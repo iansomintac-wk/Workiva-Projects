@@ -1,0 +1,48 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CUSTOMER DATA — not versioned by default.
+#
+# The restore point and any exported book contain REAL account names and notes
+# for a live book of business. This repo has no remote today, but a repo that
+# holds customer data is one `gh repo create --public` away from disclosing it,
+# and that mistake is not reversible.
+#
+# If you decide you want your book versioned locally, delete the line below —
+# but then never add a remote you do not control, and never make it public.
+# Regular Export JSON to a private backup location is the better habit; git is
+# for the code, not for a dataset that changes every day inside localStorage.
+# ─────────────────────────────────────────────────────────────────────────────
+book-of-business-RESTORE-POINT-*.json
+book-of-business-export*.json
+*-export.json
+
+# Screen recordings and screenshots — 46 MB of session artefacts, not project
+# files. Git stores binaries whole on every change; these would bloat the
+# history permanently and can never be pruned without rewriting it.
+*.mp4
+*.mov
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# The API key lives in the browser's localStorage and never touches this folder.
+# These patterns exist so it stays that way if anything ever writes one out.
+.env
+*.key
+*secret*
+*apikey*
+
+# Claude Code tooling. .claude/skills/ is 6.2 MB of vendored third-party design
+# skills (hallmark, impeccable, taste, ui-ux-pro-max, frontend-design) that are
+# updated independently of this project — 302 of the 318 files in the first
+# staging attempt. settings.local.json is local by definition. Neither is part of
+# the tracker, and both would swamp the history of a repo whose real content is
+# two HTML files.
+.claude/
+
+# OS and editor noise
+Thumbs.db
+desktop.ini
+.DS_Store
+*.swp
+*~

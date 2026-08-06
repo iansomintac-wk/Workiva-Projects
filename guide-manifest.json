@@ -1,0 +1,23 @@
+{
+  "guideVersion": "4.9",
+  "guideContentBasis": "3.0 content, updated at 3.6 (mockups, tab strips, Off Track terminology), 3.7 (\"Newer workflows\" chapter), 3.8 (three-act Today, Calls-today prep), 3.9 (the ranked work taught as a chaptered scrolling story) and 4.0 (Today rebuilt as ONE timeline whose axis is the workday) and 4.1 (the Story/Compact density toggle and the remembered beat). Original instructional flow unchanged. 4.2 closes the last six coverage gaps. 4.3 rewrites Risk and Copilot for v73 and moves the time-saved chapter. 4.4 teaches the v74 curriculum fit calculator and repairs four malformed article tags in the Newer workflows chapter. 4.4a adds the guide its own self-check suite. 4.4b teaches booking the next session and the calendar invite. 4.4c closes both launch checklists on the calendar invite. 4.4d records how to verify the bundle: both halves carry console-callable self-check suites. 4.5 teaches the v75 spine on Risk and Copilot. 4.6 rewrites the spine chapter for v76: Risk as a deck, Copilot as layered travel through time. 4.7 teaches the v79 instruments. 4.8 teaches the motion switch. 4.9 replaces the instruments chapter with the Copilot band.",
+  "trackerVersion": "v80",
+  "trackerFile": "osm-book-of-business-tracker-v80.html",
+  "changelogFile": "CHANGELOG.txt",
+  "bundledOn": "2026-08-04",
+  "scope": "Companion onboarding guide plus current tracker. The tracker was edited in place through v71 (schema 5) (Today rebuilt as a per-account dispatcher; account snapshot promoted onto Overview; Today list capped; search debounced; Call Prep Brief replaced by an actionable Account Brief; two pre-existing self-check bugs fixed), so it is deliberately NOT byte-identical to any earlier delivered build. Guide content was updated at 3.6 to match the current Today tab and terminology.",
+  "guideCoverageGap": "No known coverage gaps. The v81 Copilot band and the v79 glideslope are taught in the Newer workflows chapter.",
+  "requiredChecks": [
+    "bundle links",
+    "no stale version references (v54 / v3.0)",
+    "guide loads with no runtime exceptions",
+    "tracker self-checks pass from bundle location (143/143 as of v71)",
+    "tracker filename matches trackerFile and every data-tracker-link href",
+    "no stale Needs Attention / At Risk / three-tab references in the guide"
+  ],
+  "guideFile": "osm-runway-onboarding-v4.4.html",
+  "trackerSchemaVersion": 8,
+  "validatedOn": "2026-08-04",
+  "guideSelfChecks": "window.runGuideSelfChecks() — 18 checks. Run from the console on the guide; must be 18/18 after any edit.",
+  "trackerSelfChecks": "window.runSelfChecks() — 208 checks. Must be 208/208 after any edit."
+}
