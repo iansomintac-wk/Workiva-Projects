@@ -1,6 +1,65 @@
 OSM Book of Business Tracker — version notes (extracted verbatim from the tracker file header)
 
 CHANGELOG:
+  v98 - Time saved by the day, and two controls that were never wired.
+
+    THE REPORT. DATA.impact was a lifetime counter with a since-date: it can
+    answer "how much in total" and nothing else. DATA.impactLog now dates every
+    increment, so daily, weekly and monthly are questions with real answers.
+    Settings -> Time-Saved Report, and a button at the day close.
+
+    Two honesty rules carried over from the rest of this file. Every minute is an
+    ESTIMATE, and the report says so in its own second paragraph rather than in a
+    footnote. And a window the log cannot reach back far enough to cover is
+    reported as PARTIAL, naming the date logging began - never as a small number
+    that reads like a quiet month. The queued-today section is the one part that
+    counts real records rather than estimating, and it says which.
+
+    COPILOT WORK NOW COUNTS. Five new events: the AI portfolio read (15m), a
+    record updated from a card back (2m), an answer drafted from a logged question
+    (6m), a session caught up in the backfill grid (3m), a commercial field
+    imported (1m). Every estimate is what the ALTERNATIVE costs - the round trip
+    to the account and back, the hand-assembled portfolio review - not what the
+    feature feels worth.
+
+    THE BEAT CLICK THAT NEVER WAS. .day-step has carried cursor:pointer since the
+    Day was built, the lede reads "Click one, or press J / K", and setTodayFocus()
+    even has a comment about "J/K and a click" being no-ops to a screen reader -
+    but no click handler was ever bound. J/K worked. Scrolling worked. Clicking
+    did nothing at all. It now selects the beat, exactly as J/K does.
+
+    It deliberately does NOT open the flyout. The Day is a timeline with a working
+    panel beside it; a modal on every click would fight the only thing the tab is
+    for, and the flyout is already one click further on from the panel's own
+    dispatch chips.
+
+    THE DAY CLOSE READ A FIGURE THAT DOES NOT EXIST. "What moved today" tested
+    impact.events and read impact.minutes. computeImpactSummary() returns {rows,
+    totalMinutes, since} and always has. So that line has rendered "Nothing logged
+    yet today" on every book since it shipped - and was reaching for a LIFETIME
+    total to describe a single day in the first place. Both corrected by the dated
+    log.
+
+    A WIDER FLYOUT. 560px is right for a glance and cramped for the session plan,
+    the activity log and the coordination tables, all of which are tables
+    pretending to be lists. A Widen / Narrow toggle in the panel header, capped at
+    1100px rather than full-viewport, because a 2560px monitor would otherwise
+    give a 2500px measure for the Account Brief's prose. Browser preference, same
+    contract as the motion switch.
+
+    ON "AUTOMATING" THE EXPORT. A page cannot write to disk unprompted, so there
+    is no zero-touch version of this without a server or a persisted file handle.
+    What exists is the honest maximum: the passive nag in the header, the
+    load-time prompt past three times the nag window, and now the offer at the day
+    close - at the moment you have just finished, rather than buried in Settings.
+
+    SCHEMA 10 -> 11: DATA.impactLog. The migration infers nothing. Spreading an
+    existing lifetime total evenly across the days since its since-date would
+    manufacture a history that never happened; an upgraded book simply starts
+    logging today, and the report says how far back it actually reaches.
+
+    Eight checks, 302 -> 310.
+
   v97 - Three leaks that only a full book could show.
 
     Everything fixed in this file for the last ten versions was about EMPTINESS:

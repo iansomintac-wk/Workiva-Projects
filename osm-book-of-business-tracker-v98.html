@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  OSM Book of Business Tracker — v97
+  OSM Book of Business Tracker — v98
   Single-file HTML/JS app. localStorage persistence. No build step, no server.
 
   RULES FOR EDITING THIS FILE (human or AI):
@@ -35,6 +35,48 @@
 
   CHANGELOG:
   (v72–v85 are in CHANGELOG.txt alongside this file; the entries below predate it.)
+  v98 - TIME SAVED BY THE DAY, AND TWO CONTROLS THAT WERE NEVER WIRED.
+        THE REPORT. DATA.impact was a lifetime counter with a since-date, which
+        can answer "how much in total" and nothing else. DATA.impactLog now dates
+        every increment, so daily, weekly and monthly are real questions with real
+        answers. Settings -> Time-Saved Report, and a button at the day close.
+        Two honesty rules carried over from everything else here: every minute is
+        an ESTIMATE and the report says so in its own second paragraph; and a
+        window the log cannot reach back far enough to cover is reported as
+        PARTIAL with the date logging began, never as a small number that looks
+        like a quiet month. The queue section is the one part that is a COUNT of
+        real records rather than an estimate, and it says which.
+        COPILOT WORK NOW COUNTS. Five new events: the AI portfolio read, a record
+        updated from a card back, an answer drafted from a logged question, a
+        session caught up in the backfill grid, and a commercial field imported.
+        Each estimate is what the ALTERNATIVE costs - the round trip to the
+        account, the hand-assembled portfolio review - not what the feature feels
+        worth.
+        THE BEAT CLICK THAT NEVER WAS. .day-step has carried cursor:pointer since
+        the Day was built, the lede says "Click one, or press J / K", and
+        setTodayFocus() has a comment about "J/K and a click" - but nothing was
+        ever bound. J/K worked, scrolling worked, clicking did nothing. It now
+        selects the beat. Deliberately NOT the flyout: the Day is a timeline with
+        a working panel beside it, and a modal on every click would fight the one
+        thing the tab is for.
+        THE DAY CLOSE READ A FIGURE THAT DOES NOT EXIST. "What moved today"
+        checked impact.events and impact.minutes; computeImpactSummary() returns
+        {rows, totalMinutes, since}. So that line has read "Nothing logged yet
+        today" on every book since it shipped - and was reaching for a LIFETIME
+        total to describe a single day besides. Both fixed by the dated log.
+        A WIDER FLYOUT. 560px is right for a glance and cramped for the session
+        plan, activity log and coordination tables. A Widen/Narrow toggle in the
+        panel header, capped at 1100px rather than full-viewport - a 2560px
+        monitor would otherwise give an unreadable measure for the Account Brief.
+        Browser preference, like the motion switch.
+        ON "AUTOMATING" THE EXPORT: a page cannot write to disk unprompted, so
+        there is no zero-touch version of this. What exists is the honest maximum
+        - a passive nag in the header, a load-time prompt past three times the nag
+        window, and now the offer at the day close, where you have just finished.
+        SCHEMA 11 -> 12 is NOT taken: impactLog is v10 -> v11. The migration
+        infers nothing, because spreading a lifetime total evenly across elapsed
+        days would manufacture a history that never happened.
+        Eight checks, 302 -> 310.
   v97 - THREE LEAKS THAT ONLY A FULL BOOK COULD SHOW.
         Everything fixed in this file for the last ten versions was about
         EMPTINESS - surfaces that rendered nothing because nothing had been
@@ -1885,6 +1927,10 @@
     display:flex; justify-content:flex-end; z-index:50; opacity:0; pointer-events:none; transition:opacity .2s;
   }
   .overlay.open{opacity:1; pointer-events:auto;}
+  /* v98: two widths. The wide one is capped at 1100px rather than filling the
+     viewport — a 2560px monitor would otherwise give a 2500px measure, which is
+     unreadable for the prose in the Account Brief. */
+  .panel.wide{width:min(1100px, 100%);}
   .panel{
     width:min(560px, 100%); background:var(--bg); height:100%; overflow-y:auto;
     border-left:1px solid var(--border); transform:translateX(20px); transition:transform .2s;
@@ -2528,6 +2574,8 @@
   .day-close .dm-head{margin-bottom:10px;}
   .day-close h3{margin:6px 0 0; font-family:var(--font-display); font-weight:800; color:var(--text);
     font-size:var(--text-xl); letter-spacing:-.02em; overflow-wrap:anywhere; min-width:0;}
+  .close-actions{display:flex; align-items:center; gap:var(--space-1); flex-wrap:wrap;
+    margin:var(--space-2) 0; padding-top:var(--space-2); border-top:1px solid var(--border-soft);}
   .close-groups{display:grid; gap:8px;}
   .close-group{padding:var(--space-1) 0; border-top:1px solid var(--border-soft);}
   .close-group:first-child{border-top:0; padding-top:0;}
@@ -3309,6 +3357,18 @@ function saveDayPrefs(patch){
    turns the flourishes off and keeps the structure. It is per browser, not in
    the book, and it is the same shape as the Day's density preference. Anyone
    with prefers-reduced-motion set gets Calm whatever the switch says. */
+/* v98: how wide the account flyout opens. A browser preference, not a fact about
+   the book — same contract as the motion switch and the Day's density. 560px is
+   right for a glance and cramped for the Session Plan, the Activity Log and the
+   Coordination tab, all of which are tables pretending to be lists. */
+const PANEL_WIDTH_KEY = 'obm-panel-width-v1';
+function getPanelWide(){
+  try{ return localStorage.getItem(PANEL_WIDTH_KEY) === 'wide'; }catch(e){ return false; }
+}
+function savePanelWide(wide){
+  try{ localStorage.setItem(PANEL_WIDTH_KEY, wide ? 'wide' : 'normal'); return true; }
+  catch(e){ return false; }   // a lost preference is not worth a toast
+}
 const MOTION_KEY = 'obm-motion-v1';
 const MOTION_MODES = ['full', 'calm'];
 function getMotionPref(){
@@ -3772,6 +3832,7 @@ Rules: 60-120 words per section. Write from a customer success, implementation a
     const res = await callAiAPI(prompt, {maxTokens: 3200});
     if(ui.aiChapters.req !== myReq) return;
     const sections = parseAiSections(res.text);
+    trackImpact('copilot_read');
     ui.aiChapters = {loading:false, sections, error:'', req:myReq,
       raw: Object.keys(sections).length ? '' : res.text,
       truncated: !!res.truncated,
@@ -5620,7 +5681,7 @@ const DEFAULT_OUTCOME_NAMES = [
    explicit step in migrateData(). backfillCustomerRecord remains for per-record field
    defaults on legacy/imported records, but new-shape changes get a numbered migration —
    version-blind additive guessing is how backfill logic rots. */
-const CURRENT_SCHEMA_VERSION = 10; // v89: + customer.tier / customer.arr / customer.renewalDate
+const CURRENT_SCHEMA_VERSION = 11; // v98: + DATA.impactLog (dated time-saved events)
 
 /* The single gate for clock times. Accepts "H:MM" and "HH:MM" on a 24h clock and
    returns a zero-padded "HH:MM"; everything else returns null and the field is
@@ -5848,6 +5909,22 @@ function migrateData(data){
       }
     });
     v = 10;
+  }
+  if(v === 10){
+    /* v10 -> v11 (v98): DATA.impactLog, dated time-saved events.
+       INFERS NOTHING. The existing cumulative counter has a since-date and no
+       per-day detail, and spreading that total evenly across the elapsed days
+       would manufacture a history that never happened. An upgraded book starts
+       logging from today; the lifetime figure is untouched and still correct.
+       The daily/weekly/monthly report says how far back the log actually goes
+       rather than implying it covers the whole window. */
+    if(data.impactLog !== undefined){
+      const clean = (Array.isArray(data.impactLog) ? data.impactLog : []).filter(e =>
+        isRecordObject(e) && isRealISODate(e.date) && typeof e.key === 'string'
+        && Number.isFinite(e.n) && e.n > 0);
+      if(clean.length) data.impactLog = clean.slice(-MAX_IMPACT_LOG); else delete data.impactLog;
+    }
+    v = 11;
   }
   data.schemaVersion = v;
   // Sanity: contradictory risk thresholds (watch >= alert) make the watch tier
@@ -9167,6 +9244,9 @@ function _runSelfChecksInner(){
   // account and its recommendation.
   (function(){
     const savedImpact = DATA.impact, savedCfg = DATA.config.impactMinutes;
+    // v98: trackImpact now also appends to DATA.impactLog, so this check has to
+    // put that back too or it leaks a key onto a book that never had one.
+    const savedLog = DATA.impactLog === undefined ? null : JSON.stringify(DATA.impactLog);
     try{
       DATA.impact = undefined; DATA.config.impactMinutes = {};
       trackImpact('activity_logged'); trackImpact('activity_logged'); trackImpact('partner_note_imported', 5);
@@ -9179,7 +9259,10 @@ function _runSelfChecksInner(){
         baseOk && sum.rows.find(r=>r.key==='activity_logged').total === 20
         && sum.totalMinutes === 20 + 10,
         `total=${sum.totalMinutes}`);
-    } finally { DATA.impact = savedImpact; DATA.config.impactMinutes = savedCfg; }
+    } finally {
+      DATA.impact = savedImpact; DATA.config.impactMinutes = savedCfg;
+      if(savedLog === null) delete DATA.impactLog; else DATA.impactLog = JSON.parse(savedLog);
+    }
   })();
   (function(){
     let ok = false, detail = '';
@@ -12330,7 +12413,7 @@ function _runSelfChecksInner(){
       && Number.isFinite(effortMinutesFor('signal:renewal_pressure')));
 
     check('v89 the commercial fields are versioned, migrated and repaired like every other shape',
-      CURRENT_SCHEMA_VERSION === 10
+      CURRENT_SCHEMA_VERSION >= 10
       && String(migrateData).indexOf('c.renewalDate') !== -1
       && String(repairAuxiliaryCollections).indexOf('parseMoneyCell') !== -1
       && String(applyValueImport).indexOf('DATA.customers') !== -1
@@ -12949,6 +13032,88 @@ function _runSelfChecksInner(){
     check('v97 running the suite cannot re-base the weekly digest',
       String(getWeeklyDigest).indexOf('!_suiteRunning') !== -1,
       'a diagnostic may read anything and must change nothing');
+  })();
+
+  /* ---- v98 dated impact, the report, and two dead controls ---- */
+  (function(){
+    const realLog = DATA.impactLog === undefined ? null : JSON.stringify(DATA.impactLog);
+    const realImp = JSON.stringify(DATA.impact === undefined ? null : DATA.impact);
+    let today = null, week = null, month = null, uncovered = null, report = '';
+    try{
+      const T = todayISO();
+      /* Earliest entry is INSIDE the month window on purpose: `covered` asks
+         whether the log reaches back far enough to speak for the window, and a
+         log that begins 20 days ago cannot speak for the last 30. The first
+         draft of this fixture started 40 days back, which covers the window
+         fine and asserted the opposite of what it meant to. */
+      DATA.impactLog = [
+        {date: isoAddDays(T, -20), key:'activity_logged', n: 2},   // month only
+        {date: isoAddDays(T, -3),  key:'copilot_read',    n: 1},   // week + month
+        {date: T,                  key:'card_edit',       n: 4}    // all three
+      ];
+      today = impactWindow(T, T);
+      week = impactWindow(isoAddDays(T, -6), T);
+      month = impactWindow(isoAddDays(T, -29), T);
+      uncovered = month.covered;
+      report = buildImpactReport();
+    } finally {
+      if(realLog === null) delete DATA.impactLog; else DATA.impactLog = JSON.parse(realLog);
+      const ri = JSON.parse(realImp); if(ri === null) delete DATA.impact; else DATA.impact = ri;
+    }
+
+    check('v98 time saved can be asked for by day, week and month, not just lifetime',
+      today.totalMinutes === 4 * impactMinutesFor('card_edit')
+      && week.totalMinutes === today.totalMinutes + impactMinutesFor('copilot_read')
+      && month.totalMinutes === week.totalMinutes + 2 * impactMinutesFor('activity_logged')
+      && month.covered === false,   // the log begins inside the window
+      JSON.stringify({d:today.totalMinutes, w:week.totalMinutes, m:month.totalMinutes}));
+
+    /* The empty-denominator rule, again. A log that began after the window opened
+       must SAY so rather than report a small number as though the window were
+       measured and found quiet. */
+    check('v98 a window the log cannot cover is reported as partial, never as a small number',
+      uncovered === false && report.indexOf('only partly covered') !== -1,
+      JSON.stringify({covered: uncovered, hasNotice: report.indexOf('only partly covered') !== -1}));
+
+    check('v98 the report says its numbers are estimates, and names what was queued today',
+      report.indexOf('ESTIMATE') !== -1
+      && report.indexOf('QUEUED FOR GAINSIGHT TODAY') !== -1
+      && report.indexOf('TODAY') !== -1 && report.indexOf('LAST 7 DAYS') !== -1
+      && report.indexOf('LAST 30 DAYS') !== -1);
+
+    // The Copilot surfaces now count toward the figure.
+    check('v98 Copilot work is counted, not just Today work',
+      ['copilot_read','card_edit','question_drafted','session_backfilled'].every(k =>
+        IMPACT_EVENTS.some(e => e.key === k))
+      && String(generateCopilotRead).indexOf("trackImpact('copilot_read')") !== -1
+      && String(attachEvents).indexOf("trackImpact('card_edit')") !== -1);
+
+    /* Two controls that looked live and were not. The beat had cursor:pointer and
+       a lede saying "Click one" with nothing bound; the day close read fields off
+       computeImpactSummary() that it has never returned. */
+    check('v98 clicking a beat selects it — the control the lede has always promised',
+      String(attachEvents).indexOf('[data-day-step]') !== -1
+      && String(attachEvents).indexOf('setTodayFocus(id)') !== -1);
+
+    /* Asserted on the CODE, not the source text: the comment above the fix names
+       the old expression, so a naive indexOf finds it in the very comment
+       explaining that it is gone. */
+    check('v98 the day close reads a figure that exists',
+      String(renderDayClose).indexOf('impactPeriods().day') !== -1
+      && !/\$\{impact\s*&&\s*impact\.events/.test(String(renderDayClose)),
+      'it read impact.events and impact.minutes, which computeImpactSummary has never returned');
+
+    check('v98 the flyout can be widened, and the preference is a browser one',
+      typeof getPanelWide === 'function' && typeof savePanelWide === 'function'
+      && String(savePanelWide).indexOf('localStorage') !== -1
+      && String(savePanelWide).indexOf('DATA') === -1
+      && PANEL_WIDTH_KEY !== STORAGE_KEY);
+
+    check('v98 the dated log is versioned, migrated and repaired like every other shape',
+      CURRENT_SCHEMA_VERSION === 11
+      && String(migrateData).indexOf('impactLog') !== -1
+      && String(repairAuxiliaryCollections).indexOf('impactLog') !== -1
+      && String(trackImpact).indexOf('MAX_IMPACT_LOG') !== -1);
   })();
 
   // Last two checks on purpose — everything above has had its chance to leak by now.
@@ -14681,7 +14846,17 @@ const IMPACT_EVENTS = [
   {key:'progress_report',       label:'Manager progress reports assembled', minutes:25},
   {key:'script_opened',         label:'Session run scripts opened (45-minute prep from a standing runbook)', minutes:10},
   {key:'gainsight_copy',        label:'Gainsight summaries drafted for pasting', minutes:3},
-  {key:'cta_drafted',           label:'At-Risk CTA drafts prepared for Gainsight', minutes:6}
+  {key:'cta_drafted',           label:'At-Risk CTA drafts prepared for Gainsight', minutes:6},
+  /* v98: the Copilot surfaces. Every estimate below is what the alternative
+     costs, not what the feature "feels worth" — the card back saves the round
+     trip to the account and back, the read saves assembling a portfolio review by
+     hand, the backfill grid saves a panel visit per session. Coarse, and labelled
+     as estimates everywhere they appear, exactly like the originals. */
+  {key:'copilot_read',          label:'AI portfolio reads (four lenses over the whole book at once)', minutes:15},
+  {key:'card_edit',             label:'Records updated from a card back (no round trip to the account)', minutes:2},
+  {key:'question_drafted',      label:'Customer answers drafted from the logged question', minutes:6},
+  {key:'session_backfilled',    label:'Sessions caught up in the backfill grid (vs one panel visit each)', minutes:3},
+  {key:'value_imported',        label:'Commercial fields imported from a Gainsight CSV', minutes:1}
 ];
 function getImpactStore(){
   if(!isRecordObject(DATA.impact)) DATA.impact = {events:{}, since: todayISO()};
@@ -14689,10 +14864,64 @@ function getImpactStore(){
   if(!isRealISODate(DATA.impact.since)) DATA.impact.since = todayISO();
   return DATA.impact;
 }
+/* v98: DATA.impact.events is a lifetime counter with a since-date, which can
+   answer "how much in total" and nothing else. A daily, weekly or monthly figure
+   needs DATED events, so every increment is now also appended to a log.
+
+   Capped at 4000 entries — roughly three years of heavy use — and pruned from the
+   front, because an unbounded array inside a book that is exported as one JSON
+   file is a slow leak nobody notices until the export gets big. The cumulative
+   counter stays exactly as it was, so every existing surface is untouched. */
+const MAX_IMPACT_LOG = 4000;
+function getImpactLog(){
+  return Array.isArray(DATA.impactLog) ? DATA.impactLog : [];
+}
 function trackImpact(key, n){
   const st = getImpactStore();
-  st.events[key] = (st.events[key] || 0) + (Number.isFinite(n) && n > 0 ? n : 1);
+  const count = Number.isFinite(n) && n > 0 ? Math.round(n) : 1;
+  st.events[key] = (st.events[key] || 0) + count;
+  if(!Array.isArray(DATA.impactLog)) DATA.impactLog = [];
+  const today = todayISO();
+  const last = DATA.impactLog[DATA.impactLog.length - 1];
+  // Same key, same day: add to the existing row rather than growing the log.
+  if(last && last.date === today && last.key === key) last.n += count;
+  else DATA.impactLog.push({date: today, key, n: count});
+  if(DATA.impactLog.length > MAX_IMPACT_LOG){
+    DATA.impactLog.splice(0, DATA.impactLog.length - MAX_IMPACT_LOG);
+  }
   queueSave();
+}
+/* Minutes saved inside a window, from the dated log. Returns null rather than
+   zero when the log cannot cover the window — a book that started logging on
+   Tuesday must not report "0 minutes saved last month" as though the month were
+   measured and found empty. */
+function impactWindow(fromISO, toISO){
+  const log = getImpactLog();
+  if(!log.length) return null;
+  const earliest = log.reduce((m, e) => e.date < m ? e.date : m, log[0].date);
+  const rows = {};
+  let total = 0;
+  log.forEach(e => {
+    if(e.date < fromISO || e.date > toISO) return;
+    const mins = impactMinutesFor(e.key) * e.n;
+    if(!rows[e.key]) rows[e.key] = {key: e.key, count: 0, minutes: 0};
+    rows[e.key].count += e.n;
+    rows[e.key].minutes += mins;
+    total += mins;
+  });
+  return {from: fromISO, to: toISO, totalMinutes: total,
+    covered: earliest <= fromISO,
+    loggingSince: earliest,
+    rows: Object.values(rows).sort((a, b) => b.minutes - a.minutes)
+      .map(r => Object.assign({label: (IMPACT_EVENTS.find(e => e.key === r.key) || {}).label || r.key}, r))};
+}
+function impactPeriods(){
+  const today = todayISO();
+  return {
+    day:   impactWindow(today, today),
+    week:  impactWindow(isoAddDays(today, -6), today),
+    month: impactWindow(isoAddDays(today, -29), today)
+  };
 }
 function impactMinutesFor(key){
   const cfg = DATA.config.impactMinutes || {};
@@ -14709,6 +14938,91 @@ function computeImpactSummary(){
   });
   return {rows, totalMinutes: rows.reduce((sum, r) => sum + r.total, 0), since: st.since};
 }
+/* ============ v98: THE TIME-SAVED REPORT ============
+   The impact meter could say "4h 20m since March" and nothing else. This answers
+   the question a manager actually asks — how much this week, how much this month
+   — and the one an OSM asks, which is what went into the queue today.
+
+   TWO HONESTY RULES, and they are the reason this is worth reading at all:
+   1. Every minute here is an ESTIMATE from IMPACT_EVENTS, not a measurement. The
+      report says so at the top, once, in the same sentence as the total.
+   2. It never claims a window it cannot cover. A log that started on Tuesday
+      reports the month as "logging began 3 days ago", not as a small number.
+      An empty denominator lying is the failure mode this whole file is built
+      against. */
+function buildImpactReport(){
+  const L = [];
+  const periods = impactPeriods();
+  const lifetime = computeImpactSummary();
+  const q = getGainsightQueue();
+  const today = todayISO();
+  const todaysQueue = q.filter(x => x.date === today);
+
+  L.push('TIME SAVED — OSM Book of Business Tracker');
+  L.push('Generated ' + fmtDate(today));
+  L.push('');
+  L.push('Every figure below is an ESTIMATE built from the per-action assumptions in');
+  L.push('Settings, not a measurement of your actual time. They are deliberately coarse.');
+  L.push('');
+
+  const block = (title, w) => {
+    L.push('— ' + title + ' —');
+    if(!w){
+      L.push('  Nothing logged yet. This report starts counting from the first tracked action.');
+      L.push('');
+      return;
+    }
+    if(!w.covered){
+      L.push('  Logging began ' + fmtDate(w.loggingSince) + ', so this window is only partly covered.');
+    }
+    L.push('  ' + fmtImpactDuration(w.totalMinutes) + ' saved' +
+      (w.rows.length ? ' across ' + w.rows.reduce((n, r) => n + r.count, 0) + ' actions' : ''));
+    w.rows.forEach(r => {
+      L.push('    ' + String(r.count).padStart(4) + ' x  ' + r.label);
+      L.push('           ' + fmtImpactDuration(r.minutes));
+    });
+    if(!w.rows.length) L.push('    (no tracked actions in this window)');
+    L.push('');
+  };
+  block('TODAY', periods.day);
+  block('LAST 7 DAYS', periods.week);
+  block('LAST 30 DAYS', periods.month);
+
+  L.push('— SINCE ' + fmtDate(lifetime.since).toUpperCase() + ' —');
+  L.push('  ' + fmtImpactDuration(lifetime.totalMinutes) + ' saved in total');
+  lifetime.rows.filter(r => r.count).forEach(r => {
+    L.push('    ' + String(r.count).padStart(4) + ' x  ' + r.label + '  (' + fmtImpactDuration(r.total) + ')');
+  });
+  L.push('');
+
+  /* What went into the queue today — the thing an OSM wants at 5pm, and the one
+     part of this report that is a COUNT of real records rather than an estimate. */
+  L.push('— QUEUED FOR GAINSIGHT TODAY (' + todaysQueue.length + ') —');
+  if(!todaysQueue.length){
+    L.push('  Nothing queued today.');
+  } else {
+    const byKind = {};
+    todaysQueue.forEach(x => { (byKind[x.kind] = byKind[x.kind] || []).push(x); });
+    Object.keys(byKind).sort().forEach(kind => {
+      L.push('  ' + kind + ' (' + byKind[kind].length + ')');
+      byKind[kind].forEach(x => L.push('    - ' + x.customerName + (x.status && x.status !== 'queued' ? ' [' + x.status + ']' : '')));
+    });
+  }
+  L.push('');
+  const stillQueued = q.filter(x => x.status === 'queued').length;
+  if(stillQueued) L.push('  ' + stillQueued + ' item' + (stillQueued === 1 ? '' : 's') + ' still sitting in the queue overall.');
+  L.push('');
+  L.push('These are counts of what the tracker did. Whether it saved you the time it');
+  L.push('claims is a judgement only you can make — the assumptions are editable.');
+  return L.join(String.fromCharCode(10));
+}
+function downloadImpactReport(){
+  const name = 'time-saved-' + todayISO() + '.txt';
+  downloadTextFile(name, buildImpactReport());
+  trackImpact('progress_report');
+  showToast('Report downloaded. Every figure in it is an estimate, and it says so.');
+}
+
 function fmtImpactDuration(mins){
   const h = Math.floor(mins / 60), m = Math.round(mins % 60);
   return h ? `${h}h ${m}m` : `${m}m`;
@@ -15210,6 +15524,17 @@ const GAINSIGHT_SYNC_MESSAGES = {
   not_configured: 'No Gainsight domain/API key stored — add them in Settings. Browsers also block direct Gainsight calls, so a backend/middleware is required for the actual push.',
   transport_not_built: 'Credentials are stored, but the push/pull transport is not built yet — this version queues and exports; a future backend consumes the queue. Nothing was sent.'
 };
+/* v98: one download path. Four call sites had hand-rolled the same blob/anchor/
+   revoke dance; the report made it five, which is where a helper stops being
+   optional. */
+function downloadTextFile(filename, text, mime){
+  const blob = new Blob([text], {type: mime || 'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
 function downloadGainsightQueue(){
   const queue = getGainsightQueue();
   const blob = new Blob([JSON.stringify({exportedOn: todayISO(), items: queue}, null, 2)], {type:'application/json'});
@@ -16688,6 +17013,7 @@ async function generateThreadAnswer(activityId, threadId){
     const res = await callAiAPI(buildThreadAnswerPrompt(cust, act, thread), {maxTokens: 700});
     thread.a = String(res.text || '').replace(/\s+/g, ' ').trim().slice(0, 2000);
     thread.answeredOn = todayISO();
+    trackImpact('question_drafted');
     ui.threadAnswerAi[threadId] = {loading:false, error:''};
     saveData();
     showToast('Draft answer saved to the question. Read it before you send it.');
@@ -16889,10 +17215,36 @@ function renderDayClose(day){
              <span class="bp-basis">Closes today and shows what the tracker saved you.</span>`}
       </div>
 
+      <!-- v98: the two things worth doing at the end of a day, offered at the end
+           of the day rather than hidden in Settings. The backup line is the only
+           honest form of "automated export" a serverless local file can offer:
+           the browser will not let a page write to disk unprompted, so the next
+           best thing is asking at the moment you have finished. -->
+      <div class="close-actions">
+        <button class="btn btn-sm" data-download-report>Download the time-saved report</button>
+        <button class="btn btn-sm ${(function(){ const d = DATA.lastExportedAt ? daysSince(DATA.lastExportedAt) : null; return (d === null || d > 0) ? 'btn-primary' : ''; })()}" data-backup-now>Back up the book</button>
+        <span class="bp-basis">${(function(){
+          const d = DATA.lastExportedAt ? daysSince(DATA.lastExportedAt) : null;
+          if(d === null) return 'This book has never been exported. It exists only in this browser.';
+          if(d === 0) return 'Backed up today.';
+          return `Last backup ${d} day${d===1?'':'s'} ago — everything since then exists only in this browser.`;
+        })()}</span>
+      </div>
+
       <div class="close-split">
         <div>
           <div class="lbl">What moved today</div>
-          <div class="close-stat">${impact && impact.events ? `${impact.events} action${impact.events===1?'':'s'} logged · about ${fmtImpactDuration(impact.minutes)} saved` : 'Nothing logged yet today.'}</div>
+          <!-- v98: this read impact.events and impact.minutes, neither of which
+               computeImpactSummary() has ever returned — it returns {rows,
+               totalMinutes, since}. So this line has always said "Nothing logged
+               yet today", on every book, forever. It was also reaching for a
+               LIFETIME total to describe today. Both fixed by the dated log. -->
+          <div class="close-stat">${(function(){
+            const d = impactPeriods().day;
+            if(!d || !d.rows.length) return 'Nothing tracked yet today.';
+            const n = d.rows.reduce((sum, r) => sum + r.count, 0);
+            return `${n} action${n===1?'':'s'} · about ${fmtImpactDuration(d.totalMinutes)} saved`;
+          })()}</div>
         </div>
         <div>
           <div class="lbl">The rest of the week</div>
@@ -17613,6 +17965,7 @@ function openBackfillModal(){
     if(!plan.length){ showToast('Nothing entered — fill in at least one row.'); return; }
     markUndoable('session backfill');
     const res = applySessionBackfill(plan);
+    if(res.created) trackImpact('session_backfilled', res.created);
     /* Deliberately NOT trackImpact('activity_logged'): impact counts touchpoints
        the tracker prompted you to make. Catching up on history you already did is
        record-keeping, and counting it would flatter the number. */
@@ -17889,7 +18242,7 @@ function renderPanel(){
            BEHIND the overlay. tabindex="-1" makes the panel programmatically
            focusable so focus can be moved in on open; aria-labelledby points at
            the account name so a screen reader announces which account opened. -->
-      <div class="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" tabindex="-1">
+      <div class="panel${getPanelWide() ? ' wide' : ''}" role="dialog" aria-modal="true" aria-labelledby="panel-title" tabindex="-1">
         <div class="panel-header">
           <div>
             <div class="panel-title" id="panel-title">${escapeHtml(c.name)}${pausedBadgeHtml(c)}${implBadgeHtml(c)}</div>
@@ -17900,6 +18253,7 @@ function renderPanel(){
           <div style="display:flex; align-items:center; gap:8px;">
             <button class="btn btn-primary btn-sm" id="btn-open-log-form">+ Log Activity</button>
             ${c.stage === 'graduated' ? `<button class="btn btn-sm" id="btn-archive-customer" title="Download this customer's full record as a JSON file, then remove them from the live tracker">Archive</button>` : ''}
+            <button class="btn btn-sm" id="btn-panel-width" title="${getPanelWide() ? 'Narrow the panel' : 'Widen the panel — easier for the session plan, activity log and coordination tables'}" aria-pressed="${getPanelWide()}">${getPanelWide() ? 'Narrow' : 'Widen'}</button>
             <button class="close-x" id="btn-close-panel">✕</button>
           </div>
         </div>
@@ -19422,6 +19776,10 @@ The draft is discarded. The risk itself stays open.`)) return;
   }));
 
   $('#btn-close-panel') && $('#btn-close-panel').addEventListener('click', ()=>{ ui.openCustomerId=null; render(); });
+  $('#btn-panel-width') && $('#btn-panel-width').addEventListener('click', ()=>{
+    savePanelWide(!getPanelWide());
+    render();
+  });
   $('#overlay') && $('#overlay').addEventListener('click', e=>{ if(e.target.id==='overlay'){ ui.openCustomerId=null; render(); } });
 
   $$('[data-table-stage]').forEach(sel => sel.addEventListener('change', e=>{
@@ -19508,6 +19866,8 @@ The draft is discarded. The risk itself stays open.`)) return;
     if(target) target.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'center'});
   }));
   $$('[data-download-gainsight]').forEach(b => b.addEventListener('click', ()=> downloadGainsightQueue()));
+  $$('[data-download-report]').forEach(b => b.addEventListener('click', downloadImpactReport));
+  $$('[data-backup-now]').forEach(b => b.addEventListener('click', exportData));
   $$('[data-thread-ai]').forEach(btn => btn.addEventListener('click', ()=>{
     const [actId, threadId] = btn.dataset.threadAi.split('|');
     generateThreadAnswer(actId, threadId);
@@ -19733,6 +20093,7 @@ The draft is discarded. The risk itself stays open.`)) return;
      the rail silently jump. Called after render(), so the DOM it inspects is the
      rebuilt one. */
   const dkAfterWrite = (deckId, custId, what) => {
+    trackImpact('card_edit');
     saveData(); render();
     const stillThere = !!document.querySelector(
       '[data-deck="' + cssEscape(deckId) + '"] .dk-card[data-dk-id="' + cssEscape(custId) + '"]');
@@ -19880,6 +20241,21 @@ The draft is discarded. The risk itself stays open.`)) return;
   $$('[data-onb-act]').forEach(b => b.addEventListener('click', ()=>{
     if(b.dataset.onbAct === 'backfill') openBackfillModal();
     else if(b.dataset.onbAct === 'quicklog') openQuickLogModal();
+  }));
+  /* v98: the click that was never bound. .day-step has carried cursor:pointer
+     since the Day was built, the lede says "Click one, or press J / K", and
+     setTodayFocus() has a comment about "J/K and a click" — but nothing ever
+     listened. J/K worked, scrolling worked, clicking did nothing at all.
+
+     It selects the beat, exactly as J/K does. It deliberately does NOT open the
+     flyout: the Day is a timeline with a working panel beside it, and a modal on
+     every click would fight the one thing the tab is for. The flyout is already
+     one click further on, from the panel's own dispatch chips. */
+  $$('#day [data-day-step]').forEach(step => step.addEventListener('click', e => {
+    if(e.target.closest('button, a, input, select, textarea, label')) return;
+    const id = step.dataset.dayStep;
+    if(!id || id === ui.todayFocusId) return;
+    setTodayFocus(id);
   }));
   $$('[data-day-skip]').forEach(b => b.addEventListener('click', ()=>{
     const close = document.querySelector('[data-day-close]');
@@ -21377,6 +21753,7 @@ function openSettingsModal(){
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
         <button class="btn btn-sm" id="btn-curriculum-settings">Session Curriculum</button>
         <button class="btn btn-sm" id="btn-backfill-settings" title="Catch the book up: enter completed session counts and dates for every live account in one grid, instead of one panel at a time">Backfill Sessions</button>
+        <button class="btn btn-sm" id="btn-time-saved-report" title="Daily, weekly and monthly time saved, plus what went into the Gainsight queue today">Time-Saved Report</button>
         <button class="btn btn-sm" id="btn-export-settings">Export JSON</button>
         <button class="btn btn-sm" id="btn-import-settings">Import JSON</button>
         <button class="btn btn-sm" id="btn-import-excel-settings">Import Excel</button>
@@ -21523,6 +21900,7 @@ function openSettingsModal(){
     backdrop.remove();          // openBackfillModal refuses to stack on another modal
     openBackfillModal();
   });
+  backdrop.querySelector('#btn-time-saved-report').addEventListener('click', downloadImpactReport);
   backdrop.querySelector('#btn-export-settings').addEventListener('click', exportData);
   backdrop.querySelector('#btn-import-settings').addEventListener('click', ()=> document.getElementById('import-file-input').click());
   backdrop.querySelector('#btn-import-excel-settings').addEventListener('click', ()=> document.getElementById('import-excel-input').click());
@@ -22092,6 +22470,19 @@ function repairAuxiliaryCollections(data){
   if(!Array.isArray(data.pauseReturns)) data.pauseReturns = [];
   data.pauseReturns = data.pauseReturns.filter(x => isRecordObject(x) && typeof x.id === 'string' && typeof x.name === 'string' && isRealISODate(x.date));
   // v58 additive fields: micro-repair, never reject.
+  /* v98: the dated log gets the same boundary treatment as everything else — a
+     non-array is dropped, and rows that are not a real date plus a positive count
+     are dropped individually rather than poisoning the whole report. */
+  if(data.impactLog !== undefined){
+    if(!Array.isArray(data.impactLog)){ delete data.impactLog; if(report) report.droppedOrphanCollections++; }
+    else {
+      const before = data.impactLog.length;
+      const clean = data.impactLog.filter(e => isRecordObject(e) && isRealISODate(e.date)
+        && typeof e.key === 'string' && Number.isFinite(e.n) && e.n > 0).slice(-MAX_IMPACT_LOG);
+      if(clean.length) data.impactLog = clean; else delete data.impactLog;
+      if(report && before !== clean.length) report.droppedOrphanCollections++;
+    }
+  }
   if(data.impact !== undefined){
     if(!isRecordObject(data.impact) || !isRecordObject(data.impact.events)){
       data.impact = {events:{}, since: todayISO()};
@@ -22829,6 +23220,7 @@ function openValueImportModal(headers, dataRows, fileName){
       if(!changing.length){ showToast('Nothing to import.'); return; }
       markUndoable('Gainsight import');
       const res = applyValueImport(rows);
+      if(res.accounts) trackImpact('value_imported', res.accounts);
       saveData();
       close();
       window.render();

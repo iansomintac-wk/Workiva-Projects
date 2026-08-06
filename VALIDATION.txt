@@ -1,3 +1,47 @@
+OSM Runway Bundle (Guide v4.4 + Tracker v98) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, local HTTP.)
+
+SHA-256
+  osm-book-of-business-tracker-v98.html
+    27d4283bfe3e2f051d4b19ca1020b2c3d2d9a5ffb70fa149ca01e4459c6e7060
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 310/310, three consecutive runs on the real book
+  (37 accounts, 41 activities). localStorage byte-identical. Schema 10 -> 11
+  migrated in place.
+
+EXERCISED IN THE BROWSER
+  - Beat click: clicking the third beat set ui.todayFocusId to that account.
+    Before this version the handler did not exist.
+  - Panel width: 560px -> 1100px -> 560px, preference persisted to
+    obm-panel-width-v1.
+  - Report, generated against a seeded log and queue:
+      TODAY        45m across 14 actions (backfill 27m, drafts 12m, cards 6m)
+      LAST 7 DAYS  1h 10m across 20 actions
+      LAST 30 DAYS "Logging began Jul 24, 2026, so this window is only partly
+                    covered." - the partial-coverage rule firing correctly
+      QUEUED TODAY grouped by kind, with "3 items still sitting in the queue
+                    overall" counted separately from today's two
+  - Copilot events appear in the report by name.
+
+CHECKS CORRECTED RATHER THAN CODE (four, all mine)
+  1. A v89 check pinned CURRENT_SCHEMA_VERSION === 10; now >= 10.
+  2. The v58 impact check saved and restored DATA.impact but not the new
+     DATA.impactLog, so trackImpact() leaked a key onto a book that never had one.
+     Caught by the whole-book purity guard.
+  3. My partial-window fixture started 40 days back, which COVERS a 30-day window
+     - it asserted the opposite of what it meant. Fixture now begins inside the
+     window.
+  4. The day-close check used indexOf('impact.events'), which matched the comment
+     explaining that impact.events had been removed. Now matches the expression.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
 OSM Runway Bundle (Guide v4.4 + Tracker v97) - Validation Summary
 ==================================================================
 Validated: August 5, 2026 (Chrome, two local origins.)
