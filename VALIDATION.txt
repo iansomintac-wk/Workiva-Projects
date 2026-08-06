@@ -1,3 +1,49 @@
+OSM Runway Bundle (Guide v4.4 + Tracker v99) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, local HTTP, secure context confirmed.)
+
+SHA-256
+  osm-book-of-business-tracker-v99.html
+    944a738d48f2693b9be6ddcb7caf540c272e050864a049ead6607d8b52330632
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 318/318, three consecutive runs on the real book
+  (37 accounts, 41 activities). localStorage byte-identical.
+
+ENVIRONMENT CONFIRMED
+  window.showSaveFilePicker present: true
+  window.isSecureContext: true (http://127.0.0.1 qualifies)
+
+STATE MACHINE EXERCISED WITHOUT TOUCHING THE FILESYSTEM
+  A stub handle was substituted to drive every branch:
+    needs-permission -> "Paused - the browser needs one click per session before
+                        it can write to your file", and the header renders
+                        "auto-backup paused - click to resume"
+    ready            -> header renders "backing up to book-backup.json" and the
+                        "back up now" nag is suppressed
+    suite running    -> fsWriteNow() returned false
+    not ready        -> fsWriteNow() returned false
+  The picker itself was NOT invoked. Choosing where a backup lives writes to the
+  user's disk and is theirs to do; the tracker never picks the location.
+
+THE THREE-PLACE GUARD
+  This writes DATA to a real file. The suite swaps DATA for fabricated books.
+  Asserted: saveData() stands down first (v82), fsScheduleBackup() refuses, and
+  fsWriteNow() re-checks before opening the file. A further check confirms the
+  writer refuses while the suite that contains it is running.
+
+CHECK CORRECTED RATHER THAN CODE
+  The loop-prevention check used indexOf('saveData()'), which matched the comment
+  inside fsWriteNow explaining why saveData() is avoided. Now matched as a call
+  rather than a mention. This is the second time that exact trap has bitten in
+  this project; both are recorded here.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
 OSM Runway Bundle (Guide v4.4 + Tracker v98) - Validation Summary
 ==================================================================
 Validated: August 5, 2026 (Chrome, local HTTP.)

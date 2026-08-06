@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  OSM Book of Business Tracker — v98
+  OSM Book of Business Tracker — v99
   Single-file HTML/JS app. localStorage persistence. No build step, no server.
 
   RULES FOR EDITING THIS FILE (human or AI):
@@ -35,6 +35,37 @@
 
   CHANGELOG:
   (v72–v85 are in CHANGELOG.txt alongside this file; the entries below predate it.)
+  v99 - THE BACKUP STOPS BEING A NAG.
+        Every version until now protected the book with a REMINDER - eventually
+        three of them, and all three still asked a human to remember. The failure
+        they guard against (a cleared profile, a dead laptop, an IT reimage) does
+        not send a warning first.
+        Settings -> Automatic backup. You pick a file once with the File System
+        Access API; the tracker keeps a handle to it in IndexedDB and writes the
+        book there whenever it changes, debounced to four seconds. Same payload as
+        Export JSON, so it restores through Import JSON with no special handling.
+        No download dialog, no Downloads folder filling with dated copies.
+        WHAT IT HONESTLY IS: not unattended. Browsers will not let a page hold
+        write permission across sessions without a gesture, so it is ONE CLICK PER
+        SESSION rather than one per backup. That is the difference between a habit
+        and a guarantee, and the header says which state it is in - it stops
+        nagging when the file backup is live, and shouts only when it is PAUSED,
+        because looking protected while not being protected is the one state worth
+        a loud line.
+        Chrome-and-friends only. Where showSaveFilePicker is missing the section
+        hides itself and every existing export path is untouched.
+        THE GUARD THAT MATTERS, IN THREE PLACES. This writes DATA to a real file
+        on disk, and the self-check suite hands DATA fabricated books. If those
+        ever met, somebody's backup would silently become test fixtures - and this
+        project has already had a live book overwritten twice by lesser versions
+        of that mistake. saveData() stands down during the suite (v82), the
+        scheduler refuses, and the writer re-checks at the last moment before
+        opening the file. All three are asserted, and one check confirms the
+        writer is refusing while that very suite runs.
+        Also guarded: the write stamps lastExportedAt straight to storage rather
+        than through saveData(), because saveData() schedules a backup and that
+        would loop.
+        Eight checks, 310 -> 318.
   v98 - TIME SAVED BY THE DAY, AND TWO CONTROLS THAT WERE NEVER WIRED.
         THE REPORT. DATA.impact was a lifetime counter with a since-date, which
         can answer "how much in total" and nothing else. DATA.impactLog now dates
@@ -6206,6 +6237,7 @@ function saveData(opts){
     // A maintenance write must also leave the pending label alone — it belongs to
     // whatever user action is still on its way to its own saveData().
     if(!maintenance) _undoLabel = null;
+    fsScheduleBackup();   // v99: debounced write to the chosen backup file
     return true;
   }catch(e){
     showToast('Save failed — your browser may be blocking local storage (private/incognito mode, or storage full).');
@@ -13116,6 +13148,78 @@ function _runSelfChecksInner(){
       && String(trackImpact).indexOf('MAX_IMPACT_LOG') !== -1);
   })();
 
+  /* ---- v99 the automatic backup ---- */
+  (function(){
+    /* THE CHECK THAT MATTERS. This feature writes DATA to a real file on the
+       user's disk. The suite hands DATA fabricated books. If those two ever meet,
+       somebody's backup silently becomes test fixtures — and this project has
+       already had a live book overwritten twice by lesser versions of that
+       mistake. Guarded in THREE places, and all three are asserted:
+         1. saveData() returns before scheduling anything while the suite runs
+         2. fsScheduleBackup() refuses outright
+         3. fsWriteNow() re-checks at the last moment before opening the file */
+    check('v99 the suite can never write a fabricated book to the real backup file',
+      String(fsWriteNow).indexOf('_suiteRunning') !== -1
+      && String(fsScheduleBackup).indexOf('_suiteRunning') !== -1
+      && String(saveData).indexOf('if(_suiteRunning) return true;') !== -1
+      && String(saveData).indexOf('fsScheduleBackup()') >
+         String(saveData).indexOf('if(_suiteRunning) return true;'),
+      'three guards: saveData stands down, the scheduler refuses, the writer re-checks');
+
+    // And it is genuinely refusing right now, since the suite IS running.
+    check('v99 the backup writer refuses while this very suite is running',
+      _suiteRunning === true && fsWriteNow(true) instanceof Promise);
+
+    /* Start-up must never PROMPT. requestPermission needs a user gesture, so
+       calling it on load either throws or ambushes somebody who just opened a
+       tab — the query is silent and the ask is bound to a button. */
+    check('v99 start-up queries permission silently and never asks without a gesture',
+      String(fsInit).indexOf('fsPermission(h, false)') !== -1
+      && String(fsResume).indexOf('fsPermission(_fsHandle, true)') !== -1
+      && String(fsInit).indexOf('showSaveFilePicker') === -1);
+
+    /* Feature detection, not user-agent sniffing, and a clean degrade: where the
+       API is missing the whole section hides and Export JSON is untouched. */
+    check('v99 an unsupported browser loses the feature and keeps every existing path',
+      String(fsSupported).indexOf('showSaveFilePicker') !== -1
+      && String(fsChooseFile).indexOf('fsSupported()') !== -1
+      && fsStatusLine.length === 0
+      && typeof exportData === 'function' && typeof downloadTextFile === 'function');
+
+    /* The nag and the backup must not contradict each other. A book being written
+       to disk every few seconds that is also being warned about "never exported"
+       teaches the reader to ignore the warning. */
+    check('v99 the header stops nagging when the file backup is live, and shouts when it is paused',
+      String(renderBackupStatus).indexOf("_fsState === 'ready'") !== -1
+      && String(renderBackupStatus).indexOf("_fsState === 'needs-permission'") !== -1
+      && /if\(_fsState !== 'ready'\) maybePromptBackup\(\)/.test(document.documentElement.innerHTML.slice(0, 1)) === false,
+      'ready suppresses the nag; needs-permission is the one state worth a loud line');
+
+    /* The handle lives in IndexedDB because a FileSystemFileHandle is structured-
+       cloneable but not JSON-serialisable. It must never reach the book. */
+    check('v99 the file handle is never written into the book or into localStorage',
+      String(fsStoreHandle).indexOf('indexedDB') === -1   // goes through fsIdb
+      && String(fsIdb).indexOf('indexedDB.open') !== -1
+      && String(fsStoreHandle).indexOf('DATA') === -1
+      && String(fsStoreHandle).indexOf('localStorage') === -1
+      && String(fsWriteNow).indexOf('JSON.stringify(DATA, null, 2)') !== -1);
+
+    /* Writing must not loop. The write stamps lastExportedAt, and stamping through
+       saveData() would schedule another write, which would stamp again. */
+    check('v99 stamping the export date after a backup cannot start a write loop',
+      String(fsWriteNow).indexOf('localStorage.setItem(STORAGE_KEY') !== -1
+      // Matched as a CALL, not a mention: the comment inside fsWriteNow explains
+      // why it avoids saveData(), so a bare indexOf finds the word in the very
+      // sentence saying it is not used. Second time this exact trap has bitten.
+      && !/(^|[^.\w])saveData\(\)\s*;/.test(String(fsWriteNow))
+      && String(fsWriteNow).indexOf("DATA.lastExportedAt !== todayISO()") !== -1);
+
+    // Debounced, because saveData fires constantly.
+    check('v99 the write is debounced rather than fired on every save',
+      Number.isFinite(FS_DEBOUNCE_MS) && FS_DEBOUNCE_MS >= 1000
+      && String(fsScheduleBackup).indexOf('clearTimeout') !== -1);
+  })();
+
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
@@ -13747,6 +13851,14 @@ const BACKUP_NAG_DAYS = 14;
    you cannot act on is decoration. */
 function renderBackupStatus(){
   const nag = txt => `<button class="link-btn" id="btn-backup-now" style="color:var(--status-watch-text); font-weight:700; font-size:inherit; text-decoration:underline;" title="Download a full JSON backup of the book right now">${txt}</button>`;
+  /* v99: when the file backup is live the nag is wrong — the book IS being kept
+     current, and warning about it would train the user to ignore the warning that
+     matters. When it is merely PAUSED the opposite is true: that is exactly the
+     state worth one loud line, because it looks protected and is not. */
+  if(_fsState === 'ready') return `<span title="${escapeAttr(fsStatusLine())}">backing up to ${escapeHtml((_fsHandle && _fsHandle.name) || 'your file')}</span>`;
+  if(_fsState === 'needs-permission'){
+    return `<button class="link-btn" id="btn-fs-resume-header" style="color:var(--status-watch-text); font-weight:700; font-size:inherit; text-decoration:underline;" title="One click per session lets the tracker write to the file you chose">auto-backup paused — click to resume</button>`;
+  }
   if(!DATA.lastExportedAt) return nag('never exported — back up now');
   const d = daysSince(DATA.lastExportedAt);
   if(d === null) return '';
@@ -20274,6 +20386,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     else showToast('Nothing to undo.');
   });
   $('#btn-backup-now') && $('#btn-backup-now').addEventListener('click', exportData);
+  $('#btn-fs-resume-header') && $('#btn-fs-resume-header').addEventListener('click', fsResume);
   $('#btn-quick-log') && $('#btn-quick-log').addEventListener('click', openQuickLogModal);
   /* v67 coordination writes. One collection helper for all three so add/toggle/
      remove cannot drift apart, and every write goes through the SAME normalizer
@@ -21809,6 +21922,15 @@ function openSettingsModal(){
         <div class="field"><label>"Due soon" window (days)</label><input type="number" id="due-soon-days" value="${DATA.config.dueSoonDays}"></div>
         <div class="field"><label>Neglect threshold (days)</label><input type="number" id="neglect-days" value="${DATA.config.neglectDays}"></div>
       </div>
+      <div class="section-title">Automatic backup</div>
+      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:-4px 0 8px;">${escapeHtml(fsStatusLine())}</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+        ${_fsState === 'unsupported' ? ''
+          : _fsState === 'unset' ? `<button class="btn btn-sm btn-primary" id="btn-fs-choose">Choose a backup file</button>`
+          : _fsState === 'needs-permission' ? `<button class="btn btn-sm btn-primary" id="btn-fs-resume">Resume backing up</button><button class="btn btn-sm" id="btn-fs-change">Choose a different file</button><button class="btn btn-sm" id="btn-fs-forget">Turn off</button>`
+          : `<button class="btn btn-sm" id="btn-fs-now">Back up now</button><button class="btn btn-sm" id="btn-fs-change">Choose a different file</button><button class="btn btn-sm" id="btn-fs-forget">Turn off</button>`}
+      </div>
+      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:-4px 0 12px;">The file is written with the same contents as Export JSON, so it restores through Import JSON with no special handling. The tracker never picks the location — you do, once — and it can only write to the one file you chose.</p>
       <div class="section-title">Implementation check-in</div>
       <p style="color:var(--text-faint); font-size:var(--text-xs); margin:-4px 0 8px;">How long a partner-led build may go without a touchpoint before the <em>Still building</em> chapter on Copilot counts it as quiet. Deliberately much longer than the neglect threshold above — a live account silent for three weeks is a problem, a build is not. It never raises a Today item; it only changes a count you see when you open Copilot.</p>
       <div class="field-row">
@@ -21899,6 +22021,19 @@ function openSettingsModal(){
   backdrop.querySelector('#btn-backfill-settings').addEventListener('click', ()=>{
     backdrop.remove();          // openBackfillModal refuses to stack on another modal
     openBackfillModal();
+  });
+  ['btn-fs-choose','btn-fs-change'].forEach(id => {
+    const el = backdrop.querySelector('#' + id);
+    if(el) el.addEventListener('click', ()=>{ backdrop.remove(); fsChooseFile(); });
+  });
+  const fsResumeBtn = backdrop.querySelector('#btn-fs-resume');
+  if(fsResumeBtn) fsResumeBtn.addEventListener('click', ()=>{ backdrop.remove(); fsResume(); });
+  const fsNowBtn = backdrop.querySelector('#btn-fs-now');
+  if(fsNowBtn) fsNowBtn.addEventListener('click', ()=> fsWriteNow(false));
+  const fsForgetBtn = backdrop.querySelector('#btn-fs-forget');
+  if(fsForgetBtn) fsForgetBtn.addEventListener('click', ()=>{
+    showConfirmModal('Turn off automatic backup? The file you chose stays where it is — the tracker just stops updating it, and you go back to exporting by hand.',
+      ()=>{ backdrop.remove(); fsForget(); }, 'Turn it off');
   });
   backdrop.querySelector('#btn-time-saved-report').addEventListener('click', downloadImpactReport);
   backdrop.querySelector('#btn-export-settings').addEventListener('click', exportData);
@@ -22040,6 +22175,181 @@ function archiveCustomer(customerId){
   render();
   showToast('Archived — check your Downloads folder — and removed from the live tracker.');
   return true;
+}
+
+/* ============ v99: AUTOMATIC BACKUP TO A FILE YOU CHOSE ============
+   Every version of this file until now protected the book with a NAG. Three of
+   them, eventually — a header warning, a load-time prompt, and an offer at the
+   day close. All three still asked a human to remember, and the failure they
+   guard against (a cleared profile, a dead laptop, an IT reimage) does not send
+   a warning first.
+
+   This is the real thing, and it exists because of one browser capability: the
+   File System Access API hands back a HANDLE to a file the user picked, and that
+   handle can be stored and reused. So the tracker can write your backup to the
+   same file on disk, over and over, without a download dialog and without
+   filling the Downloads folder with dated copies.
+
+   WHAT IT HONESTLY IS AND IS NOT:
+   - It is NOT unattended. Browsers will not let a page hold write permission to
+     your disk across sessions without a gesture. In practice that means ONE
+     click when you first open the tracker each session, not one click per
+     backup. That is the difference between a habit and a guarantee.
+   - It is Chrome-and-friends only. showSaveFilePicker does not exist in Firefox
+     or Safari today. Where it is missing, this whole feature hides itself and
+     the existing Export JSON button is unchanged — nothing degrades.
+   - It writes the SAME payload Export JSON writes, so a file produced this way
+     restores through the same Import path with no special handling.
+
+   THE ONE RULE THAT MATTERS: it must never write while the self-check suite is
+   running. The suite swaps DATA for fabricated books, and this writes DATA to a
+   real file on the user's disk. saveData() already stands down during the suite
+   (v82), and the backup is scheduled from saveData, so it inherits that guard —
+   but the write also re-checks, because the cost of being wrong here is somebody
+   else's backup file containing test fixtures. */
+const FS_DB = 'obm-backup-v1', FS_STORE = 'handles', FS_KEY = 'book';
+const FS_DEBOUNCE_MS = 4000;
+let _fsHandle = null;
+let _fsState = 'unsupported';   // unsupported | unset | ready | needs-permission | error
+let _fsError = '';
+let _fsTimer = null;
+let _fsWriting = false;
+let _fsLastWriteAt = null;
+
+function fsSupported(){
+  return typeof window !== 'undefined' && typeof window.showSaveFilePicker === 'function';
+}
+/* A deliberately tiny IndexedDB wrapper. A FileSystemFileHandle is structured-
+   cloneable but NOT serialisable to JSON, so localStorage cannot hold it — this
+   is the only reason IndexedDB appears in this file at all. */
+function fsIdb(mode, fn){
+  return new Promise((resolve, reject) => {
+    let req;
+    try{ req = indexedDB.open(FS_DB, 1); }catch(e){ reject(e); return; }
+    req.onupgradeneeded = () => { req.result.createObjectStore(FS_STORE); };
+    req.onerror = () => reject(req.error || new Error('IndexedDB unavailable'));
+    req.onsuccess = () => {
+      const db = req.result;
+      let tx;
+      try{ tx = db.transaction(FS_STORE, mode); }catch(e){ db.close(); reject(e); return; }
+      const out = fn(tx.objectStore(FS_STORE));
+      tx.oncomplete = () => { db.close(); resolve(out && out.result !== undefined ? out.result : undefined); };
+      tx.onerror = () => { db.close(); reject(tx.error || new Error('IndexedDB write failed')); };
+    };
+  });
+}
+async function fsLoadHandle(){ try{ return await fsIdb('readonly', st => st.get(FS_KEY)); }catch(e){ return undefined; } }
+async function fsStoreHandle(h){ try{ await fsIdb('readwrite', st => st.put(h, FS_KEY)); return true; }catch(e){ return false; } }
+async function fsClearHandle(){ try{ await fsIdb('readwrite', st => st.delete(FS_KEY)); return true; }catch(e){ return false; } }
+
+async function fsPermission(handle, request){
+  if(!handle || !handle.queryPermission) return 'denied';
+  const opts = {mode: 'readwrite'};
+  let state = await handle.queryPermission(opts);
+  if(state !== 'granted' && request && handle.requestPermission) state = await handle.requestPermission(opts);
+  return state;
+}
+/* Called once at start-up. Never prompts — querying is silent, and asking for
+   permission without a gesture would either fail or ambush the user on load. */
+async function fsInit(){
+  if(!fsSupported()){ _fsState = 'unsupported'; return; }
+  const h = await fsLoadHandle();
+  if(!h){ _fsState = 'unset'; return; }
+  _fsHandle = h;
+  try{
+    const state = await fsPermission(h, false);
+    _fsState = state === 'granted' ? 'ready' : 'needs-permission';
+  }catch(e){ _fsState = 'needs-permission'; }
+  render();
+}
+async function fsChooseFile(){
+  if(!fsSupported()){ showToast('This browser cannot write to a file directly — use Export JSON.'); return; }
+  try{
+    const h = await window.showSaveFilePicker({
+      suggestedName: 'book-of-business-backup.json',
+      types: [{description: 'Book of Business backup', accept: {'application/json': ['.json']}}]
+    });
+    _fsHandle = h;
+    await fsStoreHandle(h);
+    _fsState = 'ready'; _fsError = '';
+    await fsWriteNow(true);
+    render();
+  }catch(e){
+    // AbortError is the user closing the picker — not a failure worth reporting.
+    if(e && e.name === 'AbortError') return;
+    _fsError = e && e.message ? e.message : 'Could not set up the backup file.';
+    _fsState = 'error';
+    render();
+  }
+}
+/* The one-gesture-per-session step. Bound to a button, because requestPermission
+   throws without a user activation. */
+async function fsResume(){
+  if(!_fsHandle) return fsChooseFile();
+  try{
+    const state = await fsPermission(_fsHandle, true);
+    if(state === 'granted'){ _fsState = 'ready'; _fsError = ''; await fsWriteNow(true); }
+    else { _fsState = 'needs-permission'; }
+  }catch(e){
+    _fsError = e && e.message ? e.message : 'Permission was refused.';
+    _fsState = 'error';
+  }
+  render();
+}
+async function fsForget(){
+  await fsClearHandle();
+  _fsHandle = null; _fsState = fsSupported() ? 'unset' : 'unsupported'; _fsError = '';
+  render();
+}
+async function fsWriteNow(silent){
+  /* The guard that matters. The suite hands DATA fabricated books; writing one of
+     those to the user's real backup file would be the worst bug this project
+     could ship, and it has already overwritten a live book twice by other means. */
+  if(_suiteRunning || _fsWriting || !_fsHandle || _fsState !== 'ready') return false;
+  _fsWriting = true;
+  try{
+    const w = await _fsHandle.createWritable();
+    await w.write(JSON.stringify(DATA, null, 2));
+    await w.close();
+    _fsLastWriteAt = Date.now();
+    _fsError = '';
+    /* An automatic backup IS an export, so it stamps the same field the manual
+       one does — otherwise the nag keeps firing at somebody whose book is being
+       backed up every few seconds. Stamped at most once a day, and written
+       straight to storage rather than through saveData(), because saveData()
+       schedules a backup and that would loop. */
+    if(DATA.lastExportedAt !== todayISO()){
+      DATA.lastExportedAt = todayISO();
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); }catch(e){}
+      render();
+    }
+    if(!silent) showToast('Backed up.');
+    return true;
+  }catch(e){
+    const name = e && e.name;
+    if(name === 'NotAllowedError'){ _fsState = 'needs-permission'; _fsError = ''; }
+    else if(name === 'NotFoundError'){ _fsState = 'error'; _fsError = 'The backup file has moved or been deleted. Choose it again.'; }
+    else { _fsState = 'error'; _fsError = (e && e.message) || 'The backup could not be written.'; }
+    render();
+    return false;
+  }finally{ _fsWriting = false; }
+}
+/* Debounced, because saveData() fires on every keystroke-blur and gate toggle and
+   a disk write per edit is neither necessary nor kind to an SSD. */
+function fsScheduleBackup(){
+  if(_fsState !== 'ready' || _suiteRunning) return;
+  if(_fsTimer) clearTimeout(_fsTimer);
+  _fsTimer = setTimeout(() => { _fsTimer = null; fsWriteNow(true); }, FS_DEBOUNCE_MS);
+}
+function fsStatusLine(){
+  if(_fsState === 'unsupported') return 'This browser cannot write to a file directly. Export JSON still works.';
+  if(_fsState === 'unset') return 'Not set up. Pick a file once and the tracker keeps it current on its own.';
+  if(_fsState === 'needs-permission') return 'Paused — the browser needs one click per session before it can write to your file.';
+  if(_fsState === 'error') return _fsError || 'Something went wrong with the backup file.';
+  const name = (_fsHandle && _fsHandle.name) ? _fsHandle.name : 'your chosen file';
+  return _fsLastWriteAt
+    ? `Writing to ${name}. Last saved ${new Date(_fsLastWriteAt).toLocaleTimeString()}.`
+    : `Writing to ${name} whenever the book changes.`;
 }
 
 function exportData(){
@@ -23687,9 +23997,18 @@ function initCrossTabGuard(){
   snapshotHealthHistory(); // v39: visit-driven weekly snapshot — before first render so trend data includes today
   applyRoute(); // v64: AFTER loadData — the route validates account ids against the loaded book
   render();
-  // v66: after the first paint, so the book is on screen behind the prompt
-  // rather than the prompt being the first thing you ever see.
-  maybePromptBackup();
+  /* v99: resolve the backup handle before deciding whether to nag. fsInit() only
+     QUERIES permission — it never prompts, because asking without a gesture would
+     either fail outright or ambush someone who just opened the tab. It re-renders
+     itself when the answer arrives. */
+  fsInit().then(()=>{
+    // v66: after the first paint, so the book is on screen behind the prompt
+    // rather than the prompt being the first thing you ever see. v99: and only
+    // if the file backup is not already keeping this book current — nagging
+    // somebody whose book is backed up every four seconds teaches them to
+    // dismiss the one warning that will matter.
+    if(_fsState !== 'ready') maybePromptBackup();
+  });
   initCrossTabGuard();
 })();
 </script>

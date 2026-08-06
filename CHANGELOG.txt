@@ -1,6 +1,59 @@
 OSM Book of Business Tracker — version notes (extracted verbatim from the tracker file header)
 
 CHANGELOG:
+  v99 - The backup stops being a nag.
+
+    Every version of this file until now protected the book with a REMINDER.
+    Eventually three of them: a header warning at fourteen days, a load-time
+    prompt at forty-two, and an offer at the day close. All three still asked a
+    human to remember, and the failure they guard against - a cleared profile, a
+    dead laptop, an IT reimage - does not send a warning first.
+
+    Settings -> Automatic backup. You pick a file ONCE using the File System
+    Access API. The tracker keeps a handle to it in IndexedDB (a
+    FileSystemFileHandle is structured-cloneable but not JSON-serialisable, which
+    is the only reason IndexedDB appears in this file at all) and writes the book
+    to that file whenever it changes, debounced to four seconds. The payload is
+    identical to Export JSON, so the file restores through Import JSON with no
+    special handling. No download dialog, no Downloads folder filling with dated
+    copies of the same book.
+
+    WHAT IT HONESTLY IS AND IS NOT. It is not unattended. Browsers will not let a
+    page hold write permission to disk across sessions without a user gesture, so
+    in practice this is ONE CLICK PER SESSION, not one click per backup. That is
+    still the difference between a habit and a guarantee. The header reflects
+    which state it is in: it stops nagging once the file backup is live, and
+    shouts only when it is PAUSED - because looking protected while not being
+    protected is the single state worth a loud line, and a nag that fires at
+    somebody whose book is written to disk every four seconds only teaches them to
+    ignore nags.
+
+    Chrome-and-friends only, by feature detection rather than user-agent sniffing.
+    Where showSaveFilePicker is absent the section hides itself and every existing
+    export path behaves exactly as before.
+
+    THE GUARD THAT MATTERS, IN THREE PLACES. This feature writes DATA to a real
+    file on the user's disk. The self-check suite swaps DATA for fabricated books
+    dozens of times per run. If those two ever met, somebody's backup would
+    silently become test fixtures - and this project has already had a live book
+    overwritten twice by lesser versions of that mistake:
+      1. saveData() returns before scheduling anything while the suite runs (v82)
+      2. fsScheduleBackup() refuses outright
+      3. fsWriteNow() re-checks at the last moment, before opening the file
+    All three are asserted, and one check confirms the writer is actively refusing
+    while that very suite is running.
+
+    Also guarded against a loop: the write stamps DATA.lastExportedAt directly to
+    localStorage rather than through saveData(), because saveData() schedules a
+    backup, which would stamp again.
+
+    Start-up only QUERIES permission - it never asks. requestPermission needs a
+    user activation, so calling it on load would either throw or ambush somebody
+    who just opened a tab. The ask is bound to a button in the header and in
+    Settings.
+
+    Eight checks, 310 -> 318.
+
   v98 - Time saved by the day, and two controls that were never wired.
 
     THE REPORT. DATA.impact was a lifetime counter with a since-date: it can
