@@ -1,3 +1,61 @@
+OSM Runway Bundle (Guide v5.0 + Tracker v99) - Validation Summary
+==================================================================
+Validated: August 5, 2026.
+
+SHA-256
+  osm-book-of-business-tracker-v99.html
+    944a738d48f2693b9be6ddcb7caf540c272e050864a049ead6607d8b52330632
+  osm-runway-onboarding-v4.4.html
+    b20db6130c1a10b9232dde3ecf095240511b662579482df2473a6dba5e08578c
+
+GUIDE v5.0 - FIRST UPDATE SINCE v85, COVERING TWELVE TRACKER VERSIONS
+  Twelve new cards in Newer workflows: the backfill grid, the Assumed graduation
+  tag and the readiness strip, plays, the graduation check-back, the Gainsight CSV
+  import and the value-breaks-ties ruling, the card rails, Still building, Owed an
+  answer, the Copilot landing and four-lens read, routing and the early CSM
+  handoff, the dated time-saved report, and automatic backup.
+
+  A FACTUAL CORRECTION. The guardrail chapter had said "There is no automatic
+  cloud backup. Export JSON regularly." v99 made the first sentence false. It now
+  states what is true on both counts - still no cloud, and a file backup that
+  costs one click per session rather than being sold as unattended.
+
+  THE GUIDE'S OWN CHECK WAS ENFORCING THE FALSE CLAIM. It asserted
+  /no automatic cloud backup/ against the page text. Rewritten to assert the
+  honest version, and given a guideText() helper that strips <script> before
+  reading - the same trap that once let a version check pass by matching the
+  version string inside its own source.
+
+  Checklist: both start paths gained "Turn on automatic backup"; the existing-book
+  path gained "Catch the sessions up".
+
+VERIFICATION STATUS - READ THIS BEFORE DISTRIBUTING
+  Tracker: 318/318, three consecutive runs, storage byte-stable. COMPLETE.
+  Guide:   runGuideSelfChecks() has NOT been run against v5.0. The Chrome
+           extension disconnected partway through this session and no browser was
+           available afterwards.
+
+  What WAS run instead: 14 static checks over the file, all passing -
+    - the 12 new cards are tag-balanced (delta unchanged from the committed
+      baseline, which is itself 53 open / 51 close with nesting 2 and passes the
+      guide's own DOM-level suite 18/18)
+    - all 12 headings render in visible text
+    - no stale tracker filename or version label anywhere, including the hero
+      eyebrow and the meta description, both of which still said v80
+    - the "Tracker v49-v60" range label now reads v49-v99
+    - the three regexes the rewritten storage check depends on all match
+    - the old false claim is absent
+    - both checklist paths carry the new items
+    - guideText() is defined before it is used
+    - the new cards introduce no unescaped ampersands (62 pre-date this pass, all
+      in prose or a Google Fonts URL, none in a parse-breaking position)
+
+  OUTSTANDING: run runGuideSelfChecks() in a browser and confirm 19/19.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
 OSM Runway Bundle (Guide v4.4 + Tracker v99) - Validation Summary
 ==================================================================
 Validated: August 5, 2026 (Chrome, local HTTP, secure context confirmed.)
