@@ -1,6 +1,42 @@
 OSM Book of Business Tracker — version notes (extracted verbatim from the tracker file header)
 
 CHANGELOG:
+  v97 - Three leaks that only a full book could show.
+
+    Everything fixed in this file for the last ten versions was about EMPTINESS:
+    surfaces that rendered nothing because nothing had been logged. Putting the
+    fully-populated demo book through the whole-book purity guard tested the
+    opposite condition for the first time, and found three writes nobody asked
+    for.
+
+    1. getSessionNote() CREATED A RECORD ON READ. renderSessionCard() calls it
+       once per session in the plan, so merely opening the Session Plan tab
+       stamped eight empty note records onto the account. This is the third member
+       of the family - getDayClose() at v90, getGainsightQueue() at v95 - and the
+       worst of the three, because it fires on a RENDER rather than on a question
+       somebody asked. Now split: readSessionNote() returns a throwaway default
+       and creates nothing; getSessionNote() still materialises, and only writers
+       call it. The three read-only call sites were switched over.
+
+    2. THE SUITE CONSUMED THE BASELINE IT WAS MEASURING. getWeeklyDigest() re-bases
+       the weekly snapshot once it is seven days old. That is correct behaviour on
+       a render - the digest is meant to re-base weekly - and wrong when
+       runSelfChecks() triggers it, because the "since last week" diff is silently
+       destroyed and cannot be recovered. Guarded on _suiteRunning, the same
+       reasoning as the v82 save guard: a diagnostic may read anything and must
+       change nothing. Real renders still re-base on schedule.
+
+    3. A CHECK NOW NAMES THE FAMILY. Three getters of the same shape were found in
+       three separate versions, each by accident, each only visible on a book that
+       had never touched the field in question. The new check asserts all three
+       are read-only, so a fourth is caught by the suite rather than by luck.
+
+    Verified on BOTH books: 302/302 on the FIRST run against a freshly seeded
+    17-account demo and against the real 37-account book, with the weekly snapshot
+    and every session-note map byte-identical afterwards.
+
+    Four checks, 298 -> 302.
+
   v96 - The first time the AI layer actually ran.
 
     Every AI feature in this file had been built, self-checked and never once

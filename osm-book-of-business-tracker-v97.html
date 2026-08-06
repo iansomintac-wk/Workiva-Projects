@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  OSM Book of Business Tracker — v96
+  OSM Book of Business Tracker — v97
   Single-file HTML/JS app. localStorage persistence. No build step, no server.
 
   RULES FOR EDITING THIS FILE (human or AI):
@@ -35,6 +35,32 @@
 
   CHANGELOG:
   (v72–v85 are in CHANGELOG.txt alongside this file; the entries below predate it.)
+  v97 - THREE LEAKS THAT ONLY A FULL BOOK COULD SHOW.
+        Everything fixed in this file for the last ten versions was about
+        EMPTINESS - surfaces that rendered nothing because nothing had been
+        logged. Running the fully-populated demo book through the whole-book
+        purity guard tested the opposite condition for the first time, and found
+        three writes nobody had asked for:
+        1. getSessionNote() CREATED a note record on READ, and renderSessionCard()
+           calls it once per session in the plan. Opening the Session Plan tab
+           therefore stamped eight empty note records onto the account. This is
+           the third member of the family after getDayClose() at v90 and
+           getGainsightQueue() at v95, and the worst of them, because it fires on
+           a render rather than on a question. Split: readSessionNote() returns a
+           throwaway default, getSessionNote() still creates, and the three
+           read-only call sites now use the reader.
+        2. THE SUITE CONSUMED THE WEEKLY BASELINE. getWeeklyDigest() re-bases the
+           snapshot after seven days, which is correct on a render and wrong when
+           runSelfChecks() triggers it: the "since last week" diff is destroyed
+           and cannot be recovered. Guarded on _suiteRunning, the same reasoning
+           as the v82 save guard - a diagnostic may read anything and must change
+           nothing.
+        3. A check now names the whole family, so a fourth getter of this shape
+           fails the suite rather than being found by luck two versions later.
+        Verified on both books: 302/302 on the first run against a freshly seeded
+        17-account demo AND against the real 37-account book, with the weekly
+        snapshot and every session-note map byte-identical afterwards.
+        Four checks, 298 -> 302.
   v96 - THE FIRST TIME THE AI LAYER ACTUALLY RAN.
         Every AI feature in this file had been built, checked and never once
         executed against a real provider. Run properly for the first time against
@@ -5389,7 +5415,7 @@ function buildSessionScriptText(customer, num, tpl, rb){
   });
   lines.push('DELIVERABLES TO CONFIRM BEFORE ENDING:');
   (tpl.deliverables || []).forEach(d => lines.push('  [ ] ' + d));
-  const prep = (getSessionNote(customer, num).prep || '').trim();
+  const prep = (readSessionNote(customer, num).prep || '').trim();
   if(prep){ lines.push(''); lines.push('YOUR PREP NOTES FOR THIS SESSION:'); lines.push('  ' + prep.replace(/\n/g, '\n  ')); }
   return lines.join('\n');
 }
@@ -7199,6 +7225,20 @@ function getNextSessionInfo(customer){
   if(n === null) return null;
   return {number:n, template: getSessionTemplate(customer, n)};
 }
+/* v97: reading a session note must not CREATE one — the third instance of this
+   family, after getDayClose() at v90 and getGainsightQueue() at v95, and the
+   worst of the three because it fires on a RENDER. renderSessionCard() calls it
+   for every session in the plan, so merely opening the Session Plan tab wrote
+   eight empty note records onto the account. Invisible on a thin book; obvious
+   the moment a full one is put through the purity guard.
+
+   Two functions now, and the names say which is which. Readers get a throwaway
+   default; only a writer materializes anything. */
+function readSessionNote(customer, sessionNumber){
+  const notes = (customer && customer.sessionNotes) || {};
+  const hit = notes[sessionNumber];
+  return hit ? hit : {deliverables:{}, prep:''};
+}
 function getSessionNote(customer, sessionNumber){
   if(!customer.sessionNotes) customer.sessionNotes = {};
   if(!customer.sessionNotes[sessionNumber]) customer.sessionNotes[sessionNumber] = {deliverables:{}, prep:''};
@@ -7731,7 +7771,7 @@ function customerThinPrepSignal(c){
   if(c.stage === 'graduated') return null;
   const nextSession = getNextSessionInfo(c);
   if(!nextSession || !isMilestoneSession(nextSession.template)) return null;
-  const note = getSessionNote(c, nextSession.number);
+  const note = readSessionNote(c, nextSession.number);
   if((note.prep || '').trim().length < 20){
     return {type:'thin_milestone_prep', sessionNumber: nextSession.number, title: nextSession.template.title};
   }
@@ -12875,6 +12915,42 @@ function _runSelfChecksInner(){
       && String(generateCopilotRead).indexOf('truncated') !== -1);
   })();
 
+  /* ---- v97 reads that used to write ---- */
+  (function(){
+    /* Three getters in this file materialised state as a side effect of being
+       READ: getDayClose (v90), getGainsightQueue (v95), getSessionNote (v97).
+       All three were invisible until a book that had never touched those fields
+       was put through the whole-book purity guard. This check names the family so
+       the fourth one is caught by the suite rather than by luck. */
+    const c = {id:'sn', name:'SN', sessionNotes:{}};
+    const readBack = readSessionNote(c, 3);
+    const untouchedByRead = Object.keys(c.sessionNotes).length === 0;
+    const written = getSessionNote(c, 3);
+    written.prep = 'x';
+    check('v97 reading a session note returns a default; only writing creates one',
+      readBack && readBack.prep === '' && untouchedByRead
+      && Object.keys(c.sessionNotes).join() === '3' && c.sessionNotes[3].prep === 'x',
+      JSON.stringify({untouchedByRead, keys:Object.keys(c.sessionNotes)}));
+
+    check('v97 rendering a session card reads, never writes',
+      String(renderSessionCard).indexOf('readSessionNote') !== -1
+      && String(renderSessionCard).indexOf('getSessionNote') === -1,
+      'renderSessionCard runs for every session in the plan — a write there stamps the whole account');
+
+    /* The three known members of the family, asserted together. */
+    check('v97 no getter in the read family materialises state on read',
+      String(getDayClose).indexOf('DATA.dayClose = {}') === -1
+      && String(getGainsightQueue).indexOf('DATA.gainsightQueue = []') === -1
+      && String(readSessionNote).indexOf('customer.sessionNotes =') === -1);
+
+    /* And the diagnostic must not consume what it measures: the weekly digest
+       re-bases after seven days, which is right on a render and wrong when the
+       suite triggers it — the "since last week" diff cannot be recovered. */
+    check('v97 running the suite cannot re-base the weekly digest',
+      String(getWeeklyDigest).indexOf('!_suiteRunning') !== -1,
+      'a diagnostic may read anything and must change nothing');
+  })();
+
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
@@ -15768,7 +15844,12 @@ function getWeeklyDigest(){
       backFromPause: (DATA.pauseReturns || []).filter(e => e.date >= priorSnapshot.date).map(e => e.name)
     };
   }
-  if(!priorSnapshot || daysSince(priorSnapshot.date) >= 7){
+  /* v97: the suite must not consume the baseline it is measuring. Re-snapshotting
+     is correct behaviour on a real render — the digest re-bases weekly — but when
+     runSelfChecks() triggers it, the "since last week" diff is silently destroyed
+     and cannot be recovered. Same reasoning as the v82 save guard: a diagnostic
+     may read anything and must change nothing. */
+  if(!_suiteRunning && (!priorSnapshot || daysSince(priorSnapshot.date) >= 7)){
     DATA.weeklySnapshot = {ids: currentIds, date: todayISO()};
     queueSave(); // this runs during render — defer the write, don't block HTML building
   }
@@ -18594,7 +18675,7 @@ function renderSessionPlanTab(c){
 
 function renderSessionCard(c, num, tpl, isNext){
   const act = getSessionActivity(c, num);
-  const note = getSessionNote(c, num);
+  const note = readSessionNote(c, num);   // v97: rendering must not write
   const done = !!act;
   return `
     <div class="session-card ${done?'done':''} ${isNext?'next':''}">

@@ -1,3 +1,57 @@
+OSM Runway Bundle (Guide v4.4 + Tracker v97) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, two local origins.)
+
+SHA-256
+  osm-book-of-business-tracker-v97.html
+    57efcf1e48a6f8a7d81c78367b67594da1cd5d99b8352e1c5aec0da5b16ae438
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 302/302, three consecutive runs, on BOTH books:
+    - the real book (37 accounts, 41 activities), localStorage byte-identical
+    - the best-state demo (17 accounts, everything populated)
+  Critically, 302/302 on the FIRST run after a fresh seed. Every leak below was
+  first-run-only and invisible on a second run.
+
+WHAT THE FULL BOOK EXPOSED
+  Ten versions of fixes in this file addressed EMPTINESS. This was the first pass
+  against the opposite condition, and it found three unrequested writes:
+
+  1. getSessionNote() created a note record on read, and renderSessionCard() calls
+     it once per session - so opening the Session Plan tab wrote eight empty
+     records onto the account. Third member of a family: getDayClose (v90),
+     getGainsightQueue (v95), getSessionNote (v97). Split into
+     readSessionNote() (creates nothing) and getSessionNote() (for writers).
+  2. getWeeklyDigest() re-based the weekly snapshot during a suite run, destroying
+     the "since last week" diff unrecoverably. Guarded on _suiteRunning.
+     Confirmed after the fix: suite leaves it byte-identical, real renders still
+     re-base on schedule.
+  3. A check now asserts all three getters are read-only, so a fourth of the same
+     shape fails the suite instead of surviving two more versions.
+
+CROSS-SURFACE CONSISTENCY, TESTED ON A FULL BOOK
+  The same fact read identically on four independent surfaces:
+    header tile "graduating <=30 days"  3
+    band marks                          3
+    getMonthAhead().landing             3
+    band telemetry LANDING/30D          3
+  This is the invariant unified earlier in the project; it had never been checked
+  against a book where the number was non-zero.
+
+DENSITY OBSERVATION (not a defect, recorded for the usage period)
+  On the full demo book, "What to do next" listed 11 of 12 live accounts.
+  Severity spread: one 4, six 3, three 2, one 1. Six carried a route, a transition
+  or an unanswered question - genuinely more than Today shows. The other five were
+  severity-only, i.e. the same rows Today already ranks. Whether that redundancy
+  is useful context or noise is a judgement real usage should settle, not a
+  guess; no filter was added.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
 OSM Runway Bundle (Guide v4.4 + Tracker v96) - Validation Summary
 ==================================================================
 Validated: August 5, 2026 (Chrome, two local origins.)
