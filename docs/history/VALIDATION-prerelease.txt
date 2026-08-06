@@ -1,0 +1,2001 @@
+OSM Runway Bundle (Guide v5.0 + Tracker v99) - Validation Summary
+==================================================================
+Validated: August 5, 2026.
+
+SHA-256
+  osm-book-of-business-tracker-v99.html
+    944a738d48f2693b9be6ddcb7caf540c272e050864a049ead6607d8b52330632
+  osm-runway-onboarding-v4.4.html
+    b20db6130c1a10b9232dde3ecf095240511b662579482df2473a6dba5e08578c
+
+GUIDE v5.0 - FIRST UPDATE SINCE v85, COVERING TWELVE TRACKER VERSIONS
+  Twelve new cards in Newer workflows: the backfill grid, the Assumed graduation
+  tag and the readiness strip, plays, the graduation check-back, the Gainsight CSV
+  import and the value-breaks-ties ruling, the card rails, Still building, Owed an
+  answer, the Copilot landing and four-lens read, routing and the early CSM
+  handoff, the dated time-saved report, and automatic backup.
+
+  A FACTUAL CORRECTION. The guardrail chapter had said "There is no automatic
+  cloud backup. Export JSON regularly." v99 made the first sentence false. It now
+  states what is true on both counts - still no cloud, and a file backup that
+  costs one click per session rather than being sold as unattended.
+
+  THE GUIDE'S OWN CHECK WAS ENFORCING THE FALSE CLAIM. It asserted
+  /no automatic cloud backup/ against the page text. Rewritten to assert the
+  honest version, and given a guideText() helper that strips <script> before
+  reading - the same trap that once let a version check pass by matching the
+  version string inside its own source.
+
+  Checklist: both start paths gained "Turn on automatic backup"; the existing-book
+  path gained "Catch the sessions up".
+
+VERIFICATION STATUS - READ THIS BEFORE DISTRIBUTING
+  Tracker: 318/318, three consecutive runs, storage byte-stable. COMPLETE.
+  Guide:   runGuideSelfChecks() has NOT been run against v5.0. The Chrome
+           extension disconnected partway through this session and no browser was
+           available afterwards.
+
+  What WAS run instead: 14 static checks over the file, all passing -
+    - the 12 new cards are tag-balanced (delta unchanged from the committed
+      baseline, which is itself 53 open / 51 close with nesting 2 and passes the
+      guide's own DOM-level suite 18/18)
+    - all 12 headings render in visible text
+    - no stale tracker filename or version label anywhere, including the hero
+      eyebrow and the meta description, both of which still said v80
+    - the "Tracker v49-v60" range label now reads v49-v99
+    - the three regexes the rewritten storage check depends on all match
+    - the old false claim is absent
+    - both checklist paths carry the new items
+    - guideText() is defined before it is used
+    - the new cards introduce no unescaped ampersands (62 pre-date this pass, all
+      in prose or a Google Fonts URL, none in a parse-breaking position)
+
+  OUTSTANDING: run runGuideSelfChecks() in a browser and confirm 19/19.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
+OSM Runway Bundle (Guide v4.4 + Tracker v99) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, local HTTP, secure context confirmed.)
+
+SHA-256
+  osm-book-of-business-tracker-v99.html
+    944a738d48f2693b9be6ddcb7caf540c272e050864a049ead6607d8b52330632
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 318/318, three consecutive runs on the real book
+  (37 accounts, 41 activities). localStorage byte-identical.
+
+ENVIRONMENT CONFIRMED
+  window.showSaveFilePicker present: true
+  window.isSecureContext: true (http://127.0.0.1 qualifies)
+
+STATE MACHINE EXERCISED WITHOUT TOUCHING THE FILESYSTEM
+  A stub handle was substituted to drive every branch:
+    needs-permission -> "Paused - the browser needs one click per session before
+                        it can write to your file", and the header renders
+                        "auto-backup paused - click to resume"
+    ready            -> header renders "backing up to book-backup.json" and the
+                        "back up now" nag is suppressed
+    suite running    -> fsWriteNow() returned false
+    not ready        -> fsWriteNow() returned false
+  The picker itself was NOT invoked. Choosing where a backup lives writes to the
+  user's disk and is theirs to do; the tracker never picks the location.
+
+THE THREE-PLACE GUARD
+  This writes DATA to a real file. The suite swaps DATA for fabricated books.
+  Asserted: saveData() stands down first (v82), fsScheduleBackup() refuses, and
+  fsWriteNow() re-checks before opening the file. A further check confirms the
+  writer refuses while the suite that contains it is running.
+
+CHECK CORRECTED RATHER THAN CODE
+  The loop-prevention check used indexOf('saveData()'), which matched the comment
+  inside fsWriteNow explaining why saveData() is avoided. Now matched as a call
+  rather than a mention. This is the second time that exact trap has bitten in
+  this project; both are recorded here.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
+OSM Runway Bundle (Guide v4.4 + Tracker v98) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, local HTTP.)
+
+SHA-256
+  osm-book-of-business-tracker-v98.html
+    27d4283bfe3e2f051d4b19ca1020b2c3d2d9a5ffb70fa149ca01e4459c6e7060
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 310/310, three consecutive runs on the real book
+  (37 accounts, 41 activities). localStorage byte-identical. Schema 10 -> 11
+  migrated in place.
+
+EXERCISED IN THE BROWSER
+  - Beat click: clicking the third beat set ui.todayFocusId to that account.
+    Before this version the handler did not exist.
+  - Panel width: 560px -> 1100px -> 560px, preference persisted to
+    obm-panel-width-v1.
+  - Report, generated against a seeded log and queue:
+      TODAY        45m across 14 actions (backfill 27m, drafts 12m, cards 6m)
+      LAST 7 DAYS  1h 10m across 20 actions
+      LAST 30 DAYS "Logging began Jul 24, 2026, so this window is only partly
+                    covered." - the partial-coverage rule firing correctly
+      QUEUED TODAY grouped by kind, with "3 items still sitting in the queue
+                    overall" counted separately from today's two
+  - Copilot events appear in the report by name.
+
+CHECKS CORRECTED RATHER THAN CODE (four, all mine)
+  1. A v89 check pinned CURRENT_SCHEMA_VERSION === 10; now >= 10.
+  2. The v58 impact check saved and restored DATA.impact but not the new
+     DATA.impactLog, so trackImpact() leaked a key onto a book that never had one.
+     Caught by the whole-book purity guard.
+  3. My partial-window fixture started 40 days back, which COVERS a 30-day window
+     - it asserted the opposite of what it meant. Fixture now begins inside the
+     window.
+  4. The day-close check used indexOf('impact.events'), which matched the comment
+     explaining that impact.events had been removed. Now matches the expression.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
+OSM Runway Bundle (Guide v4.4 + Tracker v97) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, two local origins.)
+
+SHA-256
+  osm-book-of-business-tracker-v97.html
+    57efcf1e48a6f8a7d81c78367b67594da1cd5d99b8352e1c5aec0da5b16ae438
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 302/302, three consecutive runs, on BOTH books:
+    - the real book (37 accounts, 41 activities), localStorage byte-identical
+    - the best-state demo (17 accounts, everything populated)
+  Critically, 302/302 on the FIRST run after a fresh seed. Every leak below was
+  first-run-only and invisible on a second run.
+
+WHAT THE FULL BOOK EXPOSED
+  Ten versions of fixes in this file addressed EMPTINESS. This was the first pass
+  against the opposite condition, and it found three unrequested writes:
+
+  1. getSessionNote() created a note record on read, and renderSessionCard() calls
+     it once per session - so opening the Session Plan tab wrote eight empty
+     records onto the account. Third member of a family: getDayClose (v90),
+     getGainsightQueue (v95), getSessionNote (v97). Split into
+     readSessionNote() (creates nothing) and getSessionNote() (for writers).
+  2. getWeeklyDigest() re-based the weekly snapshot during a suite run, destroying
+     the "since last week" diff unrecoverably. Guarded on _suiteRunning.
+     Confirmed after the fix: suite leaves it byte-identical, real renders still
+     re-base on schedule.
+  3. A check now asserts all three getters are read-only, so a fourth of the same
+     shape fails the suite instead of surviving two more versions.
+
+CROSS-SURFACE CONSISTENCY, TESTED ON A FULL BOOK
+  The same fact read identically on four independent surfaces:
+    header tile "graduating <=30 days"  3
+    band marks                          3
+    getMonthAhead().landing             3
+    band telemetry LANDING/30D          3
+  This is the invariant unified earlier in the project; it had never been checked
+  against a book where the number was non-zero.
+
+DENSITY OBSERVATION (not a defect, recorded for the usage period)
+  On the full demo book, "What to do next" listed 11 of 12 live accounts.
+  Severity spread: one 4, six 3, three 2, one 1. Six carried a route, a transition
+  or an unanswered question - genuinely more than Today shows. The other five were
+  severity-only, i.e. the same rows Today already ranks. Whether that redundancy
+  is useful context or noise is a judgement real usage should settle, not a
+  guess; no filter was added.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
+OSM Runway Bundle (Guide v4.4 + Tracker v96) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, two local origins.)
+
+SHA-256
+  osm-book-of-business-tracker-v96.html
+    0859eca4e1ea464e7927cd7274af253022e305fdccf729170fe0b3ee4b73ffc4
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 298/298 passed, three consecutive runs on the real book
+  (37 accounts, 41 activities). localStorage byte-identical across all three.
+  298/298 also passed on the 17-account best-state demo book.
+
+FIRST LIVE AI RUN - WHAT IT FOUND
+  Model: claude-sonnet-5, user's own key, configured by them on the demo origin.
+  Run 1 (before fixes):
+    - four sections parsed correctly, legend of 16 accounts built locally
+    - truncated: true. The NEXT section ended mid-sentence: "Delta Fields Mining:
+      outreach now - 70 days silent," with nothing on screen saying why.
+    - output referred to accounts as BEST0 / BLD3 while the cards beside it
+      showed real names.
+  Run 2 (after fixes):
+    - truncated: false
+    - no pseudonym survived into the rendered text (asserted by regex over all
+      four sections)
+    - sample: "Aldridge Energy's call is in 1 day with 2 prior unanswered
+      attempts - highest no-show risk; reach them before the meeting, not at it."
+    - NEXT lens: "Pinecrest Media: escalate - 30 days silent, 41 days in build."
+  Content was specific and evidence-bound throughout - session counts, days of
+  silence, unanswered-attempt counts - with no fact invented beyond the prompt.
+
+  One cosmetic model artifact worth recording, not a code defect: run 1 emitted a
+  stray non-English word mid-sentence ("the one真正 stuck build"). Model output is
+  not deterministic and the UI treats it as prose either way.
+
+ISOLATION
+  Demo book AND the API key: 127.0.0.1:8801.
+  Real book: 127.0.0.1:8800, no key configured.
+  Different origins, therefore different localStorage. The demo seed could not
+  reach the real book at any point. Verified after the run: 37 accounts, 41
+  activities, storage byte-stable, first three names ADT / Airbnb, Inc. / Arclin
+  USA LLC, and no demo names present.
+
+  The key was never handled, transmitted, logged or read by anything other than
+  the user's own browser talking to their own provider. Presence was confirmed
+  only as a boolean and a length.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
+OSM Runway Bundle (Guide v4.4 + Tracker v95) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, served over local HTTP.)
+
+SHA-256
+  osm-book-of-business-tracker-v95.html
+    79c5c64e867c708b4b52b80a213c2d78b0534069e9fef41e5c51076821f1e09f
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 295/295 passed, three consecutive runs on the real book
+  (37 accounts, 41 activities) freshly imported. localStorage byte-identical
+  across all three. All four views render.
+
+TESTED ON TWO ORIGINS, DELIBERATELY
+  The real book was served on 127.0.0.1:8800 and a fabricated "best state" demo
+  book on 127.0.0.1:8801. Different origins mean different localStorage, so the
+  demo could not touch the real data at any point - a precaution taken because
+  earlier in this project's history a demo seed twice overwrote a live book.
+
+THE BEST-STATE DEMO (17 accounts, everything populated)
+  Produced to show the surfaces with nothing missing: 12 live accounts with
+  sessions logged, committed graduation dates, outcome plans, CSAT contacts,
+  readiness assessments, tier/ARR/renewal, first-value evidence; 4 partner-led
+  builds with go-live dates and phase history; 1 graduated account with an
+  answered check-back. Measured on it:
+    17 accounts - 12 live - 4 building - 4 calls booked this week
+    5 unanswered questions - 11 accounts on the next-action list
+    0 admin gaps (that is the point of "best state")
+    graduation durability 1 of 1 held
+  All five escalation routes fired, each from a real question:
+    Aldridge Energy        -> Climate Consultant   ("Scope 3 emission factor source")
+    Corvus Logistics       -> Product Success Mgr  ("on the roadmap or a workaround")
+    Granite Peak Utilities -> Partner impl. team   ("how was the workspace configured")
+    Eastmark Pharma        -> Solution Architect   ("ERP connector nightly or an API")
+    Harborline Shipping    -> Account Executive    (pattern of concerning language)
+  Exactly ONE transition candidate (Delta Fields Mining, ghosted after a failed
+  re-engagement play) - down from seven before the maturity rule was tightened.
+
+  The book's own loader rejected the first two versions of this fixture -
+  "invalid first-value data", then "first-value evidence 1 is invalid" - which is
+  assertNormalizedBookData doing exactly its job against fabricated input.
+
+DEFECTS FOUND AND FIXED IN THIS PASS
+  1. getGainsightQueue() created DATA.gainsightQueue on read. Same family as the
+     v90 getDayClose() defect; caught by the whole-book purity guard.
+  2. The escalation route keyed off the headline signal, so an account with
+     escalating language AND a flagged note got no route. Now reads the evidence.
+  3. The maturity rule fired on 7 of 12 healthy accounts. Tightened to 80% of
+     sessions, health 80+, on schedule, nothing outstanding.
+  4. A dangling clause in the transition summary rendered "...tried and failed ."
+     Rebuilt by joining only the reasons actually present.
+  5. A v73 check pinned the literal words "Administrative" and "Strategic" as
+     column headings; it now asserts the two-column structure.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
+OSM Runway Bundle (Guide v4.4 + Tracker v94) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, served over local HTTP at 127.0.0.1:8800.)
+
+SHA-256
+  osm-book-of-business-tracker-v94.html
+    05625e0efed7275243a1a8d1ad06b249f625d691062dcced7ed2bc26229c31bc
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 288/288 passed, three consecutive runs from a freshly
+  imported book (37 accounts, 41 activities). localStorage byte-identical across
+  all three. All four views render.
+
+THE DECISION, TESTED
+  The reveal is free and AI only enriches. Verified directly: with NO API key
+  configured, clicking "Ask AI to read it" produced error "No API key configured",
+  and all five chapters still rendered, with one honest line reading "No API key
+  configured - the chapters below are the tracker's own read. Add a key in
+  Settings for the AI layer." A check pins this: a failed read must keep four or
+  more chapters and must never empty the tab.
+
+WHAT WAS EXERCISED BEYOND THE SUITE
+  - Landing: band, the computed sentence "37 accounts - 14 need attention -
+    nothing lands inside 30 days - 17 still building.", and the door. No chapters
+    in the DOM until opened.
+  - Reveal: clicking "Open the read" rendered all five chapters (week, month,
+    impl, book, next) with no AI involved.
+  - Week chapter with nothing booked reads "No calls are booked in the next seven
+    days. That is not the same as a quiet week..." rather than rendering an empty
+    list.
+  - Today: four admin rails present (adm-gradDate 13, adm-outcome 11, adm-csat 12,
+    adm-readiness 13 = 49 gaps). Confirmed every listed account is neither
+    graduated nor in implementation.
+  - Copilot's Gainsight batch decks no longer emit any card-back editor.
+  - Band rail collapses to 26px when nothing lands; the landing brief and door
+    now sit above the fold at 1536x674.
+
+CHECKS CORRECTED RATHER THAN CODE
+  - Three older Copilot checks (v73, v76, v92) called renderCopilot() and now met
+    the closed landing. Each was asserting about the OPENED tab, so each now opens
+    it explicitly and restores the previous state.
+  - The v94 no-key assertion searched for a sentence containing an apostrophe.
+    escapeHtml renders it as &#39;, so the literal never appears in the output.
+    Matched on a substring without the apostrophe instead.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
+OSM Runway Bundle (Guide v4.4 + Tracker v93) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, served over local HTTP at 127.0.0.1:8800.)
+
+SHA-256
+  osm-book-of-business-tracker-v93.html
+    4cfeb10b5b8e361571a1778974cb44344fd649e70c14191ab71dc5778c354fc2
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 281/281 passed, three consecutive runs from a freshly
+  imported book (37 accounts, 41 activities). localStorage byte-identical across
+  all three. All four views render.
+
+THE REPORTED DEFECT, REPRODUCED AND SPLIT
+  The flip toggle itself worked: clicking Done on a flipped card returned it to
+  the front and cleared ui.deckState, verified in isolation. The complaint was
+  three other things, each confirmed in the browser:
+    1. The back rendered no account name. Confirmed by reading the back's text
+       content: "Commit a graduation date / Done / Target graduation date / ..."
+       with no customer anywhere in it.
+    2. Rail scroll position was lost on every render. Measured 424 -> 0.
+    3. Setting a graduation date removed the card from the "No date" deck
+       mid-edit, so the Done button ceased to exist and the rail jumped.
+
+  After the fix, all three verified together in one sequence: scrolled two cards
+  in (scrollLeft 820), flipped Howmet Aerospace, set a date. Result - scrollLeft
+  still 820, and the toast read "Howmet Aerospace Inc: graduation date set to
+  Jan 2, 2027. It has moved out of this list."
+
+THE QUESTIONS SURFACE
+  Seeded two real questions onto ADT through setOpenThreadsFromText (the same
+  path the debrief box uses). The "Owed an answer" deck appeared at the top of
+  the week chapter; the card back showed "ADT" and "2 unanswered - oldest asked
+  35 days ago"; typing an answer and clicking Mark answered dropped the count
+  2 -> 1 and left the account in the deck, correctly, because one question
+  remained. Telemetry read ASKED=2 before, ASKED=1 after.
+
+  A check asserts questions have NOT quietly entered the ranked day - no
+  TODAY_SOURCE_DEFS entry, no SIGNAL_DEFS entry.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
+OSM Runway Bundle (Guide v4.4 + Tracker v92) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, served over local HTTP at 127.0.0.1:8800.)
+
+SHA-256
+  osm-book-of-business-tracker-v92.html
+    cdadf076709f3080e9e8257aef5fad6da853960d3fc116943286bd590b8e5c57
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 275/275 passed, three consecutive runs from a freshly
+  imported book (37 accounts, 41 activities). localStorage byte-identical across
+  all three. All four views render.
+
+MEASURED ON THE REAL BOOK
+  17 of 37 accounts in implementation - 6 Kick-Off, 7 Build, 4 UAT.
+  5 quiet past the 35-day threshold; longest Vici Development Inc at 196 days.
+  16 of 17 with no target go-live date.
+  Band telemetry now reads:
+    BOOK 37 - ATTENTION 14 - LANDING/30D 0 - OFF SLA 2 - BUILDING 17 - QUIET 5
+
+WHAT WAS EXERCISED BEYOND THE SUITE
+  - The chapter renders three rails, one per phase, labelled Kick-Off / Build /
+    UAT, each card reading e.g. "Kick-Off for 15 days - last touched 55 days ago -
+    no go-live date set".
+  - Setting a target go-live through a card back wrote to the implementation
+    record, dropped the missing-date count 16 -> 15, and left Undo available.
+  - The empty-month sentence now redirects into the chapter rather than ending on
+    "spend it on the curriculum".
+  - The v90 split regression: columns measured 1116px each stacked, against 546px
+    side-by-side before. No horizontal page overflow.
+
+QUESTION ANSWERED ALONG THE WAY - WHERE OPEN CUSTOMER QUESTIONS SURFACE
+  Today's beat side-panel: YES (renderBeatQuestions, with the AI draft-answer
+  path). Copilot: NO - zero mentions. Neither TODAY_SOURCE_DEFS nor SIGNAL_DEFS
+  has a questions entry, so an unanswered question can never RANK an account into
+  the day; it is only visible once you are already standing on that account for
+  some other reason. The book currently records zero open questions, because they
+  exist only if typed into the debrief box.
+
+CHECKS CORRECTED RATHER THAN CODE
+  - v76 asserted a chapter COUNT. The new chapter renders only when there are
+    builds, so any fixed number is wrong for one book or the other. It now asserts
+    the real invariant: every rendered chapter is a DECLARED chapter, and the four
+    unconditional ones are always present.
+  - The v88 settings fixture did not carry implQuietDays, so the parser correctly
+    rejected it. Fixture updated.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
+OSM Runway Bundle (Guide v4.4 + Tracker v91) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, served over local HTTP at 127.0.0.1:8800.)
+
+SHA-256
+  osm-book-of-business-tracker-v91.html
+    a02f1d4b4da6c89a0de3ef2a0145acda222c84a08a042b50f07cc9a6fab2397c
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 267/267 passed, three consecutive runs from a freshly
+  imported book (37 accounts, 41 activities). localStorage byte-identical across
+  all three. All four views render. 10 rails, 77 cards, 77 parallax layers.
+
+THE PARALLAX, MEASURED
+  Ghost offsets were read off the DOM against each card's measured distance from
+  the rail centre:
+    distance   -1188   -792   -396      0
+    offset    +222.5 +148.3  +74.2      0
+  Every offset is OPPOSITE in sign to its card's distance, and the card sitting
+  exactly at the centre has an offset of zero - the reference formula behaving
+  correctly. After clamping, all offsets fall within 18 percent of the card width
+  (cap 68px on a 380px card), so the figure stays attached to its own account.
+
+  NOTE ON TESTING: setting rail.scrollLeft directly did NOT move the rail
+  (scroll-behavior:smooth plus scroll-snap), and a synthetic 'scroll' event does
+  not drive rAF. The honest test was the real nav button; the rail stepped
+  424 -> 820 -> 1216, one card per click. An earlier probe also read the "3" out
+  of "translate3d" as the offset value - the regex was wrong, not the code.
+
+WHAT ELSE WAS EXERCISED
+  - Flip on the rail: one open card at a time; opening a second closes the first.
+  - Write through an open back: a CSAT contact persisted and the card was STILL
+    FLIPPED after the full re-render, driven by ui.deckState.
+  - A graduation-date write did NOT survive the re-render - correctly. Committing
+    a date removes that account from the "No date" deck, so the card legitimately
+    left the list it was in. Verified against getMonthAhead().noDate rather than
+    assumed from the symptom.
+  - Listener hygiene: after four consecutive renders the cleanup registry held 20
+    entries - 10 rails times 2 listeners - i.e. exactly one render's worth, so
+    nothing stacked.
+  - Responsive: card width is min(380px, 82 percent). Measured 295px inside a
+    360px container and 380px with room; no horizontal page overflow.
+
+RULE 0
+  Amended in the file header at v91 to distinguish ambient WINDOW scroll (still
+  one device per tab) from direct manipulation of a single local rail. The
+  amendment is recorded in the header rather than left implicit, because the
+  previous wording forbade what this version does. Two checks hold the line: the
+  parallax must read the rail and never the window, and rail listeners must be
+  torn down before each rebind.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
+OSM Runway Bundle (Guide v4.4 + Tracker v90) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, served over local HTTP at 127.0.0.1:8800.)
+
+SHA-256
+  osm-book-of-business-tracker-v90.html
+    b2cdd26ef9a8514dba046f44340c135b08b5b055d06091611d0fa26393746671
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 265/265 passed, three consecutive runs, starting from
+  a FRESHLY IMPORTED book (37 accounts, 41 activities) rather than one the browser
+  had already been using. That distinction found two real bugs; see below.
+  localStorage byte-identical across all three runs. All four views render.
+
+WHAT WAS EXERCISED BEYOND THE SUITE (real browser, real book)
+  - 10 decks, 77 cards render on the real Copilot tab.
+  - Promote: clicking the third card in a 13-card deck moved it to the front,
+    updated the counter to "3 of 13", and marked it as the front card.
+  - Flip: the front card rotated to its back and the graduation-date field was
+    present and usable.
+  - WRITE THROUGH A CARD BACK, all five editors: a graduation date (Crowdstrike
+    Holdings, 2026-11-03), an outcome number (Equity Residential, 3), a CSAT
+    contact, a readiness note, and a risk verdict (confirmed). Each persisted to
+    localStorage and left Undo available.
+  - RE-RENDER SURVIVAL: after the full re-render every save triggers, the deck was
+    still on the same card and still flipped open, driven by ui.deckState.
+  - The AI chapter and its placeholder are gone from the rendered DOM. Checked
+    against a script-stripped clone of #app - textContent on document.body
+    includes script source, which false-negatived the first probe.
+
+BUGS FOUND HERE, NOT BY THE SUITE
+  1. RISK VERDICT WAS A SILENT NO-OP. riskItemKey() returns a composite key, so
+     the button payload carries two delimiters. Splitting naively returned only
+     the id, the hub lookup failed, and the click did nothing while appearing to
+     succeed. Now slices on the first delimiter; the check asserts the naive split
+     does NOT round-trip, so the bug cannot come back quietly.
+  2. getDayClose() CREATED DATA.dayClose ON READ. dayIsClosed() runs on every
+     Today render, so opening the tab added a key to the book. Latent since v73;
+     only visible starting from a book that has never closed a day, which is
+     exactly what a restored export is. Reads no longer create.
+  3. The v73 day-close check restored by assigning an undefined previous value,
+     which creates the key rather than removing it.
+  4. The skew taken from CardSwap sheared the body copy and the date field. Now a
+     depth cue on the cards behind only.
+  5. A scrolled-to card parked under the sticky band; fixed with scroll-margin.
+
+CHECKS CORRECTED RATHER THAN CODE
+  - v76 asserted a hardcoded chapter count of 5. The AI chapter was removed; it
+    now asserts against CP_CHAPTER_KEYS.length so the next registry change does
+    not fail the suite for no reason.
+  - v73's AI disclosure check keyed off the removed heading. Its real assertion -
+    that the data-egress sentence is body copy and never inside a heading - is
+    unchanged, now evaluated against a render with a brief present.
+  - The first draft of the v90 delimiter check called buildRiskHubList(), which
+    STAMPS. It passed on every run after the first and failed the purity guards on
+    a fresh book. Rewritten to use riskItemKey() and touch nothing.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
+OSM Runway Bundle (Guide v4.4 + Tracker v89) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, served over local HTTP at 127.0.0.1:8800.)
+
+SHA-256
+  osm-book-of-business-tracker-v89.html
+    1f7d869f162fc44eaff8037ed21426c056b7379fe7a57646337b0de9db3af764
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 255/255 passed, three consecutive runs.
+  localStorage byte-identical across all three runs (obm-data-v1, 37 accounts,
+  41 activities - the real book, restored from the 2026-08-03 restore point).
+  Schema migrated 9 -> 10 in place with no data change. All four views render.
+
+WHAT WAS EXERCISED BEYOND THE SUITE (real browser, real book, real CSV)
+  A deliberately messy 11-row export was built from the real account names, with
+  Gainsight-style headers, three currency formats, a US date, two dropped legal
+  suffixes, quoted fields containing commas, CRLF line endings and one account
+  that does not exist.
+  - Column mapping was auto-guessed correctly for all four columns from the
+    headers "Account Name / Segment / Annual Contract Value / Contract End Date".
+  - Matching: 9 exact, 1 loose ("Crowdstrike Holdings" -> "Crowdstrike Holdings,
+    Inc.", labelled and warned about above the table), 1 unmatched and skipped.
+  - Parsing: "$2,400,000" -> 2400000, "1.8M" -> 1800000, "450k" -> 450000,
+    "11/30/2026" -> 2026-11-30.
+  - Preview said "Will update 30 fields across 10 accounts. 1 row matched no
+    account and will be skipped." The commit then wrote exactly 30 fields across
+    exactly 10 accounts - preview and result come from the same function.
+  - Undo restored the entire import (10 accounts back to no value).
+
+  THE GATE, MEASURED. With ten renewal dates loaded onto the real book, the
+  renewal-pressure signal fired on ONE account and was correctly silenced on the
+  other NINE, all of which have no completed sessions and therefore an assumed
+  projection. Without that gate the import would have produced nine false
+  commercial alarms on the day it ran.
+
+DEFECT FOUND AND FIXED HERE, NOT BY THE SUITE
+  The preview rendered change arrows ("- -> $500,000") on rows labelled "no match
+  - skipped", inviting the reading that something was about to be written.
+  buildValueImportRows() now computes changes only for matched rows, pinned by a
+  check.
+
+FOUR CHECKS WERE WRONG AND WERE REWRITTEN, NOT THE CODE
+  - A v88 check asserted CURRENT_SCHEMA_VERSION === 9 and broke on the bump to
+    10; it now asserts >= 9.
+  - Two checks assumed csvNameKeyExact() was punctuation-sensitive. It is not,
+    and should not be - "Airbnb, Inc." vs "Airbnb Inc" is a spelling difference,
+    not a judgement call. The checks now assert the real two-tier boundary.
+  - The value-ordering check read the comparator via String(todayActionList).
+    That function is wrapped by memoizePerRender(), so String() returns the memo
+    wrapper and source inspection on it can NEVER work. Replaced with a
+    behavioural test: two clones named so alphabetical order contradicts value
+    order, plus a case where the small account is on fire (severity must still
+    win) and a case with no values at all (order must be unchanged).
+    NOTE FOR FUTURE CHECKS: the same trap applies to every memoized function in
+    this file - needsAttentionList, dueForSessionList, pendingGainsightItems,
+    getBatchingOpportunities, getCurriculumBottlenecks, getDomainImbalanceClusters,
+    getPortfolioAdvisorInsights and todayActionList.
+
+SHIPPED ALONGSIDE
+  gainsight-import-template.csv - headers plus three illustrative rows.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
+OSM Runway Bundle (Guide v4.4 + Tracker v88) - Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, served over local HTTP at 127.0.0.1:8800.)
+
+SHA-256
+  osm-book-of-business-tracker-v88.html
+    2a552a8b98040fd4eed7b8e93edee28fd547d328a5094f9cc8196dbfa84af64a
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() - 240/240 passed, three consecutive runs.
+  localStorage byte-identical across all three runs (obm-data-v1, 37 accounts,
+  41 activities - the real book, restored from the 2026-08-03 restore point).
+  Schema migrated 8 -> 9 in place on the real book with no data change.
+  All four views (Today, Accounts, Risk, Copilot) render without error.
+
+WHAT WAS EXERCISED BEYOND THE SUITE (real browser, real book, real input)
+
+  v87 readiness
+  - Strip on Today named the true top gap: "13 of 15 live accounts have no
+    completed session logged".
+  - Dismissing advanced to the NEXT gap rather than vanishing (no_sessions ->
+    no_booking -> no_activity -> gone), persisted to obm-onboard-v1, and the
+    book was byte-untouched throughout.
+  - Primary action opened the backfill grid; the activity-log empty state opened
+    Quick Log.
+  - Grad tags on the real book: 12 "Assumed" (dashed), 1 genuine "Est.". Every
+    Assumed tag showed the SAME date - today + 8 sessions x the 7-day default -
+    which is the visual proof of the problem the label now admits to.
+  - Batched inspection at 1560px and 746px: stacks to a column, no horizontal
+    overflow, body copy 5.38:1 and heading 16.39:1 against the strip surface.
+    Focus ring inherited from the global .btn:focus-visible rule.
+
+  v88 plays
+  - Real account (ADT): two plays suggested from its firing signals, three more
+    behind the explicit "start a play the evidence didn't suggest" disclosure.
+  - Started Re-engagement through the UI; four steps rendered with dates derived
+    from the start (Aug 5 / 8 / 12 / 17). Ticked step one via the real checkbox:
+    struck through, stamped "done Aug 5, 2026", persisted.
+  - Backdated the start by 20 days: three steps went overdue, the account's
+    Today row switched to source playbook_step_overdue at severity 3 with the
+    next step as its headline, dispatching to the Plays tab.
+  - GRAMMAR DEFECT FOUND AND FIXED here, not by the suite: the multi-step reason
+    read "2 other steps ... is also past its date". Both branches now correct.
+
+  v88 check-back
+  - Ran a real account (MSA Safety) through changeStage() to graduated: review
+    scheduled at +30 days, not yet due. Brought it due; it reached Today as
+    grad_review_due even though graduated accounts otherwise leave triage.
+  - Answered "Still using it" through the UI: verdict recorded, row cleared from
+    Today, block became the permanent line "30-day check-back: Still using it -
+    answered Aug 5, 2026", graduationDurability() returned 1/1 at 100%.
+
+NOTES
+  - The Plays tab was initially reachable by route but MISSING from the panel tab
+    strip, which is rendered from separate markup. Caught by screenshot, not by
+    the suite; the strip now carries it with an open-play count.
+  - graduationDurability() deliberately returns null, not 0%, until something has
+    been reviewed. Pinned by a check.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
+OSM Runway Bundle (Guide v4.4 + Tracker v86) — Validation Summary
+==================================================================
+Validated: August 5, 2026 (Chrome, served over local HTTP from the bundle
+folder at 127.0.0.1:8800.)
+
+SHA-256
+  osm-book-of-business-tracker-v86.html
+    054f45607dd0d2843b06b0c257d223eed8d45f56749df26a3a11360a2c872631
+  osm-runway-onboarding-v4.4.html
+    c5416c0a3554a714105f066cf5fd5c0bc94a176c5904544dc1325a1ad981a3b4
+
+RESULT
+  window.runSelfChecks() — 219/219 passed, three consecutive runs.
+  localStorage byte-identical across all three runs (obm-data-v1, 37 accounts,
+  41 activities — the real book, restored from the 2026-08-03 restore point).
+  No console errors on load or on a forced re-render.
+
+WHAT WAS EXERCISED BEYOND THE SUITE (in a real browser, real input)
+  - Backfill grid opened on the real book: 15 live rows, correct per-account
+    context lines ("1 of 8 logged · 23 days since last touchpoint").
+  - REFUSALS, all three by name and with Save blocked and data unchanged:
+    a count below what is logged; a most-recent-session date in the future; a
+    next-session booking in the past.
+  - HAPPY PATH: 3 sessions written for one account. Highest carried the entered
+    date and was NOT marked estimated; the two below it were evenly spaced,
+    ascending, inside [implementationDate, entered date], and each marked EST.
+    All three carried an EMPTY checklist — no manufactured Gainsight items.
+    Pace moved 19.75 -> 11.29 days and the projection moved 2026-10-23 ->
+    2026-08-16, i.e. the fallback was replaced by a real per-account read.
+  - BOOKING-ONLY ROW: wrote nextSessionScheduledOn and flipped that account's
+    coverage status to 'scheduled' without inventing any history.
+  - UNDO: reverted a full backfill to byte-identical prior state (logged set,
+    pace and projection all exactly restored).
+
+THE UNDO BUG, AND HOW IT WAS CAUGHT
+  The first end-to-end undo test FAILED — the button was lit, performUndo()
+  returned true, and nothing changed. The snapshot had already been overwritten
+  by a deferred maintenance write fired from render(). Reproduced against v67's
+  Quick Log to confirm it was pre-existing and not introduced by this feature:
+  undo had been silently dead for EVERY mutation since v66. Fixed via
+  saveData(opts.maintenance); re-verified on both paths.
+
+  Note on the new check: it is STRUCTURAL, not behavioural. saveData() stands
+  down entirely while the suite runs (v82), so the real write path cannot be
+  exercised from inside the suite without reopening the hole that overwrote a
+  live book twice. The behaviour was verified in the browser instead, above.
+
+HANDOFF FIELD SET: PROVISIONAL (unchanged from prior bundles).
+
+------------------------------------------------------------------
+
+OSM Runway Bundle (Guide v4.4 + Tracker v73) — Validation Summary
+==================================================================
+Validated: August 3, 2026 (Chrome, served over local HTTP from the bundle
+folder — earlier bundles were validated in headless Chromium, so the harness
+differs from entries before v61.)
+
+SHA-256
+  osm-book-of-business-tracker-v80.html
+    51cfe5d53654ca19f5ebfbd57875dcad36f39b15fdfd464faf08749e29f77334
+  osm-runway-onboarding-v4.4.html
+    1b6e9165e40a10f32a11fbdc5d7ed4dbc8b9121c6cdfe31e8fabe34e52d74fa8
+
+CHANGED FROM PRIOR BUNDLES — read this first
+Every bundle before v61 asserted the tracker was byte-identical to an earlier
+delivered build. That is deliberately NOT true from v61 onward: the tracker has
+been edited in place through v72. The "unedited / byte-identical" check was
+removed from the manifest rather than left in place and quietly failed.
+
+CORRECTION TO THE v62 AND v63 ENTRIES
+Those entries claimed the guide "still uses the old Call Prep Brief label."
+That was wrong — the guide never contained that string. The real guide gaps
+were the Today mockups, the three-tab strips, and the At Risk wording, all of
+which are now fixed at guide 3.6.
+
+TRACKER
+PASS — Tracker self-checks from bundle location: 208/208 (86 at v60 -> 208 at v80),
+       Guide self-checks: 17/17 (new at guide v4.4a),
+       three consecutive runs, re-runnable.
+PASS — Suite is re-runnable: four consecutive runSelfChecks() calls in one page
+       session, 143/143 each, with no intervening render().
+PASS — Suite does not damage the book. DATA.riskLog is byte-identical before and
+       after a full run, with no synthetic keys left behind.
+PASS — All four views and all six panel tabs render without throwing, for live,
+       in-implementation, and graduated accounts. Empty book renders its empty
+       state.
+
+v64 ACCESSIBILITY / UX
+PASS — Slide-over is a real dialog: role="dialog", aria-modal="true",
+       aria-labelledby -> the account name, tabindex="-1".
+PASS — Focus moves into the panel on open (previously activeElement stayed on
+       <body>), and returns to the row that opened it on close.
+PASS — Tab is trapped: focusing the last control and pressing Tab wraps to the
+       first.
+PASS — Escape closes the panel. Previously there was NO global key handler at
+       all. It stands down while a .modal-backdrop is open so it cannot close
+       the panel out from under a confirm dialog.
+PASS — Browser Back closes the panel instead of leaving the app. Deep link
+       round-trips: #/accounts/<id>/gainsight restores view, account, and tab.
+       Unknown view / missing account / bogus tab degrade to defaults.
+PASS — Contrast: 47 failing text nodes -> 0, measured across all four views
+       with alpha correctly composited. Token ratios are solved against the
+       darkest surface they can sit on (--bg-card-hover), not white; solving
+       for white alone still failed the implementation strip at 4.26:1 and the
+       risk badge fill at 4.47:1. A self-check recomputes ratios from the live
+       tokens against every surface, so changing a colour without redoing the
+       maths fails the suite.
+
+v65 RISK EXECUTIVE SUMMARY
+PASS — Character cap holds. Deterministic summaries for four risk kinds
+       measured 173-208 chars against a 300 cap; trimToLength() clamps a
+       900-character input to <=300 on generation, on manual edit, and at the
+       import boundary. The cap is enforced in code, not trusted to the prompt.
+PASS — Provenance stated in every summary: "you flagged this note" for manual
+       risks vs "computed from tracker pacing" / "inferred from note wording"
+       for derived ones.
+PASS — Persistence: summary stores on the risk-memory entry, survives
+       re-render, records source (local / ai / edited), and clearing the
+       textarea removes it.
+PASS — Prune verified end to end: with a summary saved, un-flagging the source
+       note removed the risk, its memory key, AND its summary. No orphan text.
+PASS — Next steps render locally in every risk row (4 of 4) from
+       getRecommendedAction(); no AI call is involved.
+
+v66 DURABILITY, MEMORY, EFFORT, FLOW COVERAGE
+PASS — Undo round-trips through the real load pipeline: renaming an account,
+       pressing Undo restores the prior name, pressing again redoes it, and the
+       book stays intact (12 accounts / 12 activity sets) throughout.
+PASS — Undo expires. A snapshot older than UNDO_MAX_AGE_MS is discarded rather
+       than offered, and requesting it clears the snapshot.
+PASS — The backup warning renders as a <button id="btn-backup-now">, not a
+       <span>. A load-time prompt fires past 3x the nag threshold, after the
+       first paint.
+PASS — Signal calibration reads recommendationLog back for the first time:
+       correctly rated stalled at 75% dismissed ("Not a priority"), withheld a
+       rate for a signal with too few outcomes, and excluded both the
+       next_session fallback and an unknown key.
+PASS — Calibration does not re-rank. A self-check asserts neither
+       getRecommendedAction() nor todayActionList() consults it, so dismissals
+       can never quietly suppress a class of risk.
+PASS — Effort budget: every ranked row carries a positive minute estimate; a
+       30-minute budget over a 120-minute list marked exactly the rows the
+       renderer computed (7 expected dimmed, 7 measured via computed opacity),
+       and clearing the budget restores full opacity everywhere.
+PASS — Ten end-to-end flow steps pass: silent account ranked and citing its
+       silence -> logging a touchpoint lowers it -> unchecked Gainsight item
+       appears and ticking it removes it -> flagging takes severity 4, quotes
+       the note, and reaches the Risk tab -> a flag pierces a pause -> a paused
+       account drops every time-based reason -> nothing owed removes it.
+NOTE — The pause flow step FAILED on its first run and was correct to. The
+       assertion (not the app) was wrong: a pause suspends chasing the customer
+       but not the OSM's own Gainsight compliance admin. Verified directly
+       (dueForSession false, computeCoverage null, recommendation falls back to
+       next_session) and the corrected assertion now records that ruling, which
+       had not been written down anywhere.
+
+v67 SCHEMA 3 + COORDINATION LAYER
+PASS — Migration 2 -> 3 leaves a legacy book UNBLOATED: no empty arrays are
+       stamped onto records that have no stakeholders/blockers/commitments.
+       Absent means empty; accessors default.
+PASS — Hostile v3 input is cleaned, not trusted: a non-array collection is
+       dropped, an empty-text blocker is discarded, an unknown owner falls back
+       to 'customer', and an oversized commitments array is capped at 30.
+PASS — One normalizer per collection serves BOTH the UI writes and the import
+       boundary, so validation cannot drift between the safe and hostile paths.
+PASS — Coordination CRUD verified end to end: add/toggle/remove for all three
+       collections, empty input rejected, and removing the last item deletes the
+       field so absent-means-empty stays true in exports.
+PASS — Overdue is measured against today (due yesterday = overdue now; due today
+       = not yet), completed commitments never count, and due-soon respects the
+       3-day window inclusively.
+PASS — Today integration: an overdue commitment ranks at severity 4 and routes
+       to the Coordination tab; a 20-day blocker surfaces on its own.
+PASS — Lifecycle ruling verified: an in-implementation account appears on Today
+       for an overdue commitment and NOT for any signal-registry reason.
+PASS — Week ahead lists only sessions scheduled within 7 days and flags which
+       have no prep notes (2 of 2 in the test book).
+PASS — Quick log: L opens it, the shortcut is suppressed while typing in a
+       field, an empty summary is rejected, and a saved entry builds the same
+       ACTIVITY_TYPES checklist as the full form. A quick-logged flagged Call
+       escalated its account to severity 4 on Today immediately.
+PASS — Risk trend requires two real observations; a single sample and an empty
+       log both return null rather than inventing a direction.
+
+v68 HANDOFF BOOKENDS (PROVISIONAL FORMAT)
+PASS — Content survives a format change, which is the load-bearing promise of a
+       placeholder. Verified through the full path: write a field, inject a
+       value under a key the registry does not define, confirm it is shown and
+       still editable under "fields from an earlier format", confirm it appears
+       in the composed packet, then round-trip the whole book through
+       prepareBookData() and confirm both known and unknown keys survive.
+PASS — The packet is stamped WORKING DRAFT / "not an official Workiva handoff
+       format", asserted by self-check. An artefact that looked official is the
+       one failure mode with consequences outside this tool.
+PASS — Facts are composed, never retyped: the packet reads account state,
+       people, session history, open blockers, commitments, risks, and
+       outstanding admin from the book at generation time. A self-check asserts
+       no factual field creeps into the human-knowledge registry.
+PASS — Migration 3 -> 4 is additive: a legacy record gains no empty handoff
+       objects, an invalid updatedOn is nulled, an empty value is dropped, a
+       non-object handoff is removed, and an UNRECOGNISED key is deliberately
+       kept (the format is provisional; an unknown key is probably tomorrow's
+       field).
+PASS — Field length clamped at 4000 chars, key count at 40, junk normalised to
+       null. Clearing the last value removes the record so absent-means-empty
+       stays true in exports.
+PASS — Panel tabs wrap instead of scrolling: no overflow at 7 tabs (live
+       account) or 8 (in-implementation), measured against clientWidth.
+
+NOTE — Two v67 schema checks were pinned to the literal version 3 and failed the
+       moment a v4 migration step existed. That was noise, not signal; both now
+       assert against CURRENT_SCHEMA_VERSION.
+NOTE — The v61 suite-wide risk-memory guard caught a REAL leak in the new v68
+       check: buildKnowledgeTransferText() composes live risks, so it calls
+       buildRiskHubList(), which stamped and pruned the real book's risk memory
+       against a synthetic account. Fixed with a throwaway riskLog. That guard
+       has now caught two separate leaks of exactly the kind it was written for.
+
+v69 TODAY REBUILD
+PASS — Stat tiles read Total / In Implementation / On Track / Watch / Off Track /
+       Graduating, in that order. The Gainsight-items tile is gone; the new tile
+       goes amber and reports how many builds need eyes.
+PASS — Clicking the tile opens Accounts filtered to lifecycle=implementation
+       (verified every returned account is in implementation); clicking any
+       other tile clears that lens.
+PASS — Today no longer renders "START HERE", "Batch Opportunities", the time
+       budget, or the implementation strip. Asserted against the rendered HTML,
+       not the source — the first draft scanned String(renderToday) and failed
+       on its own explanatory comment.
+PASS — Focus view: 5 cards, 5 panes, exactly 1 visible, panel position:sticky,
+       and it DEFAULTS to todayActionList()[0]. The check asserts defaulting
+       rather than pinning — navigating away is legitimate, and the first draft
+       failed only because the tester had moved.
+PASS — Switching accounts triggers ZERO re-renders (measured by wrapping
+       render()), so a half-typed field survives moving between accounts.
+PASS — Inline updates write the same c.compliance shape Edit Account uses:
+       CSAT contact saved, marking it done stamps the date and removes it from
+       pendingGainsightItems(), outcome number persists, sentiment answer
+       persists, and Undo reverts the last inline change.
+PASS — In-implementation accounts are shown why the gates are closed instead of
+       being offered them; live accounts get all three.
+PASS — Keyboard: J / K / arrows move the selection, clamp at both ends, keep the
+       pane and card in sync, are suppressed while typing in a field, and the
+       handler is bound once (verified across three renders).
+
+NOTE — SCROLL-DRIVEN SELECTION WAS BUILT, MEASURED, AND REMOVED. The guide
+       effect it copied depends on each step being ~92vh so exactly one is
+       current. These cards are ~82px: all five span 345-712px inside a 730px
+       viewport and are all above the fold together at maximum scroll. Two
+       mechanics failed for that reason — IntersectionObserver ratios (four
+       cards at ratio 1.0, so "most visible" was arbitrary) and
+       nearest-to-a-focus-line (no scroll range separates them). Tall cards
+       would fix it and reintroduce the ten-screens problem the layout exists to
+       avoid, so selection is intent-driven instead. Recorded here because the
+       measurement is the reason, not a preference.
+
+v70 TODAY AS A DAY (schema 5)
+PASS — Act I renders a generated standing line from counted facts only
+       ("12 accounts need you · 3 calls to prep") with counted detail beneath.
+PASS — Act II lists ONLY sessions scheduled for today: a customer scheduled in
+       3 days, one 2 days ago, and one with no date are all excluded.
+PASS — Prep card composes recap, sessions, first value, last touch, open
+       questions, pending checklist items, and this session's deliverables —
+       all read from the book at render time, none retyped.
+PASS — Open threads persist (schema 4 -> 5) on the ACTIVITY. Re-entry safe:
+       retyping an existing line keeps its id, its answer, and its resolved
+       state; clearing every line removes the field entirely. Verified through a
+       full prepareBookData() round-trip.
+PASS — Answers apply by 1-based question number; an out-of-range answer is
+       ignored rather than written onto the wrong thread.
+PASS — Thread resolution from the prep card stamps resolvedOn and drops the
+       thread from the card. Resolving stays a human action — the model fills
+       answers and never resolves.
+PASS — Dot navigation moves the stage with card, step, and dot all in sync;
+       zero JS errors across the whole exercise.
+PASS — All four views, all eight panel tabs, three lifecycles, and an empty book
+       render without throwing (32 surfaces).
+
+NOT VERIFIED — v74.4 — THE SUITE WAS MUTATING THE BOOK
+---------------------------------------
+FAIL FOUND, THEN FIXED (1) — DATA.weeklySnapshot was DELETED by every run. The
+       v73 Copilot check restored it with `if(prevSnap)`, and a book with no
+       baseline yet legitimately holds null, which is falsy. applyDataBackfills
+       requires the KEY to exist, so the suite was removing it from the real book
+       on every invocation. It self-healed on next load, which is why it survived.
+FAIL FOUND, THEN FIXED (2) — found by the new guard on its FIRST run. The v66
+       backup-warning check restored DATA.lastExportedAt by assigning the saved
+       value back; when the key never existed that writes UNDEFINED rather than
+       removing it, CREATING the key. JSON.stringify drops undefined, so it was
+       invisible to any content comparison. Functionally harmless (undefined is
+       falsy, the nag behaved correctly) but not the book the suite was handed.
+
+ROOT CAUSE, BOTH — restore by TRUTHINESS instead of by PRESENCE. Both now use
+       `'key' in DATA` and delete when it was absent.
+
+GUARD WIDENED — the v61 guard watched DATA.riskLog only. Three leaks have now
+       come from three different collections, so watching one was always going to
+       be one behind. v74.4 snapshots the WHOLE book as the final check.
+       Serialized key by key, and the KEY LIST is compared as well, because:
+         - whole-object JSON is order-sensitive, and
+         - iterating the keys that still EXIST after a run cannot detect a
+           deletion. My own first measurement of leak (1) reported "no keys
+           changed" for exactly that reason.
+
+PASS — falsified in all three shapes it can fail, by sabotaging a leaf function
+       the suite calls mid-run: key deleted, key added, value mutated. Each
+       tripped the guard alone, naming the offending key in the detail.
+PASS — 196/196 from RUN ONE, five consecutive runs, whole book byte-identical and
+       key list unchanged.
+
+v84 THE WHOLE-BOOK GUARD CAUGHT A REAL LEAK
+PASS — trackRecommendationPersistence() stamps lastShownRecommendation as a side
+       effect of rendering, and the v64 dialog check renders a REAL account. The
+       check now restores the field. 208/208 from run one.
+FIRST FIX WAS WRONG — gating the stamping function crashed the panel, because
+       renderOverviewTab reads what it writes. A side effect something depends on
+       cannot simply be suppressed; the caller that reached for real data is the
+       one that must put it back.
+
+v83 TELEMETRY AND THE APERTURE
+------------------------------
+PASS — every telemetry field is a number the book already computes (BOOK,
+       ATTENTION, LANDING/30D, OFF SLA, SINCE). The clock is the only invented
+       value and makes no claim about the book. The reference's fake
+       FACILITY/PID strings were deliberately not taken.
+PASS — the scramble runs on FIGURES only and writes its final text from the
+       element's own content, so an interrupted run cannot leave a wrong number.
+PASS — the aperture dims rather than hides; text outside it stays legible, and it
+       is removed entirely under prefers-reduced-motion.
+PASS — the clock is torn down on every rebind; no duplicate timers across renders.
+PASS — 208/208, five runs, DATA and localStorage both unchanged.
+
+CAUGHT BY THE CHECKS, ALL MINE — raw #000 in the mask gradients (tokenised); the
+       band-mark count also matching class="band-mark-l" (invisible at zero
+       landings, wrong with data); axis labels colliding with account names.
+
+v82 THE SUITE WAS WRITING TO THE REAL BOOK
+------------------------------------------
+FAIL FOUND, THEN FIXED — runSelfChecks() swaps DATA.customers for fabricated
+       accounts and exercises real code against them. setRiskVerdict() and
+       markRiskActioned() call saveData() directly; getWeeklyDigest() calls
+       queueSave(). Instrumented count: THIRTEEN saves in one run, several while
+       DATA held a 1- or 3-account fake book. Each wrote test data over a real
+       37-account book.
+
+WHY THE v74.4 GUARD MISSED IT — that guard compares DATA in MEMORY at suite entry
+       and exit, and the checks restore memory correctly. The write had already
+       happened. A guard on the wrong side of the write is not a guard.
+
+PASS — saveData() does not touch storage while the suite runs, and returns true so
+       callers behave normally. Placed after the rejected-load branch so that
+       contract is unchanged. Flag cleared in a finally.
+PASS — queueSave() also stands down, so a deferred write cannot land mid-suite.
+PASS — PROVEN, not asserted: localStorage captured before and after five
+       consecutive runs and compared byte for byte. Identical.
+PASS — 208/208 from run one on a normal load.
+
+NOT A NEW BUG — the v73 risk checks have called setRiskVerdict() since they were
+       written. Any run of the suite against a real book could corrupt it, and
+       rule 5 of this file's header says to run the suite after every edit, so it
+       compounded on the mandated workflow.
+
+v81 THE BAND
+------------
+PASS — one mark per account really landing inside 30 days, at the day it lands,
+       sorted, none invented and none dropped; the readout agrees with the marks.
+PASS — every chapter has a window and the week's is narrower than the month's.
+PASS — exactly one AI generate control, and it is on the band.
+FIXED BY LOOKING — pct() returned a bare number so all five tick labels collapsed
+       to zero; "1 account land"; and the first chapter was never revealed on
+       arrival, so the tab opened as a band above blank space.
+
+v80 MOTION, AND THE SWITCH FOR IT
+---------------------------------
+REFERENCES REJECTED, DELIBERATELY — a WebGL showreel (one canvas, preloader at 6%
+       after twelve seconds, seventeen screens) and a paid GSAP effects library
+       (GSAP + ScrollTrigger + Lenis). Neither fits a single self-contained file
+       with no build step that opens from file:// and is used between calls.
+TAKEN INSTEAD — velocity skew, line-mask heading reveals, magnetic hover on the
+       rail and the gate, inertial settle. No dependencies, one scalar per frame.
+
+PASS — the Motion switch (Settings: Full / Calm) round-trips, junk falls back to
+       Full, and the preference never reaches DATA.
+PASS — prefers-reduced-motion overrides the switch in the SAFE direction only.
+       Asserted on source: the switch cannot turn motion on against the OS.
+PASS — nothing depends on an animation having run. Every rule that hides or moves
+       a heading sits behind .fx-on, verified by walking the live stylesheet, so
+       Calm is still rather than blank. Confirmed live: heading visible in both
+       modes, mask transform present in Full and absent in Calm.
+PASS — maskHeadings preserves its text exactly and wraps once.
+PASS — 208/208, five runs, whole book and key list byte-identical.
+
+THE CHECK CAUGHT ITSELF TWICE — ".cp3-h" prefix-matched ".cp3-horizon", and
+       "opacity: 0.8" matched a naive /opacity:\s*0/, so a visible hairline was
+       reported as hidden content. Both halves needed a boundary. Same class of
+       bug twice in one predicate.
+
+v79 INSTRUMENTS — THE THEME MUST NOT LIE
+----------------------------------------
+The whole risk of theming an ops surface is that the theme starts inventing.
+Every instrument here is driven by a number the book already computes, and the
+checks are written to catch it if that stops being true.
+
+PASS — glideslope is severity: on path at 1, bottom of scale at 4, monotonic
+       between, clamped against 0 / 99 / non-numeric.
+PASS — attitude is the week's net movement. Built a week that deteriorated and a
+       week that improved and required the needle to disagree about them; pitch is
+       bounded to -1..1 so a large swing cannot tip the horizon out of the dial.
+PASS — with no baseline the horizon sits LEVEL and states why, rather than
+       inventing a tilt.
+PASS — the distance tape carries exactly one mark per account really projected to
+       land inside 30 days, and its readout agrees with the mark count.
+PASS — four tabs, four chapter numerals.
+PASS — tokens only: the token check now covers .gs / .adi / .tape / .inst-. Sky
+       and ground are Link Blue and Storm Cloud held back with opacity, not new
+       hexes.
+PASS — 207/207, five runs, whole book and key list byte-identical.
+
+FIXED WHILE BUILDING — the progress ribbon was a grid child consuming the first
+       cell, which pushed the instrument column out of place; it spans the grid
+       now. Chapter min-height of 62vh stranded short chapters in empty space;
+       reduced to 34vh with the pacing carried by padding.
+
+A CHECK WAS WRONG, NOT THE CODE — the climbing scenario put every account in the
+       prior snapshot and got net zero, because all were still at risk. `resolved`
+       is snapshot-minus-current, so the prior week needs both the still-troubled
+       AND someone who has come out of it; built from the live lists now. It also
+       dated the snapshot 7 days back, which is exactly when getWeeklyDigest()
+       rewrites it — the check was re-baselining the book underneath itself.
+
+v78 THE LAST RISK CARD WAS UNREADABLE
+-------------------------------------
+REPORTED BY THE USER with a screen recording; frames extracted and read.
+
+FAIL FOUND, THEN FIXED (1) — circular measurement. Stage sized from the front
+       card's offsetHeight while the card's max-height resolved against the
+       stage, so a tall card collapsed it. Measured: 834px of content squeezed
+       into 273px, 561px unreachable behind an invisible scrollbar. Natural height
+       now read from scrollHeight.
+FAIL FOUND, THEN FIXED (2) — no scroll reserved for overflow. A card taller than
+       the viewport ran out of travel before content, so the sticky stage released
+       mid-card. Each card now owns step + its own overflow; page scroll drives
+       the card's scrollTop through the surplus first. Verified the section
+       releases 16px AFTER the card is fully read, never before.
+
+PASS — verified on a REAL confirmed case (full workspace, 682px): the card opens
+       at its top and reads through to the executive summary, nothing clipped.
+PASS — 204/204, five runs, whole book byte-identical.
+
+MY OWN, RECORDED — the first fix declared the sizing helpers after the
+       sizeTrack() call that uses them. const is not hoisted; bindRiskDeck threw
+       and the deck did not bind at all. Found by reading the CONSOLE, not the
+       code. Then compounded by measuring with synthetic scroll events, which
+       schedule a rAF that never fires without real compositing — the driver
+       looked frozen when it was never asked to paint. Real wheel input is the
+       only honest test of a scroll driver, which this project already recorded at
+       v72.
+
+CHECK IS A PROXY AND SAYS SO — v78 asserts the driver's source contract
+       (natural-height sizing, page scroll drives the card, track reserves
+       overflow, helpers declared before use, binding observable). The geometry is
+       only provable in a live layout and was verified there by hand.
+
+v77 ONE DEFINITION OF "GRADUATING SOON"
+---------------------------------------
+FAIL FOUND, THEN FIXED — the header tile and Copilot disagreed about the same
+       labelled fact. Tile said 2 (ADT: committed 24 days out, projected 1,267;
+       RMR: committed 4 days AGO). Copilot said 0. Three separate copies of the
+       predicate existed and had already drifted — the tile excluded
+       in-implementation accounts, the filter it opens did not, so the list could
+       be longer than the count that opened it.
+
+PASS — one function, isGraduatingSoon(), used by the tile, the grad30 filter and
+       getMonthAhead().landing.
+PASS — projection not commitment; lower bound at 0; in-implementation excluded.
+PASS — nothing lost. Verified after the change that ADT and RMR both still appear
+       in Copilot's Off SLA list and both still read behind target.
+PASS — new check builds one account of each shape (pacing to land in ~25 days, an
+       optimistic commitment against a years-out pace, a committed date in the
+       past, one in implementation) and asserts tile == filtered list == Copilot.
+PASS — on the real 37-account book the tile now reads 0, matching Copilot.
+PASS — 203/203, five runs, whole book and key list byte-identical.
+
+OVERRIDES A DOCUMENTED DECISION — a prior comment stated that including past-due
+       dates was by design. That is recorded here rather than silently reversed:
+       past-due is urgent but it is not "graduating soon", and Off Track already
+       carries it.
+
+v76 TWO DIFFERENT PHYSICS
+-------------------------
+PASS — Risk is a deck: sticky stage, cards stacked by MEASURED height so each
+       waiting card peeks a fixed step below the front one whatever either
+       contains. Verified live on the 37-account book — advancing the scroll moves
+       [01] -> [06], the rail follows, and the count reads "11 more behind this
+       one".
+PASS — waiting cards show their edge, not their text. Ghosted contents put a
+       second set of gate buttons under the real ones.
+PASS — Copilot is three-speed parallax: month marks in the far field, graduation
+       ticks at middle speed, writing at scroll speed, with a progress ribbon.
+       Verified: eras AUG/SEP/OCT drift, ribbon fills, no rail present.
+PASS — every chapter carries a time label ("Now — the next few days", "Thirty days
+       out"), and a tick is only drawn for an account really projected to land.
+PASS — no driver calls render(); both are rAF-throttled. Checked across the whole
+       driver surface, not just the entry point — the v75 version of this check
+       looked at one function and v76 split the work into three.
+PASS — 202/202, five runs, whole book and key list byte-identical.
+
+GEOMETRY BUGS FOUND BY LOOKING — deck invisible (shared top edge), then dead space
+       (cards filling the stage), then ghosted content. All three were only
+       visible in a screenshot; none would have been caught by a passing check.
+
+SELF-INFLICTED, RECORDED — the edit replacing the v75 driver cut from its opening
+       comment to `function render(){` assuming adjacency. It deleted the routing
+       layer: SEARCH_DEBOUNCE_MS, _searchDebounce, cssEscape, currentRoute,
+       syncRoute, applyRoute, syncPanelFocus. Rebuilt from contracts the file
+       still stated (the v64 routing check pins the round-trip and the junk-route
+       degradation; renderPanel lists the tabs) and re-verified by the suite.
+       Range edits are anchored on both ends now.
+
+v75 THE SPINE — RISK AND COPILOT
+--------------------------------
+Verified against the RESTORED 37-ACCOUNT BOOK, not a synthetic one. That book has
+a real severity mix (10 sev-3, 3 sev-2, 4 sev-1), which is a far better test of
+the signature than the uniform seed it replaced.
+
+PASS — the rail matches the queue it maps: one entry per rendered case, the
+       meter states a real fraction, exactly ONE case and ONE rail entry active,
+       [01] is the first case in the DOM, every rail target resolves.
+PASS — .is-active is a highlight only. bindScrolly never calls render(), which is
+       what lets a scroll tick toggle a class instead of rebuilding #app.
+PASS — the observer is disconnected and the key handler removed before rebinding.
+       Leaking one observer per render is the v72 pane-pool bug in a new costume.
+PASS — J/K stand down inside INPUT/TEXTAREA/SELECT/contentEditable and under a
+       modal or an open panel — the same guards the quick-log "L" shortcut has.
+PASS — Copilot chapters numbered, reachable from the rail, exactly one active,
+       and the ruler is NOT drawn when nothing lands in the window.
+PASS — tokens only: no raw hex and no raw px font-size in any .spine / .rk2 /
+       .cp2 / .horizon rule. Asserted from the live stylesheet.
+PASS — degradation. Motion is opt-IN behind (prefers-reduced-motion:
+       no-preference), so a reduced-motion reader gets none by default. Below
+       1000px the grid collapses to one column, the rail goes static and the
+       horizon is hidden; verified by forcing the state and measuring.
+PASS — 202/202, five consecutive runs, whole book and key list byte-identical.
+
+FAIL FOUND WHILE BUILDING — overflow-y:auto on the rail CLIPPED the severity
+       lanes at left:-3px, so the signature element rendered as nothing. The lane
+       is inside the row now.
+
+THREE CHECKS CORRECTED, NOT THE CODE — all three failed on working behaviour:
+       - v73 Copilot disclosure matched the old .cp-h class. Re-keyed to the
+         closing </h2> between the heading and the sentence, so the assertion that
+         matters survives the next rename.
+       - v74.2 invite date assumed a pace long enough to put the paced date in the
+         future. defaultPaceDays is 7 on the real book, the v74.3 clamp fires, and
+         the check was wrong. It asserts the rule now.
+       - v75 teardown asserted attachEvents() calls bindScrolly(); render() does.
+
+OPEN, NOT CHANGED — two surfaces disagree about "graduating in 30 days" and the
+       horizon made it visible. The header tile counts targetGraduationDate ||
+       projected with NO lower bound, so it includes ADT (committed in 24 days,
+       projected 1,267 days out) and The RMR Group (committed 4 days AGO).
+       getMonthAhead().landing counts only projections inside 0..30 days and finds
+       none. Copilot's number is the more truthful one; the header tile is wrong
+       by its own label. Left alone because it is graduation semantics and outside
+       this rebuild — flagged for a decision.
+
+GUIDE v4.4d — VERIFYING THE BUNDLE
+PASS — no stale claim found. v74.4 changed nothing user-facing; every existing
+       instructional statement was re-checked against the tracker, including the
+       "no baseline yet" copy that describes the very weeklySnapshot the leak was
+       deleting. Still accurate.
+PASS — the Version compatibility card now names both suites and how to run them,
+       closing the gap between "revalidate before distribution" and any means of
+       doing it.
+PASS — it states that the tracker's suite leaves the book exactly as it found it.
+       That is only true from v74.4 onward, so this is the first release in which
+       the guide can honestly tell a reader to run the checks on a real book.
+PASS — compat card layout holds with the added paragraph: no overflow, version
+       grid intact, "Bundled file confirmed".
+PASS — 18/18, five consecutive runs.
+
+GUIDE v4.4c — THE CHECKLIST CLOSES ON THE INVITE
+PASS — both launch paths end on booking a session and opening the .ics
+       (fresh 12 -> 13 items, existing 11 -> 12).
+PASS — APPENDED, not inserted. Checklist state is a positional array clamped to
+       the item count, so a mid-list insert would shift every existing tick onto
+       the wrong row. Verified with progress seeded at the OLD length: ticks at
+       0, 1 and 3 survived, the new row came in unchecked, score read 3/13.
+PASS — completion card and progress bar fire on the new total (12/12 existing
+       path, bar 100%), not the old one.
+PASS — 18/18, four consecutive runs; seeded test state cleared afterwards.
+
+GUIDE v4.4b — BOOKING AND THE INVITE
+PASS — new chapter teaches both Edit account fields and the .ics, including what
+       stays all-day and why, the clamp, and that no calendar integration exists
+       in either direction.
+FAIL FOUND, THEN FIXED — the 17th card sat alone in the final row of a 4-up grid
+       with three empty columns beside it. Found by eye, not by the suite. A lone
+       card now spans two columns (full width at the 2-col and 1-col
+       breakpoints); card height dropped from ~1100px to 552px.
+PASS — verified in all three column states, with no horizontal page overflow.
+PASS — an 18th check pins it, measured from real layout rather than the
+       stylesheet. Removing the widening rule trips that check and nothing else.
+
+v74.1 CALENDAR — THE INVITE THAT LEAVES THE TOOL
+------------------------------------------------
+FAIL FOUND, THEN FIXED — buildSessionIcs() emitted unfolded content lines. A real
+       account name ("Koninklijke Philips Electronics North America Corporation")
+       produced a 192-octet SUMMARY and a 138-octet DESCRIPTION against the
+       75-octet cap in RFC 5545 section 3.1. Measured before the fix; asserted
+       after. Google Calendar tolerates it, stricter parsers and mail gateways do
+       not, and a rejected invite looks exactly like an ignored one.
+
+PASS — folding is UTF-8 octet-aware and code-point safe. Verified on the real
+       output: 16 lines, max 75 octets, 3 continuation lines, em dash intact, no
+       U+FFFD anywhere (nothing split mid-character).
+PASS — folding is LOSSLESS. icsUnfold() restores exactly the two long properties;
+       the check asserts the round-trip, not merely that short lines came out.
+PASS — escape-then-fold ordering. The reverse can place a fold between a
+       backslash and the character it escapes.
+PASS — injection. A name carrying a comma, semicolon, backslash and a pasted
+       newline still yields 13 well-formed property lines and forges nothing.
+PASS — DTEND is exclusive, verified across a month end, a year end, and into and
+       out of a leap day (2028-02-28 -> 20280229, 2028-02-29 -> 20280301).
+PASS — isoAddDays is reversible and drift-free across 36 date/span combinations
+       spanning month ends, a leap day, and DST transitions in both directions.
+PASS — nextSessionDateFor precedence: explicit scheduled date, then last touch +
+       pace, then today; always a real ISO date.
+PASS — 12-hour clock at its two failure points: 00:00 -> 12:00am, 12:00 -> 12:00pm.
+PASS — today's calls sort by clock, untimed after timed, never dropped.
+
+FALSIFICATION — all seven deliberately broken and confirmed to fail: folding
+       removed, escaping removed, DTEND made inclusive, date arithmetic drifted a
+       day, noon misformatted, the scheduled date ignored, clock times dropped
+       from the sort. Each fault tripped its target check. Removing folding trips
+       exactly ONE check and nothing else, so the assertion is precise rather than
+       incidentally coupled.
+
+v74.2 — THE INVITE CARRIES THE HOUR
+       Supersedes the note above: a booked call is no longer all-day.
+
+FAIL FOUND, THEN FIXED — the .ics export was UNREACHABLE. attachEvents() bound a
+       [data-ics] handler and downloadSessionIcs() worked, but no surface rendered
+       the button. Fourth instance of this shape in this file
+       (renderSignalCalibration, getBatchingOpportunities, data-thread-resolve,
+       data-ics). Button added under "Time on the calendar" in Edit Account, and
+       reachability is now asserted from BOTH ends — renders AND bound — because
+       either half alone passes while the feature is broken.
+
+PASS — a scheduled call becomes a timed VEVENT in UTC, DAY_CALL_LENGTH_MIN long.
+       The stored time is the OSM's local wall clock; UTC is used rather than a
+       floating time so the invite means one instant for anyone it is forwarded
+       to. Verified in America/Los_Angeles: 09:30 on 15 Jan -> 173000Z (UTC-8),
+       09:30 on 21 Jun -> 163000Z (UTC-7), 17:30 on 21 Jun -> 003000Z on the 22nd.
+PASS — asserted as a ROUND TRIP across both DST transitions rather than against a
+       hard-coded offset, so the check holds on any machine's timezone.
+PASS — a booked date with no time stays all-day; a PACED date stays all-day even
+       when a time is stored, because that date was never scheduled.
+PASS — the download names what it produced: date and hour, or all-day with the
+       reason. Both branches exercised end to end through the real click path
+       (anchor click stubbed so no file was written).
+PASS — 195/195, four consecutive runs.
+
+FALSIFICATION — local time written as if it were UTC, call length halved, time
+       attached to a paced date. Each tripped exactly one check.
+
+STILL NOT COVERED, STATED PLAINLY:
+       - No VTIMEZONE component. UTC stamps make one unnecessary for a fixed
+         instant, but a recurring series would need one.
+       - No SEQUENCE. The UID is stable per (customer, session, date), so
+         re-importing after changing the HOUR updates the existing event in most
+         clients; a client that requires SEQUENCE to accept a revision may ignore
+         the change.
+       (The overdue-paced-date gap listed here previously is CLOSED in v74.3 —
+         see below.)
+
+v74.3 — THE PACED DATE CLAMPS FORWARD
+PASS — an overdue account no longer proposes a past date. Verified: last touch
+       400 days ago gave a raw paced date of 2025-07-14 and an invite date of
+       today. An on-pace account is untouched (paced date 12 days out, unchanged).
+PASS — an explicitly booked date in the PAST is respected, not moved. The check
+       pins both directions: removing the clamp fails it, and over-clamping so a
+       real booking is dragged forward fails it too.
+PASS — contained. nextSessionDateFor() feeds the invite and nothing else;
+       computeCoverage() derives its own due date, so coverage, risk and Today's
+       ranking are unaffected.
+PASS — the download message was corrected in the same pass. The clamp had made it
+       claim "that is the paced date" while returning today. Three distinct
+       reasons now produce three distinct sentences, all four verified end to end.
+PASS — 195/195, four consecutive runs. Check count unchanged: the existing
+       invite-date check was extended rather than duplicated.
+
+GUIDE SELF-CHECKS — window.runGuideSelfChecks()
+-----------------------------------------------
+The guide is no longer unverified. 17 checks, callable from the console the same
+way the tracker's are.
+
+PASS — 18/18 across six consecutive runs from a clean load (17 at 4.4a, 18 at 4.4b).
+PASS — 17/17 across six hostile store preconditions: junk checklist value, junk
+       path, unparseable challenge state, quick mode preset, an over-long
+       checklist array, and a completely empty store. Saved progress was
+       byte-identical after every one.
+PASS — falsification. Every check was deliberately broken and confirmed to fail:
+       a nested card, a dead in-page anchor, a stale version string in the prose,
+       an off-target Open-tracker link, a version banner disagreeing with its
+       constant, and an empty card. Each fault tripped exactly ONE check, the
+       correct one, and each restored to 17/17.
+
+WHAT IT COVERS
+       structure   no card nested inside another; no empty card; every in-page
+                   link resolves; every chapter named and uniquely named
+       bundle      every Open-tracker link points at the bundled file; the four
+                   on-screen version banners match their constants; no stale
+                   tracker version anywhere in the prose
+       content     every challenge question has exactly one reachable right
+                   answer; every checklist item is a complete triple; every
+                   decoder hotspot has copy behind it
+       behaviour   the checklist score counts the items actually rendered;
+                   progress round-trips and cannot overflow a shorter path;
+                   quick mode really removes the guided-only chapters; the
+                   reveals degrade under prefers-reduced-motion
+       honesty     the guide states the checklist is self-reported and does not
+                   change the tracker, and that the book lives in the browser
+                   with no cloud backup
+       purity      running the suite leaves saved progress exactly as it found it
+
+TWO BUGS IN THE CHECKS THEMSELVES, caught on the first run and fixed. Recorded
+because both are recurring classes in this project, not one-offs:
+       - The prose scan read the version named in its OWN comment.
+         document.body.textContent includes <script> text. Asserting against
+         source text keeps producing this; the check now strips script and style.
+         Same family as the v69 check that passed by matching the comment
+         explaining a removal.
+       - The reduced-motion scan reported a missing rule that was present. A
+         single try/catch around the whole stylesheet loop let the cross-origin
+         Google Fonts sheet abort it with a SecurityError. Now guarded per sheet,
+         and the check reports how many sheets it could read — a scan that
+         silently reads nothing must not be able to look like a pass.
+
+MARKUP DEFECT FOUND AND FIXED — four cards in "Newer workflows" carried a doubled
+       opening <article> tag (19 opens / 15 closes). Browsers repaired it by
+       nesting, so it was invisible in use. The section heading also still read
+       "Five things the tour skips" against fifteen cards. Both corrected; the
+       first is now asserted permanently.
+
+v74 CURRICULUM FIT — SOURCED, NOT ESTIMATED
+-------------------------------------------
+Weights derived from Workiva's own published onboarding paths on
+training.workiva.com, read directly in the browser with the user's authorised
+session. Measured as solution-specific eLearning minutes, with shared platform
+content lifted into `core`.
+
+MEASURED (GRC uses an identical 4-curriculum template):
+       Controls Mgmt     Kickstart 1h10 · Workflow 1h55 · Workspace 45m · Outcome 17m
+       Audit Mgmt        1h10 · 1h35 · 45m · 50m
+       Risk Mgmt         2h45 · 1h00 · 45m · 10m
+       Policies & Proc   2h45 · 25m  · 45m · 10m
+       Sustainability    Intro 18m · Orientation 10m · End-to-End 1h
+       Carbon            Intro 18m · Orientation 8m  · Carbon Basics 80m
+       SEC Reporting     Intro 18m · Using Workiva 1h20 · Using SEC 1h · Filing 25m
+
+STRUCTURAL FINDINGS
+       - Workiva already ships both bookends: "Introduction to Workiva" (shared
+         across paths) and "Solidifying a Positive Outcome" (the OSM-to-CSM
+         handoff). The user's bookend model matches their curriculum.
+       - GRC is FOUR components, not one.
+       - There is NO CSRD onboarding path; CSRD sits inside Sustainability
+         Reporting. Its weight is the only inferred one and is labelled as such
+         in the registry, the fit panel, and Settings.
+       - Risk and Policies carry 2h45 Kickstarts because they bundle platform
+         training the other paths split out. Lifting platform into core is what
+         makes the components comparable.
+
+PASS — arithmetic verified across all 11 configurations. Every single component
+       fits biweekly EXCEPT Controls Management (7 > 6); no combination fits
+       biweekly; Sustainability + CSRD + Carbon = 10 sessions, fits 13 weekly
+       with 3 spare.
+PASS — window is taken from Go-Live to committed graduation date when both
+       exist, and the panel states WHICH window it used — a fit against an
+       assumed 13 weeks is a different claim from one against a committed date.
+PASS — the migration does not infer components from `module`; verified by
+       running it against a customer with reportsCSRD:true and one with the
+       shipped default module 'Both'. Both come out unset.
+PASS — unknown component keys and 'core' are stripped from an imported list.
+PASS — every weight is editable in Settings with its derivation printed beside
+       it; the standard window is configurable.
+PASS — 185/185, four consecutive runs.
+
+CHECK REWRITTEN DURING THE BUILD — the first version asserted on a COMMENT string
+       in migrateData and failed on capitalisation. It now runs the migration and
+       inspects the result. Same fragility class as the v69 check that passed by
+       matching the comment explaining a removal.
+
+CAVEAT CARRIED INTO THE UI — these are self-paced eLearning durations. They size
+       content surface area; they do not measure live delivery. The panel and the
+       Settings block both say so.
+
+v73.2 — A SMALL SUMMARY IS NOT NO SUMMARY
+------------------------------------------
+The v73.1 fix was half right and the user said so. It removed the 1,858-character
+note and put five counters in its place, so the panel could tell you a
+conversation had happened but not what was said. “Small summary” was the ask.
+
+FIXED — the roll-up across ALL activity now renders, from accountActivityRollup(),
+       which already existed for the Account Brief and had never been called on
+       Today: “4 interactions over 77 days · about one every 26 days · 2
+       Onboarding Sessions, 1 Check-in, 1 Email · 1 unchecked item · 1 flagged.”
+FIXED — the last touchpoint renders as a 260-character extract of the OSM’s own
+       words, labelled “Extract of your note (142 words). Read the full note.”
+       Deliberately a truncation, not an AI summary: generating a reading of a
+       note the OSM wrote themselves would invent something and add one more
+       thing to verify.
+
+PASS — verified on the real JBT Marel note (977 chars in the fixture): full note
+       absent from the panel, roll-up present, extract present, 3 open questions
+       surfaced from 3 different activities.
+PASS — 181/181, four consecutive runs seeded; 181/181 on a truly empty book.
+NOTE  — an earlier probe reported 180/181 on “empty” because it cleared customers
+       and activities but left riskLog populated; the suite then correctly pruned
+       orphaned risk keys and the v61 guard reported the change. Probe error, not
+       a tracker defect — recorded so the number is not mistaken for a flake.
+
+STRENGTHENED — the v73.1 bloat check now also asserts the extract and roll-up are
+       present, so the next person to fix bloat cannot fix it the way I did.
+
+GUIDE 4.4 — TODAY CONDENSED, TAUGHT
+------------------------------------
+Method: the STRUCTURAL sweep introduced at 4.3, run first rather than last. It
+compares every term the tracker uses against the guide and vice versa, instead of
+searching for phrases I happen to think of — which is how the 4.3 "dark Calls
+today section" error slipped through a clean string sweep.
+
+FOUND BY THE SWEEP — four tracker terms the guide did not name: "Open questions",
+       "Read the full note", "Draft an answer", "Mark handled".
+FOUND BY THE SWEEP — one claim that had NARROWED against reality: the calls
+       chapter said the panel brings up "the questions they asked last time".
+       Questions now come from every logged activity, so "last time" understated
+       it. Corrected to "every question still open across the whole history".
+CHECKED AND LEFT ALONE — the guide's phrase "where it stands" is prose, not a UI
+       label. The tracker has no literal "Where it stands" heading (the standing
+       block is five self-labelling cells), so the guide describes it without
+       inventing a label that does not exist on screen.
+
+NEW CHAPTER — "Where it stands, not the note it stands on": the five counted
+       facts, the note living in the Activity Log, open questions spanning the
+       whole history, and Draft an answer — including what the OSM's Settings
+       instruction controls (tone, length, format) and what it explicitly cannot
+       do (loosen the curriculum-first grounding, or authorise inventing Workiva
+       behaviour). States that the answer is a draft: "it gets you to a first
+       sentence, it does not speak for you."
+
+PASS — Guide v4.4 / Tracker v73, "Bundled file confirmed", warning hidden, all 4
+       tracker links resolve, 23 rhythm cards, practice flow walks all 6 views,
+       zero stale strings, zero JS errors.
+PASS — tracker 180/180 from the renamed bundle, three consecutive runs, risk
+       memory verified untouched.
+
+v73.1 TODAY CONDENSED — MEASURED ON THE REAL CASE
+-------------------------------------------------
+Source: a real flagged note on JBT Marel Corporation, 1,858 characters (ten key
+points plus seven next steps), supplied as a screenshot and reproduced verbatim
+as the test fixture.
+
+FIXED — SIGNAL_DEFS embedded sig.acts[0].summary with no truncation, so the whole
+       note rendered TWICE (beat reason + panel reason). Now a 150-character
+       quote. Verified: the 1,858-character string appears nowhere in the panel.
+FIXED — the panel now LEADS with five counted facts (last touch, sessions,
+       first value, open questions, logged) plus one line naming the last
+       interaction and linking to the Activity Log.
+FIXED — open questions are collected from EVERY logged activity, not only the
+       most recent. Verified: 3 questions surfaced from 2 activities.
+NEW   — "Draft an answer" per question, using an instruction the OSM sets in
+       Settings. Verified: the instruction reaches the prompt, survives the
+       "clear AI key" path that would previously have overwritten it, and the
+       prompt still carries the grounding rules the instruction cannot override
+       ("it does not override the rules above" / "Never invent Workiva product
+       behaviour" / curriculum-first).
+
+PASS — 180/180, four consecutive runs, seeded AND empty book.
+PASS — risk memory verified byte-identical before and after the suite, with no
+       synthetic keys leaked.
+
+CAUGHT DURING THE BUILD — the first draft of the new check swapped customers and
+       activities but not DATA.riskLog, and renderBeatPanel() calls
+       buildRiskHubList(), which stamps risk memory. The v61 guard failed on run
+       one and passed on run two — the exact signature of a leak that has already
+       happened. Third catch for that guard, second time on my own code.
+
+GUIDE 4.3 — CORRECTION AFTER THE "NO STALE STRINGS" CLAIM
+---------------------------------------------------------
+The 4.3 release above recorded "zero stale strings". That sweep was incomplete,
+and this is how it failed: it searched for phrases I THOUGHT to look for. The
+chapter "Calls today, and prep" named no removed class and quoted no removed
+label — it simply described "a dark Calls today section" that v72 deleted when
+calls became beats in the one timeline. A string sweep cannot catch a paragraph
+that is wrong about the shape of a screen.
+
+FIXED — that chapter is now "Your calls are the fixed points", describing calls
+       as beats inside the timeline, the panel keeping pace, and the earned-clock
+       arithmetic exactly as it renders: "3 items · roughly 30 min · about 30m
+       free between 9:30am and 11:00am (allowing 60 minutes a call)" — with the
+       point that the hour-per-call assumption is printed rather than hidden.
+FIXED — the Risk chapter now names the "Needs review" group the reader sees.
+
+METHOD CHANGE — the sweep is now STRUCTURAL, not string-based: every feature the
+       guide names is checked for existence in the tracker source, and every
+       tracker vocabulary term is checked for presence in the guide. That is what
+       surfaced this, and it also surfaced dead code (below).
+
+PARKED, NOT DELETED — renderSignalCalibration() had no call site after the panel
+       came off Copilot. The user's instruction was to hide it, not to stop
+       collecting, so the renderer stays with an explicit note and a new
+       self-check asserts BOTH halves: the data keeps accruing from
+       recommendationLog, and no render path calls the panel. 176/176.
+
+SCROLL CLAIMS — the guide's existing statements ("Story gives each beat the
+       screen in turn and follows your scroll") needed no correction. They were
+       already accurate; the verification above confirms them rather than
+       changing them.
+
+SCROLL-DRIVEN ACTIVATION. Act II uses IntersectionObserver over
+       75vh steps, which is the correct instrument at that height. It could not
+       be exercised here: a control experiment (fresh IO on a fresh 600px node,
+       plus a raw scroll listener, plus requestAnimationFrame) recorded ZERO
+       callbacks of any kind while scrollY demonstrably moved 0 -> 900 -> 4041.
+       This automation context does not deliver frame-driven callbacks. Every
+       non-frame path was verified instead. Check the scroll behaviour in a
+       normal browser before relying on it.
+
+CORRECTION TO THE v69 ENTRY. That entry stated scroll-driven selection failed
+       because 82px cards cannot separate under a focus line. The geometric
+       argument holds for ratio-based selection, but the empirical failure was
+       measured in this same harness — so it was not the evidence it appeared to
+       be, and the nearest-to-line approach may in fact have worked. Act III
+       remains click/keyboard driven on the DESIGN argument (comparative content
+       should not hijack scrolling), which never depended on that measurement.
+
+v72.2 / v72.3 DESIGN PASS (five lenses) AND DENSITY
+---------------------------------------------------
+Method: five independent assessments, each told what the others owned so contrast
+and responsive overflow were measured once, not five times. Convergence was the
+signal.
+
+CONVERGENCE — .focus-act unstyled (4 of 5 lenses) · pinned panel taller than the
+       viewport (3 of 5) · hierarchy inverted, standing smaller than a beat
+       (3 of 5) · 450ms transition against a 150-300ms product floor (3 of 5).
+SINGLE-LENS, MOST SEVERE — ArrowDown inside the panel retargeted a WRITE to
+       another account (one lens) · the font identity silently vanishing on
+       file:// (one lens). Neither would have been found by a single audit.
+
+MEASURED, v72.1 -> v72.3, same 18-account book:
+       inactive beat contrast 1.98:1 -> passing · off-token font sizes 2 -> 0 ·
+       controls with no accessible name 4 -> 0 · control heights 34.4/32.8/27.2px
+       -> 34px · body line-height 1.216 -> 1.55 · horizontal bleed <=768px +8px
+       -> 0 · font fallback depth 2 -> 5 · self-checks 155 -> 163.
+
+PASS — Density toggle: Story 9,530px / 14.1 viewports; Compact 4,507px / 6.7
+       viewports (-53%), 3 beats legible at once instead of 1, all 15 beats
+       rendered in both. Compact does not install the scroll observer.
+PASS — Density and focused beat survive a full reload, and live in their own
+       localStorage key, not in DATA. Verified the book contains neither.
+PASS — The marker and rail agree with the beat the day opens on (regression found
+       and fixed during the build: a restored beat 10 showed "1 of 15").
+PASS — 163/163, four consecutive runs; the suite restores the reader's density
+       and focus rather than clobbering them.
+
+NOT DONE, deliberately — nothing outstanding from the five lenses is unaddressed
+       except items explicitly outside the Today tab: the .tabs strip overflows
+       at 320px (pre-existing app chrome), and .btn-sm is 27.2px tall against a
+       44px touch guideline (app-wide, desktop tool, would touch every surface).
+
+v72.1 POST-MORTEM (Today tab)
+-----------------------------
+Method: adversarial probing of the live tab at boundary conditions, not a diff
+read. Every bug this build has produced was found by running the code.
+
+FIXED — an account with a call today that also ranked below the cap appeared in
+       BOTH the day and the list below it. Re-tested at 25 accounts: 0 duplicates.
+FIXED — the cap did not bound calls (30 calls -> 30 beats). Invariant settled:
+       calls are never hidden; ranked work yields its room to them.
+FIXED — normalizeDayTime() rejected "HH:MM:SS", so a time set through an input
+       that emits seconds was silently deleted. Now "09:30:00" -> "09:30".
+FIXED — a movement with unknown capacity claimed work "did not fit", asserting a
+       measurement that never happened.
+
+PASS — empty book renders the empty state, no throw, 0 beats.
+PASS — single-beat day: 3 pool nodes, exactly 1 active.
+PASS — two calls at an identical clock time sort stably; no NaN/undefined in the
+       rendered output.
+PASS — gap capacity between 09:00 and 13:00 computes to 180 min; all 8 beats
+       placed across preface / gap / after with none dropped.
+PASS — graduated accounts with a call today are excluded; paused accounts with a
+       booked call are still shown (a booked call happens regardless of a pause).
+PASS — merged beat arithmetic: call prep 10 min + ranked work 15 min = 25 min,
+       severity = max, both reasons carried.
+PASS — self-checks 155/155, three consecutive runs.
+
+v72 TODAY AS ONE TIMELINE
+-------------------------
+PASS — 151/151 self-checks, three consecutive runs, from the renamed bundle file.
+PASS — One account, one beat. On an 18-account book with 5 calls, zero accounts
+       appear in more than one block (v71: 5 of 18 appeared in three each).
+PASS — Merge case: an account with BOTH a call today and a ranked signal yields a
+       single beat carrying both reasons at severity = max.
+PASS — Clock honesty. With no nextSessionTime set anywhere, the rendered tab
+       contains no am/pm string at all, says "time not set", and falls back to
+       ordinal movements. Normalizer rejects "25:00", "9:5", "10:60", "1030",
+       "abc", null, undefined, 12; accepts "9:05"->"09:05", "0:00"->"00:00".
+PASS — Gap fitting places every beat; the last slot is unbounded, a slot that
+       filled is marked, and the movement heading states it. Nothing is dropped.
+PASS — Severity 4 cannot hide: flagged on the rail and counted in the standing
+       regardless of where the clock places it.
+PASS — Pane pool holds exactly 3 nodes at 16 beats.
+PASS — Typing into a beat's sentiment, then navigating 5 beats away (evicting the
+       pane), preserves the text in memory and in localStorage.
+PASS — A pane rebuilt by the pool has live controls (gate toggle verified
+       false -> true on a swapped-in pane).
+PASS — Responsive: the Day contributes ZERO horizontal overflow at 320 / 375 /
+       414 / 768 px (v71 forced a 413px minimum).
+PASS — Travelling movement marker overlaps zero controls in the working panel.
+PASS — Schema 5 -> 6 migration; DATA.schemaVersion reads 6.
+
+MEASURED AGAINST v71, same 18-account book:
+       interactive elements 314 -> 73 · DOM nodes 1,463 -> 495 · generated HTML
+       121KB -> 39KB · panes 20 -> 3 · duplicated accounts 5 -> 0 · inline style
+       attributes 416 -> 83 · self-checks 143 -> 151.
+
+NOT VERIFIED — scroll-driven activation. This automation context delivers no
+       frame-driven callbacks (a control experiment recorded zero
+       IntersectionObserver and zero raw scroll callbacks while scrollY moved
+       0 -> 4041). Click and J/K selection ARE verified and are real, non-frame
+       paths; the observer path needs a human in a real browser.
+
+OPEN — THE GUIDE IS NOW WRONG, NOT MERELY STALE. Guide v4.1's card "The day,
+       told as a story" describes severity chapters as the scroll axis. As of
+       v72 the axis is TIME; severity became a per-beat label. The Today mockups
+       in both the scene and practice views still show "1 of 15 · Needs you
+       today". A guide pass is required before this bundle ships to anyone.
+
+v71 THE WORK AS A STORY
+REVERSAL — the v69 ruling against scroll-driven selection is WITHDRAWN, on both
+       of its grounds. (a) The reference mechanic was misread: frame-by-frame it
+       is one step per BEAT of a narrative, not one step per item. (b) The OSM is
+       working THROUGH the ranked accounts, not comparing them, so "comparative
+       content should not hijack scrolling" did not apply. (c) The supporting
+       measurement was taken in an automation context later proven to deliver no
+       frame callbacks at all. Two weak arguments and one bad measurement.
+PASS — 15 story steps, 15 panes, 15 dots, exactly one pane visible, stage
+       position:sticky, 72vh per step, opens on todayActionList()[0].
+PASS — Chaptering: every severity band maps to an act with reading guidance,
+       chapters descend with severity, chapter-boundary dots are marked, and the
+       travelling chip changes as you cross into a new act (verified "Needs you
+       today" -> "Slipping").
+PASS — Selection without any frame callback: clicking a step, clicking a dot,
+       and J/K/arrows all move the selection with step, pane, dot, and chip in
+       sync. Clamps at both ends, suppressed while typing in a field, and the
+       handler is bound once across repeated renders.
+PASS — The pinned panel is still the working surface: an inline CSAT edit saved
+       to c.compliance from inside the story.
+PASS — Accounts beyond the story cap fall into the compact "Also today" list.
+PASS — All four views, eight panel tabs, three lifecycles, empty book: 32
+       surfaces render with zero JS errors.
+
+NOTE — FAILED SILENTLY, worth recording. Replacing the v69 focus grid removed
+       focusKeyHandler but left the addEventListener call referencing it.
+       addEventListener with an undefined listener does NOT throw: the keyboard
+       simply stopped working, with no error in the console and no failing
+       check. It was caught only because a new self-check asserted the function
+       exists. Silent-failure classes like this are why the check was added
+       rather than the bug just being fixed.
+NOTE — Scroll-driven activation still cannot be exercised here (no frame
+       callbacks in this harness). Every non-frame path was verified instead.
+       The scroll feel needs a look in a normal browser.
+
+SCROLL-DRIVEN ACTIVATION — VERIFIED (was open since v71)
+--------------------------------------------------------
+This had been recorded as unverified across four releases. The blocker was a
+WRONG ASSUMPTION on my part, not a limitation: every earlier attempt drove the
+page with JS (scrollTo / scrollIntoView), which moves scrollY without producing
+the input events an IntersectionObserver observes. Driving it with a real scroll
+gesture works, and always did.
+
+METHOD — real wheel input at (700, 400) over the track column, on a 15-account
+       book in Story density, reduced-motion OFF, with counters installed on the
+       live page: a raw scroll listener, a rAF ticker, an independent
+       IntersectionObserver on the real beats, and a wrapper on setTodayFocus().
+
+PASS — The app's own observer is installed (_storyTeardown non-empty).
+PASS — 27 IntersectionObserver callbacks fired across the run; 71 rAF ticks.
+PASS — 6 focus changes tracked the scroll: c5 -> c0 -> c4 -> c7 -> c4 -> c7,
+       i.e. it follows BOTH directions, not just downward.
+PASS — The pinned panel matched the active beat at every checkpoint
+       (data-day-holds === data-day-step).
+PASS — The travelling marker tracked: "2 of 15" at scrollY 1000, "8 of 15" at
+       4500, "9 of 15" after scrolling back.
+PASS — The rail scalar tracked: --day 13.33 -> 53.33.
+PASS — The pane pool held exactly 3 nodes throughout.
+PASS — The live region announced each change: "8 of 15 - 11:00am call — Pinnacle
+       Freight. Working panel updated."
+PASS — The earned clock computed real gap arithmetic in the wild: "3 items ·
+       roughly 30 min · about 30m free between 9:30am and 11:00am (allowing 60
+       minutes a call)".
+PASS — A merged beat rendered correctly at speed: "8 of 15 · 11:00am call ·
+       Pinnacle Freight · Log Session 2: Sustainability Program Setup · +1 more
+       reason in the panel" — the call kept its session title and the ranked
+       signal became a reason, which is the v72.1 merge fix visible in use.
+
+OBSERVED, not a defect — adjacent beats can oscillate once at a boundary
+       (c4 -> c7 -> c4 -> c7) as momentum settles. That is inherent to a
+       most-visible-wins observer and self-corrects; selection remains correct
+       and the panel never disagreed with the beat.
+
+v73 RISK TRIAGE, COPILOT NARRATIVE, GUIDE 4.3
+---------------------------------------------
+Method: four design lenses audited both tabs BEFORE the rebuild, each told what
+the others owned. Convergence was the signal.
+
+CONVERGED (all four lenses, independently): every risk row rendered 307-321px
+       regardless of severity, with an owner select, a date input and a 300-char
+       textarea on risks the reader had not agreed were real.
+
+PASS — The gate: an unreviewed case renders ZERO textareas, ZERO selects, ZERO
+       date inputs and no Copy-for-Gainsight. Approving reveals exactly one
+       workspace, with a labelled owner control.
+PASS — One account, one judgement: 17 raw signals -> 11 cases on the audit's own
+       fixture; Northwind's three rows became one led by the asserted flag.
+PASS — A dismissal returns on a severity rise AND after 30 days. The severity
+       rule alone was insufficient: Off Track is always sev 3, so dismissing one
+       would have been permanent blindness.
+PASS — Copy no longer stamps an action (asserted on the handler body).
+PASS — The dismissal dialog has role="dialog", aria-modal, Escape, and focus
+       restored on close; attachEvents contains no prompt().
+PASS — Queue removal confirms, marks undoable, and reports.
+PASS — Copilot: the three cut sections are absent from RENDERED OUTPUT; the
+       week/month/next-steps beats are present; every insight carries its
+       accounts; no tinted panel survives; the AI disclosure sits outside the
+       heading.
+PASS — 175/175, four consecutive runs, on a seeded book AND an empty one.
+
+MEASURED, v72.3 -> v73:
+       Risk  6,199px -> 3.8 viewports · 17 rows (all 307-321px) -> 11 cases
+             (161/214/268px) · textareas 17 -> 0 · selects 17 -> 0 · date inputs
+             17 -> 0 · buttons 115 -> 45 · headings 1 -> 13
+       Copilot 1,958px -> 2.2 viewports · duplicate sub-lines 11 -> 0 · tinted
+             panels 4 -> 0 · named account chips 0 -> 66 · headings 1 -> 7
+       Global .tabs overflow at 320px 61px -> 0 · control heights 27.2/34.4/34.8
+             -> one token · AI badge contrast 4.10:1 -> own text token
+
+GUIDE 4.3 — three statements were WRONG, not stale, and are rewritten: the
+       Copilot time-saved chapter, the signal-calibration chapter, and "Every
+       open risk carries a 300-character executive summary". The queue chapter
+       also quoted a header string that no longer exists. Two new chapters added
+       (Risk as triage, Copilot as narrative). 21 rhythm cards, zero stale
+       strings, compat "Bundled file confirmed", zero JS errors.
+
+VERIFIED — scroll-driven activation, see the section above. The earlier "no
+       frame callbacks" finding was an artefact of driving the page with JS
+       rather than with real input.
+
+GUIDE 4.2 — THE LAST SIX GAPS CLOSED
+------------------------------------
+Six features that had been listed as untaught since v3.7 are now chapters. Each
+was read from the SOURCE before being written, because a guide that describes a
+feature approximately is worse than one that omits it.
+
+TAUGHT, each with its limits and not only its benefit:
+  Impact meter        — 8 tracked events; the COUNTS are real, the per-event
+                        minutes are an assumption editable in Settings, and the
+                        result is labelled an estimate everywhere it appears.
+  Gainsight queue     — real, persists, exports as JSON; the transport
+                        DELIBERATELY does not exist. Taught as a staging area,
+                        not a push. Storing credentials readies the seam without
+                        opening it.
+  Signal calibration  — refuses to score a signal under 4 resolutions, and
+                        excludes recommendations that resolved on their own,
+                        because those are not a verdict on the advice.
+  Account Brief       — inline Gainsight clearing is the IN-FLOW surface; the
+                        To-Do tab is the BATCH surface with "Copy all & queue".
+                        Same list, two moments.
+  AI Call Prep        — states what slice of the history it was built from, and
+                        flags a response that hit the length cap.
+  Progress Report     — a snapshot, not a live link; carries TTFV, pending
+                        Gainsight count, and the labelled impact estimate.
+
+FIXED IN THE TRACKER WHILE WRITING THIS — the Today close button read "Review and
+       push all N", claiming a push the app cannot perform. syncGainsightQueue()
+       always returns transport_not_built, and the Risk tab says so plainly
+       ("queue ready, transport not yet connected ... Nothing is ever sent
+       silently"). The close now reads "Review all N" and states that nothing is
+       sent automatically. Documenting the feature is what exposed the overclaim.
+
+PASS — 17 rhythm cards render; all six new chapters present; zero JS errors;
+       compat "Bundled file confirmed"; no text anywhere claims an automatic push.
+
+GUIDE 4.1
+---------
+NEW — teaches the Story/Compact density toggle and the fact that the day reopens
+       on the beat you left (and falls back to the first when that account has
+       dropped out of today).
+FIXED — two statements v72.3 made INCOMPLETE rather than wrong, because both
+       assumed Story was the only mode: "You scroll it once, top to bottom" and
+       "Scroll it, click any beat, or press J and K". Scrolling does not select in
+       Compact, by design, and the guide now says which mode does what.
+UPDATED — the Today mockup shows the Story / Compact control.
+PASS — Guide v4.1 / Tracker v73, "Bundled file confirmed", warning hidden, all 4
+       tracker links resolve, practice flow walks all 6 views, zero stale strings
+       (v4.0, "You scroll it once", "Scroll it, click any beat", "chaptered by
+       severity", "This week", "Also today", "Tracker v71"), zero JS errors.
+PASS — tracker 163/163 from the renamed bundle, four consecutive runs, on a
+       seeded book AND on an empty one.
+
+GUIDE 4.0
+---------
+FIXED — "The day, told as a story" taught severity chapters as the SCROLL AXIS.
+       v72 made the axis TIME; severity became a per-beat label. That card was
+       WRONG, not stale, and is replaced by "The day, in the order it happens".
+FIXED — the Today mockup still showed "This week" (removed from the tracker at
+       v72) and "Also today" (renamed "Below the day"). It now shows movements,
+       a timed call beat, the close, and the below-the-day list.
+FIXED — the scene card read "Today · the day's story"; now "the day in order".
+FIXED — the reduced-motion narrative step and practice view 0 now name the
+       movement a beat sits in, not just its rank.
+NEW    — the guide now teaches: one account = one beat carrying every reason;
+       the optional-and-earned clock (no time is printed unless it was set); and
+       the close, where queued Gainsight work is pushed once.
+
+STILL NOT TAUGHT (missing chapters, not incorrect statements): the Impact meter,
+       the Gainsight sync queue, signal calibration on Copilot, the Account
+       Brief inline Gainsight actions, the AI Call Prep synopsis, the Progress
+       Report export. The Handoff field set remains provisional.
+
+GUIDE 3.9
+CORRECTED, again for the same reason: a card had become WRONG, not stale.
+PASS — "One panel, five accounts" described the v69/v70 layout. v71 replaced it
+       with a chaptered scrolling story of fifteen. Rewritten as "The day, told
+       as a story", covering the numbered steps, the severity chapters AND their
+       reading notes, the travelling act marker, the pinned panel, and J/K.
+PASS — Today mockups now show a story step ("1 of 15 · Needs you today") in both
+       the scene and the practice view, instead of a "Ranked first" card.
+PASS — Zero remaining "five accounts" or "ranked first" in the rendered text.
+PASS — The chapter guidance is carried into the guide verbatim in spirit: the
+       top act is the only one a person asserted; everything below is inferred.
+       That distinction is the point of the chaptering and would be lost if the
+       guide described the story as a plain sequence.
+PASS — Bundle links, compat check ("Bundled file confirmed"), versions, and
+       hashes all resolve; no v3.8 or v70 references remain.
+PASS — Interactive machinery intact after the edits: practice flow advances
+       through its 6 views, 12 decode options, zero JS errors on load.
+
+HOUSEKEEPING
+NOTE — Bundle files were briefly converted to CRLF by a scripted edit and have
+       been restored to LF (verified 0 CRLF byte pairs in every file). Line
+       endings are not functionally significant here, but the tracker's own
+       editing rules call for targeted edits, and a whole-file line-ending
+       rewrite is not one.
+
+KNOWN GAPS
+1. The guide is stale: 3.8 describes the ranked work as a five-card list beside
+   a panel; v71 made it a chaptered scrolling story of 15. Earlier note: 3.7
+   documented the v67/v68 Today. v69 rebuilt it and v70
+   added Acts I-III with a Calls-today prep section and persisted open threads.
+   Original v69 note: v69 rebuilt it
+   (pinned working panel, no "Start here" label, In Implementation stat tile,
+   Batch Opportunities / time budget / implementation strip removed).
+2. The Handoff tab uses a PROVISIONAL field set pending confirmation of the
+   real internal format. It is labelled as such in the UI and in every export.
+3. The guide does not yet TEACH: the Risk tab, the Impact meter, the Gainsight
+   sync queue, the Account Brief's inline Gainsight actions, the AI Call Prep
+   synopsis, or the Progress Report export. These are missing chapters, not
+   incorrect statements. The guide's instructional flow was not restructured.
+4. Two labels in the guide are historical and deliberately unchanged: a
+   "New in v60" feature card and a "Tracker v49-v60" range. Retargeting them
+   would falsely claim those features shipped later than they did.
+5. Testing used synthetic books (8-40 accounts for behaviour, 10-500 for render
+   benchmarks). None of it ran against a real production book.
+6. Single browser (Chrome). No cross-browser or mobile verification.
+6a. The v3 and v4 migrations was exercised against synthetic legacy and hostile
+   payloads, not against a real v2 book exported from production use.
+7. Not addressed by choice: attachEvents() rebinds ~112 listener types via 46
+   querySelectorAll sweeps per render (~73ms at 50 accounts — not worth an
+   event-delegation refactor at this book size), and 27px touch targets (passes
+   WCAG 2.5.8 AA at 24x24, below the 44px comfort guideline; matters on tablets
+   only).

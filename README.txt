@@ -1,57 +1,90 @@
-OSM Runway Guide v4.4 + Book of Business Tracker v73
-=====================================================
+OSM Runway 1.0 — Book of Business Tracker + Onboarding Guide
+============================================================
 
-1. Keep all six bundle files in this folder.
-2. Open osm-runway-onboarding-v4.4.html in a modern browser.
-3. Use "Open tracker" to launch the bundled v72 tracker in a new tab.
-4. CHANGELOG.txt holds the tracker's full version notes (v37 -> v72), extracted
-   verbatim from the tracker file's own header — the header inside the HTML
-   remains the canonical record; this file is a readable mirror of it.
+A working prototype. Two single-file HTML apps that run from your own machine
+with no build step, no server, and no account.
 
-(The docs/ folder is design documentation, not part of the distributable
-bundle. It can be omitted when sharing the six files.)
+  osm-book-of-business-tracker-1.0.html   the tracker
+  osm-runway-onboarding-1.0.html          the onboarding guide
+  CHANGELOG.txt                            what 1.0 is
+  VALIDATION.txt                           what was verified, and what was not
+  guide-manifest.json                      machine-readable bundle record
+  gainsight-import-template.csv            column template for Gainsight import
+  demo-seed.js                             optional demo book, for evaluation
 
-Compatibility
--------------
-Guide: v4.4 (v3.0 content, with mockups and terminology matched to the
-       tracker, plus a "Newer workflows" chapter teaching Quick log, the
-       week-ahead and time budget, Coordination, risk summaries and ownership,
-       the Handoff tab, and Undo/backup)
-Tracker: v73 (Today rebuilt as ONE timeline whose axis is the workday: calls are
-       the day's fixed points, ranked work fills the gaps between them, and admin
-       collects into a close that pushes to Gainsight in one go. One account gets
-       exactly ONE beat, carrying every reason it surfaced. An OPTIONAL per-call
-       clock time (schema 6) turns the day into real minutes; without it the
-       movements stay ordinal and claim no time the book does not have. Plus:
-       deep-linking into the right account tab; an always-visible account
-       snapshot on each account's Overview; a 300-character executive summary and
-       inline next steps on every open risk; single-level Undo; Quick log
-       (press L); a Coordination tab for stakeholders, blockers, and commitments;
-       a Handoff tab (PROVISIONAL field set) for sales intake and the CSM
-       knowledge transfer packet; signal calibration on Copilot; an Account Brief
-       that summarises all logged activity and lets you clear Gainsight items
-       without leaving it; plus everything in CHANGELOG.txt)
-Bundled: August 4, 2026
 
-Unlike previous bundles, the tracker in this one is NOT byte-identical to an
-earlier delivered build — it was edited in place through v72. Self-checks pass
-208/208 from the bundle location, and window.runGuideSelfChecks() must return 18/18 on the guide; see VALIDATION.txt for what was and was not
-verified.
+Running it
+----------
+1. Keep the files above in one folder.
+2. Open osm-runway-onboarding-1.0.html in a modern browser (Chrome or Edge
+   recommended — automatic backup needs the File System Access API).
+3. Use "Open tracker" to launch the tracker in a new tab.
 
-Guide coverage: the v3.0 Advanced Workflows chapter (implementation phase,
-partner sheet import, Session Debrief) still matches tracker behavior. Not yet
-taught step-by-step: the AI Call Prep synopsis, the Progress Report export, and
-the Accounts lifecycle filter (self-explanatory dropdown on the toolbar).
+Both files also open directly from file:// with no internet connection. The AI
+Copilot features are the exception: they call the Anthropic API and need a key
+entered in Settings plus a network connection. Everything else works offline.
 
-Guide gap status: at 4.2 there are NO known coverage gaps. The last six
-untaught features are now chapters: the Impact meter, the Gainsight sync queue,
-signal calibration, the Account Brief inline actions, the AI Call Prep synopsis,
-and the Progress Report export. Each is taught with its limits, not just its
-benefit — the queue has no transport, the impact minutes are an editable
-assumption, calibration needs four resolutions, the report is a snapshot. The
-Handoff field set stays PROVISIONAL: a product open question, not a doc gap.
 
-The guide stores mode, practice, challenge, and self-verified checklist
-progress in its own browser-storage keys. It never reads or writes the
-tracker's obm-data-v1 key. If browser storage is unavailable, the guide
-continues for the current visit and labels that limitation honestly.
+What the tracker does
+---------------------
+Keeps an OSM's book of business in one place and turns it into a day's work.
+
+  Today       One timeline whose axis is the workday. Calls are the day's fixed
+              points; ranked work fills the gaps between them; admin collects
+              into a close that pushes to Gainsight in one go. One account gets
+              exactly one beat, carrying every reason it surfaced.
+  Accounts    List, table, kanban and gantt views over the same book, with a
+              per-account runway strip, health and risk scoring, domain
+              assessment, session logging, and a graduation model.
+  Risk        Open risks with executive summaries and inline next steps.
+  Copilot     An AI layer over the book: four-lens account reads, call prep,
+              routing, and suggested next actions. Requires an API key.
+  Handoff     Sales intake and the CSM knowledge-transfer packet.
+              The field set here is PROVISIONAL — a product open question.
+  Settings    Thresholds, Gainsight CSV import, export/import, and automatic
+              backup to a file you choose.
+
+
+Where your data lives
+---------------------
+In your browser's localStorage, under the key obm-data-v1. Not in a cloud, not
+on a server, not in anyone else's account.
+
+There is no automatic cloud backup. What there is:
+
+  - Export JSON, any time, to a file you keep.
+  - Automatic backup (Settings): pick a file once and the tracker writes the
+    book to it whenever the book changes, debounced to four seconds. The payload
+    is identical to Export JSON and restores through Import JSON.
+
+Be clear about the limit of that second one: browsers will not let a page hold
+write permission to disk across sessions without a user gesture, so in practice
+it is ONE CLICK PER SESSION, not one click per backup. The header tells you
+which state you are in and says so loudly when the backup is paused.
+
+The guide keeps its own progress — chosen path, checklist, challenge answers,
+reading mode — in separate osm-guide-* keys. It never reads or writes the
+tracker's data.
+
+
+Verifying a change
+------------------
+Both halves carry console-callable self-check suites. After any edit:
+
+  tracker:  window.runSelfChecks()        must be 318/318
+  guide:    window.runGuideSelfChecks()   must be 18/18
+
+See VALIDATION.txt for the last run and for what it did and did not cover.
+
+
+Notes for anyone editing these files
+------------------------------------
+The tracker's HTML header carries the editing rules — motion budget, token
+discipline, the signal registry, schema migration. Read them before changing
+anything; each one exists because something broke.
+
+Comment markers like "v72" or "v91" appear throughout the source. They are
+provenance pointing into docs/history/, not a version scheme. This is 1.0.
+
+The docs/ folder is development documentation and is not part of the
+distributable bundle — it can be omitted when sharing.
