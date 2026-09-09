@@ -884,7 +884,6 @@
     overflow-wrap:anywhere; min-width:0;}
   .ds-do{font-size:var(--text-base); font-weight:700; color:var(--text); margin-top:6px;}
   .ds-why{font-size:var(--text-sm); color:var(--text-dim); margin-top:6px; max-width:48ch;}
-  .ds-more{color:var(--text-faint);}
   .ds-faint{color:var(--text-faint); font-size:var(--text-xs);}
   .ds-flag{color:var(--status-risk-text); font-weight:700;}
   /* The four questions a beat answers. A definition list because that is what
@@ -4244,9 +4243,10 @@ function migrateData(data){
        the gaps between them with ranked work. nextSessionScheduledOn is a DATE
        (isRealISODate) and carries no time, so a timeline that printed "10:00"
        would be asserting a number the book does not contain. Rather than invent
-       it, the clock is optional and earned: set a time and the day is measured
-       in real minutes; leave it unset and the day degrades to ordinal movements
-       ("before your first call") that claim nothing.
+       it, the clock is optional and earned: set a time and that call takes its
+       place in clock order with the others; leave it unset and the call still
+       leads the day, sorted after the timed ones by name, with no clock string
+       ever invented for it.
 
        Additive on the same contract as v3-v5: absent means unset, nothing is
        stamped onto records that have none. Normalises anything already present,
@@ -8343,8 +8343,9 @@ function _runSelfChecksInner(){
       _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
       const withGap = buildDayTimeline();
       const annotated = withGap.beats.filter(b => b.kind === 'work' && b.gapNote);
-      const mentionsBothTimes = annotated.length > 0
-        && annotated.every(b => b.gapNote.indexOf('9:00') !== -1 || b.gapNote.indexOf('09:00') !== -1);
+      const mentionsBothTimes = annotated.length > 0 && annotated.every(b =>
+        (b.gapNote.indexOf('9:00') !== -1 || b.gapNote.indexOf('09:00') !== -1) &&
+        b.gapNote.indexOf('12:00') !== -1);
       // One timed call -> nothing to measure between, so no note at all.
       const one = [mk('__h1__', {nextSessionScheduledOn: todayISO(), nextSessionTime:'09:00'}),
                    mk('__h2__'), mk('__h3__')];
@@ -8435,6 +8436,12 @@ function _runSelfChecksInner(){
       DATA.activities = cs.reduce((m,c)=>{ m[c.id] = []; return m; }, {});
       _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
       const day = buildDayTimeline();
+      /* Force one beat past the cap. Synthetic accounts with no activity never
+         produce four drivers, so without this the overCap clause can never fire
+         and nothing guards the left column's limit — slice(0,4) could become
+         slice(0,3) and the suite would stay green while driver #4 vanished
+         between the two surfaces. */
+      if(day.beats[0]) day.beats[0].reasons = ['Drv-1','Drv-2','Drv-3','Drv-4','Drv-5'];
       const html = renderDay(day, () => '');
       /* Bound the scan to the TRACK before splitting. renderDay emits the track
          and then the .day-stage pane pool, and the pool's renderBeatPanel output
@@ -8443,17 +8450,21 @@ function _runSelfChecksInner(){
          markup that is not a beat. */
       const track = html.split('class="day-stage"')[0];
       const steps = track.split('class="day-step').slice(1);
-      const states = ['On Track','Needs Attention','Off Track'];
+      const stateOk = steps.every((s, i) => {
+        const cust = DATA.customers.find(x => x.id === day.beats[i].customerId);
+        return !!cust && s.indexOf(escapeHtml(accountStateLabel(cust))) !== -1;
+      });
       const everyStepComplete = steps.length === day.beats.length && steps.every(s =>
-        states.some(st => s.indexOf(st) !== -1)   // state
+        stateOk                                   // state
         && s.indexOf('ds-why-list') !== -1        // why
         && s.indexOf('ds-do') !== -1              // what do I do
         && s.indexOf('<h4') !== -1                // setTodayFocus reads this
         && s.indexOf('ds-eyebrow') !== -1);       // and this
       // The drivers list is capped at four; a fifth must be counted, not printed.
-      const overCap = steps.some(s => (s.match(/<li/g) || []).length > 4);
-      ok = everyStepComplete && !overCap;
-      detail = JSON.stringify({steps: steps.length, beats: day.beats.length, everyStepComplete, overCap});
+      const maxLi = steps.reduce((n,s)=> Math.max(n, (s.match(/<li/g) || []).length), 0);
+      const overCap = maxLi > 4;
+      ok = everyStepComplete && !overCap && maxLi === 4;
+      detail = JSON.stringify({steps: steps.length, beats: day.beats.length, everyStepComplete, overCap, stateOk, maxLi});
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.todayFocusId = prevFocus;
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
@@ -15421,9 +15432,10 @@ function renderGainsightItemRow(it, opts){
 
    The clock is optional and EARNED. nextSessionScheduledOn is a date and
    carries no time, so a timeline that printed "10:00" would assert a number
-   the book does not contain. Set nextSessionTime and the day is measured in
-   real minutes; leave it unset and the movements are ordinal ("before your
-   first call") and claim nothing. */
+   the book does not contain. Set nextSessionTime and that call takes its
+   place in clock order with the others; leave it unset and the call still
+   leads the day — it sorts after the timed calls, by name, and no clock
+   string is ever invented for it. */
 
 /* Bounds the RANKED WORK the day shows, not the day itself. A booked call is a
    commitment that exists in the world, so calls are never hidden — if you truly
@@ -15813,7 +15825,7 @@ function renderBeatPanel(beat, dispatchChips){
   <div class="section-card" style="margin:0;">
     <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap;">
       <div class="bp-name">${escapeHtml(c.name)}</div>
-      <div class="bp-meta">${escapeHtml(c.module)}${impl ? ' · in implementation' : ` · ${riskLabel(computeRisk(c))} · ${healthScore(c)}% health`}</div>
+      <div class="bp-meta">${escapeHtml(c.module)}${impl ? ' · in implementation' : ` · ${accountStateLabel(c)} · ${healthScore(c)}% health`}</div>
     </div>
 
     ${renderBeatStanding(c)}
@@ -15947,7 +15959,7 @@ function renderBeatPrep(beat){
       <div class="bp-sec bp-time">
         <label class="lbl" for="bp-time-${escapeAttr(c.id)}">Time on your calendar</label>
         <input type="time" id="bp-time-${escapeAttr(c.id)}" data-fp-time="${escapeAttr(c.id)}" value="${escapeAttr(getNextSessionTime(c) || '')}">
-        <span class="bp-basis">${getNextSessionTime(c) ? 'The day is measured in real minutes around this.' : 'Set it and the day fits work into the real gaps.'}</span>
+        <span class="bp-basis">${getNextSessionTime(c) ? 'Your calls run in clock order, and work that fits between them says so.' : 'Set it and this call takes its place in the clock order.'}</span>
       </div>
 
       <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
@@ -16119,12 +16131,12 @@ function renderDay(day, dispatchChips){
   }).join('');
 
   return `
-    <div class="day" id="day" data-density="${escapeAttr(ui.dayDensity)}" role="region" aria-label="Today, as one timeline">
+    <div class="day" id="day" data-density="${escapeAttr(ui.dayDensity)}" role="region" aria-label="Today: calls first, then ranked work">
       <p class="sr-only" id="day-live" role="status" aria-live="polite"></p>
       <div class="day-head">
         <p class="day-lede">${ui.dayDensity === 'compact'
-          ? 'Every account at once, in the order the day happens. Click one, or press J / K.'
-          : 'One line per account, in the order the day happens. The panel beside it keeps pace — scroll, or press J / K.'}
+          ? 'Every account at once — calls first, then ranked work. Click one, or press J / K.'
+          : 'One line per account — today\'s calls first, then everything else the book ranked. The panel beside it keeps pace — scroll, or press J / K.'}
           <button class="link-btn day-skip" data-day-skip>Skip to the close</button></p>
         <div class="day-density" role="group" aria-label="How much of the day to show at once">
           ${DAY_DENSITIES.map(d => `<button type="button" class="btn btn-sm ${ui.dayDensity === d ? 'active' : ''}"
@@ -16669,7 +16681,7 @@ function renderReadinessStrip(){
   if(!r.next) return '';                       // fed, or every gap dismissed — say nothing
   const g = r.next;
   return `
-    <div class="onb onb-compact" data-onb="${escapeAttr(g.key)}">
+    <div class="onb" data-onb="${escapeAttr(g.key)}">
       <div class="onb-body">
         <p class="onb-h">${escapeHtml(g.headline)} <button class="link-btn" data-onb-expand="${escapeAttr(g.key)}">why this matters</button></p>
         ${ui.onbExpanded === g.key ? `<p class="onb-p">${g.detail}</p>` : ''}
@@ -17611,7 +17623,7 @@ function renderDetailsTab(c, risk){
     <div class="field" style="margin-top:10px;">
       <label>Time on the calendar <span style="color:var(--text-faint); font-weight:400;">optional</span></label>
       <input type="time" id="cust-next-session-time" value="${escapeAttr(getNextSessionTime(c)||'')}">
-      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:4px 0 0;">Set it and Today measures the day in real minutes, fitting work into the gaps between calls. Leave it blank and the day stays ordinal — "before your first call" — rather than claiming a time the book doesn't have.</p>
+      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:4px 0 0;">Set it and Today puts this call in clock order with your others, and notes which work fits between them. Leave it blank and the call still leads the day — it just sits after the timed ones, rather than claiming a time the book does not have.</p>
       <div style="margin-top:8px;">
         <button class="btn btn-sm" data-ics="${escapeAttr(c.id)}">Add to calendar</button>
         <p style="color:var(--text-faint); font-size:var(--text-xs); margin:4px 0 0;">Downloads an .ics for the next session — the date booked above, or the paced date if it isn't booked yet. With a time set it carries that hour as a ${DAY_CALL_LENGTH_MIN}-minute event written in UTC, so it reads correctly for anyone you forward it to; without one it is an all-day entry. The download says which it made.</p>
