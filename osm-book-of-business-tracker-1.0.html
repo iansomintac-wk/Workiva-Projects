@@ -8195,6 +8195,84 @@ function _runSelfChecksInner(){
     check('v72 one account gets exactly one beat, carrying every reason it surfaced', ok, detail);
   })();
   (function(){
+    /* Phase 1: the day is ordered by PRIORITY, not by the clock. A booked call
+       is the only item on this tab with another person attached to it, so every
+       call leads regardless of what time it starts. The 15:30 call used to sit
+       below three hours of ranked work; it does not any more. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevFocus = ui.todayFocusId;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const mk = (id, extra) => { const c = Object.assign({id, name:'Ord'+id, module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]}, extra || {});
+        backfillCustomerRecord(c); return c; };
+      // A late call and an early one, plus three accounts that only rank as work.
+      const cs = [mk('__o1__', {nextSessionScheduledOn: todayISO(), nextSessionTime:'15:30'}),
+                  mk('__o2__'), mk('__o3__'),
+                  mk('__o4__', {nextSessionScheduledOn: todayISO(), nextSessionTime:'09:30'}),
+                  mk('__o5__')];
+      DATA.customers = cs;
+      DATA.activities = cs.reduce((m,c)=>{ m[c.id] = []; return m; }, {});
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const day = buildDayTimeline();
+      const kinds = day.beats.map(b => b.kind);
+      const lastCall = kinds.lastIndexOf('call');
+      const firstWork = kinds.indexOf('work');
+      // (a) No work beat may precede any call beat.
+      const callsLead = lastCall === -1 || firstWork === -1 || lastCall < firstWork;
+      // (b) Calls keep clock order among themselves.
+      const callOrder = day.beats.filter(b => b.kind === 'call').map(b => b.customerId);
+      const clockOrder = JSON.stringify(callOrder) === JSON.stringify(['__o4__','__o1__']);
+      // (c) At most two movements, both known to the registry.
+      const keys = day.movements.map(m => m.mkey);
+      const twoMovements = keys.length <= 2 && keys.every(k => DAY_MOVEMENT_MAP[k]);
+      ok = callsLead && clockOrder && twoMovements;
+      detail = JSON.stringify({kinds, callOrder, keys, callsLead, clockOrder, twoMovements});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.todayFocusId = prevFocus;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase1 every call leads the day, in clock order, in at most two movements', ok, detail);
+  })();
+  (function(){
+    /* The minutes maths survives as an ANNOTATION, never as a guess. A day with
+       fewer than two timed calls has no measurable gap, and must say nothing
+       rather than invent one. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const mk = (id, extra) => { const c = Object.assign({id, name:'Gap'+id, module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]}, extra || {});
+        backfillCustomerRecord(c); return c; };
+      // Two timed calls three hours apart -> a real 120-minute gap after the call length.
+      const two = [mk('__g1__', {nextSessionScheduledOn: todayISO(), nextSessionTime:'09:00'}),
+                   mk('__g2__', {nextSessionScheduledOn: todayISO(), nextSessionTime:'12:00'}),
+                   mk('__g3__'), mk('__g4__')];
+      DATA.customers = two;
+      DATA.activities = two.reduce((m,c)=>{ m[c.id] = []; return m; }, {});
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const withGap = buildDayTimeline();
+      const annotated = withGap.beats.filter(b => b.kind === 'work' && b.gapNote);
+      const mentionsBothTimes = annotated.length > 0
+        && annotated.every(b => b.gapNote.indexOf('9:00') !== -1 || b.gapNote.indexOf('09:00') !== -1);
+      // One timed call -> nothing to measure between, so no note at all.
+      const one = [mk('__h1__', {nextSessionScheduledOn: todayISO(), nextSessionTime:'09:00'}),
+                   mk('__h2__'), mk('__h3__')];
+      DATA.customers = one;
+      DATA.activities = one.reduce((m,c)=>{ m[c.id] = []; return m; }, {});
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const noGap = buildDayTimeline();
+      const silent = noGap.beats.filter(b => b.kind === 'work').every(b => !b.gapNote);
+      ok = mentionsBothTimes && silent;
+      detail = JSON.stringify({annotated: annotated.map(b=>b.gapNote), mentionsBothTimes, silent});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase1 a gap note appears only where two timed calls actually bound one', ok, detail);
+  })();
+  (function(){
     /* The clock is EARNED. An unset time must never produce a clock string, and
        a bad one must never be stored — otherwise the timeline asserts a number
        the book does not contain, which is the one thing this tab does not do. */
@@ -8225,7 +8303,7 @@ function _runSelfChecksInner(){
       // No am/pm anywhere, and the day says so plainly instead of implying order.
       const noClock = !/\d{1,2}:\d{2}(am|pm)/.test(html);
       const saysSo = html.indexOf('time not set') !== -1;
-      const ordinal = html.indexOf('Before your first call') !== -1;
+      const ordinal = html.indexOf('Your calls today') !== -1;
       ok = noClock && saysSo && ordinal;
       detail = JSON.stringify({noClock, saysSo, ordinal});
     }catch(err){ detail = err.message; }
@@ -8234,22 +8312,20 @@ function _runSelfChecksInner(){
     check('v72 an untimed day renders no clock time and states that it has none', ok, detail);
   })();
   (function(){
-    /* Gap fitting is pure, so it is tested directly rather than through a render.
-       The contract that matters: the LAST slot is unbounded, so work is never
-       silently dropped — a slot that filled is marked, and everything is placed. */
-    const beats = [1,2,3,4,5].map(n => ({customerId:'b'+n, effortMin:20}));
-    const slots = [{capacity:30}, {capacity:30}, {capacity:null}];
-    fitBeatsToSlots(beats, slots);
-    const placed = slots.reduce((n,s)=> n + s.beats.length, 0);
-    check('v72 gap fitting places every beat and marks the slots that filled',
-      placed === beats.length && slots[0].beats.length === 1 && slots[0].full === true
-      && slots[2].beats.length === 3,
-      JSON.stringify(slots.map(s => ({n:s.beats.length, used:s.usedMin, full:s.full}))));
-    // A single unbounded slot takes everything; nothing is lost when nothing is timed.
-    const one = [{capacity:null}];
-    fitBeatsToSlots(beats, one);
-    check('v72 an untimed day places all work in its one movement',
-      one[0].beats.length === beats.length, String(one[0].beats.length));
+    /* Gap annotation is pure, so it is tested directly rather than through a
+       render. The contract that matters: work fills a slot, then moves to the
+       next one — and a beat that fits in no measurable slot is left SILENT
+       rather than given an invented gap. This replaced the fitBeatsToSlots
+       tests at phase 1, when the minutes maths stopped structuring the day. */
+    const calls = [{at:'09:00'}, {at:'12:00'}, {at:'13:30'}];
+    // 09:00->12:00 leaves 120 free after a 60-minute call; 12:00->13:30 leaves 30.
+    const beats = [1,2,3,4].map(n => ({customerId:'g'+n, effortMin:60}));
+    annotateGapFit(beats, calls);
+    const noted = beats.filter(b => b.gapNote);
+    const firstSlotTook = beats.filter(b => b.gapNote.indexOf('12:00pm') !== -1).length;
+    check('phase1 gap annotation fills a slot, advances, and never invents a gap',
+      noted.length === 2 && firstSlotTook === 2 && !beats[2].gapNote && !beats[3].gapNote,
+      JSON.stringify(beats.map(b => b.gapNote)));
   })();
   (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
@@ -8384,11 +8460,13 @@ function _runSelfChecksInner(){
     // would delete a time the user had just set, with no feedback.
     normalizeDayTime('09:30:00') === '09:30' && normalizeDayTime('9:5:00') === null &&
     normalizeDayTime('09:30:99') === null);
-  check('v72 an unbounded movement never claims work "did not fit"',
-    // A slot with no known capacity measured no time, so it cannot honestly say
-    // anything failed to fit. It says the work was spread instead.
-    String(renderDay).indexOf('spread across the movements below') !== -1 &&
-    String(renderDay).indexOf("m.capacity === null") !== -1);
+  /* Capacity left the day at phase 1: movements no longer carry a measured
+     bound, so no heading is in a position to claim work "did not fit". This
+     used to assert the old wording was PRESENT; it now asserts the claim is
+     absent, which is the same property against the new implementation. */
+  check('v72 no movement heading claims work "did not fit"',
+    String(renderDay).indexOf('did not fit') === -1 &&
+    String(renderDay).indexOf('m.capacity') === -1);
   (function(){
     /* v72.2 (Impeccable, Operate mode). Two rules this tab had broken:
        (a) "Fixed rem scale, not fluid — clamp-sized headings don't serve product
@@ -15168,16 +15246,19 @@ function storyChapterFor(sev){
   return STORY_CHAPTERS.find(ch => sev >= ch.min) || STORY_CHAPTERS[STORY_CHAPTERS.length - 1];
 }
 
-/* The movements of the day. Instantiated per-day, not fixed: a no-call day and
-   a five-call day produce different timelines from the same registry, and a
-   movement with no beats is omitted entirely rather than shown empty. */
+/* The movements of the day. Two, plus the close: calls lead because a booked
+   call is the only item on this tab with another person attached to it, then
+   everything the book ranked. A movement with no beats is omitted entirely
+   rather than shown empty. This replaced a five-movement chronological set
+   (preface / call / gap / after / run) at phase 1 — the clock stopped driving
+   page order, and the gap maths moved onto the beats as annotation. */
 const DAY_MOVEMENT_DEFS = [
-  {key:'run',     label:'The day',                  note:'No calls on the calendar today. This is account work, highest severity first.'},
-  {key:'preface', label:'Before your first call',   note:'Work that fits in the time you have before the day starts talking back.'},
-  {key:'call',    label:'Call',                     note:'What happened last time, what you still owe, and what this session is meant to produce.'},
-  {key:'gap',     label:'Between calls',            note:'Short work, sized to the gap.'},
-  {key:'after',   label:'After your last call',     note:'The deeper work, once the calendar is quiet.'},
-  {key:'close',   label:'The close',                note:'Everything you queued today, pushed in one go.'}
+  {key:'calls', label:'Your calls today',
+    note:'The fixed points of your day. What happened last time, what you still owe, and what this session is meant to produce.'},
+  {key:'work',  label:'Everything else needing you',
+    note:'Ranked by severity. Nothing here is waiting on a clock, but the book says it needs you.'},
+  {key:'close', label:'The close',
+    note:'Everything you queued today, pushed in one go.'}
 ];
 const DAY_MOVEMENT_MAP = DAY_MOVEMENT_DEFS.reduce((m,d)=>{ m[d.key] = d; return m; }, {});
 
@@ -15204,29 +15285,31 @@ function callsScheduledToday(){
     });
 }
 
-/* Pure, and directly self-checked. Given ranked work beats and the day's work
-   slots in order, assign each beat to a slot. A slot with a known capacity in
-   minutes takes beats until the next one would not fit; a slot with unknown
-   capacity takes an even share. The LAST slot is unbounded, so nothing is ever
-   dropped — a slot that filled says so, and the work moves later in the day. */
-function fitBeatsToSlots(beats, slots){
-  slots.forEach(s => { s.beats = []; s.usedMin = 0; s.full = false; });
-  if(!slots.length) return slots;
-  const share = Math.max(1, Math.ceil(beats.length / slots.length));
+/* Where a work beat would fit between two of today's calls. The minutes maths
+   that used to STRUCTURE the day now annotates it: same arithmetic, no longer
+   deciding page order. Sets b.gapNote in place; empty string when the book
+   cannot measure a gap, because a guessed gap is worse than no gap. */
+function annotateGapFit(workBeats, callBeats){
+  workBeats.forEach(b => { b.gapNote = ''; });
+  const timed = callBeats.filter(b => b.at)
+    .slice()
+    .sort((x,y) => dayTimeToMinutes(x.at) - dayTimeToMinutes(y.at));
+  if(timed.length < 2) return;
+  const slots = [];
+  for(let i = 0; i < timed.length - 1; i++){
+    const a = dayTimeToMinutes(timed[i].at), z = dayTimeToMinutes(timed[i+1].at);
+    if(a === null || z === null) continue;
+    const cap = Math.max(0, z - a - DAY_CALL_LENGTH_MIN);
+    if(cap > 0) slots.push({from: timed[i].at, to: timed[i+1].at, cap, used: 0});
+  }
+  if(!slots.length) return;
   let i = 0;
-  beats.forEach(b => {
-    while(i < slots.length - 1){
-      const s = slots[i];
-      const fits = s.capacity === null ? s.beats.length < share
-                                       : s.usedMin + b.effortMin <= s.capacity;
-      if(fits) break;
-      s.full = true;
-      i++;
-    }
-    slots[i].beats.push(b);
-    slots[i].usedMin += b.effortMin;
+  workBeats.forEach(b => {
+    while(i < slots.length && slots[i].used + b.effortMin > slots[i].cap) i++;
+    if(i >= slots.length) return;
+    slots[i].used += b.effortMin;
+    b.gapNote = `fits your ${fmtDayTime(slots[i].from)}–${fmtDayTime(slots[i].to)} gap · ~${fmtGapMinutes(b.effortMin)}`;
   });
-  return slots;
 }
 
 /* The day, assembled. Returns {beats, movements, calls, sev4, totalMin, timed}.
@@ -15281,26 +15364,14 @@ function buildDayTimeline(){
   const spilledWork = workBeats.slice(keptWork.length);
   spilledWork.forEach(b => byCust.delete(b.customerId));
 
-  // 4. Build the movements, then fit the unmerged work into the gaps.
+  // 4. Two movements, in priority order. Calls first — every one of them, in
+  //    clock order — then the ranked work. The clock no longer decides page
+  //    order; it survives only as the gap note on each work beat.
   const movements = [];
-  const mk = (key, extra) => Object.assign({}, DAY_MOVEMENT_MAP[key], {mkey: key + (extra && extra.suffix ? ':' + extra.suffix : '')}, extra || {});
-  if(!callBeats.length){
-    movements.push(mk('run', {capacity:null, beats:[]}));
-  } else {
-    movements.push(mk('preface', {capacity:null, beats:[]}));
-    callBeats.forEach((cb, i) => {
-      movements.push(mk('call', {suffix:cb.customerId, isCall:true, beats:[cb], capacity:null, call:cb}));
-      const nextCb = callBeats[i+1];
-      if(nextCb){
-        const a = dayTimeToMinutes(cb.at), z = dayTimeToMinutes(nextCb.at);
-        const cap = (a !== null && z !== null) ? Math.max(0, z - a - DAY_CALL_LENGTH_MIN) : null;
-        movements.push(mk('gap', {suffix:String(i), capacity:cap, beats:[], between:[cb.at, nextCb.at]}));
-      } else {
-        movements.push(mk('after', {capacity:null, beats:[]}));
-      }
-    });
-  }
-  fitBeatsToSlots(keptWork, movements.filter(m => !m.isCall));
+  const mk = (key, extra) => Object.assign({}, DAY_MOVEMENT_MAP[key], {mkey: key}, extra || {});
+  annotateGapFit(keptWork, callBeats);
+  if(callBeats.length) movements.push(mk('calls', {isCall:true, capacity:null, beats: callBeats}));
+  if(keptWork.length)  movements.push(mk('work',  {capacity:null, beats: keptWork}));
 
   const beats = [];
   movements.forEach(m => { m.beats.forEach(b => { b.movementKey = m.mkey; b.movementLabel = m.label; beats.push(b); }); });
@@ -15775,16 +15846,12 @@ function renderDay(day, dispatchChips){
   let seenChapter = new Set();
   let idx = -1;
   const trackHtml = day.movements.map(m => {
-    const cap = m.capacity === null ? '' :
-      ` · about ${fmtGapMinutes(m.capacity) || 'no time'} free${m.between && m.between[0] && m.between[1] ? ` between ${fmtDayTime(m.between[0])} and ${fmtDayTime(m.between[1])}` : ''} (allowing ${DAY_CALL_LENGTH_MIN} minutes a call)`;
     const load = m.beats.length ? `${m.beats.length} ${m.beats.length===1?'item':'items'} · roughly ${m.beats.reduce((n,b)=>n+b.effortMin,0)} min` : '';
     const head = `
       <div class="day-move" data-movement="${escapeAttr(m.mkey)}" data-movement-label="${escapeAttr(m.label)}">
         <h3 class="dm-eyebrow">${escapeHtml(m.label)}</h3>
-        <div class="dm-load">${escapeHtml(load)}${cap ? escapeHtml(cap) : ''}</div>
-        <p class="dm-note">${escapeHtml(m.note)}${m.full ? (m.capacity === null
-          ? ' The rest of the ranked work is spread across the movements below.'
-          : ' The rest did not fit in this gap and moved later in the day.') : ''}</p>
+        <div class="dm-load">${escapeHtml(load)}</div>
+        <p class="dm-note">${escapeHtml(m.note)}${m.mkey === 'work' && day.spilled ? ` ${day.spilled} more ranked below the day.` : ''}</p>
       </div>`;
     const steps = m.beats.map(b => {
       idx++;
