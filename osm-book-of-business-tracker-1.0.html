@@ -865,8 +865,11 @@
   .dm-load{font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-faint); margin-top:5px; overflow-wrap:anywhere;}
   .dm-note{margin:8px 0 0; font-size:var(--text-sm); color:var(--text-dim); max-width:48ch; overflow-wrap:anywhere;}
 
-  /* A beat. Owns real height — that is the whole reason the mechanic works. */
-  .day-step{min-height:72vh; display:flex; flex-direction:column; justify-content:center;
+  /* A beat. Owns real height — that is the whole reason the mechanic works.
+     flex-start, not center: with four rows of content the beat's height now
+     varies, and centring made every beat shift vertically as you walked the
+     day. The height stays; what fills it changed. */
+  .day-step{min-height:72vh; display:flex; flex-direction:column; justify-content:flex-start;
     padding:20px 0; opacity:.62; transition:opacity var(--transition); cursor:pointer;}
   .day-step:not(.active):hover{opacity:.82;}
   .day-step:focus-visible{outline:2px solid var(--accent-info); outline-offset:6px; border-radius:6px;}
@@ -884,6 +887,20 @@
   .ds-more{color:var(--text-faint);}
   .ds-faint{color:var(--text-faint); font-size:var(--text-xs);}
   .ds-flag{color:var(--status-risk-text); font-weight:700;}
+  /* The four questions a beat answers. A definition list because that is what
+     this is — term and value — and it gives screen readers the pairing free. */
+  .ds-facts{display:grid; grid-template-columns:minmax(0,10ch) minmax(0,1fr);
+    gap:6px var(--space-2); margin:14px 0 0; max-width:52ch;}
+  .ds-facts dt{font-family:var(--font-mono); font-size:var(--text-xs); letter-spacing:.06em;
+    text-transform:uppercase; color:var(--text-faint); padding-top:2px;}
+  .ds-facts dd{margin:0; font-size:var(--text-sm); color:var(--text); min-width:0; overflow-wrap:anywhere;}
+  .ds-facts dd.ds-do{font-weight:700;}
+  .ds-why-list{margin:0; padding-left:16px; color:var(--text-dim);}
+  .ds-why-list li{margin-bottom:3px;}
+  @media (max-width: 900px){
+    .ds-facts{grid-template-columns:1fr; gap:2px;}
+    .ds-facts dt{margin-top:8px;}
+  }
   /* The annotation, straight from the guide: one sentence telling you how to
      READ the beat rather than repeating it. */
   .day-note{margin-top:14px; padding:10px 12px; border-radius:10px; background:var(--bg-card-hover);
@@ -8398,6 +8415,50 @@ function _runSelfChecksInner(){
       JSON.stringify(beats.map(b => b.gapNote)));
   })();
   (function(){
+    /* Phase 2: every beat answers four questions — what state is this account in,
+       why is it here, what do I do, and what is outstanding. A beat that renders
+       a name and nothing else is the whitespace problem this replaced. Also
+       guards the two DOM hooks setTodayFocus() reads for its screen-reader
+       announcement: an <h4> and a .ds-eyebrow inside every .day-step. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevFocus = ui.todayFocusId;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const mk = (id, extra) => { const c = Object.assign({id, name:'Beat'+id, module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]}, extra || {});
+        backfillCustomerRecord(c); return c; };
+      const cs = [mk('__b1__', {nextSessionScheduledOn: todayISO(), nextSessionTime:'09:30'}),
+                  mk('__b2__'), mk('__b3__')];
+      DATA.customers = cs;
+      DATA.activities = cs.reduce((m,c)=>{ m[c.id] = []; return m; }, {});
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const day = buildDayTimeline();
+      const html = renderDay(day, () => '');
+      /* Bound the scan to the TRACK before splitting. renderDay emits the track
+         and then the .day-stage pane pool, and the pool's renderBeatPanel output
+         carries an uncapped reasons list by design — splitting the whole document
+         bleeds that panel into the last beat's chunk and makes overCap fire on
+         markup that is not a beat. */
+      const track = html.split('class="day-stage"')[0];
+      const steps = track.split('class="day-step').slice(1);
+      const states = ['On Track','Needs Attention','Off Track'];
+      const everyStepComplete = steps.length === day.beats.length && steps.every(s =>
+        states.some(st => s.indexOf(st) !== -1)   // state
+        && s.indexOf('ds-why-list') !== -1        // why
+        && s.indexOf('ds-do') !== -1              // what do I do
+        && s.indexOf('<h4') !== -1                // setTodayFocus reads this
+        && s.indexOf('ds-eyebrow') !== -1);       // and this
+      // The drivers list is capped at four; a fifth must be counted, not printed.
+      const overCap = steps.some(s => (s.match(/<li/g) || []).length > 4);
+      ok = everyStepComplete && !overCap;
+      detail = JSON.stringify({steps: steps.length, beats: day.beats.length, everyStepComplete, overCap});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.todayFocusId = prevFocus;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase2 every beat states account state, why, and what to do', ok, detail);
+  })();
+  (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
        account at 2pm, so the rail flags it and the standing counts it wherever
        it sits — the failure mode named when the axis was chosen. */
@@ -15894,6 +15955,21 @@ function renderDayClose(day){
     </div>`;
 }
 
+/* What this account is still waiting on you for, counted from the record. Both
+   numbers are COUNTED, never estimated — the tab's standing rule. Empty text
+   when there is nothing outstanding, so the row hides rather than printing a
+   zero. */
+function beatOutstanding(c){
+  if(!c) return {questions:0, deliverables:0, text:''};
+  const questions = collectOpenQuestions(c).length;
+  let deliverables = 0;
+  (DATA.activities[c.id] || []).forEach(a => (a.checklist || []).forEach(i => { if(!i.done) deliverables++; }));
+  const bits = [];
+  if(questions) bits.push(`${questions} open question${questions===1?'':'s'}`);
+  if(deliverables) bits.push(`${deliverables} deliverable${deliverables===1?'':'s'}`);
+  return {questions, deliverables, text: bits.join(' · ')};
+}
+
 /* ============ THE TRACK ============
    One scrolling column of beats beside one sticky stage. The stage holds a
    THREE-NODE pane pool: pool index is beatIndex % 3, so prev / active / next
@@ -15929,16 +16005,28 @@ function renderDay(day, dispatchChips){
       const first = b.kind === 'work' && !seenChapter.has(ch.key);
       if(b.kind === 'work') seenChapter.add(ch.key);
       b._i = idx;
+      const c = DATA.customers.find(x => x.id === b.customerId);
+      const out = beatOutstanding(c);
+      const drivers = b.reasons.slice(0, 4);
+      const moreDrivers = b.reasons.length - drivers.length;
       return `
         <div class="day-step ${b.customerId === ui.todayFocusId ? 'active' : ''}"
              data-day-step="${escapeAttr(b.customerId)}" data-day-index="${idx}"
              data-day-movement="${escapeAttr(m.label)}">
           <div class="ds-eyebrow">${idx+1} of ${day.beats.length} · ${b.kind === 'call' ? (b.at ? escapeHtml(fmtDayTime(b.at)) + ' call' : 'call · time not set') : escapeHtml(ch.label)}</div>
           <h4>${escapeHtml(b.customerName)}</h4>
-          <div class="ds-do">${escapeHtml(b.headline || (b.call && b.call.next ? b.call.next.template.title : 'Prep this call'))}</div>
-          ${b.reasons.length ? `<div class="ds-why">${escapeHtml(b.reasons[0])}</div>` : ''}
-          ${b.reasons.length > 1 ? `<div class="ds-why ds-more">+ ${b.reasons.length - 1} more reason${b.reasons.length-1===1?'':'s'} in the panel</div>` : ''}
-          <div class="ds-why ds-faint">${b.severity === 4 ? '<span class="ds-flag">top severity</span> · ' : ''}about ${b.effortMin} minutes${b.kind === 'call' && b.call && !b.call.prepped ? ' · no prep notes yet' : ''}</div>
+          <dl class="ds-facts">
+            <dt>State</dt>
+            <dd>${c ? escapeHtml(accountStateLabel(c)) : 'Unknown'}${c && !inImplementation(c) ? ` <span class="ds-faint">· ${healthScore(c)}% health</span>` : ''}</dd>
+            ${drivers.length ? `
+              <dt>Why</dt>
+              <dd><ul class="ds-why-list">${drivers.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul>
+                ${moreDrivers > 0 ? `<span class="ds-faint">+ ${moreDrivers} more reason${moreDrivers===1?'':'s'} in the panel</span>` : ''}</dd>` : ''}
+            <dt>What do I do</dt>
+            <dd class="ds-do">${escapeHtml(b.headline || (b.call && b.call.next ? b.call.next.template.title : 'Prep this call'))}</dd>
+            ${out.text ? `<dt>Outstanding</dt><dd>${escapeHtml(out.text)}</dd>` : ''}
+          </dl>
+          <div class="ds-why ds-faint">${b.severity === 4 ? '<span class="ds-flag">top severity</span> · ' : ''}about ${b.effortMin} minutes${b.kind === 'call' && b.call && !b.call.prepped ? ' · no prep notes yet' : ''}${b.gapNote ? ` · ${escapeHtml(b.gapNote)}` : ''}</div>
           ${first ? `<div class="day-note">${escapeHtml(ch.note)}</div>` : ''}
         </div>`;
     }).join('');
