@@ -51,6 +51,16 @@ const cleanup = () => {
 };
 process.on('exit', cleanup);
 
+// A harness that could not run exits 2 — never 1, which means "the app failed".
+process.on('uncaughtException', e => {
+  console.error('Harness failure: ' + (e && e.message || e));
+  process.exit(2);
+});
+process.on('unhandledRejection', e => {
+  console.error('Harness failure: ' + (e && e.message || e));
+  process.exit(2);
+});
+
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function findPage(deadline) {
@@ -68,6 +78,12 @@ async function findPage(deadline) {
 function rpc(ws) {
   let id = 0;
   const pending = new Map();
+  const failAll = why => {
+    for (const [, p] of pending) p.reject(new Error(why));
+    pending.clear();
+  };
+  ws.addEventListener('close', ev => failAll(`CDP socket closed (code ${ev.code}) — Chrome went away mid-run.`));
+  ws.addEventListener('error', () => failAll('CDP socket error — Chrome went away mid-run.'));
   ws.addEventListener('message', ev => {
     let msg; try { msg = JSON.parse(ev.data); } catch { return; }
     if (msg.id && pending.has(msg.id)) {
@@ -76,9 +92,15 @@ function rpc(ws) {
       msg.error ? reject(new Error(msg.error.message)) : res(msg.result);
     }
   });
-  return (method, params = {}) => new Promise((res, reject) => {
+  return (method, params = {}, timeoutMs = 120000) => new Promise((res, reject) => {
     const mid = ++id;
-    pending.set(mid, { resolve: res, reject });
+    const timer = setTimeout(() => {
+      if (pending.delete(mid)) reject(new Error(`CDP ${method} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+    pending.set(mid, {
+      resolve: v => { clearTimeout(timer); res(v); },
+      reject: e => { clearTimeout(timer); reject(e); },
+    });
     ws.send(JSON.stringify({ id: mid, method, params }));
   });
 }
@@ -127,8 +149,17 @@ if (seedPath) {
     } catch (e) { return 'err:' + String(e && e.message || e); } })()`,
     returnByValue: true, awaitPromise: true,
   });
-  const v = String(seeded.result?.value || '');
-  if (v.startsWith('err:')) { console.error('Seed failed: ' + v.slice(4)); process.exit(2); }
+  if (seeded.exceptionDetails) {
+    console.error('Seed failed to compile or threw: ' +
+      (seeded.exceptionDetails.exception?.description || seeded.exceptionDetails.text || 'unknown'));
+    process.exit(2);
+  }
+  const v = String(seeded.result?.value ?? '');
+  if (!v.startsWith('ok:')) {
+    console.error('Seed did not report success: ' +
+      (v || '(no value returned — likely a syntax error in the seed file)'));
+    process.exit(2);
+  }
   console.log(`seeded ${v.slice(3)} accounts from ${seedPath}`);
 }
 
@@ -144,10 +175,21 @@ const run = await send('Runtime.evaluate', {
   returnByValue: true, awaitPromise: true,
 });
 
+if (run.exceptionDetails) {
+  console.error('Suite evaluation threw: ' +
+    (run.exceptionDetails.exception?.description || run.exceptionDetails.text || 'unknown'));
+  process.exit(2);
+}
+
 let out;
 try { out = JSON.parse(run.result.value); }
 catch { console.error('Suite returned an unreadable result:', run.result); process.exit(2); }
 if (!out.ok) { console.error(`${fnName}() threw:\n${out.error}`); process.exit(1); }
+
+if (out.total === 0) {
+  console.error('The suite reported zero checks — it did not run. Treating as a harness failure.');
+  process.exit(2);
+}
 
 const passed = out.total - out.failed.length;
 console.log(`${fnName}: ${passed}/${out.total} passed, ${out.failed.length} failed`);
