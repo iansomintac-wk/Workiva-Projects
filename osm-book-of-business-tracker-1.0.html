@@ -380,7 +380,7 @@
 
   /* The standing. One line, large, generated from the book. Big type is spent
      exactly once, where a single sentence carries the whole glance. */
-  .day-standing{padding:26px 0 18px;}
+  .day-standing{padding:14px 0 12px;}
   .day-standing h2{margin:0; font-family:var(--font-display); font-weight:800;
     font-size:var(--text-3xl); line-height:1.04; letter-spacing:-.03em; color:var(--text); max-width:22ch;
     text-wrap:balance; overflow-wrap:anywhere; min-width:0;}
@@ -859,14 +859,17 @@
 
   /* Movement heading. Names where in the day you are and states that movement's
      own load, so a heading is never just a label. */
-  .day-move{padding:34px 0 4px; max-width:48ch; min-width:0;}
+  .day-move{padding:18px 0 4px; max-width:48ch; min-width:0;}
   .dm-eyebrow{margin:0; font-family:var(--font-mono); font-size:var(--text-xs); font-weight:600; letter-spacing:.1em;
     text-transform:uppercase; color:var(--accent-info);}
   .dm-load{font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-faint); margin-top:5px; overflow-wrap:anywhere;}
   .dm-note{margin:8px 0 0; font-size:var(--text-sm); color:var(--text-dim); max-width:48ch; overflow-wrap:anywhere;}
 
-  /* A beat. Owns real height — that is the whole reason the mechanic works. */
-  .day-step{min-height:72vh; display:flex; flex-direction:column; justify-content:center;
+  /* A beat. Owns real height — that is the whole reason the mechanic works.
+     flex-start, not center: with four rows of content the beat's height now
+     varies, and centring made every beat shift vertically as you walked the
+     day. The height stays; what fills it changed. */
+  .day-step{min-height:72vh; display:flex; flex-direction:column; justify-content:flex-start;
     padding:20px 0; opacity:.62; transition:opacity var(--transition); cursor:pointer;}
   .day-step:not(.active):hover{opacity:.82;}
   .day-step:focus-visible{outline:2px solid var(--accent-info); outline-offset:6px; border-radius:6px;}
@@ -881,9 +884,22 @@
     overflow-wrap:anywhere; min-width:0;}
   .ds-do{font-size:var(--text-base); font-weight:700; color:var(--text); margin-top:6px;}
   .ds-why{font-size:var(--text-sm); color:var(--text-dim); margin-top:6px; max-width:48ch;}
-  .ds-more{color:var(--text-faint);}
   .ds-faint{color:var(--text-faint); font-size:var(--text-xs);}
   .ds-flag{color:var(--status-risk-text); font-weight:700;}
+  /* The four questions a beat answers. A definition list because that is what
+     this is — term and value — and it gives screen readers the pairing free. */
+  .ds-facts{display:grid; grid-template-columns:minmax(0,10ch) minmax(0,1fr);
+    gap:6px var(--space-2); margin:14px 0 0; max-width:52ch;}
+  .ds-facts dt{font-family:var(--font-mono); font-size:var(--text-xs); letter-spacing:.06em;
+    text-transform:uppercase; color:var(--text-faint); padding-top:2px;}
+  .ds-facts dd{margin:0; font-size:var(--text-sm); color:var(--text); min-width:0; overflow-wrap:anywhere;}
+  .ds-facts dd.ds-do{font-weight:700;}
+  .ds-why-list{margin:0; padding-left:16px; color:var(--text-dim);}
+  .ds-why-list li{margin-bottom:3px;}
+  @media (max-width: 900px){
+    .ds-facts{grid-template-columns:1fr; gap:2px;}
+    .ds-facts dt{margin-top:8px;}
+  }
   /* The annotation, straight from the guide: one sentence telling you how to
      READ the beat rather than repeating it. */
   .day-note{margin-top:14px; padding:10px 12px; border-radius:10px; background:var(--bg-card-hover);
@@ -4227,9 +4243,10 @@ function migrateData(data){
        the gaps between them with ranked work. nextSessionScheduledOn is a DATE
        (isRealISODate) and carries no time, so a timeline that printed "10:00"
        would be asserting a number the book does not contain. Rather than invent
-       it, the clock is optional and earned: set a time and the day is measured
-       in real minutes; leave it unset and the day degrades to ordinal movements
-       ("before your first call") that claim nothing.
+       it, the clock is optional and earned: set a time and that call takes its
+       place in clock order with the others; leave it unset and the call still
+       leads the day, sorted after the timed ones by name, with no clock string
+       ever invented for it.
 
        Additive on the same contract as v3-v5: absent means unset, nothing is
        stamped onto records that have none. Normalises anything already present,
@@ -5364,6 +5381,21 @@ function _computeRiskUncached(customer){
 // it now reads "Off Track". Internal keys ('risk', riskOverride values,
 // computeRisk) are untouched per editing rule 6; this is display language.
 function riskLabel(r){ return r==='risk' ? 'Off Track' : r==='watch' ? 'Watch' : 'On Track'; }
+/* The three words the OSM actually uses for an account, for the Today beat.
+   riskLabel() stays exactly as it is: 'Watch' is a COMPARISON VALUE in the risk
+   taxonomy (item.kind === 'Watch'), so renaming it there would break matching
+   silently. This is display only.
+
+   __forceRisk is a test seam, honoured ONLY on an object with no id — every
+   real customer has one. That guard is load-bearing, not belt-and-braces:
+   prepareBookData() adopts an imported book wholesale and does not whitelist
+   customer keys, so without it a hand-edited save file could pin any account's
+   state label to a value the book disagrees with. */
+function accountStateLabel(customer){
+  const forced = (customer && !customer.id && customer.__forceRisk) || null;
+  const r = forced || computeRisk(customer);
+  return r === 'risk' ? 'Off Track' : r === 'watch' ? 'Needs Attention' : 'On Track';
+}
 function riskBadgeClass(r){ return r==='risk' ? 'badge-risk' : r==='watch' ? 'badge-watch' : 'badge-ontrack'; }
 function stageIndex(key){ return DATA.config.stages.findIndex(s=>s.key===key); }
 
@@ -6989,6 +7021,7 @@ let ui = {
   sessionDebriefs: {},    // {activityId: {loading, text, error}} — transient, never persisted to DATA
   debriefInputs: {},      // v50/v51: {activityId: {questions:''}} — outstanding-question drafts, transient, never persisted to DATA (transcripts live ON the activity record since v51)
   todayCollapsed: {gainsight: true}, // transient, never persisted — which Today sections start collapsed
+  onbExpanded: null,   // transient, never persisted — which readiness detail is open
   todayShowAll: false, // v62: transient — expands the capped "Also today" list to every ranked account
   todayFocusId: null, // v69: transient — which beat the working panel is showing
   dayEntered: false,  // v72: transient — the day has been scrolled to its entry point once this visit
@@ -8100,6 +8133,42 @@ function _runSelfChecksInner(){
       .filter(t => html.indexOf(t) !== -1);
     check('v69 Today no longer renders the removed surfaces', gone.length === 0, gone.join(', '));
   })();
+  (function(){
+    /* Phase 1: the day comes before the paperwork. "Records to bring up to date"
+       is the least time-critical block on the tab and it held the third screen
+       position; it now sits below the day.
+
+       This builds its OWN book with a real admin gap. Under demo-seed.js
+       adminGapCount() is 0, so a check that leaned on the ambient book would
+       render no admin block at all and pass without asserting anything — the
+       first version of this check did exactly that. `gaps > 0` is therefore
+       part of the assertion, not a precondition: if the fixture stops producing
+       a gap, this check fails loudly instead of going quiet. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevFocus = ui.todayFocusId;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      // No targetGraduationDate -> the "no committed graduation date" gap fires.
+      const mk = id => { const c = {id, name:'Adm'+id, module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[],
+        nextSessionScheduledOn: todayISO(), nextSessionTime:'09:30'};
+        backfillCustomerRecord(c); delete c.targetGraduationDate; return c; };
+      const cs = [mk('__adm1__'), mk('__adm2__')];
+      DATA.customers = cs;
+      DATA.activities = cs.reduce((m,c)=>{ m[c.id] = []; return m; }, {});
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const gaps = adminGapCount();
+      const html = renderToday();
+      const dayAt   = html.indexOf('class="day"');
+      const adminAt = html.indexOf('Records to bring up to date');
+      ok = gaps > 0 && dayAt !== -1 && adminAt !== -1 && adminAt > dayAt;
+      detail = JSON.stringify({gaps, dayAt, adminAt});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.todayFocusId = prevFocus;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase1 Records to bring up to date renders below the day', ok, detail);
+  })();
   check('v69 the implementation count is a stat tile that can reach its accounts',
     String(renderStats).indexOf('data-stat="implementation"') !== -1 &&
     String(renderStats).indexOf('Gainsight Items Pending') === -1);
@@ -8159,6 +8228,25 @@ function _runSelfChecksInner(){
     check('v70 calls-today lists only sessions scheduled for today', ok, detail);
   })();
   (function(){
+    /* Phase 2: the beat states the account in the OSM's words. This is a DISPLAY
+       wrapper and nothing more — riskLabel() keeps its 19 call sites, and the
+       string 'Watch' stays intact because the risk taxonomy COMPARES against it
+       (item.kind === 'Watch'), so renaming it globally would be a silent
+       string-matching break for a cosmetic gain. */
+    const map = {risk:'Off Track', watch:'Needs Attention', ontrack:'On Track'};
+    const bad = [];
+    Object.keys(map).forEach(r => {
+      const got = accountStateLabel({__forceRisk: r});
+      if(got !== map[r]) bad.push(`${r} -> ${got}, wanted ${map[r]}`);
+    });
+    // riskLabel must be untouched by this addition.
+    const riskLabelIntact = riskLabel('risk') === 'Off Track'
+      && riskLabel('watch') === 'Watch' && riskLabel('ok') === 'On Track';
+    check('phase2 accountStateLabel names the three states and leaves riskLabel alone',
+      bad.length === 0 && riskLabelIntact,
+      bad.join(' | ') + (riskLabelIntact ? '' : ' | riskLabel changed'));
+  })();
+  (function(){
     /* ============ v72: THE DAY ============
        The redesign's load-bearing claim is that ONE ACCOUNT GETS ONE BEAT. v71
        put five of eighteen accounts into three blocks each, so this is the check
@@ -8195,6 +8283,85 @@ function _runSelfChecksInner(){
     check('v72 one account gets exactly one beat, carrying every reason it surfaced', ok, detail);
   })();
   (function(){
+    /* Phase 1: the day is ordered by PRIORITY, not by the clock. A booked call
+       is the only item on this tab with another person attached to it, so every
+       call leads regardless of what time it starts. The 15:30 call used to sit
+       below three hours of ranked work; it does not any more. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevFocus = ui.todayFocusId;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const mk = (id, extra) => { const c = Object.assign({id, name:'Ord'+id, module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]}, extra || {});
+        backfillCustomerRecord(c); return c; };
+      // A late call and an early one, plus three accounts that only rank as work.
+      const cs = [mk('__o1__', {nextSessionScheduledOn: todayISO(), nextSessionTime:'15:30'}),
+                  mk('__o2__'), mk('__o3__'),
+                  mk('__o4__', {nextSessionScheduledOn: todayISO(), nextSessionTime:'09:30'}),
+                  mk('__o5__')];
+      DATA.customers = cs;
+      DATA.activities = cs.reduce((m,c)=>{ m[c.id] = []; return m; }, {});
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const day = buildDayTimeline();
+      const kinds = day.beats.map(b => b.kind);
+      const lastCall = kinds.lastIndexOf('call');
+      const firstWork = kinds.indexOf('work');
+      // (a) No work beat may precede any call beat.
+      const callsLead = lastCall === -1 || firstWork === -1 || lastCall < firstWork;
+      // (b) Calls keep clock order among themselves.
+      const callOrder = day.beats.filter(b => b.kind === 'call').map(b => b.customerId);
+      const clockOrder = JSON.stringify(callOrder) === JSON.stringify(['__o4__','__o1__']);
+      // (c) At most two movements, both known to the registry.
+      const keys = day.movements.map(m => m.mkey);
+      const twoMovements = keys.length <= 2 && keys.every(k => DAY_MOVEMENT_MAP[k]);
+      ok = callsLead && clockOrder && twoMovements;
+      detail = JSON.stringify({kinds, callOrder, keys, callsLead, clockOrder, twoMovements});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.todayFocusId = prevFocus;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase1 every call leads the day, in clock order, in at most two movements', ok, detail);
+  })();
+  (function(){
+    /* The minutes maths survives as an ANNOTATION, never as a guess. A day with
+       fewer than two timed calls has no measurable gap, and must say nothing
+       rather than invent one. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const mk = (id, extra) => { const c = Object.assign({id, name:'Gap'+id, module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]}, extra || {});
+        backfillCustomerRecord(c); return c; };
+      // Two timed calls three hours apart -> a real 120-minute gap after the call length.
+      const two = [mk('__g1__', {nextSessionScheduledOn: todayISO(), nextSessionTime:'09:00'}),
+                   mk('__g2__', {nextSessionScheduledOn: todayISO(), nextSessionTime:'12:00'}),
+                   mk('__g3__'), mk('__g4__')];
+      DATA.customers = two;
+      DATA.activities = two.reduce((m,c)=>{ m[c.id] = []; return m; }, {});
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const withGap = buildDayTimeline();
+      const annotated = withGap.beats.filter(b => b.kind === 'work' && b.gapNote);
+      const mentionsBothTimes = annotated.length > 0 && annotated.every(b =>
+        (b.gapNote.indexOf('9:00') !== -1 || b.gapNote.indexOf('09:00') !== -1) &&
+        b.gapNote.indexOf('12:00') !== -1);
+      // One timed call -> nothing to measure between, so no note at all.
+      const one = [mk('__h1__', {nextSessionScheduledOn: todayISO(), nextSessionTime:'09:00'}),
+                   mk('__h2__'), mk('__h3__')];
+      DATA.customers = one;
+      DATA.activities = one.reduce((m,c)=>{ m[c.id] = []; return m; }, {});
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const noGap = buildDayTimeline();
+      const silent = noGap.beats.filter(b => b.kind === 'work').every(b => !b.gapNote);
+      ok = mentionsBothTimes && silent;
+      detail = JSON.stringify({annotated: annotated.map(b=>b.gapNote), mentionsBothTimes, silent});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase1 a gap note appears only where two timed calls actually bound one', ok, detail);
+  })();
+  (function(){
     /* The clock is EARNED. An unset time must never produce a clock string, and
        a bad one must never be stored — otherwise the timeline asserts a number
        the book does not contain, which is the one thing this tab does not do. */
@@ -8225,7 +8392,7 @@ function _runSelfChecksInner(){
       // No am/pm anywhere, and the day says so plainly instead of implying order.
       const noClock = !/\d{1,2}:\d{2}(am|pm)/.test(html);
       const saysSo = html.indexOf('time not set') !== -1;
-      const ordinal = html.indexOf('Before your first call') !== -1;
+      const ordinal = html.indexOf('Your calls today') !== -1;
       ok = noClock && saysSo && ordinal;
       detail = JSON.stringify({noClock, saysSo, ordinal});
     }catch(err){ detail = err.message; }
@@ -8234,22 +8401,148 @@ function _runSelfChecksInner(){
     check('v72 an untimed day renders no clock time and states that it has none', ok, detail);
   })();
   (function(){
-    /* Gap fitting is pure, so it is tested directly rather than through a render.
-       The contract that matters: the LAST slot is unbounded, so work is never
-       silently dropped — a slot that filled is marked, and everything is placed. */
-    const beats = [1,2,3,4,5].map(n => ({customerId:'b'+n, effortMin:20}));
-    const slots = [{capacity:30}, {capacity:30}, {capacity:null}];
-    fitBeatsToSlots(beats, slots);
-    const placed = slots.reduce((n,s)=> n + s.beats.length, 0);
-    check('v72 gap fitting places every beat and marks the slots that filled',
-      placed === beats.length && slots[0].beats.length === 1 && slots[0].full === true
-      && slots[2].beats.length === 3,
-      JSON.stringify(slots.map(s => ({n:s.beats.length, used:s.usedMin, full:s.full}))));
-    // A single unbounded slot takes everything; nothing is lost when nothing is timed.
-    const one = [{capacity:null}];
-    fitBeatsToSlots(beats, one);
-    check('v72 an untimed day places all work in its one movement',
-      one[0].beats.length === beats.length, String(one[0].beats.length));
+    /* Gap annotation is pure, so it is tested directly rather than through a
+       render. The contract that matters: work fills a slot, then moves to the
+       next one — and a beat that fits in no measurable slot is left SILENT
+       rather than given an invented gap. This replaced the fitBeatsToSlots
+       tests at phase 1, when the minutes maths stopped structuring the day. */
+    const calls = [{at:'09:00'}, {at:'12:00'}, {at:'13:30'}];
+    // 09:00->12:00 leaves 120 free after a 60-minute call; 12:00->13:30 leaves 30.
+    const beats = [1,2,3,4].map(n => ({customerId:'g'+n, effortMin:60}));
+    annotateGapFit(beats, calls);
+    const noted = beats.filter(b => b.gapNote);
+    const firstSlotTook = beats.filter(b => b.gapNote.indexOf('12:00pm') !== -1).length;
+    check('phase1 gap annotation fills a slot, advances, and never invents a gap',
+      noted.length === 2 && firstSlotTook === 2 && !beats[2].gapNote && !beats[3].gapNote,
+      JSON.stringify(beats.map(b => b.gapNote)));
+  })();
+  (function(){
+    /* Phase 2: every beat answers four questions — what state is this account in,
+       why is it here, what do I do, and what is outstanding. A beat that renders
+       a name and nothing else is the whitespace problem this replaced. Also
+       guards the two DOM hooks setTodayFocus() reads for its screen-reader
+       announcement: an <h4> and a .ds-eyebrow inside every .day-step. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevFocus = ui.todayFocusId;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const mk = (id, extra) => { const c = Object.assign({id, name:'Beat'+id, module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]}, extra || {});
+        backfillCustomerRecord(c); return c; };
+      const cs = [mk('__b1__', {nextSessionScheduledOn: todayISO(), nextSessionTime:'09:30'}),
+                  mk('__b2__'), mk('__b3__')];
+      DATA.customers = cs;
+      DATA.activities = cs.reduce((m,c)=>{ m[c.id] = []; return m; }, {});
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const day = buildDayTimeline();
+      /* Force one beat past the cap. Synthetic accounts with no activity never
+         produce four drivers, so without this the overCap clause can never fire
+         and nothing guards the left column's limit — slice(0,4) could become
+         slice(0,3) and the suite would stay green while driver #4 vanished
+         between the two surfaces. */
+      if(day.beats[0]) day.beats[0].reasons = ['Drv-1','Drv-2','Drv-3','Drv-4','Drv-5'];
+      const html = renderDay(day, () => '');
+      /* Bound the scan to the TRACK before splitting. renderDay emits the track
+         and then the .day-stage pane pool, and the pool's renderBeatPanel output
+         carries an uncapped reasons list by design — splitting the whole document
+         bleeds that panel into the last beat's chunk and makes overCap fire on
+         markup that is not a beat. */
+      const track = html.split('class="day-stage"')[0];
+      const steps = track.split('class="day-step').slice(1);
+      const stateOk = steps.every((s, i) => {
+        const cust = DATA.customers.find(x => x.id === day.beats[i].customerId);
+        return !!cust && s.indexOf(escapeHtml(accountStateLabel(cust))) !== -1;
+      });
+      const everyStepComplete = steps.length === day.beats.length && steps.every(s =>
+        stateOk                                   // state
+        && s.indexOf('ds-why-list') !== -1        // why
+        && s.indexOf('ds-do') !== -1              // what do I do
+        && s.indexOf('<h4') !== -1                // setTodayFocus reads this
+        && s.indexOf('ds-eyebrow') !== -1);       // and this
+      // The drivers list is capped at four; a fifth must be counted, not printed.
+      const maxLi = steps.reduce((n,s)=> Math.max(n, (s.match(/<li/g) || []).length), 0);
+      const overCap = maxLi > 4;
+      ok = everyStepComplete && !overCap && maxLi === 4;
+      detail = JSON.stringify({steps: steps.length, beats: day.beats.length, everyStepComplete, overCap, stateOk, maxLi});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.todayFocusId = prevFocus;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase2 every beat states account state, why, and what to do', ok, detail);
+  })();
+  (function(){
+    /* Phase 2: the headline and the drivers moved LEFT. The panel printing them
+       again put the same two sentences on screen twice, a few hundred pixels
+       apart. The panel keeps the evidence — severity basis, signal key, the
+       dispatch chips — and drops the restatement. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const c = {id:'__dup__', name:'Dupe Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__dup__: []};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const day = buildDayTimeline();
+      const beat = day.beats[0];
+      if(!beat) throw new Error('no beat built for the duplication check');
+      const panel = renderBeatPanel(beat, () => '');
+      // The headline is the left column's line. It must appear at most once in
+      // the panel, and not as a restated heading.
+      const headline = beat.headline || '';
+      // An empty headline would make the duplication test pass trivially, so the
+      // check fails loudly instead of quietly asserting nothing.
+      if(!headline) throw new Error('beat has no headline — this check cannot test duplication');
+      /* Compare against the ESCAPED headline — renderBeatPanel prints every
+         headline through escapeHtml(), and the default module's Session 1 title
+         contains a literal '&'. The first version of this check compared the raw
+         string, so its needle could never match the markup and timesInPanel was
+         pinned at 0 no matter what the code did. */
+      const needle = escapeHtml(headline);
+      const times = panel.split(needle).length - 1;
+      const keepsEvidence = panel.indexOf('Severity') !== -1 || panel.indexOf('signal') !== -1;
+      ok = times === 0 && keepsEvidence;
+      detail = JSON.stringify({headline, timesInPanel: times, keepsEvidence});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase2 the panel carries evidence, not a restatement of the beat', ok, detail);
+  })();
+  (function(){
+    /* The left column caps drivers at four and points at the panel for the rest.
+       That pointer has to be TRUE. Task 6 removed the panel's full reasons list,
+       which briefly made it a lie and put every driver past the fourth out of
+       reach entirely — no surface in the UI rendered them. This asserts both
+       halves of the split: the overflow is reachable in the panel, and the first
+       four are NOT restated there, which is the duplication the task removed. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const c = {id:'__ovf__', name:'Overflow Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__ovf__: []};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const reasons = ['Rsn-one','Rsn-two','Rsn-three','Rsn-four','Rsn-five','Rsn-six'];
+      const beat = {kind:'work', customerId:c.id, customerName:c.name, at:null, call:null,
+        headline:'Hdln', reasons: reasons.slice(), severity:2, effortMin:20, signalKey:null,
+        row:{customerId:c.id, severity:2, source:'test', why:'', signalKey:null,
+             alsoWaiting:[], panelTab:'overview'}};
+      const panel = renderBeatPanel(beat, () => '');
+      const overflow = reasons.slice(4);
+      const reachable = overflow.every(r => panel.indexOf(escapeHtml(r)) !== -1);
+      const firstFourRestated = reasons.slice(0, 4).some(r => panel.indexOf(escapeHtml(r)) !== -1);
+      ok = reachable && !firstFourRestated;
+      detail = JSON.stringify({reachable, firstFourRestated,
+        found: overflow.map(r => panel.indexOf(escapeHtml(r)) !== -1)});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase2 drivers past the fourth stay reachable in the panel, and the first four are not restated there', ok, detail);
   })();
   (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
@@ -8384,11 +8677,13 @@ function _runSelfChecksInner(){
     // would delete a time the user had just set, with no feedback.
     normalizeDayTime('09:30:00') === '09:30' && normalizeDayTime('9:5:00') === null &&
     normalizeDayTime('09:30:99') === null);
-  check('v72 an unbounded movement never claims work "did not fit"',
-    // A slot with no known capacity measured no time, so it cannot honestly say
-    // anything failed to fit. It says the work was spread instead.
-    String(renderDay).indexOf('spread across the movements below') !== -1 &&
-    String(renderDay).indexOf("m.capacity === null") !== -1);
+  /* Capacity left the day at phase 1: movements no longer carry a measured
+     bound, so no heading is in a position to claim work "did not fit". This
+     used to assert the old wording was PRESENT; it now asserts the claim is
+     absent, which is the same property against the new implementation. */
+  check('v72 no movement heading claims work "did not fit"',
+    String(renderDay).indexOf('did not fit') === -1 &&
+    String(renderDay).indexOf('m.capacity') === -1);
   (function(){
     /* v72.2 (Impeccable, Operate mode). Two rules this tab had broken:
        (a) "Fixed rem scale, not fluid — clamp-sized headings don't serve product
@@ -15137,9 +15432,10 @@ function renderGainsightItemRow(it, opts){
 
    The clock is optional and EARNED. nextSessionScheduledOn is a date and
    carries no time, so a timeline that printed "10:00" would assert a number
-   the book does not contain. Set nextSessionTime and the day is measured in
-   real minutes; leave it unset and the movements are ordinal ("before your
-   first call") and claim nothing. */
+   the book does not contain. Set nextSessionTime and that call takes its
+   place in clock order with the others; leave it unset and the call still
+   leads the day — it sorts after the timed calls, by name, and no clock
+   string is ever invented for it. */
 
 /* Bounds the RANKED WORK the day shows, not the day itself. A booked call is a
    commitment that exists in the world, so calls are never hidden — if you truly
@@ -15168,16 +15464,19 @@ function storyChapterFor(sev){
   return STORY_CHAPTERS.find(ch => sev >= ch.min) || STORY_CHAPTERS[STORY_CHAPTERS.length - 1];
 }
 
-/* The movements of the day. Instantiated per-day, not fixed: a no-call day and
-   a five-call day produce different timelines from the same registry, and a
-   movement with no beats is omitted entirely rather than shown empty. */
+/* The movements of the day. Two, plus the close: calls lead because a booked
+   call is the only item on this tab with another person attached to it, then
+   everything the book ranked. A movement with no beats is omitted entirely
+   rather than shown empty. This replaced a five-movement chronological set
+   (preface / call / gap / after / run) at phase 1 — the clock stopped driving
+   page order, and the gap maths moved onto the beats as annotation. */
 const DAY_MOVEMENT_DEFS = [
-  {key:'run',     label:'The day',                  note:'No calls on the calendar today. This is account work, highest severity first.'},
-  {key:'preface', label:'Before your first call',   note:'Work that fits in the time you have before the day starts talking back.'},
-  {key:'call',    label:'Call',                     note:'What happened last time, what you still owe, and what this session is meant to produce.'},
-  {key:'gap',     label:'Between calls',            note:'Short work, sized to the gap.'},
-  {key:'after',   label:'After your last call',     note:'The deeper work, once the calendar is quiet.'},
-  {key:'close',   label:'The close',                note:'Everything you queued today, pushed in one go.'}
+  {key:'calls', label:'Your calls today',
+    note:'The fixed points of your day. What happened last time, what you still owe, and what this session is meant to produce.'},
+  {key:'work',  label:'Everything else needing you',
+    note:'Ranked by severity. Nothing here is waiting on a clock, but the book says it needs you.'},
+  {key:'close', label:'The close',
+    note:'Everything you queued today, pushed in one go.'}
 ];
 const DAY_MOVEMENT_MAP = DAY_MOVEMENT_DEFS.reduce((m,d)=>{ m[d.key] = d; return m; }, {});
 
@@ -15204,29 +15503,31 @@ function callsScheduledToday(){
     });
 }
 
-/* Pure, and directly self-checked. Given ranked work beats and the day's work
-   slots in order, assign each beat to a slot. A slot with a known capacity in
-   minutes takes beats until the next one would not fit; a slot with unknown
-   capacity takes an even share. The LAST slot is unbounded, so nothing is ever
-   dropped — a slot that filled says so, and the work moves later in the day. */
-function fitBeatsToSlots(beats, slots){
-  slots.forEach(s => { s.beats = []; s.usedMin = 0; s.full = false; });
-  if(!slots.length) return slots;
-  const share = Math.max(1, Math.ceil(beats.length / slots.length));
+/* Where a work beat would fit between two of today's calls. The minutes maths
+   that used to STRUCTURE the day now annotates it: same arithmetic, no longer
+   deciding page order. Sets b.gapNote in place; empty string when the book
+   cannot measure a gap, because a guessed gap is worse than no gap. */
+function annotateGapFit(workBeats, callBeats){
+  workBeats.forEach(b => { b.gapNote = ''; });
+  const timed = callBeats.filter(b => b.at)
+    .slice()
+    .sort((x,y) => dayTimeToMinutes(x.at) - dayTimeToMinutes(y.at));
+  if(timed.length < 2) return;
+  const slots = [];
+  for(let i = 0; i < timed.length - 1; i++){
+    const a = dayTimeToMinutes(timed[i].at), z = dayTimeToMinutes(timed[i+1].at);
+    if(a === null || z === null) continue;
+    const cap = Math.max(0, z - a - DAY_CALL_LENGTH_MIN);
+    if(cap > 0) slots.push({from: timed[i].at, to: timed[i+1].at, cap, used: 0});
+  }
+  if(!slots.length) return;
   let i = 0;
-  beats.forEach(b => {
-    while(i < slots.length - 1){
-      const s = slots[i];
-      const fits = s.capacity === null ? s.beats.length < share
-                                       : s.usedMin + b.effortMin <= s.capacity;
-      if(fits) break;
-      s.full = true;
-      i++;
-    }
-    slots[i].beats.push(b);
-    slots[i].usedMin += b.effortMin;
+  workBeats.forEach(b => {
+    while(i < slots.length && slots[i].used + b.effortMin > slots[i].cap) i++;
+    if(i >= slots.length) return;
+    slots[i].used += b.effortMin;
+    b.gapNote = `fits your ${fmtDayTime(slots[i].from)}–${fmtDayTime(slots[i].to)} gap · ~${fmtGapMinutes(b.effortMin)}`;
   });
-  return slots;
 }
 
 /* The day, assembled. Returns {beats, movements, calls, sev4, totalMin, timed}.
@@ -15281,26 +15582,14 @@ function buildDayTimeline(){
   const spilledWork = workBeats.slice(keptWork.length);
   spilledWork.forEach(b => byCust.delete(b.customerId));
 
-  // 4. Build the movements, then fit the unmerged work into the gaps.
+  // 4. Two movements, in priority order. Calls first — every one of them, in
+  //    clock order — then the ranked work. The clock no longer decides page
+  //    order; it survives only as the gap note on each work beat.
   const movements = [];
-  const mk = (key, extra) => Object.assign({}, DAY_MOVEMENT_MAP[key], {mkey: key + (extra && extra.suffix ? ':' + extra.suffix : '')}, extra || {});
-  if(!callBeats.length){
-    movements.push(mk('run', {capacity:null, beats:[]}));
-  } else {
-    movements.push(mk('preface', {capacity:null, beats:[]}));
-    callBeats.forEach((cb, i) => {
-      movements.push(mk('call', {suffix:cb.customerId, isCall:true, beats:[cb], capacity:null, call:cb}));
-      const nextCb = callBeats[i+1];
-      if(nextCb){
-        const a = dayTimeToMinutes(cb.at), z = dayTimeToMinutes(nextCb.at);
-        const cap = (a !== null && z !== null) ? Math.max(0, z - a - DAY_CALL_LENGTH_MIN) : null;
-        movements.push(mk('gap', {suffix:String(i), capacity:cap, beats:[], between:[cb.at, nextCb.at]}));
-      } else {
-        movements.push(mk('after', {capacity:null, beats:[]}));
-      }
-    });
-  }
-  fitBeatsToSlots(keptWork, movements.filter(m => !m.isCall));
+  const mk = (key, extra) => Object.assign({}, DAY_MOVEMENT_MAP[key], {mkey: key}, extra || {});
+  annotateGapFit(keptWork, callBeats);
+  if(callBeats.length) movements.push(mk('calls', {isCall:true, capacity:null, beats: callBeats}));
+  if(keptWork.length)  movements.push(mk('work',  {capacity:null, beats: keptWork}));
 
   const beats = [];
   movements.forEach(m => { m.beats.forEach(b => { b.movementKey = m.mkey; b.movementLabel = m.label; beats.push(b); }); });
@@ -15536,7 +15825,7 @@ function renderBeatPanel(beat, dispatchChips){
   <div class="section-card" style="margin:0;">
     <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap;">
       <div class="bp-name">${escapeHtml(c.name)}</div>
-      <div class="bp-meta">${escapeHtml(c.module)}${impl ? ' · in implementation' : ` · ${riskLabel(computeRisk(c))} · ${healthScore(c)}% health`}</div>
+      <div class="bp-meta">${escapeHtml(c.module)}${impl ? ' · in implementation' : ` · ${accountStateLabel(c)} · ${healthScore(c)}% health`}</div>
     </div>
 
     ${renderBeatStanding(c)}
@@ -15545,12 +15834,15 @@ function renderBeatPanel(beat, dispatchChips){
 
     ${row ? `
       <div class="focus-act">
-        <h5>Why this one ${row.severity ? `<span class="badge ${row.severity>=3?'badge-risk':row.severity===2?'badge-watch':''}" title="${escapeAttr(row.why || '')}">Sev ${row.severity}/4</span>` : ''}</h5>
-        <div style="font-size:var(--text-base); font-weight:600; color:var(--text);">${escapeHtml(beat.headline)}</div>
-        <ul style="margin:6px 0 0; padding-left:16px; color:var(--text-dim); font-size:var(--text-sm);">
-          ${beat.reasons.map(r => `<li>${escapeHtml(r)}</li>`).join('')}
-        </ul>
-        <p class="bp-basis">Severity ${row.severity} of 4 · ${row.signalKey ? `signal <span style="font-family:var(--font-mono);">${escapeHtml(row.signalKey)}</span>` : escapeHtml(row.source)}.</p>
+        <h5>The evidence ${row.severity ? `<span class="badge ${row.severity>=3?'badge-risk':row.severity===2?'badge-watch':''}" title="${escapeAttr(row.why || '')}">Sev ${row.severity}/4</span>` : ''}</h5>
+        <p class="bp-basis" style="margin:0 0 8px;">Severity ${row.severity} of 4 · ${row.signalKey ? `signal <span style="font-family:var(--font-mono);">${escapeHtml(row.signalKey)}</span>` : escapeHtml(row.source)}. The reason this account is on your day is stated beside it; this is what the tracker read to get there.</p>
+        ${beat.reasons.length > 4 ? `
+          <div class="bp-sec">
+            <div class="lbl">The other ${beat.reasons.length - 4} driver${beat.reasons.length - 4 === 1 ? '' : 's'}</div>
+            <ul style="margin:4px 0 0; padding-left:16px; color:var(--text-dim); font-size:var(--text-sm);">
+              ${beat.reasons.slice(4).map(r => `<li>${escapeHtml(r)}</li>`).join('')}
+            </ul>
+          </div>` : ''}
         ${dispatchChips(row)}
         ${row.signalKey && SIGNAL_KEY_SET.has(row.signalKey) ? `
           <div style="display:flex; gap:6px; margin-top:8px;">
@@ -15667,7 +15959,7 @@ function renderBeatPrep(beat){
       <div class="bp-sec bp-time">
         <label class="lbl" for="bp-time-${escapeAttr(c.id)}">Time on your calendar</label>
         <input type="time" id="bp-time-${escapeAttr(c.id)}" data-fp-time="${escapeAttr(c.id)}" value="${escapeAttr(getNextSessionTime(c) || '')}">
-        <span class="bp-basis">${getNextSessionTime(c) ? 'The day is measured in real minutes around this.' : 'Set it and the day fits work into the real gaps.'}</span>
+        <span class="bp-basis">${getNextSessionTime(c) ? 'Your calls run in clock order. Where two of them bound a gap, work that fits inside it says so.' : 'Set it and this call takes its place in the clock order.'}</span>
       </div>
 
       <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
@@ -15753,6 +16045,21 @@ function renderDayClose(day){
     </div>`;
 }
 
+/* What this account is still waiting on you for, counted from the record. Both
+   numbers are COUNTED, never estimated — the tab's standing rule. Empty text
+   when there is nothing outstanding, so the row hides rather than printing a
+   zero. */
+function beatOutstanding(c){
+  if(!c) return {questions:0, deliverables:0, text:''};
+  const questions = collectOpenQuestions(c).length;
+  let deliverables = 0;
+  (DATA.activities[c.id] || []).forEach(a => (a.checklist || []).forEach(i => { if(!i.done) deliverables++; }));
+  const bits = [];
+  if(questions) bits.push(`${questions} open question${questions===1?'':'s'}`);
+  if(deliverables) bits.push(`${deliverables} deliverable${deliverables===1?'':'s'}`);
+  return {questions, deliverables, text: bits.join(' · ')};
+}
+
 /* ============ THE TRACK ============
    One scrolling column of beats beside one sticky stage. The stage holds a
    THREE-NODE pane pool: pool index is beatIndex % 3, so prev / active / next
@@ -15775,16 +16082,12 @@ function renderDay(day, dispatchChips){
   let seenChapter = new Set();
   let idx = -1;
   const trackHtml = day.movements.map(m => {
-    const cap = m.capacity === null ? '' :
-      ` · about ${fmtGapMinutes(m.capacity) || 'no time'} free${m.between && m.between[0] && m.between[1] ? ` between ${fmtDayTime(m.between[0])} and ${fmtDayTime(m.between[1])}` : ''} (allowing ${DAY_CALL_LENGTH_MIN} minutes a call)`;
     const load = m.beats.length ? `${m.beats.length} ${m.beats.length===1?'item':'items'} · roughly ${m.beats.reduce((n,b)=>n+b.effortMin,0)} min` : '';
     const head = `
       <div class="day-move" data-movement="${escapeAttr(m.mkey)}" data-movement-label="${escapeAttr(m.label)}">
         <h3 class="dm-eyebrow">${escapeHtml(m.label)}</h3>
-        <div class="dm-load">${escapeHtml(load)}${cap ? escapeHtml(cap) : ''}</div>
-        <p class="dm-note">${escapeHtml(m.note)}${m.full ? (m.capacity === null
-          ? ' The rest of the ranked work is spread across the movements below.'
-          : ' The rest did not fit in this gap and moved later in the day.') : ''}</p>
+        <div class="dm-load">${escapeHtml(load)}</div>
+        <p class="dm-note">${escapeHtml(m.note)}${m.mkey === 'work' && day.spilled ? ` ${day.spilled} more ranked below the day.` : ''}</p>
       </div>`;
     const steps = m.beats.map(b => {
       idx++;
@@ -15792,16 +16095,28 @@ function renderDay(day, dispatchChips){
       const first = b.kind === 'work' && !seenChapter.has(ch.key);
       if(b.kind === 'work') seenChapter.add(ch.key);
       b._i = idx;
+      const c = DATA.customers.find(x => x.id === b.customerId);
+      const out = beatOutstanding(c);
+      const drivers = b.reasons.slice(0, 4);
+      const moreDrivers = b.reasons.length - drivers.length;
       return `
         <div class="day-step ${b.customerId === ui.todayFocusId ? 'active' : ''}"
              data-day-step="${escapeAttr(b.customerId)}" data-day-index="${idx}"
              data-day-movement="${escapeAttr(m.label)}">
           <div class="ds-eyebrow">${idx+1} of ${day.beats.length} · ${b.kind === 'call' ? (b.at ? escapeHtml(fmtDayTime(b.at)) + ' call' : 'call · time not set') : escapeHtml(ch.label)}</div>
           <h4>${escapeHtml(b.customerName)}</h4>
-          <div class="ds-do">${escapeHtml(b.headline || (b.call && b.call.next ? b.call.next.template.title : 'Prep this call'))}</div>
-          ${b.reasons.length ? `<div class="ds-why">${escapeHtml(b.reasons[0])}</div>` : ''}
-          ${b.reasons.length > 1 ? `<div class="ds-why ds-more">+ ${b.reasons.length - 1} more reason${b.reasons.length-1===1?'':'s'} in the panel</div>` : ''}
-          <div class="ds-why ds-faint">${b.severity === 4 ? '<span class="ds-flag">top severity</span> · ' : ''}about ${b.effortMin} minutes${b.kind === 'call' && b.call && !b.call.prepped ? ' · no prep notes yet' : ''}</div>
+          <dl class="ds-facts">
+            <dt>State</dt>
+            <dd>${c ? escapeHtml(accountStateLabel(c)) : 'Unknown'}${c && !inImplementation(c) ? ` <span class="ds-faint">· ${healthScore(c)}% health</span>` : ''}</dd>
+            ${drivers.length ? `
+              <dt>Why</dt>
+              <dd><ul class="ds-why-list">${drivers.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul>
+                ${moreDrivers > 0 ? `<span class="ds-faint">+ ${moreDrivers} more reason${moreDrivers===1?'':'s'} in the panel</span>` : ''}</dd>` : ''}
+            <dt>What do I do</dt>
+            <dd class="ds-do">${escapeHtml(b.headline || (b.call && b.call.next ? b.call.next.template.title : 'Prep this call'))}</dd>
+            ${out.text ? `<dt>Outstanding</dt><dd>${escapeHtml(out.text)}</dd>` : ''}
+          </dl>
+          <div class="ds-why ds-faint">${b.severity === 4 ? '<span class="ds-flag">top severity</span> · ' : ''}about ${b.effortMin} minutes${b.kind === 'call' && b.call && !b.call.prepped ? ' · no prep notes yet' : ''}${b.gapNote ? ` · ${escapeHtml(b.gapNote)}` : ''}</div>
           ${first ? `<div class="day-note">${escapeHtml(ch.note)}</div>` : ''}
         </div>`;
     }).join('');
@@ -15816,12 +16131,12 @@ function renderDay(day, dispatchChips){
   }).join('');
 
   return `
-    <div class="day" id="day" data-density="${escapeAttr(ui.dayDensity)}" role="region" aria-label="Today, as one timeline">
+    <div class="day" id="day" data-density="${escapeAttr(ui.dayDensity)}" role="region" aria-label="Today: calls first, then ranked work">
       <p class="sr-only" id="day-live" role="status" aria-live="polite"></p>
       <div class="day-head">
         <p class="day-lede">${ui.dayDensity === 'compact'
-          ? 'Every account at once, in the order the day happens. Click one, or press J / K.'
-          : 'One line per account, in the order the day happens. The panel beside it keeps pace — scroll, or press J / K.'}
+          ? 'Every account at once — calls first, then ranked work. Click one, or press J / K.'
+          : 'One line per account — today\'s calls first, then everything else the book ranked. The panel beside it keeps pace — scroll, or press J / K.'}
           <button class="link-btn day-skip" data-day-skip>Skip to the close</button></p>
         <div class="day-density" role="group" aria-label="How much of the day to show at once">
           ${DAY_DENSITIES.map(d => `<button type="button" class="btn btn-sm ${ui.dayDensity === d ? 'active' : ''}"
@@ -15925,12 +16240,12 @@ function renderToday(){
     <div>
       ${renderDayStanding(day)}
       ${readiness}
-      ${renderAdminGaps()}
+      ${renderDay(day, dispatchChips)}
+      ${restBlock}
       ${resolvedBanner}
       ${pausedStrip}
       ${riskStrip}
-      ${renderDay(day, dispatchChips)}
-      ${restBlock}
+      ${renderAdminGaps()}
       ${day.beats.length ? renderDayClose(day) : ''}
       ${emptyState}
       ${allClear}
@@ -16368,8 +16683,8 @@ function renderReadinessStrip(){
   return `
     <div class="onb" data-onb="${escapeAttr(g.key)}">
       <div class="onb-body">
-        <p class="onb-h">${escapeHtml(g.headline)}</p>
-        <p class="onb-p">${g.detail}</p>
+        <p class="onb-h">${escapeHtml(g.headline)} <button class="link-btn" data-onb-expand="${escapeAttr(g.key)}">why this matters</button></p>
+        ${ui.onbExpanded === g.key ? `<p class="onb-p">${g.detail}</p>` : ''}
       </div>
       <div class="onb-actions">
         <button class="btn btn-sm" data-onb-dismiss="${escapeAttr(g.key)}">Not now</button>
@@ -17308,7 +17623,7 @@ function renderDetailsTab(c, risk){
     <div class="field" style="margin-top:10px;">
       <label>Time on the calendar <span style="color:var(--text-faint); font-weight:400;">optional</span></label>
       <input type="time" id="cust-next-session-time" value="${escapeAttr(getNextSessionTime(c)||'')}">
-      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:4px 0 0;">Set it and Today measures the day in real minutes, fitting work into the gaps between calls. Leave it blank and the day stays ordinal — "before your first call" — rather than claiming a time the book doesn't have.</p>
+      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:4px 0 0;">Set it and Today puts this call in clock order with your others. Leave it blank and the call still leads the day — it just sits after the timed ones, rather than claiming a time the book does not have.</p>
       <div style="margin-top:8px;">
         <button class="btn btn-sm" data-ics="${escapeAttr(c.id)}">Add to calendar</button>
         <p style="color:var(--text-faint); font-size:var(--text-xs); margin:4px 0 0;">Downloads an .ics for the next session — the date booked above, or the paced date if it isn't booked yet. With a time set it carries that hour as a ${DAY_CALL_LENGTH_MIN}-minute event written in UTC, so it reads correctly for anyone you forward it to; without one it is an all-day entry. The download says which it made.</p>
@@ -18735,6 +19050,10 @@ The draft is discarded. The risk itself stays open.`)) return;
      dismissing the idea. */
   $$('[data-onb-dismiss]').forEach(b => b.addEventListener('click', ()=>{
     dismissGap(b.dataset.onbDismiss);
+    render();
+  }));
+  $$('[data-onb-expand]').forEach(b => b.addEventListener('click', () => {
+    ui.onbExpanded = ui.onbExpanded === b.dataset.onbExpand ? null : b.dataset.onbExpand;
     render();
   }));
   $$('[data-onb-act]').forEach(b => b.addEventListener('click', ()=>{
