@@ -380,7 +380,7 @@
 
   /* The standing. One line, large, generated from the book. Big type is spent
      exactly once, where a single sentence carries the whole glance. */
-  .day-standing{padding:26px 0 18px;}
+  .day-standing{padding:14px 0 12px;}
   .day-standing h2{margin:0; font-family:var(--font-display); font-weight:800;
     font-size:var(--text-3xl); line-height:1.04; letter-spacing:-.03em; color:var(--text); max-width:22ch;
     text-wrap:balance; overflow-wrap:anywhere; min-width:0;}
@@ -859,7 +859,7 @@
 
   /* Movement heading. Names where in the day you are and states that movement's
      own load, so a heading is never just a label. */
-  .day-move{padding:34px 0 4px; max-width:48ch; min-width:0;}
+  .day-move{padding:18px 0 4px; max-width:48ch; min-width:0;}
   .dm-eyebrow{margin:0; font-family:var(--font-mono); font-size:var(--text-xs); font-weight:600; letter-spacing:.1em;
     text-transform:uppercase; color:var(--accent-info);}
   .dm-load{font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-faint); margin-top:5px; overflow-wrap:anywhere;}
@@ -7021,6 +7021,7 @@ let ui = {
   sessionDebriefs: {},    // {activityId: {loading, text, error}} — transient, never persisted to DATA
   debriefInputs: {},      // v50/v51: {activityId: {questions:''}} — outstanding-question drafts, transient, never persisted to DATA (transcripts live ON the activity record since v51)
   todayCollapsed: {gainsight: true}, // transient, never persisted — which Today sections start collapsed
+  onbExpanded: null,   // transient, never persisted — which readiness detail is open
   todayShowAll: false, // v62: transient — expands the capped "Also today" list to every ranked account
   todayFocusId: null, // v69: transient — which beat the working panel is showing
   dayEntered: false,  // v72: transient — the day has been scrolled to its entry point once this visit
@@ -16668,10 +16669,10 @@ function renderReadinessStrip(){
   if(!r.next) return '';                       // fed, or every gap dismissed — say nothing
   const g = r.next;
   return `
-    <div class="onb" data-onb="${escapeAttr(g.key)}">
+    <div class="onb onb-compact" data-onb="${escapeAttr(g.key)}">
       <div class="onb-body">
-        <p class="onb-h">${escapeHtml(g.headline)}</p>
-        <p class="onb-p">${g.detail}</p>
+        <p class="onb-h">${escapeHtml(g.headline)} <button class="link-btn" data-onb-expand="${escapeAttr(g.key)}">why this matters</button></p>
+        ${ui.onbExpanded === g.key ? `<p class="onb-p">${g.detail}</p>` : ''}
       </div>
       <div class="onb-actions">
         <button class="btn btn-sm" data-onb-dismiss="${escapeAttr(g.key)}">Not now</button>
@@ -19037,6 +19038,10 @@ The draft is discarded. The risk itself stays open.`)) return;
      dismissing the idea. */
   $$('[data-onb-dismiss]').forEach(b => b.addEventListener('click', ()=>{
     dismissGap(b.dataset.onbDismiss);
+    render();
+  }));
+  $$('[data-onb-expand]').forEach(b => b.addEventListener('click', () => {
+    ui.onbExpanded = ui.onbExpanded === b.dataset.onbExpand ? null : b.dataset.onbExpand;
     render();
   }));
   $$('[data-onb-act]').forEach(b => b.addEventListener('click', ()=>{
