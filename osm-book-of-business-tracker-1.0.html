@@ -8100,6 +8100,42 @@ function _runSelfChecksInner(){
       .filter(t => html.indexOf(t) !== -1);
     check('v69 Today no longer renders the removed surfaces', gone.length === 0, gone.join(', '));
   })();
+  (function(){
+    /* Phase 1: the day comes before the paperwork. "Records to bring up to date"
+       is the least time-critical block on the tab and it held the third screen
+       position; it now sits below the day.
+
+       This builds its OWN book with a real admin gap. Under demo-seed.js
+       adminGapCount() is 0, so a check that leaned on the ambient book would
+       render no admin block at all and pass without asserting anything — the
+       first version of this check did exactly that. `gaps > 0` is therefore
+       part of the assertion, not a precondition: if the fixture stops producing
+       a gap, this check fails loudly instead of going quiet. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevFocus = ui.todayFocusId;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      // No targetGraduationDate -> the "no committed graduation date" gap fires.
+      const mk = id => { const c = {id, name:'Adm'+id, module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[],
+        nextSessionScheduledOn: todayISO(), nextSessionTime:'09:30'};
+        backfillCustomerRecord(c); delete c.targetGraduationDate; return c; };
+      const cs = [mk('__adm1__'), mk('__adm2__')];
+      DATA.customers = cs;
+      DATA.activities = cs.reduce((m,c)=>{ m[c.id] = []; return m; }, {});
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const gaps = adminGapCount();
+      const html = renderToday();
+      const dayAt   = html.indexOf('class="day"');
+      const adminAt = html.indexOf('Records to bring up to date');
+      ok = gaps > 0 && dayAt !== -1 && adminAt !== -1 && adminAt > dayAt;
+      detail = JSON.stringify({gaps, dayAt, adminAt});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.todayFocusId = prevFocus;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase1 Records to bring up to date renders below the day', ok, detail);
+  })();
   check('v69 the implementation count is a stat tile that can reach its accounts',
     String(renderStats).indexOf('data-stat="implementation"') !== -1 &&
     String(renderStats).indexOf('Gainsight Items Pending') === -1);
@@ -15992,12 +16028,12 @@ function renderToday(){
     <div>
       ${renderDayStanding(day)}
       ${readiness}
-      ${renderAdminGaps()}
+      ${renderDay(day, dispatchChips)}
+      ${restBlock}
       ${resolvedBanner}
       ${pausedStrip}
       ${riskStrip}
-      ${renderDay(day, dispatchChips)}
-      ${restBlock}
+      ${renderAdminGaps()}
       ${day.beats.length ? renderDayClose(day) : ''}
       ${emptyState}
       ${allClear}
