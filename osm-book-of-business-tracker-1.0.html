@@ -8499,6 +8499,40 @@ function _runSelfChecksInner(){
     check('phase2 the panel carries evidence, not a restatement of the beat', ok, detail);
   })();
   (function(){
+    /* The left column caps drivers at four and points at the panel for the rest.
+       That pointer has to be TRUE. Task 6 removed the panel's full reasons list,
+       which briefly made it a lie and put every driver past the fourth out of
+       reach entirely — no surface in the UI rendered them. This asserts both
+       halves of the split: the overflow is reachable in the panel, and the first
+       four are NOT restated there, which is the duplication the task removed. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const c = {id:'__ovf__', name:'Overflow Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__ovf__: []};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const reasons = ['Rsn-one','Rsn-two','Rsn-three','Rsn-four','Rsn-five','Rsn-six'];
+      const beat = {kind:'work', customerId:c.id, customerName:c.name, at:null, call:null,
+        headline:'Hdln', reasons: reasons.slice(), severity:2, effortMin:20, signalKey:null,
+        row:{customerId:c.id, severity:2, source:'test', why:'', signalKey:null,
+             alsoWaiting:[], panelTab:'overview'}};
+      const panel = renderBeatPanel(beat, () => '');
+      const overflow = reasons.slice(4);
+      const reachable = overflow.every(r => panel.indexOf(escapeHtml(r)) !== -1);
+      const firstFourRestated = reasons.slice(0, 4).some(r => panel.indexOf(escapeHtml(r)) !== -1);
+      ok = reachable && !firstFourRestated;
+      detail = JSON.stringify({reachable, firstFourRestated,
+        found: overflow.map(r => panel.indexOf(escapeHtml(r)) !== -1)});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase2 drivers past the fourth stay reachable in the panel, and the first four are not restated there', ok, detail);
+  })();
+  (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
        account at 2pm, so the rail flags it and the standing counts it wherever
        it sits — the failure mode named when the axis was chosen. */
@@ -15789,6 +15823,13 @@ function renderBeatPanel(beat, dispatchChips){
       <div class="focus-act">
         <h5>The evidence ${row.severity ? `<span class="badge ${row.severity>=3?'badge-risk':row.severity===2?'badge-watch':''}" title="${escapeAttr(row.why || '')}">Sev ${row.severity}/4</span>` : ''}</h5>
         <p class="bp-basis" style="margin:0 0 8px;">Severity ${row.severity} of 4 · ${row.signalKey ? `signal <span style="font-family:var(--font-mono);">${escapeHtml(row.signalKey)}</span>` : escapeHtml(row.source)}. The reason this account is on your day is stated beside it; this is what the tracker read to get there.</p>
+        ${beat.reasons.length > 4 ? `
+          <div class="bp-sec">
+            <div class="lbl">The other ${beat.reasons.length - 4} driver${beat.reasons.length - 4 === 1 ? '' : 's'}</div>
+            <ul style="margin:4px 0 0; padding-left:16px; color:var(--text-dim); font-size:var(--text-sm);">
+              ${beat.reasons.slice(4).map(r => `<li>${escapeHtml(r)}</li>`).join('')}
+            </ul>
+          </div>` : ''}
         ${dispatchChips(row)}
         ${row.signalKey && SIGNAL_KEY_SET.has(row.signalKey) ? `
           <div style="display:flex; gap:6px; margin-top:8px;">
