@@ -15959,7 +15959,7 @@ function renderBeatPrep(beat){
       <div class="bp-sec bp-time">
         <label class="lbl" for="bp-time-${escapeAttr(c.id)}">Time on your calendar</label>
         <input type="time" id="bp-time-${escapeAttr(c.id)}" data-fp-time="${escapeAttr(c.id)}" value="${escapeAttr(getNextSessionTime(c) || '')}">
-        <span class="bp-basis">${getNextSessionTime(c) ? 'Your calls run in clock order, and work that fits between them says so.' : 'Set it and this call takes its place in the clock order.'}</span>
+        <span class="bp-basis">${getNextSessionTime(c) ? 'Your calls run in clock order. Where two of them bound a gap, work that fits inside it says so.' : 'Set it and this call takes its place in the clock order.'}</span>
       </div>
 
       <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
@@ -17623,7 +17623,7 @@ function renderDetailsTab(c, risk){
     <div class="field" style="margin-top:10px;">
       <label>Time on the calendar <span style="color:var(--text-faint); font-weight:400;">optional</span></label>
       <input type="time" id="cust-next-session-time" value="${escapeAttr(getNextSessionTime(c)||'')}">
-      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:4px 0 0;">Set it and Today puts this call in clock order with your others, and notes which work fits between them. Leave it blank and the call still leads the day — it just sits after the timed ones, rather than claiming a time the book does not have.</p>
+      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:4px 0 0;">Set it and Today puts this call in clock order with your others. Leave it blank and the call still leads the day — it just sits after the timed ones, rather than claiming a time the book does not have.</p>
       <div style="margin-top:8px;">
         <button class="btn btn-sm" data-ics="${escapeAttr(c.id)}">Add to calendar</button>
         <p style="color:var(--text-faint); font-size:var(--text-xs); margin:4px 0 0;">Downloads an .ics for the next session — the date booked above, or the paced date if it isn't booked yet. With a time set it carries that hour as a ${DAY_CALL_LENGTH_MIN}-minute event written in UTC, so it reads correctly for anyone you forward it to; without one it is an all-day entry. The download says which it made.</p>
