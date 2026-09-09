@@ -8459,6 +8459,46 @@ function _runSelfChecksInner(){
     check('phase2 every beat states account state, why, and what to do', ok, detail);
   })();
   (function(){
+    /* Phase 2: the headline and the drivers moved LEFT. The panel printing them
+       again put the same two sentences on screen twice, a few hundred pixels
+       apart. The panel keeps the evidence — severity basis, signal key, the
+       dispatch chips — and drops the restatement. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const c = {id:'__dup__', name:'Dupe Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__dup__: []};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const day = buildDayTimeline();
+      const beat = day.beats[0];
+      if(!beat) throw new Error('no beat built for the duplication check');
+      const panel = renderBeatPanel(beat, () => '');
+      // The headline is the left column's line. It must appear at most once in
+      // the panel, and not as a restated heading.
+      const headline = beat.headline || '';
+      // An empty headline would make the duplication test pass trivially, so the
+      // check fails loudly instead of quietly asserting nothing.
+      if(!headline) throw new Error('beat has no headline — this check cannot test duplication');
+      /* Compare against the ESCAPED headline — renderBeatPanel prints every
+         headline through escapeHtml(), and the default module's Session 1 title
+         contains a literal '&'. The first version of this check compared the raw
+         string, so its needle could never match the markup and timesInPanel was
+         pinned at 0 no matter what the code did. */
+      const needle = escapeHtml(headline);
+      const times = panel.split(needle).length - 1;
+      const keepsEvidence = panel.indexOf('Severity') !== -1 || panel.indexOf('signal') !== -1;
+      ok = times === 0 && keepsEvidence;
+      detail = JSON.stringify({headline, timesInPanel: times, keepsEvidence});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase2 the panel carries evidence, not a restatement of the beat', ok, detail);
+  })();
+  (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
        account at 2pm, so the rail flags it and the standing counts it wherever
        it sits — the failure mode named when the axis was chosen. */
@@ -15747,12 +15787,8 @@ function renderBeatPanel(beat, dispatchChips){
 
     ${row ? `
       <div class="focus-act">
-        <h5>Why this one ${row.severity ? `<span class="badge ${row.severity>=3?'badge-risk':row.severity===2?'badge-watch':''}" title="${escapeAttr(row.why || '')}">Sev ${row.severity}/4</span>` : ''}</h5>
-        <div style="font-size:var(--text-base); font-weight:600; color:var(--text);">${escapeHtml(beat.headline)}</div>
-        <ul style="margin:6px 0 0; padding-left:16px; color:var(--text-dim); font-size:var(--text-sm);">
-          ${beat.reasons.map(r => `<li>${escapeHtml(r)}</li>`).join('')}
-        </ul>
-        <p class="bp-basis">Severity ${row.severity} of 4 · ${row.signalKey ? `signal <span style="font-family:var(--font-mono);">${escapeHtml(row.signalKey)}</span>` : escapeHtml(row.source)}.</p>
+        <h5>The evidence ${row.severity ? `<span class="badge ${row.severity>=3?'badge-risk':row.severity===2?'badge-watch':''}" title="${escapeAttr(row.why || '')}">Sev ${row.severity}/4</span>` : ''}</h5>
+        <p class="bp-basis" style="margin:0 0 8px;">Severity ${row.severity} of 4 · ${row.signalKey ? `signal <span style="font-family:var(--font-mono);">${escapeHtml(row.signalKey)}</span>` : escapeHtml(row.source)}. The reason this account is on your day is stated beside it; this is what the tracker read to get there.</p>
         ${dispatchChips(row)}
         ${row.signalKey && SIGNAL_KEY_SET.has(row.signalKey) ? `
           <div style="display:flex; gap:6px; margin-top:8px;">
