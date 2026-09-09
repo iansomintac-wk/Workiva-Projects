@@ -5364,6 +5364,15 @@ function _computeRiskUncached(customer){
 // it now reads "Off Track". Internal keys ('risk', riskOverride values,
 // computeRisk) are untouched per editing rule 6; this is display language.
 function riskLabel(r){ return r==='risk' ? 'Off Track' : r==='watch' ? 'Watch' : 'On Track'; }
+/* The three words the OSM actually uses for an account, for the Today beat.
+   riskLabel() stays exactly as it is: 'Watch' is a COMPARISON VALUE in the risk
+   taxonomy (item.kind === 'Watch'), so renaming it there would break matching
+   silently. This is display only. __forceRisk is a test seam — a plain object
+   with that key resolves without a full customer record. */
+function accountStateLabel(customer){
+  const r = (customer && customer.__forceRisk) || computeRisk(customer);
+  return r === 'risk' ? 'Off Track' : r === 'watch' ? 'Needs Attention' : 'On Track';
+}
 function riskBadgeClass(r){ return r==='risk' ? 'badge-risk' : r==='watch' ? 'badge-watch' : 'badge-ontrack'; }
 function stageIndex(key){ return DATA.config.stages.findIndex(s=>s.key===key); }
 
@@ -8193,6 +8202,25 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA;
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
     check('v70 calls-today lists only sessions scheduled for today', ok, detail);
+  })();
+  (function(){
+    /* Phase 2: the beat states the account in the OSM's words. This is a DISPLAY
+       wrapper and nothing more — riskLabel() keeps its 19 call sites, and the
+       string 'Watch' stays intact because the risk taxonomy COMPARES against it
+       (item.kind === 'Watch'), so renaming it globally would be a silent
+       string-matching break for a cosmetic gain. */
+    const map = {risk:'Off Track', watch:'Needs Attention', ok:'On Track'};
+    const bad = [];
+    Object.keys(map).forEach(r => {
+      const got = accountStateLabel({__forceRisk: r});
+      if(got !== map[r]) bad.push(`${r} -> ${got}, wanted ${map[r]}`);
+    });
+    // riskLabel must be untouched by this addition.
+    const riskLabelIntact = riskLabel('risk') === 'Off Track'
+      && riskLabel('watch') === 'Watch' && riskLabel('ok') === 'On Track';
+    check('phase2 accountStateLabel names the three states and leaves riskLabel alone',
+      bad.length === 0 && riskLabelIntact,
+      bad.join(' | ') + (riskLabelIntact ? '' : ' | riskLabel changed'));
   })();
   (function(){
     /* ============ v72: THE DAY ============
