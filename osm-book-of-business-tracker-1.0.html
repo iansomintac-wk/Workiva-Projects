@@ -4389,27 +4389,44 @@ function migrateData(data){
          The account would show each criterion twice, one copy holding the
          evidence. */
       const allTemplates = (data.config && data.config.sessionTemplates) || {};
-      const csrdKey = c.reportsCSRD ? (c.module + ' (CSRD)') : null;
+      /* backfillCustomerRecord normalizes these — but it runs AFTER migrateData,
+         so read them defensively here or an imported book with totalSessions:"8"
+         or a module absent from the template set migrates every tick as an
+         orphan and renders each criterion twice. */
+      const planLength = (Number.isFinite(c.totalSessions) && c.totalSessions >= 6 && c.totalSessions <= 12)
+        ? c.totalSessions : 8;
+      const moduleKey = (Array.isArray(allTemplates[c.module]) && allTemplates[c.module].length)
+        ? c.module
+        : (((data.config || {}).modules || [])[0] || c.module);
+      /* Resolve the curriculum the SAME way resolveRawCurriculum does. A CSRD
+         account's templates live under "<module> (CSRD)"; reading the plain
+         module key made every ticked deliverable on such an account fail to
+         match and migrate as an orphan, while derivation — using the correct
+         set — rendered the real deliverable beside it as fresh and unevidenced.
+         The account would show each criterion twice, one copy holding the
+         evidence. */
+      const csrdKey = c.reportsCSRD ? (moduleKey + ' (CSRD)') : null;
       const templates = (csrdKey && Array.isArray(allTemplates[csrdKey]) && allTemplates[csrdKey].length)
         ? allTemplates[csrdKey]
-        : (Array.isArray(allTemplates[c.module]) ? allTemplates[c.module] : []);
-      /* Clamp to the account's own plan length, as getSessionTemplateSet does.
-         Without it a tick for a session beyond the plan stores as DERIVED but
-         renders as "no longer in the curriculum" — the two disagreeing about
-         the same row. */
-      const planLength = Number.isInteger(c.totalSessions) ? c.totalSessions : 0;
+        : (Array.isArray(allTemplates[moduleKey]) ? allTemplates[moduleKey] : []);
       Object.keys(c.sessionNotes).forEach(key => {
         const note = c.sessionNotes[key];
-        if(!/^\d+$/.test(key) || !isRecordObject(note) || !isRecordObject(note.deliverables)) return;
-        const sessionNumber = parseInt(key, 10);
-        const tpl = sessionNumber <= planLength ? templates[sessionNumber - 1] : null;
+        if(!isRecordObject(note) || !isRecordObject(note.deliverables)) return;
+        const numericKey = /^\d+$/.test(key);
+        const sessionNumber = numericKey ? parseInt(key, 10) : null;
+        /* A non-numeric key is unusable as a session reference, and
+           backfillCustomerRecord deletes the whole note a moment after this runs.
+           Skipping it would destroy the ticks inside. They migrate as custom
+           criteria instead — the label is preserved and visible, which is the
+           honest outcome for a tick whose session cannot be identified. */
+        const tpl = (numericKey && sessionNumber <= planLength) ? templates[sessionNumber - 1] : null;
         const labels = (tpl && Array.isArray(tpl.deliverables)) ? tpl.deliverables : [];
         Object.keys(note.deliverables).forEach(label => {
           if(note.deliverables[label] !== true) return;      // an unticked box is not evidence
           const idx = labels.indexOf(label);
           const criterion = idx === -1
             ? {text: label, stage:'', sourceSession: null, sourceIndex: null}
-            : {text: label, stage: tpl.ttfvStage || '', sourceSession: sessionNumber, sourceIndex: idx};
+            : {text: label, stage: tpl.ttfvStage || '', sourceSession: numericKey ? sessionNumber : null, sourceIndex: idx};
           const already = c.outcomeCriteria.items.find(x =>
             x.text === label && x.sourceSession === criterion.sourceSession);
           if(already){
@@ -4419,7 +4436,16 @@ function migrateData(data){
             return;
           }
           const rec = materializeOutcomeCriterion(c, criterion);
-          c.outcomeEvidence[rec.id] = {on:null, by:'unknown', legacy:true};
+          /* Guarded, like the `already` branch above. materializeOutcomeCriterion
+             dedupes derived criteria on (sourceSession, sourceIndex) while
+             `already` keys on (text, sourceSession), so a REWORDED slot makes the
+             two disagree and this returns a record that may already hold real,
+             dated evidence. An unguarded write replaced it with a null-dated
+             legacy record — destroying a date, a source and a note that a human
+             entered, on the only copy that exists. */
+          if(c.outcomeEvidence[rec.id] === undefined){
+            c.outcomeEvidence[rec.id] = {on:null, by:'unknown', legacy:true};
+          }
         });
       });
     });
@@ -9254,15 +9280,47 @@ function _runSelfChecksInner(){
         && c.outcomeEvidence[k].legacy === true && c.outcomeEvidence[k].by === 'unknown');
       const orphan = (c.outcomeCriteria.items || []).find(x => x.text === 'A LABEL NO TEMPLATE CARRIES');
       const matched = (c.outcomeCriteria.items || []).find(x => x.text === firstLabel);
-      const untickedSkipped = ids.length === 2;
+      const untickedSkipped = !c.outcomeCriteria.items.some(x => x.text === 'AN UNTICKED ONE');
       const sessionNotesIntact = c.sessionNotes['1'].deliverables[firstLabel] === true;
-      ok = book.schemaVersion === 12 && everyLegacyUndated && !!orphan && !!matched
+      ok = book.schemaVersion >= 12 && everyLegacyUndated && !!orphan && !!matched
         && orphan.sourceSession === null && matched.sourceSession === 1
         && untickedSkipped && sessionNotesIntact;
       detail = JSON.stringify({v: book.schemaVersion, ids: ids.length, everyLegacyUndated,
         orphan: !!orphan, matched: !!matched, untickedSkipped, sessionNotesIntact});
     }catch(err){ detail = err.message; }
     check('phaseA migration turns ticks into undated legacy evidence and drops nothing', ok, detail);
+  })();
+  (function(){
+    /* Real, dated evidence must SURVIVE the migration. The migration's `already`
+       lookup and materializeOutcomeCriterion's dedupe key on different things, so
+       a reworded slot can route a tick onto a record that already holds a real
+       date, a real source and a real note. An unguarded write replaced all three
+       with a null-dated legacy record. Counts alone cannot see this — both stay
+       at 1 while the contents are destroyed — so this asserts the CONTENTS. */
+    let ok = false, detail = '';
+    try{
+      const cfg = JSON.parse(JSON.stringify(DATA.config));
+      const mod = cfg.modules[0];
+      const label = cfg.sessionTemplates[mod][0].deliverables[0];
+      const real = {on:'2026-07-01', by:'osm', note:'signed off in call'};
+      const book = {schemaVersion: 11, config: cfg,
+        customers: [{id:'__keep1__', name:'Keep Co', module: mod,
+          stage: cfg.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+          totalSessions:8, domainScores:{},
+          stageHistory:[{stage: cfg.stages[1].key, date: isoAddDays(todayISO(), -200)}],
+          sessionNotes:{ '1': {deliverables:{[label]: true}, prep:''} },
+          compliance: defaultCompliance(),
+          outcomeCriteria:{items:[{id:'oc_keep', text:'A DIFFERENT WORDING', stage:'ttfv1',
+            sourceSession:1, sourceIndex:0, sourceCount:2}], removed:[]},
+          outcomeEvidence:{oc_keep: JSON.parse(JSON.stringify(real))}}],
+        activities: {__keep1__: []}};
+      migrateData(book);
+      const ev = book.customers[0].outcomeEvidence['oc_keep'];
+      ok = !!ev && ev.on === real.on && ev.by === real.by && ev.note === real.note
+        && ev.legacy === undefined;
+      detail = JSON.stringify({survived: ev});
+    }catch(err){ detail = err.message; }
+    check('phaseA migration never overwrites real dated evidence', ok, detail);
   })();
   (function(){
     /* The migration must be IDEMPOTENT — running it twice must not double the
