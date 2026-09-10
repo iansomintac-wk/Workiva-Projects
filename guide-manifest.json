@@ -17,11 +17,11 @@
     "Signal calibration requires four resolutions before it carries weight.",
     "Automatic backup requires one user gesture per browser session."
   ],
-  "trackerSelfChecks": "window.runSelfChecks() - 318 checks. Must be 318/318 after any edit.",
+  "trackerSelfChecks": "window.runSelfChecks() - 354 checks. Must be 354/354 after any edit, with demo-seed.js seeded first; an unseeded profile reports 314/354 and those failures are not defects.",
   "guideSelfChecks": "window.runGuideSelfChecks() - 18 checks. Must be 18/18 after any edit.",
   "requiredChecks": [
     "both files open with no runtime exceptions, including from file://",
-    "tracker self-checks pass from the bundle location (318/318)",
+    "tracker self-checks pass from the bundle location (354/354, seeded)",
     "guide self-checks pass (18/18)",
     "tracker filename matches trackerFile and every data-tracker-link href in the guide",
     "no version numbers in user-visible prose beyond the 1.0 release label",

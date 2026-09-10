@@ -1,95 +1,171 @@
-OSM Runway 1.0 — Validation Summary
-===================================
-Validated: August 6, 2026.
+OSM Runway — Validation Summary
+===============================
+Validated: September 9, 2026. Supersedes the August 6, 2026 record, which was
+stale in three ways by the time it was replaced — see A CORRECTION TO THE
+PREVIOUS RECORD below.
 
 SHA-256
-  osm-book-of-business-tracker-1.0.html   (1,392,570 bytes)
-    2f5c806b42e17e3a78c7b17cb55d1290f81b11fa6bc3af8c36c11c6d43bad0ab
-  osm-runway-onboarding-1.0.html          (184,805 bytes)
-    28aedce85c691b10beebcd9b1e58cea020383dafcce8f695dbaa8346b500b0ce
+  osm-book-of-business-tracker-1.0.html   (1,531,310 bytes)
+    3dd15da09d99e32cad9c48295133c5e2bb8d74ba6b7af793beae5eb3e1c45057
+  osm-runway-onboarding-1.0.html          (185,641 bytes)
+    598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
 
 
 WHAT WAS VERIFIED
 -----------------
-Both files were loaded in Chrome and both self-check suites were executed
-against the actual bundle.
+Both suites were executed against the actual bundle, from file://, by
+tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        318/318 passed, 0 failed
+  window.runSelfChecks()        354/354 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
-Neither page produced a console error or uncaught exception on load.
+Neither page produced a console error or uncaught exception on load; the runner
+subscribes to Runtime.exceptionThrown and fails the run if one appears.
 
-The guide's bundle-compatibility check resolved to "Bundled file confirmed" —
-it issued a live HEAD request for the tracker filename and got it. All five
-data-tracker-link hrefs point at osm-book-of-business-tracker-1.0.html.
+THE TRACKER SUITE NEEDS A SEEDED BOOK. Three checks — the v81 band check and two
+v94 Copilot checks — assert on a populated book and cannot be satisfied by an
+empty one. On a fresh browser profile the suite reports 314/354, and those four
+failures are not defects. The runner therefore evaluates demo-seed.js in the page
+before calling the suite:
 
-The guide's on-screen version banner reads 1.0 / 1.0 / August 6, 2026 and
-matches the constants in its own source, asserted by check 7.
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
+       --seed demo-seed.js --expect 354
+  node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
+       --fn runGuideSelfChecks --expect 18
 
-The guide's stale-version scan (check 8) reads the VISIBLE guide with script,
-style and noscript stripped, and found no leftover version string in prose.
+The August record did not state this, which is why its 318/318 was reproducible
+only by accident.
+
+A v11-to-v12 MIGRATION DRY RUN was executed against deliberately awkward legacy
+data (tools/legacy-seed.js, tools/migration-dryrun.mjs): a label no template
+still carries, a CSRD account, a sessionNotes key with a trailing space, an
+account with totalSessions absent, an unticked box, and the same label ticked in
+two sessions. 57 ticks in, 56 evidence records out, 0 ticks lost — the 57/56
+difference reconciles exactly to the duplicate-label fixture deduping onto one
+record, verified tick by tick rather than by count. No evidence record was given
+an invented date. Running prepareBookData a second time changed nothing.
 
 
 A CORRECTION TO THE PREVIOUS RECORD
 -----------------------------------
-The prior manifest stated the guide carried 19 self-checks and listed
-"guide self-checks pass (19/19)" as a required check, while also recording that
-the suite had NOT been run since the edit that supposedly introduced the
-nineteenth. Run for real, the suite reports 18.
+The August 6 record stated 318/318 and 18/18. All three of the following were
+wrong or unreproducible, and two of them had been wrong when written.
 
-All 18 execute, across every section the suite defines — structure, the bundle
-claim, versions, prose, the challenge, the checklist, mode, motion, honesty, and
-the restore proof that ends the run. Nothing is being skipped or swallowed; 19
-was a written-down number that had never met the thing it described. The count
-is now 18 everywhere it appears.
+1. THE TRACKER COUNT. 318 was true on August 6 and is now 354. It was also
+   repeated in guide-manifest.json, README.txt and CHANGELOG.txt, so the same
+   stale number was asserted in four places, one of them machine-readable.
+
+2. THE GUIDE'S 18/18 WAS VIEWPORT-DEPENDENT, and nobody knew. The check named
+   "quick mode actually removes the guided-only chapters" captured every
+   .guided-only element and asserted all of them were visible after leaving
+   quick mode. One of the nine is .chapter-dock, which the guide deliberately
+   hides under 800px:
+
+       @media (max-width: 800px) { .chapter-dock, .chapter-menu { display: none } }
+
+   So the check passed in a real browser window and failed at any narrow width,
+   while the guide behaved correctly at both. It reported 17/18 for the whole of
+   this work before the cause was found. The check now captures each element's
+   baseline display and asserts leaving quick mode restores every element to
+   exactly that — stricter than the old assertion, and true at any width.
+
+3. THE RUNNER NEVER PINNED A VIEWPORT, which is what allowed (2) to hide. Any
+   check reading a computed style silently depended on whatever headless Chrome
+   defaulted to — 782px — which is narrower than any window a human validating
+   by hand would use. tools/selfcheck.mjs now pins 1440x900 and takes --width /
+   --height so a viewport-sensitive check can be exercised deliberately.
+
+The August record's own correction — that a manifest claimed 19 guide checks
+when the suite had always reported 18 — was of exactly this species: a written
+number that had never met the thing it described. Two more were found here.
 
 
 WHAT WAS NOT VERIFIED
 ---------------------
-Served over http://127.0.0.1, not file://. The browser tooling used for this
-run refuses file:// URLs, so the suites were run against a local static server
-pointed at the bundle folder. This is not the same as the offline file:// path
-the bundle is meant to be used from, and it is worth noting for two features in
-particular:
-
-  - The guide's compatibility check has a documented http-only branch (the HEAD
-    request). From file:// it falls back to comparing hrefs, which is the
-    weaker of the two paths and is the one most users will actually hit.
-  - Automatic backup depends on the File System Access API, whose availability
-    and permission behavior can differ by origin.
+THE MIGRATION HAS NOT RUN AGAINST A REAL BOOK. Every verification above used
+synthetic fixtures. The dry run covered seven awkward shapes and lost nothing,
+but a real 15-account book carries history no fixture reproduces. Export JSON
+before opening this build against live data. The migration only ever adds, and
+leaves sessionNotes intact, but it is a schema change against a store that has
+no server copy and one level of undo.
 
 Not exercised in this run:
-  - Automatic backup end to end. Choosing a file, granting write permission,
-    and confirming a written payload all require user gestures and write to
-    real disk. The suite asserts the three guards that keep the check suite
-    from ever writing a fabricated book to a real backup file, and those
-    assertions pass, but no actual backup file was written or restored.
-  - Any AI Copilot feature. These call the Anthropic API and need a key.
+  - Automatic backup end to end. Choosing a file, granting write permission and
+    confirming a written payload all require user gestures and write to real
+    disk. The suite asserts the three guards that stop the check suite from
+    writing a fabricated book to a real backup file, and those pass, but no
+    backup file was written or restored.
+  - Any AI Copilot feature. These call the Anthropic API and need a key. The
+    deterministic read was confirmed to render in full without one, with no
+    console error — the degrade path works.
   - Gainsight CSV import against a real export.
   - Cross-browser behavior. Chrome only.
-
-None of the above was changed by the 1.0 packaging work — the changes were to
-file names, the file header comment, version strings, and the bundle
-documentation. No application logic was touched.
+  - Evidence capture from the Overview panel. Phase A ships that panel
+    read-only by design; capture is Phase B.
 
 
-SCOPE OF THE 1.0 CHANGE
------------------------
-  - Renamed osm-book-of-business-tracker-v99.html to ...-1.0.html and
-    osm-runway-onboarding-v4.4.html to osm-runway-onboarding-1.0.html.
-  - Replaced the tracker's 1,623-line in-file changelog header with a short
-    release note. The removed content was already duplicated in full by the
-    changelog file now archived at docs/history/CHANGELOG-prerelease.txt.
-  - Set the guide's GUIDE_VERSION and TRACKER_VERSION to 1.0, dropped the "v"
-    prefix from the displayed guide version, and updated the four places the
-    version is printed on screen.
-  - Widened the stale-version regex in guide check 8 so it still bites now that
-    versions are not v-prefixed. Left as-is, "Tracker v\d+" would have matched
-    nothing and the check would have passed vacuously forever.
-  - Archived the prior changelog and validation records to docs/history/ and
-    wrote fresh CHANGELOG.txt, VALIDATION.txt, README.txt and
-    guide-manifest.json describing 1.0.
-  - Left the ~1,300 "vNN" markers in JS comments and self-check labels in
-    place. They are provenance pointing into the archive, they are invisible to
-    anyone using the app, and rewriting them would have destroyed the reasoning
-    behind individual lines for no user-facing gain.
+SCOPE OF THE CHANGE SINCE 1.0
+-----------------------------
+42 commits. Two feature branches, both merged after a full-branch review, plus
+the fixes that review produced.
+
+TODAY TAB, PHASES 1-2 (suite 318 -> 324)
+  - The day is ordered by priority, not by the clock: every call leads in clock
+    order, then ranked work by severity, in two movements instead of five. The
+    minutes arithmetic that spaced work between calls survives as a note on the
+    beat rather than as page structure.
+  - Gainsight admin moved from the third screen position to below the day.
+  - Each beat states account state, up to four drivers, one recommended action
+    and what is outstanding. The panel beside it keeps the evidence and drops
+    the restatement.
+  - Added tools/selfcheck.mjs: the gate became a command with an exit code
+    rather than a console read.
+
+OUTCOME CRITERIA AND EVIDENCE, PHASE A (suite 324 -> 345, schema 11 -> 12)
+  - ADMIN_GAP_DEFS had said since it was written that "the numbered outcome is
+    what graduation is judged against", and then checked a boolean. Success
+    criteria now derive from each account's own curriculum, evidence is keyed by
+    an opaque id assigned once, and outcomeVerdict() is pure and answers
+    "unknown" where it does not know rather than "not ready".
+  - The migration converts every historical tick into evidence without inventing
+    a date it does not have.
+
+UX AND CORRECTNESS FIXES (suite 345 -> 354)
+  - The State label no longer contradicts the beat it sits on. It is now the
+    worst of computeRisk and the account's ranked severity, so an account
+    carrying a flagged escalation cannot read On Track. computeRisk itself is
+    unchanged; only the label moved.
+  - renewal_pressure declared severity:(c,sig) while every call site passes one
+    argument, so its "past renewal" branch was unreachable and the signal was
+    permanently capped at 3. An account whose graduation lands after its renewal
+    scored identically to one merely approaching it. No test could have caught
+    this — it returned a valid severity either way.
+  - A health percentage no longer renders beside a state that does not derive
+    from it.
+  - The severity badge names its band ("Slipping") instead of numbering it
+    ("Sev 3/4"), reusing the vocabulary STORY_CHAPTERS already defines.
+  - The readiness strip no longer reads "Nothing is on the calendar" directly
+    above "3 calls to prep".
+  - The beat panel no longer states the same fact twice.
+  - The Copilot band's SINCE date no longer runs the decode-scramble, which
+    rendered a valid date as "SEP 9, 200&" mid-churn and read as corruption.
+
+TOOLING ADDED (not part of the distributable bundle)
+  tools/selfcheck.mjs        headless suite runner, exit-coded
+  tools/inspect.mjs          renders a view and captures text, PNG and structure
+  tools/legacy-seed.js       a schemaVersion 11 book with seven awkward shapes
+  tools/migration-dryrun.mjs runs a book through prepareBookData and reconciles
+  demo-seed-today.js         a book with calls on today, at real clock times
+
+
+A NOTE ON THE CHECKS THEMSELVES
+-------------------------------
+Six checks written during this work passed while asserting nothing, and each was
+caught only because a rule was in force that a new check must be demonstrated
+FAILING before it is accepted. Among them: a fixture that could not produce the
+condition it tested, a scan that read past the region it meant to examine, a
+comparison of unescaped text against escaped markup, and a CSRD fixture that
+sampled the one deliverable label identical in both curricula.
+
+A check that has never been seen to fail is not evidence. That rule is worth
+keeping for anyone editing this file.
