@@ -5,8 +5,8 @@ stale in three ways by the time it was replaced — see A CORRECTION TO THE
 PREVIOUS RECORD below.
 
 SHA-256
-  osm-book-of-business-tracker-1.0.html   (1,531,310 bytes)
-    3dd15da09d99e32cad9c48295133c5e2bb8d74ba6b7af793beae5eb3e1c45057
+  osm-book-of-business-tracker-1.0.html   (1,570,924 bytes)
+    43321890dcb6854b35944a5cd328a56aa20daedf04eeb733edf19151089132b9
   osm-runway-onboarding-1.0.html          (185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
 
@@ -16,20 +16,23 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        354/354 passed, 0 failed
+  window.runSelfChecks()        366/366 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
 subscribes to Runtime.exceptionThrown and fails the run if one appears.
 
-THE TRACKER SUITE NEEDS A SEEDED BOOK. Three checks — the v81 band check and two
-v94 Copilot checks — assert on a populated book and cannot be satisfied by an
-empty one. On a fresh browser profile the suite reports 314/354, and those four
-failures are not defects. The runner therefore evaluates demo-seed.js in the page
-before calling the suite:
+THE TRACKER SUITE NEEDS A SEEDED BOOK. Re-measured for this record rather than
+carried forward: on a fresh browser profile the suite reports 361/366, 5
+failed — the phase3 health-score-pairing check, the v81 band check, two v94
+Copilot checks, and the v74.4 whole-book-unchanged guard. None are defects;
+they need a seeded book. (The previous record's "314/354" for this same
+measurement was already stale by the time it was superseded — corrected here
+rather than carried forward unverified.) The runner therefore evaluates
+demo-seed.js in the page before calling the suite:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 354
+       --seed demo-seed.js --expect 366
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -100,8 +103,10 @@ Not exercised in this run:
     console error — the degrade path works.
   - Gainsight CSV import against a real export.
   - Cross-browser behavior. Chrome only.
-  - Evidence capture from the Overview panel. Phase A ships that panel
-    read-only by design; capture is Phase B.
+  - The Overview outcome panel remains read-only. Capture landed on the session
+    card, where the OSM already ticks deliverables; the panel still only reports.
+  - Nobody has ticked a box in a real browser against a real book. Every
+    assertion above is a headless render or a direct function call.
 
 
 SCOPE OF THE CHANGE SINCE 1.0
@@ -149,6 +154,25 @@ UX AND CORRECTNESS FIXES (suite 345 -> 354)
   - The beat panel no longer states the same fact twice.
   - The Copilot band's SINCE date no longer runs the decode-scramble, which
     rendered a valid date as "SEP 9, 200&" mid-churn and read as corruption.
+
+OUTCOME CRITERIA AND EVIDENCE, PHASE B (suite 354 -> 366)
+  - The session deliverable checkbox writes evidence. Phase A shipped a store
+    that nothing in the running app could write to; the only records that could
+    exist were what the migration built from history. Ticking a box now records
+    a date, an attribution, and the session's activity where one is logged.
+  - sessionNotes[n].deliverables is left physically intact and is no longer read
+    for meaning. A check asserts that writing to it changes nothing on screen.
+  - First Value derives itself: every ttfv1 criterion evidenced gives an
+    achieved date, taken from the LAST of them. A recorded date always wins.
+    This CAN move the portfolio TTFV median. It does not move it in the demo
+    book: measured, all 17 seeded accounts carry 9 ttfv1 criteria and 0
+    evidence, so 0 accounts derive a date and portfolioTTFVStat is identical
+    before and after at {median:125, n:12}. The path is exercised only by
+    synthetic fixtures. On a real book with history it will move.
+  - Cost of the derived path, measured rather than asserted:
+    portfolioTTFVStat() over the 17-account book is 0.094 ms per call against
+    0.002 ms for the equivalent plain field read — ~47x relative, negligible
+    absolute. Stated so nobody later claims either direction.
 
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded

@@ -10218,6 +10218,55 @@ function _runSelfChecksInner(){
     check('phaseB a derived first value says so, and is not also told its value story is missing', ok, detail);
   })();
   (function(){
+    /* Spec check 11. NOT "no code mentions the field" — the migration, the
+       backfill and the import validator all still touch it, and should. What
+       must be true is that nothing reads it for MEANING.
+       The third assertion is the decisive one: setting the legacy boolean
+       directly changes nothing on screen. A render that still consulted it
+       would show a tick nobody evidenced, and the two stores would silently
+       disagree the first time anyone hand-edited a book or restored an old
+       export. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__pb10__', name:'One Truth Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__pb10__: []};
+      const tpl = getSessionTemplate(c, 1);
+
+      const noLegacyRead = renderSessionCard.toString().indexOf('.deliverables[') === -1;
+
+      // Writing evidence must not write the legacy map.
+      const notesBefore = JSON.stringify(c.sessionNotes);
+      setOutcomeEvidence(c,
+        outcomeCriteriaFor(c).find(x => x.sourceSession === 1 && x.sourceIndex === 0),
+        {on: todayISO(), by:'osm'});
+      const legacyUntouched = JSON.stringify(c.sessionNotes) === notesBefore;
+
+      /* And writing the legacy map must not change what renders.
+         getSessionNote is a WRITER and is called BEFORE the first render on
+         purpose: if the note were materialized between the two renders, any
+         difference between readSessionNote's throwaway default and the stored
+         record — `prep`, say — would show up as a diff that has nothing to do
+         with the legacy map, and this check would fail while appearing to
+         prove something. Materialize first; then the ONLY variable between the
+         two renders is the two booleans below. */
+      const note = getSessionNote(c, 1);
+      const before = renderSessionCard(c, 1, tpl, false);
+      note.deliverables[tpl.deliverables[0]] = true;
+      note.deliverables[tpl.deliverables[1]] = true;
+      const after = renderSessionCard(c, 1, tpl, false);
+      const legacyIsInert = before === after;
+
+      ok = noLegacyRead && legacyUntouched && legacyIsInert;
+      detail = JSON.stringify({noLegacyRead, legacyUntouched, legacyIsInert});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseB the legacy deliverables map is inert — evidence is the only truth', ok, detail);
+  })();
+  (function(){
     /* Phase 3 / FIX 1. Excluding the headline from the drivers list must not
        just move a rule around — it must actually stop the same sentence
        rendering twice under Why and What do I do, and a beat with a REAL

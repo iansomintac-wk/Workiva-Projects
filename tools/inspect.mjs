@@ -34,6 +34,8 @@ const positional = args.filter((a, i) =>
 const target = resolve(positional[0] || 'osm-book-of-business-tracker-1.0.html');
 const seedPath = flag('seed', null);
 const viewName = flag('view', null);
+const panelId = flag('panel', null);
+const panelTab = flag('panel-tab', null);
 const outDir = flag('out', null);
 const width = Number(flag('width', 1440));
 const height = Number(flag('height', 900));
@@ -218,8 +220,14 @@ console.log(`seeded ${seedResult.slice(3)} accounts from ${seedPath}`);
 // Switch views, then wait for the DOM to settle: poll the container's
 // innerText.length until two consecutive 250ms samples agree, capped at 5s.
 const switchResult = await send('Runtime.evaluate', {
-  expression: `(() => { try { ui.view = ${JSON.stringify(viewName)}; render(); return 'ok'; }
-    catch (e) { return 'err:' + String(e && e.stack || e); } })()`,
+  expression: `(() => { try {
+      ui.view = ${JSON.stringify(viewName)};
+      ${panelId ? `ui.openCustomerId = ${JSON.stringify(panelId)};` : ''}
+      ${panelTab ? `ui.panelTab = ${JSON.stringify(panelTab)};` : ''}
+      render();
+      ${panelId ? `if(!DATA.customers.some(c => c.id === ${JSON.stringify(panelId)})) return 'err:no such customer — the panel did not open';` : ''}
+      return 'ok';
+    } catch (e) { return 'err:' + e.message; } })()`,
   returnByValue: true, awaitPromise: true,
 });
 if (switchResult.exceptionDetails) {
@@ -301,6 +309,8 @@ writeFileSync(outTxtPath, captured.text, 'utf8');
 writeFileSync(outPngPath, pngBuffer);
 const meta = {
   view: viewName,
+  panel: panelId,
+  panelTab,
   seed: seedPath,
   viewport: { width, height, deviceScaleFactor: 1 },
   textLength: captured.textLength,
