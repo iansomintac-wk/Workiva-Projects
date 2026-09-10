@@ -5828,6 +5828,74 @@ function outcomeCriteriaFor(customer){
   });
   return out;
 }
+/* The ONLY writers of criteria and evidence. Everything else reads.
+
+   Materialization is what anchors identity: a criterion earns a stored record
+   the first time anyone acts on it, and from then on its opaque id is what
+   evidence is keyed by. Removal materializes too, so removed[] can never hold
+   a positional key. */
+function materializeOutcomeCriterion(customer, criterion){
+  if(!isRecordObject(customer.outcomeCriteria)) customer.outcomeCriteria = {items:[], removed:[]};
+  if(!Array.isArray(customer.outcomeCriteria.items)) customer.outcomeCriteria.items = [];
+  if(!Array.isArray(customer.outcomeCriteria.removed)) customer.outcomeCriteria.removed = [];
+  if(criterion && !criterion.provisional){
+    const known = customer.outcomeCriteria.items.find(x => x.id === criterion.id);
+    if(known) return known;
+  }
+  const dup = customer.outcomeCriteria.items.find(x =>
+    x.sourceSession === (criterion.sourceSession || null) && x.sourceIndex === criterion.sourceIndex);
+  if(dup) return dup;
+  /* sourceCount is what makes the index fallback in outcomeCriteriaFor safe: it
+     only trusts a stored sourceIndex while the session still holds the same
+     number of deliverables. A session that gained or lost one has shifted every
+     later position, and matching on the index there would attach one
+     criterion's evidence to a different criterion, silently. */
+  const count = criterion.sourceSession
+    ? ((getSessionTemplateSet(customer)[criterion.sourceSession - 1] || {}).deliverables || []).length
+    : null;
+  const rec = {id:'oc_' + uid().slice(0, 8), text: String(criterion.text || ''),
+    stage: criterion.stage || '', sourceSession: criterion.sourceSession || null,
+    sourceIndex: criterion.sourceIndex === undefined ? null : criterion.sourceIndex,
+    sourceCount: count};
+  customer.outcomeCriteria.items.push(rec);
+  return rec;
+}
+
+const OUTCOME_EVIDENCE_BY = ['customer', 'osm', 'unknown'];
+
+function setOutcomeEvidence(customer, criterion, rec){
+  if(!customer || !criterion) return null;
+  const stored = materializeOutcomeCriterion(customer, criterion);
+  if(!isRecordObject(customer.outcomeEvidence)) customer.outcomeEvidence = {};
+  const on = (rec && isRealISODate(rec.on)) ? rec.on : null;   // never invent a date
+  const by = (rec && OUTCOME_EVIDENCE_BY.indexOf(rec.by) !== -1) ? rec.by : 'unknown';
+  const out = {on, by};
+  if(rec && typeof rec.activityId === 'string' && rec.activityId) out.activityId = rec.activityId;
+  if(rec && typeof rec.note === 'string' && rec.note.trim()) out.note = rec.note.trim().slice(0, 500);
+  if(rec && rec.legacy === true) out.legacy = true;
+  customer.outcomeEvidence[stored.id] = out;
+  return out;
+}
+
+/* Deleting the entry, rather than storing {met:false}, keeps "evidenced" a
+   single question — does a record exist — instead of two. The criterion itself
+   stays, so re-ticking reuses the same identity. */
+function clearOutcomeEvidence(customer, criterionId){
+  if(!customer || !isRecordObject(customer.outcomeEvidence)) return false;
+  if(customer.outcomeEvidence[criterionId] === undefined) return false;
+  delete customer.outcomeEvidence[criterionId];
+  return true;
+}
+
+function removeOutcomeCriterion(customer, criterion){
+  if(!customer || !criterion) return null;
+  const stored = materializeOutcomeCriterion(customer, criterion);
+  if(customer.outcomeCriteria.removed.indexOf(stored.id) === -1){
+    customer.outcomeCriteria.removed.push(stored.id);
+  }
+  clearOutcomeEvidence(customer, stored.id);
+  return stored.id;
+}
 function getSessionActivity(customer, sessionNumber){
   const acts = DATA.activities[customer.id] || [];
   return acts.find(a => a.sessionNumber === sessionNumber) || null;
@@ -8669,10 +8737,16 @@ function _runSelfChecksInner(){
       const before = JSON.stringify(c);
       const a = JSON.stringify(outcomeCriteriaFor(c));
       const b = JSON.stringify(outcomeCriteriaFor(c));
+      /* backfillCustomerRecord now creates EMPTY outcomeCriteria/outcomeEvidence
+         containers, which is a default, not materialization. What must stay true
+         is that deriving adds nothing to them — and that the book is byte-identical
+         afterwards, which is the assertion this check has always rested on. */
+      const items = (c.outcomeCriteria && c.outcomeCriteria.items) || [];
+      const evKeys = Object.keys(c.outcomeEvidence || {});
       ok = a === b && JSON.stringify(c) === before
-        && c.outcomeCriteria === undefined && c.outcomeEvidence === undefined;
+        && items.length === 0 && evKeys.length === 0;
       detail = JSON.stringify({stable: a === b, bookUntouched: JSON.stringify(c) === before,
-        materialized: c.outcomeCriteria !== undefined});
+        materializedItems: items.length, evidenceKeys: evKeys.length});
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA;
     check('phaseA deriving criteria is pure and materializes nothing', ok, detail);
@@ -8737,6 +8811,117 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     check('phaseA an inserted deliverable cannot steal another criterion evidence', ok, detail);
+  })();
+  (function(){
+    /* Materialization assigns an OPAQUE id. The positional display key must
+       never reach storage — not in items, not in removed, not in the evidence
+       map — because it is not stable under insertion. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc4__', name:'Mat Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__oc4__: []};
+      const first = outcomeCriteriaFor(c)[0];
+      const rec = setOutcomeEvidence(c, first, {on: todayISO(), by:'customer'});
+      const keys = Object.keys(c.outcomeEvidence);
+      const storedIds = c.outcomeCriteria.items.map(x => x.id);
+      const noPositional = keys.concat(storedIds, c.outcomeCriteria.removed)
+        .every(k => /^oc_/.test(k));
+      // Re-deriving now returns the opaque id in place of the provisional key.
+      const after = outcomeCriteriaFor(c)[0];
+      ok = /^oc_/.test(rec ? keys[0] : '') && noPositional && keys.length === 1
+        && after.id === storedIds[0] && after.provisional !== true
+        && after.evidence && after.evidence.by === 'customer';
+      detail = JSON.stringify({keys, storedIds, noPositional, afterId: after.id});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA evidence materializes an opaque id and no positional key is ever stored', ok, detail);
+  })();
+  (function(){
+    /* THE TWO WAYS IDENTITY BREAKS, in one check.
+
+       REWORDING: change a deliverable's text and its evidence must follow it,
+       via the (sourceSession, sourceIndex) fallback.
+
+       INSERTION: add a deliverable at index 0 of a session that already has
+       evidence at index 0. With positional ids the new criterion would silently
+       inherit the old one's evidence — the collision opaque ids exist for. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      const mod = DATA.config.modules[0];
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const c = {id:'__oc5__', name:'Insert Co', module:mod,
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__oc5__: []};
+      _renderMemoResets.forEach(r => r());
+      const original = outcomeCriteriaFor(c).find(x => x.sourceSession === 1 && x.sourceIndex === 0);
+      setOutcomeEvidence(c, original, {on: todayISO(), by:'osm'});
+      const evidencedId = c.outcomeCriteria.items[0].id;
+      const originalText = original.text;
+
+      // (a) REWORD the deliverable in place. Evidence must follow it.
+      DATA.config.sessionTemplates[mod][0].deliverables[0] = originalText + ' (reworded)';
+      _renderMemoResets.forEach(r => r());
+      const reworded = outcomeCriteriaFor(c).find(x => x.id === evidencedId);
+      const survivedReword = !!reworded && !!reworded.evidence
+        && reworded.source === 'curriculum (reworded since)' && reworded.text === originalText;
+
+      // (b) Restore, then INSERT a new deliverable at index 0.
+      DATA.config.sessionTemplates[mod][0].deliverables[0] = originalText;
+      DATA.config.sessionTemplates[mod][0].deliverables.unshift('BRAND NEW DELIVERABLE');
+      _renderMemoResets.forEach(r => r());
+      const after = outcomeCriteriaFor(c);
+      const inserted = after.find(x => x.text === 'BRAND NEW DELIVERABLE');
+      const kept = after.find(x => x.id === evidencedId);
+      const survivedInsert = !!inserted && inserted.evidence === null
+        && !!kept && kept.text === originalText && !!kept.evidence && kept.evidence.by === 'osm';
+
+      ok = survivedReword && survivedInsert;
+      detail = JSON.stringify({survivedReword, survivedInsert,
+        rewordedSource: reworded && reworded.source,
+        insertedEvidence: inserted && inserted.evidence,
+        keptHasEvidence: !!(kept && kept.evidence)});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('phaseA rewording follows evidence, and inserting neither moves nor inherits it', ok, detail);
+  })();
+  (function(){
+    /* Un-ticking DELETES the entry and keeps the criterion, so re-ticking reuses
+       the same identity instead of minting a second one. And removing a derived
+       criterion materializes it first, so removed[] holds only opaque ids. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc6__', name:'Toggle Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__oc6__: []};
+      const first = outcomeCriteriaFor(c)[0];
+      setOutcomeEvidence(c, first, {on: todayISO(), by:'osm'});
+      const id = c.outcomeCriteria.items[0].id;
+      clearOutcomeEvidence(c, id);
+      const gone = c.outcomeEvidence[id] === undefined;
+      const criterionKept = c.outcomeCriteria.items.some(x => x.id === id);
+      setOutcomeEvidence(c, outcomeCriteriaFor(c).find(x => x.id === id), {on: todayISO(), by:'osm'});
+      const sameIdentity = c.outcomeCriteria.items.length === 1 && !!c.outcomeEvidence[id];
+      // Removal of a still-provisional criterion must materialize it.
+      const second = outcomeCriteriaFor(c).find(x => x.provisional === true);
+      const removedId = removeOutcomeCriterion(c, second);
+      const removedOpaque = /^oc_/.test(removedId) && c.outcomeCriteria.removed.indexOf(removedId) !== -1;
+      const excluded = !outcomeCriteriaFor(c).some(x => x.id === removedId);
+      ok = gone && criterionKept && sameIdentity && removedOpaque && excluded;
+      detail = JSON.stringify({gone, criterionKept, sameIdentity, removedId, removedOpaque, excluded});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA un-ticking keeps identity, and removal stores only opaque ids', ok, detail);
   })();
   (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
@@ -21443,6 +21628,13 @@ function backfillCustomerRecord(c){
   [c.compliance.sentiment, c.compliance.outcomePlan, c.compliance.associatedPeopleCSAT].forEach(item=>{
     if(item.date && !isRealISODate(item.date)) item.date = null;
   });
+  // v99 (Phase A): outcome criteria overrides and the evidence store. Absent
+  // means "derive everything, nothing evidenced" — the same contract as every
+  // other optional per-account collection here.
+  if(!isRecordObject(c.outcomeCriteria)) c.outcomeCriteria = {items:[], removed:[]};
+  if(!Array.isArray(c.outcomeCriteria.items)) c.outcomeCriteria.items = [];
+  if(!Array.isArray(c.outcomeCriteria.removed)) c.outcomeCriteria.removed = [];
+  if(!isRecordObject(c.outcomeEvidence)) c.outcomeEvidence = {};
   // A restored/imported record's module may since have been renamed or deleted —
   // fall back to the first configured module rather than pointing at nothing.
   if(!DATA.config.modules.includes(c.module)){
