@@ -757,13 +757,24 @@
     })();
 
     (function(){
+      /* Some .guided-only elements are hidden by RESPONSIVE rules, not by mode —
+         .chapter-dock is display:none under 800px — so "visible" is not a
+         viewport-independent property and this check used to fail on any narrow
+         window while the guide was behaving correctly. Compare each element
+         against its OWN baseline instead: quick mode must hide everything that
+         was visible, and leaving quick mode must restore every element to
+         exactly what it was. That is stricter than the old assertion, not
+         looser: it catches a mode toggle that leaves anything changed. */
       const guided = $$('.guided-only');
+      const baseline = guided.map(el => getComputedStyle(el).display);
+      const wasVisible = guided.filter((el, i) => baseline[i] !== 'none');
       setMode('quick', false);
-      const hidden = guided.length > 0 && guided.every(el => getComputedStyle(el).display === 'none');
+      const hidden = wasVisible.length > 0 && wasVisible.every(el => getComputedStyle(el).display === 'none');
       setMode('guided', false);
-      const shown = guided.every(el => getComputedStyle(el).display !== 'none');
+      const restored = guided.every((el, i) => getComputedStyle(el).display === baseline[i]);
       check('quick mode actually removes the guided-only chapters',
-        hidden && shown, `hidden=${hidden} shownAgain=${shown} count=${guided.length}`);
+        hidden && restored,
+        `hidden=${hidden} restored=${restored} count=${guided.length} visibleHere=${wasVisible.length}`);
     })();
 
     (function(){

@@ -29,6 +29,8 @@ const positional = args.filter((a, i) =>
 const target = resolve(positional[0] || 'osm-book-of-business-tracker-1.0.html');
 const fnName = flag('fn', 'runSelfChecks');
 const expect = flag('expect', null);
+const width = Number(flag('width', 1440));
+const height = Number(flag('height', 900));
 /* A RANDOM port per invocation. A fixed one lets a Chrome that outlived its
    parent — SIGKILL on the launcher does not reliably take down the browser
    process tree on Windows — keep listening, so the next run attaches to a stale
@@ -142,12 +144,25 @@ const send = rpc(ws);
 
 const pageErrors = [];
 await send('Runtime.enable');
+await send('Page.enable');
 ws.addEventListener('message', ev => {
   let m; try { m = JSON.parse(ev.data); } catch { return; }
   if (m.method === 'Runtime.exceptionThrown') {
     pageErrors.push(m.params.exceptionDetails?.exception?.description
       || m.params.exceptionDetails?.text || 'unknown exception');
   }
+});
+
+/* Pin the viewport instead of leaving it at whatever headless Chrome
+   defaults to. Any check that reads getComputedStyle()/layout is a
+   viewport-dependent assertion in disguise — an unpinned default can change
+   between Chrome versions, differs from what a human sees in a real window,
+   and previously made the guide's "quick mode hides guided chapters" check
+   fail under headless Chrome's 782px default (a responsive @media rule, not
+   a mode bug) while passing at 1440x900. Set explicitly, before the
+   readiness poll, so nothing evaluates layout against an unchosen size. */
+await send('Emulation.setDeviceMetricsOverride', {
+  width, height, deviceScaleFactor: 1, mobile: false,
 });
 
 const readyDeadline = Date.now() + 30000;
