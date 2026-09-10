@@ -717,7 +717,11 @@ MSG
       // All but the last evidenced -> still nothing.
       for(let i = 0; i < t1.length - 1; i++){
         const live = outcomeCriteriaFor(c).filter(x => x.stage === 'ttfv1')[i];
-        setOutcomeEvidence(c, live, {on: isoAddDays(todayISO(), -(40 - i)), by:'osm'});
+        /* -(60 + i), not -(40 - i). ttfv1 spans several sessions of 12-15
+           deliverables, so i can exceed 37, at which point an "earlier"
+           criterion would be dated LATER than the -3 below and this check
+           would fail for a reason that has nothing to do with the code. */
+        setOutcomeEvidence(c, live, {on: isoAddDays(todayISO(), -(60 + i)), by:'osm'});
       }
       const partial = getFirstValue(c).achievedOn === null;
 
@@ -970,9 +974,16 @@ Spec check 11 says "nothing reads `sessionNotes[n].deliverables` any more." Read
         {on: todayISO(), by:'osm'});
       const legacyUntouched = JSON.stringify(c.sessionNotes) === notesBefore;
 
-      // And writing the legacy map must not change what renders.
+      /* And writing the legacy map must not change what renders.
+         getSessionNote is a WRITER and is called BEFORE the first render on
+         purpose: if the note were materialized between the two renders, any
+         difference between readSessionNote's throwaway default and the stored
+         record — `prep`, say — would show up as a diff that has nothing to do
+         with the legacy map, and this check would fail while appearing to
+         prove something. Materialize first; then the ONLY variable between the
+         two renders is the two booleans below. */
+      const note = getSessionNote(c, 1);
       const before = renderSessionCard(c, 1, tpl, false);
-      const note = getSessionNote(c, 1);            // a WRITER — deliberate here
       note.deliverables[tpl.deliverables[0]] = true;
       note.deliverables[tpl.deliverables[1]] = true;
       const after = renderSessionCard(c, 1, tpl, false);
