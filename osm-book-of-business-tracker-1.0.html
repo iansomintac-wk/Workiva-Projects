@@ -10398,7 +10398,12 @@ function _runSelfChecksInner(){
     // It rendered with no listener for one build after its v70 binding was
     // deleted with the block around it. A rendered button that does nothing is
     // worse than an absent one.
-    String(renderBeatPrep).indexOf('data-thread-resolve=') !== -1 &&
+    /* renderBeatQuestions owns this control now. It used to be asserted against
+       renderBeatPrep, which rendered a SECOND copy of the same questions; that
+       duplicate was removed, and the check was pinned to the function rather
+       than to the control. The binding is asserted separately on the next line,
+       so both halves of "Mark handled is wired" are still covered. */
+    String(renderBeatQuestions).indexOf('data-thread-resolve=') !== -1 &&
     String(bindBeatPane).indexOf('data-thread-resolve') !== -1 &&
     String(bindBeatPane).indexOf('resolvedOn') !== -1);
   check('v72 the pane pool is exactly three nodes at any beat count',
@@ -17058,27 +17063,13 @@ function renderBeatPanel(beat, dispatchChips){
    Every fact is read from the book at render time, so a prep card cannot go
    stale the way a written brief does. */
 function renderBeatPrep(beat){
-  const x = beat.call, c = x.c, last = x.last;
-  const threads = last ? unresolvedThreads(last) : [];
+  const x = beat.call, c = x.c;
   const pendingItems = (DATA.activities[c.id] || [])
     .flatMap(a => (a.checklist || []).filter(i => !i.done).map(i => ({label:i.label, date:a.date})));
   const deliverables = (x.next && x.next.template && Array.isArray(x.next.template.deliverables)) ? x.next.template.deliverables : [];
   return `
     <div class="focus-act">
       <h5>${x.at ? escapeHtml(fmtDayTime(x.at)) + ' · ' : ''}Call prep${x.next ? ` · Session ${x.next.number}` : ''} ${x.prepped ? '<span class="badge badge-ontrack">prep notes logged</span>' : '<span class="badge badge-watch">no prep notes</span>'}</h5>
-
-      <div class="bp-sec">
-        <div class="lbl">Open questions from last time ${threads.length ? `<span class="badge badge-watch">${threads.length}</span>` : ''}</div>
-        ${threads.length ? threads.map(t => `
-          <div class="bp-thread">
-            <div style="font-size:var(--text-sm); color:var(--text); font-weight:600;">${escapeHtml(t.q)}</div>
-            ${t.a
-              ? `<div style="font-size:var(--text-xs); color:var(--text-dim); margin-top:3px;">${escapeHtml(t.a)}</div>`
-              : `<div style="font-size:var(--text-xs); color:var(--status-watch-text); margin-top:3px;">Still unanswered — this is what they will ask.</div>`}
-            <button class="btn btn-sm" style="margin-top:6px;" data-thread-resolve="${escapeAttr(last.id)}|${escapeAttr(t.id)}">Mark handled</button>
-          </div>`).join('')
-          : `<div class="bp-body" style="color:var(--text-faint);">None recorded. Questions you capture in a Session Debrief now persist and appear here before the next call.</div>`}
-      </div>
 
       <div class="bp-sec">
         <div class="lbl">Pending deliverables</div>
