@@ -997,9 +997,12 @@
     text-transform:uppercase; letter-spacing:.05em;}
   .bp-thread{margin-top:6px; padding:6px 8px; background:var(--bg-card-hover); border-radius:6px;}
   .bp-risk{border-top:1px solid var(--border-soft); padding:var(--space-1) 0 0; margin-bottom:var(--space-1);}
+  .bp-risk:first-of-type{border-top:0; padding-top:0;}
   /* Outcome criteria. A list, not a table — the text is the content and the
      mark is an annotation on it. */
   .oc-group{margin-top:12px;}
+  .oc-group .lbl{font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-faint);
+    text-transform:uppercase; letter-spacing:.05em;}
   .oc-row{display:flex; gap:var(--space-2); align-items:baseline; padding:4px 0;
     font-size:var(--text-sm); color:var(--text-dim);}
   .oc-row.oc-met{color:var(--text);}
@@ -1007,7 +1010,6 @@
   .oc-row.oc-met .oc-mark{color:var(--status-ontrack-text, var(--accent-info));}
   .oc-text{min-width:0; overflow-wrap:anywhere;}
   .oc-meta{display:block; font-size:var(--text-xs); color:var(--text-faint); margin-top:2px;}
-  .bp-risk:first-of-type{border-top:0; padding-top:0;}
   .bp-time{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
   .bp-time .bp-basis{margin:0;}
   .badge-new{background:rgba(0,116,232,.15); color:var(--accent-info); border-color:rgba(0,116,232,.3);}
@@ -4445,7 +4447,7 @@ function migrateData(data){
             }
             return;
           }
-          const rec = materializeOutcomeCriterion(c, criterion);
+          const rec = materializeOutcomeCriterion(c, criterion, (numericKey && tpl) ? labels.length : undefined);
           /* Guarded, like the `already` branch above. materializeOutcomeCriterion
              dedupes derived criteria on (sourceSession, sourceIndex) while
              `already` keys on (text, sourceSession), so a REWORDED slot makes the
@@ -5928,13 +5930,17 @@ function outcomeCriteriaFor(customer){
   });
   return out;
 }
-/* The ONLY writers of criteria and evidence. Everything else reads.
+/* The writers of criteria and evidence for RUNTIME use. Everything else reads.
+   The migration below is the one exception: it writes c.outcomeEvidence[…]
+   directly, bypassing setOutcomeEvidence's validation, deliberately — it is
+   translating legacy ticks that predate the evidence store, not accepting new
+   input, so the validation path does not apply to it.
 
    Materialization is what anchors identity: a criterion earns a stored record
    the first time anyone acts on it, and from then on its opaque id is what
    evidence is keyed by. Removal materializes too, so removed[] can never hold
    a positional key. */
-function materializeOutcomeCriterion(customer, criterion){
+function materializeOutcomeCriterion(customer, criterion, explicitCount){
   if(!isRecordObject(customer.outcomeCriteria)) customer.outcomeCriteria = {items:[], removed:[]};
   if(!Array.isArray(customer.outcomeCriteria.items)) customer.outcomeCriteria.items = [];
   if(!Array.isArray(customer.outcomeCriteria.removed)) customer.outcomeCriteria.removed = [];
@@ -5961,9 +5967,16 @@ function materializeOutcomeCriterion(customer, criterion){
      number of deliverables. A session that gained or lost one has shifted every
      later position, and matching on the index there would attach one
      criterion's evidence to a different criterion, silently. */
-  const count = criterion.sourceSession
-    ? ((getSessionTemplateSet(customer)[criterion.sourceSession - 1] || {}).deliverables || []).length
-    : null;
+  /* The caller may supply the count, and the migration MUST: it runs before
+     applyDataBackfills, so getSessionTemplateSet would read an un-normalized
+     totalSessions and module — the same raw-field trap that took three fix
+     rounds to remove from the migration itself. A stored sourceCount of 0
+     against a real session of 12-15 silently disables the reader's index
+     fallback, and the criterion renders twice the first time it is reworded. */
+  const count = Number.isFinite(explicitCount) ? explicitCount
+    : (criterion.sourceSession
+        ? ((getSessionTemplateSet(customer)[criterion.sourceSession - 1] || {}).deliverables || []).length
+        : null);
   const rec = {id:'oc_' + uid().slice(0, 8), text: String(criterion.text || ''),
     stage: criterion.stage || '', sourceSession: criterion.sourceSession || null,
     sourceIndex: idx,
@@ -9292,10 +9305,10 @@ function _runSelfChecksInner(){
       const matched = (c.outcomeCriteria.items || []).find(x => x.text === firstLabel);
       const untickedSkipped = !c.outcomeCriteria.items.some(x => x.text === 'AN UNTICKED ONE');
       const sessionNotesIntact = c.sessionNotes['1'].deliverables[firstLabel] === true;
-      ok = book.schemaVersion >= 12 && everyLegacyUndated && !!orphan && !!matched
+      ok = book.schemaVersion >= 12 && ids.length === 2 && everyLegacyUndated && !!orphan && !!matched
         && orphan.sourceSession === null && matched.sourceSession === 1
         && untickedSkipped && sessionNotesIntact;
-      detail = JSON.stringify({v: book.schemaVersion, ids: ids.length, everyLegacyUndated,
+      detail = JSON.stringify({v: book.schemaVersion, ids: ids.length, idCount: ids.length, everyLegacyUndated,
         orphan: !!orphan, matched: !!matched, untickedSkipped, sessionNotesIntact});
     }catch(err){ detail = err.message; }
     check('phaseA migration turns ticks into undated legacy evidence and drops nothing', ok, detail);
@@ -9428,11 +9441,11 @@ function _runSelfChecksInner(){
       const c = book.customers[0];
       const items = c.outcomeCriteria.items;
       const rec = items.find(x => x.text === csrdLabel);
-      ok = items.length === 1 && !!rec && rec.sourceSession === sessionNumber
+      ok = items.length === 1 && !!rec && rec.sourceSession === sessionNumber && rec.sourceIndex === 0
         && Object.keys(c.outcomeEvidence).length === 1
         && c.outcomeEvidence[rec.id] && c.outcomeEvidence[rec.id].legacy === true;
       detail = JSON.stringify({items: items.length, sourceSession: rec && rec.sourceSession,
-        expectedSession: sessionNumber, label: csrdLabel});
+        expectedSession: sessionNumber, sourceIndex: rec && rec.sourceIndex, label: csrdLabel});
     }catch(err){ detail = err.message; }
     check('phaseA a CSRD account migrates against its own curriculum', ok, detail);
   })();
@@ -9458,8 +9471,9 @@ function _runSelfChecksInner(){
       const namesOutcome = html.indexOf(escapeHtml(v.outcomeName)) !== -1;
       const showsStages = html.indexOf('ttfv1') !== -1 || html.toLowerCase().indexOf('first value') !== -1;
       const showsUndated = html.indexOf('date unknown') !== -1;
-      const noWriters = !/data-(oc|outcome)-(set|clear|remove|tick)/.test(html)
-        && html.indexOf('<input') === -1 && html.indexOf('<textarea') === -1;
+      const noWriters = !/data-[a-z-]*(set|tick|clear|remove|save|add)/.test(html)
+        && html.indexOf('<input') === -1 && html.indexOf('<textarea') === -1
+        && html.indexOf('<button') === -1;
       const pure = JSON.stringify(c) === before;
       ok = namesOutcome && showsStages && showsUndated && noWriters && pure;
       detail = JSON.stringify({namesOutcome, showsStages, showsUndated, noWriters, pure});
@@ -22299,7 +22313,7 @@ function backfillCustomerRecord(c){
   [c.compliance.sentiment, c.compliance.outcomePlan, c.compliance.associatedPeopleCSAT].forEach(item=>{
     if(item.date && !isRealISODate(item.date)) item.date = null;
   });
-  // v99 (Phase A): outcome criteria overrides and the evidence store. Absent
+  // Phase A: outcome criteria overrides and the evidence store. Absent
   // means "derive everything, nothing evidenced" — the same contract as every
   // other optional per-account collection here.
   if(!isRecordObject(c.outcomeCriteria)) c.outcomeCriteria = {items:[], removed:[]};
