@@ -9930,6 +9930,110 @@ function _runSelfChecksInner(){
     check('phase3 a graduation landing after renewal reaches top severity', ok, detail);
   })();
   (function(){
+    /* Phase 3 / badge FIX 1. accountStateLabel(c) (On Track / Needs Attention /
+       Off Track) is the worst of computeRisk and the account's top-ranked
+       signal severity — healthScore(c) is a separate engagement measure that
+       does not feed it. Paired beside it, the two can read as contradictory
+       ("Needs Attention · 92% health"), so healthScore is removed from the
+       three sites that rendered them side by side: the beat panel header
+       (bp-meta), the day-step STATE row, and the knowledge-transfer packet's
+       "Status at transfer" line. riskLabel(...) IS the engagement read, so
+       health beside IT is untouched — asserted positively via the real
+       account panel so a check that just deleted "% health" everywhere would
+       not pass for the wrong reason. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog,
+          prevFocus = ui.todayFocusId, prevOpenId = ui.openCustomerId, prevTab = ui.panelTab;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const c = {id:'__hlth1__', name:'Health Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__hlth1__: []};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+
+      const beat = {kind:'work', customerId:c.id, customerName:c.name, at:null, call:null,
+        headline:'Gainsight admin item', reasons:['Gainsight admin item'], severity:2, effortMin:20, signalKey:null,
+        row:{customerId:c.id, severity:2, source:'test', why:'', signalKey:null, alsoWaiting:[], panelTab:'overview'}};
+      const day = {beats:[beat], movements:[{mkey:'work', label:'Work', note:'', beats:[beat]}], spilled:0};
+
+      const dayHtml = renderDay(day, () => '');
+      const panelHtml = renderBeatPanel(beat, () => '');
+      const kt = buildKnowledgeTransferText(c);
+
+      const label = escapeHtml(accountStateLabel(c));
+      const stateDd = (dayHtml.split('<dt>State</dt>')[1] || '').split('</dd>')[0];
+      const metaDiv = (panelHtml.split('class="bp-meta"')[1] || '').split('</div>')[0];
+      const ktLine = kt.split('\n').find(l => l.indexOf('Status at transfer:') !== -1) || '';
+
+      const dayStateClean = stateDd.indexOf(label) !== -1 && stateDd.indexOf('% health') === -1;
+      const metaClean = metaDiv.indexOf(label) !== -1 && metaDiv.indexOf('% health') === -1;
+      const ktClean = ktLine.indexOf(accountStateLabel(c)) !== -1 && ktLine.indexOf('% health') === -1;
+
+      // Positive control: a real, non-implementation account through the real
+      // panel still pairs riskLabel(...) with health elsewhere in the file's
+      // output — proves this check can fail, and that the fix did not strip
+      // "% health" from the whole file.
+      DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const real = DATA.customers.find(x => !inImplementation(x));
+      let elsewhereHasHealth = false;
+      if(real){
+        ui.openCustomerId = real.id; ui.panelTab = 'details';
+        elsewhereHasHealth = renderPanel().indexOf('% health') !== -1;
+        ui.openCustomerId = prevOpenId; ui.panelTab = prevTab;
+      }
+
+      ok = dayStateClean && metaClean && ktClean && !!real && elsewhereHasHealth;
+      detail = JSON.stringify({dayStateClean, metaClean, ktClean, hasRealAccount: !!real, elsewhereHasHealth});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    ui.todayFocusId = prevFocus; ui.openCustomerId = prevOpenId; ui.panelTab = prevTab;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase3 the state label is not paired with a health score', ok, detail);
+  })();
+  (function(){
+    /* Phase 3 / badge FIX 2. The evidence badge named a band NUMBER (Sev N/4)
+       that required already knowing STORY_CHAPTERS to decode — the beat's own
+       eyebrow already names the band, so the badge should too. Built from
+       storyChapterFor(severity) rather than a second table, so the two can't
+       drift. Two severities exercised — a fix that hard-codes one label
+       string, or that leaves severity 1 plural on the badge, still gets
+       caught by the exact match. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const mk = id => { const c = {id, name:'Badge Co '+id, module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+        backfillCustomerRecord(c); return c; };
+      const c4 = mk('__sevb4__'), c2 = mk('__sevb2__');
+      DATA.customers = [c4, c2];
+      DATA.activities = {__sevb4__: [], __sevb2__: []};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+
+      const beatFor = (c, sev) => ({kind:'work', customerId:c.id, customerName:c.name, at:null, call:null,
+        headline:'Evidence check', reasons:['Evidence check'], severity:sev, effortMin:20, signalKey:null,
+        row:{customerId:c.id, severity:sev, source:'test', why:'why text', signalKey:null, alsoWaiting:[], panelTab:'overview'}});
+
+      const panel4 = renderBeatPanel(beatFor(c4, 4), () => '');
+      const panel2 = renderBeatPanel(beatFor(c2, 2), () => '');
+
+      const badge4Reads = panel4.indexOf('>Needs you today<') !== -1;
+      const badge2Reads = panel2.indexOf('>Admin and pacing<') !== -1;
+      const noSevDigit4 = !/Sev \d/.test(panel4);
+      const noSevDigit2 = !/Sev \d/.test(panel2);
+
+      ok = badge4Reads && badge2Reads && noSevDigit4 && noSevDigit2;
+      detail = JSON.stringify({badge4Reads, badge2Reads, noSevDigit4, noSevDigit2});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase3 the severity badge names its band', ok, detail);
+  })();
+  (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
        account at 2pm, so the rail flags it and the standing counts it wherever
        it sits — the failure mode named when the axis was chosen. */
@@ -16878,6 +16982,16 @@ const STORY_CHAPTERS = [
 function storyChapterFor(sev){
   return STORY_CHAPTERS.find(ch => sev >= ch.min) || STORY_CHAPTERS[STORY_CHAPTERS.length - 1];
 }
+/* The Sev N/4 badges (evidence panel, "Below the day") name the band instead
+   of numbering it — the beat's own eyebrow already carries this vocabulary.
+   Derived from storyChapterFor so the two can never drift; severity 1's
+   chapter label is plural ("Opportunities") because it names a group of
+   accounts in STORY_CHAPTERS, but a badge sits on one account, so singular
+   reads better here. STORY_CHAPTERS itself stays untouched. */
+function severityBadgeLabel(sev){
+  const label = storyChapterFor(sev).label;
+  return sev === 1 ? 'Opportunity' : label;
+}
 
 /* The movements of the day. Two, plus the close: calls lead because a booked
    call is the only item on this tab with another person attached to it, then
@@ -17240,7 +17354,7 @@ function renderBeatPanel(beat, dispatchChips){
   <div class="section-card" style="margin:0;">
     <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap;">
       <div class="bp-name">${escapeHtml(c.name)}</div>
-      <div class="bp-meta">${escapeHtml(c.module)}${impl ? ' · in implementation' : ` · ${accountStateLabel(c)} · ${healthScore(c)}% health`}</div>
+      <div class="bp-meta">${escapeHtml(c.module)}${impl ? ' · in implementation' : ` · ${accountStateLabel(c)}`}</div>
     </div>
 
     ${renderBeatStanding(c)}
@@ -17249,7 +17363,7 @@ function renderBeatPanel(beat, dispatchChips){
 
     ${row ? `
       <div class="focus-act">
-        <h5>The evidence ${row.severity ? `<span class="badge ${row.severity>=3?'badge-risk':row.severity===2?'badge-watch':''}" title="${escapeAttr(row.why || '')}">Sev ${row.severity}/4</span>` : ''}</h5>
+        <h5>The evidence ${row.severity ? `<span class="badge ${row.severity>=3?'badge-risk':row.severity===2?'badge-watch':''}" title="${escapeAttr(row.why || '')}">${escapeHtml(severityBadgeLabel(row.severity))}</span>` : ''}</h5>
         <p class="bp-basis" style="margin:0 0 8px;">Severity ${row.severity} of 4 · ${row.signalKey ? `signal <span style="font-family:var(--font-mono);">${escapeHtml(row.signalKey)}</span>` : escapeHtml(row.source)}. The reason this account is on your day is stated beside it; this is what the tracker read to get there.</p>
         ${beat.reasons.length > 4 ? `
           <div class="bp-sec">
@@ -17499,7 +17613,7 @@ function renderDay(day, dispatchChips){
           <h4>${escapeHtml(b.customerName)}</h4>
           <dl class="ds-facts">
             <dt>State</dt>
-            <dd>${c ? escapeHtml(accountStateLabel(c)) : 'Unknown'}${c && !inImplementation(c) ? ` <span class="ds-faint">· ${healthScore(c)}% health</span>` : ''}</dd>
+            <dd>${c ? escapeHtml(accountStateLabel(c)) : 'Unknown'}</dd>
             ${drivers.length ? `
               <dt>Why</dt>
               <dd><ul class="ds-why-list">${drivers.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul>
@@ -17610,7 +17724,7 @@ function renderToday(){
           </div>
           <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
             ${diff.newIds.has(row.customerId) ? `<span class="badge badge-new">NEW</span>` : ''}
-            <span class="badge ${row.severity>=3?'badge-risk':row.severity===2?'badge-watch':''}" title="${escapeAttr(row.why || '')}">Sev ${row.severity}/4</span>
+            <span class="badge ${row.severity>=3?'badge-risk':row.severity===2?'badge-watch':''}" title="${escapeAttr(row.why || '')}">${escapeHtml(severityBadgeLabel(row.severity))}</span>
           </div>
         </div>`).join('')}
       ${hidden ? `<p class="bp-basis" style="margin:10px 0 0;">${hidden} more — <button class="link-btn" data-today-show-all>show all ${restAll.length}</button></p>` : ''}
@@ -17706,7 +17820,7 @@ function buildKnowledgeTransferText(c){
   L.push(`Module: ${c.module} · Stage: ${(DATA.config.stages.find(s=>s.key===c.stage)||{}).label || c.stage}`);
   L.push(`Implemented: ${fmtDate(c.implementationDate)}${c.targetGraduationDate ? ` · Target graduation: ${fmtDate(c.targetGraduationDate)}` : ''}`);
   if(!inImplementation(c)){
-    L.push(`Status at transfer: ${accountStateLabel(c)} · ${healthScore(c)}% health · ${sessionsCompletedCount(c)}/${c.totalSessions} sessions logged`);
+    L.push(`Status at transfer: ${accountStateLabel(c)} · ${sessionsCompletedCount(c)}/${c.totalSessions} sessions logged`);
   } else {
     const impl = getImplementationState(c);
     L.push(`Status at transfer: in partner-led implementation (${implPhaseLabel(impl.phase)})${impl.partner ? ` · partner: ${impl.partner}` : ''}`);
