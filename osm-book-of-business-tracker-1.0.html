@@ -12582,8 +12582,13 @@ function _runSelfChecksInner(){
       && String(savePanelWide).indexOf('DATA') === -1
       && PANEL_WIDTH_KEY !== STORAGE_KEY);
 
+    /* >= rather than ===, matching the >= 4 / >= 9 / >= 10 clauses elsewhere in
+       this suite. What matters is that the dated log landed at a schema version
+       and has a migration behind it, not which version happens to be current —
+       pinning that coupled this check to every future bump, and it broke on the
+       very next one. */
     check('v98 the dated log is versioned, migrated and repaired like every other shape',
-      CURRENT_SCHEMA_VERSION === 12
+      CURRENT_SCHEMA_VERSION >= 11
       && String(migrateData).indexOf('impactLog') !== -1
       && String(repairAuxiliaryCollections).indexOf('impactLog') !== -1
       && String(trackImpact).indexOf('MAX_IMPACT_LOG') !== -1);
