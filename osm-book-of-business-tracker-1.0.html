@@ -5493,9 +5493,90 @@ function riskLabel(r){ return r==='risk' ? 'Off Track' : r==='watch' ? 'Watch' :
    prepareBookData() adopts an imported book wholesale and does not whitelist
    customer keys, so without it a hand-edited save file could pin any account's
    state label to a value the book disagrees with. */
-function accountStateLabel(customer){
+const ACCOUNT_STATE_RANK = {ontrack:0, watch:1, risk:2};
+/* v100: computeRisk sees only days-since-touchpoint and domain readiness — it
+   cannot see a flagged note, an overdue commitment, or the severity that put
+   an account on Today's beat. That let an escalating account (contacted more
+   often, so daysSince shrinks) read healthier the more upset the customer
+   got. accountState() is the worst of computeRisk(customer) and the account's
+   highest-ranked Today signal: severity 4 forces 'risk' (someone asserted
+   it — a flag or a broken promise), severity 3 forces at least 'watch',
+   severity 2 or below never raises the state (admin/pacing work, not a
+   customer problem). basis names whichever input actually decided, so the
+   label stays explainable instead of merely asserted. computeRisk itself is
+   untouched — this is a read-only wrapper, called from render paths, so it
+   must never mutate DATA (see todayActionList's purity notes above it). */
+function accountStateSignalBasis(row){
+  const bySignal = {
+    flagged: 'a flagged priority item',
+    escalating_risk: 'an escalating pattern of concerning notes',
+    renewal_pressure: 'a renewal date the projected graduation misses',
+    behind_target: 'a pace behind the committed graduation target',
+    stalled: 'an extended stall in touchpoints',
+    risk_language: 'risk language in a recent note',
+    no_value_evidence: 'no evidence of value this deep into the plan',
+    late_gate: 'a compliance gate past its date',
+    thin_milestone_prep: 'thin prep ahead of a milestone',
+    domain_imbalance: 'a lopsided domain readiness spread',
+    slow_pace: 'a pace slower than the plan needs'
+  };
+  if(row.signalKey && bySignal[row.signalKey]) return bySignal[row.signalKey];
+  const bySource = {
+    commitment_overdue: 'an overdue commitment',
+    commitment_due_soon: 'a commitment due soon',
+    blocker_aged: 'a blocker aged past its threshold',
+    playbook_step_overdue: 'an overdue play step',
+    coverage_neglected: 'no session scheduled past the neglect threshold',
+    coverage_due_soon: 'a session coming due with nothing scheduled',
+    gainsight_gate: 'a Gainsight compliance gate',
+    gainsight_item: 'an outstanding Gainsight checklist item',
+    grad_review_due: 'a graduation check-back come due',
+    session_due: 'a session due for logging'
+  };
+  return bySource[row.source] || row.headline || 'a ranked Today signal';
+}
+// Names the reason computeRisk itself landed where it did — mirrors
+// _computeRiskUncached's branches so the phrase always matches the branch
+// that actually fired. Never touches customer fields the forced test seam
+// doesn't provide (see accountState below).
+function accountStateRiskBasis(customer, risk){
+  if(customer.riskOverride) return 'a manually set state';
+  if(customer.stage === 'graduated') return 'the account has graduated';
+  if(inImplementation(customer)) return 'the account is in partner-led implementation';
+  const avg = avgDomainScore(customer);
+  if(isPaused(customer)){
+    return (avg !== null && avg > 0 && avg < 2) ? 'low domain readiness while paused' : 'the account is paused';
+  }
+  const last = lastActivityDate(customer.id) || customer.implementationDate;
+  const d = daysSince(last);
+  const watchDays = DATA.config.riskWatchDays;
+  const alertDays = DATA.config.riskAlertDays;
+  if(d === null) return 'no touchpoint logged yet';
+  if(d >= alertDays) return `no touchpoint in ${d} days`;
+  if(avg !== null && avg <= 1 && d >= (watchDays + 4)) return `no touchpoint in ${d} days and low domain readiness`;
+  if(d >= watchDays) return `no touchpoint in ${d} days`;
+  if(avg !== null && avg > 0 && avg < 2) return 'low domain readiness';
+  return `a recent touchpoint ${d} day${d===1?'':'s'} ago`;
+}
+function accountState(customer){
   const forced = (customer && !customer.id && customer.__forceRisk) || null;
-  const r = forced || computeRisk(customer);
+  const risk = forced || computeRisk(customer);
+  let state = risk;
+  let basis = forced ? 'a forced test override' : accountStateRiskBasis(customer, risk);
+  if(customer && customer.id){
+    const row = todayActionRowMap().get(customer.id);
+    if(row){
+      const sevFloor = row.severity >= 4 ? 'risk' : row.severity === 3 ? 'watch' : null;
+      if(sevFloor && ACCOUNT_STATE_RANK[sevFloor] >= ACCOUNT_STATE_RANK[state]){
+        if(ACCOUNT_STATE_RANK[sevFloor] > ACCOUNT_STATE_RANK[state]) state = sevFloor;
+        basis = accountStateSignalBasis(row);
+      }
+    }
+  }
+  return {state, basis};
+}
+function accountStateLabel(customer){
+  const r = accountState(customer).state;
   return r === 'risk' ? 'Off Track' : r === 'watch' ? 'Needs Attention' : 'On Track';
 }
 function riskBadgeClass(r){ return r==='risk' ? 'badge-risk' : r==='watch' ? 'badge-watch' : 'badge-ontrack'; }
@@ -9684,6 +9765,120 @@ function _runSelfChecksInner(){
     check('phase3 the telemetry date does not scramble', ok, detail);
   })();
   (function(){
+    /* v100. accountState() must be the worst of computeRisk and the account's
+       top-ranked Today signal: a severity-4 flag forces Off Track even on a
+       fresh-touchpoint account computeRisk alone would call On Track, and
+       severity 2 (admin/pacing — a Gainsight gate, here) must NOT do the
+       same, or the mapping is just "flag everything". Both halves run on the
+       same synthetic account so the only variable is the flag. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const c = {id:'__flag4__', name:'Flag Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{2:3,3:3}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c];
+      DATA.activities = {__flag4__: [{id:'fa1', date: isoAddDays(todayISO(), -2), type:'Check-in',
+        summary:'All good, business as usual', sessionNumber:1, checklist:[], flagged:true, openThreads:[]}]};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+
+      const riskWhileFlagged = computeRisk(c);
+      const labelWhileFlagged = accountStateLabel(c);
+      const topRowWhileFlagged = todayActionList().find(r => r.customerId === '__flag4__');
+
+      // Drop the signal to severity 2: unflag the activity. The account's
+      // Gainsight compliance gate (severity 2, open by default on a fresh
+      // record) stays as its top candidate, so this exercises "a real
+      // severity-2 signal is present and still must not raise the state" —
+      // not merely "no signal at all".
+      DATA.activities.__flag4__[0].flagged = false;
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const topRowAfterDrop = todayActionList().find(r => r.customerId === '__flag4__');
+      const labelAfterDrop = accountStateLabel(c);
+
+      ok = riskWhileFlagged === 'ontrack'
+        && !!topRowWhileFlagged && topRowWhileFlagged.severity === 4
+        && labelWhileFlagged === 'Off Track'
+        && !!topRowAfterDrop && topRowAfterDrop.severity <= 2
+        && labelAfterDrop === 'On Track';
+      detail = JSON.stringify({riskWhileFlagged, labelWhileFlagged,
+        topSeverityWhileFlagged: topRowWhileFlagged && topRowWhileFlagged.severity,
+        topSeverityAfterDrop: topRowAfterDrop && topRowAfterDrop.severity, labelAfterDrop});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase3 a flagged account never reads On Track', ok, detail);
+  })();
+  (function(){
+    /* v100. accountState() must never change what computeRisk(customer)
+       reports — 19 call sites, health scoring, sorting and the Risk hub all
+       still depend on computeRisk's current meaning. Captured across the
+       WHOLE real book (not a synthetic clone) so this guards production
+       data, not just a hand-built fixture. _riskMemo is cleared between the
+       two passes so a stale cache can't paper over a real mutation. */
+    let ok = false, detail = '';
+    const prevRiskMemo = _riskMemo;
+    try{
+      _riskMemo = new Map();
+      const before = DATA.customers.map(c => computeRisk(c));
+      DATA.customers.forEach(c => accountState(c));
+      _riskMemo = new Map();
+      const after = DATA.customers.map(c => computeRisk(c));
+      const mismatches = DATA.customers
+        .map((c,i) => ({id:c.id, before: before[i], after: after[i]}))
+        .filter(x => x.before !== x.after);
+      ok = mismatches.length === 0;
+      detail = JSON.stringify(mismatches);
+    }catch(err){ detail = err.message; }
+    _riskMemo = prevRiskMemo;
+    check('phase3 computeRisk is unchanged by the state label', ok, detail);
+  })();
+  (function(){
+    /* v100. basis must name WHICH input decided, not just assert a state. One
+       account whose top Today signal (a flag) forces the state past what
+       computeRisk alone would say — basis must name the signal. One account
+       with no signal at all, driven purely by computeRisk's recency check —
+       basis must name that instead. A basis that reads identically in both
+       cases fails this — that's the whole point of the field. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const mkBase = id => { const c = {id, name:'Basis '+id, module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{2:3,3:3}, sessionNotes:{}, stageHistory:[]};
+        backfillCustomerRecord(c);
+        c.compliance.sentiment.done = true; c.compliance.outcomePlan.done = true;
+        c.compliance.associatedPeopleCSAT.done = true; // no baseline Gainsight-gate candidate
+        return c; };
+      const sigC = mkBase('__basis_sig__');
+      const recC = mkBase('__basis_rec__');
+      DATA.customers = [sigC, recC];
+      DATA.activities = {
+        __basis_sig__: [{id:'sa1', date: isoAddDays(todayISO(), -2), type:'Check-in',
+          summary:'Escalated again', sessionNumber:1, checklist:[], flagged:true, openThreads:[]}],
+        __basis_rec__: [{id:'ra1', date: isoAddDays(todayISO(), -90), type:'Check-in',
+          summary:'Last touch', sessionNumber:1, checklist:[], flagged:false, openThreads:[]}]
+      };
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+
+      const sigState = accountState(sigC);
+      const recState = accountState(recC);
+      const sigNamesSignal = /flag/i.test(sigState.basis);
+      const recNamesRecency = /day/i.test(recState.basis);
+
+      ok = sigState.state === 'risk' && sigNamesSignal
+        && recState.state === 'risk' && recNamesRecency
+        && sigState.basis !== recState.basis;
+      detail = JSON.stringify({sigState, recState});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase3 the state basis names the input that decided', ok, detail);
+  })();
+  (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
        account at 2pm, so the rail flags it and the standing counts it wherever
        it sits — the failure mode named when the axis was chosen. */
@@ -13103,6 +13298,16 @@ getPortfolioAdvisorInsights = memoizePerRender(getPortfolioAdvisorInsights);
 // v61: called twice per render (todayItemsCount() for the tab badge, then
 // renderToday()), and it walks every customer through the full signal registry.
 todayActionList = memoizePerRender(todayActionList);
+// v100: accountState() needs one account's Today row, and the header stats
+// call it for every account in the book. todayActionList() is memoized above,
+// but a .find() per lookup is still O(n) per account — O(n^2) across the
+// header. This builds the id->row Map once per render instead.
+function todayActionRowMap(){
+  const m = new Map();
+  todayActionList().forEach(r => m.set(r.customerId, r));
+  return m;
+}
+todayActionRowMap = memoizePerRender(todayActionRowMap);
 
 // v53.1 scroll preservation: render() rebuilds #app wholesale, which reset
 // the slide-over panel's scroll to the top on EVERY in-panel interaction —
@@ -13746,9 +13951,15 @@ function renderHeader(){
 }
 
 function renderStats(){
-  const risk = DATA.customers.filter(c=>computeRisk(c)==='risk').length;
-  const watch = DATA.customers.filter(c=>computeRisk(c)==='watch').length;
-  const ontrack = DATA.customers.filter(c=>computeRisk(c)==='ontrack').length;
+  // v100: repointed from computeRisk to accountState so the masthead counts
+  // agree with the Today beats in the same vocabulary — a flagged or overdue
+  // account no longer counts as On Track up here while reading Off Track
+  // down there. One accountState() call per customer (todayActionRowMap
+  // keeps the signal lookup O(1)), not one computeRisk() call per bucket.
+  const states = DATA.customers.map(c => accountState(c).state);
+  const risk = states.filter(s=>s==='risk').length;
+  const watch = states.filter(s=>s==='watch').length;
+  const ontrack = states.filter(s=>s==='ontrack').length;
   /* v69: the Gainsight-items tile was a number you could not act on from here —
      it deep-linked back into Today, the tab you were already looking at. Replaced
      by the lifecycle count that had no home in the header at all, positioned
@@ -15386,7 +15597,7 @@ WHAT THE TRACKER OBSERVED: ${item.detail}
 PROVENANCE: ${riskProvenanceLabel(item)}
 STATUS: ${inImplementation(c)
   ? 'In implementation, phase ' + implPhaseLabel(getImplementationState(c).phase)
-  : riskLabel(computeRisk(c)) + ', ' + healthScore(c) + '% health, ' + sessionsCompletedCount(c) + '/' + c.totalSessions + ' sessions logged'}
+  : accountStateLabel(c) + ', ' + healthScore(c) + '% health, ' + sessionsCompletedCount(c) + '/' + c.totalSessions + ' sessions logged'}
 
 RECENT NOTES:
 ${notes || '(no recent notes logged)'}
@@ -15436,7 +15647,7 @@ function buildRiskCtaText(item){
     `Risk reason (suggested): ${(item.category || taxonomyForHubItem(item)).label}${(item.category && item.category.phrase) ? ` — keyword match: "${item.category.phrase}"` : ''} — confirm the reason code in Gainsight`,
     `Current status: ${inImplementation(c)
       ? 'In implementation (partner-led, phase ' + implPhaseLabel(getImplementationState(c).phase) + ')'
-      : riskLabel(computeRisk(c)) + ' · ' + healthScore(c) + '% health · ' + sessionsCompletedCount(c) + '/' + c.totalSessions + ' sessions'}`,
+      : accountStateLabel(c) + ' · ' + healthScore(c) + '% health · ' + sessionsCompletedCount(c) + '/' + c.totalSessions + ' sessions'}`,
     `Recommended action: ${rec.action}`,
     rec.reasons.length ? `Why: ${rec.reasons.join('; ')}` : null,
     '',
@@ -17444,7 +17655,7 @@ function buildKnowledgeTransferText(c){
   L.push(`Module: ${c.module} · Stage: ${(DATA.config.stages.find(s=>s.key===c.stage)||{}).label || c.stage}`);
   L.push(`Implemented: ${fmtDate(c.implementationDate)}${c.targetGraduationDate ? ` · Target graduation: ${fmtDate(c.targetGraduationDate)}` : ''}`);
   if(!inImplementation(c)){
-    L.push(`Status at transfer: ${riskLabel(computeRisk(c))} · ${healthScore(c)}% health · ${sessionsCompletedCount(c)}/${c.totalSessions} sessions logged`);
+    L.push(`Status at transfer: ${accountStateLabel(c)} · ${healthScore(c)}% health · ${sessionsCompletedCount(c)}/${c.totalSessions} sessions logged`);
   } else {
     const impl = getImplementationState(c);
     L.push(`Status at transfer: in partner-led implementation (${implPhaseLabel(impl.phase)})${impl.partner ? ` · partner: ${impl.partner}` : ''}`);
