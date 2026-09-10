@@ -1154,6 +1154,9 @@
   .checklist-item{display:flex; align-items:center; gap:8px; font-size:var(--text-sm); color:var(--text-dim);}
   .checklist-item input{width:14px; height:14px; padding:0; accent-color:var(--accent-info);}
   .checklist-item.done{color:var(--text-faint); text-decoration:line-through;}
+  .deliverable-by { margin-left:8px; font-size:var(--text-xs); color:var(--text-faint);
+    background:transparent; border:1px solid var(--border-soft); border-radius:4px; padding:1px 4px; }
+  .deliverable-by:disabled { opacity:.35; }
 
   .todo-item{
     background:var(--bg-panel); border:1px solid var(--border-soft); border-radius:9px; padding:var(--space-compact) var(--space-2); margin-bottom:var(--space-1);
@@ -6092,6 +6095,27 @@ function clearOutcomeEvidence(customer, criterionId){
   return true;
 }
 
+/* v100 / Spec 8. The listener is a DOM adapter; this is the logic. Split so a
+   check can reach it without mounting a card and firing an event — the tick is
+   the whole point of Phase B and it was covered only at its two ends.
+   Returns the stored record on a tick, null otherwise. */
+function toggleDeliverableEvidence(customer, sessionNumber, index, checked){
+  const crit = outcomeCriteriaFor(customer)
+    .find(x => x.sourceSession === sessionNumber && x.sourceIndex === index);
+  if(!crit) return null;
+  if(checked){
+    const act = getSessionActivity(customer, sessionNumber);
+    const rec = {on: todayISO(), by:'osm'};
+    if(act) rec.activityId = act.id;
+    return setOutcomeEvidence(customer, crit, rec);
+  }
+  /* A provisional criterion has never been acted on, so it has no stored record
+     and no opaque id. Clearing it would materialize an identity minted by an
+     UN-tick, and every account would quietly accumulate them. */
+  if(!crit.provisional) clearOutcomeEvidence(customer, crit.id);
+  return null;
+}
+
 function removeOutcomeCriterion(customer, criterion){
   if(!customer || !criterion) return null;
   const stored = materializeOutcomeCriterion(customer, criterion);
@@ -9761,6 +9785,133 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA;
     check('phaseB rendering every session card still writes nothing', ok, detail);
+  })();
+  (function(){
+    /* Spec 3: `by` distinguishes "the customer demonstrated it" from "we
+       observed it" — the difference between evidence and assertion, and the
+       thing a graduation conversation actually turns on. Changing it must not
+       cost the record its date or its activity link; a control that silently
+       reset `on` to today would quietly move this account's TTFV every time
+       someone corrected who did the demonstrating. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__pb4__', name:'By Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__pb4__: []};
+      const crit = outcomeCriteriaFor(c).find(x => x.sourceSession === 1 && x.sourceIndex === 0);
+      const older = isoAddDays(todayISO(), -30);
+      setOutcomeEvidence(c, crit, {on: older, by:'osm', activityId:'act_fixed'});
+      const id = Object.keys(c.outcomeEvidence)[0];
+
+      const fresh = outcomeCriteriaFor(c).find(x => x.sourceSession === 1 && x.sourceIndex === 0);
+      setOutcomeEvidence(c, fresh, Object.assign({}, fresh.evidence, {by:'customer'}));
+      const ev = c.outcomeEvidence[id];
+      const keptDate = ev.on === older;
+      const keptLink = ev.activityId === 'act_fixed';
+      const nowCustomer = ev.by === 'customer';
+      const oneRecord = Object.keys(c.outcomeEvidence).length === 1;
+
+      const html = renderSessionCard(c, 1, getSessionTemplate(c, 1), false);
+      const hasControl = html.indexOf('data-deliverable-by="__pb4__|1|0"') !== -1;
+      const showsCustomer = /data-deliverable-by="__pb4__\|1\|0"[\s\S]{0,400}?<option value="customer" selected/
+        .test(html);
+      // The box nobody ticked must not offer a live attribution control.
+      const neighbourDisabled = /data-deliverable-by="__pb4__\|1\|1"[^>]*disabled/.test(html);
+
+      ok = keptDate && keptLink && nowCustomer && oneRecord && hasControl
+        && showsCustomer && neighbourDisabled;
+      detail = JSON.stringify({keptDate, keptLink, nowCustomer, oneRecord, hasControl,
+        showsCustomer, neighbourDisabled});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseB evidence can be marked customer-demonstrated without losing its date or its link', ok, detail);
+  })();
+  (function(){
+    /* The link is made from the session's own logged activity, and ONLY when
+       one exists. Both halves are asserted on the same account, because a
+       handler that always wrote activityId would pass the first half and
+       fabricate a reference on the second. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__pb5__', name:'Link Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c];
+      DATA.activities = {__pb5__: [{id:'act_s3', type:'Call', date: isoAddDays(todayISO(), -5),
+        summary:'Session 3 held', sessionNumber:3, checklist:[], flagged:false}]};
+
+      // Session 3 HAS an activity; session 4 does not. Same code path, both ways.
+      [3, 4].forEach(n => {
+        const crit = outcomeCriteriaFor(c).find(x => x.sourceSession === n && x.sourceIndex === 0);
+        const act = getSessionActivity(c, n);
+        const rec = {on: todayISO(), by:'osm'};
+        if(act) rec.activityId = act.id;
+        setOutcomeEvidence(c, crit, rec);
+      });
+
+      const stored = Object.keys(c.outcomeEvidence).map(k => c.outcomeEvidence[k]);
+      const twoRecords = stored.length === 2;
+      const oneLinked = stored.filter(x => x.activityId === 'act_s3').length === 1;
+      const oneUnlinked = stored.filter(x => !('activityId' in x)).length === 1;
+
+      ok = twoRecords && oneLinked && oneUnlinked;
+      detail = JSON.stringify({twoRecords, oneLinked, oneUnlinked, stored});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseB a deliverable ticked during a logged session links that activity, and never invents one', ok, detail);
+  })();
+  (function(){
+    /* Added after Task 1's review. Task 1 asserted setOutcomeEvidence and
+       clearOutcomeEvidence directly and left the path BETWEEN the checkbox and
+       them uncovered — the parse, the activity linkage, and the provisional
+       guard were asserted by nobody. Step 4b extracts that path into
+       toggleDeliverableEvidence so it can be reached without a DOM event; this
+       is the check that reaches it.
+       The provisional half is the one that matters: un-ticking a box nobody
+       ever ticked must create NOTHING. Without the guard it materializes a
+       criterion — a stored identity minted by an un-tick — and every account
+       would silently accumulate them. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__pb11__', name:'Toggle Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c];
+      DATA.activities = {__pb11__: [{id:'act_s2', type:'Call', date: isoAddDays(todayISO(), -5),
+        summary:'Session 2 held', sessionNumber:2, checklist:[], flagged:false}]};
+
+      // Tick, through the same function the listener calls.
+      const rec = toggleDeliverableEvidence(c, 2, 0, true);
+      const linked = !!rec && rec.by === 'osm' && rec.on === todayISO() && rec.activityId === 'act_s2';
+      const oneRecord = Object.keys(c.outcomeEvidence).length === 1;
+
+      // Un-tick the same one — the evidence goes, the identity stays.
+      toggleDeliverableEvidence(c, 2, 0, false);
+      const cleared = Object.keys(c.outcomeEvidence).length === 0;
+      const identityKept = c.outcomeCriteria.items.filter(x => x.sourceSession === 2).length === 1;
+
+      // Un-tick a box NOBODY ticked. This must create nothing at all.
+      const itemsBefore = c.outcomeCriteria.items.length;
+      toggleDeliverableEvidence(c, 5, 3, false);
+      const provisionalInert = c.outcomeCriteria.items.length === itemsBefore
+        && Object.keys(c.outcomeEvidence).length === 0;
+
+      // An index the session does not have is a no-op, not a throw.
+      const outOfRange = toggleDeliverableEvidence(c, 2, 999, true) === null
+        && Object.keys(c.outcomeEvidence).length === 0;
+
+      ok = linked && oneRecord && cleared && identityKept && provisionalInert && outOfRange;
+      detail = JSON.stringify({linked, oneRecord, cleared, identityKept, provisionalInert, outOfRange});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseB the tick path itself is covered — link, clear, and the provisional guard', ok, detail);
   })();
   (function(){
     /* Phase 3 / FIX 1. Excluding the headline from the drivers list must not
@@ -19572,10 +19723,19 @@ function renderSessionCard(c, num, tpl, isNext){
               const crit = criteria.find(x => x.sourceSession === num && x.sourceIndex === idx);
               const ev = crit ? crit.evidence : null;
               const checked = !!ev;
+              const by = ev ? (ev.by || 'unknown') : 'osm';
+              const sel = v => by === v ? ' selected' : '';
               return `
               <label class="checklist-item ${checked?'done':''}">
                 <input type="checkbox" data-session-deliverable="${c.id}|${num}|${idx}" ${checked?'checked':''}>
                 ${escapeHtml(label)}
+                <select class="deliverable-by" data-deliverable-by="${c.id}|${num}|${idx}"
+                  title="Who demonstrated this? Evidence the customer showed you is worth more at graduation than something you observed."
+                  ${checked?'':'disabled'}>
+                  <option value="osm"${sel('osm')}>we observed it</option>
+                  <option value="customer"${sel('customer')}>customer demonstrated</option>
+                  ${by === 'unknown' ? '<option value="unknown" selected>source unknown</option>' : ''}
+                </select>
               </label>
             `;
             }).join('');
@@ -21387,26 +21547,29 @@ The draft is discarded. The risk itself stays open.`)) return;
         showToast(copied ? 'Copied — paste into your email client' : 'Could not copy automatically — the body is selected, press Ctrl/Cmd+C');
       }
     }));
-    $$('[data-session-deliverable]').forEach(chk => chk.addEventListener('change', e=>{
-      /* v100 / Spec 8. Ticking is a claim about the world, so it records one:
-         today's date, attributed to the OSM by default, linked to the session's
-         logged activity when there is one. Un-ticking DELETES the entry rather
-         than storing {met:false} — Spec 3.
+    $$('[data-session-deliverable]').forEach(chk => chk.addEventListener('change', ()=>{
+      /* v100 / Spec 8. Ticking is a claim about the world, so it records one.
+         The logic lives in toggleDeliverableEvidence; this is the adapter.
          No render() call: the old handler never re-rendered either, and
          re-rendering here would collapse every open run-script <details> on the
          page under the user's cursor. */
       const [custId, numStr, idxStr] = chk.dataset.sessionDeliverable.split('|');
+      toggleDeliverableEvidence(c, parseInt(numStr, 10), parseInt(idxStr, 10), chk.checked);
+      saveData();
+      /* Enable the attribution control in place rather than re-rendering. */
+      const bySel = document.querySelector(`[data-deliverable-by="${chk.dataset.sessionDeliverable}"]`);
+      if(bySel){ bySel.disabled = !chk.checked; if(chk.checked) bySel.value = 'osm'; }
+    }));
+    $$('[data-deliverable-by]').forEach(sel => sel.addEventListener('change', ()=>{
+      /* Attribution only. The date and the activity link are the record's other
+         two facts and must survive being re-attributed — resetting `on` to
+         today here would move this account's TTFV every time someone corrected
+         who did the demonstrating. */
+      const [custId, numStr, idxStr] = sel.dataset.deliverableBy.split('|');
       const num = parseInt(numStr, 10), idx = parseInt(idxStr, 10);
       const crit = outcomeCriteriaFor(c).find(x => x.sourceSession === num && x.sourceIndex === idx);
-      if(!crit) return;
-      if(chk.checked){
-        const act = getSessionActivity(c, num);
-        const rec = {on: todayISO(), by:'osm'};
-        if(act) rec.activityId = act.id;
-        setOutcomeEvidence(c, crit, rec);
-      } else if(!crit.provisional){
-        clearOutcomeEvidence(c, crit.id);
-      }
+      if(!crit || !crit.evidence) return;
+      setOutcomeEvidence(c, crit, Object.assign({}, crit.evidence, {by: sel.value}));
       saveData();
     }));
     // v57: full-script modal — read-only textarea (manual Ctrl/Cmd+C always
