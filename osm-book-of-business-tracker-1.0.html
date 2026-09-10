@@ -6793,8 +6793,16 @@ const SIGNAL_DEFS = [
      completed sessions, because the projection would then be today plus the
      config default and this alarm would be firing off an assumption. The v87
      pass exists precisely to stop that, and a signal is the loudest possible
-     place to get it wrong. */
-  {key:'renewal_pressure', severity:(c,sig)=>sig && sig.past ? 4 : 3,
+     place to get it wrong.
+
+     v100.1: was declared severity:(c,sig)=>... , but every real call site
+     (todaySignalSeverity, getCustomerNextSteps' steps builder) invokes
+     severity(sig) with ONE argument — the convention every other entry here
+     follows. That silently bound `sig` to undefined, so `sig && sig.past`
+     was always falsy and the past-renewal branch below never fired: an
+     account already past its renewal was capped at the same severity 3 as
+     one merely approaching it. */
+  {key:'renewal_pressure', severity:(sig)=>sig && sig.past ? 4 : 3,
     detect:c=>renewalPressure(c),
     action:(c,sig)=>({
       action: sig.past ? 'Re-plan the runway — it currently lands after renewal' : 'Tighten the runway ahead of renewal',
@@ -9877,6 +9885,49 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
     check('phase3 the state basis names the input that decided', ok, detail);
+  })();
+  (function(){
+    /* v100.1. todaySignalSeverity() (~L16521) and the next-steps builder
+       (~L7098) both call def.severity(sig) — ONE argument. Fourteen of the
+       fifteen SIGNAL_DEFS entries declare severity as 0- or 1-arg and never
+       notice; renewal_pressure alone declared severity:(c,sig)=>..., so at
+       every real call site its `sig` parameter received undefined and
+       `sig && sig.past` was permanently falsy — the past-renewal branch was
+       unreachable, and an account whose graduation lands AFTER renewal was
+       capped at the same severity 3 as one merely approaching it. Both poles
+       asserted here: an account whose runway lands after renewal must reach
+       4, and one that still lands ahead of it (but inside the pressure
+       buffer) must stay at 3 — a check that only asserted the 4 would still
+       pass if severity() started returning 4 unconditionally. */
+    const base = over => Object.assign({id:'__rpsev__', name:'RP Sev Co', stage:'ttfv1',
+      implementationDate: isoAddDays(todayISO(), -100), totalSessions:8,
+      domainScores:{}, sessionNotes:{}, stageHistory:[]}, over || {});
+    const realA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = base({});
+      DATA.activities = {'__rpsev__': [
+        {id:'a1', date: isoAddDays(todayISO(), -50), type:'Other', summary:'s', sessionNumber:1, checklist:[], flagged:false},
+        {id:'a2', date: isoAddDays(todayISO(), -10), type:'Other', summary:'s', sessionNumber:2, checklist:[], flagged:false}]};
+      const projected = projectedGraduationDate(c);
+
+      // Pole 1: runway lands AFTER renewal (past === true) -> severity 4.
+      c.renewalDate = isoAddDays(projected, -15);
+      const pastSig = renewalPressure(c);
+      const pastSeverity = todaySignalSeverity(c, 'renewal_pressure');
+
+      // Pole 2: runway still lands AHEAD of renewal, inside the pressure
+      // buffer (past === false, signal still fires) -> severity 3.
+      c.renewalDate = isoAddDays(projected, 15);
+      const aheadSig = renewalPressure(c);
+      const aheadSeverity = todaySignalSeverity(c, 'renewal_pressure');
+
+      ok = !!pastSig && pastSig.past === true && pastSeverity === 4
+        && !!aheadSig && aheadSig.past === false && aheadSeverity === 3;
+      detail = JSON.stringify({pastSig, pastSeverity, aheadSig, aheadSeverity});
+    }catch(err){ detail = err.message; }
+    DATA.activities = realA;
+    check('phase3 a graduation landing after renewal reaches top severity', ok, detail);
   })();
   (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
