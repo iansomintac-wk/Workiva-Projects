@@ -10197,7 +10197,10 @@ function _runSelfChecksInner(){
 
       const html = renderOverviewTab(c, computeRisk(c));
       const showsDerivedSuffix = html.indexOf(' · derived') !== -1;
-      const tooltipNamesSessionPlan = html.indexOf('See the Session Plan tab') !== -1;
+      const derivedTip = 'Derived: every first-value success criterion is evidenced, dated by the last of them. See the Session Plan tab.';
+      const recordedTip = 'Earliest first-value evidence date — see the Activity Log tab.';
+      const tipCount = html.split(derivedTip).length - 1;
+      const tooltipIsDerivedBranch = tipCount === 1 && html.indexOf(recordedTip) === -1;
 
       // The contrast: same account, evidence cleared -> nothing derives ->
       // the signal must fire, or the suppression above proved nothing.
@@ -10206,10 +10209,10 @@ function _runSelfChecksInner(){
       const clearedNoDerivation = fvCleared.achievedOn === null && fvCleared.derivedFrom === null;
       const signalFiresWithoutEvidence = !!(nveDef && nveDef.detect(c));
 
-      ok = enough && derivedFromTtfv1 && showsDerivedSuffix && tooltipNamesSessionPlan
+      ok = enough && derivedFromTtfv1 && showsDerivedSuffix && tooltipIsDerivedBranch
         && derivedSuppressesSignal && clearedNoDerivation && signalFiresWithoutEvidence;
       detail = JSON.stringify({ttfv1: t1.length, enough, derivedFromTtfv1, showsDerivedSuffix,
-        tooltipNamesSessionPlan, derivedSuppressesSignal, clearedNoDerivation, signalFiresWithoutEvidence});
+        tipCount, tooltipIsDerivedBranch, derivedSuppressesSignal, clearedNoDerivation, signalFiresWithoutEvidence});
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA;
     check('phaseB a derived first value says so, and is not also told its value story is missing', ok, detail);
