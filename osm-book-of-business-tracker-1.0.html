@@ -1010,6 +1010,8 @@
   .oc-row.oc-met .oc-mark{color:var(--status-ontrack-text, var(--accent-info));}
   .oc-text{min-width:0; overflow-wrap:anywhere;}
   .oc-meta{display:block; font-size:var(--text-xs); color:var(--text-faint); margin-top:2px;}
+  .oc-note { display:block; font-size:var(--text-xs); color:var(--text-faint);
+    font-style:italic; margin-top:2px; }
   .bp-time{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
   .bp-time .bp-basis{margin:0;}
   .badge-new{background:rgba(0,116,232,.15); color:var(--accent-info); border-color:rgba(0,116,232,.3);}
@@ -9956,6 +9958,39 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA;
     check('phaseB the tick path itself is covered — link, clear, and the provisional guard', ok, detail);
+  })();
+  (function(){
+    /* setOutcomeEvidence has accepted and stored `note` since Phase A, and the
+       panel has silently discarded it since Phase A — invisible until Phase B
+       made notes reachable. It is OSM-authored free text, so the escaping half
+       is not decoration: a note containing markup must not become markup. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__pb6__', name:'Note Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance.outcomePlan.outcomeNumber = 4;
+      DATA.customers = [c]; DATA.activities = {__pb6__: []};
+      const list = outcomeCriteriaFor(c);
+      const manyCriteria = list.length >= 2;      // the fixture must be able to fail
+      const raw = 'Dana walked us through it live <b>on screen</b> & signed off';
+      setOutcomeEvidence(c, list[0], {on: todayISO(), by:'customer', note: raw});
+      // A second evidenced criterion with NO note, so an empty element shows up.
+      setOutcomeEvidence(c, outcomeCriteriaFor(c)[1], {on: todayISO(), by:'osm'});
+
+      const html = renderOutcomeCriteria(c);
+      const shows = html.indexOf(escapeHtml(raw)) !== -1;
+      const notRawMarkup = html.indexOf('<b>on screen</b>') === -1;
+      const noEmpties = (html.match(/class="oc-note"/g) || []).length === 1;
+
+      ok = manyCriteria && shows && notRawMarkup && noEmpties;
+      detail = JSON.stringify({criteria: list.length, manyCriteria, shows, notRawMarkup,
+        noteEls: (html.match(/class="oc-note"/g) || []).length});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseB an evidence note is shown, escaped, and absent when there is none', ok, detail);
   })();
   (function(){
     /* Phase 3 / FIX 1. Excluding the headline from the drivers list must not
@@ -19153,7 +19188,8 @@ function renderOutcomeCriteria(c){
     return `<div class="oc-row${ev ? ' oc-met' : ''}">
       <span class="oc-mark">${mark}</span>
       <span class="oc-text">${escapeHtml(x.text)}${sourceNote}
-        ${meta ? `<span class="oc-meta">${meta}</span>` : ''}</span>
+        ${meta ? `<span class="oc-meta">${meta}</span>` : ''}
+        ${ev && ev.note ? `<span class="oc-note">${escapeHtml(ev.note)}</span>` : ''}</span>
     </div>`;
   };
   const group = (label, stage, counts) => {
