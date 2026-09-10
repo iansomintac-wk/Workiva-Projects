@@ -549,7 +549,7 @@ Expected: exit 0, `360/360`.
 - [ ] **Step 6: Look at it, do not only test it**
 
 ```
-node tools/inspect.mjs osm-book-of-business-tracker-1.0.html demo-seed.js sessions "$CLAUDE_JOB_DIR/tmp/t2-sessions"
+node tools/inspect.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --view accounts --out "$CLAUDE_JOB_DIR/tmp/t2-sessions"
 ```
 
 Read the `.txt` and open the `.png`. A `<select>` inside a `<label>` that also contains a checkbox can toggle that checkbox when clicked, because the label forwards the click to its control. Confirm in the capture that the control renders inline and that clicking it is not the same click target as the box. If it is, move the `<select>` outside the `<label>` and hold the row together with a wrapper `<div>`.
@@ -931,6 +931,7 @@ MSG
 **Files:**
 - Modify: `osm-book-of-business-tracker-1.0.html` — one new check
 - Modify: `VALIDATION.txt`, `CHANGELOG.txt`, `README.txt`, `guide-manifest.json`
+- Modify: `tools/inspect.mjs` — add `--panel` / `--panel-tab` (harness, not runtime; the one-file constraint does not bind it)
 
 **Interfaces:**
 - Consumes: everything above.
@@ -1004,6 +1005,44 @@ node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks 
 
 Expected: `365/365` and `18/18`, both exit 0.
 
+- [ ] **Step 3b: Make `tools/inspect.mjs` able to photograph a customer panel**
+
+Task 2's implementer found that `--view sessions` silently falls back to the Today view: session cards render inside a customer detail panel keyed by `ui.openCustomerId` and `ui.panelTab`, and `inspect.mjs` only ever sets `ui.view` (line ~221). Every "look at it" step in this plan has therefore been photographing the wrong screen, and Task 5's own final capture would have too.
+
+This is the one file outside the tracker that this plan touches. It is harness, not runtime, so the one-file constraint does not bind it.
+
+In `tools/inspect.mjs`, beside the other `flag(...)` reads (~line 36):
+
+```js
+const panelId = flag('panel', null);
+const panelTab = flag('panel-tab', null);
+```
+
+Then replace the view-setting evaluate at ~line 221 with:
+
+```js
+  expression: `(() => { try {
+      ui.view = ${JSON.stringify(viewName)};
+      ${panelId ? `ui.openCustomerId = ${JSON.stringify(panelId)};` : ''}
+      ${panelTab ? `ui.panelTab = ${JSON.stringify(panelTab)};` : ''}
+      render();
+      ${panelId ? `if(ui.openCustomerId !== ${JSON.stringify(panelId)}) return 'err:no such customer — the panel did not open';` : ''}
+      return 'ok';
+    } catch (e) { return 'err:' + e.message; } })()`,
+```
+
+The read-back guard is the point: `prepareBookData` nulls `ui.openCustomerId` when it names a customer the book does not have (line ~4694 of the tracker), so a typo'd id would otherwise produce a clean-looking capture of the wrong screen — exactly the failure this step exists to end. Add `panel: panelId, panelTab` to the `.meta.json` payload (~line 303) so a capture records which screen it actually photographed.
+
+Verify against a real id from `demo-seed.js`:
+
+```
+grep -o "id:'[^']*'" demo-seed.js | head -3
+node tools/inspect.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js \
+  --view accounts --panel <that id> --panel-tab sessions --out "$CLAUDE_JOB_DIR/tmp/panel-check"
+```
+
+Read the `.txt`: it must contain "Deliverables" and the attribution control's option text ("customer demonstrated"). If it shows the Today tab's beats instead, the flags are not taking effect — do not proceed on a capture that shows the wrong screen.
+
 - [ ] **Step 4: Update the four records that carry the count**
 
 ```
@@ -1045,7 +1084,7 @@ Under **WHAT WAS NOT VERIFIED**, delete the line "Evidence capture from the Over
 - [ ] **Step 5: Commit**
 
 ```
-git add VALIDATION.txt CHANGELOG.txt README.txt guide-manifest.json osm-book-of-business-tracker-1.0.html
+git add VALIDATION.txt CHANGELOG.txt README.txt guide-manifest.json osm-book-of-business-tracker-1.0.html tools/inspect.mjs
 git commit -F - <<'MSG'
 Assert the legacy deliverables map is inert; update the records to 365
 
@@ -1067,9 +1106,15 @@ MSG
 Before calling Phase B done, look at it rather than only testing it:
 
 ```
-node tools/inspect.mjs osm-book-of-business-tracker-1.0.html demo-seed.js sessions "$CLAUDE_JOB_DIR/tmp/pb-sessions"
-node tools/inspect.mjs osm-book-of-business-tracker-1.0.html demo-seed.js overview "$CLAUDE_JOB_DIR/tmp/pb-overview"
+node tools/inspect.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js \
+  --view accounts --panel <a customer id from demo-seed.js> --panel-tab sessions \
+  --out "$CLAUDE_JOB_DIR/tmp/pb-sessions"
+node tools/inspect.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js \
+  --view accounts --panel <the same customer id> --panel-tab overview \
+  --out "$CLAUDE_JOB_DIR/tmp/pb-overview"
 ```
+
+Both `--panel` and `--panel-tab` are added in Task 5 Step 3b. Without them these captures photograph the Today tab and prove nothing about either surface this phase changed.
 
 Then run `superpowers:requesting-code-review` over the full branch diff. Phase A's worst defects — real dated evidence silently overwritten, one criterion inheriting another's evidence, a signal permanently capped at severity 3 — were all found by review, and not one of them by a test.
 
