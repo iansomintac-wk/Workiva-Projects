@@ -1154,7 +1154,15 @@
   .checklist-item{display:flex; align-items:center; gap:8px; font-size:var(--text-sm); color:var(--text-dim);}
   .checklist-item input{width:14px; height:14px; padding:0; accent-color:var(--accent-info);}
   .checklist-item.done{color:var(--text-faint); text-decoration:line-through;}
-  .deliverable-by { margin-left:8px; font-size:var(--text-xs); color:var(--text-faint);
+  /* v100 fix round 1: the <select> used to live inside the <label> alongside the
+     checkbox. That folded its selected-option text into the checkbox's
+     accessible name (an AT user heard the attribution as part of the
+     deliverable's label) and is an HTML content-model violation — a <label>
+     may not contain a labelable descendant other than its own control. The
+     row now holds label + select as siblings; .checklist-row keeps the same
+     gap the old single flex row had. */
+  .checklist-row { display:flex; align-items:center; gap:8px; }
+  .deliverable-by { font-size:var(--text-xs); color:var(--text-faint);
     background:transparent; border:1px solid var(--border-soft); border-radius:4px; padding:1px 4px; }
   .deliverable-by:disabled { opacity:.35; }
 
@@ -6109,11 +6117,27 @@ function toggleDeliverableEvidence(customer, sessionNumber, index, checked){
     if(act) rec.activityId = act.id;
     return setOutcomeEvidence(customer, crit, rec);
   }
-  /* A provisional criterion has never been acted on, so it has no stored record
-     and no opaque id. Clearing it would materialize an identity minted by an
-     UN-tick, and every account would quietly accumulate them. */
+  /* clearOutcomeEvidence is id-keyed and never calls materializeOutcomeCriterion
+     — it early-returns when customer.outcomeEvidence[criterionId] is undefined,
+     so calling it on a criterion nobody ever ticked cannot itself materialize an
+     identity through TODAY's implementation. This guard is belt-and-braces
+     against a future change to clearOutcomeEvidence (e.g. one that keys off the
+     criterion object and materializes it first), not a live defense right now —
+     kept because it is cheap and states the intent explicitly. */
   if(!crit.provisional) clearOutcomeEvidence(customer, crit.id);
   return null;
+}
+
+/* v100 fix round 1 / Critical 1. Re-attribution is its own write path with its
+   own invariant — the date and the activity link must survive it — and that
+   invariant was being asserted only against a check's own inline
+   Object.assign, never against the listener's actual code. Extracted so both
+   the listener and the check call the SAME function. */
+function reattributeDeliverableEvidence(customer, sessionNumber, index, by){
+  const crit = outcomeCriteriaFor(customer)
+    .find(x => x.sourceSession === sessionNumber && x.sourceIndex === index);
+  if(!crit || !crit.evidence) return null;
+  return setOutcomeEvidence(customer, crit, Object.assign({}, crit.evidence, {by}));
 }
 
 function removeOutcomeCriterion(customer, criterion){
@@ -9792,7 +9816,13 @@ function _runSelfChecksInner(){
        thing a graduation conversation actually turns on. Changing it must not
        cost the record its date or its activity link; a control that silently
        reset `on` to today would quietly move this account's TTFV every time
-       someone corrected who did the demonstrating. */
+       someone corrected who did the demonstrating.
+       v100 fix round 1 / Critical 1: the re-attribution assertion below calls
+       reattributeDeliverableEvidence — the SAME function the attribution
+       listener calls — instead of re-implementing the Object.assign inline.
+       The inline version passed even when the listener's own code reset `on`
+       or dropped activityId, because it was never exercising the listener's
+       code path at all. */
     const prevC = DATA.customers, prevA = DATA.activities;
     let ok = false, detail = '';
     try{
@@ -9806,8 +9836,7 @@ function _runSelfChecksInner(){
       setOutcomeEvidence(c, crit, {on: older, by:'osm', activityId:'act_fixed'});
       const id = Object.keys(c.outcomeEvidence)[0];
 
-      const fresh = outcomeCriteriaFor(c).find(x => x.sourceSession === 1 && x.sourceIndex === 0);
-      setOutcomeEvidence(c, fresh, Object.assign({}, fresh.evidence, {by:'customer'}));
+      reattributeDeliverableEvidence(c, 1, 0, 'customer');
       const ev = c.outcomeEvidence[id];
       const keptDate = ev.on === older;
       const keptLink = ev.activityId === 'act_fixed';
@@ -9833,7 +9862,13 @@ function _runSelfChecksInner(){
     /* The link is made from the session's own logged activity, and ONLY when
        one exists. Both halves are asserted on the same account, because a
        handler that always wrote activityId would pass the first half and
-       fabricate a reference on the second. */
+       fabricate a reference on the second.
+       v100 fix round 1 / Critical 3: routed through toggleDeliverableEvidence
+       itself rather than re-implementing its linkage inline — the inline
+       version passed unchanged even when toggleDeliverableEvidence's own
+       activityId logic was mutated to fabricate a link (e.g.
+       `rec.activityId = act ? act.id : 'act_fabricated'`), because it was
+       never calling the mutated code. See the fix report for that red run. */
     const prevC = DATA.customers, prevA = DATA.activities;
     let ok = false, detail = '';
     try{
@@ -9846,13 +9881,7 @@ function _runSelfChecksInner(){
         summary:'Session 3 held', sessionNumber:3, checklist:[], flagged:false}]};
 
       // Session 3 HAS an activity; session 4 does not. Same code path, both ways.
-      [3, 4].forEach(n => {
-        const crit = outcomeCriteriaFor(c).find(x => x.sourceSession === n && x.sourceIndex === 0);
-        const act = getSessionActivity(c, n);
-        const rec = {on: todayISO(), by:'osm'};
-        if(act) rec.activityId = act.id;
-        setOutcomeEvidence(c, crit, rec);
-      });
+      [3, 4].forEach(n => { toggleDeliverableEvidence(c, n, 0, true); });
 
       const stored = Object.keys(c.outcomeEvidence).map(k => c.outcomeEvidence[k]);
       const twoRecords = stored.length === 2;
@@ -9872,10 +9901,18 @@ function _runSelfChecksInner(){
        guard were asserted by nobody. Step 4b extracts that path into
        toggleDeliverableEvidence so it can be reached without a DOM event; this
        is the check that reaches it.
-       The provisional half is the one that matters: un-ticking a box nobody
-       ever ticked must create NOTHING. Without the guard it materializes a
-       criterion — a stored identity minted by an un-tick — and every account
-       would silently accumulate them. */
+       v100 fix round 1 / Critical 2: provisionalInert does NOT catch "delete
+       the `if(!crit.provisional)` guard outright" today — clearOutcomeEvidence
+       is id-keyed and early-returns when nothing is stored under that id, so
+       it cannot materialize anything through the current implementation (see
+       the corrected comment on the guard itself, in toggleDeliverableEvidence).
+       What provisionalInert DOES catch is the un-tick branch being changed to
+       materialize the criterion instead of calling clearOutcomeEvidence — e.g.
+       `if(!crit.provisional) clearOutcomeEvidence(customer, crit.id); else
+       materializeOutcomeCriterion(customer, crit);` — confirmed failing against
+       that exact mutation; see the fix report for the red run. Kept as
+       belt-and-braces coverage for that future-refactor shape, not as proof
+       today's code has the hazard the original comment claimed. */
     const prevC = DATA.customers, prevA = DATA.activities;
     let ok = false, detail = '';
     try{
@@ -9898,8 +9935,15 @@ function _runSelfChecksInner(){
       const identityKept = c.outcomeCriteria.items.filter(x => x.sourceSession === 2).length === 1;
 
       // Un-tick a box NOBODY ticked. This must create nothing at all.
+      // v100 fix round 1 / Critical 2: session 5 has only ONE deliverable
+      // (index 0) in this template, so the original (5,3) fixture hit
+      // toggleDeliverableEvidence's `if(!crit) return null;` early-return —
+      // the SAME path as outOfRange below — and never reached the provisional
+      // guard at all. Session 3 index 1 is a real, genuinely provisional
+      // criterion (see outcomeCriteriaFor dump in the fix report) untouched by
+      // anything else in this check.
       const itemsBefore = c.outcomeCriteria.items.length;
-      toggleDeliverableEvidence(c, 5, 3, false);
+      toggleDeliverableEvidence(c, 3, 1, false);
       const provisionalInert = c.outcomeCriteria.items.length === itemsBefore
         && Object.keys(c.outcomeEvidence).length === 0;
 
@@ -19726,17 +19770,20 @@ function renderSessionCard(c, num, tpl, isNext){
               const by = ev ? (ev.by || 'unknown') : 'osm';
               const sel = v => by === v ? ' selected' : '';
               return `
-              <label class="checklist-item ${checked?'done':''}">
-                <input type="checkbox" data-session-deliverable="${c.id}|${num}|${idx}" ${checked?'checked':''}>
-                ${escapeHtml(label)}
+              <div class="checklist-row">
+                <label class="checklist-item ${checked?'done':''}">
+                  <input type="checkbox" data-session-deliverable="${c.id}|${num}|${idx}" ${checked?'checked':''}>
+                  ${escapeHtml(label)}
+                </label>
                 <select class="deliverable-by" data-deliverable-by="${c.id}|${num}|${idx}"
+                  aria-label="Evidence source"
                   title="Who demonstrated this? Evidence the customer showed you is worth more at graduation than something you observed."
                   ${checked?'':'disabled'}>
                   <option value="osm"${sel('osm')}>we observed it</option>
                   <option value="customer"${sel('customer')}>customer demonstrated</option>
                   ${by === 'unknown' ? '<option value="unknown" selected>source unknown</option>' : ''}
                 </select>
-              </label>
+              </div>
             `;
             }).join('');
           })()}
@@ -21554,22 +21601,24 @@ The draft is discarded. The risk itself stays open.`)) return;
          re-rendering here would collapse every open run-script <details> on the
          page under the user's cursor. */
       const [custId, numStr, idxStr] = chk.dataset.sessionDeliverable.split('|');
-      toggleDeliverableEvidence(c, parseInt(numStr, 10), parseInt(idxStr, 10), chk.checked);
+      const rec = toggleDeliverableEvidence(c, parseInt(numStr, 10), parseInt(idxStr, 10), chk.checked);
       saveData();
-      /* Enable the attribution control in place rather than re-rendering. */
+      /* Enable the attribution control in place rather than re-rendering.
+         Guarded on the returned record, not on chk.checked: an un-tick always
+         returns null by design, but a TICK can also return null when the slot
+         didn't resolve (v100 fix round 1 / Minor 5) — the control must not go
+         live over a record that was never written. */
       const bySel = document.querySelector(`[data-deliverable-by="${chk.dataset.sessionDeliverable}"]`);
-      if(bySel){ bySel.disabled = !chk.checked; if(chk.checked) bySel.value = 'osm'; }
+      if(bySel){ bySel.disabled = !rec; if(rec) bySel.value = 'osm'; }
     }));
     $$('[data-deliverable-by]').forEach(sel => sel.addEventListener('change', ()=>{
       /* Attribution only. The date and the activity link are the record's other
          two facts and must survive being re-attributed — resetting `on` to
          today here would move this account's TTFV every time someone corrected
-         who did the demonstrating. */
+         who did the demonstrating. reattributeDeliverableEvidence carries that
+         invariant; this listener is just its DOM adapter. */
       const [custId, numStr, idxStr] = sel.dataset.deliverableBy.split('|');
-      const num = parseInt(numStr, 10), idx = parseInt(idxStr, 10);
-      const crit = outcomeCriteriaFor(c).find(x => x.sourceSession === num && x.sourceIndex === idx);
-      if(!crit || !crit.evidence) return;
-      setOutcomeEvidence(c, crit, Object.assign({}, crit.evidence, {by: sel.value}));
+      reattributeDeliverableEvidence(c, parseInt(numStr, 10), parseInt(idxStr, 10), sel.value);
       saveData();
     }));
     // v57: full-script modal — read-only textarea (manual Ctrl/Cmd+C always
