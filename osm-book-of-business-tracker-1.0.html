@@ -5914,7 +5914,9 @@ function removeOutcomeCriterion(customer, criterion){
 function outcomeVerdict(customer){
   const op = (customer && customer.compliance && customer.compliance.outcomePlan) || {};
   const names = DATA.config.outcomeNames || [];
-  const num = Number.isInteger(op.outcomeNumber) ? op.outcomeNumber : null;
+  const rawNum = op.outcomeNumber;
+  const chosen = Number.isInteger(rawNum) && rawNum >= 1;
+  const num = chosen ? rawNum : null;
   const list = outcomeCriteriaFor(customer);
   const stageCount = stage => {
     const inStage = list.filter(x => x.stage === stage);
@@ -5922,31 +5924,44 @@ function outcomeVerdict(customer){
   };
   const unevidenced = list.filter(x => !x.evidence).map(x => ({id:x.id, text:x.text, stage:x.stage}));
   const undated = list.filter(x => x.evidence && !x.evidence.on).length;
+  /* A criterion with neither ttfv stage — the shape the migration creates for a
+     ticked deliverable no template still carries — must be counted SOMEWHERE.
+     Counting it in neither total made an evidenced criterion invisible in the
+     numbers while state silently included it. */
+  const otherRows = list.filter(x => x.stage !== 'ttfv1' && x.stage !== 'ttfv2');
+  const other = {met: otherRows.filter(x => x.evidence).length, total: otherRows.length};
   const gates = {
     outcomePlan: !!op.done,
     csat: !!(customer && customer.compliance && customer.compliance.associatedPeopleCSAT && customer.compliance.associatedPeopleCSAT.done),
     sentiment: !!(customer && customer.compliance && customer.compliance.sentiment && customer.compliance.sentiment.done),
     gradDate: !!(customer && customer.targetGraduationDate)
   };
-  const blockers = (typeof openBlockers === 'function' && customer) ? openBlockers(customer).length : 0;
+  const blockers = customer ? openBlockers(customer).length : 0;
 
+  const noCriteria = list.length === 0;
   const reasons = [];
-  if(unevidenced.length) reasons.push(`${unevidenced.length} success criteri${unevidenced.length===1?'on is':'a are'} unevidenced`);
-  if(blockers) reasons.push(`${blockers} open blocker${blockers===1?'':'s'}`);
-  if(!gates.gradDate) reasons.push('no committed graduation date');
-  if(!gates.outcomePlan) reasons.push('the outcome plan is not marked created');
-  if(!gates.csat) reasons.push('no CSAT contact');
-  if(!gates.sentiment) reasons.push('no readiness assessment');
+  if(noCriteria){
+    reasons.push('no success criteria to judge against — this module has no deliverables authored');
+  } else {
+    if(unevidenced.length) reasons.push(`${unevidenced.length} success criteri${unevidenced.length===1?'on is':'a are'} unevidenced`);
+    if(blockers) reasons.push(`${blockers} open blocker${blockers===1?'':'s'}`);
+    if(!gates.gradDate) reasons.push('no committed graduation date');
+    if(!gates.outcomePlan) reasons.push('the outcome plan is not marked created');
+    if(!gates.csat) reasons.push('no CSAT contact');
+    if(!gates.sentiment) reasons.push('no readiness assessment');
+  }
 
-  /* An unchosen outcome is UNKNOWN, never failed. Absence of a judgement is not
-     a negative judgement — the same rule that stops an unassessed readiness
-     domain reading as low readiness. */
-  const state = num === null ? 'unknown' : (reasons.length ? 'not_ready' : 'ready');
+  /* Three states, and the difference between the last two matters. An unchosen
+     outcome and an unauthored curriculum are both ABSENCES of a judgement, not
+     negative judgements — the same rule that keeps an unassessed readiness
+     domain from reading as low readiness. Only an account with criteria that
+     are not met is not_ready. */
+  const state = !chosen ? 'unknown' : (noCriteria ? 'unknown' : (reasons.length ? 'not_ready' : 'ready'));
 
-  return {outcomeNumber: num, outcomeName: num ? (names[num - 1] || 'Customer Success Outcome') : null,
-    ttfv1: stageCount('ttfv1'), ttfv2: stageCount('ttfv2'),
+  return {outcomeNumber: num, outcomeName: chosen ? (names[num - 1] || 'Customer Success Outcome') : null,
+    ttfv1: stageCount('ttfv1'), ttfv2: stageCount('ttfv2'), other,
     unevidenced, undated, gates, openBlockers: blockers, state,
-    reasons: state === 'unknown' ? [] : reasons};
+    reasons: chosen ? reasons : []};
 }
 function getSessionActivity(customer, sessionNumber){
   const acts = DATA.activities[customer.id] || [];
@@ -9088,6 +9103,66 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA;
     check('phaseA ready requires every condition, and each failure names itself', ok, detail);
+  })();
+  (function(){
+    /* VACUOUS READY. An account with no criteria has proved nothing, so it must
+       not report ready on every-of-zero. Also pins the outcomeNumber boundary:
+       0 is not a choice, and an out-of-range number still names something. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      const mod = DATA.config.modules[0];
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      DATA.config.sessionTemplates[mod].forEach(t => { t.deliverables = []; });
+      const c = {id:'__empty1__', name:'Empty Co', module:mod,
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance = {sentiment:{done:true, date:todayISO(), answerA:'a', answerB:'b'},
+        outcomePlan:{done:true, date:todayISO(), outcomeNumber:2, planText:''},
+        associatedPeopleCSAT:{done:true, date:todayISO(), contactName:'X'}};
+      c.targetGraduationDate = isoAddDays(todayISO(), 30);
+      DATA.customers = [c]; DATA.activities = {__empty1__: []};
+      const empty = outcomeVerdict(c);
+      c.compliance.outcomePlan.outcomeNumber = 0;
+      const zero = outcomeVerdict(c);
+      c.compliance.outcomePlan.outcomeNumber = 19;
+      const over = outcomeVerdict(c);
+      ok = empty.state === 'unknown' && empty.reasons.length === 1
+        && zero.state === 'unknown' && zero.outcomeName === null && zero.outcomeNumber === null
+        && over.outcomeName === 'Customer Success Outcome';
+      detail = JSON.stringify({empty: empty.state, emptyReasons: empty.reasons.length,
+        zero: zero.state, zeroName: zero.outcomeName, overName: over.outcomeName});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('phaseA nothing to judge against is unknown, and 0 is not a chosen outcome', ok, detail);
+  })();
+  (function(){
+    /* A criterion with neither ttfv stage must be counted somewhere. This is the
+       shape the migration creates for a ticked deliverable no template carries. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__stg1__', name:'Stage Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance.outcomePlan.outcomeNumber = 3;
+      c.outcomeCriteria = {items:[{id:'oc_nostage', text:'Orphaned label', stage:'',
+        sourceSession:null, sourceIndex:null, sourceCount:null}], removed:[]};
+      c.outcomeEvidence = {oc_nostage: {on:null, by:'unknown', legacy:true}};
+      DATA.customers = [c]; DATA.activities = {__stg1__: []};
+      const v = outcomeVerdict(c);
+      const total = outcomeCriteriaFor(c).length;
+      ok = !!v.other && v.other.total === 1 && v.other.met === 1
+        && (v.ttfv1.total + v.ttfv2.total + v.other.total) === total
+        && v.undated === 1 && !v.unevidenced.some(x => x.id === 'oc_nostage');
+      detail = JSON.stringify({other: v.other, ttfv1: v.ttfv1, ttfv2: v.ttfv2,
+        undated: v.undated, total});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA a criterion with no ttfv stage is still counted', ok, detail);
   })();
   (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
