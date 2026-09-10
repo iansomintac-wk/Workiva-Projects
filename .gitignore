@@ -46,3 +46,7 @@ desktop.ini
 .DS_Store
 *.swp
 *~
+
+# tools/inspect.mjs capture output — instrumentation artefacts (text/png/json
+# dumps of rendered views), not project files.
+.artifacts/
