@@ -7,7 +7,7 @@
   "guideFile": "osm-runway-onboarding-1.0.html",
   "changelogFile": "CHANGELOG.txt",
   "validationFile": "VALIDATION.txt",
-  "trackerSchemaVersion": 11,
+  "trackerSchemaVersion": 12,
   "scope": "A single-file book-of-business tracker and its companion onboarding guide, bundled and validated together as one release. Both run from file:// with no build step and no server. The tracker holds its book in browser localStorage under obm-data-v1; the guide holds its own progress under separate osm-guide-* keys and never reads or writes the tracker's book. The AI Copilot features are the only ones requiring a network connection and an Anthropic API key.",
   "guideCoverage": "The guide covers the tracker end to end and has no known coverage gaps. Each feature is taught with its limits, not only its benefit: the Gainsight sync queue has no transport, impact minutes are an editable assumption, signal calibration needs four resolutions, the Progress Report is a snapshot, and automatic backup costs one click per session rather than being unattended.",
   "openItems": [

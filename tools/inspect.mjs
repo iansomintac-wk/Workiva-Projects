@@ -225,9 +225,9 @@ const switchResult = await send('Runtime.evaluate', {
       ${panelId ? `ui.openCustomerId = ${JSON.stringify(panelId)};` : ''}
       ${panelTab ? `ui.panelTab = ${JSON.stringify(panelTab)};` : ''}
       render();
-      ${panelId ? `if(!DATA.customers.some(c => c.id === ${JSON.stringify(panelId)})) return 'err:no such customer — the panel did not open';` : ''}
+      ${panelId ? `if(!DATA.customers.some(c => c.id === ${JSON.stringify(panelId)})) return 'err:no customer with id ' + ${JSON.stringify(panelId)} + ' in this book';` : ''}
       return 'ok';
-    } catch (e) { return 'err:' + e.message; } })()`,
+    } catch (e) { return 'err:' + String(e && e.stack || e); } })()`,
   returnByValue: true, awaitPromise: true,
 });
 if (switchResult.exceptionDetails) {

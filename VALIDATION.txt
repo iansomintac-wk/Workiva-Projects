@@ -1,10 +1,15 @@
 OSM Runway — Validation Summary
 ===============================
-Validated: September 9, 2026. Supersedes the August 6, 2026 record, which was
+Validated: September 10, 2026. Supersedes the August 6, 2026 record, which was
 stale in three ways by the time it was replaced — see A CORRECTION TO THE
 PREVIOUS RECORD below.
 
 SHA-256
+Hashed from the CRLF working-tree checkout (this repo runs core.autocrlf=true
+on Windows), not the LF git blob — the blob for the tracker at commit 6bd2695
+is 1,545,960 bytes with a different hash. A checkout on a platform that does
+not convert line endings will not reproduce the pair below; it will match the
+blob instead.
   osm-book-of-business-tracker-1.0.html   (1,570,924 bytes)
     43321890dcb6854b35944a5cd328a56aa20daedf04eeb733edf19151089132b9
   osm-runway-onboarding-1.0.html          (185,641 bytes)
@@ -24,12 +29,29 @@ subscribes to Runtime.exceptionThrown and fails the run if one appears.
 
 THE TRACKER SUITE NEEDS A SEEDED BOOK. Re-measured for this record rather than
 carried forward: on a fresh browser profile the suite reports 361/366, 5
-failed — the phase3 health-score-pairing check, the v81 band check, two v94
-Copilot checks, and the v74.4 whole-book-unchanged guard. None are defects;
-they need a seeded book. (The previous record's "314/354" for this same
-measurement was already stale by the time it was superseded — corrected here
-rather than carried forward unverified.) The runner therefore evaluates
-demo-seed.js in the page before calling the suite:
+failed — the phase3 health-score-pairing check, the v81 band check, and two
+v94 Copilot checks. None are defects; each asserts on a populated book and
+cannot be satisfied by an empty one. (The previous record's "314/354" for
+this same measurement was already stale by the time it was superseded —
+corrected here rather than carried forward unverified.)
+
+The fifth unseeded failure, v74.4's whole-book-unchanged guard, is not a
+"needs a seeded book" case — it is a restore bug in the v58 impact check.
+That check does `const savedImpact = DATA.impact; ... DATA.impact =
+undefined; ...; finally { DATA.impact = savedImpact; }` to exercise
+getImpactStore() from empty. When DATA.impact does not exist before the
+suite runs, `savedImpact` is `undefined`, and `DATA.impact = undefined`
+leaves an OWN property set to undefined rather than no property at all —
+Object.keys(DATA) then contains 'impact' where it did not at suite entry,
+which is exactly what v74.4 diffs on. demo-seed.js sets DATA.impact
+explicitly, which is why a seeded run never sees this. Verified by isolating
+the variable: seeding normally (impact present going in) runs 366/366;
+seeding and then deleting DATA.impact before the suite runs reproduces the
+identical failure — `removed=[] added=[impact] mutated=[]` — against an
+otherwise fully populated book, so book emptiness is not the cause. Not a
+shipped defect (nothing user-facing reads or writes through this path), but
+not what "needs a seeded book" describes either. The runner therefore
+evaluates demo-seed.js in the page before calling the suite:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js --expect 366
@@ -54,9 +76,10 @@ A CORRECTION TO THE PREVIOUS RECORD
 The August 6 record stated 318/318 and 18/18. All three of the following were
 wrong or unreproducible, and two of them had been wrong when written.
 
-1. THE TRACKER COUNT. 318 was true on August 6 and is now 354. It was also
-   repeated in guide-manifest.json, README.txt and CHANGELOG.txt, so the same
-   stale number was asserted in four places, one of them machine-readable.
+1. THE TRACKER COUNT. 318 was true on August 6; by September 9 it was 354. It
+   was also repeated in guide-manifest.json, README.txt and CHANGELOG.txt, so
+   the same stale number was asserted in four places, one of them
+   machine-readable.
 
 2. THE GUIDE'S 18/18 WAS VIEWPORT-DEPENDENT, and nobody knew. The check named
    "quick mode actually removes the guided-only chapters" captured every
@@ -111,8 +134,10 @@ Not exercised in this run:
 
 SCOPE OF THE CHANGE SINCE 1.0
 -----------------------------
-42 commits. Two feature branches, both merged after a full-branch review, plus
-the fixes that review produced.
+55 commits since 1.0 (git rev-list --count accc76e..6bd2695), counted through
+6bd2695 — the commit that added this section. This record's own fix commit,
+landing after 6bd2695, is not counted. Two feature branches, both merged
+after a full-branch review, plus the fixes that review produced.
 
 TODAY TAB, PHASES 1-2 (suite 318 -> 324)
   - The day is ordered by priority, not by the clock: every call leads in clock
@@ -171,12 +196,17 @@ OUTCOME CRITERIA AND EVIDENCE, PHASE B (suite 354 -> 366)
     synthetic fixtures. On a real book with history it will move.
   - Cost of the derived path, measured rather than asserted:
     portfolioTTFVStat() over the 17-account book is 0.094 ms per call against
-    0.002 ms for the equivalent plain field read — ~47x relative, negligible
-    absolute. Stated so nobody later claims either direction.
+    roughly 0.002 ms for the equivalent plain field read. Both absolutes
+    reproduce; the ratio between them does not — it divides two sub-millisecond
+    numbers, and a re-measurement by a different reviewer landed on 57x against
+    the same 0.094 ms. Read it as call-time negligible in absolute terms
+    (0.094 ms), not as a precise multiplier. Stated so nobody later claims
+    either direction.
 
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded
-  tools/inspect.mjs          renders a view and captures text, PNG and structure
+  tools/inspect.mjs          renders a view (optionally a --panel customer's
+                             --panel-tab) and captures text, PNG and structure
   tools/legacy-seed.js       a schemaVersion 11 book with seven awkward shapes
   tools/migration-dryrun.mjs runs a book through prepareBookData and reconciles
   demo-seed-today.js         a book with calls on today, at real clock times
