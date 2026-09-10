@@ -4381,13 +4381,28 @@ function migrateData(data){
       if(!Array.isArray(c.outcomeCriteria.removed)) c.outcomeCriteria.removed = [];
       if(!isRecordObject(c.outcomeEvidence)) c.outcomeEvidence = {};
       if(!isRecordObject(c.sessionNotes)) return;
-      const templates = (data.config && data.config.sessionTemplates
-        && data.config.sessionTemplates[c.module]) || [];
+      /* Resolve the curriculum the SAME way resolveRawCurriculum does. A CSRD
+         account's templates live under "<module> (CSRD)"; reading the plain
+         module key made every ticked deliverable on such an account fail to
+         match and migrate as an orphan, while derivation — using the correct
+         set — rendered the real deliverable beside it as fresh and unevidenced.
+         The account would show each criterion twice, one copy holding the
+         evidence. */
+      const allTemplates = (data.config && data.config.sessionTemplates) || {};
+      const csrdKey = c.reportsCSRD ? (c.module + ' (CSRD)') : null;
+      const templates = (csrdKey && Array.isArray(allTemplates[csrdKey]) && allTemplates[csrdKey].length)
+        ? allTemplates[csrdKey]
+        : (Array.isArray(allTemplates[c.module]) ? allTemplates[c.module] : []);
+      /* Clamp to the account's own plan length, as getSessionTemplateSet does.
+         Without it a tick for a session beyond the plan stores as DERIVED but
+         renders as "no longer in the curriculum" — the two disagreeing about
+         the same row. */
+      const planLength = Number.isInteger(c.totalSessions) ? c.totalSessions : 0;
       Object.keys(c.sessionNotes).forEach(key => {
         const note = c.sessionNotes[key];
         if(!/^\d+$/.test(key) || !isRecordObject(note) || !isRecordObject(note.deliverables)) return;
         const sessionNumber = parseInt(key, 10);
-        const tpl = templates[sessionNumber - 1];
+        const tpl = sessionNumber <= planLength ? templates[sessionNumber - 1] : null;
         const labels = (tpl && Array.isArray(tpl.deliverables)) ? tpl.deliverables : [];
         Object.keys(note.deliverables).forEach(label => {
           if(note.deliverables[label] !== true) return;      // an unticked box is not evidence
@@ -9302,6 +9317,56 @@ function _runSelfChecksInner(){
       detail = JSON.stringify({rejectedDate, rejectedBy, accepted});
     }catch(err){ detail = err.message; }
     check('phaseA malformed outcome evidence is rejected at the import boundary', ok, detail);
+  })();
+  (function(){
+    /* A CSRD account's curriculum lives under "<module> (CSRD)". Reading the
+       plain module key made every ticked deliverable migrate as an orphan while
+       derivation rendered the real one beside it, unevidenced — the same
+       criterion twice, one copy holding the evidence. */
+    let ok = false, detail = '';
+    try{
+      const cfg = JSON.parse(JSON.stringify(DATA.config));
+      const mod = 'Sustainability';
+      const csrdKey = mod + ' (CSRD)';
+      if(!Array.isArray(cfg.sessionTemplates[csrdKey]) || !cfg.sessionTemplates[csrdKey].length){
+        throw new Error('fixture needs a shipped ' + csrdKey + ' template set');
+      }
+      const plain = cfg.sessionTemplates[mod] || [];
+      const csrd = cfg.sessionTemplates[csrdKey] || [];
+      /* Find a session whose CSRD deliverable genuinely DIFFERS from the plain
+         one. Sampling a label that happens to read the same in both curricula
+         lets a migration reading the wrong template key match by coincidence —
+         which is exactly how the first version of this check passed against the
+         unfixed code. Throwing when no divergence exists keeps the check from
+         going quietly vacuous if the curricula ever converge. */
+      let sessionNumber = 0, csrdLabel = '';
+      for(let i = 0; i < Math.min(plain.length, csrd.length); i++){
+        const a = ((plain[i] || {}).deliverables || [])[0];
+        const b = ((csrd[i] || {}).deliverables || [])[0];
+        if(a && b && a !== b){ sessionNumber = i + 1; csrdLabel = b; break; }
+      }
+      if(!sessionNumber){
+        throw new Error('fixture needs a session where the CSRD curriculum diverges — none found');
+      }
+      const book = {schemaVersion: 11, config: cfg,
+        customers: [{id:'__csrd1__', name:'CSRD Co', module: mod, reportsCSRD: true,
+          stage: cfg.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+          totalSessions:8, domainScores:{},
+          stageHistory:[{stage: cfg.stages[1].key, date: isoAddDays(todayISO(), -200)}],
+          sessionNotes: {[String(sessionNumber)]: {deliverables:{[csrdLabel]: true}, prep:''}},
+          compliance: defaultCompliance()}],
+        activities: {__csrd1__: []}};
+      migrateData(book);
+      const c = book.customers[0];
+      const items = c.outcomeCriteria.items;
+      const rec = items.find(x => x.text === csrdLabel);
+      ok = items.length === 1 && !!rec && rec.sourceSession === sessionNumber
+        && Object.keys(c.outcomeEvidence).length === 1
+        && c.outcomeEvidence[rec.id] && c.outcomeEvidence[rec.id].legacy === true;
+      detail = JSON.stringify({items: items.length, sourceSession: rec && rec.sourceSession,
+        expectedSession: sessionNumber, label: csrdLabel});
+    }catch(err){ detail = err.message; }
+    check('phaseA a CSRD account migrates against its own curriculum', ok, detail);
   })();
   (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
