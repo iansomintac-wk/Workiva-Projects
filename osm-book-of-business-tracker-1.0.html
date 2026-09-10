@@ -10025,9 +10025,14 @@ function _runSelfChecksInner(){
       const badge2Reads = panel2.indexOf('>Admin and pacing<') !== -1;
       const noSevDigit4 = !/Sev \d/.test(panel4);
       const noSevDigit2 = !/Sev \d/.test(panel2);
+      const noSevPattern4 = !/(>|[^\w])sev\w*\s*\d/i.test(panel4);
+      const noSevPattern2 = !/(>|[^\w])sev\w*\s*\d/i.test(panel2);
+      let severityMatch = '';
+      if (!noSevPattern4) { const m = panel4.match(/(>|[^\w])sev\w*\s*\d[^.]*?\./i); severityMatch = m?.[0] || 'severity match found'; }
+      if (!noSevPattern2) { const m = panel2.match(/(>|[^\w])sev\w*\s*\d[^.]*?\./i); severityMatch = m?.[0] || 'severity match found'; }
 
-      ok = badge4Reads && badge2Reads && noSevDigit4 && noSevDigit2;
-      detail = JSON.stringify({badge4Reads, badge2Reads, noSevDigit4, noSevDigit2});
+      ok = badge4Reads && badge2Reads && noSevDigit4 && noSevDigit2 && noSevPattern4 && noSevPattern2;
+      detail = ok ? JSON.stringify({badge4Reads, badge2Reads, noSevDigit4, noSevDigit2, noSevPattern4, noSevPattern2}) : severityMatch;
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
@@ -17364,7 +17369,7 @@ function renderBeatPanel(beat, dispatchChips){
     ${row ? `
       <div class="focus-act">
         <h5>The evidence ${row.severity ? `<span class="badge ${row.severity>=3?'badge-risk':row.severity===2?'badge-watch':''}" title="${escapeAttr(row.why || '')}">${escapeHtml(severityBadgeLabel(row.severity))}</span>` : ''}</h5>
-        <p class="bp-basis" style="margin:0 0 8px;">Severity ${row.severity} of 4 · ${row.signalKey ? `signal <span style="font-family:var(--font-mono);">${escapeHtml(row.signalKey)}</span>` : escapeHtml(row.source)}. The reason this account is on your day is stated beside it; this is what the tracker read to get there.</p>
+        <p class="bp-basis" style="margin:0 0 8px;">Ranked from ${row.signalKey ? `signal <span style="font-family:var(--font-mono);">${escapeHtml(row.signalKey)}</span>` : escapeHtml(row.source)}. The reason this account is on your day is stated beside it; this is what the tracker read to get there.</p>
         ${beat.reasons.length > 4 ? `
           <div class="bp-sec">
             <div class="lbl">The other ${beat.reasons.length - 4} driver${beat.reasons.length - 4 === 1 ? '' : 's'}</div>
