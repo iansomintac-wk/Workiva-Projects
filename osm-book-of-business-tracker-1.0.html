@@ -5907,6 +5907,47 @@ function removeOutcomeCriterion(customer, criterion){
   clearOutcomeEvidence(customer, stored.id);
   return stored.id;
 }
+
+/* PURE. Stores nothing — there is no cached verdict anywhere, because a stored
+   verdict is a second source of truth that goes stale the moment anything it
+   read changes. */
+function outcomeVerdict(customer){
+  const op = (customer && customer.compliance && customer.compliance.outcomePlan) || {};
+  const names = DATA.config.outcomeNames || [];
+  const num = Number.isInteger(op.outcomeNumber) ? op.outcomeNumber : null;
+  const list = outcomeCriteriaFor(customer);
+  const stageCount = stage => {
+    const inStage = list.filter(x => x.stage === stage);
+    return {met: inStage.filter(x => x.evidence).length, total: inStage.length};
+  };
+  const unevidenced = list.filter(x => !x.evidence).map(x => ({id:x.id, text:x.text, stage:x.stage}));
+  const undated = list.filter(x => x.evidence && !x.evidence.on).length;
+  const gates = {
+    outcomePlan: !!op.done,
+    csat: !!(customer && customer.compliance && customer.compliance.associatedPeopleCSAT && customer.compliance.associatedPeopleCSAT.done),
+    sentiment: !!(customer && customer.compliance && customer.compliance.sentiment && customer.compliance.sentiment.done),
+    gradDate: !!(customer && customer.targetGraduationDate)
+  };
+  const blockers = (typeof openBlockers === 'function' && customer) ? openBlockers(customer).length : 0;
+
+  const reasons = [];
+  if(unevidenced.length) reasons.push(`${unevidenced.length} success criteri${unevidenced.length===1?'on is':'a are'} unevidenced`);
+  if(blockers) reasons.push(`${blockers} open blocker${blockers===1?'':'s'}`);
+  if(!gates.gradDate) reasons.push('no committed graduation date');
+  if(!gates.outcomePlan) reasons.push('the outcome plan is not marked created');
+  if(!gates.csat) reasons.push('no CSAT contact');
+  if(!gates.sentiment) reasons.push('no readiness assessment');
+
+  /* An unchosen outcome is UNKNOWN, never failed. Absence of a judgement is not
+     a negative judgement — the same rule that stops an unassessed readiness
+     domain reading as low readiness. */
+  const state = num === null ? 'unknown' : (reasons.length ? 'not_ready' : 'ready');
+
+  return {outcomeNumber: num, outcomeName: num ? (names[num - 1] || 'Customer Success Outcome') : null,
+    ttfv1: stageCount('ttfv1'), ttfv2: stageCount('ttfv2'),
+    unevidenced, undated, gates, openBlockers: blockers, state,
+    reasons: state === 'unknown' ? [] : reasons};
+}
 function getSessionActivity(customer, sessionNumber){
   const acts = DATA.activities[customer.id] || [];
   return acts.find(a => a.sessionNumber === sessionNumber) || null;
@@ -8965,6 +9006,88 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA;
     check('phaseA two different custom criteria get two identities', ok, detail);
+  })();
+  (function(){
+    /* ABSENCE IS NOT FAILURE. An account with no outcome chosen is 'unknown',
+       never 'not_ready' — the same principle that stops an unassessed readiness
+       domain reading as low readiness. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc7__', name:'Unknown Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance.outcomePlan.outcomeNumber = null;
+      DATA.customers = [c]; DATA.activities = {__oc7__: []};
+      const v = outcomeVerdict(c);
+      c.compliance.outcomePlan.outcomeNumber = 4;
+      const v2 = outcomeVerdict(c);
+      ok = v.state === 'unknown' && v2.state === 'not_ready'
+        && v2.outcomeName === DATA.config.outcomeNames[3]
+        && v2.reasons.length > 0;
+      detail = JSON.stringify({noNumber: v.state, withNumber: v2.state,
+        name: v2.outcomeName, reasons: v2.reasons.length});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA an unchosen outcome is unknown, not failed', ok, detail);
+  })();
+  (function(){
+    /* The verdict is PURE and counts what it claims: ttfv1/ttfv2 split, an
+       explicit undated count so legacy evidence cannot quietly pad the result. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc8__', name:'Count Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance.outcomePlan.outcomeNumber = 1;
+      DATA.customers = [c]; DATA.activities = {__oc8__: []};
+      const list = outcomeCriteriaFor(c);
+      const t1 = list.filter(x => x.stage === 'ttfv1');
+      setOutcomeEvidence(c, t1[0], {on: todayISO(), by:'osm'});
+      setOutcomeEvidence(c, t1[1], {on: null, by:'unknown', legacy:true});
+      const before = JSON.stringify(c);
+      const a = JSON.stringify(outcomeVerdict(c));
+      const b = JSON.stringify(outcomeVerdict(c));
+      const v = outcomeVerdict(c);
+      ok = a === b && JSON.stringify(c) === before
+        && v.ttfv1.met === 2 && v.ttfv1.total === t1.length
+        && v.undated === 1 && v.unevidenced.length === list.length - 2;
+      detail = JSON.stringify({pure: a === b, untouched: JSON.stringify(c) === before,
+        ttfv1: v.ttfv1, undated: v.undated, unevidenced: v.unevidenced.length});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA the verdict is pure and counts undated evidence separately', ok, detail);
+  })();
+  (function(){
+    /* 'ready' requires ALL of it: every criterion evidenced, three compliance
+       gates, a committed graduation date, no open blockers. Each missing one
+       must produce a reason, not a silent downgrade. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc9__', name:'Ready Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance = {sentiment:{done:true, date:todayISO(), answerA:'a', answerB:'b'},
+        outcomePlan:{done:true, date:todayISO(), outcomeNumber:2, planText:''},
+        associatedPeopleCSAT:{done:true, date:todayISO(), contactName:'X'}};
+      c.targetGraduationDate = isoAddDays(todayISO(), 30);
+      DATA.customers = [c]; DATA.activities = {__oc9__: []};
+      outcomeCriteriaFor(c).forEach(x => setOutcomeEvidence(c, x, {on: todayISO(), by:'osm'}));
+      const ready = outcomeVerdict(c);
+      c.targetGraduationDate = null;
+      const noDate = outcomeVerdict(c);
+      ok = ready.state === 'ready' && ready.reasons.length === 0
+        && noDate.state === 'not_ready' && noDate.reasons.length === 1;
+      detail = JSON.stringify({ready: ready.state, readyReasons: ready.reasons,
+        noDate: noDate.state, noDateReasons: noDate.reasons});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA ready requires every condition, and each failure names itself', ok, detail);
   })();
   (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
