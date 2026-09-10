@@ -5842,8 +5842,19 @@ function materializeOutcomeCriterion(customer, criterion){
     const known = customer.outcomeCriteria.items.find(x => x.id === criterion.id);
     if(known) return known;
   }
-  const dup = customer.outcomeCriteria.items.find(x =>
-    x.sourceSession === (criterion.sourceSession || null) && x.sourceIndex === criterion.sourceIndex);
+  /* Derived criteria are identified by their slot; custom ones have no slot, so
+     they are identified by their text. Deduping custom criteria on
+     (sourceSession, sourceIndex) would collide every one of them on null/null
+     and merge unrelated criteria into a single identity — which the migration
+     that materializes orphaned labels would hit on any book with two of them.
+     sourceIndex is normalized first: a caller may pass undefined where a stored
+     record holds null, and `undefined !== null` would mint a duplicate. */
+  const idx = criterion.sourceIndex === undefined ? null : criterion.sourceIndex;
+  const dup = criterion.sourceSession
+    ? customer.outcomeCriteria.items.find(x =>
+        x.sourceSession === criterion.sourceSession && x.sourceIndex === idx)
+    : customer.outcomeCriteria.items.find(x =>
+        !x.sourceSession && x.text === String(criterion.text || ''));
   if(dup) return dup;
   /* sourceCount is what makes the index fallback in outcomeCriteriaFor safe: it
      only trusts a stored sourceIndex while the session still holds the same
@@ -5855,7 +5866,7 @@ function materializeOutcomeCriterion(customer, criterion){
     : null;
   const rec = {id:'oc_' + uid().slice(0, 8), text: String(criterion.text || ''),
     stage: criterion.stage || '', sourceSession: criterion.sourceSession || null,
-    sourceIndex: criterion.sourceIndex === undefined ? null : criterion.sourceIndex,
+    sourceIndex: idx,
     sourceCount: count};
   customer.outcomeCriteria.items.push(rec);
   return rec;
@@ -8922,6 +8933,38 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA;
     check('phaseA un-ticking keeps identity, and removal stores only opaque ids', ok, detail);
+  })();
+  (function(){
+    /* Two DIFFERENT custom criteria must get two identities. They share
+       sourceSession:null and sourceIndex:null, so a dedupe keyed on that pair
+       merges them and one loses its evidence — which the orphaned-label branch
+       of the migration would hit on any book carrying two of them. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__cust1__', name:'Custom Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__cust1__: []};
+      const one = {text:'First custom criterion', stage:'ttfv2', sourceSession:null, sourceIndex:null};
+      const two = {text:'Second custom criterion', stage:'ttfv2', sourceSession:null, sourceIndex:null};
+      setOutcomeEvidence(c, one, {on: todayISO(), by:'osm'});
+      setOutcomeEvidence(c, two, {on: null, by:'customer'});
+      const items = c.outcomeCriteria.items;
+      const ids = items.map(x => x.id);
+      const texts = items.map(x => x.text).sort();
+      const evKeys = Object.keys(c.outcomeEvidence).sort();
+      // Same text twice must still dedupe to one.
+      setOutcomeEvidence(c, {text:'First custom criterion', stage:'ttfv2', sourceSession:null, sourceIndex:null},
+        {on: todayISO(), by:'osm'});
+      ok = items.length === 2 && new Set(ids).size === 2
+        && texts[0] === 'First custom criterion' && texts[1] === 'Second custom criterion'
+        && evKeys.length === 2 && c.outcomeCriteria.items.length === 2;
+      detail = JSON.stringify({items: items.length, uniqueIds: new Set(ids).size, texts, evidence: evKeys.length});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA two different custom criteria get two identities', ok, detail);
   })();
   (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
