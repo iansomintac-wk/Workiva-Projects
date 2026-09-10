@@ -997,6 +997,16 @@
     text-transform:uppercase; letter-spacing:.05em;}
   .bp-thread{margin-top:6px; padding:6px 8px; background:var(--bg-card-hover); border-radius:6px;}
   .bp-risk{border-top:1px solid var(--border-soft); padding:var(--space-1) 0 0; margin-bottom:var(--space-1);}
+  /* Outcome criteria. A list, not a table — the text is the content and the
+     mark is an annotation on it. */
+  .oc-group{margin-top:12px;}
+  .oc-row{display:flex; gap:var(--space-2); align-items:baseline; padding:4px 0;
+    font-size:var(--text-sm); color:var(--text-dim);}
+  .oc-row.oc-met{color:var(--text);}
+  .oc-mark{font-family:var(--font-mono); color:var(--text-faint); flex:0 0 auto;}
+  .oc-row.oc-met .oc-mark{color:var(--status-ontrack-text, var(--accent-info));}
+  .oc-text{min-width:0; overflow-wrap:anywhere;}
+  .oc-meta{display:block; font-size:var(--text-xs); color:var(--text-faint); margin-top:2px;}
   .bp-risk:first-of-type{border-top:0; padding-top:0;}
   .bp-time{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
   .bp-time .bp-basis{margin:0;}
@@ -9425,6 +9435,60 @@ function _runSelfChecksInner(){
         expectedSession: sessionNumber, label: csrdLabel});
     }catch(err){ detail = err.message; }
     check('phaseA a CSRD account migrates against its own curriculum', ok, detail);
+  })();
+  (function(){
+    /* The panel states the verdict and names what is outstanding. Read-only in
+       Phase A: rendering must emit no control that writes, because the capture
+       UI is Phase B and a half-wired control is worse than none. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__ov1__', name:'View Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance.outcomePlan.outcomeNumber = 4;
+      DATA.customers = [c]; DATA.activities = {__ov1__: []};
+      const list = outcomeCriteriaFor(c);
+      setOutcomeEvidence(c, list[0], {on: todayISO(), by:'customer'});
+      setOutcomeEvidence(c, list[1], {on: null, by:'unknown', legacy:true});
+      const before = JSON.stringify(c);
+      const html = renderOutcomeCriteria(c);
+      const v = outcomeVerdict(c);
+      const namesOutcome = html.indexOf(escapeHtml(v.outcomeName)) !== -1;
+      const showsStages = html.indexOf('ttfv1') !== -1 || html.toLowerCase().indexOf('first value') !== -1;
+      const showsUndated = html.indexOf('date unknown') !== -1;
+      const noWriters = !/data-(oc|outcome)-(set|clear|remove|tick)/.test(html)
+        && html.indexOf('<input') === -1 && html.indexOf('<textarea') === -1;
+      const pure = JSON.stringify(c) === before;
+      ok = namesOutcome && showsStages && showsUndated && noWriters && pure;
+      detail = JSON.stringify({namesOutcome, showsStages, showsUndated, noWriters, pure});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA the outcome panel states the verdict, is read-only, and renders purely', ok, detail);
+  })();
+  (function(){
+    /* Criterion text is user-controlled once an OSM edits it. Every one must be
+       escaped, or a criterion containing a quote breaks the markup. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__ov2__', name:'Esc Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance.outcomePlan.outcomeNumber = 1;
+      c.outcomeCriteria = {items:[{id:'oc_xss1', text:'<img src=x onerror=alert(1)> & "quoted"',
+        stage:'ttfv2', sourceSession:null, sourceIndex:null}], removed:[]};
+      DATA.customers = [c]; DATA.activities = {__ov2__: []};
+      const html = renderOutcomeCriteria(c);
+      ok = html.indexOf('<img src=x') === -1 && html.indexOf('&lt;img') !== -1
+        && html.indexOf('&amp;') !== -1;
+      detail = JSON.stringify({rawImg: html.indexOf('<img src=x') !== -1,
+        escaped: html.indexOf('&lt;img') !== -1});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA criterion text is escaped in the outcome panel', ok, detail);
   })();
   (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
@@ -18201,6 +18265,63 @@ function renderGradReviewBlock(c){
     </div>`;
 }
 
+/* PURE. Read-only in Phase A: no control here writes anything, because capture
+   is Phase B and a half-wired checkbox is worse than no checkbox.
+
+   outcomeVerdict() has two different 'unknown' states and they must not be
+   conflated: reasons.length === 0 means no outcome number has been chosen yet
+   (send the OSM to the Edit account tab); reasons.length === 1 means an
+   outcome IS chosen but the module has no deliverables authored, so there is
+   nothing to judge against (naming that reason is right — the Edit account
+   tab cannot fix it). */
+function renderOutcomeCriteria(c){
+  const v = outcomeVerdict(c);
+  if(v.state === 'unknown' && !v.reasons.length){
+    return `<div class="section-card" style="margin-top:16px;">
+      <div class="section-title" style="margin-top:0;">Success outcome</div>
+      <p class="bp-basis" style="margin:0;">No numbered outcome chosen yet, so there is nothing to judge graduation against. Pick one on the Edit account tab.</p>
+    </div>`;
+  }
+  if(v.state === 'unknown'){
+    return `<div class="section-card" style="margin-top:16px;">
+      <div class="section-title" style="margin-top:0;">Success outcome</div>
+      <p class="bp-basis" style="margin:0;">Outcome ${v.outcomeNumber} · ${escapeHtml(v.outcomeName)} — ${escapeHtml(v.reasons.join(' · '))}.</p>
+    </div>`;
+  }
+  const list = outcomeCriteriaFor(c);
+  const row = x => {
+    const ev = x.evidence;
+    const mark = ev ? '✓' : '○';
+    const meta = !ev ? '' : ev.on
+      ? `met ${fmtDate(ev.on)} · ${escapeHtml(ev.by === 'customer' ? 'customer demonstrated' : ev.by === 'osm' ? 'OSM observed' : 'source unknown')}`
+      : 'met — date unknown, predates evidence tracking';
+    const note = x.source === 'curriculum' ? '' : ` <span class="bp-basis">(${escapeHtml(x.source)})</span>`;
+    return `<div class="oc-row${ev ? ' oc-met' : ''}">
+      <span class="oc-mark">${mark}</span>
+      <span class="oc-text">${escapeHtml(x.text)}${note}
+        ${meta ? `<span class="oc-meta">${meta}</span>` : ''}</span>
+    </div>`;
+  };
+  const group = (label, stage, counts) => {
+    const rows = list.filter(x => x.stage === stage);
+    if(!rows.length) return '';
+    return `<div class="oc-group">
+      <div class="lbl">${escapeHtml(label)} <span class="bp-basis">${counts.met} of ${counts.total}</span></div>
+      ${rows.map(row).join('')}
+    </div>`;
+  };
+  const other = list.filter(x => x.stage !== 'ttfv1' && x.stage !== 'ttfv2');
+  return `
+    <div class="section-card" style="margin-top:16px;">
+      <div class="section-title" style="margin-top:0;">Success outcome <span class="badge ${v.state === 'ready' ? 'badge-ontrack' : 'badge-watch'}">${v.state === 'ready' ? 'READY' : 'NOT READY'}</span></div>
+      <p class="bp-basis" style="margin:-4px 0 10px;">Outcome ${v.outcomeNumber} · ${escapeHtml(v.outcomeName)}</p>
+      ${group('First value', 'ttfv1', v.ttfv1)}
+      ${group('Outcome', 'ttfv2', v.ttfv2)}
+      ${other.length ? `<div class="oc-group"><div class="lbl">Other <span class="bp-basis">${v.other.met} of ${v.other.total}</span></div>${other.map(row).join('')}</div>` : ''}
+      ${v.reasons.length ? `<p class="bp-basis" style="margin:10px 0 0;">Not ready: ${escapeHtml(v.reasons.join(' · '))}.</p>` : ''}
+      ${v.undated ? `<p class="bp-basis" style="margin:6px 0 0;">${v.undated} criteri${v.undated===1?'on was':'a were'} ticked before evidence was tracked, so ${v.undated===1?'its date is':'their dates are'} unknown.</p>` : ''}
+    </div>`;
+}
 function renderOverviewTab(c, risk){
   const nextSession = getNextSessionInfo(c);
   const nextSteps = getCustomerNextSteps(c);
@@ -18289,6 +18410,7 @@ function renderOverviewTab(c, risk){
       <p style="color:var(--accent-watch-text); font-size:var(--text-xs); margin:0 0 6px;">Sends this account's real name and note text to your configured provider — not a pseudonymized summary.</p>
       ${renderAiBriefBody(ui.aiCustomerBriefs[c.id])}
     </div>
+    ${renderOutcomeCriteria(c)}
   `;
 }
 
