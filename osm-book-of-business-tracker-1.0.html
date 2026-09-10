@@ -5744,6 +5744,65 @@ function getSessionTemplate(customer, sessionNumber){
   const set = getSessionTemplateSet(customer);
   return set[sessionNumber-1] || null;
 }
+/* ============ OUTCOME CRITERIA ============
+   ADMIN_GAP_DEFS has said since it was written that "the numbered outcome is
+   what graduation is judged against", and then checked a boolean. Every read of
+   outcomeNumber was a <select>'s selected-state or a name lookup; nothing
+   reasoned over it. These functions are what make that sentence true.
+
+   Criteria are DERIVED, never authored from nothing: the curriculum already
+   states 12-15 deliverables per module, already specific, already grouped by
+   ttfvStage. getSessionTemplateSet() already clamps them to the account's own
+   totalSessions. Nothing is stored until a criterion is acted on.
+
+   Identity is OPAQUE and assigned once, at materialization. The positional key
+   below is for display and DOM attributes only and must never be stored: a
+   deliverable inserted mid-list shifts every later position, and the inserted
+   one would inherit the evidence of whatever used to sit there. */
+function outcomeCriterionKey(sessionNumber, index){ return 's' + sessionNumber + '#' + index; }
+
+/* PURE. Returns the account's criteria in curriculum order, then any
+   materialized item the curriculum no longer carries. Writes nothing. */
+function outcomeCriteriaFor(customer){
+  if(!customer) return [];
+  const store = isRecordObject(customer.outcomeCriteria) ? customer.outcomeCriteria : {};
+  const stored = Array.isArray(store.items) ? store.items : [];
+  const removed = new Set(Array.isArray(store.removed) ? store.removed : []);
+  const evidence = isRecordObject(customer.outcomeEvidence) ? customer.outcomeEvidence : {};
+  const claimed = new Set();
+  const out = [];
+
+  getSessionTemplateSet(customer).forEach((tpl, i) => {
+    const sessionNumber = i + 1;
+    (tpl.deliverables || []).forEach((text, idx) => {
+      /* Match a materialized item by (sourceSession, text) first so a REORDERED
+         deliverable keeps its evidence, then by (sourceSession, sourceIndex) so
+         a REWORDED one does too. */
+      const hit = stored.find(s => !claimed.has(s.id) && s.sourceSession === sessionNumber && s.text === text)
+               || stored.find(s => !claimed.has(s.id) && s.sourceSession === sessionNumber && s.sourceIndex === idx);
+      if(hit){
+        claimed.add(hit.id);
+        if(removed.has(hit.id)) return;
+        out.push({id:hit.id, text:hit.text, stage:hit.stage || tpl.ttfvStage || '',
+          source: hit.text === text ? 'curriculum' : 'curriculum (reworded since)',
+          sourceSession:sessionNumber, sourceIndex:idx, evidence: evidence[hit.id] || null});
+        return;
+      }
+      out.push({id: outcomeCriterionKey(sessionNumber, idx), text, stage: tpl.ttfvStage || '',
+        source:'curriculum', sourceSession:sessionNumber, sourceIndex:idx,
+        evidence:null, provisional:true});
+    });
+  });
+
+  stored.forEach(s => {
+    if(claimed.has(s.id) || removed.has(s.id)) return;
+    out.push({id:s.id, text:s.text, stage:s.stage || '',
+      source: s.sourceSession ? 'no longer in the curriculum' : 'added for this account',
+      sourceSession: s.sourceSession || null, sourceIndex: s.sourceIndex,
+      evidence: evidence[s.id] || null});
+  });
+  return out;
+}
 function getSessionActivity(customer, sessionNumber){
   const acts = DATA.activities[customer.id] || [];
   return acts.find(a => a.sessionNumber === sessionNumber) || null;
@@ -8543,6 +8602,83 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
     check('phase2 drivers past the fourth stay reachable in the panel, and the first four are not restated there', ok, detail);
+  })();
+  (function(){
+    /* Phase A: criteria are DERIVED from the account's own curriculum and clamp
+       to its own plan length. An 8-session account must not inherit criteria
+       from sessions 9-12 it will never run. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc1__', name:'Crit Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__oc1__: []};
+      _renderMemoResets.forEach(r => r());
+      const list = outcomeCriteriaFor(c);
+      const sessions = [...new Set(list.map(x => x.sourceSession))].sort((a,b)=>a-b);
+      const clamped = sessions.every(n => n >= 1 && n <= 8);
+      const allProvisional = list.every(x => x.provisional === true && x.evidence === null);
+      const hasStages = list.every(x => x.stage === 'ttfv1' || x.stage === 'ttfv2');
+      const keysUnique = new Set(list.map(x => x.id)).size === list.length;
+      ok = list.length > 0 && clamped && allProvisional && hasStages && keysUnique;
+      detail = JSON.stringify({n:list.length, sessions, clamped, allProvisional, hasStages, keysUnique});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    _renderMemoResets.forEach(r => r());
+    check('phaseA criteria derive from the curriculum and clamp to the account plan', ok, detail);
+  })();
+  (function(){
+    /* PURE. Deriving criteria must not materialize anything, must not touch the
+       book, and must return byte-identical output twice. renderToday() stamping
+       DATA.riskLog is the defect class this guards against. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc2__', name:'Pure Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__oc2__: []};
+      const before = JSON.stringify(c);
+      const a = JSON.stringify(outcomeCriteriaFor(c));
+      const b = JSON.stringify(outcomeCriteriaFor(c));
+      ok = a === b && JSON.stringify(c) === before
+        && c.outcomeCriteria === undefined && c.outcomeEvidence === undefined;
+      detail = JSON.stringify({stable: a === b, bookUntouched: JSON.stringify(c) === before,
+        materialized: c.outcomeCriteria !== undefined});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA deriving criteria is pure and materializes nothing', ok, detail);
+  })();
+  (function(){
+    /* A materialized criterion whose deliverable was later DELETED from the
+       curriculum still appears, labelled. Discarding an evidenced criterion
+       because a template changed would throw away a human's assertion. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc3__', name:'Ghost Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.outcomeCriteria = {items:[
+        {id:'oc_ghost1', text:'A deliverable no template still carries', stage:'ttfv1',
+         sourceSession:2, sourceIndex:9},
+        {id:'oc_added1', text:'Something the OSM added', stage:'ttfv2',
+         sourceSession:null, sourceIndex:null}
+      ], removed:[]};
+      DATA.customers = [c]; DATA.activities = {__oc3__: []};
+      const list = outcomeCriteriaFor(c);
+      const ghost = list.find(x => x.id === 'oc_ghost1');
+      const added = list.find(x => x.id === 'oc_added1');
+      ok = !!ghost && ghost.source === 'no longer in the curriculum'
+        && !!added && added.source === 'added for this account';
+      detail = JSON.stringify({ghost: ghost && ghost.source, added: added && added.source});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA a deleted-from-curriculum criterion survives, labelled', ok, detail);
   })();
   (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
