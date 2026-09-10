@@ -8772,8 +8772,14 @@ function _runSelfChecksInner(){
          produce four drivers, so without this the overCap clause can never fire
          and nothing guards the left column's limit — slice(0,4) could become
          slice(0,3) and the suite would stay green while driver #4 vanished
-         between the two surfaces. */
-      if(day.beats[0]) day.beats[0].reasons = ['Drv-1','Drv-2','Drv-3','Drv-4','Drv-5'];
+         between the two surfaces. FIX 1 amendment: the headline is put IN the
+         reasons list, at position 0 — exactly the shape a real Gainsight
+         grad-review gate produces when it is the account's only reason — so
+         headlineDupes actually has something to catch pre-fix.  */
+      if(day.beats[0]){
+        day.beats[0].headline = day.beats[0].headline || 'Drv-1';
+        day.beats[0].reasons = [day.beats[0].headline, 'Drv-2','Drv-3','Drv-4','Drv-5'];
+      }
       const html = renderDay(day, () => '');
       /* Bound the scan to the TRACK before splitting. renderDay emits the track
          and then the .day-stage pane pool, and the pool's renderBeatPanel output
@@ -8786,17 +8792,40 @@ function _runSelfChecksInner(){
         const cust = DATA.customers.find(x => x.id === day.beats[i].customerId);
         return !!cust && s.indexOf(escapeHtml(accountStateLabel(cust))) !== -1;
       });
-      const everyStepComplete = steps.length === day.beats.length && steps.every(s =>
-        stateOk                                   // state
-        && s.indexOf('ds-why-list') !== -1        // why
-        && s.indexOf('ds-do') !== -1              // what do I do
-        && s.indexOf('<h4') !== -1                // setTodayFocus reads this
-        && s.indexOf('ds-eyebrow') !== -1);       // and this
+      /* FIX 1 amendment: a beat whose only reason IS its headline has nothing
+         left to say under "Why" once the headline is excluded from the drivers
+         list — that beat correctly omits the whole ds-why-list dt/dd pair. The
+         old assertion ("ds-why-list present in every step") is now wrong; the
+         Why row's presence must match whether the beat has drivers BEYOND its
+         headline. Diagnosed per-step rather than folded into one boolean so a
+         failure names which step disagreed. */
+      const whyMismatches = steps.map((s, i) => {
+        const b = day.beats[i];
+        const extra = (b.reasons || []).filter(r => r !== b.headline);
+        const hasWhy = s.indexOf('ds-why-list') !== -1;
+        return {i, expectWhy: extra.length > 0, hasWhy};
+      }).filter(x => x.expectWhy !== x.hasWhy);
+      // NEW, strictly stronger: the headline is the "what do I do" sentence and
+      // must never also print as one of its own Why drivers.
+      const headlineDupes = steps.map((s, i) => {
+        const b = day.beats[i];
+        const needle = escapeHtml(b.headline || '');
+        const count = needle ? (s.split(needle).length - 1) : 0;
+        return {i, count};
+      }).filter(x => x.count > 1);
+      const everyStepComplete = steps.length === day.beats.length
+        && whyMismatches.length === 0
+        && headlineDupes.length === 0
+        && steps.every(s =>
+          stateOk                                   // state
+          && s.indexOf('ds-do') !== -1              // what do I do
+          && s.indexOf('<h4') !== -1                // setTodayFocus reads this
+          && s.indexOf('ds-eyebrow') !== -1);       // and this
       // The drivers list is capped at four; a fifth must be counted, not printed.
       const maxLi = steps.reduce((n,s)=> Math.max(n, (s.match(/<li/g) || []).length), 0);
       const overCap = maxLi > 4;
       ok = everyStepComplete && !overCap && maxLi === 4;
-      detail = JSON.stringify({steps: steps.length, beats: day.beats.length, everyStepComplete, overCap, stateOk, maxLi});
+      detail = JSON.stringify({steps: steps.length, beats: day.beats.length, everyStepComplete, overCap, stateOk, maxLi, whyMismatches, headlineDupes});
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.todayFocusId = prevFocus;
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
@@ -9544,6 +9573,115 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     _renderMemoResets.forEach(r => r());
     check('phaseA the panel tells the two unknown states apart', ok, detail);
+  })();
+  (function(){
+    /* Phase 3 / FIX 1. Excluding the headline from the drivers list must not
+       just move a rule around — it must actually stop the same sentence
+       rendering twice under Why and What do I do, and a beat with a REAL
+       extra driver must still show its Why row. Both halves are asserted
+       against the same customer so the only variable between them is the
+       reasons list. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevFocus = ui.todayFocusId;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const c = {id:'__hdln__', name:'Headline Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[],
+        nextSessionScheduledOn: todayISO(), nextSessionTime:'09:30'};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__hdln__: []};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const SAME = 'Estimated graduation date is 48 days earlier than target — update in Gainsight';
+      const EXTRA = 'A second, distinct reason this account is here';
+
+      // (a) The beat's only reason IS its headline.
+      let day = buildDayTimeline();
+      if(!day.beats[0]) throw new Error('no beat built for the headline-duplication check');
+      day.beats[0].headline = SAME;
+      day.beats[0].reasons = [SAME];
+      let html = renderDay(day, () => '');
+      let step = html.split('class="day-stage"')[0].split('class="day-step').slice(1)[0];
+      const needle = escapeHtml(SAME);
+      const onlyReasonTimes = step.split(needle).length - 1;
+      const onlyReasonHasWhy = step.indexOf('ds-why-list') !== -1;
+
+      // (b) The beat's headline PLUS one real extra driver.
+      day = buildDayTimeline();
+      day.beats[0].headline = SAME;
+      day.beats[0].reasons = [SAME, EXTRA];
+      html = renderDay(day, () => '');
+      step = html.split('class="day-stage"')[0].split('class="day-step').slice(1)[0];
+      const withExtraTimes = step.split(needle).length - 1;
+      const withExtraHasWhy = step.indexOf('ds-why-list') !== -1;
+      const extraDriverShown = step.indexOf(escapeHtml(EXTRA)) !== -1;
+
+      ok = onlyReasonTimes === 1 && !onlyReasonHasWhy
+        && withExtraTimes === 1 && withExtraHasWhy && extraDriverShown;
+      detail = JSON.stringify({onlyReasonTimes, onlyReasonHasWhy, withExtraTimes, withExtraHasWhy, extraDriverShown});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.todayFocusId = prevFocus;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase3 a beat never prints its headline twice', ok, detail);
+  })();
+  (function(){
+    /* Phase 3 / FIX 2. A call beat with a logged activity carrying an open
+       question, rendered through the real renderBeatPanel. Three facts must
+       each print exactly once: the last-note text, the open question text,
+       and the session-count figure. Counted on the PLAIN TEXT (tags stripped)
+       so markup differences between the standing strip and the prep card
+       cannot hide a duplicate fact behind different HTML. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    let ok = false, detail = '';
+    try{
+      DATA.riskLog = {};
+      const c = {id:'__panel1__', name:'Panel Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -220),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[],
+        nextSessionScheduledOn: todayISO(), nextSessionTime:'10:00'};
+      backfillCustomerRecord(c);
+      const NOTE = 'We reviewed the connector mapping and it is on track for go-live.';
+      const QUESTION = 'Can numeric columns be restricted to a US number format?';
+      DATA.customers = [c];
+      DATA.activities = {__panel1__: [{id:'pa1', date: isoAddDays(todayISO(), -5), type:'Onboarding Session',
+        summary: NOTE, sessionNumber:3, checklist:[], flagged:false,
+        openThreads:[{id:'pt1', q:QUESTION, a:null}]}]};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const day = buildDayTimeline();
+      const beat = day.beats.find(b => b.customerId === '__panel1__' && b.kind === 'call');
+      if(!beat) throw new Error('no call beat built for the panel duplication check');
+      const panel = renderBeatPanel(beat, () => '');
+      const plain = panel.replace(/<[^>]+>/g, '');
+      const sessionsFigure = `${sessionsCompletedCount(c)}/${c.totalSessions}`;
+      const noteTimes = plain.split(NOTE).length - 1;
+      const questionTimes = plain.split(QUESTION).length - 1;
+      const sessionsTimes = plain.split(sessionsFigure).length - 1;
+      ok = noteTimes === 1 && questionTimes === 1 && sessionsTimes === 1;
+      detail = JSON.stringify({noteTimes, questionTimes, sessionsTimes, sessionsFigure});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('phase3 the beat panel states each fact once', ok, detail);
+  })();
+  (function(){
+    /* Phase 3 / FIX 4. The telemetry band scrambles figures, but SINCE is a
+       formatted date — mid-churn it reads as corrupted data, not a changing
+       number. copilotTelemetry() must opt SINCE out via its own field data
+       (scramble:false), and renderTelemetry() must honour that per field
+       rather than special-casing the SINCE label. */
+    let ok = false, detail = '';
+    try{
+      const month = {landing:[], offSla:[]};
+      const html = renderTelemetry(month);
+      const chunks = html.split('<span class="tele-f">').slice(1).map(c => c.split('</span>')[0]);
+      const since = chunks.find(c => c.indexOf('>SINCE<') !== -1);
+      const numeric = chunks.filter(c => c !== since);
+      const sinceHasNoScramble = !!since && since.indexOf('data-scramble') === -1;
+      const numericAllScramble = numeric.length > 0 && numeric.every(c => c.indexOf('data-scramble') !== -1);
+      ok = sinceHasNoScramble && numericAllScramble;
+      detail = JSON.stringify({since, numericCount: numeric.length, sinceHasNoScramble, numericAllScramble});
+    }catch(err){ detail = err.message; }
+    check('phase3 the telemetry date does not scramble', ok, detail);
   })();
   (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
@@ -13953,7 +14091,11 @@ function copilotTelemetry(month){
     {k: 'ASKED', v: openQuestionCount()},
     {k: 'BUILDING', v: implementationHubList().length},
     {k: 'QUIET', v: implementationHubList().filter(r => r.quiet).length},
-    {k: 'SINCE', v: digest ? fmtDate(digest.since).toUpperCase() : 'NO BASELINE'}
+    /* v99.1 / FIX 4: SINCE is a formatted date, not a figure — mid-churn the
+       scramble renders it as e.g. "SEP 9, 200&", which reads as corrupted data.
+       Opted out on the FIELD, not on a hardcoded label in the renderer, so
+       another text field can opt out later without touching renderTelemetry. */
+    {k: 'SINCE', v: digest ? fmtDate(digest.since).toUpperCase() : 'NO BASELINE', scramble: false}
   ];
 }
 
@@ -13961,7 +14103,7 @@ function renderTelemetry(month){
   return `
     <div class="tele" aria-hidden="true">
       ${copilotTelemetry(month).map(f => `
-        <span class="tele-f"><i>${escapeHtml(f.k)}</i><b data-scramble>${escapeHtml(String(f.v))}</b></span>`).join('')}
+        <span class="tele-f"><i>${escapeHtml(f.k)}</i><b${f.scramble !== false ? ' data-scramble' : ''}>${escapeHtml(String(f.v))}</b></span>`).join('')}
       <span class="tele-f tele-clock"><i>NOW</i><b data-clock>--:--:--</b></span>
     </div>`;
 }
@@ -16921,25 +17063,9 @@ function renderBeatPrep(beat){
   const pendingItems = (DATA.activities[c.id] || [])
     .flatMap(a => (a.checklist || []).filter(i => !i.done).map(i => ({label:i.label, date:a.date})));
   const deliverables = (x.next && x.next.template && Array.isArray(x.next.template.deliverables)) ? x.next.template.deliverables : [];
-  const fv = getFirstValue(c);
-  const stat = (label, value) => `<div><div class="lbl">${escapeHtml(label)}</div><div class="bp-stat">${value}</div></div>`;
   return `
     <div class="focus-act">
       <h5>${x.at ? escapeHtml(fmtDayTime(x.at)) + ' · ' : ''}Call prep${x.next ? ` · Session ${x.next.number}` : ''} ${x.prepped ? '<span class="badge badge-ontrack">prep notes logged</span>' : '<span class="badge badge-watch">no prep notes</span>'}</h5>
-
-      <div class="bp-stats">
-        ${stat('Sessions', `${sessionsCompletedCount(c)}<span style="color:var(--text-faint); font-weight:400;">/${c.totalSessions}</span>`)}
-        ${stat('Last touch', last ? `${daysSince(last.date)}d ago` : '<span style="color:var(--text-faint); font-weight:400;">none</span>')}
-        ${stat('First value', fv.achievedOn ? fmtDate(fv.achievedOn) : '<span style="color:var(--text-faint); font-weight:400;">not evidenced</span>')}
-      </div>
-
-      <div class="bp-sec">
-        <div class="lbl">Recap of the last meeting</div>
-        ${last ? `
-          <div class="bp-meta" style="margin-top:3px;">${fmtDate(last.date)} · ${escapeHtml(last.type)}${last.sessionNumber ? ` · Session ${last.sessionNumber}` : ''}</div>
-          <div class="bp-body">${escapeHtml(last.summary || '')}</div>`
-          : `<div class="bp-body" style="color:var(--text-faint);">Nothing logged for this account yet.</div>`}
-      </div>
 
       <div class="bp-sec">
         <div class="lbl">Open questions from last time ${threads.length ? `<span class="badge badge-watch">${threads.length}</span>` : ''}</div>
@@ -17103,8 +17229,15 @@ function renderDay(day, dispatchChips){
       b._i = idx;
       const c = DATA.customers.find(x => x.id === b.customerId);
       const out = beatOutstanding(c);
-      const drivers = b.reasons.slice(0, 4);
-      const moreDrivers = b.reasons.length - drivers.length;
+      /* FIX 1: the headline is the "What do I do" sentence. When it also shows
+         up as one of the account's own reasons — a single Gainsight gate, for
+         instance, prints the same sentence as both its headline and its only
+         reason — restating it under Why is the same fact twice, two rows apart.
+         Excluded before slicing, so a fifth REAL driver still overflows to the
+         panel correctly (moreDrivers is computed off the same filtered list). */
+      const driverPool = b.reasons.filter(r => r !== b.headline);
+      const drivers = driverPool.slice(0, 4);
+      const moreDrivers = driverPool.length - drivers.length;
       return `
         <div class="day-step ${b.customerId === ui.todayFocusId ? 'active' : ''}"
              data-day-step="${escapeAttr(b.customerId)}" data-day-index="${idx}"
@@ -17669,7 +17802,7 @@ function bookReadiness(){
   if(noBooking.length) gaps.push({
     key: 'no_booking', count: noBooking.length, of: live.length, action: 'backfill',
     actionLabel: 'Book next sessions',
-    headline: 'Nothing is on the calendar',
+    headline: 'Next sessions are not booked',
     detail: `<b>${noBooking.length} of ${live.length}</b> live accounts have no next session booked, so coverage cannot tell an account you have scheduled from one that has gone quiet. Both read the same here.`
   });
   if(noActivity.length) gaps.push({
