@@ -29,18 +29,24 @@ const positional = args.filter((a, i) =>
 const target = resolve(positional[0] || 'osm-book-of-business-tracker-1.0.html');
 const fnName = flag('fn', 'runSelfChecks');
 const expect = flag('expect', null);
-const PORT = Number(flag('port', 9333));
+/* A RANDOM port per invocation. A fixed one lets a Chrome that outlived its
+   parent — SIGKILL on the launcher does not reliably take down the browser
+   process tree on Windows — keep listening, so the next run attaches to a stale
+   page still holding the PREVIOUS build and reports checks against code that is
+   no longer on disk. */
+const PORT = Number(flag('port', 0)) || (9400 + Math.floor(Math.random() * 500));
 
 if (!existsSync(target)) { console.error(`No such file: ${target}`); process.exit(2); }
 const chrome = CHROME_CANDIDATES.find(p => existsSync(p));
 if (!chrome) { console.error('Could not find Chrome or Edge.'); process.exit(2); }
 
+const targetUrl = pathToFileURL(target).href;
 const profile = mkdtempSync(join(tmpdir(), 'selfcheck-'));
 const child = spawn(chrome, [
   '--headless=new', `--remote-debugging-port=${PORT}`, `--user-data-dir=${profile}`,
   '--no-first-run', '--no-default-browser-check', '--disable-gpu',
   '--allow-file-access-from-files',
-  pathToFileURL(target).href,
+  targetUrl,
 ], { stdio: ['ignore', 'ignore', 'pipe'] });
 
 let chromeStderr = '';
@@ -63,16 +69,37 @@ process.on('unhandledRejection', e => {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function findPage(deadline) {
+async function findPage(deadline, expectedUrl) {
+  const expectedName = decodeURIComponent(expectedUrl.split('/').pop());
+  let seen = [];
   while (Date.now() < deadline) {
     try {
       const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json();
-      const page = list.find(t => t.type === 'page' && t.webSocketDebuggerUrl);
-      if (page) return page;
+      const pages = list.filter(t => t.type === 'page' && t.webSocketDebuggerUrl);
+      seen = pages.map(p => p.url);
+      // Prefer a full-URL match — cheapest and least ambiguous when Chrome
+      // reports one verbatim.
+      const exact = pages.find(p => p.url && p.url.toLowerCase() === expectedUrl.toLowerCase());
+      if (exact) return exact;
+      // Chrome can normalise the drive letter or percent-encode parts of a
+      // Windows file:// path, so fall back to comparing decoded basenames.
+      const byName = pages.find(p => {
+        try { return decodeURIComponent(p.url.split('/').pop()).toLowerCase() === expectedName.toLowerCase(); }
+        catch { return false; }
+      });
+      if (byName) return byName;
     } catch { /* not up yet */ }
     await sleep(120);
   }
-  throw new Error('Chrome exposed no debuggable page.\n' + chromeStderr.slice(-800));
+  // Taking "the first page we find" would happily attach to a stale Chrome
+  // left over from a previous run — SIGKILL on the launcher doesn't reliably
+  // take the browser process tree down on Windows — and silently report
+  // checks against a PREVIOUS build that's no longer on disk. Require the URL
+  // to match and say exactly what didn't, rather than guess.
+  throw new Error(`No debuggable page matched the target.\n` +
+    `  expected: ${expectedUrl}\n` +
+    `  found: ${seen.length ? seen.join(', ') : '(none)'}\n` +
+    chromeStderr.slice(-800));
 }
 
 function rpc(ws) {
@@ -105,7 +132,7 @@ function rpc(ws) {
   });
 }
 
-const page = await findPage(Date.now() + 20000);
+const page = await findPage(Date.now() + 20000, targetUrl);
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((res, rej) => {
   ws.addEventListener('open', res, { once: true });

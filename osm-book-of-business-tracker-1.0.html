@@ -998,6 +998,18 @@
   .bp-thread{margin-top:6px; padding:6px 8px; background:var(--bg-card-hover); border-radius:6px;}
   .bp-risk{border-top:1px solid var(--border-soft); padding:var(--space-1) 0 0; margin-bottom:var(--space-1);}
   .bp-risk:first-of-type{border-top:0; padding-top:0;}
+  /* Outcome criteria. A list, not a table — the text is the content and the
+     mark is an annotation on it. */
+  .oc-group{margin-top:12px;}
+  .oc-group .lbl{font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-faint);
+    text-transform:uppercase; letter-spacing:.05em;}
+  .oc-row{display:flex; gap:var(--space-2); align-items:baseline; padding:4px 0;
+    font-size:var(--text-sm); color:var(--text-dim);}
+  .oc-row.oc-met{color:var(--text);}
+  .oc-mark{font-family:var(--font-mono); color:var(--text-faint); flex:0 0 auto;}
+  .oc-row.oc-met .oc-mark{color:var(--status-ontrack-text, var(--accent-info));}
+  .oc-text{min-width:0; overflow-wrap:anywhere;}
+  .oc-meta{display:block; font-size:var(--text-xs); color:var(--text-faint); margin-top:2px;}
   .bp-time{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
   .bp-time .bp-basis{margin:0;}
   .badge-new{background:rgba(0,116,232,.15); color:var(--accent-info); border-color:rgba(0,116,232,.3);}
@@ -4115,7 +4127,7 @@ const DEFAULT_OUTCOME_NAMES = [
    explicit step in migrateData(). backfillCustomerRecord remains for per-record field
    defaults on legacy/imported records, but new-shape changes get a numbered migration —
    version-blind additive guessing is how backfill logic rots. */
-const CURRENT_SCHEMA_VERSION = 11; // v98: + DATA.impactLog (dated time-saved events)
+const CURRENT_SCHEMA_VERSION = 12; // Phase A: + per-account outcome criteria and evidence
 
 /* The single gate for clock times. Accepts "H:MM" and "HH:MM" on a 24h clock and
    returns a zero-padded "HH:MM"; everything else returns null and the field is
@@ -4360,6 +4372,96 @@ function migrateData(data){
       if(clean.length) data.impactLog = clean.slice(-MAX_IMPACT_LOG); else delete data.impactLog;
     }
     v = 11;
+  }
+  if(v === 11){
+    /* v11 -> v12 (Phase A): per-account outcome criteria and evidence.
+
+       INFERS NO DATES. A ticked deliverable is a real human act and becomes
+       evidence, but the book never recorded WHEN, so `on` is null and `legacy`
+       says why. Stamping todayISO() here would manufacture a history that never
+       happened — the same reasoning as the v10->v11 impactLog step above.
+
+       A label the template no longer carries was ALREADY orphaned before this
+       change; it is preserved as a custom criterion rather than dropped,
+       because someone ticked it. sessionNotes is left completely intact: Phase
+       B repoints its UI, and deleting user data to tidy a field is not a risk
+       worth taking in an app whose only store is localStorage. */
+    (data.customers || []).forEach(c => {
+      if(!isRecordObject(c)) return;
+      if(!isRecordObject(c.outcomeCriteria)) c.outcomeCriteria = {items:[], removed:[]};
+      if(!Array.isArray(c.outcomeCriteria.items)) c.outcomeCriteria.items = [];
+      if(!Array.isArray(c.outcomeCriteria.removed)) c.outcomeCriteria.removed = [];
+      if(!isRecordObject(c.outcomeEvidence)) c.outcomeEvidence = {};
+      if(!isRecordObject(c.sessionNotes)) return;
+      /* Resolve the curriculum the SAME way resolveRawCurriculum does. A CSRD
+         account's templates live under "<module> (CSRD)"; reading the plain
+         module key made every ticked deliverable on such an account fail to
+         match and migrate as an orphan, while derivation — using the correct
+         set — rendered the real deliverable beside it as fresh and unevidenced.
+         The account would show each criterion twice, one copy holding the
+         evidence. */
+      const allTemplates = (data.config && data.config.sessionTemplates) || {};
+      /* backfillCustomerRecord normalizes these — but it runs AFTER migrateData,
+         so read them defensively here or an imported book with totalSessions:"8"
+         or a module absent from the template set migrates every tick as an
+         orphan and renders each criterion twice. */
+      const planLength = (Number.isFinite(c.totalSessions) && c.totalSessions >= 6 && c.totalSessions <= 12)
+        ? c.totalSessions : 8;
+      const moduleKey = (Array.isArray(allTemplates[c.module]) && allTemplates[c.module].length)
+        ? c.module
+        : (((data.config || {}).modules || [])[0] || c.module);
+      /* Resolve the curriculum the SAME way resolveRawCurriculum does. A CSRD
+         account's templates live under "<module> (CSRD)"; reading the plain
+         module key made every ticked deliverable on such an account fail to
+         match and migrate as an orphan, while derivation — using the correct
+         set — rendered the real deliverable beside it as fresh and unevidenced.
+         The account would show each criterion twice, one copy holding the
+         evidence. */
+      const csrdKey = c.reportsCSRD ? (moduleKey + ' (CSRD)') : null;
+      const templates = (csrdKey && Array.isArray(allTemplates[csrdKey]) && allTemplates[csrdKey].length)
+        ? allTemplates[csrdKey]
+        : (Array.isArray(allTemplates[moduleKey]) ? allTemplates[moduleKey] : []);
+      Object.keys(c.sessionNotes).forEach(key => {
+        const note = c.sessionNotes[key];
+        if(!isRecordObject(note) || !isRecordObject(note.deliverables)) return;
+        const numericKey = /^\d+$/.test(key);
+        const sessionNumber = numericKey ? parseInt(key, 10) : null;
+        /* A non-numeric key is unusable as a session reference, and
+           backfillCustomerRecord deletes the whole note a moment after this runs.
+           Skipping it would destroy the ticks inside. They migrate as custom
+           criteria instead — the label is preserved and visible, which is the
+           honest outcome for a tick whose session cannot be identified. */
+        const tpl = (numericKey && sessionNumber <= planLength) ? templates[sessionNumber - 1] : null;
+        const labels = (tpl && Array.isArray(tpl.deliverables)) ? tpl.deliverables : [];
+        Object.keys(note.deliverables).forEach(label => {
+          if(note.deliverables[label] !== true) return;      // an unticked box is not evidence
+          const idx = labels.indexOf(label);
+          const criterion = idx === -1
+            ? {text: label, stage:'', sourceSession: null, sourceIndex: null}
+            : {text: label, stage: tpl.ttfvStage || '', sourceSession: numericKey ? sessionNumber : null, sourceIndex: idx};
+          const already = c.outcomeCriteria.items.find(x =>
+            x.text === label && x.sourceSession === criterion.sourceSession);
+          if(already){
+            if(c.outcomeEvidence[already.id] === undefined){
+              c.outcomeEvidence[already.id] = {on:null, by:'unknown', legacy:true};
+            }
+            return;
+          }
+          const rec = materializeOutcomeCriterion(c, criterion, (numericKey && tpl) ? labels.length : undefined);
+          /* Guarded, like the `already` branch above. materializeOutcomeCriterion
+             dedupes derived criteria on (sourceSession, sourceIndex) while
+             `already` keys on (text, sourceSession), so a REWORDED slot makes the
+             two disagree and this returns a record that may already hold real,
+             dated evidence. An unguarded write replaced it with a null-dated
+             legacy record — destroying a date, a source and a note that a human
+             entered, on the only copy that exists. */
+          if(c.outcomeEvidence[rec.id] === undefined){
+            c.outcomeEvidence[rec.id] = {on:null, by:'unknown', legacy:true};
+          }
+        });
+      });
+    });
+    v = 12;
   }
   data.schemaVersion = v;
   // Sanity: contradictory risk thresholds (watch >= alert) make the watch tier
@@ -5743,6 +5845,236 @@ function getSessionTemplateSet(customer){
 function getSessionTemplate(customer, sessionNumber){
   const set = getSessionTemplateSet(customer);
   return set[sessionNumber-1] || null;
+}
+/* ============ OUTCOME CRITERIA ============
+   ADMIN_GAP_DEFS has said since it was written that "the numbered outcome is
+   what graduation is judged against", and then checked a boolean. Every read of
+   outcomeNumber was a <select>'s selected-state or a name lookup; nothing
+   reasoned over it. These functions are what make that sentence true.
+
+   Criteria are DERIVED, never authored from nothing: the curriculum already
+   states 12-15 deliverables per module, already specific, already grouped by
+   ttfvStage. getSessionTemplateSet() already clamps them to the account's own
+   totalSessions. Nothing is stored until a criterion is acted on.
+
+   Identity is OPAQUE and assigned once, at materialization. The positional key
+   below is for display and DOM attributes only and must never be stored: a
+   deliverable inserted mid-list shifts every later position, and the inserted
+   one would inherit the evidence of whatever used to sit there. */
+function outcomeCriterionKey(sessionNumber, index){ return 's' + sessionNumber + '#' + index; }
+
+/* PURE. Returns the account's criteria in curriculum order, then any
+   materialized item the curriculum no longer carries. Writes nothing. */
+function outcomeCriteriaFor(customer){
+  if(!customer) return [];
+  const store = isRecordObject(customer.outcomeCriteria) ? customer.outcomeCriteria : {};
+  const stored = Array.isArray(store.items) ? store.items : [];
+  const removed = new Set(Array.isArray(store.removed) ? store.removed : []);
+  const evidence = isRecordObject(customer.outcomeEvidence) ? customer.outcomeEvidence : {};
+  const claimed = new Set();
+  const out = [];
+
+  getSessionTemplateSet(customer).forEach((tpl, i) => {
+    const sessionNumber = i + 1;
+    const deliverables = tpl.deliverables || [];
+    const matched = new Array(deliverables.length).fill(null);
+
+    /* Pass 1 — TEXT, across the WHOLE session before any index matching. A
+       deliverable that still reads exactly as it did when its evidence was
+       recorded keeps that evidence, wherever in the session it has moved to. */
+    deliverables.forEach((text, idx) => {
+      const hit = stored.find(s => !claimed.has(s.id) && s.sourceSession === sessionNumber && s.text === text);
+      if(hit){ claimed.add(hit.id); matched[idx] = hit; }
+    });
+
+    /* Pass 2 — INDEX, only for deliverables pass 1 could not place, and only
+       while the session still holds the same NUMBER of deliverables. A session
+       that gained or lost one has shifted every position after the change, so
+       an index is no longer evidence of identity: matching on it would attach
+       one criterion's evidence to a different criterion, silently. sourceCount
+       is absent on records materialized before this guard existed — treat that
+       as permissive rather than dropping their matching entirely. */
+    deliverables.forEach((text, idx) => {
+      if(matched[idx]) return;
+      const hit = stored.find(s => !claimed.has(s.id) && s.sourceSession === sessionNumber
+        && s.sourceIndex === idx
+        && (s.sourceCount === undefined || s.sourceCount === deliverables.length));
+      if(hit){ claimed.add(hit.id); matched[idx] = hit; }
+    });
+
+    deliverables.forEach((text, idx) => {
+      const hit = matched[idx];
+      if(hit){
+        if(removed.has(hit.id)) return;
+        const ev = evidence[hit.id];
+        out.push({id:hit.id,
+          text: (typeof hit.text === 'string' && hit.text) ? hit.text : text,
+          stage: hit.stage || tpl.ttfvStage || '',
+          source: hit.text === text ? 'curriculum' : 'curriculum (reworded since)',
+          sourceSession:sessionNumber, sourceIndex:idx,
+          evidence: ev ? Object.assign({}, ev) : null});
+        return;
+      }
+      out.push({id: outcomeCriterionKey(sessionNumber, idx), text, stage: tpl.ttfvStage || '',
+        source:'curriculum', sourceSession:sessionNumber, sourceIndex:idx,
+        evidence:null, provisional:true});
+    });
+  });
+
+  stored.forEach(s => {
+    if(claimed.has(s.id) || removed.has(s.id)) return;
+    out.push({id:s.id, text: (typeof s.text === 'string' && s.text) ? s.text : '', stage:s.stage || '',
+      source: s.sourceSession ? 'no longer in the curriculum' : 'added for this account',
+      sourceSession: s.sourceSession || null, sourceIndex: s.sourceIndex,
+      evidence: evidence[s.id] ? Object.assign({}, evidence[s.id]) : null});
+  });
+  return out;
+}
+/* The writers of criteria and evidence for RUNTIME use. Everything else reads.
+   The migration below is the one exception: it writes c.outcomeEvidence[…]
+   directly, bypassing setOutcomeEvidence's validation, deliberately — it is
+   translating legacy ticks that predate the evidence store, not accepting new
+   input, so the validation path does not apply to it.
+
+   Materialization is what anchors identity: a criterion earns a stored record
+   the first time anyone acts on it, and from then on its opaque id is what
+   evidence is keyed by. Removal materializes too, so removed[] can never hold
+   a positional key. */
+function materializeOutcomeCriterion(customer, criterion, explicitCount){
+  if(!isRecordObject(customer.outcomeCriteria)) customer.outcomeCriteria = {items:[], removed:[]};
+  if(!Array.isArray(customer.outcomeCriteria.items)) customer.outcomeCriteria.items = [];
+  if(!Array.isArray(customer.outcomeCriteria.removed)) customer.outcomeCriteria.removed = [];
+  if(criterion && !criterion.provisional){
+    const known = customer.outcomeCriteria.items.find(x => x.id === criterion.id);
+    if(known) return known;
+  }
+  /* Derived criteria are identified by their slot; custom ones have no slot, so
+     they are identified by their text. Deduping custom criteria on
+     (sourceSession, sourceIndex) would collide every one of them on null/null
+     and merge unrelated criteria into a single identity — which the migration
+     that materializes orphaned labels would hit on any book with two of them.
+     sourceIndex is normalized first: a caller may pass undefined where a stored
+     record holds null, and `undefined !== null` would mint a duplicate. */
+  const idx = criterion.sourceIndex === undefined ? null : criterion.sourceIndex;
+  const dup = criterion.sourceSession
+    ? customer.outcomeCriteria.items.find(x =>
+        x.sourceSession === criterion.sourceSession && x.sourceIndex === idx)
+    : customer.outcomeCriteria.items.find(x =>
+        !x.sourceSession && x.text === String(criterion.text || ''));
+  if(dup) return dup;
+  /* sourceCount is what makes the index fallback in outcomeCriteriaFor safe: it
+     only trusts a stored sourceIndex while the session still holds the same
+     number of deliverables. A session that gained or lost one has shifted every
+     later position, and matching on the index there would attach one
+     criterion's evidence to a different criterion, silently. */
+  /* The caller may supply the count, and the migration MUST: it runs before
+     applyDataBackfills, so getSessionTemplateSet would read an un-normalized
+     totalSessions and module — the same raw-field trap that took three fix
+     rounds to remove from the migration itself. A stored sourceCount of 0
+     against a real session of 12-15 silently disables the reader's index
+     fallback, and the criterion renders twice the first time it is reworded. */
+  const count = Number.isFinite(explicitCount) ? explicitCount
+    : (criterion.sourceSession
+        ? ((getSessionTemplateSet(customer)[criterion.sourceSession - 1] || {}).deliverables || []).length
+        : null);
+  const rec = {id:'oc_' + uid().slice(0, 8), text: String(criterion.text || ''),
+    stage: criterion.stage || '', sourceSession: criterion.sourceSession || null,
+    sourceIndex: idx,
+    sourceCount: count};
+  customer.outcomeCriteria.items.push(rec);
+  return rec;
+}
+
+const OUTCOME_EVIDENCE_BY = ['customer', 'osm', 'unknown'];
+
+function setOutcomeEvidence(customer, criterion, rec){
+  if(!customer || !criterion) return null;
+  const stored = materializeOutcomeCriterion(customer, criterion);
+  if(!isRecordObject(customer.outcomeEvidence)) customer.outcomeEvidence = {};
+  const on = (rec && isRealISODate(rec.on)) ? rec.on : null;   // never invent a date
+  const by = (rec && OUTCOME_EVIDENCE_BY.indexOf(rec.by) !== -1) ? rec.by : 'unknown';
+  const out = {on, by};
+  if(rec && typeof rec.activityId === 'string' && rec.activityId) out.activityId = rec.activityId;
+  if(rec && typeof rec.note === 'string' && rec.note.trim()) out.note = rec.note.trim().slice(0, 500);
+  if(rec && rec.legacy === true) out.legacy = true;
+  customer.outcomeEvidence[stored.id] = out;
+  return out;
+}
+
+/* Deleting the entry, rather than storing {met:false}, keeps "evidenced" a
+   single question — does a record exist — instead of two. The criterion itself
+   stays, so re-ticking reuses the same identity. */
+function clearOutcomeEvidence(customer, criterionId){
+  if(!customer || !isRecordObject(customer.outcomeEvidence)) return false;
+  if(customer.outcomeEvidence[criterionId] === undefined) return false;
+  delete customer.outcomeEvidence[criterionId];
+  return true;
+}
+
+function removeOutcomeCriterion(customer, criterion){
+  if(!customer || !criterion) return null;
+  const stored = materializeOutcomeCriterion(customer, criterion);
+  if(customer.outcomeCriteria.removed.indexOf(stored.id) === -1){
+    customer.outcomeCriteria.removed.push(stored.id);
+  }
+  clearOutcomeEvidence(customer, stored.id);
+  return stored.id;
+}
+
+/* PURE. Stores nothing — there is no cached verdict anywhere, because a stored
+   verdict is a second source of truth that goes stale the moment anything it
+   read changes. */
+function outcomeVerdict(customer){
+  const op = (customer && customer.compliance && customer.compliance.outcomePlan) || {};
+  const names = DATA.config.outcomeNames || [];
+  const rawNum = op.outcomeNumber;
+  const chosen = Number.isInteger(rawNum) && rawNum >= 1;
+  const num = chosen ? rawNum : null;
+  const list = outcomeCriteriaFor(customer);
+  const stageCount = stage => {
+    const inStage = list.filter(x => x.stage === stage);
+    return {met: inStage.filter(x => x.evidence).length, total: inStage.length};
+  };
+  const unevidenced = list.filter(x => !x.evidence).map(x => ({id:x.id, text:x.text, stage:x.stage}));
+  const undated = list.filter(x => x.evidence && !x.evidence.on).length;
+  /* A criterion with neither ttfv stage — the shape the migration creates for a
+     ticked deliverable no template still carries — must be counted SOMEWHERE.
+     Counting it in neither total made an evidenced criterion invisible in the
+     numbers while state silently included it. */
+  const otherRows = list.filter(x => x.stage !== 'ttfv1' && x.stage !== 'ttfv2');
+  const other = {met: otherRows.filter(x => x.evidence).length, total: otherRows.length};
+  const gates = {
+    outcomePlan: !!op.done,
+    csat: !!(customer && customer.compliance && customer.compliance.associatedPeopleCSAT && customer.compliance.associatedPeopleCSAT.done),
+    sentiment: !!(customer && customer.compliance && customer.compliance.sentiment && customer.compliance.sentiment.done),
+    gradDate: !!(customer && customer.targetGraduationDate)
+  };
+  const blockers = customer ? openBlockers(customer).length : 0;
+
+  const noCriteria = list.length === 0;
+  const reasons = [];
+  if(noCriteria){
+    reasons.push('no success criteria to judge against — this module has no deliverables authored');
+  } else {
+    if(unevidenced.length) reasons.push(`${unevidenced.length} success criteri${unevidenced.length===1?'on is':'a are'} unevidenced`);
+    if(blockers) reasons.push(`${blockers} open blocker${blockers===1?'':'s'}`);
+    if(!gates.gradDate) reasons.push('no committed graduation date');
+    if(!gates.outcomePlan) reasons.push('the outcome plan is not marked created');
+    if(!gates.csat) reasons.push('no CSAT contact');
+    if(!gates.sentiment) reasons.push('no readiness assessment');
+  }
+
+  /* Three states, and the difference between the last two matters. An unchosen
+     outcome and an unauthored curriculum are both ABSENCES of a judgement, not
+     negative judgements — the same rule that keeps an unassessed readiness
+     domain from reading as low readiness. Only an account with criteria that
+     are not met is not_ready. */
+  const state = !chosen ? 'unknown' : (noCriteria ? 'unknown' : (reasons.length ? 'not_ready' : 'ready'));
+
+  return {outcomeNumber: num, outcomeName: chosen ? (names[num - 1] || 'Customer Success Outcome') : null,
+    ttfv1: stageCount('ttfv1'), ttfv2: stageCount('ttfv2'), other,
+    unevidenced, undated, gates, openBlockers: blockers, state,
+    reasons: chosen ? reasons : []};
 }
 function getSessionActivity(customer, sessionNumber){
   const acts = DATA.activities[customer.id] || [];
@@ -8543,6 +8875,675 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
     check('phase2 drivers past the fourth stay reachable in the panel, and the first four are not restated there', ok, detail);
+  })();
+  (function(){
+    /* Phase A: criteria are DERIVED from the account's own curriculum and clamp
+       to its own plan length. An 8-session account must not inherit criteria
+       from sessions 9-12 it will never run. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc1__', name:'Crit Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__oc1__: []};
+      _renderMemoResets.forEach(r => r());
+      const list = outcomeCriteriaFor(c);
+      const sessions = [...new Set(list.map(x => x.sourceSession))].sort((a,b)=>a-b);
+      const clamped = sessions.every(n => n >= 1 && n <= 8);
+      const allProvisional = list.every(x => x.provisional === true && x.evidence === null);
+      const hasStages = list.every(x => x.stage === 'ttfv1' || x.stage === 'ttfv2');
+      const keysUnique = new Set(list.map(x => x.id)).size === list.length;
+      ok = list.length > 0 && clamped && allProvisional && hasStages && keysUnique;
+      detail = JSON.stringify({n:list.length, sessions, clamped, allProvisional, hasStages, keysUnique});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    _renderMemoResets.forEach(r => r());
+    check('phaseA criteria derive from the curriculum and clamp to the account plan', ok, detail);
+  })();
+  (function(){
+    /* PURE. Deriving criteria must not materialize anything, must not touch the
+       book, and must return byte-identical output twice. renderToday() stamping
+       DATA.riskLog is the defect class this guards against. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc2__', name:'Pure Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__oc2__: []};
+      const before = JSON.stringify(c);
+      const a = JSON.stringify(outcomeCriteriaFor(c));
+      const b = JSON.stringify(outcomeCriteriaFor(c));
+      /* backfillCustomerRecord now creates EMPTY outcomeCriteria/outcomeEvidence
+         containers, which is a default, not materialization. What must stay true
+         is that deriving adds nothing to them — and that the book is byte-identical
+         afterwards, which is the assertion this check has always rested on. */
+      const items = (c.outcomeCriteria && c.outcomeCriteria.items) || [];
+      const evKeys = Object.keys(c.outcomeEvidence || {});
+      ok = a === b && JSON.stringify(c) === before
+        && items.length === 0 && evKeys.length === 0;
+      detail = JSON.stringify({stable: a === b, bookUntouched: JSON.stringify(c) === before,
+        materializedItems: items.length, evidenceKeys: evKeys.length});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA deriving criteria is pure and materializes nothing', ok, detail);
+  })();
+  (function(){
+    /* A materialized criterion whose deliverable was later DELETED from the
+       curriculum still appears, labelled. Discarding an evidenced criterion
+       because a template changed would throw away a human's assertion. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc3__', name:'Ghost Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.outcomeCriteria = {items:[
+        {id:'oc_ghost1', text:'A deliverable no template still carries', stage:'ttfv1',
+         sourceSession:2, sourceIndex:9},
+        {id:'oc_added1', text:'Something the OSM added', stage:'ttfv2',
+         sourceSession:null, sourceIndex:null}
+      ], removed:[]};
+      DATA.customers = [c]; DATA.activities = {__oc3__: []};
+      const list = outcomeCriteriaFor(c);
+      const ghost = list.find(x => x.id === 'oc_ghost1');
+      const added = list.find(x => x.id === 'oc_added1');
+      ok = !!ghost && ghost.source === 'no longer in the curriculum'
+        && !!added && added.source === 'added for this account';
+      detail = JSON.stringify({ghost: ghost && ghost.source, added: added && added.source});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA a deleted-from-curriculum criterion survives, labelled', ok, detail);
+  })();
+  (function(){
+    /* Inserting a deliverable must not let it STEAL an existing criterion's
+       evidence. The first version of this matching walked text-then-index per
+       deliverable, so an inserted one reached the index fallback before the
+       deliverable that actually owned that evidence got its text pass. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      const mod = DATA.config.modules[0];
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const tpl = DATA.config.sessionTemplates[mod][0];
+      tpl.deliverables = ['Alpha', 'Bravo', 'Charlie'];
+      const c = {id:'__ins1__', name:'Steal Co', module:mod,
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      // Evidence lives on 'Bravo', which sat at index 1 when it was recorded.
+      c.outcomeCriteria = {items:[{id:'oc_bravo', text:'Bravo', stage:'ttfv1',
+        sourceSession:1, sourceIndex:1, sourceCount:3}], removed:[]};
+      c.outcomeEvidence = {oc_bravo: {on:null, by:'osm'}};
+      DATA.customers = [c]; DATA.activities = {__ins1__: []};
+      tpl.deliverables = ['Alpha', 'Xray', 'Bravo', 'Charlie'];   // insert at index 1
+      const list = outcomeCriteriaFor(c);
+      const xray = list.find(x => x.text === 'Xray');
+      const bravo = list.find(x => x.id === 'oc_bravo');
+      ok = !!xray && xray.evidence === null && xray.provisional === true
+        && !!bravo && bravo.text === 'Bravo' && !!bravo.evidence && bravo.evidence.by === 'osm';
+      detail = JSON.stringify({xrayEvidence: xray && xray.evidence,
+        bravoText: bravo && bravo.text, bravoHasEvidence: !!(bravo && bravo.evidence)});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    check('phaseA an inserted deliverable cannot steal another criterion evidence', ok, detail);
+  })();
+  (function(){
+    /* Materialization assigns an OPAQUE id. The positional display key must
+       never reach storage — not in items, not in removed, not in the evidence
+       map — because it is not stable under insertion. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc4__', name:'Mat Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__oc4__: []};
+      const first = outcomeCriteriaFor(c)[0];
+      const rec = setOutcomeEvidence(c, first, {on: todayISO(), by:'customer'});
+      const keys = Object.keys(c.outcomeEvidence);
+      const storedIds = c.outcomeCriteria.items.map(x => x.id);
+      const noPositional = keys.concat(storedIds, c.outcomeCriteria.removed)
+        .every(k => /^oc_/.test(k));
+      // Re-deriving now returns the opaque id in place of the provisional key.
+      const after = outcomeCriteriaFor(c)[0];
+      ok = /^oc_/.test(rec ? keys[0] : '') && noPositional && keys.length === 1
+        && after.id === storedIds[0] && after.provisional !== true
+        && after.evidence && after.evidence.by === 'customer';
+      detail = JSON.stringify({keys, storedIds, noPositional, afterId: after.id});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA evidence materializes an opaque id and no positional key is ever stored', ok, detail);
+  })();
+  (function(){
+    /* THE TWO WAYS IDENTITY BREAKS, in one check.
+
+       REWORDING: change a deliverable's text and its evidence must follow it,
+       via the (sourceSession, sourceIndex) fallback.
+
+       INSERTION: add a deliverable at index 0 of a session that already has
+       evidence at index 0. With positional ids the new criterion would silently
+       inherit the old one's evidence — the collision opaque ids exist for. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      const mod = DATA.config.modules[0];
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const c = {id:'__oc5__', name:'Insert Co', module:mod,
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__oc5__: []};
+      _renderMemoResets.forEach(r => r());
+      const original = outcomeCriteriaFor(c).find(x => x.sourceSession === 1 && x.sourceIndex === 0);
+      setOutcomeEvidence(c, original, {on: todayISO(), by:'osm'});
+      const evidencedId = c.outcomeCriteria.items[0].id;
+      const originalText = original.text;
+
+      // (a) REWORD the deliverable in place. Evidence must follow it.
+      DATA.config.sessionTemplates[mod][0].deliverables[0] = originalText + ' (reworded)';
+      _renderMemoResets.forEach(r => r());
+      const reworded = outcomeCriteriaFor(c).find(x => x.id === evidencedId);
+      const survivedReword = !!reworded && !!reworded.evidence
+        && reworded.source === 'curriculum (reworded since)' && reworded.text === originalText;
+
+      // (b) Restore, then INSERT a new deliverable at index 0.
+      DATA.config.sessionTemplates[mod][0].deliverables[0] = originalText;
+      DATA.config.sessionTemplates[mod][0].deliverables.unshift('BRAND NEW DELIVERABLE');
+      _renderMemoResets.forEach(r => r());
+      const after = outcomeCriteriaFor(c);
+      const inserted = after.find(x => x.text === 'BRAND NEW DELIVERABLE');
+      const kept = after.find(x => x.id === evidencedId);
+      const survivedInsert = !!inserted && inserted.evidence === null
+        && !!kept && kept.text === originalText && !!kept.evidence && kept.evidence.by === 'osm';
+
+      ok = survivedReword && survivedInsert;
+      detail = JSON.stringify({survivedReword, survivedInsert,
+        rewordedSource: reworded && reworded.source,
+        insertedEvidence: inserted && inserted.evidence,
+        keptHasEvidence: !!(kept && kept.evidence)});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('phaseA rewording follows evidence, and inserting neither moves nor inherits it', ok, detail);
+  })();
+  (function(){
+    /* Un-ticking DELETES the entry and keeps the criterion, so re-ticking reuses
+       the same identity instead of minting a second one. And removing a derived
+       criterion materializes it first, so removed[] holds only opaque ids. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc6__', name:'Toggle Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__oc6__: []};
+      const first = outcomeCriteriaFor(c)[0];
+      setOutcomeEvidence(c, first, {on: todayISO(), by:'osm'});
+      const id = c.outcomeCriteria.items[0].id;
+      clearOutcomeEvidence(c, id);
+      const gone = c.outcomeEvidence[id] === undefined;
+      const criterionKept = c.outcomeCriteria.items.some(x => x.id === id);
+      setOutcomeEvidence(c, outcomeCriteriaFor(c).find(x => x.id === id), {on: todayISO(), by:'osm'});
+      const sameIdentity = c.outcomeCriteria.items.length === 1 && !!c.outcomeEvidence[id];
+      // Removal of a still-provisional criterion must materialize it.
+      const second = outcomeCriteriaFor(c).find(x => x.provisional === true);
+      const removedId = removeOutcomeCriterion(c, second);
+      const removedOpaque = /^oc_/.test(removedId) && c.outcomeCriteria.removed.indexOf(removedId) !== -1;
+      const excluded = !outcomeCriteriaFor(c).some(x => x.id === removedId);
+      ok = gone && criterionKept && sameIdentity && removedOpaque && excluded;
+      detail = JSON.stringify({gone, criterionKept, sameIdentity, removedId, removedOpaque, excluded});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA un-ticking keeps identity, and removal stores only opaque ids', ok, detail);
+  })();
+  (function(){
+    /* Two DIFFERENT custom criteria must get two identities. They share
+       sourceSession:null and sourceIndex:null, so a dedupe keyed on that pair
+       merges them and one loses its evidence — which the orphaned-label branch
+       of the migration would hit on any book carrying two of them. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__cust1__', name:'Custom Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__cust1__: []};
+      const one = {text:'First custom criterion', stage:'ttfv2', sourceSession:null, sourceIndex:null};
+      const two = {text:'Second custom criterion', stage:'ttfv2', sourceSession:null, sourceIndex:null};
+      setOutcomeEvidence(c, one, {on: todayISO(), by:'osm'});
+      setOutcomeEvidence(c, two, {on: null, by:'customer'});
+      const items = c.outcomeCriteria.items;
+      const ids = items.map(x => x.id);
+      const texts = items.map(x => x.text).sort();
+      const evKeys = Object.keys(c.outcomeEvidence).sort();
+      // Same text twice must still dedupe to one.
+      setOutcomeEvidence(c, {text:'First custom criterion', stage:'ttfv2', sourceSession:null, sourceIndex:null},
+        {on: todayISO(), by:'osm'});
+      ok = items.length === 2 && new Set(ids).size === 2
+        && texts[0] === 'First custom criterion' && texts[1] === 'Second custom criterion'
+        && evKeys.length === 2 && c.outcomeCriteria.items.length === 2;
+      detail = JSON.stringify({items: items.length, uniqueIds: new Set(ids).size, texts, evidence: evKeys.length});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA two different custom criteria get two identities', ok, detail);
+  })();
+  (function(){
+    /* ABSENCE IS NOT FAILURE. An account with no outcome chosen is 'unknown',
+       never 'not_ready' — the same principle that stops an unassessed readiness
+       domain reading as low readiness. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc7__', name:'Unknown Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance.outcomePlan.outcomeNumber = null;
+      DATA.customers = [c]; DATA.activities = {__oc7__: []};
+      const v = outcomeVerdict(c);
+      c.compliance.outcomePlan.outcomeNumber = 4;
+      const v2 = outcomeVerdict(c);
+      ok = v.state === 'unknown' && v2.state === 'not_ready'
+        && v2.outcomeName === DATA.config.outcomeNames[3]
+        && v2.reasons.length > 0;
+      detail = JSON.stringify({noNumber: v.state, withNumber: v2.state,
+        name: v2.outcomeName, reasons: v2.reasons.length});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA an unchosen outcome is unknown, not failed', ok, detail);
+  })();
+  (function(){
+    /* The verdict is PURE and counts what it claims: ttfv1/ttfv2 split, an
+       explicit undated count so legacy evidence cannot quietly pad the result. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc8__', name:'Count Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance.outcomePlan.outcomeNumber = 1;
+      DATA.customers = [c]; DATA.activities = {__oc8__: []};
+      const list = outcomeCriteriaFor(c);
+      const t1 = list.filter(x => x.stage === 'ttfv1');
+      setOutcomeEvidence(c, t1[0], {on: todayISO(), by:'osm'});
+      setOutcomeEvidence(c, t1[1], {on: null, by:'unknown', legacy:true});
+      const before = JSON.stringify(c);
+      const a = JSON.stringify(outcomeVerdict(c));
+      const b = JSON.stringify(outcomeVerdict(c));
+      const v = outcomeVerdict(c);
+      ok = a === b && JSON.stringify(c) === before
+        && v.ttfv1.met === 2 && v.ttfv1.total === t1.length
+        && v.undated === 1 && v.unevidenced.length === list.length - 2;
+      detail = JSON.stringify({pure: a === b, untouched: JSON.stringify(c) === before,
+        ttfv1: v.ttfv1, undated: v.undated, unevidenced: v.unevidenced.length});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA the verdict is pure and counts undated evidence separately', ok, detail);
+  })();
+  (function(){
+    /* 'ready' requires ALL of it: every criterion evidenced, three compliance
+       gates, a committed graduation date, no open blockers. Each missing one
+       must produce a reason, not a silent downgrade. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__oc9__', name:'Ready Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance = {sentiment:{done:true, date:todayISO(), answerA:'a', answerB:'b'},
+        outcomePlan:{done:true, date:todayISO(), outcomeNumber:2, planText:''},
+        associatedPeopleCSAT:{done:true, date:todayISO(), contactName:'X'}};
+      c.targetGraduationDate = isoAddDays(todayISO(), 30);
+      DATA.customers = [c]; DATA.activities = {__oc9__: []};
+      outcomeCriteriaFor(c).forEach(x => setOutcomeEvidence(c, x, {on: todayISO(), by:'osm'}));
+      const ready = outcomeVerdict(c);
+      c.targetGraduationDate = null;
+      const noDate = outcomeVerdict(c);
+      ok = ready.state === 'ready' && ready.reasons.length === 0
+        && noDate.state === 'not_ready' && noDate.reasons.length === 1;
+      detail = JSON.stringify({ready: ready.state, readyReasons: ready.reasons,
+        noDate: noDate.state, noDateReasons: noDate.reasons});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA ready requires every condition, and each failure names itself', ok, detail);
+  })();
+  (function(){
+    /* VACUOUS READY. An account with no criteria has proved nothing, so it must
+       not report ready on every-of-zero. Also pins the outcomeNumber boundary:
+       0 is not a choice, and an out-of-range number still names something. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      const mod = DATA.config.modules[0];
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      DATA.config.sessionTemplates[mod].forEach(t => { t.deliverables = []; });
+      const c = {id:'__empty1__', name:'Empty Co', module:mod,
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance = {sentiment:{done:true, date:todayISO(), answerA:'a', answerB:'b'},
+        outcomePlan:{done:true, date:todayISO(), outcomeNumber:2, planText:''},
+        associatedPeopleCSAT:{done:true, date:todayISO(), contactName:'X'}};
+      c.targetGraduationDate = isoAddDays(todayISO(), 30);
+      DATA.customers = [c]; DATA.activities = {__empty1__: []};
+      const empty = outcomeVerdict(c);
+      c.compliance.outcomePlan.outcomeNumber = 0;
+      const zero = outcomeVerdict(c);
+      c.compliance.outcomePlan.outcomeNumber = 19;
+      const over = outcomeVerdict(c);
+      ok = empty.state === 'unknown' && empty.reasons.length === 1
+        && zero.state === 'unknown' && zero.outcomeName === null && zero.outcomeNumber === null
+        && over.outcomeName === 'Customer Success Outcome';
+      detail = JSON.stringify({empty: empty.state, emptyReasons: empty.reasons.length,
+        zero: zero.state, zeroName: zero.outcomeName, overName: over.outcomeName});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('phaseA nothing to judge against is unknown, and 0 is not a chosen outcome', ok, detail);
+  })();
+  (function(){
+    /* A criterion with neither ttfv stage must be counted somewhere. This is the
+       shape the migration creates for a ticked deliverable no template carries. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__stg1__', name:'Stage Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance.outcomePlan.outcomeNumber = 3;
+      c.outcomeCriteria = {items:[{id:'oc_nostage', text:'Orphaned label', stage:'',
+        sourceSession:null, sourceIndex:null, sourceCount:null}], removed:[]};
+      c.outcomeEvidence = {oc_nostage: {on:null, by:'unknown', legacy:true}};
+      DATA.customers = [c]; DATA.activities = {__stg1__: []};
+      const v = outcomeVerdict(c);
+      const total = outcomeCriteriaFor(c).length;
+      ok = !!v.other && v.other.total === 1 && v.other.met === 1
+        && (v.ttfv1.total + v.ttfv2.total + v.other.total) === total
+        && v.undated === 1 && !v.unevidenced.some(x => x.id === 'oc_nostage');
+      detail = JSON.stringify({other: v.other, ttfv1: v.ttfv1, ttfv2: v.ttfv2,
+        undated: v.undated, total});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA a criterion with no ttfv stage is still counted', ok, detail);
+  })();
+  (function(){
+    /* MIGRATION. A ticked deliverable becomes evidence with on:null — never a
+       date the book does not have. A label the template no longer carries was
+       ALREADY orphaned before this change; it is preserved as a custom
+       criterion rather than dropped, because a human ticked it. */
+    let ok = false, detail = '';
+    try{
+      const mod = DATA.config.modules[0];
+      const firstLabel = DATA.config.sessionTemplates[mod][0].deliverables[0];
+      const book = {schemaVersion: 11, config: JSON.parse(JSON.stringify(DATA.config)),
+        customers: [{id:'__mig1__', name:'Mig Co', module: mod,
+          stage: DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+          totalSessions:8, domainScores:{}, stageHistory:[{stage:DATA.config.stages[1].key, date: isoAddDays(todayISO(), -200)}],
+          sessionNotes:{ '1': {deliverables:{}, prep:''} },
+          compliance: defaultCompliance()}],
+        activities: {__mig1__: []}};
+      book.customers[0].sessionNotes['1'].deliverables[firstLabel] = true;
+      book.customers[0].sessionNotes['1'].deliverables['A LABEL NO TEMPLATE CARRIES'] = true;
+      book.customers[0].sessionNotes['1'].deliverables['AN UNTICKED ONE'] = false;
+      migrateData(book);
+      const c = book.customers[0];
+      const ids = Object.keys(c.outcomeEvidence || {});
+      const everyLegacyUndated = ids.every(k => c.outcomeEvidence[k].on === null
+        && c.outcomeEvidence[k].legacy === true && c.outcomeEvidence[k].by === 'unknown');
+      const orphan = (c.outcomeCriteria.items || []).find(x => x.text === 'A LABEL NO TEMPLATE CARRIES');
+      const matched = (c.outcomeCriteria.items || []).find(x => x.text === firstLabel);
+      const untickedSkipped = !c.outcomeCriteria.items.some(x => x.text === 'AN UNTICKED ONE');
+      const sessionNotesIntact = c.sessionNotes['1'].deliverables[firstLabel] === true;
+      ok = book.schemaVersion >= 12 && ids.length === 2 && everyLegacyUndated && !!orphan && !!matched
+        && orphan.sourceSession === null && matched.sourceSession === 1
+        && untickedSkipped && sessionNotesIntact;
+      detail = JSON.stringify({v: book.schemaVersion, ids: ids.length, idCount: ids.length, everyLegacyUndated,
+        orphan: !!orphan, matched: !!matched, untickedSkipped, sessionNotesIntact});
+    }catch(err){ detail = err.message; }
+    check('phaseA migration turns ticks into undated legacy evidence and drops nothing', ok, detail);
+  })();
+  (function(){
+    /* Real, dated evidence must SURVIVE the migration. The migration's `already`
+       lookup and materializeOutcomeCriterion's dedupe key on different things, so
+       a reworded slot can route a tick onto a record that already holds a real
+       date, a real source and a real note. An unguarded write replaced all three
+       with a null-dated legacy record. Counts alone cannot see this — both stay
+       at 1 while the contents are destroyed — so this asserts the CONTENTS. */
+    let ok = false, detail = '';
+    try{
+      const cfg = JSON.parse(JSON.stringify(DATA.config));
+      const mod = cfg.modules[0];
+      const label = cfg.sessionTemplates[mod][0].deliverables[0];
+      const real = {on:'2026-07-01', by:'osm', note:'signed off in call'};
+      const book = {schemaVersion: 11, config: cfg,
+        customers: [{id:'__keep1__', name:'Keep Co', module: mod,
+          stage: cfg.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+          totalSessions:8, domainScores:{},
+          stageHistory:[{stage: cfg.stages[1].key, date: isoAddDays(todayISO(), -200)}],
+          sessionNotes:{ '1': {deliverables:{[label]: true}, prep:''} },
+          compliance: defaultCompliance(),
+          outcomeCriteria:{items:[{id:'oc_keep', text:'A DIFFERENT WORDING', stage:'ttfv1',
+            sourceSession:1, sourceIndex:0, sourceCount:2}], removed:[]},
+          outcomeEvidence:{oc_keep: JSON.parse(JSON.stringify(real))}}],
+        activities: {__keep1__: []}};
+      migrateData(book);
+      const ev = book.customers[0].outcomeEvidence['oc_keep'];
+      ok = !!ev && ev.on === real.on && ev.by === real.by && ev.note === real.note
+        && ev.legacy === undefined;
+      detail = JSON.stringify({survived: ev});
+    }catch(err){ detail = err.message; }
+    check('phaseA migration never overwrites real dated evidence', ok, detail);
+  })();
+  (function(){
+    /* The migration must be IDEMPOTENT — running it twice must not double the
+       evidence, because migrateData runs on every import as well as on load. */
+    let ok = false, detail = '';
+    try{
+      const mod = DATA.config.modules[0];
+      const label = DATA.config.sessionTemplates[mod][0].deliverables[0];
+      const mk = () => ({schemaVersion: 11, config: JSON.parse(JSON.stringify(DATA.config)),
+        customers: [{id:'__mig2__', name:'Idem Co', module: mod,
+          stage: DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+          totalSessions:8, domainScores:{}, stageHistory:[{stage:DATA.config.stages[1].key, date: isoAddDays(todayISO(), -200)}],
+          sessionNotes:{ '1': {deliverables:{[label]: true}, prep:''} },
+          compliance: defaultCompliance()}],
+        activities: {__mig2__: []}});
+      const once = mk(); migrateData(once);
+      const twice = mk(); migrateData(twice); twice.schemaVersion = 11; migrateData(twice);
+      const a = Object.keys(once.customers[0].outcomeEvidence).length;
+      const b = Object.keys(twice.customers[0].outcomeEvidence).length;
+      const itemsA = once.customers[0].outcomeCriteria.items.length;
+      const itemsB = twice.customers[0].outcomeCriteria.items.length;
+      ok = a === 1 && b === 1 && itemsA === 1 && itemsB === 1;
+      detail = JSON.stringify({evidenceOnce:a, evidenceTwice:b, itemsOnce:itemsA, itemsTwice:itemsB});
+    }catch(err){ detail = err.message; }
+    check('phaseA the migration is idempotent', ok, detail);
+  })();
+  (function(){
+    /* An imported book carrying malformed outcome data must be REJECTED at the
+       boundary, not silently repaired into something plausible. */
+    let ok = false, detail = '';
+    try{
+      const base = () => ({schemaVersion: 12, config: JSON.parse(JSON.stringify(DATA.config)),
+        customers: [{id:'__val1__', name:'Val Co', module: DATA.config.modules[0],
+          stage: DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+          totalSessions:8, domainScores:{}, sessionNotes:{},
+          stageHistory:[{stage:DATA.config.stages[1].key, date: isoAddDays(todayISO(), -200)}],
+          compliance: defaultCompliance(), outcomeCriteria:{items:[], removed:[]}, outcomeEvidence:{}}],
+        activities: {__val1__: []}});
+      const badDate = base();
+      badDate.customers[0].outcomeEvidence['oc_x'] = {on:'not-a-date', by:'osm'};
+      let rejectedDate = false;
+      try{ prepareBookData(badDate, 'Test'); }catch(e){ rejectedDate = true; }
+      const badBy = base();
+      badBy.customers[0].outcomeEvidence['oc_y'] = {on:null, by:'nonsense'};
+      let rejectedBy = false;
+      try{ prepareBookData(badBy, 'Test'); }catch(e){ rejectedBy = true; }
+      const good = base();
+      good.customers[0].outcomeEvidence['oc_z'] = {on:null, by:'unknown', legacy:true};
+      let accepted = false;
+      try{ prepareBookData(good, 'Test'); accepted = true; }catch(e){ accepted = false; }
+      ok = rejectedDate && rejectedBy && accepted;
+      detail = JSON.stringify({rejectedDate, rejectedBy, accepted});
+    }catch(err){ detail = err.message; }
+    check('phaseA malformed outcome evidence is rejected at the import boundary', ok, detail);
+  })();
+  (function(){
+    /* A CSRD account's curriculum lives under "<module> (CSRD)". Reading the
+       plain module key made every ticked deliverable migrate as an orphan while
+       derivation rendered the real one beside it, unevidenced — the same
+       criterion twice, one copy holding the evidence. */
+    let ok = false, detail = '';
+    try{
+      const cfg = JSON.parse(JSON.stringify(DATA.config));
+      const mod = 'Sustainability';
+      const csrdKey = mod + ' (CSRD)';
+      if(!Array.isArray(cfg.sessionTemplates[csrdKey]) || !cfg.sessionTemplates[csrdKey].length){
+        throw new Error('fixture needs a shipped ' + csrdKey + ' template set');
+      }
+      const plain = cfg.sessionTemplates[mod] || [];
+      const csrd = cfg.sessionTemplates[csrdKey] || [];
+      /* Find a session whose CSRD deliverable genuinely DIFFERS from the plain
+         one. Sampling a label that happens to read the same in both curricula
+         lets a migration reading the wrong template key match by coincidence —
+         which is exactly how the first version of this check passed against the
+         unfixed code. Throwing when no divergence exists keeps the check from
+         going quietly vacuous if the curricula ever converge. */
+      let sessionNumber = 0, csrdLabel = '';
+      for(let i = 0; i < Math.min(plain.length, csrd.length); i++){
+        const a = ((plain[i] || {}).deliverables || [])[0];
+        const b = ((csrd[i] || {}).deliverables || [])[0];
+        if(a && b && a !== b){ sessionNumber = i + 1; csrdLabel = b; break; }
+      }
+      if(!sessionNumber){
+        throw new Error('fixture needs a session where the CSRD curriculum diverges — none found');
+      }
+      const book = {schemaVersion: 11, config: cfg,
+        customers: [{id:'__csrd1__', name:'CSRD Co', module: mod, reportsCSRD: true,
+          stage: cfg.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+          totalSessions:8, domainScores:{},
+          stageHistory:[{stage: cfg.stages[1].key, date: isoAddDays(todayISO(), -200)}],
+          sessionNotes: {[String(sessionNumber)]: {deliverables:{[csrdLabel]: true}, prep:''}},
+          compliance: defaultCompliance()}],
+        activities: {__csrd1__: []}};
+      migrateData(book);
+      const c = book.customers[0];
+      const items = c.outcomeCriteria.items;
+      const rec = items.find(x => x.text === csrdLabel);
+      ok = items.length === 1 && !!rec && rec.sourceSession === sessionNumber && rec.sourceIndex === 0
+        && Object.keys(c.outcomeEvidence).length === 1
+        && c.outcomeEvidence[rec.id] && c.outcomeEvidence[rec.id].legacy === true;
+      detail = JSON.stringify({items: items.length, sourceSession: rec && rec.sourceSession,
+        expectedSession: sessionNumber, sourceIndex: rec && rec.sourceIndex, label: csrdLabel});
+    }catch(err){ detail = err.message; }
+    check('phaseA a CSRD account migrates against its own curriculum', ok, detail);
+  })();
+  (function(){
+    /* The panel states the verdict and names what is outstanding. Read-only in
+       Phase A: rendering must emit no control that writes, because the capture
+       UI is Phase B and a half-wired control is worse than none. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__ov1__', name:'View Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance.outcomePlan.outcomeNumber = 4;
+      DATA.customers = [c]; DATA.activities = {__ov1__: []};
+      const list = outcomeCriteriaFor(c);
+      setOutcomeEvidence(c, list[0], {on: todayISO(), by:'customer'});
+      setOutcomeEvidence(c, list[1], {on: null, by:'unknown', legacy:true});
+      const before = JSON.stringify(c);
+      const html = renderOutcomeCriteria(c);
+      const v = outcomeVerdict(c);
+      const namesOutcome = html.indexOf(escapeHtml(v.outcomeName)) !== -1;
+      const showsStages = html.indexOf('ttfv1') !== -1 || html.toLowerCase().indexOf('first value') !== -1;
+      const showsUndated = html.indexOf('date unknown') !== -1;
+      const noWriters = !/data-[a-z-]*(set|tick|clear|remove|save|add)/.test(html)
+        && html.indexOf('<input') === -1 && html.indexOf('<textarea') === -1
+        && html.indexOf('<button') === -1;
+      const pure = JSON.stringify(c) === before;
+      ok = namesOutcome && showsStages && showsUndated && noWriters && pure;
+      detail = JSON.stringify({namesOutcome, showsStages, showsUndated, noWriters, pure});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA the outcome panel states the verdict, is read-only, and renders purely', ok, detail);
+  })();
+  (function(){
+    /* Criterion text is user-controlled once an OSM edits it. Every one must be
+       escaped, or a criterion containing a quote breaks the markup. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__ov2__', name:'Esc Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      c.compliance.outcomePlan.outcomeNumber = 1;
+      c.outcomeCriteria = {items:[{id:'oc_xss1', text:'<img src=x onerror=alert(1)> & "quoted"',
+        stage:'ttfv2', sourceSession:null, sourceIndex:null}], removed:[]};
+      DATA.customers = [c]; DATA.activities = {__ov2__: []};
+      const html = renderOutcomeCriteria(c);
+      ok = html.indexOf('<img src=x') === -1 && html.indexOf('&lt;img') !== -1
+        && html.indexOf('&amp;') !== -1;
+      detail = JSON.stringify({rawImg: html.indexOf('<img src=x') !== -1,
+        escaped: html.indexOf('&lt;img') !== -1});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseA criterion text is escaped in the outcome panel', ok, detail);
+  })();
+  (function(){
+    /* Two DIFFERENT unknown states, and the panel must not conflate them.
+       No outcome number chosen -> send the user to the Edit account tab.
+       An outcome chosen but a curriculum with no deliverables authored -> say
+       THAT, with its reason. Telling someone to pick an outcome they already
+       picked sends them somewhere that cannot help. Neither branch had any
+       coverage until now. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      const mod = DATA.config.modules[0];
+      const c = {id:'__unk1__', name:'Unknown Co', module:mod,
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__unk1__: []};
+
+      // (a) No outcome chosen.
+      c.compliance.outcomePlan.outcomeNumber = null;
+      const none = renderOutcomeCriteria(c);
+      const noneSendsToEdit = none.indexOf('Edit account') !== -1;
+
+      // (b) Outcome chosen, but the curriculum has no deliverables.
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      DATA.config.sessionTemplates[mod].forEach(t => { t.deliverables = []; });
+      _renderMemoResets.forEach(r => r());
+      c.compliance.outcomePlan.outcomeNumber = 4;
+      const v = outcomeVerdict(c);
+      const empty = renderOutcomeCriteria(c);
+      const emptyNamesReason = v.reasons.length === 1
+        && empty.indexOf(escapeHtml(v.reasons[0])) !== -1;
+      const emptyDoesNotMisdirect = empty.indexOf('Edit account') === -1;
+
+      ok = v.state === 'unknown' && noneSendsToEdit && emptyNamesReason && emptyDoesNotMisdirect;
+      detail = JSON.stringify({state: v.state, noneSendsToEdit, emptyNamesReason,
+        emptyDoesNotMisdirect, reasons: v.reasons.length});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('phaseA the panel tells the two unknown states apart', ok, detail);
   })();
   (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
@@ -11823,8 +12824,13 @@ function _runSelfChecksInner(){
       && String(savePanelWide).indexOf('DATA') === -1
       && PANEL_WIDTH_KEY !== STORAGE_KEY);
 
+    /* >= rather than ===, matching the >= 4 / >= 9 / >= 10 clauses elsewhere in
+       this suite. What matters is that the dated log landed at a schema version
+       and has a migration behind it, not which version happens to be current —
+       pinning that coupled this check to every future bump, and it broke on the
+       very next one. */
     check('v98 the dated log is versioned, migrated and repaired like every other shape',
-      CURRENT_SCHEMA_VERSION === 11
+      CURRENT_SCHEMA_VERSION >= 11
       && String(migrateData).indexOf('impactLog') !== -1
       && String(repairAuxiliaryCollections).indexOf('impactLog') !== -1
       && String(trackImpact).indexOf('MAX_IMPACT_LOG') !== -1);
@@ -17314,6 +18320,63 @@ function renderGradReviewBlock(c){
     </div>`;
 }
 
+/* PURE. Read-only in Phase A: no control here writes anything, because capture
+   is Phase B and a half-wired checkbox is worse than no checkbox.
+
+   outcomeVerdict() has two different 'unknown' states and they must not be
+   conflated: reasons.length === 0 means no outcome number has been chosen yet
+   (send the OSM to the Edit account tab); reasons.length === 1 means an
+   outcome IS chosen but the module has no deliverables authored, so there is
+   nothing to judge against (naming that reason is right — the Edit account
+   tab cannot fix it). */
+function renderOutcomeCriteria(c){
+  const v = outcomeVerdict(c);
+  if(v.state === 'unknown' && !v.reasons.length){
+    return `<div class="section-card" style="margin-top:16px;">
+      <div class="section-title" style="margin-top:0;">Success outcome</div>
+      <p class="bp-basis" style="margin:0;">No numbered outcome chosen yet, so there is nothing to judge graduation against. Pick one on the Edit account tab.</p>
+    </div>`;
+  }
+  if(v.state === 'unknown'){
+    return `<div class="section-card" style="margin-top:16px;">
+      <div class="section-title" style="margin-top:0;">Success outcome</div>
+      <p class="bp-basis" style="margin:0;">Outcome ${v.outcomeNumber} · ${escapeHtml(v.outcomeName)} — ${escapeHtml(v.reasons.join(' · '))}.</p>
+    </div>`;
+  }
+  const list = outcomeCriteriaFor(c);
+  const row = x => {
+    const ev = x.evidence;
+    const mark = ev ? '✓' : '○';
+    const meta = !ev ? '' : ev.on
+      ? `met ${fmtDate(ev.on)} · ${escapeHtml(ev.by === 'customer' ? 'customer demonstrated' : ev.by === 'osm' ? 'OSM observed' : 'source unknown')}`
+      : 'met — date unknown, predates evidence tracking';
+    const sourceNote = x.source === 'curriculum' ? '' : ` <span class="bp-basis">(${escapeHtml(x.source)})</span>`;
+    return `<div class="oc-row${ev ? ' oc-met' : ''}">
+      <span class="oc-mark">${mark}</span>
+      <span class="oc-text">${escapeHtml(x.text)}${sourceNote}
+        ${meta ? `<span class="oc-meta">${meta}</span>` : ''}</span>
+    </div>`;
+  };
+  const group = (label, stage, counts) => {
+    const rows = list.filter(x => x.stage === stage);
+    if(!rows.length) return '';
+    return `<div class="oc-group">
+      <div class="lbl">${escapeHtml(label)} <span class="bp-basis">${counts.met} of ${counts.total}</span></div>
+      ${rows.map(row).join('')}
+    </div>`;
+  };
+  const other = list.filter(x => x.stage !== 'ttfv1' && x.stage !== 'ttfv2');
+  return `
+    <div class="section-card" style="margin-top:16px;">
+      <div class="section-title" style="margin-top:0;">Success outcome <span class="badge ${v.state === 'ready' ? 'badge-ontrack' : 'badge-watch'}">${v.state === 'ready' ? 'READY' : 'NOT READY'}</span></div>
+      <p class="bp-basis" style="margin:-4px 0 10px;">Outcome ${v.outcomeNumber} · ${escapeHtml(v.outcomeName)}</p>
+      ${group('First value', 'ttfv1', v.ttfv1)}
+      ${group('Outcome', 'ttfv2', v.ttfv2)}
+      ${other.length ? `<div class="oc-group"><div class="lbl">Other <span class="bp-basis">${v.other.met} of ${v.other.total}</span></div>${other.map(row).join('')}</div>` : ''}
+      ${v.reasons.length ? `<p class="bp-basis" style="margin:10px 0 0;">Not ready: ${escapeHtml(v.reasons.join(' · '))}.</p>` : ''}
+      ${v.undated ? `<p class="bp-basis" style="margin:6px 0 0;">${v.undated} criteri${v.undated===1?'on was':'a were'} ticked before evidence was tracked, so ${v.undated===1?'its date is':'their dates are'} unknown.</p>` : ''}
+    </div>`;
+}
 function renderOverviewTab(c, risk){
   const nextSession = getNextSessionInfo(c);
   const nextSteps = getCustomerNextSteps(c);
@@ -17402,6 +18465,7 @@ function renderOverviewTab(c, risk){
       <p style="color:var(--accent-watch-text); font-size:var(--text-xs); margin:0 0 6px;">Sends this account's real name and note text to your configured provider — not a pseudonymized summary.</p>
       ${renderAiBriefBody(ui.aiCustomerBriefs[c.id])}
     </div>
+    ${renderOutcomeCriteria(c)}
   `;
 }
 
@@ -21249,6 +22313,13 @@ function backfillCustomerRecord(c){
   [c.compliance.sentiment, c.compliance.outcomePlan, c.compliance.associatedPeopleCSAT].forEach(item=>{
     if(item.date && !isRealISODate(item.date)) item.date = null;
   });
+  // Phase A: outcome criteria overrides and the evidence store. Absent
+  // means "derive everything, nothing evidenced" — the same contract as every
+  // other optional per-account collection here.
+  if(!isRecordObject(c.outcomeCriteria)) c.outcomeCriteria = {items:[], removed:[]};
+  if(!Array.isArray(c.outcomeCriteria.items)) c.outcomeCriteria.items = [];
+  if(!Array.isArray(c.outcomeCriteria.removed)) c.outcomeCriteria.removed = [];
+  if(!isRecordObject(c.outcomeEvidence)) c.outcomeEvidence = {};
   // A restored/imported record's module may since have been renamed or deleted —
   // fall back to the first configured module rather than pointing at nothing.
   if(!DATA.config.modules.includes(c.module)){
@@ -21635,6 +22706,23 @@ function assertNormalizedBookData(data, source){
     if(c.firstValue !== undefined){
       if(!isRecordObject(c.firstValue) || !Array.isArray(c.firstValue.evidence)) rejectData(source, `${label} has invalid first-value data.`);
       c.firstValue.evidence.forEach((ev,j)=>{ if(!isRecordObject(ev) || !isRealISODate(ev.date) || typeof ev.note!=='string') rejectData(source, `${label} first-value evidence ${j+1} is invalid.`); });
+    }
+    if(c.outcomeCriteria !== undefined){
+      if(!isRecordObject(c.outcomeCriteria) || !Array.isArray(c.outcomeCriteria.items)
+        || !Array.isArray(c.outcomeCriteria.removed)) rejectData(source, `${label} has invalid outcome criteria.`);
+      c.outcomeCriteria.items.forEach((it,j)=>{
+        if(!isRecordObject(it) || typeof it.id !== 'string' || !it.id || typeof it.text !== 'string'){
+          rejectData(source, `${label} outcome criterion ${j+1} is invalid.`);
+        }
+      });
+    }
+    if(c.outcomeEvidence !== undefined){
+      if(!isRecordObject(c.outcomeEvidence)) rejectData(source, `${label} has invalid outcome evidence.`);
+      Object.entries(c.outcomeEvidence).forEach(([id, ev])=>{
+        if(!isRecordObject(ev)) rejectData(source, `${label} outcome evidence ${id} is invalid.`);
+        if(ev.on !== null && !isRealISODate(ev.on)) rejectData(source, `${label} outcome evidence ${id} has an invalid date.`);
+        if(OUTCOME_EVIDENCE_BY.indexOf(ev.by) === -1) rejectData(source, `${label} outcome evidence ${id} has an unknown source.`);
+      });
     }
   });
 
