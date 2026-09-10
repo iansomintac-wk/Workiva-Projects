@@ -5623,12 +5623,44 @@ function nextOpenSessionNumber(customer){
    Same contract as c.pause and c.signalSuppressions: deliberately NOT backfilled,
    no schema bump. Per final ruling this is information only — it never gates or
    feeds ready_to_set_date or any graduation logic. */
+/* v100 / Spec 5. First value stops being a field somebody has to remember to
+   stamp, because the criteria it is made of are now tracked individually.
+
+   A RECORDED achievedOn always wins. recomputeFirstValueAchievedOn stamps that
+   one from activity evidence a human marked, and the tracker does not overwrite
+   a date a human asserted.
+
+   Two rules here read backwards if you skim them:
+
+   LATEST, not earliest. The activity path takes the earliest date because any
+   one qualifying activity is sufficient. This path needs ALL of ttfv1, so first
+   value is not reached until the last of its criteria is.
+
+   NEVER from an empty list. [].every() is true, so an account whose module
+   authors no ttfv1 deliverables would otherwise derive a date from nothing at
+   all — the every-of-zero bug that made an empty criteria list report READY,
+   in its second home.
+
+   All-legacy evidence yields null: those ticks are real, but no date was ever
+   captured for them and one will not be invented here. */
+function derivedFirstValueDate(c){
+  if(!c) return null;
+  const t1 = outcomeCriteriaFor(c).filter(x => x.stage === 'ttfv1');
+  if(!t1.length) return null;
+  if(!t1.every(x => x.evidence)) return null;
+  const dates = t1.map(x => x.evidence.on).filter(d => isRealISODate(d));
+  if(!dates.length) return null;
+  return dates.reduce((max, d) => d > max ? d : max, dates[0]);
+}
 function getFirstValue(c){
   const fv = c.firstValue || {};
+  const recorded = (typeof fv.achievedOn === 'string' && ISO_DATE_RE.test(fv.achievedOn)) ? fv.achievedOn : null;
+  const derived = recorded ? null : derivedFirstValueDate(c);
   return {
     definition: (typeof fv.definition === 'string' && fv.definition.trim()) ? fv.definition.trim() : null,
     evidence: Array.isArray(fv.evidence) ? fv.evidence : [],
-    achievedOn: (typeof fv.achievedOn === 'string' && ISO_DATE_RE.test(fv.achievedOn)) ? fv.achievedOn : null
+    achievedOn: recorded || derived,
+    derivedFrom: derived ? 'ttfv1' : null
   };
 }
 
@@ -9991,6 +10023,138 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA;
     check('phaseB an evidence note is shown, escaped, and absent when there is none', ok, detail);
+  })();
+  (function(){
+    /* Spec 5. First value stops being a field somebody has to remember to
+       stamp. Every ttfv1 criterion evidenced -> the date is the LATEST of them,
+       because first value is not reached until the last of its criteria is. One
+       criterion short -> no date at all, not a partial one. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__pb7__', name:'Derive Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__pb7__: []};
+      const t1 = outcomeCriteriaFor(c).filter(x => x.stage === 'ttfv1');
+      const enough = t1.length >= 3;            // the fixture must be able to fail
+
+      // All but the last evidenced -> still nothing.
+      for(let i = 0; i < t1.length - 1; i++){
+        const live = outcomeCriteriaFor(c).filter(x => x.stage === 'ttfv1')[i];
+        /* -(60 + i), not -(40 - i). ttfv1 spans several sessions of 12-15
+           deliverables, so i can exceed 37, at which point an "earlier"
+           criterion would be dated LATER than the -3 below and this check
+           would fail for a reason that has nothing to do with the code. */
+        setOutcomeEvidence(c, live, {on: isoAddDays(todayISO(), -(60 + i)), by:'osm'});
+      }
+      const partial = getFirstValue(c).achievedOn === null;
+
+      // The last one, dated LATER than every other, is the date that wins.
+      const last = outcomeCriteriaFor(c).filter(x => x.stage === 'ttfv1').slice(-1)[0];
+      const latest = isoAddDays(todayISO(), -3);
+      setOutcomeEvidence(c, last, {on: latest, by:'customer'});
+      const fv = getFirstValue(c);
+      const derivedIsLatest = fv.achievedOn === latest;
+      const labelled = fv.derivedFrom === 'ttfv1';
+
+      // PURE: reading it twice writes nothing.
+      const before = JSON.stringify(DATA.customers);
+      getFirstValue(c); getFirstValue(c);
+      const pure = JSON.stringify(DATA.customers) === before;
+
+      ok = enough && partial && derivedIsLatest && labelled && pure;
+      detail = JSON.stringify({ttfv1: t1.length, enough, partial, derivedIsLatest, labelled, pure,
+        got: fv.achievedOn, latest});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseB first value derives from the last ttfv1 criterion, and not from a partial set', ok, detail);
+  })();
+  (function(){
+    /* Spec 5, the load-bearing half: a date a human asserted ALWAYS wins. The
+       recorded date here is deliberately EARLIER than the derived one would be,
+       so an implementation that took the max of the two would FAIL rather than
+       coincidentally agree. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__pb8__', name:'Manual Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__pb8__: []};
+      const n = outcomeCriteriaFor(c).filter(x => x.stage === 'ttfv1').length;
+      for(let i = 0; i < n; i++){
+        const live = outcomeCriteriaFor(c).filter(x => x.stage === 'ttfv1')[i];
+        setOutcomeEvidence(c, live, {on: isoAddDays(todayISO(), -10), by:'osm'});
+      }
+      const wouldDerive = derivedFirstValueDate(c);
+
+      const recorded = isoAddDays(todayISO(), -90);
+      c.firstValue = {definition:null, evidence:[{date: recorded, note:'demo', activityId:'act_1'}],
+        achievedOn: recorded};
+      const fv = getFirstValue(c);
+
+      const recordedWins = fv.achievedOn === recorded;
+      const notLabelledDerived = fv.derivedFrom === null;
+      const differs = wouldDerive !== null && wouldDerive !== recorded;
+
+      ok = recordedWins && notLabelledDerived && differs;
+      detail = JSON.stringify({recordedWins, notLabelledDerived, differs, wouldDerive, recorded});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseB a recorded achieved date always beats the derived one', ok, detail);
+  })();
+  (function(){
+    /* every() over an empty list is TRUE. An account whose curriculum authors
+       no ttfv1 deliverables must derive NOTHING — this is the every-of-zero bug
+       that made an empty criteria list report READY in Phase A, in its second
+       home. And an account whose ttfv1 evidence is entirely legacy has no dates
+       to take a maximum of: null, never a guess. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      const mod = DATA.config.modules[0];
+      const c = {id:'__pb9__', name:'Empty Co', module:mod,
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__pb9__: []};
+
+      // (a) all-legacy evidence -> every criterion met, and still no date.
+      const n = outcomeCriteriaFor(c).filter(x => x.stage === 'ttfv1').length;
+      const hadSome = n > 0;
+      for(let i = 0; i < n; i++){
+        const live = outcomeCriteriaFor(c).filter(x => x.stage === 'ttfv1')[i];
+        setOutcomeEvidence(c, live, {on: null, by:'unknown', legacy:true});
+      }
+      const allMet = outcomeCriteriaFor(c).filter(x => x.stage === 'ttfv1').every(x => x.evidence);
+      const legacyGivesNoDate = derivedFirstValueDate(c) === null;
+
+      // (b) no ttfv1 criteria at all -> no date. A FRESH customer, never
+      // evidenced against the pre-wipe curriculum — reusing `c` here would not
+      // test this guard at all: outcomeCriteriaFor() keeps returning materialized
+      // items the curriculum "no longer carries" (by design, so evidence already
+      // captured against a removed deliverable is never silently dropped), so
+      // `c`'s 9 ttfv1 criteria from part (a) would still be there after the wipe
+      // and t1.length would never reach 0.
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      DATA.config.sessionTemplates[mod].forEach(t => { t.deliverables = []; });
+      _renderMemoResets.forEach(r => r());
+      const c2 = {id:'__pb9b__', name:'Empty Co 2', module:mod,
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c2);
+      const emptyGivesNoDate = derivedFirstValueDate(c2) === null
+        && outcomeCriteriaFor(c2).filter(x => x.stage === 'ttfv1').length === 0;
+
+      ok = hadSome && allMet && legacyGivesNoDate && emptyGivesNoDate;
+      detail = JSON.stringify({ttfv1: n, hadSome, allMet, legacyGivesNoDate, emptyGivesNoDate});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('phaseB neither an empty ttfv1 list nor all-legacy evidence invents a first-value date', ok, detail);
   })();
   (function(){
     /* Phase 3 / FIX 1. Excluding the headline from the drivers list must not
@@ -19247,8 +19411,10 @@ function renderOverviewTab(c, risk){
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
           <span style="font-size:var(--text-xs); color:var(--text-faint); font-family:var(--font-mono);">First Value</span>
           ${fv.achievedOn
-            ? `<span class="badge badge-ontrack" title="Earliest first-value evidence date — see the Activity Log tab. Information only; does not affect graduation readiness.">${icon('check')} Achieved ${fmtDate(fv.achievedOn)}</span>`
-            : `<span style="font-size:var(--text-xs); color:var(--text-faint);">not yet evidenced — mark evidence in Log Activity</span>`}
+            ? `<span class="badge badge-ontrack" title="${escapeAttr(fv.derivedFrom === 'ttfv1'
+                ? 'Derived: every first-value success criterion is evidenced, dated by the last of them. See the Session Plan tab.'
+                : 'Earliest first-value evidence date — see the Activity Log tab.')} Information only; does not affect graduation readiness.">${icon('check')} Achieved ${fmtDate(fv.achievedOn)}${fv.derivedFrom === 'ttfv1' ? ' · derived' : ''}</span>`
+            : `<span style="font-size:var(--text-xs); color:var(--text-faint);">not yet evidenced — mark evidence in Log Activity, or tick the first-value deliverables on the Session Plan tab</span>`}
         </div>
         <input type="text" id="fv-definition" maxlength="200" placeholder="One sentence: what does first value look like for this account?" value="${escapeAttr(fv.definition || '')}" style="width:100%; margin-top:6px;">
       </div>
