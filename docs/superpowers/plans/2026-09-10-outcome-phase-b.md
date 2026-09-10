@@ -18,7 +18,7 @@
 - **Every new check must be demonstrated FAILING before it is accepted.** Six checks written during Phase A passed while asserting nothing; the red-flip rule is the only reason they were caught. A check that has never been seen to fail is not evidence.
 - **Check naming:** `check('phaseB <sentence>', ok, detail)`, matching the `phaseA` block at lines 9021–9664.
 - **Fixture pattern:** build a customer literal, call `backfillCustomerRecord(c)`, swap `DATA.customers` / `DATA.activities`, restore them in a trailing statement outside the `try`. Copy the shape at line 9570. If you touch `DATA.config.sessionTemplates`, restore it AND call `_renderMemoResets.forEach(r => r())`.
-- **Suite arithmetic:** starts at **354**. Task 1 → 357, Task 2 → 359, Task 3 → 360, Task 4 → 363, Task 5 → 364.
+- **Suite arithmetic:** starts at **354**. Task 1 → 357, Task 2 → 360, Task 3 → 361, Task 4 → 364, Task 5 → 365.
 - **The gate is a command, not a console read:**
   ```
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect <N>
@@ -274,12 +274,14 @@ MSG
 ## Task 2: Attribute the evidence and link the activity
 
 **Files:**
-- Modify: `osm-book-of-business-tracker-1.0.html` region D (add the control), region E (add its handler), plus one CSS rule
-- Modify: `osm-book-of-business-tracker-1.0.html` — two new checks
+- Modify: `osm-book-of-business-tracker-1.0.html` region D (add the control), region E (add its handler and thin the checkbox listener), region B (add `toggleDeliverableEvidence`), plus one CSS rule
+- Modify: `osm-book-of-business-tracker-1.0.html` — three new checks
 
 **Interfaces:**
 - Consumes: everything Task 1 consumes, plus `OUTCOME_EVIDENCE_BY = ['customer','osm','unknown']`.
-- Produces: the DOM contract `data-deliverable-by="<customerId>|<sessionNumber>|<index>"` on a `<select>`; the invariant that changing it preserves `on` and `activityId`.
+- Produces:
+  - `toggleDeliverableEvidence(customer, sessionNumber, index, checked) -> record|null` — the tick's logic, extracted from the listener so a check can reach it. Returns the stored evidence record on a tick, `null` on an un-tick or an unresolvable slot.
+  - the DOM contract `data-deliverable-by="<customerId>|<sessionNumber>|<index>"` on a `<select>`; the invariant that changing it preserves `on` and `activityId`.
 
 **A deviation from the spec, stated rather than smuggled.** §8 asks for "a control to mark it customer-demonstrated and to link the activity." The attribution gets a real control. The activity link is made automatically from `getSessionActivity(c, num)` rather than through a picker, because the session card is already scoped to exactly one session and that session's logged call *is* the activity that proves its deliverables. A picker would ask the user to answer a question the card already knows the answer to. When no activity is logged, no `activityId` key is written at all — never a fabricated link.
 
@@ -365,17 +367,67 @@ MSG
     DATA.customers = prevC; DATA.activities = prevA;
     check('phaseB a deliverable ticked during a logged session links that activity, and never invents one', ok, detail);
   })();
+  (function(){
+    /* Added after Task 1's review. Task 1 asserted setOutcomeEvidence and
+       clearOutcomeEvidence directly and left the path BETWEEN the checkbox and
+       them uncovered — the parse, the activity linkage, and the provisional
+       guard were asserted by nobody. Step 4b extracts that path into
+       toggleDeliverableEvidence so it can be reached without a DOM event; this
+       is the check that reaches it.
+       The provisional half is the one that matters: un-ticking a box nobody
+       ever ticked must create NOTHING. Without the guard it materializes a
+       criterion — a stored identity minted by an un-tick — and every account
+       would silently accumulate them. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__pb11__', name:'Toggle Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c];
+      DATA.activities = {__pb11__: [{id:'act_s2', type:'Call', date: isoAddDays(todayISO(), -5),
+        summary:'Session 2 held', sessionNumber:2, checklist:[], flagged:false}]};
+
+      // Tick, through the same function the listener calls.
+      const rec = toggleDeliverableEvidence(c, 2, 0, true);
+      const linked = !!rec && rec.by === 'osm' && rec.on === todayISO() && rec.activityId === 'act_s2';
+      const oneRecord = Object.keys(c.outcomeEvidence).length === 1;
+
+      // Un-tick the same one — the evidence goes, the identity stays.
+      toggleDeliverableEvidence(c, 2, 0, false);
+      const cleared = Object.keys(c.outcomeEvidence).length === 0;
+      const identityKept = c.outcomeCriteria.items.filter(x => x.sourceSession === 2).length === 1;
+
+      // Un-tick a box NOBODY ticked. This must create nothing at all.
+      const itemsBefore = c.outcomeCriteria.items.length;
+      toggleDeliverableEvidence(c, 5, 3, false);
+      const provisionalInert = c.outcomeCriteria.items.length === itemsBefore
+        && Object.keys(c.outcomeEvidence).length === 0;
+
+      // An index the session does not have is a no-op, not a throw.
+      const outOfRange = toggleDeliverableEvidence(c, 2, 999, true) === null
+        && Object.keys(c.outcomeEvidence).length === 0;
+
+      ok = linked && oneRecord && cleared && identityKept && provisionalInert && outOfRange;
+      detail = JSON.stringify({linked, oneRecord, cleared, identityKept, provisionalInert, outOfRange});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseB the tick path itself is covered — link, clear, and the provisional guard', ok, detail);
+  })();
 ```
 
-- [ ] **Step 2: Run them and watch both fail**
+- [ ] **Step 2: Run them and watch all three fail**
 
 ```
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 359 > "$CLAUDE_JOB_DIR/tmp/t2-red.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t2-red.txt"
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 360 > "$CLAUDE_JOB_DIR/tmp/t2-red.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t2-red.txt"
 ```
 
 Expected: exit 1. The first fails on `hasControl` — no such element exists yet.
 
 The second exercises `setOutcomeEvidence` directly and **will pass on its first run**. Flip it by temporarily changing `if(act) rec.activityId = act.id;` to assign `'act_s3'` unconditionally, confirm `oneUnlinked` goes false, then revert. Record both outputs.
+
+The third fails naturally on `toggleDeliverableEvidence is not defined`. Confirm the `detail` field says exactly that, and not something else that would have failed anyway.
 
 - [ ] **Step 3: Add the control to the render**
 
@@ -437,13 +489,62 @@ Then, immediately after that listener:
     }));
 ```
 
+- [ ] **Step 4b: Extract the tick logic so a check can reach it**
+
+Task 1's review found that nothing exercised the listener: the parse, the activity linkage and the `!crit.provisional` guard were asserted by nobody, because a self-check cannot easily fire a DOM `change` event on a card that is not mounted. The fix is not a heavier test — it is a thinner listener.
+
+Add this beside the other evidence writers, immediately after `clearOutcomeEvidence` (grep `function clearOutcomeEvidence`):
+
+```js
+/* v100 / Spec 8. The listener is a DOM adapter; this is the logic. Split so a
+   check can reach it without mounting a card and firing an event — the tick is
+   the whole point of Phase B and it was covered only at its two ends.
+   Returns the stored record on a tick, null otherwise. */
+function toggleDeliverableEvidence(customer, sessionNumber, index, checked){
+  const crit = outcomeCriteriaFor(customer)
+    .find(x => x.sourceSession === sessionNumber && x.sourceIndex === index);
+  if(!crit) return null;
+  if(checked){
+    const act = getSessionActivity(customer, sessionNumber);
+    const rec = {on: todayISO(), by:'osm'};
+    if(act) rec.activityId = act.id;
+    return setOutcomeEvidence(customer, crit, rec);
+  }
+  /* A provisional criterion has never been acted on, so it has no stored record
+     and no opaque id. Clearing it would materialize an identity minted by an
+     UN-tick, and every account would quietly accumulate them. */
+  if(!crit.provisional) clearOutcomeEvidence(customer, crit.id);
+  return null;
+}
+```
+
+Then reduce the checkbox listener written in Task 1 to the adapter it now is — the whole body between `const [custId, numStr, idxStr] = …` and `saveData();` collapses:
+
+```js
+    $$('[data-session-deliverable]').forEach(chk => chk.addEventListener('change', ()=>{
+      /* v100 / Spec 8. Ticking is a claim about the world, so it records one.
+         The logic lives in toggleDeliverableEvidence; this is the adapter.
+         No render() call: the old handler never re-rendered either, and
+         re-rendering here would collapse every open run-script <details> on the
+         page under the user's cursor. */
+      const [custId, numStr, idxStr] = chk.dataset.sessionDeliverable.split('|');
+      toggleDeliverableEvidence(c, parseInt(numStr, 10), parseInt(idxStr, 10), chk.checked);
+      saveData();
+      /* Enable the attribution control in place rather than re-rendering. */
+      const bySel = document.querySelector(`[data-deliverable-by="${chk.dataset.sessionDeliverable}"]`);
+      if(bySel){ bySel.disabled = !chk.checked; if(chk.checked) bySel.value = 'osm'; }
+    }));
+```
+
+The unused `e` parameter and the unused `custId` binding both go; the reviewer flagged them and this is the edit that removes them.
+
 - [ ] **Step 5: Run the suite**
 
 ```
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 359 > "$CLAUDE_JOB_DIR/tmp/t2-green.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t2-green.txt"
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 360 > "$CLAUDE_JOB_DIR/tmp/t2-green.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t2-green.txt"
 ```
 
-Expected: exit 0, `359/359`.
+Expected: exit 0, `360/360`.
 
 - [ ] **Step 6: Look at it, do not only test it**
 
@@ -529,7 +630,7 @@ Parked in Phase A because nothing could create a note. Tasks 1–2 make `note` r
 - [ ] **Step 2: Run it and watch it fail**
 
 ```
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 360 > "$CLAUDE_JOB_DIR/tmp/t3-red.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t3-red.txt"
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 361 > "$CLAUDE_JOB_DIR/tmp/t3-red.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t3-red.txt"
 ```
 
 Expected: exit 1, failing on `shows` and on `noteEls: 0` — the note is stored and never rendered.
@@ -552,10 +653,10 @@ Add the style beside `.oc-meta` — grep `\.oc-meta`:
 - [ ] **Step 4: Run the suite**
 
 ```
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 360 > "$CLAUDE_JOB_DIR/tmp/t3-green.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t3-green.txt"
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 361 > "$CLAUDE_JOB_DIR/tmp/t3-green.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t3-green.txt"
 ```
 
-Expected: exit 0, `360/360`.
+Expected: exit 0, `361/361`.
 
 - [ ] **Step 5: Commit**
 
@@ -720,7 +821,7 @@ MSG
 - [ ] **Step 2: Run them and watch all three fail**
 
 ```
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 363 > "$CLAUDE_JOB_DIR/tmp/t4-red.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t4-red.txt"
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 364 > "$CLAUDE_JOB_DIR/tmp/t4-red.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t4-red.txt"
 ```
 
 Expected: exit 1, all three failing. A `ReferenceError: derivedFirstValueDate is not defined` is a legitimate red — but confirm the `detail` field actually says that, rather than something unrelated that would have failed anyway.
@@ -792,10 +893,10 @@ At the Overview First Value badge (~18893, grep ``Achieved ${fmtDate(fv.achieved
 - [ ] **Step 5: Run the suite**
 
 ```
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 363 > "$CLAUDE_JOB_DIR/tmp/t4-green.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t4-green.txt"
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 364 > "$CLAUDE_JOB_DIR/tmp/t4-green.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t4-green.txt"
 ```
 
-Expected: exit 0, `363/363`.
+Expected: exit 0, `364/364`.
 
 **Watch for one specific collateral failure.** `ttfvDays()` reads `getFirstValue().achievedOn`, and `portfolioTTFVStat()` medians it across the book. More accounts now carry dates, so the portfolio median can move, and the `n >= 5` floor can now be crossed by a book that previously fell short. If a pre-existing check asserts a specific median or a specific count of contributing accounts, it is not wrong — the input genuinely changed. Read what it asserts, confirm the new number by hand, and update the check with a comment saying why. Do not weaken the assertion to make it pass.
 
@@ -889,7 +990,7 @@ Spec check 11 says "nothing reads `sessionNotes[n].deliverables` any more." Read
 This check will **pass on its first run**, because Tasks 1–2 already removed the read. It is the whole point of the phase, so it does not get accepted on a green it was born with. Temporarily restore `const checked = !!note.deliverables[label];` in the render and confirm it fails on `noLegacyRead` **and** on `legacyIsInert` — both halves, not one. Then revert.
 
 ```
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 364 > "$CLAUDE_JOB_DIR/tmp/t5-red.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t5-red.txt"
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 365 > "$CLAUDE_JOB_DIR/tmp/t5-red.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t5-red.txt"
 ```
 
 Record both the red and the green output.
@@ -897,11 +998,11 @@ Record both the red and the green output.
 - [ ] **Step 3: Run both suites green**
 
 ```
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 364 > "$CLAUDE_JOB_DIR/tmp/t5-green.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t5-green.txt"
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 365 > "$CLAUDE_JOB_DIR/tmp/t5-green.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t5-green.txt"
 node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18 > "$CLAUDE_JOB_DIR/tmp/t5-guide.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t5-guide.txt"
 ```
 
-Expected: `364/364` and `18/18`, both exit 0.
+Expected: `365/365` and `18/18`, both exit 0.
 
 - [ ] **Step 4: Update the four records that carry the count**
 
@@ -909,7 +1010,7 @@ Expected: `364/364` and `18/18`, both exit 0.
 grep -rn "354" VALIDATION.txt CHANGELOG.txt README.txt guide-manifest.json
 ```
 
-Replace each with 364. Then re-measure the hashes rather than editing the old ones — a written number that never met the thing it describes is the exact failure the August record was corrected for:
+Replace each with 365. Then re-measure the hashes rather than editing the old ones — a written number that never met the thing it describes is the exact failure the August record was corrected for:
 
 ```
 sha256sum osm-book-of-business-tracker-1.0.html osm-runway-onboarding-1.0.html
@@ -919,7 +1020,7 @@ stat -c '%n %s' osm-book-of-business-tracker-1.0.html osm-runway-onboarding-1.0.
 In `VALIDATION.txt`, under **SCOPE OF THE CHANGE SINCE 1.0**, add after the Phase A section:
 
 ```
-OUTCOME CRITERIA AND EVIDENCE, PHASE B (suite 354 -> 364)
+OUTCOME CRITERIA AND EVIDENCE, PHASE B (suite 354 -> 365)
   - The session deliverable checkbox writes evidence. Phase A shipped a store
     that nothing in the running app could write to; the only records that could
     exist were what the migration built from history. Ticking a box now records
@@ -946,7 +1047,7 @@ Under **WHAT WAS NOT VERIFIED**, delete the line "Evidence capture from the Over
 ```
 git add VALIDATION.txt CHANGELOG.txt README.txt guide-manifest.json osm-book-of-business-tracker-1.0.html
 git commit -F - <<'MSG'
-Assert the legacy deliverables map is inert; update the records to 364
+Assert the legacy deliverables map is inert; update the records to 365
 
 Spec check 11 stated literally — "nothing reads the field" — is false and
 should be: the migration translates it, the backfill keeps its shape legal,
