@@ -4115,7 +4115,7 @@ const DEFAULT_OUTCOME_NAMES = [
    explicit step in migrateData(). backfillCustomerRecord remains for per-record field
    defaults on legacy/imported records, but new-shape changes get a numbered migration —
    version-blind additive guessing is how backfill logic rots. */
-const CURRENT_SCHEMA_VERSION = 11; // v98: + DATA.impactLog (dated time-saved events)
+const CURRENT_SCHEMA_VERSION = 12; // Phase A: + per-account outcome criteria and evidence
 
 /* The single gate for clock times. Accepts "H:MM" and "HH:MM" on a 24h clock and
    returns a zero-padded "HH:MM"; everything else returns null and the field is
@@ -4360,6 +4360,55 @@ function migrateData(data){
       if(clean.length) data.impactLog = clean.slice(-MAX_IMPACT_LOG); else delete data.impactLog;
     }
     v = 11;
+  }
+  if(v === 11){
+    /* v11 -> v12 (Phase A): per-account outcome criteria and evidence.
+
+       INFERS NO DATES. A ticked deliverable is a real human act and becomes
+       evidence, but the book never recorded WHEN, so `on` is null and `legacy`
+       says why. Stamping todayISO() here would manufacture a history that never
+       happened — the same reasoning as the v10->v11 impactLog step above.
+
+       A label the template no longer carries was ALREADY orphaned before this
+       change; it is preserved as a custom criterion rather than dropped,
+       because someone ticked it. sessionNotes is left completely intact: Phase
+       B repoints its UI, and deleting user data to tidy a field is not a risk
+       worth taking in an app whose only store is localStorage. */
+    (data.customers || []).forEach(c => {
+      if(!isRecordObject(c)) return;
+      if(!isRecordObject(c.outcomeCriteria)) c.outcomeCriteria = {items:[], removed:[]};
+      if(!Array.isArray(c.outcomeCriteria.items)) c.outcomeCriteria.items = [];
+      if(!Array.isArray(c.outcomeCriteria.removed)) c.outcomeCriteria.removed = [];
+      if(!isRecordObject(c.outcomeEvidence)) c.outcomeEvidence = {};
+      if(!isRecordObject(c.sessionNotes)) return;
+      const templates = (data.config && data.config.sessionTemplates
+        && data.config.sessionTemplates[c.module]) || [];
+      Object.keys(c.sessionNotes).forEach(key => {
+        const note = c.sessionNotes[key];
+        if(!/^\d+$/.test(key) || !isRecordObject(note) || !isRecordObject(note.deliverables)) return;
+        const sessionNumber = parseInt(key, 10);
+        const tpl = templates[sessionNumber - 1];
+        const labels = (tpl && Array.isArray(tpl.deliverables)) ? tpl.deliverables : [];
+        Object.keys(note.deliverables).forEach(label => {
+          if(note.deliverables[label] !== true) return;      // an unticked box is not evidence
+          const idx = labels.indexOf(label);
+          const criterion = idx === -1
+            ? {text: label, stage:'', sourceSession: null, sourceIndex: null}
+            : {text: label, stage: tpl.ttfvStage || '', sourceSession: sessionNumber, sourceIndex: idx};
+          const already = c.outcomeCriteria.items.find(x =>
+            x.text === label && x.sourceSession === criterion.sourceSession);
+          if(already){
+            if(c.outcomeEvidence[already.id] === undefined){
+              c.outcomeEvidence[already.id] = {on:null, by:'unknown', legacy:true};
+            }
+            return;
+          }
+          const rec = materializeOutcomeCriterion(c, criterion);
+          c.outcomeEvidence[rec.id] = {on:null, by:'unknown', legacy:true};
+        });
+      });
+    });
+    v = 12;
   }
   data.schemaVersion = v;
   // Sanity: contradictory risk thresholds (watch >= alert) make the watch tier
@@ -9165,6 +9214,96 @@ function _runSelfChecksInner(){
     check('phaseA a criterion with no ttfv stage is still counted', ok, detail);
   })();
   (function(){
+    /* MIGRATION. A ticked deliverable becomes evidence with on:null — never a
+       date the book does not have. A label the template no longer carries was
+       ALREADY orphaned before this change; it is preserved as a custom
+       criterion rather than dropped, because a human ticked it. */
+    let ok = false, detail = '';
+    try{
+      const mod = DATA.config.modules[0];
+      const firstLabel = DATA.config.sessionTemplates[mod][0].deliverables[0];
+      const book = {schemaVersion: 11, config: JSON.parse(JSON.stringify(DATA.config)),
+        customers: [{id:'__mig1__', name:'Mig Co', module: mod,
+          stage: DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+          totalSessions:8, domainScores:{}, stageHistory:[{stage:DATA.config.stages[1].key, date: isoAddDays(todayISO(), -200)}],
+          sessionNotes:{ '1': {deliverables:{}, prep:''} },
+          compliance: defaultCompliance()}],
+        activities: {__mig1__: []}};
+      book.customers[0].sessionNotes['1'].deliverables[firstLabel] = true;
+      book.customers[0].sessionNotes['1'].deliverables['A LABEL NO TEMPLATE CARRIES'] = true;
+      book.customers[0].sessionNotes['1'].deliverables['AN UNTICKED ONE'] = false;
+      migrateData(book);
+      const c = book.customers[0];
+      const ids = Object.keys(c.outcomeEvidence || {});
+      const everyLegacyUndated = ids.every(k => c.outcomeEvidence[k].on === null
+        && c.outcomeEvidence[k].legacy === true && c.outcomeEvidence[k].by === 'unknown');
+      const orphan = (c.outcomeCriteria.items || []).find(x => x.text === 'A LABEL NO TEMPLATE CARRIES');
+      const matched = (c.outcomeCriteria.items || []).find(x => x.text === firstLabel);
+      const untickedSkipped = ids.length === 2;
+      const sessionNotesIntact = c.sessionNotes['1'].deliverables[firstLabel] === true;
+      ok = book.schemaVersion === 12 && everyLegacyUndated && !!orphan && !!matched
+        && orphan.sourceSession === null && matched.sourceSession === 1
+        && untickedSkipped && sessionNotesIntact;
+      detail = JSON.stringify({v: book.schemaVersion, ids: ids.length, everyLegacyUndated,
+        orphan: !!orphan, matched: !!matched, untickedSkipped, sessionNotesIntact});
+    }catch(err){ detail = err.message; }
+    check('phaseA migration turns ticks into undated legacy evidence and drops nothing', ok, detail);
+  })();
+  (function(){
+    /* The migration must be IDEMPOTENT — running it twice must not double the
+       evidence, because migrateData runs on every import as well as on load. */
+    let ok = false, detail = '';
+    try{
+      const mod = DATA.config.modules[0];
+      const label = DATA.config.sessionTemplates[mod][0].deliverables[0];
+      const mk = () => ({schemaVersion: 11, config: JSON.parse(JSON.stringify(DATA.config)),
+        customers: [{id:'__mig2__', name:'Idem Co', module: mod,
+          stage: DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+          totalSessions:8, domainScores:{}, stageHistory:[{stage:DATA.config.stages[1].key, date: isoAddDays(todayISO(), -200)}],
+          sessionNotes:{ '1': {deliverables:{[label]: true}, prep:''} },
+          compliance: defaultCompliance()}],
+        activities: {__mig2__: []}});
+      const once = mk(); migrateData(once);
+      const twice = mk(); migrateData(twice); twice.schemaVersion = 11; migrateData(twice);
+      const a = Object.keys(once.customers[0].outcomeEvidence).length;
+      const b = Object.keys(twice.customers[0].outcomeEvidence).length;
+      const itemsA = once.customers[0].outcomeCriteria.items.length;
+      const itemsB = twice.customers[0].outcomeCriteria.items.length;
+      ok = a === 1 && b === 1 && itemsA === 1 && itemsB === 1;
+      detail = JSON.stringify({evidenceOnce:a, evidenceTwice:b, itemsOnce:itemsA, itemsTwice:itemsB});
+    }catch(err){ detail = err.message; }
+    check('phaseA the migration is idempotent', ok, detail);
+  })();
+  (function(){
+    /* An imported book carrying malformed outcome data must be REJECTED at the
+       boundary, not silently repaired into something plausible. */
+    let ok = false, detail = '';
+    try{
+      const base = () => ({schemaVersion: 12, config: JSON.parse(JSON.stringify(DATA.config)),
+        customers: [{id:'__val1__', name:'Val Co', module: DATA.config.modules[0],
+          stage: DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+          totalSessions:8, domainScores:{}, sessionNotes:{},
+          stageHistory:[{stage:DATA.config.stages[1].key, date: isoAddDays(todayISO(), -200)}],
+          compliance: defaultCompliance(), outcomeCriteria:{items:[], removed:[]}, outcomeEvidence:{}}],
+        activities: {__val1__: []}});
+      const badDate = base();
+      badDate.customers[0].outcomeEvidence['oc_x'] = {on:'not-a-date', by:'osm'};
+      let rejectedDate = false;
+      try{ prepareBookData(badDate, 'Test'); }catch(e){ rejectedDate = true; }
+      const badBy = base();
+      badBy.customers[0].outcomeEvidence['oc_y'] = {on:null, by:'nonsense'};
+      let rejectedBy = false;
+      try{ prepareBookData(badBy, 'Test'); }catch(e){ rejectedBy = true; }
+      const good = base();
+      good.customers[0].outcomeEvidence['oc_z'] = {on:null, by:'unknown', legacy:true};
+      let accepted = false;
+      try{ prepareBookData(good, 'Test'); accepted = true; }catch(e){ accepted = false; }
+      ok = rejectedDate && rejectedBy && accepted;
+      detail = JSON.stringify({rejectedDate, rejectedBy, accepted});
+    }catch(err){ detail = err.message; }
+    check('phaseA malformed outcome evidence is rejected at the import boundary', ok, detail);
+  })();
+  (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
        account at 2pm, so the rail flags it and the standing counts it wherever
        it sits — the failure mode named when the axis was chosen. */
@@ -12444,7 +12583,7 @@ function _runSelfChecksInner(){
       && PANEL_WIDTH_KEY !== STORAGE_KEY);
 
     check('v98 the dated log is versioned, migrated and repaired like every other shape',
-      CURRENT_SCHEMA_VERSION === 11
+      CURRENT_SCHEMA_VERSION === 12
       && String(migrateData).indexOf('impactLog') !== -1
       && String(repairAuxiliaryCollections).indexOf('impactLog') !== -1
       && String(trackImpact).indexOf('MAX_IMPACT_LOG') !== -1);
@@ -22262,6 +22401,23 @@ function assertNormalizedBookData(data, source){
     if(c.firstValue !== undefined){
       if(!isRecordObject(c.firstValue) || !Array.isArray(c.firstValue.evidence)) rejectData(source, `${label} has invalid first-value data.`);
       c.firstValue.evidence.forEach((ev,j)=>{ if(!isRecordObject(ev) || !isRealISODate(ev.date) || typeof ev.note!=='string') rejectData(source, `${label} first-value evidence ${j+1} is invalid.`); });
+    }
+    if(c.outcomeCriteria !== undefined){
+      if(!isRecordObject(c.outcomeCriteria) || !Array.isArray(c.outcomeCriteria.items)
+        || !Array.isArray(c.outcomeCriteria.removed)) rejectData(source, `${label} has invalid outcome criteria.`);
+      c.outcomeCriteria.items.forEach((it,j)=>{
+        if(!isRecordObject(it) || typeof it.id !== 'string' || !it.id || typeof it.text !== 'string'){
+          rejectData(source, `${label} outcome criterion ${j+1} is invalid.`);
+        }
+      });
+    }
+    if(c.outcomeEvidence !== undefined){
+      if(!isRecordObject(c.outcomeEvidence)) rejectData(source, `${label} has invalid outcome evidence.`);
+      Object.entries(c.outcomeEvidence).forEach(([id, ev])=>{
+        if(!isRecordObject(ev)) rejectData(source, `${label} outcome evidence ${id} is invalid.`);
+        if(ev.on !== null && !isRealISODate(ev.on)) rejectData(source, `${label} outcome evidence ${id} has an invalid date.`);
+        if(OUTCOME_EVIDENCE_BY.indexOf(ev.by) === -1) rejectData(source, `${label} outcome evidence ${id} has an unknown source.`);
+      });
     }
   });
 
