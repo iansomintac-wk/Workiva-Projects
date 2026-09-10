@@ -9491,6 +9491,47 @@ function _runSelfChecksInner(){
     check('phaseA criterion text is escaped in the outcome panel', ok, detail);
   })();
   (function(){
+    /* Two DIFFERENT unknown states, and the panel must not conflate them.
+       No outcome number chosen -> send the user to the Edit account tab.
+       An outcome chosen but a curriculum with no deliverables authored -> say
+       THAT, with its reason. Telling someone to pick an outcome they already
+       picked sends them somewhere that cannot help. Neither branch had any
+       coverage until now. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      const mod = DATA.config.modules[0];
+      const c = {id:'__unk1__', name:'Unknown Co', module:mod,
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__unk1__: []};
+
+      // (a) No outcome chosen.
+      c.compliance.outcomePlan.outcomeNumber = null;
+      const none = renderOutcomeCriteria(c);
+      const noneSendsToEdit = none.indexOf('Edit account') !== -1;
+
+      // (b) Outcome chosen, but the curriculum has no deliverables.
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      DATA.config.sessionTemplates[mod].forEach(t => { t.deliverables = []; });
+      _renderMemoResets.forEach(r => r());
+      c.compliance.outcomePlan.outcomeNumber = 4;
+      const v = outcomeVerdict(c);
+      const empty = renderOutcomeCriteria(c);
+      const emptyNamesReason = v.reasons.length === 1
+        && empty.indexOf(escapeHtml(v.reasons[0])) !== -1;
+      const emptyDoesNotMisdirect = empty.indexOf('Edit account') === -1;
+
+      ok = v.state === 'unknown' && noneSendsToEdit && emptyNamesReason && emptyDoesNotMisdirect;
+      detail = JSON.stringify({state: v.state, noneSendsToEdit, emptyNamesReason,
+        emptyDoesNotMisdirect, reasons: v.reasons.length});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('phaseA the panel tells the two unknown states apart', ok, detail);
+  })();
+  (function(){
     /* Severity 4 must not be able to hide. The clock can place a top-severity
        account at 2pm, so the rail flags it and the standing counts it wherever
        it sits — the failure mode named when the axis was chosen. */
@@ -18295,10 +18336,10 @@ function renderOutcomeCriteria(c){
     const meta = !ev ? '' : ev.on
       ? `met ${fmtDate(ev.on)} · ${escapeHtml(ev.by === 'customer' ? 'customer demonstrated' : ev.by === 'osm' ? 'OSM observed' : 'source unknown')}`
       : 'met — date unknown, predates evidence tracking';
-    const note = x.source === 'curriculum' ? '' : ` <span class="bp-basis">(${escapeHtml(x.source)})</span>`;
+    const sourceNote = x.source === 'curriculum' ? '' : ` <span class="bp-basis">(${escapeHtml(x.source)})</span>`;
     return `<div class="oc-row${ev ? ' oc-met' : ''}">
       <span class="oc-mark">${mark}</span>
-      <span class="oc-text">${escapeHtml(x.text)}${note}
+      <span class="oc-text">${escapeHtml(x.text)}${sourceNote}
         ${meta ? `<span class="oc-meta">${meta}</span>` : ''}</span>
     </div>`;
   };
