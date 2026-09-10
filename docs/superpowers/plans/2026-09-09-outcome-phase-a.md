@@ -384,10 +384,10 @@ EOF
 - [ ] **Step 2: Run the suite to verify all three fail**
 
 ```bash
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 330
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 331
 ```
 
-Expected: `327/330 passed, 3 failed` — `setOutcomeEvidence is not defined`. Exit 1.
+Expected: `328/331 passed, 3 failed` — `setOutcomeEvidence is not defined`. Exit 1.
 
 - [ ] **Step 3: Add the writers**
 
@@ -411,9 +411,18 @@ function materializeOutcomeCriterion(customer, criterion){
   const dup = customer.outcomeCriteria.items.find(x =>
     x.sourceSession === (criterion.sourceSession || null) && x.sourceIndex === criterion.sourceIndex);
   if(dup) return dup;
+  /* sourceCount is what makes the index fallback in outcomeCriteriaFor safe: it
+     only trusts a stored sourceIndex while the session still holds the same
+     number of deliverables. A session that gained or lost one has shifted every
+     later position, and matching on the index there would attach one
+     criterion's evidence to a different criterion, silently. */
+  const count = criterion.sourceSession
+    ? ((getSessionTemplateSet(customer)[criterion.sourceSession - 1] || {}).deliverables || []).length
+    : null;
   const rec = {id:'oc_' + uid().slice(0, 8), text: String(criterion.text || ''),
     stage: criterion.stage || '', sourceSession: criterion.sourceSession || null,
-    sourceIndex: criterion.sourceIndex === undefined ? null : criterion.sourceIndex};
+    sourceIndex: criterion.sourceIndex === undefined ? null : criterion.sourceIndex,
+    sourceCount: count};
   customer.outcomeCriteria.items.push(rec);
   return rec;
 }
@@ -472,10 +481,10 @@ In `backfillCustomerRecord()` (~21218), immediately after the `c.compliance` lin
 - [ ] **Step 5: Run the suite**
 
 ```bash
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 330
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 331
 ```
 
-Expected: `330/330 passed, 0 failed`. Exit 0.
+Expected: `331/331 passed, 0 failed`. Exit 0.
 
 - [ ] **Step 6: Prove the collision check has teeth**
 
@@ -501,7 +510,7 @@ whatever used to sit at its index.
 
 Never invents a date: an evidence record with no valid date stores null.
 
-330/330.
+331/331.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01QCor8uQ3RFXpBXe9D8bCGg
@@ -609,10 +618,10 @@ EOF
 - [ ] **Step 2: Run the suite to verify all three fail**
 
 ```bash
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 333
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 335
 ```
 
-Expected: `330/333 passed, 3 failed` — `outcomeVerdict is not defined`. Exit 1.
+Expected: `332/335 passed, 3 failed` — `outcomeVerdict is not defined`. Exit 1.
 
 - [ ] **Step 3: Add the verdict**
 
@@ -662,10 +671,10 @@ function outcomeVerdict(customer){
 - [ ] **Step 4: Run the suite**
 
 ```bash
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 333
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 335
 ```
 
-Expected: `333/333 passed, 0 failed`. Exit 0.
+Expected: `335/335 passed, 0 failed`. Exit 0.
 
 - [ ] **Step 5: Prove the unknown/failed distinction has teeth**
 
@@ -685,7 +694,7 @@ names every unmet condition rather than printing a bare state.
 An account with no outcome chosen is 'unknown', never 'not_ready'. Absence
 of a judgement is not a negative judgement.
 
-333/333.
+335/335.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01QCor8uQ3RFXpBXe9D8bCGg
@@ -801,10 +810,10 @@ EOF
 - [ ] **Step 2: Run the suite to verify all three fail**
 
 ```bash
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 336
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 338
 ```
 
-Expected: `333/336 passed, 3 failed`. Exit 1.
+Expected: `335/338 passed, 3 failed`. Exit 1.
 
 - [ ] **Step 3: Bump the schema version**
 
@@ -893,10 +902,10 @@ In `assertNormalizedBookData`'s customer loop, immediately after the `c.firstVal
 - [ ] **Step 6: Run the suite**
 
 ```bash
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 336
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 338
 ```
 
-Expected: `336/336 passed, 0 failed`. Exit 0.
+Expected: `338/338 passed, 0 failed`. Exit 0.
 
 If `v74.4` (the whole-book guard) fails, a check above mutated `DATA.config.sessionTemplates` without restoring it — Task 2's insertion check deep-clones and restores; confirm yours does too.
 
@@ -922,7 +931,7 @@ ticked it. sessionNotes is left completely intact — Phase B repoints its UI.
 Idempotent, and malformed outcome data is rejected at the import boundary
 rather than silently repaired.
 
-336/336.
+338/338.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01QCor8uQ3RFXpBXe9D8bCGg
@@ -1002,10 +1011,10 @@ EOF
 - [ ] **Step 2: Run the suite to verify both fail**
 
 ```bash
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 338
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 344
 ```
 
-Expected: `336/338 passed, 2 failed` — `renderOutcomeCriteria is not defined`. Exit 1.
+Expected: `338/340 passed, 2 failed` — `renderOutcomeCriteria is not defined`. Exit 1.
 
 - [ ] **Step 3: Add the renderer**
 
@@ -1082,10 +1091,10 @@ In `renderOverviewTab(c, risk)`, insert `${renderOutcomeCriteria(c)}` as the LAS
 - [ ] **Step 6: Run the suite**
 
 ```bash
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 338
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 344
 ```
 
-Expected: `338/338 passed, 0 failed`. Exit 0.
+Expected: `340/340 passed, 0 failed`. Exit 0.
 
 - [ ] **Step 7: Prove the escaping check has teeth**
 
@@ -1113,7 +1122,7 @@ evidence tracking say so instead of showing an invented date.
 
 Read-only: capture is Phase B, and a half-wired control is worse than none.
 
-338/338.
+340/340.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01QCor8uQ3RFXpBXe9D8bCGg
@@ -1125,11 +1134,11 @@ EOF
 ## Verification of the whole plan
 
 ```bash
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 338
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 344
 node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
 ```
 
-Expected: `338/338` exit 0. **The guide reports 17/18 and has done since before this work** — `quick mode actually removes the guided-only chapters` fails on a file identical to master. Pre-existing, out of scope; run it only to confirm this branch did not make it worse.
+Expected: `340/340` exit 0. **The guide reports 17/18 and has done since before this work** — `quick mode actually removes the guided-only chapters` fails on a file identical to master. Pre-existing, out of scope; run it only to confirm this branch did not make it worse.
 
 **Then, on a copy of the real book:** Export JSON from the current app first. Load the export into the new build and confirm the migration ran — every previously ticked deliverable appears as a criterion marked *date unknown*, and no account lost one.
 
