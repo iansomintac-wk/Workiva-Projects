@@ -18,7 +18,7 @@
 - **Every new check must be demonstrated FAILING before it is accepted.** Six checks written during Phase A passed while asserting nothing; the red-flip rule is the only reason they were caught. A check that has never been seen to fail is not evidence.
 - **Check naming:** `check('phaseB <sentence>', ok, detail)`, matching the `phaseA` block at lines 9021–9664.
 - **Fixture pattern:** build a customer literal, call `backfillCustomerRecord(c)`, swap `DATA.customers` / `DATA.activities`, restore them in a trailing statement outside the `try`. Copy the shape at line 9570. If you touch `DATA.config.sessionTemplates`, restore it AND call `_renderMemoResets.forEach(r => r())`.
-- **Suite arithmetic:** starts at **354**. Task 1 → 357, Task 2 → 360, Task 3 → 361, Task 4 → 364, Task 5 → 365.
+- **Suite arithmetic:** starts at **354**. Task 1 → 357, Task 2 → 360, Task 3 → 361, Task 4 → 365, Task 5 → 366.
 - **The gate is a command, not a console read:**
   ```
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect <N>
@@ -825,7 +825,7 @@ MSG
 - [ ] **Step 2: Run them and watch all three fail**
 
 ```
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 364 > "$CLAUDE_JOB_DIR/tmp/t4-red.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t4-red.txt"
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 365 > "$CLAUDE_JOB_DIR/tmp/t4-red.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t4-red.txt"
 ```
 
 Expected: exit 1, all three failing. A `ReferenceError: derivedFirstValueDate is not defined` is a legitimate red — but confirm the `detail` field actually says that, rather than something unrelated that would have failed anyway.
@@ -897,10 +897,10 @@ At the Overview First Value badge (~18893, grep ``Achieved ${fmtDate(fv.achieved
 - [ ] **Step 5: Run the suite**
 
 ```
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 364 > "$CLAUDE_JOB_DIR/tmp/t4-green.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t4-green.txt"
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 365 > "$CLAUDE_JOB_DIR/tmp/t4-green.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t4-green.txt"
 ```
 
-Expected: exit 0, `364/364`.
+Expected: exit 0, `365/365`.
 
 **Watch for one specific collateral failure.** `ttfvDays()` reads `getFirstValue().achievedOn`, and `portfolioTTFVStat()` medians it across the book. More accounts now carry dates, so the portfolio median can move, and the `n >= 5` floor can now be crossed by a book that previously fell short. If a pre-existing check asserts a specific median or a specific count of contributing accounts, it is not wrong — the input genuinely changed. Read what it asserts, confirm the new number by hand, and update the check with a comment saying why. Do not weaken the assertion to make it pass.
 
@@ -1002,7 +1002,7 @@ Spec check 11 says "nothing reads `sessionNotes[n].deliverables` any more." Read
 This check will **pass on its first run**, because Tasks 1–2 already removed the read. It is the whole point of the phase, so it does not get accepted on a green it was born with. Temporarily restore `const checked = !!note.deliverables[label];` in the render and confirm it fails on `noLegacyRead` **and** on `legacyIsInert` — both halves, not one. Then revert.
 
 ```
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 365 > "$CLAUDE_JOB_DIR/tmp/t5-red.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t5-red.txt"
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 366 > "$CLAUDE_JOB_DIR/tmp/t5-red.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t5-red.txt"
 ```
 
 Record both the red and the green output.
@@ -1010,11 +1010,11 @@ Record both the red and the green output.
 - [ ] **Step 3: Run both suites green**
 
 ```
-node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 365 > "$CLAUDE_JOB_DIR/tmp/t5-green.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t5-green.txt"
+node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 366 > "$CLAUDE_JOB_DIR/tmp/t5-green.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t5-green.txt"
 node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18 > "$CLAUDE_JOB_DIR/tmp/t5-guide.txt" 2>&1; echo "exit=$?"; cat "$CLAUDE_JOB_DIR/tmp/t5-guide.txt"
 ```
 
-Expected: `365/365` and `18/18`, both exit 0.
+Expected: `366/366` and `18/18`, both exit 0.
 
 - [ ] **Step 3b: Make `tools/inspect.mjs` able to photograph a customer panel**
 
@@ -1060,7 +1060,7 @@ Read the `.txt`: it must contain "Deliverables" and the attribution control's op
 grep -rn "354" VALIDATION.txt CHANGELOG.txt README.txt guide-manifest.json
 ```
 
-Replace each with 365. Then re-measure the hashes rather than editing the old ones — a written number that never met the thing it describes is the exact failure the August record was corrected for:
+Replace each with 366. Then re-measure the hashes rather than editing the old ones — a written number that never met the thing it describes is the exact failure the August record was corrected for:
 
 ```
 sha256sum osm-book-of-business-tracker-1.0.html osm-runway-onboarding-1.0.html
@@ -1070,7 +1070,7 @@ stat -c '%n %s' osm-book-of-business-tracker-1.0.html osm-runway-onboarding-1.0.
 In `VALIDATION.txt`, under **SCOPE OF THE CHANGE SINCE 1.0**, add after the Phase A section:
 
 ```
-OUTCOME CRITERIA AND EVIDENCE, PHASE B (suite 354 -> 365)
+OUTCOME CRITERIA AND EVIDENCE, PHASE B (suite 354 -> 366)
   - The session deliverable checkbox writes evidence. Phase A shipped a store
     that nothing in the running app could write to; the only records that could
     exist were what the migration built from history. Ticking a box now records
@@ -1079,8 +1079,15 @@ OUTCOME CRITERIA AND EVIDENCE, PHASE B (suite 354 -> 365)
     for meaning. A check asserts that writing to it changes nothing on screen.
   - First Value derives itself: every ttfv1 criterion evidenced gives an
     achieved date, taken from the LAST of them. A recorded date always wins.
-    This can move the portfolio TTFV median — more accounts carry an honest
-    date, none carry an invented one.
+    This CAN move the portfolio TTFV median. It does not move it in the demo
+    book: measured, all 17 seeded accounts carry 9 ttfv1 criteria and 0
+    evidence, so 0 accounts derive a date and portfolioTTFVStat is identical
+    before and after at {median:125, n:12}. The path is exercised only by
+    synthetic fixtures. On a real book with history it will move.
+  - Cost of the derived path, measured rather than asserted:
+    portfolioTTFVStat() over the 17-account book is 0.094 ms per call against
+    0.002 ms for the equivalent plain field read — ~47x relative, negligible
+    absolute. Stated so nobody later claims either direction.
 ```
 
 Under **WHAT WAS NOT VERIFIED**, delete the line "Evidence capture from the Overview panel. Phase A ships that panel read-only by design; capture is Phase B." — capture now exists, on the session card rather than the panel. Replace it with what is still untrue:
@@ -1097,7 +1104,7 @@ Under **WHAT WAS NOT VERIFIED**, delete the line "Evidence capture from the Over
 ```
 git add VALIDATION.txt CHANGELOG.txt README.txt guide-manifest.json osm-book-of-business-tracker-1.0.html tools/inspect.mjs
 git commit -F - <<'MSG'
-Assert the legacy deliverables map is inert; update the records to 365
+Assert the legacy deliverables map is inert; update the records to 366
 
 Spec check 11 stated literally — "nothing reads the field" — is false and
 should be: the migration translates it, the backfill keeps its shape legal,

@@ -5646,7 +5646,7 @@ function nextOpenSessionNumber(customer){
 function derivedFirstValueDate(c){
   if(!c) return null;
   const t1 = outcomeCriteriaFor(c).filter(x => x.stage === 'ttfv1');
-  if(!t1.length) return null;
+  if(!t1.length) return null; // (the !dates.length guard below re-catches this case too — this line states the rule where the rule applies, for a module authoring no ttfv1 deliverables at all)
   if(!t1.every(x => x.evidence)) return null;
   const dates = t1.map(x => x.evidence.on).filter(d => isRealISODate(d));
   if(!dates.length) return null;
@@ -6925,8 +6925,13 @@ const SIGNAL_DEFS = [
     // schedulable action; same shape as risk_language). Not time-based, so not
     // pause-gated (Spec 1 ruling). Evidence-without-definition accounts can never
     // fire this — correct, since they demonstrably got value.
+    // v100 / Spec 5: an account can now demonstrably have gotten value WITHOUT
+    // an evidence[] entry — every ttfv1 criterion evidenced derives achievedOn
+    // without ever touching fv.evidence. Gate on fv.derivedFrom too, or this
+    // signal contradicts the Overview badge sitting right next to it: "Achieved
+    // ... · derived" and "no logged evidence" cannot both be true on screen.
     detect:c=>{ const fv = getFirstValue(c);
-      if(!fv.definition || fv.evidence.length) return null;
+      if(!fv.definition || fv.evidence.length || fv.derivedFrom) return null;
       const completed = sessionsCompletedCount(c);
       return completed >= Math.ceil(c.totalSessions * 0.5) ? {completed, total: c.totalSessions} : null; },
     action:null,
@@ -10155,6 +10160,59 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     _renderMemoResets.forEach(r => r());
     check('phaseB neither an empty ttfv1 list nor all-legacy evidence invents a first-value date', ok, detail);
+  })();
+  (function(){
+    /* Spec 5, fix round 1. A derived first-value date must say so ON SCREEN,
+       and must not simultaneously trip no_value_evidence — that signal reads
+       fv.evidence, which the derived path never populates, so an account with
+       every ttfv1 criterion evidenced could show "Achieved ... · derived" on
+       the Overview badge while Copilot said its value story was missing.
+       Asserted with the required contrast: the SAME fixture, evidence cleared,
+       must still fire the signal — otherwise this only proves the signal is
+       silent on an account that was never eligible to begin with. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__pb10__', name:'Signal Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      const acts = Array.from({length:4}, (_,i)=>(
+        {id:'pb10a'+i, date: todayISO(), type:'Session', summary:'x', checklist:[], sessionNumber:i+1, flagged:false}));
+      DATA.customers = [c]; DATA.activities = {__pb10__: acts};
+      // Definition present, no manual evidence[] — no_value_evidence's own
+      // eligibility gate — so every criterion evidenced below has to be what
+      // makes derivedFrom fire, not a recorded achievedOn.
+      c.firstValue = {definition:'First filed report gets exported', evidence:[], achievedOn:null};
+
+      const t1 = outcomeCriteriaFor(c).filter(x => x.stage === 'ttfv1');
+      const enough = t1.length > 0;           // the fixture must be able to fail
+      t1.forEach((x,i) => setOutcomeEvidence(c, x, {on: isoAddDays(todayISO(), -(10 + i)), by:'osm'}));
+
+      const fv = getFirstValue(c);
+      const derivedFromTtfv1 = fv.derivedFrom === 'ttfv1';
+
+      const nveDef = SIGNAL_DEFS.find(d => d.key === 'no_value_evidence');
+      const derivedSuppressesSignal = !(nveDef && nveDef.detect(c));
+
+      const html = renderOverviewTab(c, computeRisk(c));
+      const showsDerivedSuffix = html.indexOf(' · derived') !== -1;
+      const tooltipNamesSessionPlan = html.indexOf('See the Session Plan tab') !== -1;
+
+      // The contrast: same account, evidence cleared -> nothing derives ->
+      // the signal must fire, or the suppression above proved nothing.
+      c.outcomeEvidence = {};
+      const fvCleared = getFirstValue(c);
+      const clearedNoDerivation = fvCleared.achievedOn === null && fvCleared.derivedFrom === null;
+      const signalFiresWithoutEvidence = !!(nveDef && nveDef.detect(c));
+
+      ok = enough && derivedFromTtfv1 && showsDerivedSuffix && tooltipNamesSessionPlan
+        && derivedSuppressesSignal && clearedNoDerivation && signalFiresWithoutEvidence;
+      detail = JSON.stringify({ttfv1: t1.length, enough, derivedFromTtfv1, showsDerivedSuffix,
+        tooltipNamesSessionPlan, derivedSuppressesSignal, clearedNoDerivation, signalFiresWithoutEvidence});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseB a derived first value says so, and is not also told its value story is missing', ok, detail);
   })();
   (function(){
     /* Phase 3 / FIX 1. Excluding the headline from the drivers list must not
