@@ -9664,6 +9664,105 @@ function _runSelfChecksInner(){
     check('phaseA the panel tells the two unknown states apart', ok, detail);
   })();
   (function(){
+    /* Phase B / Spec 8. The tick is the capture UI. Phase A shipped an
+       evidence store nothing could write to; this is the one control an OSM
+       already uses that means "this deliverable happened", so it is the one
+       that should write. Ticking records a dated, attributed entry; un-ticking
+       DELETES it (Spec 3 — "evidenced" stays a single question) while leaving
+       the materialized criterion, so re-ticking reuses the same identity
+       rather than minting a second one. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__pb1__', name:'Tick Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__pb1__: []};
+
+      const crit = outcomeCriteriaFor(c).find(x => x.sourceSession === 1 && x.sourceIndex === 0);
+      const rec = setOutcomeEvidence(c, crit, {on: todayISO(), by:'osm'});
+      const id = Object.keys(c.outcomeEvidence)[0];
+      const opaque = /^oc_[0-9a-z]{8}$/.test(id);
+      const dated = rec.on === todayISO() && rec.by === 'osm';
+      const rendersTicked = /data-session-deliverable="__pb1__\|1\|0"[^>]*checked/
+        .test(renderSessionCard(c, 1, getSessionTemplate(c, 1), false));
+
+      clearOutcomeEvidence(c, id);
+      const goneFromEvidence = c.outcomeEvidence[id] === undefined;
+      const criterionSurvives = c.outcomeCriteria.items.some(x => x.id === id);
+      const rendersUnticked = !/data-session-deliverable="__pb1__\|1\|0"[^>]*checked/
+        .test(renderSessionCard(c, 1, getSessionTemplate(c, 1), false));
+
+      // Re-ticking reuses the SAME identity — no second record.
+      const again = outcomeCriteriaFor(c).find(x => x.sourceSession === 1 && x.sourceIndex === 0);
+      setOutcomeEvidence(c, again, {on: todayISO(), by:'osm'});
+      const oneIdentity = c.outcomeCriteria.items
+        .filter(x => x.sourceSession === 1 && x.sourceIndex === 0).length === 1
+        && again.id === id;
+
+      ok = opaque && dated && rendersTicked && goneFromEvidence && criterionSurvives
+        && rendersUnticked && oneIdentity;
+      detail = JSON.stringify({opaque, dated, rendersTicked, goneFromEvidence,
+        criterionSurvives, rendersUnticked, oneIdentity});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseB a ticked deliverable is evidence, and un-ticking deletes it without losing identity', ok, detail);
+  })();
+  (function(){
+    /* A tick migrated from a legacy book carries {on:null, legacy:true}. It is
+       still a real human act, so the box must read TICKED — an account that
+       used the tracker before evidence tracking existed must not open to a
+       wall of empty checkboxes and look like it lost its history. The second
+       assertion is the one that matters: the box BESIDE it, which nobody
+       ticked, must not read ticked. A render that hardcoded checked would pass
+       the first half on its own. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__pb2__', name:'Legacy Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__pb2__: []};
+      const tpl = getSessionTemplate(c, 2);
+      const twoOrMore = tpl.deliverables.length >= 2;   // the fixture must be able to fail
+      const crit = outcomeCriteriaFor(c).find(x => x.sourceSession === 2 && x.sourceIndex === 0);
+      setOutcomeEvidence(c, crit, {on: null, by:'unknown', legacy:true});
+
+      const html = renderSessionCard(c, 2, tpl, false);
+      const firstTicked = /data-session-deliverable="__pb2__\|2\|0"[^>]*checked/.test(html);
+      const secondClear = !/data-session-deliverable="__pb2__\|2\|1"[^>]*checked/.test(html);
+
+      ok = twoOrMore && firstTicked && secondClear;
+      detail = JSON.stringify({deliverables: tpl.deliverables.length, twoOrMore, firstTicked, secondClear});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseB an undated legacy tick still reads as ticked, and its neighbour does not', ok, detail);
+  })();
+  (function(){
+    /* v97 again, on the region this task edits. renderSessionCard now calls
+       outcomeCriteriaFor, which walks the template set and returns provisional
+       criteria for anything not yet materialized. If any of that leaked a
+       write, opening the Session Plan tab would stamp criteria onto every
+       account in the book. Whole-book comparison, not a spot check. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__pb3__', name:'Pure Co', module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {__pb3__: []};
+      const before = JSON.stringify(DATA.customers);
+      for(let n = 1; n <= c.totalSessions; n++) renderSessionCard(c, n, getSessionTemplate(c, n), n === 1);
+      ok = JSON.stringify(DATA.customers) === before;
+      detail = ok ? 'unchanged' : 'the session card wrote to the book';
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseB rendering every session card still writes nothing', ok, detail);
+  })();
+  (function(){
     /* Phase 3 / FIX 1. Excluding the headline from the drivers list must not
        just move a rule around — it must actually stop the same sentence
        rendering twice under Why and What do I do, and a beat with a REAL
@@ -19460,15 +19559,27 @@ function renderSessionCard(c, num, tpl, isNext){
       <div class="session-card-block">
         <div class="session-card-label">Deliverables</div>
         <div class="checklist">
-          ${tpl.deliverables.map((label,idx)=>{
-            const checked = !!note.deliverables[label];
-            return `
+          ${(()=>{
+            /* v100 / Spec 8. ONE truth. The tick reads the evidence store, not
+               the parallel boolean map in the session note. That map still
+               exists in stored data — the migration only ever adds — but
+               nothing reads it for meaning any more.
+               outcomeCriteriaFor is resolved ONCE per card: it walks the whole
+               template set, and calling it inside the map would walk it
+               thirteen times to render one session. */
+            const criteria = outcomeCriteriaFor(c);
+            return tpl.deliverables.map((label,idx)=>{
+              const crit = criteria.find(x => x.sourceSession === num && x.sourceIndex === idx);
+              const ev = crit ? crit.evidence : null;
+              const checked = !!ev;
+              return `
               <label class="checklist-item ${checked?'done':''}">
                 <input type="checkbox" data-session-deliverable="${c.id}|${num}|${idx}" ${checked?'checked':''}>
                 ${escapeHtml(label)}
               </label>
             `;
-          }).join('')}
+            }).join('');
+          })()}
         </div>
       </div>
 
@@ -21277,11 +21388,25 @@ The draft is discarded. The risk itself stays open.`)) return;
       }
     }));
     $$('[data-session-deliverable]').forEach(chk => chk.addEventListener('change', e=>{
-      const [custId, num, idx] = chk.dataset.sessionDeliverable.split('|');
-      const note = getSessionNote(c, parseInt(num,10));
-      const tpl = getSessionTemplate(c, parseInt(num,10));
-      const label = tpl.deliverables[idx];
-      note.deliverables[label] = chk.checked;
+      /* v100 / Spec 8. Ticking is a claim about the world, so it records one:
+         today's date, attributed to the OSM by default, linked to the session's
+         logged activity when there is one. Un-ticking DELETES the entry rather
+         than storing {met:false} — Spec 3.
+         No render() call: the old handler never re-rendered either, and
+         re-rendering here would collapse every open run-script <details> on the
+         page under the user's cursor. */
+      const [custId, numStr, idxStr] = chk.dataset.sessionDeliverable.split('|');
+      const num = parseInt(numStr, 10), idx = parseInt(idxStr, 10);
+      const crit = outcomeCriteriaFor(c).find(x => x.sourceSession === num && x.sourceIndex === idx);
+      if(!crit) return;
+      if(chk.checked){
+        const act = getSessionActivity(c, num);
+        const rec = {on: todayISO(), by:'osm'};
+        if(act) rec.activityId = act.id;
+        setOutcomeEvidence(c, crit, rec);
+      } else if(!crit.provisional){
+        clearOutcomeEvidence(c, crit.id);
+      }
       saveData();
     }));
     // v57: full-script modal — read-only textarea (manual Ctrl/Cmd+C always
