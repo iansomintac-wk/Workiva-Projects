@@ -17,11 +17,11 @@
     "Signal calibration requires four resolutions before it carries weight.",
     "Automatic backup requires one user gesture per browser session."
   ],
-  "trackerSelfChecks": "window.runSelfChecks() - 366 checks. Must be 366/366 after any edit, with demo-seed.js seeded first; an unseeded profile reports 361/366 — four of the five need a populated book and are not defects, one (v74.4) is a known deferred defect in a self-check's own restore, not in the bundle. See VALIDATION.txt.",
+  "trackerSelfChecks": "window.runSelfChecks() - 367 checks. Must be 367/367 after any edit, with demo-seed.js seeded first; an unseeded profile reports 362/367 — four of the five need a populated book and are not defects, one (v74.4) is a known deferred defect: getImpactStore() writes DATA.impact on first read, and of the suite's 13 renderToday() calls only one restores it, so an unseeded run leaks the key. Not a defect in the bundle itself. See VALIDATION.txt.",
   "guideSelfChecks": "window.runGuideSelfChecks() - 18 checks. Must be 18/18 after any edit.",
   "requiredChecks": [
     "both files open with no runtime exceptions, including from file://",
-    "tracker self-checks pass from the bundle location (366/366, seeded)",
+    "tracker self-checks pass from the bundle location (367/367, seeded)",
     "guide self-checks pass (18/18)",
     "tracker filename matches trackerFile and every data-tracker-link href in the guide",
     "no version numbers in user-visible prose beyond the 1.0 release label",

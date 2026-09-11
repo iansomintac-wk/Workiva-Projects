@@ -10285,6 +10285,62 @@ function _runSelfChecksInner(){
     check('phaseB the legacy deliverables map is inert — evidence is the only truth', ok, detail);
   })();
   (function(){
+    /* Whole-branch review fix wave. Log Activity's first-value checkbox
+       label said "already achieved <date>; this adds more evidence" for ANY
+       existing achievedOn, DERIVED ones included. Ticking the box adds a
+       RECORDED evidence entry, and a recorded date always outranks a derived
+       one — the derived date does not gain a second witness, it gets
+       replaced outright, and recomputeFirstValueAchievedOn then takes the
+       EARLIEST of the recorded evidence, which need not even be the date
+       just logged. "Adds more evidence" is the wrong model for a
+       replacement. Two fixtures that genuinely differ in derivedFrom must
+       render two different sentences. */
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const mkBase = id => { const c = {id, name:'FVLabel'+id, module:DATA.config.modules[0],
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+        backfillCustomerRecord(c); return c; };
+
+      // Derived: every ttfv1 criterion evidenced, no recorded achievedOn.
+      const dCust = mkBase('__pblbl1__');
+      DATA.customers = [dCust]; DATA.activities = {__pblbl1__: []};
+      const t1 = outcomeCriteriaFor(dCust).filter(x => x.stage === 'ttfv1');
+      const enoughT1 = t1.length > 0;   // the fixture must be able to fail
+      t1.forEach((_, i) => {
+        const live = outcomeCriteriaFor(dCust).filter(x => x.stage === 'ttfv1')[i];
+        setOutcomeEvidence(dCust, live, {on: isoAddDays(todayISO(), -(30 + i)), by:'osm'});
+      });
+      const dFv = getFirstValue(dCust);
+      const isDerived = dFv.derivedFrom === 'ttfv1' && !!dFv.achievedOn;
+      const derivedHtml = renderLogActivityTab(dCust);
+      const derivedSaysReplace = derivedHtml.indexOf('replaces the derived') !== -1;
+      const derivedNoAddsMore = derivedHtml.indexOf('this adds more evidence') === -1;
+
+      // Recorded: an explicit achievedOn a human asserted, not derived.
+      const rCust = mkBase('__pblbl2__');
+      DATA.customers = [rCust]; DATA.activities = {__pblbl2__: []};
+      const recordedDate = isoAddDays(todayISO(), -90);
+      rCust.firstValue = {definition:null,
+        evidence:[{date: recordedDate, note:'demo', activityId:'act_1'}], achievedOn: recordedDate};
+      const rFv = getFirstValue(rCust);
+      const isRecorded = rFv.derivedFrom === null && rFv.achievedOn === recordedDate;
+      const recordedHtml = renderLogActivityTab(rCust);
+      const recordedSaysAddsMore = recordedHtml.indexOf('this adds more evidence') !== -1;
+      const recordedNoReplace = recordedHtml.indexOf('replaces the derived') === -1;
+
+      const genuinelyDiffer = dFv.derivedFrom !== rFv.derivedFrom;
+
+      ok = enoughT1 && isDerived && derivedSaysReplace && derivedNoAddsMore
+        && isRecorded && recordedSaysAddsMore && recordedNoReplace && genuinelyDiffer;
+      detail = JSON.stringify({enoughT1, isDerived, derivedSaysReplace, derivedNoAddsMore,
+        isRecorded, recordedSaysAddsMore, recordedNoReplace, genuinelyDiffer});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('phaseB the first-value tick label tells a derived date from a recorded one', ok, detail);
+  })();
+  (function(){
     /* Phase 3 / FIX 1. Excluding the headline from the drivers list must not
        just move a rule around — it must actually stop the same sentence
        rendering twice under Why and What do I do, and a beat with a REAL
@@ -20388,7 +20444,19 @@ function renderLogActivityTab(c){
     </label>
     <label class="checklist-item" style="margin-bottom:14px;">
       <input type="checkbox" id="act-first-value">
-      ${icon('check')} This demonstrates first value${getFirstValue(c).achievedOn ? ` — already achieved ${fmtDate(getFirstValue(c).achievedOn)}; this adds more evidence` : ` — stamps this account's first-value evidence`}
+      ${icon('check')} This demonstrates first value${(()=>{
+        /* Whole-branch review fix wave. A DERIVED achievedOn is not a second
+           witness to the same fact — it is the standing default until a
+           human records one. Ticking this box adds a RECORDED evidence
+           entry, and a recorded date always outranks a derived one
+           (getFirstValue), so the tick REPLACES the derived date rather than
+           adding to it. The stored date is then the EARLIEST across all
+           recorded evidence, not necessarily this activity's own date. */
+        const fv = getFirstValue(c);
+        if(!fv.achievedOn) return ` — stamps this account's first-value evidence`;
+        if(fv.derivedFrom === 'ttfv1') return ` — replaces the derived ${fmtDate(fv.achievedOn)} with a recorded date: first value stops being derived and becomes the earliest evidence date on record`;
+        return ` — already achieved ${fmtDate(fv.achievedOn)}; this adds more evidence`;
+      })()}
     </label>
     <button class="btn btn-primary" id="btn-save-activity">Log activity</button>
     <p style="color:var(--text-faint); font-size:var(--text-xs); margin-top:10px;">

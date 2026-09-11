@@ -226,6 +226,7 @@ const switchResult = await send('Runtime.evaluate', {
       ${panelTab ? `ui.panelTab = ${JSON.stringify(panelTab)};` : ''}
       render();
       ${panelId ? `if(!DATA.customers.some(c => c.id === ${JSON.stringify(panelId)})) return 'err:no customer with id ' + ${JSON.stringify(panelId)} + ' in this book';` : ''}
+      ${panelTab ? `if(!PANEL_TAB_KEYS.includes(${JSON.stringify(panelTab)})) return 'err:no such panel tab ' + ${JSON.stringify(panelTab)} + ' — valid: ' + PANEL_TAB_KEYS.join(', ');` : ''}
       return 'ok';
     } catch (e) { return 'err:' + String(e && e.stack || e); } })()`,
   returnByValue: true, awaitPromise: true,

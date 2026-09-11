@@ -2,29 +2,32 @@ OSM Runway — Validation Summary
 ===============================
 Validated: September 10, 2026. Supersedes the August 6, 2026 record, which was
 stale in three ways by the time it was replaced — see A CORRECTION TO THE
-PREVIOUS RECORD below.
+PREVIOUS RECORD below. This record also supersedes the whole-branch-review fix
+chain through `208b278`, with the whole-branch review's own fix wave folded
+in — see WHOLE-BRANCH REVIEW FIX WAVE below.
 
 SHA-256
 Two pairs, because the two forms genuinely differ (core.autocrlf=true on this
 Windows checkout), and stating only one has already been wrong once this
-branch. Re-measured a fourth time — this is the third round in a row the
-tracker's own content changed, so the tracker figures below are stale the
-moment the HTML changes and only the moment it changes; re-measure, don't
-edit in place.
+branch. Re-measured last, after every other edit in this pass was final, per
+the standing instruction; the tracker figures below are stale the moment the
+HTML changes and only the moment it changes; re-measure, don't edit in place.
 
 WORKING TREE (CRLF) — what `sha256sum`/`stat` on a checked-out Windows file
 gives you, and what a human opening the file in a Windows editor has:
-  osm-book-of-business-tracker-1.0.html   (1,572,215 bytes)
-    92afa1833c3b9a22b57214e3282710f769ee936abf1bca814fb3f9738b681faa
+  osm-book-of-business-tracker-1.0.html   (1,576,440 bytes)
+    dff1660b9d4711c9e511f56a5d3ec17e25e06c72f13898cb6e20fc40ed9fa0b6
   osm-runway-onboarding-1.0.html          (185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
 
 GIT BLOB (LF) — what `git cat-file -p HEAD:<file> | sha256sum` gives you on
 any platform, and what a checkout that does not convert line endings has:
-  osm-book-of-business-tracker-1.0.html   (1,547,233 bytes)
-    1a7b5c3d628bd99d4e23a85106c0624517c7114f57825179401c8f703b142395
+  osm-book-of-business-tracker-1.0.html   (1,551,390 bytes)
+    ce2934615c5d12f7656f1ba6eba2f41283ffe29d026dd22d1cd8dcdd4d253974
   osm-runway-onboarding-1.0.html          (185,641 bytes — no CRLF in this
-    file, so the two forms coincide) same hash as above
+    file, so the two forms coincide) same hash as above — byte-identical
+    across this entire branch, confirmed again this pass:
+    `git diff 6bd2695 HEAD -- osm-runway-onboarding-1.0.html` is empty.
 
 
 WHAT WAS VERIFIED
@@ -32,14 +35,14 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        366/366 passed, 0 failed
+  window.runSelfChecks()        367/367 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
 subscribes to Runtime.exceptionThrown and fails the run if one appears.
 
 THE TRACKER SUITE NEEDS A SEEDED BOOK. Re-measured for this record rather than
-carried forward: on a fresh browser profile the suite reports 361/366, 5
+carried forward: on a fresh browser profile the suite reports 362/367, 5
 failed — the phase3 health-score-pairing check, the v81 band check, and two
 v94 Copilot checks. None are defects; verified for each, by reading what it
 asserts against, rather than assumed from its name:
@@ -62,7 +65,7 @@ forward unverified.)
 The fifth unseeded failure, v74.4's whole-book-unchanged guard, is STILL
 present after two rounds of fixing genuine defects that stop short of
 closing it. Stated plainly rather than adjusted to fit: the unseeded suite
-is still 361/366, v74.4 still fails, still `removed=[] added=[impact]
+is still 362/367, v74.4 still fails, still `removed=[] added=[impact]
 mutated=[]`.
 
 getImpactStore() (`if(!isRecordObject(DATA.impact)) DATA.impact = {...}`) is
@@ -83,29 +86,75 @@ that Object.keys(DATA) reports as added):
      computeImpactSummary() -> getImpactStore() also touches DATA.impact.
      Fixed round 2.
 Both fixes are real, independently verified (each one's own check still
-passes, 366/366 stays 366/366), and stay. Neither was sufficient alone or
-together: the unseeded figure did not move after either round.
+passes; the seeded suite, 366/366 at the time these two rounds were done —
+before this record's own suite count moved to 367 — stayed 366/366 across
+both), and stay. Neither was sufficient alone or together: the unseeded
+figure did not move after either round.
 
-A THIRD site was located, cheaply, with the same Proxy technique, and is
-NOT fixed — per instruction, this record stops here rather than chasing
-correctness across an unbounded number of checks that share one library
-call. `v72 the day opens on the remembered beat, or the first when there is
-none` (same enclosing block as the fix above, ~line 8538) calls
-renderToday() twice more, directly, with no save/restore of DATA.impact (or
-DATA.riskLog — the sibling check right after it, `v61 the Today checks
-leave the real book risk memory untouched`, only asserts riskLog was left
-alone across the WHOLE block, which is a different contract than each
-individual call restoring what it disturbs). This is the same defect class
-as the two fixed ones, in the same file region, and is left for the
-whole-branch review to triage alongside whatever else calls renderToday()
-without knowing about this side effect — an audit of every self-check that
-calls renderToday(), renderOverviewTab(), or anything else that reaches
-computeImpactSummary(), rather than a fourth round of finding sites one at
-a time, is the more proportionate fix. The runner therefore evaluates
-demo-seed.js in the page before calling the suite:
+CORRECTION (whole-branch review fix wave). The previous text here named a
+THIRD SITE — `v72 the day opens on the remembered beat, or the first when
+there is none` (~line 8538) — as the remaining cause. That attribution was
+false, and is corrected in place rather than left to stand: v72's two extra
+renderToday() calls (lines 8539 and 8544) sit behind
+`if(!again.length && !callsScheduledToday().length)` (line 8522), and that
+guard is TRUE on an unseeded book — confirmed by seeding a one-line probe
+that reads `todayActionList().length` and `callsScheduledToday().length`
+directly and got `{againLen:0, scheduledLen:0, guardTrue:true}`. v72's own
+branch is never entered on the run that produces `added=[impact]`; its two
+calls contribute nothing to it.
+
+This was never a single third SITE — it is a CLASS. The suite contains
+exactly 13 renderToday() calls (counted directly: lines 8512, 8539, 8544,
+8575, 8578, 8656, 8688, 8917, 10678, 10740, 10871, 10873, 10896). Of those,
+exactly ONE — line 8512, the Today-tab check fixed above — restores
+DATA.impact. Two (8539, 8544, both v72's) are gated behind the guard just
+confirmed true and never execute on an unseeded run. The remaining TEN fire
+without any DATA.impact restore and belong to the same defect class as the
+two already-fixed sites: the v62 Today-cap check (8575, 8578), the v69
+"removed surfaces" check (8656), the phase1 "Records to bring up to date"
+check (8688), and six more v72 day-timeline checks (8917, 10678, 10740,
+10871, 10873, 10896).
+
+Which of those ten actually CREATES the leaked key was measured, not
+assumed, with a Proxy wrapping DATA and logging a stack trace on every
+`set` of `impact` across a full unseeded run. Exactly four writes occur in
+the whole suite: the v58 check's own two (its internal test of
+trackImpact(), both expected and both cleaned up by its own restore), and
+one real creation — at line 8575, the v62 Today-cap check's first
+renderToday() call, the first of the ten non-restoring calls to execute in
+file order. From that point on DATA.impact is a real object, so
+`getImpactStore()`'s `if(!isRecordObject(DATA.impact))` guard is false for
+every later call and none of the other nine — phase1's check (8688)
+included — performs a further write; the trace shows no `set` event at any
+of them. They are equally defective (each would independently leak the key
+if it ran first against a clean book, and fixing 8575 alone would just
+hand the same failure to line 8656, the next one in file order) but on THIS
+measured run only line 8575 is the actual creator.
+
+Root cause, not the symptom: `getImpactStore()` (lines 15800-15805,
+`if(!isRecordObject(DATA.impact)) DATA.impact = {events:{}, since:
+todayISO()};`) is a getter that writes on first read — the same shape v97's
+own check already forbids for getDayClose/getGainsightQueue/readSessionNote,
+just never extended to this one. `computeImpactSummary()` (line 15871),
+which reads as a pure summary function and is called from render paths that
+have no reason to expect a write, calls `getImpactStore()` and inherits the
+mutation. A measured fix exists and is NOT applied in this pass: a six-line
+`readImpactStore()` (a pure read returning `DATA.impact.events`/`.since`
+with in-memory defaults, never assigning to DATA) with
+`computeImpactSummary()` pointed at it was measured, against the 366-check
+baseline that stood before this record's own new check, to take the
+unseeded suite from 361/366 to 362/366 with v74.4 green, and to leave the
+seeded suite unchanged at 366/366. The suite is 367 now (this wave added
+one check, in item 2 below) — re-baseline against 367 rather than assuming
+the 361/362 pair still applies verbatim; the mechanism and the +1 shift are
+what's confirmed, not the exact digits against a count that has since
+moved. It needs its own TDD pass — a red-flip check demonstrating the leak,
+then the fix, then green — so it is deferred to a follow-up task with its
+own check, not folded into a records-only pass. The runner therefore still
+evaluates demo-seed.js in the page before calling the suite:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 366
+       --seed demo-seed.js --expect 367
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -181,6 +230,41 @@ Not exercised in this run:
     card, where the OSM already ticks deliverables; the panel still only reports.
   - Nobody has ticked a box in a real browser against a real book. Every
     assertion above is a headless render or a direct function call.
+  - THE TWO DOM LISTENERS ADDED THIS PHASE HAVE NO COVERAGE, AND AN ATTEMPT
+    WAS MADE AND ABANDONED, NOT SKIPPED. The two `change` listeners at
+    `$$('[data-session-deliverable]')` and `$$('[data-deliverable-by]')`
+    (~line 21995 and ~line 22012) are thin DOM adapters — `split('|')`,
+    `parseInt`, the call into the already-covered `toggleDeliverableEvidence`
+    / `reattributeDeliverableEvidence`, the `saveData()` call, and the
+    `bySel.disabled` / `.value` patching. The logic functions they call ARE
+    covered; the adapter itself is not. Reaching it honestly means calling
+    the actual `attachEvents()` (the closures under test only exist inside
+    it) against a real, `document`-attached checkbox, with a real dispatched
+    `change` event — not a copy of the listener body pasted into a check
+    (which would stop testing the shipped code the moment the two diverged)
+    and not a `.toString()` scan for `saveData` (the exact decorative-check
+    failure mode this branch has already caught ten times). `attachEvents()`
+    is global and unscoped: it re-binds every selector it touches — dozens,
+    across the whole app, not just these two — over whatever is CURRENTLY in
+    `document`. Calling it from a self-check without first replacing that
+    DOM wholesale (the real `render()`'s job, which also calls
+    `syncRoute()` and moves keyboard focus) risks a second, duplicate
+    listener stacked onto the live page's real, currently-bound elements —
+    contamination the suite cannot detect or undo the way it can restore a
+    `DATA` snapshot. That is a materially different and larger risk than
+    anything else in this suite touches, so no check was written rather than
+    force one through. Measured instead, per the instruction to measure the
+    gap rather than assert it away: removing `saveData();` from BOTH
+    listeners and running `node tools/selfcheck.mjs
+    osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 367`
+    still reports `367/367 passed, 0 failed`, exit 0 (reverted immediately
+    after measuring). Concretely, this costs a user: tick a deliverable
+    box, watch it render checked, close the tab or reload without another
+    save-triggering action — the tick is gone. The evidence store update
+    happened in memory (`toggleDeliverableEvidence` IS covered and IS
+    correct) and was never persisted. The fix is not more test cleverness;
+    it is a way to exercise a real DOM adapter without touching the live
+    app's actual bound state, which does not exist in this codebase yet.
   - THE GUIDE DOES NOT TEACH PHASE B. osm-runway-onboarding-1.0.html is
     byte-identical to before this branch — the one commit that touched it
     fixed a self-check's viewport assertion, not content. Its First Value
@@ -264,10 +348,28 @@ OUTCOME CRITERIA AND EVIDENCE, PHASE B (suite 354 -> 366)
     (0.094 ms), not as a precise multiplier. Stated so nobody later claims
     either direction.
 
+WHOLE-BRANCH REVIEW FIX WAVE (suite 366 -> 367)
+  - Log Activity's first-value checkbox label no longer says "this adds more
+    evidence" for a DERIVED achieved date. Ticking it records a recorded
+    evidence entry, which outranks and replaces a derived date rather than
+    corroborating it; the label now names that plainly and says the stored
+    date is the earliest of the recorded evidence. One new check asserts the
+    two wordings on two fixtures that genuinely differ in derivedFrom.
+  - `tools/inspect.mjs`'s `--panel-tab` is now guarded the same way `--panel`
+    already was: a tab name outside `PANEL_TAB_KEYS` fails loudly (exit 2)
+    instead of silently capturing the default tab. Proven with a bogus tab
+    name; see TOOLING ADDED below.
+  - The false v72 attribution for the remaining unseeded v74.4 failure is
+    corrected above, in place, rather than left to stand.
+  - The two DOM listeners' adapter code (session-deliverable tick,
+    deliverable-by attribution) remains uncovered; an honest attempt was
+    made and abandoned rather than faked. See WHAT WAS NOT VERIFIED.
+
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded
   tools/inspect.mjs          renders a view (optionally a --panel customer's
-                             --panel-tab) and captures text, PNG and structure
+                             --panel-tab, both guarded against a bogus id/tab)
+                             and captures text, PNG and structure
   tools/legacy-seed.js       a schemaVersion 11 book with seven awkward shapes
   tools/migration-dryrun.mjs runs a book through prepareBookData and reconciles
   demo-seed-today.js         a book with calls on today, at real clock times
