@@ -6,12 +6,17 @@ PREVIOUS RECORD below.
 
 SHA-256
 Hashed from the CRLF working-tree checkout (this repo runs core.autocrlf=true
-on Windows), not the LF git blob — the blob for the tracker at commit 6bd2695
-is 1,545,960 bytes with a different hash. A checkout on a platform that does
-not convert line endings will not reproduce the pair below; it will match the
-blob instead.
-  osm-book-of-business-tracker-1.0.html   (1,570,924 bytes)
-    43321890dcb6854b35944a5cd328a56aa20daedf04eeb733edf19151089132b9
+on Windows), not the LF git blob. Re-measured a third time this branch, after
+the tracker's own content changed again in this fix round — the tracker pair
+below is stale the moment the HTML changes and only the moment it changes;
+re-measure it, don't edit it in place. The git blob for the tracker staged
+for this commit is 1,546,562 bytes
+(git cat-file -p :osm-book-of-business-tracker-1.0.html | wc -c), reproducible
+after commit as `git cat-file -p HEAD:osm-book-of-business-tracker-1.0.html |
+sha256sum`. A checkout on a platform that does not convert line endings will
+not reproduce the pair below; it will match the blob instead.
+  osm-book-of-business-tracker-1.0.html   (1,571,534 bytes)
+    b2b48c418f9dfb8d730f257fa5619fe1b7f4ccf67b26508c8e292232c212edd2
   osm-runway-onboarding-1.0.html          (185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
 
@@ -36,21 +41,37 @@ this same measurement was already stale by the time it was superseded —
 corrected here rather than carried forward unverified.)
 
 The fifth unseeded failure, v74.4's whole-book-unchanged guard, is not a
-"needs a seeded book" case — it is a restore bug in the v58 impact check.
-That check does `const savedImpact = DATA.impact; ... DATA.impact =
-undefined; ...; finally { DATA.impact = savedImpact; }` to exercise
-getImpactStore() from empty. When DATA.impact does not exist before the
-suite runs, `savedImpact` is `undefined`, and `DATA.impact = undefined`
-leaves an OWN property set to undefined rather than no property at all —
-Object.keys(DATA) then contains 'impact' where it did not at suite entry,
-which is exactly what v74.4 diffs on. demo-seed.js sets DATA.impact
-explicitly, which is why a seeded run never sees this. Verified by isolating
-the variable: seeding normally (impact present going in) runs 366/366;
-seeding and then deleting DATA.impact before the suite runs reproduces the
-identical failure — `removed=[] added=[impact] mutated=[]` — against an
-otherwise fully populated book, so book emptiness is not the cause. Not a
-shipped defect (nothing user-facing reads or writes through this path), but
-not what "needs a seeded book" describes either. The runner therefore
+"needs a seeded book" case, and fixing the defect first suspected of causing
+it did not make it pass — that is stated plainly here rather than papered
+over. What was fixed, and is fixed regardless: the v58 impact check restored
+DATA.impact by `DATA.impact = savedImpact`, which — when savedImpact was
+undefined because the key did not exist before the check ran — assigned an
+OWN property set to undefined rather than leaving no property at all. Two
+other places in this file that restore the same field already do it
+correctly (v98's own impact check, and the identical impactLog restore one
+line below the bug): capture presence before overwriting, then `delete` or
+assign, never assign-through-undefined. Line 8206-8230 now matches that
+shape. This was a real defect and stays fixed, but it was not sufficient:
+the unseeded suite still reports 361/366, v74.4 still among the 5 failures,
+identically — `removed=[] added=[impact] mutated=[]` — proving the v58
+restore was not the (or not the only) trigger.
+
+The actual trigger, found by wrapping DATA in a Proxy that logs a stack
+trace on every write to `impact` and running the unseeded suite once more:
+a Today-tab check (~line 8503) calls `renderToday()` directly to inspect its
+output. That check already knows renderToday() has one side effect — it
+stamps DATA.riskLog — and snapshots/restores exactly that field around the
+call. It does not know about a second one: renderToday() -> renderDayClose()
+-> computeImpactSummary() -> getImpactStore(), and getImpactStore() is
+`if(!isRecordObject(DATA.impact)) DATA.impact = {...}` — a getter that
+writes on read, the same shape v97's check already forbids for
+getDayClose/getGainsightQueue/readSessionNote, just not for this one. On a
+seeded book DATA.impact already exists, so the lazy-create is a no-op and
+invisible; on an unseeded book it creates the key, and nothing near this
+check knows to restore it. This is a second, distinct defect from the v58
+one, in a different check, and it was not fixed here: the process for this
+record was to name a defect precisely before touching more production code,
+not to chain a second unauthorized fix onto the first. The runner therefore
 evaluates demo-seed.js in the page before calling the suite:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
@@ -135,9 +156,11 @@ Not exercised in this run:
 SCOPE OF THE CHANGE SINCE 1.0
 -----------------------------
 55 commits since 1.0 (git rev-list --count accc76e..6bd2695), counted through
-6bd2695 — the commit that added this section. This record's own fix commit,
-landing after 6bd2695, is not counted. Two feature branches, both merged
-after a full-branch review, plus the fixes that review produced.
+6bd2695 — the commit that added this section. Every fix commit to this
+record itself, landing after 6bd2695 (there are more than one by now — this
+convention is written to stay true regardless of how many), is not counted.
+Two feature branches, both merged after a full-branch review, plus the fixes
+that review produced.
 
 TODAY TAB, PHASES 1-2 (suite 318 -> 324)
   - The day is ordered by priority, not by the clock: every call leads in clock

@@ -8203,7 +8203,14 @@ function _runSelfChecksInner(){
   // don't); the queue round-trips the boundary; the CTA draft carries the
   // account and its recommendation.
   (function(){
-    const savedImpact = DATA.impact, savedCfg = DATA.config.impactMinutes;
+    // v58a: DATA.impact must be restored by PRESENCE, not by value — the same
+    // fix v98's check already applies to this exact field two check-blocks
+    // down. `DATA.impact = savedImpact` when savedImpact is undefined leaves
+    // DATA with an OWN impact property set to undefined, which was not there
+    // at suite entry: v74.4's whole-book diff reads that via Object.keys and
+    // reports it added. Snapshotting through JSON mirrors savedLog just below.
+    const savedImpact = JSON.stringify(DATA.impact === undefined ? null : DATA.impact),
+      savedCfg = DATA.config.impactMinutes;
     // v98: trackImpact now also appends to DATA.impactLog, so this check has to
     // put that back too or it leaks a key onto a book that never had one.
     const savedLog = DATA.impactLog === undefined ? null : JSON.stringify(DATA.impactLog);
@@ -8220,7 +8227,8 @@ function _runSelfChecksInner(){
         && sum.totalMinutes === 20 + 10,
         `total=${sum.totalMinutes}`);
     } finally {
-      DATA.impact = savedImpact; DATA.config.impactMinutes = savedCfg;
+      const ri = JSON.parse(savedImpact); if(ri === null) delete DATA.impact; else DATA.impact = ri;
+      DATA.config.impactMinutes = savedCfg;
       if(savedLog === null) delete DATA.impactLog; else DATA.impactLog = JSON.parse(savedLog);
     }
   })();
