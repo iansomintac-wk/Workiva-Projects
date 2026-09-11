@@ -7570,15 +7570,19 @@ function _runSelfChecksInner(){
   const results = [];
   // v74.5: v74.4 (bottom of this suite) diffs the book's key set at suite
   // ENTRY against suite EXIT, which has a temporal blind spot — a key added
-  // mid-suite and cleared before the end is invisible to it. This records,
-  // per check, whether Object.keys(DATA) still matches what it was at suite
-  // entry; v74.5's own check below asserts the list stays empty. Read the
-  // entry snapshot's __keys LAZILY (not captured here) because `check` is
-  // declared before _bookAtSuiteEntry a few lines down — by the time any
-  // check() call actually runs, the snapshot exists.
+  // mid-suite and cleared before the end is invisible to it.
+  // _recordKeyDivergence(), below, is called after every check() and records
+  // whether Object.keys(DATA) still matches what it was at suite entry;
+  // v74.5's own check at the bottom of the suite asserts the list stays
+  // empty AND proves this recorder is actually still running (see that
+  // check for the liveness probe). Factored into its own named function,
+  // rather than left inline in `check`, so v74.5 can also invoke it
+  // directly and deliberately on a probe key. Read the entry snapshot's
+  // __keys LAZILY (not captured here) because `_recordKeyDivergence` is
+  // declared before _bookAtSuiteEntry a few lines down — by the time it is
+  // ever called, the snapshot exists.
   const _midSuiteLeaks = [];
-  const check = (name, ok, detail) => {
-    results.push({name, ok: !!ok, detail: ok ? '' : (detail || '')});
+  function _recordKeyDivergence(name){
     const keysNow = Object.keys(DATA).sort().join(',');
     if (keysNow !== _bookAtSuiteEntry.__keys) {
       const entryKeys = _bookAtSuiteEntry.__keys ? _bookAtSuiteEntry.__keys.split(',') : [];
@@ -7589,6 +7593,10 @@ function _runSelfChecksInner(){
         removed: entryKeys.filter(k => nowKeys.indexOf(k) === -1),
       });
     }
+  }
+  const check = (name, ok, detail) => {
+    results.push({name, ok: !!ok, detail: ok ? '' : (detail || '')});
+    _recordKeyDivergence(name);
   };
   /* v61: the suite must not damage the book it is inspecting. Captured here and
      asserted as the very last check. This is not hypothetical — the v58/v59 hub
@@ -8253,7 +8261,7 @@ function _runSelfChecksInner(){
       ok = baseOk && sum.rows.find(r=>r.key==='activity_logged').total === 20
         && sum.totalMinutes === 20 + 10;
       detail = `total=${sum.totalMinutes}`;
-    } finally {
+    } catch(err){ detail = err.message; } finally {
       const ri = JSON.parse(savedImpact); if(ri === null) delete DATA.impact; else DATA.impact = ri;
       DATA.config.impactMinutes = savedCfg;
       if(savedLog === null) delete DATA.impactLog; else DATA.impactLog = JSON.parse(savedLog);
@@ -14168,17 +14176,39 @@ function _runSelfChecksInner(){
   })();
   (function(){
     // v74.5: v74.4 above only ever looks at entry vs. exit, so a key that
-    // leaks mid-suite and is cleared before the end is invisible to it. The
-    // `check` closure (~line 7571) records a divergence after every one of
-    // its ~369 calls; this is the LAST check in the suite, on purpose —
-    // everything above must have had its chance to leak by now. Key-set
-    // only, not values: value drift at suite end is v74.4's job, and diffing
-    // the whole book's values on every check would be expensive and would
-    // duplicate a guard that already exists. This is a read — it does not
-    // touch DATA.
-    const first = _midSuiteLeaks[0];
-    check('v74.5 no check leaves a key on the book, even briefly', !_midSuiteLeaks.length,
-      first ? `first offender: ${first.name} — added=[${first.added}] removed=[${first.removed}]` : '');
+    // leaks mid-suite and is cleared before the end is invisible to it.
+    // _recordKeyDivergence() (~line 7585) is called after every one of the
+    // suite's ~369 check() calls; this is the LAST check in the suite, on
+    // purpose — everything above must have had its chance to leak by now.
+    // Key-set only, not values: value drift at suite end is v74.4's job, and
+    // diffing the whole book's values on every check would be expensive and
+    // would duplicate a guard that already exists.
+    //
+    // A recorder that never fires looks identical to one that is silently
+    // dead — an empty _midSuiteLeaks proves nothing on its own. So,
+    // immediately before this check reports, prove liveness directly: stamp
+    // a probe key onto DATA, invoke _recordKeyDivergence BY HAND — not
+    // through check() — with a label no real check uses, remove the probe
+    // key, and confirm the recorder captured exactly that probe naming
+    // exactly that key. This is the only DATA write in this block, and the
+    // probe key is gone again before the check() call below runs — v74.4,
+    // which already ran above, never sees it either way.
+    const PROBE_LABEL = 'v74.5 liveness probe (not a real check)';
+    DATA.__v745LivenessProbe = true;
+    _recordKeyDivergence(PROBE_LABEL);
+    delete DATA.__v745LivenessProbe;
+    const probeRecord = _midSuiteLeaks.find(l => l.name === PROBE_LABEL);
+    const instrumentAlive = !!probeRecord
+      && probeRecord.added.length === 1 && probeRecord.added[0] === '__v745LivenessProbe'
+      && probeRecord.removed.length === 0;
+
+    const realLeaks = _midSuiteLeaks.filter(l => l.name !== PROBE_LABEL);
+    const first = realLeaks[0];
+    check('v74.5 no check reports while the key set on the book diverges from suite entry, in either direction, and the leak recorder proves itself alive every run',
+      instrumentAlive && !realLeaks.length,
+      `instrument alive=${instrumentAlive}${instrumentAlive ? '' : ' (DEAD — probe was not recorded)'}; ` +
+      `real leaks=${realLeaks.length}` +
+      (first ? ` — first offender: ${first.name} — added=[${first.added}] removed=[${first.removed}]` : ''));
   })();
 
   const failed = results.filter(r=>!r.ok);

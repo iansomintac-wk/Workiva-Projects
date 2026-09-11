@@ -9,7 +9,10 @@ record's own text once tracked as outstanding, now closed — see READ/WRITE
 SPLIT FOR IMPACT below — and the v74.4 GUARD's own structural blind spot
 (entry-vs-exit diffing cannot see a key that leaks and clears mid-suite),
 measured in this record's own text as outstanding and now closed with a new
-check, v74.5 — see THE v74.4 BLIND SPOT below.
+check, v74.5 — see THE v74.4 BLIND SPOT below — and, in a later pass over
+that same check, v74.5's own recorder proving itself alive on every run
+rather than trusting an empty leak list at face value — see THE GUARD'S OWN
+LIVENESS PROOF and GUARD LIVENESS PROOF below.
 
 SHA-256
 Two pairs, because the two forms genuinely differ (core.autocrlf=true on this
@@ -20,8 +23,8 @@ HTML changes and only the moment it changes; re-measure, don't edit in place.
 
 WORKING TREE (CRLF) — what `sha256sum`/`stat` on a checked-out Windows file
 gives you, and what a human opening the file in a Windows editor has:
-  osm-book-of-business-tracker-1.0.html   (1,582,467 bytes)
-    65f6b5abacd82b53065bda98ab7c41283dc12f6cd368a2f20208a57270a34aa6
+  osm-book-of-business-tracker-1.0.html   (1,584,337 bytes)
+    815cd57a225d4124778c69ab62251d6b44ca80e993c94371c750ae7c5e578860
   osm-runway-onboarding-1.0.html          (185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
 
@@ -29,8 +32,8 @@ GIT BLOB (LF) — what `git cat-file -p HEAD:<file> | sha256sum` gives you on
 any platform, and what a checkout that does not convert line endings has
 (measured this pass via the staged index blob, `git cat-file -p
 :<file> | sha256sum`, before the commit that makes it HEAD):
-  osm-book-of-business-tracker-1.0.html   (1,557,318 bytes)
-    d9c377d3aed28591cf7aa3598eb89d9b2f41830cfed7369da574dd002ce8dc9a
+  osm-book-of-business-tracker-1.0.html   (1,559,158 bytes)
+    774b4b7967ec413df7eb3e5b03bcc66931f2c89edb61089f40e62092dff5b74f
   osm-runway-onboarding-1.0.html          (185,641 bytes — no CRLF in this
     file, so the two forms coincide) same hash as above — byte-identical
     across this entire branch, confirmed again this pass:
@@ -142,12 +145,14 @@ usable — one row per IMPACT_EVENTS entry, `totalMinutes === 0`, a `since`
 that passes `isRealISODate`. It passed once `computeImpactSummary()` was
 repointed at `readImpactStore()`, and nothing else changed.
 
-MEASURED RESULT. Seeded suite 368/368 (367 plus this pass's one new
+MEASURED RESULT AT THE TIME OF THIS FIX (suite was 368 checks; v74.5 had not
+been written yet). Seeded suite 368/368 (367 plus this pass's one new
 check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
 four remaining failures are exactly the pre-existing, verified-non-defect
 four above, which need a populated book on their own terms and are not
 this defect. The tracker suite as a whole therefore still needs seeding to
-run clean, so the documented command keeps doing it:
+run clean, so — at the CURRENT suite count, 369, after v74.5 was added —
+the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js --expect 369
@@ -165,15 +170,18 @@ exactly once, at suite exit, comparing `Object.keys(DATA)` at entry against
 `Object.keys(DATA)` now — a key that appears and disappears in between never
 shows up in that diff.
 
-Proved by mutation before the fix. On a scratch copy, v101's
-restore-by-presence line — `if(hadImpact) DATA.impact =
-JSON.parse(savedImpact); else delete DATA.impact;` — was changed to the
-canonical assign-through-undefined bug this file has been bitten by four
-times: `else DATA.impact = undefined;`. Re-running the unseeded suite
-(`node tools/selfcheck.mjs <scratch copy> --expect 369`) afterward still
-reported the same four pre-existing failures as the clean baseline (phase3,
-v81, both v94 checks) plus the leaked key — v74.4 did not fail; it stayed
-GREEN. Two probe checks inserted around the leak, one right after v101's
+Proved by mutation before the fix. On a scratch copy of the PRE-FIX,
+368-check build, v101's restore-by-presence line — `if(hadImpact)
+DATA.impact = JSON.parse(savedImpact); else delete DATA.impact;` — was
+changed to the canonical assign-through-undefined bug this file has been
+bitten by four times: `else DATA.impact = undefined;`. Re-running the
+unseeded suite (`node tools/selfcheck.mjs <scratch copy> --expect 368`,
+carrying the pre-fix count — the fix this paragraph is proving the need for
+had not landed yet) afterward still reported the same four pre-existing
+failures as the clean baseline (phase3, v81, both v94 checks) — 364/368 —
+v74.4 did not fail; it stayed GREEN. Nothing in that run reported the
+leaked key at all — that is the blind spot this section exists to document.
+Two probe checks inserted around the leak, one right after v101's
 `finally` and one right before v74.4 runs, had earlier shown why: immediately
 after v101, `DATA.impact` is an own property (`hasOwnProperty: true`) with
 `value: undefined` — the leak is real — but by the time v74.4 runs,
@@ -183,17 +191,21 @@ weaker evidence than earlier passes of this record had treated it as: it
 ruled out a leak that survives to suite end, not one created and cleared
 somewhere in the middle.
 
-THE FIX, this pass: a mid-suite ownership checkpoint in the `check` closure
-itself (`_runSelfChecksInner`, ~line 7571). After every one of the suite's
-~369 calls, it compares `Object.keys(DATA).sort()` against the suite-entry
-snapshot's key list — read lazily inside the closure, not captured at
-`check`'s own definition, since the entry snapshot (`_bookAtSuiteEntry`,
-~line 7591) is declared a few lines after `check` but before any check()
-call actually runs — and records which check ran and which keys were added
-or removed into a local array. One new check, `v74.5 no check leaves a key
-on the book, even briefly`, placed LAST in the suite (after v74.4, because
-everything above must have had its chance to leak by then) asserts that
-array stays empty.
+THE FIX, this pass: a mid-suite ownership checkpoint, `_recordKeyDivergence()`
+(~line 7585, inside `_runSelfChecksInner`), called from the `check` closure
+(~line 7597) after every one of the suite's ~369 calls. It compares
+`Object.keys(DATA).sort()` against the suite-entry snapshot's key list —
+read lazily inside the function, not captured at its own definition, since
+the entry snapshot (`_bookAtSuiteEntry`, ~line 7620) is declared 35 lines
+after `_recordKeyDivergence` but before any check() call actually runs —
+and records which check ran and which keys were added or removed into a
+local array. One new check, `v74.5 no check reports while the key set on
+the book diverges from suite entry, in either direction, and the leak
+recorder proves itself alive every run`, placed LAST in the suite (after
+v74.4, because everything above must have had its chance to leak by then)
+asserts that array stays empty AND that the recorder itself is provably
+alive — see THE GUARD'S OWN LIVENESS PROOF below for the latter half,
+added in a later pass than the rest of this section.
 
 Built TDD: the new check was written and watched to fail BEFORE any other
 line changed. Its first RED, on code nobody had touched yet, named `v58
@@ -218,25 +230,75 @@ and it was the one thing standing between this suite and a strict mid-suite
 guard. It was restructured to the suite's convention: compute `ok`/`detail`
 inside the `try`, restore in the `finally`, call `check()` after the
 `finally` has run. What it asserts, and the values it tests, are unchanged.
+(A later pass, this record's own, found it had adopted only half the
+sibling convention — `let ok=false, detail=''` with no `catch(err){ detail =
+err.message; }`, so a throw inside its `try` would still abort the whole
+suite. Added; no other change.)
 
 WHAT THE NEW GUARD COVERS, AND WHAT IT DELIBERATELY DOES NOT. Scoped to the
 book's OWN KEY SET only, not its values: diffing every field's value after
 each of ~369 calls would be expensive and would duplicate a guard that
 already exists. Value drift surviving to suite end remains v74.4's job. The
 measured blind spot was an added (or removed) KEY that does not survive to
-suite end, and closing that — nothing more — is what v74.5 does.
+suite end, and closing that — plus proving, on every run, that the recorder
+doing the closing is actually alive (see THE GUARD'S OWN LIVENESS PROOF
+below) — is what v74.5 does.
 
 PROOF THE GUARD BITES, post-fix, in one run. The same v101 scratch mutation
 (`else DATA.impact = undefined;` in place of `else delete DATA.impact;`) was
-re-applied to a fresh scratch copy of the fixed suite and run unseeded. In
-that single run: v74.5 went RED, naming `v101 asking what the day saved you
-does not stamp a key onto the book` as the first offender with
-`added=[impact]` — this time exactly `impact`, since on an unseeded book
-nothing has created that key yet, so `hadImpact` is false and the mutated
-`else` branch assigns `undefined` into a key that did not exist before —
-while v74.4 stayed GREEN in the very same run, exactly as it had before the
-fix. That is the gap closed: v74.5 catches, live, what v74.4 structurally
-cannot catch at all. The scratch copy was discarded immediately after.
+re-applied to a fresh scratch copy of the fixed suite and run unseeded.
+Re-measured against the CURRENT (post-liveness-probe) check: in that single
+run, v74.5 went RED with `instrument alive=true; real leaks=201 — first
+offender: v101 asking what the day saved you does not stamp a key onto the
+book — added=[impact] removed=[]`. `impact` — not `impact` and `impactLog`
+both, since this mutation only touches the `impact` restore line — is added
+by v101 on an unseeded book (`hadImpact` false, so the mutated `else` branch
+assigns `undefined` into a key that did not exist before) and stays an own
+property, diverging from the suite-entry snapshot, on every one of the
+checks that run after v101 until something downstream restores it by
+value-based presence rather than `hasOwnProperty` — 201 of them, which is
+why the count matters: a fixer reading `real leaks=1` versus `real
+leaks=201` learns how far the leak traveled before something incidentally
+cleaned it up. `instrument alive=true` here confirms the probe half is not
+what's failing — the failure is the real leak, exactly as intended. v74.4
+stayed GREEN in the very same run, exactly as it had before the fix — the
+gap closed: v74.5 catches, live, what v74.4 structurally cannot catch at
+all. The scratch copy was discarded immediately after.
+
+THE GUARD'S OWN LIVENESS PROOF — ADDED THIS PASS. Everything above proves
+v74.5 catches a real leak. It says nothing about whether the recorder
+behind it could silently stop recording and leave v74.5 passing for the
+wrong reason — an array that is empty because nothing leaked reads
+identically to an array that is empty because nothing is watching. To close
+that, the divergence-recording logic was factored out of the `check`
+closure into its own named function, `_recordKeyDivergence()` (~line 7585),
+so it can be invoked directly as well as per-check. Immediately before its
+own `check()` call, v74.5 now stamps a probe key onto DATA
+(`DATA.__v745LivenessProbe = true`), calls `_recordKeyDivergence()` by hand
+with a label no real check uses, deletes the probe key, and asserts the
+recorder captured exactly that probe naming exactly that key — a check that
+passes only if the instrument that is supposed to be running for the
+other ~369 calls actually ran for this one too. The probe key is gone
+before `check()` returns, so it is invisible to v74.4 (which in any case
+already ran, above v74.5, in file order) and to any other check.
+
+Proved by forcing the recorder dead. On a scratch copy, `_recordKeyDivergence`'s
+body was changed to `if (false && keysNow !== _bookAtSuiteEntry.__keys) {`,
+so it can never push a divergence regardless of what DATA does. Run seeded
+(`node tools/selfcheck.mjs <scratch copy> --seed demo-seed.js --expect
+369`):
+
+  runSelfChecks: 368/369 passed, 1 failed
+    FAIL  v74.5 no check reports while the key set on the book diverges
+    from suite entry, in either direction, and the leak recorder proves
+    itself alive every run — instrument alive=false (DEAD — probe was not
+    recorded); real leaks=0
+
+`real leaks=0` here is the trap this proof exists to catch: a dead recorder
+and a clean book produce the exact same evidence a working recorder and a
+clean book would (an empty `_midSuiteLeaks`) — `instrument alive=false` is
+the only thing in that output telling a reader the zero is meaningless. The
+scratch copy was discarded immediately after.
 
 A v11-to-v12 MIGRATION DRY RUN was executed against deliberately awkward legacy
 data (tools/legacy-seed.js, tools/migration-dryrun.mjs): a label no template
@@ -310,7 +372,7 @@ Not exercised in this run:
   - THE TWO DOM LISTENERS ADDED THIS PHASE HAVE NO COVERAGE, AND AN ATTEMPT
     WAS MADE AND ABANDONED, NOT SKIPPED. The two `change` listeners at
     `$$('[data-session-deliverable]')` and `$$('[data-deliverable-by]')`
-    (~line 21995 and ~line 22012) are thin DOM adapters — `split('|')`,
+    (~line 22124 and ~line 22141) are thin DOM adapters — `split('|')`,
     `parseInt`, the call into the already-covered `toggleDeliverableEvidence`
     / `reattributeDeliverableEvidence`, the `saveData()` call, and the
     `bySel.disabled` / `.value` patching. The logic functions they call ARE
@@ -333,9 +395,12 @@ Not exercised in this run:
     force one through. Measured instead, per the instruction to measure the
     gap rather than assert it away: removing `saveData();` from BOTH
     listeners and running `node tools/selfcheck.mjs
-    osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 368`
-    still reports `368/368 passed, 0 failed`, exit 0 (re-measured against
-    this record's own suite count and reverted immediately after).
+    osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 369`
+    still reports `369/369 passed, 0 failed`, exit 0 (re-measured against
+    this record's own suite count — now 369, after v74.5 — and reverted
+    immediately after; the earlier record of this same measurement had
+    said 368 and gone stale the moment v74.5 shipped). The gap itself is
+    unchanged; only those numbers were.
     Concretely, this costs a user: tick a deliverable
     box, watch it render checked, close the tab or reload without another
     save-triggering action — the tick is gone. The evidence store update
@@ -464,16 +529,49 @@ MID-SUITE KEY-LEAK CHECKPOINT (suite 368 -> 369)
     earlier text; see THE v74.4 BLIND SPOT above for the full account,
     including the before-and-after mutation proof.
   - The `check` closure now checkpoints `Object.keys(DATA)` after every
-    call and records any divergence from the suite-entry key set. One new
-    check, `v74.5 no check leaves a key on the book, even briefly`, is the
-    last check in the suite and asserts that record is empty. Key-set only,
-    not values — value drift at suite end stays v74.4's job.
+    call (via `_recordKeyDivergence()`, factored out as its own named
+    function in a later pass — see below) and records any divergence from
+    the suite-entry key set. One new check, last in the suite, asserts that
+    record is empty. Key-set only, not values — value drift at suite end
+    stays v74.4's job.
   - The new check's own first RED, on code nobody had touched yet, found a
     real (if harmless) convention violation: the v58 impact check called
     `check(...)` before its `finally` restored `DATA.impact` /
     `DATA.config.impactMinutes` / `DATA.impactLog`, unlike every other check
     in the suite. Restructured to compute `ok`/`detail`, restore, then call
     `check()` — no change to what it asserts or the values it tests.
+
+GUARD LIVENESS PROOF (suite 369 -> 369, a later pass over the same v74.5)
+  - v74.5 shipped with no way to tell a clean book from a dead recorder —
+    both read as an empty `_midSuiteLeaks`. The divergence-recording logic
+    was factored out of the `check` closure into its own named function,
+    `_recordKeyDivergence()`, so v74.5 can invoke it directly. Immediately
+    before its own `check()` call, v74.5 now stamps a probe key onto DATA,
+    calls `_recordKeyDivergence()` by hand, deletes the probe key, and
+    asserts the recorder captured exactly that probe naming exactly that
+    key — before asserting no real leak was recorded. Both halves must be
+    true; both are named in `detail`. See THE GUARD'S OWN LIVENESS PROOF
+    above for the before/after proof, including forcing the recorder dead.
+  - Renamed from `v74.5 no check leaves a key on the book, even briefly` to
+    `v74.5 no check reports while the key set on the book diverges from
+    suite entry, in either direction, and the leak recorder proves itself
+    alive every run`. The old name understated what it catches (removals,
+    not just additions) and overstated it in the other direction ("even
+    briefly" — a leak cleaned up before a check reports is, by design,
+    invisible to this guard; that is correct, not a gap). guide-manifest.json
+    updated to match — it had said "a key added and cleared again", also
+    additions-only.
+  - The check's `detail` now reports a count of real leaks, not just the
+    first offender's name, so a fixer knows how many check() calls saw the
+    divergence before it was over.
+  - The v58 impact check's `try` gained a `catch(err){ detail =
+    err.message; }`, matching its sibling blocks. It had `let ok=false,
+    detail=''` initializers already but no catch, so a throw inside it
+    would still have aborted the whole suite rather than just failing this
+    one check — no regression from the earlier restructure, just an
+    unfinished part of the same pattern.
+  - The suite count is unchanged at 369: the probe is a direct call to
+    `_recordKeyDivergence()`, not a new `check()` call.
 
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded
