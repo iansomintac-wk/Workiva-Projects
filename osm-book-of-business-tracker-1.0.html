@@ -10341,6 +10341,36 @@ function _runSelfChecksInner(){
     check('phaseB the first-value tick label tells a derived date from a recorded one', ok, detail);
   })();
   (function(){
+    /* v101: asking what the day saved you must not stamp a key onto the book.
+       The fourth instance of a family this branch has already fixed three
+       times — getDayClose() at v90, getGainsightQueue() at v95, and the
+       readSessionNote()/getSessionNote() split at v97 (see the comment above
+       readSessionNote) — and never extended to computeImpactSummary(), a
+       PURE READ that called getImpactStore(), the WRITER, and inherited its
+       lazy DATA.impact = {...} on first touch. Restore by PRESENCE, not by
+       value: DATA.impact = undefined leaves an OWN property set to undefined,
+       which Object.keys(DATA) still reports as added — the exact bug the v58
+       and Today-tab checks above already had to fix twice in this same field. */
+    const hadImpact = Object.prototype.hasOwnProperty.call(DATA, 'impact');
+    const savedImpact = hadImpact ? JSON.stringify(DATA.impact) : null;
+    let ok = false, detail = '';
+    try{
+      delete DATA.impact;
+      const sum = computeImpactSummary();
+      const noKeyStamped = !Object.prototype.hasOwnProperty.call(DATA, 'impact');
+      const rowsMatch = Array.isArray(sum.rows) && sum.rows.length === IMPACT_EVENTS.length;
+      const zeroTotal = sum.totalMinutes === 0;
+      const usableSince = isRealISODate(sum.since);
+      ok = noKeyStamped && rowsMatch && zeroTotal && usableSince;
+      detail = JSON.stringify({noKeyStamped, rowsMatch, zeroTotal, usableSince,
+        rows: sum.rows.length, totalMinutes: sum.totalMinutes, since: sum.since});
+    }catch(err){ detail = err.message; }
+    finally{
+      if(hadImpact) DATA.impact = JSON.parse(savedImpact); else delete DATA.impact;
+    }
+    check('v101 asking what the day saved you does not stamp a key onto the book', ok, detail);
+  })();
+  (function(){
     /* Phase 3 / FIX 1. Excluding the headline from the drivers list must not
        just move a rule around — it must actually stop the same sentence
        rendering twice under Why and What do I do, and a beat with a REAL
@@ -15853,6 +15883,23 @@ const IMPACT_EVENTS = [
   {key:'session_backfilled',    label:'Sessions caught up in the backfill grid (vs one panel visit each)', minutes:3},
   {key:'value_imported',        label:'Commercial fields imported from a Gainsight CSV', minutes:1}
 ];
+/* v101: reading what the day saved you must not CREATE the record that
+   answers it — the fourth instance of this family, after getDayClose() at
+   v90, getGainsightQueue() at v95, and the readSessionNote()/getSessionNote()
+   split at v97. computeImpactSummary() is a pure summary called from render
+   paths with no reason to expect a write, but it called getImpactStore()
+   below and inherited that function's lazy DATA.impact = {...} on first
+   touch — invisible on a seeded book (the key is already there), and a
+   stamped key on an empty one. Same remedy as the other three: a throwaway
+   in-memory default for readers, and only the writer below materializes
+   anything onto DATA. */
+function readImpactStore(){
+  const src = isRecordObject(DATA.impact) ? DATA.impact : {};
+  return {
+    events: isRecordObject(src.events) ? src.events : {},
+    since: isRealISODate(src.since) ? src.since : todayISO()
+  };
+}
 function getImpactStore(){
   if(!isRecordObject(DATA.impact)) DATA.impact = {events:{}, since: todayISO()};
   if(!isRecordObject(DATA.impact.events)) DATA.impact.events = {};
@@ -15925,7 +15972,7 @@ function impactMinutesFor(key){
   return def ? def.minutes : 0;
 }
 function computeImpactSummary(){
-  const st = getImpactStore();
+  const st = readImpactStore();
   const rows = IMPACT_EVENTS.map(e => {
     const count = Number.isFinite(st.events[e.key]) ? st.events[e.key] : 0;
     const minutes = impactMinutesFor(e.key);

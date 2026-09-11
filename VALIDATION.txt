@@ -4,7 +4,9 @@ Validated: September 10, 2026. Supersedes the August 6, 2026 record, which was
 stale in three ways by the time it was replaced — see A CORRECTION TO THE
 PREVIOUS RECORD below. This record also supersedes the whole-branch-review fix
 chain through `208b278`, with the whole-branch review's own fix wave folded
-in — see WHOLE-BRANCH REVIEW FIX WAVE below.
+in — see WHOLE-BRANCH REVIEW FIX WAVE below — and the deferred v74.4 fix this
+record's own text once tracked as outstanding, now closed — see READ/WRITE
+SPLIT FOR IMPACT below.
 
 SHA-256
 Two pairs, because the two forms genuinely differ (core.autocrlf=true on this
@@ -15,15 +17,15 @@ HTML changes and only the moment it changes; re-measure, don't edit in place.
 
 WORKING TREE (CRLF) — what `sha256sum`/`stat` on a checked-out Windows file
 gives you, and what a human opening the file in a Windows editor has:
-  osm-book-of-business-tracker-1.0.html   (1,576,440 bytes)
-    dff1660b9d4711c9e511f56a5d3ec17e25e06c72f13898cb6e20fc40ed9fa0b6
+  osm-book-of-business-tracker-1.0.html   (1,579,218 bytes)
+    09e6ca5f832e776f55c672328cd1ebf646b8be42a921b9b409d70a63f05fed9d
   osm-runway-onboarding-1.0.html          (185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
 
 GIT BLOB (LF) — what `git cat-file -p HEAD:<file> | sha256sum` gives you on
 any platform, and what a checkout that does not convert line endings has:
-  osm-book-of-business-tracker-1.0.html   (1,551,390 bytes)
-    ce2934615c5d12f7656f1ba6eba2f41283ffe29d026dd22d1cd8dcdd4d253974
+  osm-book-of-business-tracker-1.0.html   (1,554,121 bytes)
+    a6e8c68b5603a81029194d0c8efcf50d7b8ce10ceda2be4d4ba26d4612654234
   osm-runway-onboarding-1.0.html          (185,641 bytes — no CRLF in this
     file, so the two forms coincide) same hash as above — byte-identical
     across this entire branch, confirmed again this pass:
@@ -35,14 +37,14 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        367/367 passed, 0 failed
+  window.runSelfChecks()        368/368 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
 subscribes to Runtime.exceptionThrown and fails the run if one appears.
 
 THE TRACKER SUITE NEEDS A SEEDED BOOK. Re-measured for this record rather than
-carried forward: on a fresh browser profile the suite reports 362/367, 5
+carried forward: on a fresh browser profile the suite now reports 364/368, 4
 failed — the phase3 health-score-pairing check, the v81 band check, and two
 v94 Copilot checks. None are defects; verified for each, by reading what it
 asserts against, rather than assumed from its name:
@@ -62,99 +64,77 @@ Each asserts on a populated book and cannot be satisfied by an empty one.
 stale by the time it was superseded — corrected here rather than carried
 forward unverified.)
 
-The fifth unseeded failure, v74.4's whole-book-unchanged guard, is STILL
-present after two rounds of fixing genuine defects that stop short of
-closing it. Stated plainly rather than adjusted to fit: the unseeded suite
-is still 362/367, v74.4 still fails, still `removed=[] added=[impact]
-mutated=[]`.
+THE FIFTH UNSEEDED FAILURE IS FIXED. v74.4's whole-book-unchanged guard —
+still present through the last two records despite two rounds of fixing
+genuine defects that stopped short of closing it — is GONE from the
+unseeded failure list as of this pass, closed with its own TDD check
+rather than folded into a records-only pass. Root cause and history, now
+that both are settled:
 
-getImpactStore() (`if(!isRecordObject(DATA.impact)) DATA.impact = {...}`) is
-a getter that writes DATA.impact on first read when it doesn't already
-exist — the same shape v97's check already forbids for
-getDayClose/getGainsightQueue/readSessionNote, just not extended to this
-one. Invisible on a seeded book, because DATA.impact already exists there.
-Two DIFFERENT self-checks trigger it on an unseeded book and have both now
-been fixed to restore by presence (capture whether the key existed before
-the check ran; `delete` it if it did not, assign it back if it did — never
+`getImpactStore()` (`if(!isRecordObject(DATA.impact)) DATA.impact =
+{events:{}, since: todayISO()};`) was a getter that wrote DATA.impact on
+first read when it didn't already exist — the same shape v97's check
+already forbids for getDayClose/getGainsightQueue/readSessionNote, just
+never extended to this one. `computeImpactSummary()`, which reads as a
+pure summary function and is called from render paths that have no reason
+to expect a write, called `getImpactStore()` and inherited the mutation.
+Invisible on a seeded book, because DATA.impact already exists there;
+obvious on an empty one, where merely asking "what did the tracker save
+you" stamped a key nobody asked for.
+
+Two self-checks were fixed in earlier rounds to restore DATA.impact by
+presence rather than by value (capture whether the key existed before the
+check ran; `delete` it if it did not, assign it back if it did — never
 assign-through-undefined, which leaves an own property set to undefined
-that Object.keys(DATA) reports as added):
-  1. The v58 impact check (~line 8206) — its OWN restore of the field it
-     was directly testing was wrong. Fixed round 1.
-  2. A Today-tab check (~line 8503) that calls renderToday() to inspect its
-     HTML output. It already knew renderToday() stamps DATA.riskLog and
-     restored that; it did not know renderToday() -> renderDayClose() ->
-     computeImpactSummary() -> getImpactStore() also touches DATA.impact.
-     Fixed round 2.
-Both fixes are real, independently verified (each one's own check still
-passes; the seeded suite, 366/366 at the time these two rounds were done —
-before this record's own suite count moved to 367 — stayed 366/366 across
-both), and stay. Neither was sufficient alone or together: the unseeded
-figure did not move after either round.
+that Object.keys(DATA) still reports as added): the v58 impact check
+(~line 8206) and a Today-tab check (~line 8503) that calls renderToday()
+and had not known renderToday() -> renderDayClose() ->
+computeImpactSummary() -> getImpactStore() also touches DATA.impact. A
+later whole-branch-review pass corrected a false attribution of the
+remaining failure to `v72 the day opens on the remembered beat, or the
+first when there is none` (~line 8538): that check's two extra
+renderToday() calls sit behind a guard that is TRUE on an unseeded book,
+so they never execute on the run that produced `added=[impact]`. Measured
+with a Proxy wrapping DATA and logging a stack trace on every `set` of
+`impact`, the actual creator on that run was the v62 Today-cap check's
+first renderToday() call (~line 8575) — the first of ten non-restoring
+calls (of the suite's 13 total) to execute in file order, after which
+DATA.impact already exists so no later call writes it. Both check-side
+fixes were real and stayed; neither closed v74.4, because the leak was
+never a property of any one call site. It was `getImpactStore()` itself,
+called from a function with no business writing anything — the fourth
+instance of the read-must-not-write family, and the only one of the four
+still open.
 
-CORRECTION (whole-branch review fix wave). The previous text here named a
-THIRD SITE — `v72 the day opens on the remembered beat, or the first when
-there is none` (~line 8538) — as the remaining cause. That attribution was
-false, and is corrected in place rather than left to stand: v72's two extra
-renderToday() calls (lines 8539 and 8544) sit behind
-`if(!again.length && !callsScheduledToday().length)` (line 8522), and that
-guard is TRUE on an unseeded book — confirmed by seeding a one-line probe
-that reads `todayActionList().length` and `callsScheduledToday().length`
-directly and got `{againLen:0, scheduledLen:0, guardTrue:true}`. v72's own
-branch is never entered on the run that produces `added=[impact]`; its two
-calls contribute nothing to it.
+THE FIX, this pass: a `readImpactStore()` function added immediately above
+`getImpactStore()` — a pure read that returns `DATA.impact.events`/`.since`
+with in-memory defaults and never assigns to DATA — with
+`computeImpactSummary()` pointed at it. `getImpactStore()` keeps its name,
+its behavior, and its only remaining caller, `trackImpact()`, which is a
+genuine writer and still needs to materialize the record; no other caller
+changed. TDD: a new check, `v101 asking what the day saved you does not
+stamp a key onto the book`, was written first, after `delete DATA.impact`,
+and watched to fail on exactly the presence half
+(`noKeyStamped:false`, with `rowsMatch`/`zeroTotal`/`usableSince` already
+true — proving a `return null` shortcut would not have passed it) before
+`readImpactStore()` existed. It asserts both halves a broken fix could
+satisfy alone: DATA gains no own `impact` property
+(`Object.prototype.hasOwnProperty.call`, not `=== undefined` — the exact
+own-property-set-to-undefined trap the v58 and Today-tab restores above
+had already been bitten by twice), and the answer returned is still
+usable — one row per IMPACT_EVENTS entry, `totalMinutes === 0`, a `since`
+that passes `isRealISODate`. It passed once `computeImpactSummary()` was
+repointed at `readImpactStore()`, and nothing else changed.
 
-This was never a single third SITE — it is a CLASS. The suite contains
-exactly 13 renderToday() calls (counted directly: lines 8512, 8539, 8544,
-8575, 8578, 8656, 8688, 8917, 10678, 10740, 10871, 10873, 10896). Of those,
-exactly ONE — line 8512, the Today-tab check fixed above — restores
-DATA.impact. Two (8539, 8544, both v72's) are gated behind the guard just
-confirmed true and never execute on an unseeded run. The remaining TEN fire
-without any DATA.impact restore and belong to the same defect class as the
-two already-fixed sites: the v62 Today-cap check (8575, 8578), the v69
-"removed surfaces" check (8656), the phase1 "Records to bring up to date"
-check (8688), and six more v72 day-timeline checks (8917, 10678, 10740,
-10871, 10873, 10896).
-
-Which of those ten actually CREATES the leaked key was measured, not
-assumed, with a Proxy wrapping DATA and logging a stack trace on every
-`set` of `impact` across a full unseeded run. Exactly four writes occur in
-the whole suite: the v58 check's own two (its internal test of
-trackImpact(), both expected and both cleaned up by its own restore), and
-one real creation — at line 8575, the v62 Today-cap check's first
-renderToday() call, the first of the ten non-restoring calls to execute in
-file order. From that point on DATA.impact is a real object, so
-`getImpactStore()`'s `if(!isRecordObject(DATA.impact))` guard is false for
-every later call and none of the other nine — phase1's check (8688)
-included — performs a further write; the trace shows no `set` event at any
-of them. They are equally defective (each would independently leak the key
-if it ran first against a clean book, and fixing 8575 alone would just
-hand the same failure to line 8656, the next one in file order) but on THIS
-measured run only line 8575 is the actual creator.
-
-Root cause, not the symptom: `getImpactStore()` (lines 15800-15805,
-`if(!isRecordObject(DATA.impact)) DATA.impact = {events:{}, since:
-todayISO()};`) is a getter that writes on first read — the same shape v97's
-own check already forbids for getDayClose/getGainsightQueue/readSessionNote,
-just never extended to this one. `computeImpactSummary()` (line 15871),
-which reads as a pure summary function and is called from render paths that
-have no reason to expect a write, calls `getImpactStore()` and inherits the
-mutation. A measured fix exists and is NOT applied in this pass: a six-line
-`readImpactStore()` (a pure read returning `DATA.impact.events`/`.since`
-with in-memory defaults, never assigning to DATA) with
-`computeImpactSummary()` pointed at it was measured, against the 366-check
-baseline that stood before this record's own new check, to take the
-unseeded suite from 361/366 to 362/366 with v74.4 green, and to leave the
-seeded suite unchanged at 366/366. The suite is 367 now (this wave added
-one check, in item 2 below) — re-baseline against 367 rather than assuming
-the 361/362 pair still applies verbatim; the mechanism and the +1 shift are
-what's confirmed, not the exact digits against a count that has since
-moved. It needs its own TDD pass — a red-flip check demonstrating the leak,
-then the fix, then green — so it is deferred to a follow-up task with its
-own check, not folded into a records-only pass. The runner therefore still
-evaluates demo-seed.js in the page before calling the suite:
+MEASURED RESULT. Seeded suite 368/368 (367 plus this pass's one new
+check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
+four remaining failures are exactly the pre-existing, verified-non-defect
+four above, which need a populated book on their own terms and are not
+this defect. The tracker suite as a whole therefore still needs seeding to
+run clean, so the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 367
+       --seed demo-seed.js --expect 368
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -256,9 +236,10 @@ Not exercised in this run:
     force one through. Measured instead, per the instruction to measure the
     gap rather than assert it away: removing `saveData();` from BOTH
     listeners and running `node tools/selfcheck.mjs
-    osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 367`
-    still reports `367/367 passed, 0 failed`, exit 0 (reverted immediately
-    after measuring). Concretely, this costs a user: tick a deliverable
+    osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 368`
+    still reports `368/368 passed, 0 failed`, exit 0 (re-measured against
+    this record's own suite count and reverted immediately after).
+    Concretely, this costs a user: tick a deliverable
     box, watch it render checked, close the tab or reload without another
     save-triggering action — the tick is gone. The evidence store update
     happened in memory (`toggleDeliverableEvidence` IS covered and IS
@@ -364,6 +345,20 @@ WHOLE-BRANCH REVIEW FIX WAVE (suite 366 -> 367)
   - The two DOM listeners' adapter code (session-deliverable tick,
     deliverable-by attribution) remains uncovered; an honest attempt was
     made and abandoned rather than faked. See WHAT WAS NOT VERIFIED.
+
+READ/WRITE SPLIT FOR IMPACT (suite 367 -> 368)
+  - computeImpactSummary() — a pure read — no longer calls getImpactStore(),
+    the writer that lazily created DATA.impact on first touch. A new
+    readImpactStore() gives it a throwaway in-memory default instead;
+    getImpactStore() keeps its name and behavior for its one remaining
+    caller, trackImpact(). The fourth instance of the read-must-not-create
+    family (after getDayClose() at v90, getGainsightQueue() at v95,
+    readSessionNote()/getSessionNote() at v97), built TDD with a red-flip
+    check (`v101 asking what the day saved you does not stamp a key onto
+    the book`) that asserts both that DATA gains no own `impact` property
+    and that the answer stays usable without it. Closes the v74.4 gap this
+    record's earlier text tracked as deferred; see THE FIFTH UNSEEDED
+    FAILURE IS FIXED above for the full account.
 
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded
