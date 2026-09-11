@@ -8501,8 +8501,18 @@ function _runSelfChecksInner(){
     // every live risk — a self-check must not write to the real book's memory.
     // Same snapshot/restore contract the v58/v59 hub checks use.
     const riskLogSnapshot = JSON.parse(JSON.stringify(DATA.riskLog || {}));
+    // renderToday() -> renderDayClose() -> computeImpactSummary() ->
+    // getImpactStore() is a SECOND, undocumented side effect: getImpactStore()
+    // lazily creates DATA.impact on first read when it does not already exist.
+    // Invisible on a seeded book (the key is already there); on an unseeded
+    // one it leaks a key this check never asked for. Restored by presence, the
+    // same shape as the v58 check's DATA.impact fix, not by always assigning.
+    const impactSnapshot = JSON.stringify(DATA.impact === undefined ? null : DATA.impact);
     let html;
-    try{ html = renderToday(); } finally { DATA.riskLog = riskLogSnapshot; }
+    try{ html = renderToday(); } finally {
+      DATA.riskLog = riskLogSnapshot;
+      const ri = JSON.parse(impactSnapshot); if(ri === null) delete DATA.impact; else DATA.impact = ri;
+    }
     /* v69: the "START HERE" label is gone — first position carries that meaning
        on its own. The invariant it protected is unchanged and still the point:
        whatever the focus view opens on must BE todayActionList()[0], so the

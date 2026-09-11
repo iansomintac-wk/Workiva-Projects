@@ -5,20 +5,26 @@ stale in three ways by the time it was replaced — see A CORRECTION TO THE
 PREVIOUS RECORD below.
 
 SHA-256
-Hashed from the CRLF working-tree checkout (this repo runs core.autocrlf=true
-on Windows), not the LF git blob. Re-measured a third time this branch, after
-the tracker's own content changed again in this fix round — the tracker pair
-below is stale the moment the HTML changes and only the moment it changes;
-re-measure it, don't edit it in place. The git blob for the tracker staged
-for this commit is 1,546,562 bytes
-(git cat-file -p :osm-book-of-business-tracker-1.0.html | wc -c), reproducible
-after commit as `git cat-file -p HEAD:osm-book-of-business-tracker-1.0.html |
-sha256sum`. A checkout on a platform that does not convert line endings will
-not reproduce the pair below; it will match the blob instead.
-  osm-book-of-business-tracker-1.0.html   (1,571,534 bytes)
-    b2b48c418f9dfb8d730f257fa5619fe1b7f4ccf67b26508c8e292232c212edd2
+Two pairs, because the two forms genuinely differ (core.autocrlf=true on this
+Windows checkout), and stating only one has already been wrong once this
+branch. Re-measured a fourth time — this is the third round in a row the
+tracker's own content changed, so the tracker figures below are stale the
+moment the HTML changes and only the moment it changes; re-measure, don't
+edit in place.
+
+WORKING TREE (CRLF) — what `sha256sum`/`stat` on a checked-out Windows file
+gives you, and what a human opening the file in a Windows editor has:
+  osm-book-of-business-tracker-1.0.html   (1,572,215 bytes)
+    92afa1833c3b9a22b57214e3282710f769ee936abf1bca814fb3f9738b681faa
   osm-runway-onboarding-1.0.html          (185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
+
+GIT BLOB (LF) — what `git cat-file -p HEAD:<file> | sha256sum` gives you on
+any platform, and what a checkout that does not convert line endings has:
+  osm-book-of-business-tracker-1.0.html   (1,547,233 bytes)
+    1a7b5c3d628bd99d4e23a85106c0624517c7114f57825179401c8f703b142395
+  osm-runway-onboarding-1.0.html          (185,641 bytes — no CRLF in this
+    file, so the two forms coincide) same hash as above
 
 
 WHAT WAS VERIFIED
@@ -35,44 +41,68 @@ subscribes to Runtime.exceptionThrown and fails the run if one appears.
 THE TRACKER SUITE NEEDS A SEEDED BOOK. Re-measured for this record rather than
 carried forward: on a fresh browser profile the suite reports 361/366, 5
 failed — the phase3 health-score-pairing check, the v81 band check, and two
-v94 Copilot checks. None are defects; each asserts on a populated book and
-cannot be satisfied by an empty one. (The previous record's "314/354" for
-this same measurement was already stale by the time it was superseded —
-corrected here rather than carried forward unverified.)
+v94 Copilot checks. None are defects; verified for each, by reading what it
+asserts against, rather than assumed from its name:
+  - phase3 requires `DATA.customers.find(x => !inImplementation(x))` to find
+    a real account (its own detail line says so — `hasRealAccount:false`);
+    an empty book has none.
+  - Both v94 checks render through `renderCopilot()`, which early-returns
+    an empty state (`if(!DATA.customers.length) return
+    '<div class="empty">...No accounts yet...'`) with none of the markup —
+    `cp-landing`, `data-cp-chapter=` — either check looks for; hence their
+    `closedChapters:0, openChapters:0`.
+  - v81's `aiOnBand` half calls that same `renderCopilot()` for its second
+    assertion, so it fails for the identical reason once `renderCopilot()`
+    takes the empty branch.
+Each asserts on a populated book and cannot be satisfied by an empty one.
+(The previous record's "314/354" for this same measurement was already
+stale by the time it was superseded — corrected here rather than carried
+forward unverified.)
 
-The fifth unseeded failure, v74.4's whole-book-unchanged guard, is not a
-"needs a seeded book" case, and fixing the defect first suspected of causing
-it did not make it pass — that is stated plainly here rather than papered
-over. What was fixed, and is fixed regardless: the v58 impact check restored
-DATA.impact by `DATA.impact = savedImpact`, which — when savedImpact was
-undefined because the key did not exist before the check ran — assigned an
-OWN property set to undefined rather than leaving no property at all. Two
-other places in this file that restore the same field already do it
-correctly (v98's own impact check, and the identical impactLog restore one
-line below the bug): capture presence before overwriting, then `delete` or
-assign, never assign-through-undefined. Line 8206-8230 now matches that
-shape. This was a real defect and stays fixed, but it was not sufficient:
-the unseeded suite still reports 361/366, v74.4 still among the 5 failures,
-identically — `removed=[] added=[impact] mutated=[]` — proving the v58
-restore was not the (or not the only) trigger.
+The fifth unseeded failure, v74.4's whole-book-unchanged guard, is STILL
+present after two rounds of fixing genuine defects that stop short of
+closing it. Stated plainly rather than adjusted to fit: the unseeded suite
+is still 361/366, v74.4 still fails, still `removed=[] added=[impact]
+mutated=[]`.
 
-The actual trigger, found by wrapping DATA in a Proxy that logs a stack
-trace on every write to `impact` and running the unseeded suite once more:
-a Today-tab check (~line 8503) calls `renderToday()` directly to inspect its
-output. That check already knows renderToday() has one side effect — it
-stamps DATA.riskLog — and snapshots/restores exactly that field around the
-call. It does not know about a second one: renderToday() -> renderDayClose()
--> computeImpactSummary() -> getImpactStore(), and getImpactStore() is
-`if(!isRecordObject(DATA.impact)) DATA.impact = {...}` — a getter that
-writes on read, the same shape v97's check already forbids for
-getDayClose/getGainsightQueue/readSessionNote, just not for this one. On a
-seeded book DATA.impact already exists, so the lazy-create is a no-op and
-invisible; on an unseeded book it creates the key, and nothing near this
-check knows to restore it. This is a second, distinct defect from the v58
-one, in a different check, and it was not fixed here: the process for this
-record was to name a defect precisely before touching more production code,
-not to chain a second unauthorized fix onto the first. The runner therefore
-evaluates demo-seed.js in the page before calling the suite:
+getImpactStore() (`if(!isRecordObject(DATA.impact)) DATA.impact = {...}`) is
+a getter that writes DATA.impact on first read when it doesn't already
+exist — the same shape v97's check already forbids for
+getDayClose/getGainsightQueue/readSessionNote, just not extended to this
+one. Invisible on a seeded book, because DATA.impact already exists there.
+Two DIFFERENT self-checks trigger it on an unseeded book and have both now
+been fixed to restore by presence (capture whether the key existed before
+the check ran; `delete` it if it did not, assign it back if it did — never
+assign-through-undefined, which leaves an own property set to undefined
+that Object.keys(DATA) reports as added):
+  1. The v58 impact check (~line 8206) — its OWN restore of the field it
+     was directly testing was wrong. Fixed round 1.
+  2. A Today-tab check (~line 8503) that calls renderToday() to inspect its
+     HTML output. It already knew renderToday() stamps DATA.riskLog and
+     restored that; it did not know renderToday() -> renderDayClose() ->
+     computeImpactSummary() -> getImpactStore() also touches DATA.impact.
+     Fixed round 2.
+Both fixes are real, independently verified (each one's own check still
+passes, 366/366 stays 366/366), and stay. Neither was sufficient alone or
+together: the unseeded figure did not move after either round.
+
+A THIRD site was located, cheaply, with the same Proxy technique, and is
+NOT fixed — per instruction, this record stops here rather than chasing
+correctness across an unbounded number of checks that share one library
+call. `v72 the day opens on the remembered beat, or the first when there is
+none` (same enclosing block as the fix above, ~line 8538) calls
+renderToday() twice more, directly, with no save/restore of DATA.impact (or
+DATA.riskLog — the sibling check right after it, `v61 the Today checks
+leave the real book risk memory untouched`, only asserts riskLog was left
+alone across the WHOLE block, which is a different contract than each
+individual call restoring what it disturbs). This is the same defect class
+as the two fixed ones, in the same file region, and is left for the
+whole-branch review to triage alongside whatever else calls renderToday()
+without knowing about this side effect — an audit of every self-check that
+calls renderToday(), renderOverviewTab(), or anything else that reaches
+computeImpactSummary(), rather than a fourth round of finding sites one at
+a time, is the more proportionate fix. The runner therefore evaluates
+demo-seed.js in the page before calling the suite:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js --expect 366
