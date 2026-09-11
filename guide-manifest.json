@@ -17,7 +17,7 @@
     "Signal calibration requires four resolutions before it carries weight.",
     "Automatic backup requires one user gesture per browser session."
   ],
-  "trackerSelfChecks": "window.runSelfChecks() - 366 checks. Must be 366/366 after any edit, with demo-seed.js seeded first; an unseeded profile reports 361/366 and those failures are not defects.",
+  "trackerSelfChecks": "window.runSelfChecks() - 366 checks. Must be 366/366 after any edit, with demo-seed.js seeded first; an unseeded profile reports 361/366 — four of the five need a populated book and are not defects, one (v74.4) is a known deferred defect in a self-check's own restore, not in the bundle. See VALIDATION.txt.",
   "guideSelfChecks": "window.runGuideSelfChecks() - 18 checks. Must be 18/18 after any edit.",
   "requiredChecks": [
     "both files open with no runtime exceptions, including from file://",
