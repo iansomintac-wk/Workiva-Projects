@@ -181,6 +181,14 @@ Not exercised in this run:
     card, where the OSM already ticks deliverables; the panel still only reports.
   - Nobody has ticked a box in a real browser against a real book. Every
     assertion above is a headless render or a direct function call.
+  - THE GUIDE DOES NOT TEACH PHASE B. osm-runway-onboarding-1.0.html is
+    byte-identical to before this branch — the one commit that touched it
+    fixed a self-check's viewport assertion, not content. Its First Value
+    narrative still describes the pre-Phase-B "earliest linked evidence"
+    model; it does not cover the deliverable-checkbox evidence capture, the
+    customer-demonstrated / we-observed attribution control, or First
+    Value's derived path. Updating it is outstanding, real authoring work,
+    not done as part of this record.
 
 
 SCOPE OF THE CHANGE SINCE 1.0
