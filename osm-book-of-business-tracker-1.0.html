@@ -7568,7 +7568,28 @@ function runSelfChecks(){
 }
 function _runSelfChecksInner(){
   const results = [];
-  const check = (name, ok, detail) => results.push({name, ok: !!ok, detail: ok ? '' : (detail || '')});
+  // v74.5: v74.4 (bottom of this suite) diffs the book's key set at suite
+  // ENTRY against suite EXIT, which has a temporal blind spot — a key added
+  // mid-suite and cleared before the end is invisible to it. This records,
+  // per check, whether Object.keys(DATA) still matches what it was at suite
+  // entry; v74.5's own check below asserts the list stays empty. Read the
+  // entry snapshot's __keys LAZILY (not captured here) because `check` is
+  // declared before _bookAtSuiteEntry a few lines down — by the time any
+  // check() call actually runs, the snapshot exists.
+  const _midSuiteLeaks = [];
+  const check = (name, ok, detail) => {
+    results.push({name, ok: !!ok, detail: ok ? '' : (detail || '')});
+    const keysNow = Object.keys(DATA).sort().join(',');
+    if (keysNow !== _bookAtSuiteEntry.__keys) {
+      const entryKeys = _bookAtSuiteEntry.__keys ? _bookAtSuiteEntry.__keys.split(',') : [];
+      const nowKeys = keysNow ? keysNow.split(',') : [];
+      _midSuiteLeaks.push({
+        name,
+        added: nowKeys.filter(k => entryKeys.indexOf(k) === -1),
+        removed: entryKeys.filter(k => nowKeys.indexOf(k) === -1),
+      });
+    }
+  };
   /* v61: the suite must not damage the book it is inspecting. Captured here and
      asserted as the very last check. This is not hypothetical — the v58/v59 hub
      checks saved DATA.riskLog by REFERENCE and let their synthetic runs prune it,
@@ -8214,6 +8235,13 @@ function _runSelfChecksInner(){
     // v98: trackImpact now also appends to DATA.impactLog, so this check has to
     // put that back too or it leaks a key onto a book that never had one.
     const savedLog = DATA.impactLog === undefined ? null : JSON.stringify(DATA.impactLog);
+    // v74.5: check() now also checkpoints the book's own key set, so calling
+    // it INSIDE the try — while DATA.impact/impactLog are still the synthetic
+    // values, before the finally below restores them — reports a real (if
+    // momentary) leak on every run. Every other check in this suite computes
+    // ok/detail, restores the book, THEN calls check(); this block now does
+    // the same. What is asserted, and the values tested, are unchanged.
+    let ok = false, detail = '';
     try{
       DATA.impact = undefined; DATA.config.impactMinutes = {};
       trackImpact('activity_logged'); trackImpact('activity_logged'); trackImpact('partner_note_imported', 5);
@@ -8222,15 +8250,15 @@ function _runSelfChecksInner(){
         && sum.rows.find(r=>r.key==='partner_note_imported').total === 5 * 2;
       DATA.config.impactMinutes = {activity_logged: 10};
       sum = computeImpactSummary();
-      check('v58 impact: counts × default minutes, config override wins, total aggregates',
-        baseOk && sum.rows.find(r=>r.key==='activity_logged').total === 20
-        && sum.totalMinutes === 20 + 10,
-        `total=${sum.totalMinutes}`);
+      ok = baseOk && sum.rows.find(r=>r.key==='activity_logged').total === 20
+        && sum.totalMinutes === 20 + 10;
+      detail = `total=${sum.totalMinutes}`;
     } finally {
       const ri = JSON.parse(savedImpact); if(ri === null) delete DATA.impact; else DATA.impact = ri;
       DATA.config.impactMinutes = savedCfg;
       if(savedLog === null) delete DATA.impactLog; else DATA.impactLog = JSON.parse(savedLog);
     }
+    check('v58 impact: counts × default minutes, config override wins, total aggregates', ok, detail);
   })();
   (function(){
     let ok = false, detail = '';
@@ -14137,6 +14165,20 @@ function _runSelfChecksInner(){
     check('v74.4 running the suite leaves the whole book exactly as it found it',
       keysNow === _bookAtSuiteEntry.__keys && !removed.length && !added.length && !mutated.length,
       `removed=[${removed}] added=[${added}] mutated=[${mutated}]`);
+  })();
+  (function(){
+    // v74.5: v74.4 above only ever looks at entry vs. exit, so a key that
+    // leaks mid-suite and is cleared before the end is invisible to it. The
+    // `check` closure (~line 7571) records a divergence after every one of
+    // its ~369 calls; this is the LAST check in the suite, on purpose —
+    // everything above must have had its chance to leak by now. Key-set
+    // only, not values: value drift at suite end is v74.4's job, and diffing
+    // the whole book's values on every check would be expensive and would
+    // duplicate a guard that already exists. This is a read — it does not
+    // touch DATA.
+    const first = _midSuiteLeaks[0];
+    check('v74.5 no check leaves a key on the book, even briefly', !_midSuiteLeaks.length,
+      first ? `first offender: ${first.name} — added=[${first.added}] removed=[${first.removed}]` : '');
   })();
 
   const failed = results.filter(r=>!r.ok);

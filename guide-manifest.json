@@ -17,11 +17,11 @@
     "Signal calibration requires four resolutions before it carries weight.",
     "Automatic backup requires one user gesture per browser session."
   ],
-  "trackerSelfChecks": "window.runSelfChecks() - 368 checks. Must be 368/368 after any edit, with demo-seed.js seeded first; an unseeded profile reports 364/368 — all four need a populated book and are not defects (a phase3 check, the v81 band check, and two v94 Copilot checks). The former fifth failure, v74.4, is fixed: computeImpactSummary() now reads through readImpactStore(), a pure read that no longer creates DATA.impact on an empty book. See VALIDATION.txt.",
+  "trackerSelfChecks": "window.runSelfChecks() - 369 checks. Must be 369/369 after any edit, with demo-seed.js seeded first; an unseeded profile reports 365/369 — all four need a populated book and are not defects (a phase3 check, the v81 band check, and two v94 Copilot checks). The former fifth failure, v74.4, is fixed: computeImpactSummary() now reads through readImpactStore(), a pure read that no longer creates DATA.impact on an empty book. A new v74.5 check closes v74.4's own structural blind spot — a key added and cleared again before suite end is invisible to an entry-vs-exit diff — by checkpointing the book's key set after every check call; key-set only, not values. See VALIDATION.txt.",
   "guideSelfChecks": "window.runGuideSelfChecks() - 18 checks. Must be 18/18 after any edit.",
   "requiredChecks": [
     "both files open with no runtime exceptions, including from file://",
-    "tracker self-checks pass from the bundle location (368/368, seeded)",
+    "tracker self-checks pass from the bundle location (369/369, seeded)",
     "guide self-checks pass (18/18)",
     "tracker filename matches trackerFile and every data-tracker-link href in the guide",
     "no version numbers in user-visible prose beyond the 1.0 release label",

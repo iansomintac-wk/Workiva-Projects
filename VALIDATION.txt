@@ -4,9 +4,12 @@ Validated: September 10, 2026. Supersedes the August 6, 2026 record, which was
 stale in three ways by the time it was replaced — see A CORRECTION TO THE
 PREVIOUS RECORD below. This record also supersedes the whole-branch-review fix
 chain through `208b278`, with the whole-branch review's own fix wave folded
-in — see WHOLE-BRANCH REVIEW FIX WAVE below — and the deferred v74.4 fix this
+in — see WHOLE-BRANCH REVIEW FIX WAVE below — the deferred v74.4 fix this
 record's own text once tracked as outstanding, now closed — see READ/WRITE
-SPLIT FOR IMPACT below.
+SPLIT FOR IMPACT below — and the v74.4 GUARD's own structural blind spot
+(entry-vs-exit diffing cannot see a key that leaks and clears mid-suite),
+measured in this record's own text as outstanding and now closed with a new
+check, v74.5 — see THE v74.4 BLIND SPOT below.
 
 SHA-256
 Two pairs, because the two forms genuinely differ (core.autocrlf=true on this
@@ -17,19 +20,21 @@ HTML changes and only the moment it changes; re-measure, don't edit in place.
 
 WORKING TREE (CRLF) — what `sha256sum`/`stat` on a checked-out Windows file
 gives you, and what a human opening the file in a Windows editor has:
-  osm-book-of-business-tracker-1.0.html   (1,579,954 bytes)
-    84651ae6278d033047b307b5aafa6a62ae1ad80388cb208ebb8da8d12e10b900
+  osm-book-of-business-tracker-1.0.html   (1,582,467 bytes)
+    65f6b5abacd82b53065bda98ab7c41283dc12f6cd368a2f20208a57270a34aa6
   osm-runway-onboarding-1.0.html          (185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
 
 GIT BLOB (LF) — what `git cat-file -p HEAD:<file> | sha256sum` gives you on
-any platform, and what a checkout that does not convert line endings has:
-  osm-book-of-business-tracker-1.0.html   (1,554,847 bytes)
-    ac40618429173ddf434ed0ce095820216b994dd64b7f1470ff815aef921ec532
+any platform, and what a checkout that does not convert line endings has
+(measured this pass via the staged index blob, `git cat-file -p
+:<file> | sha256sum`, before the commit that makes it HEAD):
+  osm-book-of-business-tracker-1.0.html   (1,557,318 bytes)
+    d9c377d3aed28591cf7aa3598eb89d9b2f41830cfed7369da574dd002ce8dc9a
   osm-runway-onboarding-1.0.html          (185,641 bytes — no CRLF in this
     file, so the two forms coincide) same hash as above — byte-identical
     across this entire branch, confirmed again this pass:
-    `git diff 6bd2695 HEAD -- osm-runway-onboarding-1.0.html` is empty.
+    `git diff HEAD -- osm-runway-onboarding-1.0.html` is empty.
 
 
 WHAT WAS VERIFIED
@@ -37,14 +42,14 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        368/368 passed, 0 failed
+  window.runSelfChecks()        369/369 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
 subscribes to Runtime.exceptionThrown and fails the run if one appears.
 
 THE TRACKER SUITE NEEDS A SEEDED BOOK. Re-measured for this record rather than
-carried forward: on a fresh browser profile the suite now reports 364/368, 4
+carried forward: on a fresh browser profile the suite now reports 365/369, 4
 failed — the phase3 health-score-pairing check, the v81 band check, and two
 v94 Copilot checks. None are defects; verified for each, by reading what it
 asserts against, rather than assumed from its name:
@@ -145,44 +150,93 @@ this defect. The tracker suite as a whole therefore still needs seeding to
 run clean, so the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 368
+       --seed demo-seed.js --expect 369
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
 The August record did not state this, which is why its 318/318 was reproducible
 only by accident.
 
-THE v74.4 BLIND SPOT — MEASURED, NOT CLOSED. v74.4 is the whole-book purity
-guard this record leans on to say the read/write split is done, and it has
-a measured hole: it cannot detect a key leaked as an own property set to
-`undefined` mid-suite and cleared again before the suite ends. Its check
-runs exactly once, at suite exit, comparing `Object.keys(DATA)` at entry
-against `Object.keys(DATA)` now — a key that appears and disappears in
-between never shows up in that diff.
+THE v74.4 BLIND SPOT — MEASURED, THEN CLOSED THIS PASS. v74.4 is the
+whole-book purity guard this record leans on to say the read/write split is
+done, and it had a measured hole: it cannot detect a key leaked as an own
+property mid-suite and cleared again before the suite ends. Its check runs
+exactly once, at suite exit, comparing `Object.keys(DATA)` at entry against
+`Object.keys(DATA)` now — a key that appears and disappears in between never
+shows up in that diff.
 
-Proved by mutation, not theorized. On a scratch copy, v101's
+Proved by mutation before the fix. On a scratch copy, v101's
 restore-by-presence line — `if(hadImpact) DATA.impact =
 JSON.parse(savedImpact); else delete DATA.impact;` — was changed to the
 canonical assign-through-undefined bug this file has been bitten by four
 times: `else DATA.impact = undefined;`. Re-running the unseeded suite
-(`node tools/selfcheck.mjs <scratch copy> --expect 368`) afterward still
-reported 364/368 with the same four pre-existing failures as the clean
-baseline (phase3, v81, both v94 checks) — v74.4 did not fail; it stayed
+(`node tools/selfcheck.mjs <scratch copy> --expect 369`) afterward still
+reported the same four pre-existing failures as the clean baseline (phase3,
+v81, both v94 checks) plus the leaked key — v74.4 did not fail; it stayed
 GREEN. Two probe checks inserted around the leak, one right after v101's
-`finally` and one right before v74.4 runs, showed why: immediately after
-v101, `DATA.impact` is an own property (`hasOwnProperty: true`) with
+`finally` and one right before v74.4 runs, had earlier shown why: immediately
+after v101, `DATA.impact` is an own property (`hasOwnProperty: true`) with
 `value: undefined` — the leak is real — but by the time v74.4 runs,
 `hasOwnProperty: false`. Something between the two clears it before v74.4
-ever gets a chance to see it as added.
+ever gets a chance to see it as added. This meant "v74.4 is green" was
+weaker evidence than earlier passes of this record had treated it as: it
+ruled out a leak that survives to suite end, not one created and cleared
+somewhere in the middle.
 
-This means "v74.4 is green" is weaker evidence than earlier passes of
-this record have treated it as: it rules out a leak that survives to
-suite end, not one that is created and cleared somewhere in the middle.
-Closing that hole — a mid-suite ownership checkpoint placed right after
-each of the four read-must-not-write call sites, or having each
-restore-by-presence site assert its own before/after cleanup instead of
-relying solely on the end-of-suite diff — is outstanding work, not done
-here.
+THE FIX, this pass: a mid-suite ownership checkpoint in the `check` closure
+itself (`_runSelfChecksInner`, ~line 7571). After every one of the suite's
+~369 calls, it compares `Object.keys(DATA).sort()` against the suite-entry
+snapshot's key list — read lazily inside the closure, not captured at
+`check`'s own definition, since the entry snapshot (`_bookAtSuiteEntry`,
+~line 7591) is declared a few lines after `check` but before any check()
+call actually runs — and records which check ran and which keys were added
+or removed into a local array. One new check, `v74.5 no check leaves a key
+on the book, even briefly`, placed LAST in the suite (after v74.4, because
+everything above must have had its chance to leak by then) asserts that
+array stays empty.
+
+Built TDD: the new check was written and watched to fail BEFORE any other
+line changed. Its first RED, on code nobody had touched yet, named `v58
+impact: counts x default minutes, config override wins, total aggregates`
+as the first offender, with `impactLog` as the added key — not `impact` and
+`impactLog` both, as the family of four prior read-must-not-write defects
+would have predicted: on a seeded book DATA already carries an own `impact`
+property at suite entry, so assigning `undefined` to an EXISTING key never
+changes `Object.keys`; only the newly-created `impactLog` key showed as a
+divergence. Measured and reported as it came out, not adjusted to match the
+prediction that motivated the work.
+
+WHY v58 diverged: it calls `check(...)` INSIDE its `try`, and restores
+`DATA.impact`, `DATA.config.impactMinutes` and `DATA.impactLog` in the
+`finally` AFTERWARD — so at the moment it reports, the book is still
+legitimately dirty by its own structure. Every other check in this suite
+(the phaseA/phaseB blocks are the clearest example) computes `ok`/`detail`,
+restores the book, THEN calls `check()`. v58's transient was never a data
+defect — it restored correctly before this pass and restores correctly
+now — but its structure was exactly the shape that would hide a real leak,
+and it was the one thing standing between this suite and a strict mid-suite
+guard. It was restructured to the suite's convention: compute `ok`/`detail`
+inside the `try`, restore in the `finally`, call `check()` after the
+`finally` has run. What it asserts, and the values it tests, are unchanged.
+
+WHAT THE NEW GUARD COVERS, AND WHAT IT DELIBERATELY DOES NOT. Scoped to the
+book's OWN KEY SET only, not its values: diffing every field's value after
+each of ~369 calls would be expensive and would duplicate a guard that
+already exists. Value drift surviving to suite end remains v74.4's job. The
+measured blind spot was an added (or removed) KEY that does not survive to
+suite end, and closing that — nothing more — is what v74.5 does.
+
+PROOF THE GUARD BITES, post-fix, in one run. The same v101 scratch mutation
+(`else DATA.impact = undefined;` in place of `else delete DATA.impact;`) was
+re-applied to a fresh scratch copy of the fixed suite and run unseeded. In
+that single run: v74.5 went RED, naming `v101 asking what the day saved you
+does not stamp a key onto the book` as the first offender with
+`added=[impact]` — this time exactly `impact`, since on an unseeded book
+nothing has created that key yet, so `hadImpact` is false and the mutated
+`else` branch assigns `undefined` into a key that did not exist before —
+while v74.4 stayed GREEN in the very same run, exactly as it had before the
+fix. That is the gap closed: v74.5 catches, live, what v74.4 structurally
+cannot catch at all. The scratch copy was discarded immediately after.
 
 A v11-to-v12 MIGRATION DRY RUN was executed against deliberately awkward legacy
 data (tools/legacy-seed.js, tools/migration-dryrun.mjs): a label no template
@@ -402,6 +456,24 @@ READ/WRITE SPLIT FOR IMPACT (suite 367 -> 368)
     and that the answer stays usable without it. Closes the v74.4 gap this
     record's earlier text tracked as deferred; see THE FIFTH UNSEEDED
     FAILURE IS FIXED above for the full account.
+
+MID-SUITE KEY-LEAK CHECKPOINT (suite 368 -> 369)
+  - Closes the v74.4 GUARD's own structural blind spot (entry-vs-exit
+    diffing cannot see a key that leaks and clears again before the suite
+    ends), measured and left as outstanding work in this record's own
+    earlier text; see THE v74.4 BLIND SPOT above for the full account,
+    including the before-and-after mutation proof.
+  - The `check` closure now checkpoints `Object.keys(DATA)` after every
+    call and records any divergence from the suite-entry key set. One new
+    check, `v74.5 no check leaves a key on the book, even briefly`, is the
+    last check in the suite and asserts that record is empty. Key-set only,
+    not values — value drift at suite end stays v74.4's job.
+  - The new check's own first RED, on code nobody had touched yet, found a
+    real (if harmless) convention violation: the v58 impact check called
+    `check(...)` before its `finally` restored `DATA.impact` /
+    `DATA.config.impactMinutes` / `DATA.impactLog`, unlike every other check
+    in the suite. Restructured to compute `ok`/`detail`, restore, then call
+    `check()` — no change to what it asserts or the values it tests.
 
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded

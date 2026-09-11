@@ -33,7 +33,7 @@ OSM Runway — release notes
     - Single-level undo, Quick log, deep-linking into the right account tab,
       a Coordination tab, a Handoff tab (PROVISIONAL field set), and a
       Progress Report export.
-    - 368 console-callable self-checks: window.runSelfChecks().
+    - 369 console-callable self-checks: window.runSelfChecks().
 
   THE GUIDE. A companion onboarding and competency guide covering the tracker
   end to end, with a guided and a quick path, a practice mode, a challenge, and
