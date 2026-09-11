@@ -10366,7 +10366,17 @@ function _runSelfChecksInner(){
         rows: sum.rows.length, totalMinutes: sum.totalMinutes, since: sum.since});
     }catch(err){ detail = err.message; }
     finally{
-      if(hadImpact) DATA.impact = JSON.parse(savedImpact); else delete DATA.impact;
+      // Guarded: if DATA.impact were ever an OWN property whose VALUE is
+      // undefined (the assign-through-undefined defect this file has already
+      // fixed twice — the v58 and Today-tab DATA.impact leaks), then
+      // JSON.stringify(DATA.impact) above returns the undefined VALUE, not
+      // the string "undefined", so savedImpact is undefined too. Unguarded,
+      // JSON.parse(undefined) throws a SyntaxError right here, and because
+      // this is a finally block that throw escapes the IIFE and aborts the
+      // whole suite instead of just failing this one check. Unreachable
+      // today, but restore by presence rather than trust JSON.parse blindly.
+      if(hadImpact) DATA.impact = savedImpact !== undefined ? JSON.parse(savedImpact) : undefined;
+      else delete DATA.impact;
     }
     check('v101 asking what the day saved you does not stamp a key onto the book', ok, detail);
   })();

@@ -17,15 +17,15 @@ HTML changes and only the moment it changes; re-measure, don't edit in place.
 
 WORKING TREE (CRLF) — what `sha256sum`/`stat` on a checked-out Windows file
 gives you, and what a human opening the file in a Windows editor has:
-  osm-book-of-business-tracker-1.0.html   (1,579,218 bytes)
-    09e6ca5f832e776f55c672328cd1ebf646b8be42a921b9b409d70a63f05fed9d
+  osm-book-of-business-tracker-1.0.html   (1,579,954 bytes)
+    84651ae6278d033047b307b5aafa6a62ae1ad80388cb208ebb8da8d12e10b900
   osm-runway-onboarding-1.0.html          (185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
 
 GIT BLOB (LF) — what `git cat-file -p HEAD:<file> | sha256sum` gives you on
 any platform, and what a checkout that does not convert line endings has:
-  osm-book-of-business-tracker-1.0.html   (1,554,121 bytes)
-    a6e8c68b5603a81029194d0c8efcf50d7b8ce10ceda2be4d4ba26d4612654234
+  osm-book-of-business-tracker-1.0.html   (1,554,847 bytes)
+    ac40618429173ddf434ed0ce095820216b994dd64b7f1470ff815aef921ec532
   osm-runway-onboarding-1.0.html          (185,641 bytes — no CRLF in this
     file, so the two forms coincide) same hash as above — byte-identical
     across this entire branch, confirmed again this pass:
@@ -116,8 +116,19 @@ changed. TDD: a new check, `v101 asking what the day saved you does not
 stamp a key onto the book`, was written first, after `delete DATA.impact`,
 and watched to fail on exactly the presence half
 (`noKeyStamped:false`, with `rowsMatch`/`zeroTotal`/`usableSince` already
-true — proving a `return null` shortcut would not have passed it) before
-`readImpactStore()` existed. It asserts both halves a broken fix could
+true) before `readImpactStore()` existed. Those OLD-implementation field
+values say nothing on their own about what a `return null` shortcut would
+have done — checked separately, on a scratch copy: mutating
+`readImpactStore()` to `return null` does not fail v101 as an ordinary
+check. `computeImpactSummary()` does `st.events[...]` against the null
+return and throws `TypeError: Cannot read properties of null (reading
+'events')`; the v58 check two blocks above calls `computeImpactSummary()`
+inside a `try`/`finally` with no `catch`, so the throw escapes it,
+escapes `runSelfChecks()` itself, and the harness reports
+`runSelfChecks() threw` and exits 1 rather than a normal 364/368 or
+368/368 — so a `return null` shortcut could not have passed either, just
+not for the reason the RED transcript's field values would suggest. It
+asserts both halves a broken fix could
 satisfy alone: DATA gains no own `impact` property
 (`Object.prototype.hasOwnProperty.call`, not `=== undefined` — the exact
 own-property-set-to-undefined trap the v58 and Today-tab restores above
@@ -140,6 +151,38 @@ run clean, so the documented command keeps doing it:
 
 The August record did not state this, which is why its 318/318 was reproducible
 only by accident.
+
+THE v74.4 BLIND SPOT — MEASURED, NOT CLOSED. v74.4 is the whole-book purity
+guard this record leans on to say the read/write split is done, and it has
+a measured hole: it cannot detect a key leaked as an own property set to
+`undefined` mid-suite and cleared again before the suite ends. Its check
+runs exactly once, at suite exit, comparing `Object.keys(DATA)` at entry
+against `Object.keys(DATA)` now — a key that appears and disappears in
+between never shows up in that diff.
+
+Proved by mutation, not theorized. On a scratch copy, v101's
+restore-by-presence line — `if(hadImpact) DATA.impact =
+JSON.parse(savedImpact); else delete DATA.impact;` — was changed to the
+canonical assign-through-undefined bug this file has been bitten by four
+times: `else DATA.impact = undefined;`. Re-running the unseeded suite
+(`node tools/selfcheck.mjs <scratch copy> --expect 368`) afterward still
+reported 364/368 with the same four pre-existing failures as the clean
+baseline (phase3, v81, both v94 checks) — v74.4 did not fail; it stayed
+GREEN. Two probe checks inserted around the leak, one right after v101's
+`finally` and one right before v74.4 runs, showed why: immediately after
+v101, `DATA.impact` is an own property (`hasOwnProperty: true`) with
+`value: undefined` — the leak is real — but by the time v74.4 runs,
+`hasOwnProperty: false`. Something between the two clears it before v74.4
+ever gets a chance to see it as added.
+
+This means "v74.4 is green" is weaker evidence than earlier passes of
+this record have treated it as: it rules out a leak that survives to
+suite end, not one that is created and cleared somewhere in the middle.
+Closing that hole — a mid-suite ownership checkpoint placed right after
+each of the four read-must-not-write call sites, or having each
+restore-by-presence site assert its own before/after cleanup instead of
+relying solely on the end-of-suite diff — is outstanding work, not done
+here.
 
 A v11-to-v12 MIGRATION DRY RUN was executed against deliberately awkward legacy
 data (tools/legacy-seed.js, tools/migration-dryrun.mjs): a label no template
