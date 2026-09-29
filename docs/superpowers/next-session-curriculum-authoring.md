@@ -1,5 +1,14 @@
 # Next session — curriculum authoring, and the outstanding Phase B items
 
+> **Status 2026-09-28 (brainstorm session):** §1 has been brainstormed. Ian answered
+> all four questions below, and the answers are recorded in
+> `specs/2026-09-28-curriculum-identity-design.md` §1. The work is split into four
+> pieces, and piece 1 (stable identity) is specified there. A probe measured a second
+> defect, larger than I5: deleting a session silently re-attaches evidence to the
+> wrong deliverables (6 per account on the demo book). **Next session:** once Ian
+> has reviewed that spec, run `superpowers:writing-plans` for piece 1 only. Do not
+> brainstorm §1 again. The §2 items 2 and 3 are unchanged.
+
 Written 2026-09-28 at the end of the Phase B / v74.5 session, which stopped at its
 context limit. Nothing here has been designed yet. The next session starts with
 `superpowers:brainstorming` on §1; it is architectural, not bounded.
