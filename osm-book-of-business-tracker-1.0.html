@@ -2436,7 +2436,7 @@ function buildCallPrepContext(c){
     const templates = getSessionTemplateSet(c);
     templates.forEach((tpl, i) => {
       const act = getSessionActivity(c, i+1);
-      const prep = (c.sessionNotes && c.sessionNotes[i+1] && c.sessionNotes[i+1].prep || '').trim();
+      const prep = (readSessionNote(c, i+1).prep || '').trim();
       lines.push(`Session ${i+1} — ${tpl.title}: ${act ? 'completed ' + fmtDate(act.date) : 'not yet held'}${prep ? ` · prep note: "${prep}"` : ''}`);
     });
     const cov = computeCoverage(c);
@@ -4003,7 +4003,30 @@ function rbLibraryIndex(){
   });
   return _rbIndex;
 }
-function authoredRunbookFor(customer, title){
+/* Piece 1: authored scripts are found by the deterministic session id of the
+   shipped default they were written for, so a rename keeps the script (spec
+   §3c). Resolved per DEFAULT key with the same library candidates the title
+   lookup uses (exact key, then any library key the template key contains), so
+   'Sustainability + Carbon' sessions still reach the 'Sustainability' scripts. */
+let _rbIdIndex = null;
+function rbLibraryIdIndex(){
+  if(_rbIdIndex) return _rbIdIndex;
+  _rbIdIndex = {};
+  const libs = Object.keys(RUNBOOK_LIBRARY);
+  Object.entries(DEFAULT_SESSION_TEMPLATES).forEach(([key, list]) => {
+    const candidates = [key].concat(libs.filter(l => l !== key && key.includes(l)));
+    list.forEach(tpl => {
+      for(const lib of candidates){
+        const byTitle = RUNBOOK_LIBRARY[lib] || {};
+        const title = Object.keys(byTitle).find(t => rbTitleKey(t) === rbTitleKey(tpl.title));
+        if(title){ _rbIdIndex[tpl.id] = byTitle[title]; break; }
+      }
+    });
+  });
+  return _rbIdIndex;
+}
+function authoredRunbookFor(customer, title, sessionId){
+  if(sessionId){ const byId = rbLibraryIdIndex()[sessionId]; if(byId) return byId; }
   const idx = rbLibraryIndex();
   const key = rbTitleKey(title);
   const keys = [];
@@ -4017,7 +4040,7 @@ function authoredRunbookFor(customer, title){
 }
 function buildSessionRunbook(customer, tpl){
   if(tpl.runbook) return {segments: tpl.runbook, source: 'custom'};
-  const lib = authoredRunbookFor(customer, tpl.title);
+  const lib = authoredRunbookFor(customer, tpl.title, tpl.id);
   if(lib) return {segments: validateRunbookShape(lib) || generateStandardRunbook(tpl), source: 'authored'};
   return {segments: generateStandardRunbook(tpl), source: 'standard'};
 }
@@ -4544,8 +4567,9 @@ function migrateData(data){
         if(!isRecordObject(note) || !isRecordObject(note.deliverables)) return;
         const numericKey = /^\d+$/.test(key);
         const sessionNumber = numericKey ? parseInt(key, 10) : null;
-        /* A non-numeric key is unusable as a session reference, and
-           backfillCustomerRecord deletes the whole note a moment after this runs.
+        /* A non-numeric key is unusable as a session reference here, and
+           backfillCustomerRecord deletes the whole note a moment after this runs
+           unless the key is a session id (ss_..., piece 1; a v11 book has none).
            Skipping it would destroy the ticks inside. They migrate as custom
            criteria instead — the label is preserved and visible, which is the
            honest outcome for a tick whose session cannot be identified. */
@@ -6409,15 +6433,31 @@ function getNextSessionInfo(customer){
 
    Two functions now, and the names say which is which. Readers get a throwaway
    default; only a writer materializes anything. */
+/* Piece 1: notes are keyed by SESSION ID, so deleting or reordering a session
+   no longer moves them onto its neighbour. A numeric key is the pre-migration
+   shape (or a placeholder session with no id); it is read as a fallback and
+   moved to the id key the first time the note is written. */
+const SESSION_NOTE_KEY_RE = /^(\d+|ss_[a-z0-9_]+)$/;
+function sessionNoteKey(customer, sessionNumber){
+  const tpl = getSessionTemplate(customer, sessionNumber);
+  return (tpl && tpl.id) ? tpl.id : String(sessionNumber);
+}
 function readSessionNote(customer, sessionNumber){
   const notes = (customer && customer.sessionNotes) || {};
-  const hit = notes[sessionNumber];
+  const key = sessionNoteKey(customer, sessionNumber);
+  const hit = notes[key] || (key !== String(sessionNumber) ? notes[sessionNumber] : null);
   return hit ? hit : {deliverables:{}, prep:''};
 }
 function getSessionNote(customer, sessionNumber){
   if(!customer.sessionNotes) customer.sessionNotes = {};
-  if(!customer.sessionNotes[sessionNumber]) customer.sessionNotes[sessionNumber] = {deliverables:{}, prep:''};
-  return customer.sessionNotes[sessionNumber];
+  const key = sessionNoteKey(customer, sessionNumber);
+  const num = String(sessionNumber);
+  if(!customer.sessionNotes[key] && key !== num && customer.sessionNotes[num]){
+    customer.sessionNotes[key] = customer.sessionNotes[num];
+    delete customer.sessionNotes[num];
+  }
+  if(!customer.sessionNotes[key]) customer.sessionNotes[key] = {deliverables:{}, prep:''};
+  return customer.sessionNotes[key];
 }
 
 /* ---- Graduation date projection ---- */
@@ -9599,6 +9639,62 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     _renderMemoResets.forEach(r => r());
     check('identity A2: insert + reword in one session adds exactly the new criterion and keeps the reworded evidence', ok, detail);
+  })();
+  (function(){
+    /* A3 — renaming a session keeps its authored talk track (spec §3c: measured
+       'authored' -> 'standard'). */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const fx = _identityFixture(1);
+      const c = fx.accts[0];
+      const indexed = Object.keys(rbLibraryIdIndex()).length;
+      const before = buildSessionRunbook(c, getSessionTemplate(c, 1)).source;
+      DATA.config.sessionTemplates[fx.mod][0].title += ' (renamed)';
+      _renderMemoResets.forEach(r => r());
+      const after = buildSessionRunbook(c, getSessionTemplate(c, 1)).source;
+      ok = fx.ticked > 0 && indexed > 0 && before === 'authored' && after === 'authored';
+      detail = JSON.stringify({ticked: fx.ticked, indexed, before, after, mod: fx.mod});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity A3: renaming a session keeps its authored runbook', ok, detail);
+  })();
+  (function(){
+    /* c4b — session notes follow their session through a delete (spec §3d;
+       measured before piece 1: 42 of 48 notes rendered under the wrong session). */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const fx = _identityFixture(2);
+      fx.accts.forEach(c => { for(let n = 1; n <= c.totalSessions; n++){
+        getSessionNote(c, n).prep = 'P:' + getSessionTemplate(c, n).title; } });
+      /* The id-keyed notes must survive a load: backfillCustomerRecord used to
+         delete, and the import validator to reject, any key that is not a
+         session number (measured: reverting either left the suite green). */
+      const book = defaultData();
+      book.config = cloneData(DATA.config);
+      book.customers = cloneData(fx.accts);
+      book.activities = cloneData(DATA.activities);
+      const loaded = prepareImportedData(book).customers;
+      DATA.customers = loaded;
+      removeSessionTemplate(DATA.config.sessionTemplates[fx.mod], 1);
+      _renderMemoResets.forEach(r => r());
+      let compared = 0, wrong = 0;
+      loaded.forEach(c => { for(let n = 1; n <= c.totalSessions; n++){
+        const p = readSessionNote(c, n).prep;
+        if(!p) continue;                       // the session that slid into the plan had no note
+        compared++;
+        if(p !== 'P:' + getSessionTemplate(c, n).title) wrong++;
+      } });
+      ok = fx.ticked > 0 && compared > 0 && wrong === 0;
+      detail = JSON.stringify({ticked: fx.ticked, compared, wrong});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity: session notes follow their session through a delete', ok, detail);
   })();
   (function(){
     /* c2a — curriculum identity (piece 1). Shipped defaults carry DETERMINISTIC
@@ -18174,7 +18270,7 @@ function callsScheduledToday(){
     .filter(x => x.on === todayISO())
     .map(x => {
       const next = getNextSessionInfo(x.c);
-      const prep = next && x.c.sessionNotes && x.c.sessionNotes[next.number] && (x.c.sessionNotes[next.number].prep || '').trim();
+      const prep = next && (readSessionNote(x.c, next.number).prep || '').trim();
       return Object.assign(x, {next, prepped: !!prep, last: getMostRecentActivity(x.c.id), at: getNextSessionTime(x.c)});
     })
     .sort((a,b)=>{
@@ -23998,9 +24094,10 @@ function backfillCustomerRecord(c){
   }
   if(!isRecordObject(c.sessionNotes)) c.sessionNotes = {};
   Object.entries(c.sessionNotes).forEach(([key, note])=>{
-    // v48: an unusable note shell (non-numeric key or non-object value) is
+    // v48: an unusable note shell (a key that is neither a session number nor,
+    // since piece 1, a session id; or a non-object value) is
     // removed rather than rejecting the whole book at the validation boundary.
-    if(!/^\d+$/.test(key) || !isRecordObject(note)){ delete c.sessionNotes[key]; return; }
+    if(!SESSION_NOTE_KEY_RE.test(key) || !isRecordObject(note)){ delete c.sessionNotes[key]; return; }
     if(!isRecordObject(note.deliverables)) note.deliverables = {};
     if(note.prep === undefined) note.prep = '';
     else if(typeof note.prep !== 'string') note.prep = String(note.prep); // v48
@@ -24407,7 +24504,7 @@ function assertNormalizedBookData(data, source){
     if(!Array.isArray(c.stageHistory) || c.stageHistory.some(h=>!isRecordObject(h) || !cfg.stages.some(s=>s.key===h.stage) || !isRealISODate(h.date))) rejectData(source, `${label} has invalid stage history.`);
     if(!isRecordObject(c.sessionNotes)) rejectData(source, `${label} has invalid session notes.`);
     Object.entries(c.sessionNotes).forEach(([session,note])=>{
-      if(!/^\d+$/.test(session) || !isRecordObject(note) || !isRecordObject(note.deliverables || {}) || (note.prep !== undefined && typeof note.prep !== 'string')) rejectData(source, `${label} has an invalid note for Session ${session}.`);
+      if(!SESSION_NOTE_KEY_RE.test(session) || !isRecordObject(note) || !isRecordObject(note.deliverables || {}) || (note.prep !== undefined && typeof note.prep !== 'string')) rejectData(source, `${label} has an invalid note for Session ${session}.`);
     });
     if(!isRecordObject(c.compliance) || !isRecordObject(c.compliance.sentiment) || !isRecordObject(c.compliance.outcomePlan) || !isRecordObject(c.compliance.associatedPeopleCSAT)) rejectData(source, `${label} has invalid compliance data.`);
     const complianceDates = [c.compliance.sentiment.date,c.compliance.outcomePlan.date,c.compliance.associatedPeopleCSAT.date].filter(Boolean);

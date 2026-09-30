@@ -45,7 +45,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        373/373 passed, 0 failed
+  window.runSelfChecks()        375/375 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -672,6 +672,68 @@ CURRICULUM IDENTITY — TASK 3 (suite 371 -> 373)
     pure-insert control apart from reworded; ttfv -> null in both (a new
     unevidenced ttfv1 criterion un-derives First Value, as in the control).
     Before (Task 1): ttfv1 9->11, unev 0->2, orphan 1.
+
+CURRICULUM IDENTITY — TASK 4 (suite 373 -> 375)
+  - Session notes are keyed by session id and authored runbooks are found by
+    session id. New `SESSION_NOTE_KEY_RE` (/^(\d+|ss_[a-z0-9_]+)$/),
+    `sessionNoteKey(customer, n)`; `readSessionNote` reads the id key, falling
+    back to the numeric key; `getSessionNote` moves a numeric-key note to the
+    id key on first write (readers still create nothing: the v97 purity check
+    stays green). New `rbLibraryIdIndex()`; `authoredRunbookFor(customer,
+    title, sessionId)` tries the id first; `buildSessionRunbook` passes
+    `tpl.id`. The trap is closed: `backfillCustomerRecord`'s notes loop and
+    the import/normalized validator now accept `ss_` keys via
+    `SESSION_NOTE_KEY_RE` (otherwise every id-keyed note is deleted on the
+    next load). The AI-context read and the Command Center read go through
+    `readSessionNote`. The two bulk clears (module switch, CSRD toggle) set
+    `c.sessionNotes = {}`, which clears everything, so they are unchanged. The
+    v11->12 migration comment about backfillCustomerRecord deleting
+    non-numeric keys now says "unless the key is a session id"; its logic is
+    untouched. Two new checks: `identity A3: renaming a session keeps its
+    authored runbook` and `identity: session notes follow their session
+    through a delete` (c4b). The v48 comment in `backfillCustomerRecord`
+    ("non-numeric key") is reworded to match.
+  - c4b goes one step past the plan's code: after writing the notes it loads
+    the fixture accounts through `prepareImportedData` (migrate, backfills,
+    validator) before the delete. Why: with the plan's c4b and A3 alone,
+    reverting either half of the trap fix (backfill regex, or validator
+    regex, back to /^\d+$/) left the suite at `375/375`, exit 0 (measured).
+    The trap this task exists to close had no check.
+  - RED first, measured on HEAD's production code with only the two new
+    checks inserted: `runSelfChecks: 373/375 passed, 2 failed`, both new checks red. A3
+    `rbLibraryIdIndex is not defined`. c4b
+    `{"ticked":22,"compared":16,"wrong":14}`. No fixture problem: the A3
+    fixture module is Carbon and `before` is 'authored'.
+  - MUTATION PROOF, A3. Mutation (production code): deleted the
+    `if(sessionId){ const byId = rbLibraryIdIndex()[sessionId]; ... }` line in
+    `authoredRunbookFor`. Red: `identity A3` with
+    `{"ticked":11,"indexed":36,"before":"authored","after":"standard","mod":"Carbon"}`.
+    Revert: line restored; `cmp` against the green file identical.
+  - MUTATION PROOF, c4b. Mutation (production code): `sessionNoteKey` returns
+    `String(sessionNumber)`. Red: `identity: session notes follow their
+    session through a delete` with `{"ticked":22,"compared":16,"wrong":14}`
+    (only that check). Revert: `cmp` identical to the green file.
+  - MUTATION PROOF, trap (backfill). Mutation (production code):
+    `backfillCustomerRecord`'s notes test back to `/^\d+$/.test(key)`.
+    Red: `374/375`, only c4b: `{"ticked":22,"compared":0,"wrong":0}` (every
+    id-keyed note deleted on load). Revert: `cmp` identical.
+  - MUTATION PROOF, trap (validator). Mutation (production code): the
+    `assertNormalizedBookData` note-key test back to `/^\d+$/.test(session)`.
+    Red: `374/375`, only c4b: `Import rejected — Identity Co 0 has an invalid
+    note for Session ss_carbon_01.` Revert: `cmp` identical.
+  - All four mutation proofs were run on the final file (with the round-trip
+    in c4b); A3 and c4b gave the same red details as above, each 374/375.
+  - No check body was changed to make a proof pass, and no existing check was edited.
+  - Final: `runSelfChecks: 375/375 passed, 0 failed`; guide
+    `runGuideSelfChecks: 18/18 passed, 0 failed`.
+  - Probes, re-run on this code (2026-09-30). Spec probe: rename_s1_runbook
+    authored->authored (was authored->standard); Carbon 66 evidenced;
+    delete_session2 reworded [0,0], evInCurr 11->10, orphaned 0->1,
+    unevidenced 0->1, 6 detached; controls 0, as after Task 3. Measure probe:
+    `delete_s2_notes.notesShownUnderWrongSession` stays 42 of 48. Expected:
+    the probe writes notes directly under NUMERIC keys, the unmigrated shape,
+    which still follows position. Task 6's migration re-keys them by session
+    id. Other measure figures as after Task 3.
 
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded

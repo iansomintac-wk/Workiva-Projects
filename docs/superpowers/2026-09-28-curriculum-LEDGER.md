@@ -5,7 +5,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 | Piece | Spec | Session prompt | State | Self-checks after | Commit |
 |---|---|---|---|---|---|
-| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **building (tasks 2–3 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). Next: build 3 (`sessions/curriculum-piece-1-build-3.md`) | **373/373** measured 2026-09-30 (guide 18/18) → 379 planned | task 2: `29689c4`; task 3: see git log |
+| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **building (tasks 2–4 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). Next: build 4 (`sessions/curriculum-piece-1-build-4.md`) | **375/375** measured 2026-09-30 (guide 18/18) → 379 planned | task 2: `29689c4`; task 3: `2a57350`; task 4: see git log |
 | 2 Versioned curriculum + pinning | not written (outline in umbrella §2) | not written | after piece 1 | | |
 | 3 Authoring UI + runbook editor | not written (outline in umbrella §2) | not written | after piece 2 | | |
 | 4 Share, fork, upgrade | not written (outline in umbrella §2) | not written | after piece 3 | | |
@@ -78,6 +78,21 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
   (`dl_carbon_02_01`), so one orphan per account is right; the old 3 came from positional
   mismatching. Plan Task 3 Step 7 and Task 7's expectation are corrected to `[0,1]`.
 
+## Task 4 results (build 3, 2026-09-30, measured)
+
+- Before: suite 373/373, guide 18/18. RED (HEAD code + the two new checks): 373/375, A3
+  `rbLibraryIdIndex is not defined`, c4b `{"ticked":22,"compared":16,"wrong":14}`.
+- After: suite **375/375**, guide **18/18**. Spec probe `rename_s1_runbook ["authored","authored"]`
+  (was `standard`); `delete_session2` reworded `[0,0]`, orphaned `[0,1]`, 6 detached on 6/6, as
+  after Task 3. Measure probe: `notesShownUnderWrongSession` still **42/48**. That is expected:
+  the probe writes numeric keys (unmigrated shape), which Task 6's migration re-keys.
+- **Correction to the plan's checks: the trap had no guard.** With plan-as-written A3 + c4b, reverting
+  either the backfill or the validator regex to `/^\d+$/` left the suite **375/375** (measured).
+  c4b now loads its accounts through `prepareImportedData` before the delete; each revert then turns
+  c4b red (backfill: `compared 0`; validator: `Import rejected … Session ss_carbon_01`). Four
+  mutation proofs, each 374/375 with only its own check red, recorded in `VALIDATION.txt`.
+- Implementer (Sonnet) inferred the RED summary line rather than capturing it; it was re-measured.
+
 ## Rules carried between sessions
 
 - A new check counts only once it has been shown failing against a mutation of
@@ -94,7 +109,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
   both files in the same commit.
 - Schema changes keep the export-before-upgrade discipline. Today that is documentation only
   (see "The three open items"); whether the app enforces it is Ian's call.
-- Notes keyed by session id need `backfillCustomerRecord` and the import validator to accept
+- **Done in task 4:** notes keyed by session id needed `backfillCustomerRecord` and the import validator to accept
   `ss_` keys. Today both delete or reject any non-numeric key.
 - The fixes in `2026-09-22-fixes-LEDGER.md` touch the same file. Whichever lands second
   rebases, and re-runs the suite and the probe.

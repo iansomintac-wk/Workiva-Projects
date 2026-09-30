@@ -666,6 +666,8 @@ function matchStoredCriteria(stored, templates){
   })();
 ```
 
+  **As built (build 3):** c4b also loads the fixture accounts through `prepareImportedData(book)` after writing the notes and before the delete. The code above alone left the suite green with either half of the Step 3(a) trap fix reverted (measured); see `VALIDATION.txt`, Task 4.
+
 - [ ] **Step 2: Run `--expect 375` and confirm both fail** (`rbLibraryIdIndex is not defined`; c4b `wrong > 0`). Record the details. **Caution:** in the fixture, `fx.mod` must have an authored library entry for session 1. If A3 reports `before !== 'authored'`, that is a fixture problem, not a pass. Pick the module the spec probe used (Carbon) and record which.
 
 - [ ] **Step 3: Re-key notes.** Replace `readSessionNote` / `getSessionNote` with:
