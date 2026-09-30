@@ -45,7 +45,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        371/371 passed, 0 failed
+  window.runSelfChecks()        373/373 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -619,6 +619,59 @@ CURRICULUM IDENTITY — TASK 2 (suite 369 -> 371)
     accounts, evInCurr 11->8, orphaned 0->3, unevidenced 0->3, 18 detached;
     no-op and delete-last controls 0; rename_s1_runbook authored->standard.
     Measure probe: 66 ticked; I5 ttfv1 9 -> 11 as in plan task 1.
+
+CURRICULUM IDENTITY — TASK 3 (suite 371 -> 373)
+  - Criteria now match by deliverable id (pass 0). New pure
+    `matchStoredCriteria(stored, templates)`; `outcomeCriteriaFor` calls it;
+    `materializeOutcomeCriterion` dedupes stamped criteria by
+    `sourceDeliverableId` only and stamps `sourceSessionId` /
+    `sourceDeliverableId` onto new records (plan Task 3). Two new checks:
+    `identity A1: deleting a session orphans only its own criteria and
+    re-attaches nothing` and `identity A2: insert + reword in one session adds
+    exactly the new criterion and keeps the reworded evidence`, plus the
+    `_identityFixture(n)` helper (not a check).
+  - RED first, before any implementation: `runSelfChecks: 371/373 passed,
+    2 failed`, the two new checks:
+    A1 `{"ticked":33,"reworded":18,"orphanedDeleted":0,"orphanedOther":9,
+    "wrongOwner":0,"followed":0,"misdeduped":true}`.
+    A2 base ttfv1 9 / unev 0; controls ctlA = ctlB at 10/1/0 (as required);
+    gotA `{"ttfv1":11,"unev":2,"orphan":1,...}`. (The runner truncates the
+    detail at 400 chars, so gotB is cut off; gotA is the same bug.)
+  - MUTATION PROOF, A1. Mutation (production code): deleted the pass 0
+    `templates.forEach` block that reads `byDl` from `matchStoredCriteria`.
+    Red: `358/373 passed, 15 failed`. A1 is red:
+    `{"ticked":33,"reworded":0,"orphanedDeleted":3,"orphanedOther":30,
+    "wrongOwner":0,"followed":33,"misdeduped":false}`; A2 is red too
+    (`base` ttfv1 18, orphan 11, dupText 11: stamped records fall through to
+    orphans). 13 existing phaseA/phaseB checks also go red, since every
+    stamped record is orphaned and its criteria re-derive as provisional.
+    Revert: pass 0 block restored; `cmp` against the green file identical.
+  - MUTATION PROOF, A2. Mutation (production code, `setSessionDeliverables`):
+    added `const priorText = new Map(deliverableRows(tpl).map(r => [r.id,
+    r.text]));` and, in the row loop, `if(id && priorText.has(id) &&
+    priorText.get(id) !== r.text) id = hexId('dl_');` (reword mints a new id).
+    Red: `371/373 passed, 2 failed`: `identity A2` (gotA
+    `{"ttfv1":11,"unev":2,"orphan":1,...}` against controls 10/1/0) and the
+    existing `phaseA rewording follows evidence, and inserting neither moves
+    nor inherits it` (`survivedReword:false`). A1 stays green (it never
+    rewords). Revert: both lines removed; `cmp` identical to the green file.
+  - No check body was changed for either proof. Both checks went red under
+    their mutations as written in the plan.
+  - Final: `runSelfChecks: 373/373 passed, 0 failed`; guide
+    `runGuideSelfChecks: 18/18 passed, 0 failed`.
+  - Probes, re-run on this code (2026-09-30). Spec probe: Carbon 66 evidenced;
+    delete_session2 reworded [0,0] on 6/6 accounts (was [0,6]), evInCurr
+    11->10, orphaned 0->1, unevidenced 0->1, 6 detached (was 18: one deleted
+    criterion per account, nothing re-attached); no-op and delete-last
+    controls 0; rename_s1_runbook still authored->standard (Task 4). The plan
+    predicted orphaned [0,3]; that was the pre-change figure. Carbon session 2
+    has one deliverable, so 1 orphan per account is the correct count.
+    Measure probe (`_variant` now edits through `setSessionDeliverables`;
+    reword keeps the id, insert passes id:null): I5 in both orders ttfv1
+    9->10, unev 0->1, orphan 0, reworded 1, dupText 0, identical to the
+    pure-insert control apart from reworded; ttfv -> null in both (a new
+    unevidenced ttfv1 criterion un-derives First Value, as in the control).
+    Before (Task 1): ttfv1 9->11, unev 0->2, orphan 1.
 
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded

@@ -6106,28 +6106,34 @@ function getSessionTemplate(customer, sessionNumber){
    one would inherit the evidence of whatever used to sit there. */
 function outcomeCriterionKey(sessionNumber, index){ return 's' + sessionNumber + '#' + index; }
 
-/* PURE. Returns the account's criteria in curriculum order, then any
-   materialized item the curriculum no longer carries. Writes nothing. */
-function outcomeCriteriaFor(customer){
-  if(!customer) return [];
-  const store = isRecordObject(customer.outcomeCriteria) ? customer.outcomeCriteria : {};
-  const stored = Array.isArray(store.items) ? store.items : [];
-  const removed = new Set(Array.isArray(store.removed) ? store.removed : []);
-  const evidence = isRecordObject(customer.outcomeEvidence) ? customer.outcomeEvidence : {};
+/* PURE. Places stored criterion records onto a curriculum. Pass 0 (piece 1):
+   a record with a sourceDeliverableId matches the deliverable carrying that
+   id WHEREVER it now sits (any session, any index). Such a record never
+   falls through to text or index — if its id is gone, it is 'no longer in
+   the curriculum'. That rule is what closes spec §3a/§3b. Passes 1 and 2 run
+   only on records WITHOUT a sourceDeliverableId (legacy/imported bridge).
+   templates: session order, each {id?, deliverables:[string], deliverableIds?}. */
+function matchStoredCriteria(stored, templates){
   const claimed = new Set();
-  const out = [];
-
-  getSessionTemplateSet(customer).forEach((tpl, i) => {
+  const byDl = new Map();
+  stored.forEach(s => { if(s && s.sourceDeliverableId && !byDl.has(s.sourceDeliverableId)) byDl.set(s.sourceDeliverableId, s); });
+  const legacy = stored.filter(s => s && !s.sourceDeliverableId);
+  const matched = templates.map(t => new Array((t.deliverables || []).length).fill(null));
+  templates.forEach((tpl, i) => (tpl.deliverables || []).forEach((_, idx) => {
+    const id = Array.isArray(tpl.deliverableIds) ? tpl.deliverableIds[idx] : null;
+    const hit = id ? byDl.get(id) : null;
+    if(hit && !claimed.has(hit.id)){ claimed.add(hit.id); matched[i][idx] = hit; }
+  }));
+  templates.forEach((tpl, i) => {
     const sessionNumber = i + 1;
     const deliverables = tpl.deliverables || [];
-    const matched = new Array(deliverables.length).fill(null);
-
     /* Pass 1 — TEXT, across the WHOLE session before any index matching. A
        deliverable that still reads exactly as it did when its evidence was
        recorded keeps that evidence, wherever in the session it has moved to. */
     deliverables.forEach((text, idx) => {
-      const hit = stored.find(s => !claimed.has(s.id) && s.sourceSession === sessionNumber && s.text === text);
-      if(hit){ claimed.add(hit.id); matched[idx] = hit; }
+      if(matched[i][idx]) return;
+      const hit = legacy.find(s => !claimed.has(s.id) && s.sourceSession === sessionNumber && s.text === text);
+      if(hit){ claimed.add(hit.id); matched[i][idx] = hit; }
     });
 
     /* Pass 2 — INDEX, only for deliverables pass 1 could not place, and only
@@ -6138,15 +6144,34 @@ function outcomeCriteriaFor(customer){
        is absent on records materialized before this guard existed — treat that
        as permissive rather than dropping their matching entirely. */
     deliverables.forEach((text, idx) => {
-      if(matched[idx]) return;
-      const hit = stored.find(s => !claimed.has(s.id) && s.sourceSession === sessionNumber
+      if(matched[i][idx]) return;
+      const hit = legacy.find(s => !claimed.has(s.id) && s.sourceSession === sessionNumber
         && s.sourceIndex === idx
         && (s.sourceCount === undefined || s.sourceCount === deliverables.length));
-      if(hit){ claimed.add(hit.id); matched[idx] = hit; }
+      if(hit){ claimed.add(hit.id); matched[i][idx] = hit; }
     });
+  });
+  return {matched, claimed};
+}
 
+/* PURE. Returns the account's criteria in curriculum order, then any
+   materialized item the curriculum no longer carries. Writes nothing. */
+function outcomeCriteriaFor(customer){
+  if(!customer) return [];
+  const store = isRecordObject(customer.outcomeCriteria) ? customer.outcomeCriteria : {};
+  const stored = Array.isArray(store.items) ? store.items : [];
+  const removed = new Set(Array.isArray(store.removed) ? store.removed : []);
+  const evidence = isRecordObject(customer.outcomeEvidence) ? customer.outcomeEvidence : {};
+  const out = [];
+  const set = getSessionTemplateSet(customer);
+  const {matched, claimed} = matchStoredCriteria(stored, set);
+
+  set.forEach((tpl, i) => {
+    const sessionNumber = i + 1;
+    const deliverables = tpl.deliverables || [];
     deliverables.forEach((text, idx) => {
-      const hit = matched[idx];
+      const hit = matched[i][idx];
+      const srcIds = {sourceSessionId: tpl.id || null, sourceDeliverableId: (tpl.deliverableIds || [])[idx] || null};
       if(hit){
         if(removed.has(hit.id)) return;
         const ev = evidence[hit.id];
@@ -6155,11 +6180,13 @@ function outcomeCriteriaFor(customer){
           stage: hit.stage || tpl.ttfvStage || '',
           source: hit.text === text ? 'curriculum' : 'curriculum (reworded since)',
           sourceSession:sessionNumber, sourceIndex:idx,
+          sourceSessionId: srcIds.sourceSessionId, sourceDeliverableId: srcIds.sourceDeliverableId,
           evidence: ev ? Object.assign({}, ev) : null});
         return;
       }
       out.push({id: outcomeCriterionKey(sessionNumber, idx), text, stage: tpl.ttfvStage || '',
         source:'curriculum', sourceSession:sessionNumber, sourceIndex:idx,
+        sourceSessionId: srcIds.sourceSessionId, sourceDeliverableId: srcIds.sourceDeliverableId,
         evidence:null, provisional:true});
     });
   });
@@ -6169,6 +6196,7 @@ function outcomeCriteriaFor(customer){
     out.push({id:s.id, text: (typeof s.text === 'string' && s.text) ? s.text : '', stage:s.stage || '',
       source: s.sourceSession ? 'no longer in the curriculum' : 'added for this account',
       sourceSession: s.sourceSession || null, sourceIndex: s.sourceIndex,
+      sourceSessionId: s.sourceSessionId || null, sourceDeliverableId: s.sourceDeliverableId || null,
       evidence: evidence[s.id] ? Object.assign({}, evidence[s.id]) : null});
   });
   return out;
@@ -6199,11 +6227,17 @@ function materializeOutcomeCriterion(customer, criterion, explicitCount){
      sourceIndex is normalized first: a caller may pass undefined where a stored
      record holds null, and `undefined !== null` would mint a duplicate. */
   const idx = criterion.sourceIndex === undefined ? null : criterion.sourceIndex;
-  const dup = criterion.sourceSession
-    ? customer.outcomeCriteria.items.find(x =>
-        x.sourceSession === criterion.sourceSession && x.sourceIndex === idx)
-    : customer.outcomeCriteria.items.find(x =>
-        !x.sourceSession && x.text === String(criterion.text || ''));
+  /* Piece 1: a criterion that knows its deliverable id is identified by it
+     alone. Deduping it on (sourceSession, sourceIndex) would, after a session
+     delete, hand a new tick the id of the deleted session's record. Legacy
+     positional dedupe applies only among unstamped records. */
+  const dup = criterion.sourceDeliverableId
+    ? customer.outcomeCriteria.items.find(x => x.sourceDeliverableId === criterion.sourceDeliverableId)
+    : (criterion.sourceSession
+        ? customer.outcomeCriteria.items.find(x => !x.sourceDeliverableId &&
+            x.sourceSession === criterion.sourceSession && x.sourceIndex === idx)
+        : customer.outcomeCriteria.items.find(x =>
+            !x.sourceSession && x.text === String(criterion.text || '')));
   if(dup) return dup;
   /* sourceCount is what makes the index fallback in outcomeCriteriaFor safe: it
      only trusts a stored sourceIndex while the session still holds the same
@@ -6224,6 +6258,7 @@ function materializeOutcomeCriterion(customer, criterion, explicitCount){
     stage: criterion.stage || '', sourceSession: criterion.sourceSession || null,
     sourceIndex: idx,
     sourceCount: count};
+  if(criterion.sourceDeliverableId){ rec.sourceSessionId = criterion.sourceSessionId || null; rec.sourceDeliverableId = criterion.sourceDeliverableId; }
   customer.outcomeCriteria.items.push(rec);
   return rec;
 }
@@ -9454,6 +9489,116 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     _renderMemoResets.forEach(r => r());
     check('phaseA rewording follows evidence, and inserting neither moves nor inherits it', ok, detail);
+  })();
+  /* Piece 1 fixture: n synthetic accounts on a module with >= 8 sessions, every
+     criterion evidenced. The CALLER saves/restores DATA.customers, DATA.activities
+     and DATA.config.sessionTemplates (deep-clone templates before mutating). */
+  function _identityFixture(n){
+    const mod = (Array.isArray(DATA.config.sessionTemplates['Carbon']) && DATA.config.sessionTemplates['Carbon'].length >= 8)
+      ? 'Carbon' : DATA.config.modules[0];
+    const accts = Array.from({length:n}, (_, k) => {
+      const c = {id:'__idfx' + k + '__', name:'Identity Co ' + k, module:mod,
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      return c;
+    });
+    DATA.customers = accts;
+    DATA.activities = Object.fromEntries(accts.map(c => [c.id, []]));
+    _renderMemoResets.forEach(r => r());
+    let ticked = 0;
+    accts.forEach(c => outcomeCriteriaFor(c).forEach(cr => {
+      if(setOutcomeEvidence(c, cr, {on: isoAddDays(todayISO(), -30), by:'customer'})) ticked++;
+    }));
+    return {mod, accts, ticked};
+  }
+  (function(){
+    /* A1 — deleting session 2 must not re-attach its evidence to anything. Before
+       piece 1 the demo book showed 6 'reworded since' rows per account (spec §3a). */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const fx = _identityFixture(3);
+      const list = DATA.config.sessionTemplates[fx.mod];
+      const deletedIds = new Set(list[1].deliverableIds);
+      const before = new Map(fx.accts.map(c => [c.id, new Map(outcomeCriteriaFor(c)
+        .filter(x => x.evidence).map(x => [x.sourceDeliverableId, x.id]))]));
+      removeSessionTemplate(list, 1);
+      _renderMemoResets.forEach(r => r());
+      let reworded = 0, orphanedOther = 0, orphanedDeleted = 0, wrongOwner = 0, followed = 0;
+      fx.accts.forEach(c => outcomeCriteriaFor(c).forEach(x => {
+        if(x.source === 'curriculum (reworded since)') reworded++;
+        if(x.source === 'no longer in the curriculum'){
+          const s = c.outcomeCriteria.items.find(r => r.id === x.id);
+          if(s && deletedIds.has(s.sourceDeliverableId)) orphanedDeleted++; else orphanedOther++;
+        }
+        if(x.evidence && x.sourceDeliverableId){
+          const wasId = before.get(c.id).get(x.sourceDeliverableId);
+          if(wasId === x.id) followed++; else wrongOwner++;
+        }
+      }));
+      // A new tick on the session that slid into the plan (old session 9) must
+      // materialize ITS OWN record. Positional dedupe on stored (sourceSession,
+      // sourceIndex) would hand it old session 8's record, which now sits at 7.
+      const c0 = fx.accts[0];
+      const fresh = outcomeCriteriaFor(c0).find(x => x.provisional && x.sourceDeliverableId);
+      const misdeduped = !fresh || materializeOutcomeCriterion(c0, fresh).sourceDeliverableId !== fresh.sourceDeliverableId;
+      ok = fx.ticked > 0 && reworded === 0 && orphanedOther === 0
+        && orphanedDeleted === fx.accts.length * deletedIds.size && wrongOwner === 0 && followed > 0 && !misdeduped;
+      detail = JSON.stringify({ticked: fx.ticked, reworded, orphanedDeleted, orphanedOther, wrongOwner, followed, misdeduped});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity A1: deleting a session orphans only its own criteria and re-attaches nothing', ok, detail);
+  })();
+  (function(){
+    /* A2 — I5: insert one deliverable AND reword another in the same ttfv1 session.
+       Measured before piece 1 (task 1): ttfv1 9 -> 11, unevidenced 0 -> 2, one
+       orphaned duplicate. Pass (Ian's M3 ruling): in BOTH edit orders, the whole
+       criteria snapshot equals a PURE insert at the same position, and the reworded
+       criterion keeps its evidence. The control must itself show +1 ttfv1, 1
+       unevidenced, 0 orphans, so a degenerate control cannot make this pass.
+       ttfvDays is in the snapshot as a regression guard only: a new unevidenced
+       ttfv1 criterion correctly un-derives First Value in both. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const fx = _identityFixture(2);
+      const tpl = DATA.config.sessionTemplates[fx.mod][0];
+      const orig = deliverableRows(tpl);
+      const c = fx.accts[0];
+      const snap = () => {
+        _renderMemoResets.forEach(r => r());
+        const list = outcomeCriteriaFor(c), texts = list.map(x => x.text);
+        return {ttfv1: list.filter(x => x.stage === 'ttfv1').length,
+          unev: list.filter(x => !x.evidence).length,
+          orphan: list.filter(x => x.source === 'no longer in the curriculum').length,
+          dupText: texts.length - new Set(texts).size, ttfv: ttfvDays(c),
+          rewordedKept: list.some(x => x.source === 'curriculum (reworded since)' && x.evidence)};
+      };
+      const base = snap();
+      const NEW = {id:null, text:'NEW deliverable'};
+      const copy = () => orig.map(r => ({id:r.id, text:r.text}));
+      const run = rows => { setSessionDeliverables(tpl, rows); return snap(); };
+      // Order A: insert at the front, reword the last. Order B: reword the first, insert at the end.
+      const ctlA = run([NEW].concat(copy()));
+      const a = copy(); a[a.length - 1].text += ' (reworded)';
+      const gotA = run([NEW].concat(a));
+      const ctlB = run(copy().concat([NEW]));
+      const b = copy(); b[0].text += ' (reworded)';
+      const gotB = run(b.concat([NEW]));
+      const counts = s => JSON.stringify([s.ttfv1, s.unev, s.orphan, s.dupText, s.ttfv]);
+      const ctlOk = [ctlA, ctlB].every(s => s.ttfv1 === base.ttfv1 + 1 && s.unev === base.unev + 1 && s.orphan === 0);
+      ok = fx.ticked > 0 && ctlOk
+        && counts(gotA) === counts(ctlA) && gotA.rewordedKept
+        && counts(gotB) === counts(ctlB) && gotB.rewordedKept;
+      detail = JSON.stringify({ticked: fx.ticked, base, ctlA, gotA, ctlB, gotB});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity A2: insert + reword in one session adds exactly the new criterion and keeps the reworded evidence', ok, detail);
   })();
   (function(){
     /* c2a — curriculum identity (piece 1). Shipped defaults carry DETERMINISTIC

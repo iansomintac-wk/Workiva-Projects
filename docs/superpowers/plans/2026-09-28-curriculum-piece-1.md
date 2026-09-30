@@ -575,7 +575,7 @@ function matchStoredCriteria(stored, templates){
 
 - [ ] **Step 7: Probes and docs.**
   - Edit the measurement probe's `_variant` so the edits go through the writer (`const rows = deliverableRows(t[0]); …; setSessionDeliverables(t[0], rows)`; reword keeps the id, insert passes `id:null`).
-  - Re-run both probes. Expected spec probe: `delete_session2` `reworded [0,0]` on all 6 and orphaned `[0,3]`; `rename_s1_runbook` still `["authored","standard"]` (Task 4 fixes it). Expected measurement probe: I5 rows `ttfv1 9→10`, `unev 0→1`, orphan 0, reworded 1.
+  - Re-run both probes. Expected spec probe: `delete_session2` `reworded [0,0]` on all 6 and orphaned `[0,1]` (Carbon session 2 has one deliverable; `[0,3]` was the positional before-number, corrected in build 2); `rename_s1_runbook` still `["authored","standard"]` (Task 4 fixes it). Expected measurement probe: I5 rows `ttfv1 9→10`, `unev 0→1`, orphan 0, reworded 1.
   - If either number differs, stop and report before committing.
   - Update the counts 371 → 373 and add the VALIDATION section `TASK 3 (suite 371 -> 373)` with the mutation proofs and the probe numbers.
 
@@ -1006,7 +1006,7 @@ function sessionDeleteImpact(templateKey, sessionId){
 - [ ] **Step 5: Mutation proof.** Apply the replacer mutation: A7 red, on the random-id session's ids changing. Revert. Diff clean, then green.
 - [ ] **Step 6: End-to-end numbers.**
   - Re-run the spec probe, the measurement probe, and `tools/migration-dryrun.mjs` in both modes.
-  - Expected spec probe: `delete_session2 reworded [0,0]`, orphaned `[0,3]`, `rename_s1_runbook ["authored","authored"]`, controls 0.
+  - Expected spec probe: `delete_session2 reworded [0,0]`, orphaned `[0,1]`, `rename_s1_runbook ["authored","authored"]`, controls 0.
   - Record every number in VALIDATION, split into measured this session and carried.
 - [ ] **Step 7: Docs.** Update the counts 378 → 379. Add a CHANGELOG entry for piece 1 (user-visible: per-row deliverable editor, reorder, delete confirmation, schema 13). Update the ledger row: piece 1 → `built`, with the self-check count and commit.
 - [ ] **Step 8: Commit.** `git commit -m "Curriculum piece 1 task 7: ids survive export and import (A7)"`

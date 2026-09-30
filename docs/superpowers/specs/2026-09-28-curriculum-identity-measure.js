@@ -27,16 +27,19 @@ function _m(c){ const cr=outcomeCriteriaFor(c); const t1=cr.filter(x=>x.stage===
   return {ttfv1:t1.length, unev:cr.filter(x=>!x.evidence).length, orphan:cr.filter(x=>x.source==='no longer in the curriculum').length,
     reworded:cr.filter(x=>x.source==='curriculum (reworded since)').length, dupText, ttfv:ttfvDays(c)}; }
 function _variant(edit){
-  const t=JSON.parse(JSON.stringify(_orig)); edit(t[0].deliverables); DATA.config.sessionTemplates[_mod]=t;
-  const rows=_accts.map(_m);
+  /* Edits go through the writer (piece 1): reword keeps the row's id, insert passes id:null. */
+  const t=JSON.parse(JSON.stringify(_orig)); const rows=deliverableRows(t[0]); edit(rows); setSessionDeliverables(t[0], rows); DATA.config.sessionTemplates[_mod]=t;
+  if(typeof _renderMemoResets!=='undefined') _renderMemoResets.forEach(r=>r());
+  const res=_accts.map(_m);
   DATA.config.sessionTemplates[_mod]=JSON.parse(JSON.stringify(_orig));
-  return rows;
+  if(typeof _renderMemoResets!=='undefined') _renderMemoResets.forEach(r=>r());
+  return res;
 }
 _res.base=_accts.map(_m);
-_res.i5_insert0_rewordLast=_variant(d=>{ d.push(d.pop()+' (reworded)'); d.unshift('NEW deliverable'); });
-_res.i5_rewordFirst_insertEnd=_variant(d=>{ d[0]=d[0]+' (reworded)'; d.push('NEW deliverable'); });
-_res.ctl_pureInsert=_variant(d=>{ d.unshift('NEW deliverable'); });
-_res.ctl_pureReword=_variant(d=>{ d[1]=d[1]+' (reworded)'; });
+_res.i5_insert0_rewordLast=_variant(d=>{ d[d.length-1].text+=' (reworded)'; d.unshift({id:null, text:'NEW deliverable'}); });
+_res.i5_rewordFirst_insertEnd=_variant(d=>{ d[0].text+=' (reworded)'; d.push({id:null, text:'NEW deliverable'}); });
+_res.ctl_pureInsert=_variant(d=>{ d.unshift({id:null, text:'NEW deliverable'}); });
+_res.ctl_pureReword=_variant(d=>{ d[1].text+=' (reworded)'; });
 /* Notes + activities: stamp a note on every session carrying its current title, then delete session 2. */
 _accts.forEach(c=>{ c.sessionNotes={}; for(let n=1;n<=c.totalSessions;n++){ c.sessionNotes[n]={deliverables:{}, prep:'PREP:'+_orig[n-1].title}; } });
 const _acts=[]; _accts.forEach(c=>{ (DATA.activities[c.id]||[]).forEach(a=>{ if(Number.isInteger(a.sessionNumber)) _acts.push({c, a, title:(_orig[a.sessionNumber-1]||{}).title}); }); });

@@ -5,7 +5,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 | Piece | Spec | Session prompt | State | Self-checks after | Commit |
 |---|---|---|---|---|---|
-| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **building (task 2 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). Build 2 can start (M3 ruled 2026-09-30) | **371/371** measured 2026-09-30 (guide 18/18) → 379 planned | task 2: `29689c4` |
+| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **building (tasks 2–3 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). Next: build 3 (`sessions/curriculum-piece-1-build-3.md`) | **373/373** measured 2026-09-30 (guide 18/18) → 379 planned | task 2: `29689c4`; task 3: see git log |
 | 2 Versioned curriculum + pinning | not written (outline in umbrella §2) | not written | after piece 1 | | |
 | 3 Authoring UI + runbook editor | not written (outline in umbrella §2) | not written | after piece 2 | | |
 | 4 Share, fork, upgrade | not written (outline in umbrella §2) | not written | after piece 3 | | |
@@ -63,6 +63,20 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
   ttfv1/unev/orphan/`ttfvDays` = 11/2/1/null and the pure-insert control 10/1/0/null. So
   "`ttfvDays` equals the control" passes on broken code. The counts tell them apart. Applied in
   plan Task 3's A2 code, spec §5's A2 row and the build-2 prompt. Build 2 is unblocked.
+
+## Task 3 results (build 2, 2026-09-30, measured)
+
+- Before: suite 371/371, guide 18/18; spec probe `delete_session2` `reworded [0,6]`, orphaned `[0,3]`,
+  18 detached; measurement I5 both orders 9→11 ttfv1, 0→2 unev, 1 orphan.
+- After: suite **373/373**, guide **18/18**; spec probe `reworded [0,0]`, orphaned **`[0,1]`**, evInCurr
+  11→10, unevidenced `[0,1]`, 6 detached, controls 0, `rename_s1_runbook ["authored","standard"]`
+  (Task 4); measurement I5 both orders ttfv1 **9→10**, unev **0→1**, orphan 0, reworded 1.
+- Mutation proofs (in `VALIDATION.txt`): pass 0 removed → 358/373 (A1, A2 and 13 phaseA/B red);
+  reword mints a new id → 371/373 (A2 and the phaseA reword check red; A1 green, it never rewords).
+- **Correction: the plan expected orphaned `[0,3]` after the change. That was the before-number.**
+  Measured Carbon deliverables per session `[2,1,2,2,1,1,1,1,1,1,1,1]`: session 2 has one
+  (`dl_carbon_02_01`), so one orphan per account is right; the old 3 came from positional
+  mismatching. Plan Task 3 Step 7 and Task 7's expectation are corrected to `[0,1]`.
 
 ## Rules carried between sessions
 
