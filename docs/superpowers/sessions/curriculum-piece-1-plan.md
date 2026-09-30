@@ -1,16 +1,17 @@
 # Session prompt — Curriculum piece 1: stable identity (PLAN ONLY)
 
-Paste everything below this line as the first message of a fresh Claude Code session in this repo.
+Start a fresh Claude Code session in this repo with:
+`read docs/superpowers/sessions/curriculum-piece-1-plan.md and do it`
+The instructions are everything below the line. Pasting them directly also works.
 
 ---
 
 Write the implementation plan for **curriculum authoring piece 1: stable identity**,
 and only that. This session plans. It does not build.
 
-Where the work is: the spec was committed on branch `worktree-curriculum-identity-spec`
-(`3c76a56` and the handoff commit after it), not on `master`. If that branch has been
-merged, work from `master`. If it hasn't, branch from it. Either way, before planning,
-confirm that `docs/superpowers/specs/2026-09-28-curriculum-identity-design.md` is present.
+Where the work is: `master`. The spec was merged there on 2026-09-30 (`3c76a56`,
+`4c8ba46`). Before planning, confirm that
+`docs/superpowers/specs/2026-09-28-curriculum-identity-design.md` is present.
 
 Context to load (nothing else up front):
 1. `docs/superpowers/2026-09-28-curriculum-LEDGER.md`: the four pieces, their state, and the rules
