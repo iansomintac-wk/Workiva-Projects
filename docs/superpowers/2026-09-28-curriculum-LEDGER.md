@@ -5,7 +5,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 | Piece | Spec | Session prompt | State | Self-checks after | Commit |
 |---|---|---|---|---|---|
-| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **planned** (plans/2026-09-28-curriculum-piece-1.md). Build 1 can start; build 2 waits for the M3 ruling | 369 now → 379 planned | |
+| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **building (task 2 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). Build 2 waits for the M3 ruling | **371/371** measured 2026-09-30 (guide 18/18) → 379 planned | task 2: `29689c4` |
 | 2 Versioned curriculum + pinning | not written (outline in umbrella §2) | not written | after piece 1 | | |
 | 3 Authoring UI + runbook editor | not written (outline in umbrella §2) | not written | after piece 2 | | |
 | 4 Share, fork, upgrade | not written (outline in umbrella §2) | not written | after piece 3 | | |
@@ -63,6 +63,12 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
   **production** code, and its setup must assert that it evidenced more than 0 criteria. The
   spec session's first probe run was green only because the seed had no evidence.
 - Line numbers drift with each commit. Grep for the symbol.
+- Plan code for a check is a hypothesis too. Task 2's A6 regex, copied as written, stayed
+  green under its own named mutation (it allowed one `[..]` group; the handler's receiver is
+  `sessionTemplates[curKey()][idx]`). It was caught only because the mutation proof was run.
+  Fixed in `29689c4`. Tasks 3–7 will copy more check code from the plan, so each one runs its
+  mutation proof for the same reason.
+- P1–P4 were not overruled before build 1, so build 1 went ahead on them as written.
 - README.txt and VALIDATION.txt quote the self-check count. A task that adds checks updates
   both files in the same commit.
 - Schema changes keep the export-before-upgrade discipline. Today that is documentation only
