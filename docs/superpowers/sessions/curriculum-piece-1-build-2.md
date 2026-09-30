@@ -12,9 +12,10 @@ that. Model: **Sonnet** for the implementer and for any re-review.
 Where the work is: branch `curriculum-piece-1`. Task 2 must be committed there already;
 confirm with `git log --oneline -3`.
 
-**Blocked on Ian's ruling on M3** (A2's `ttfvDays` condition). Read the ledger. If the ruling
-isn't recorded there, stop and ask. Don't pick one yourself. If Ian reworded the condition,
-change A2's assertion to match before writing any code.
+**M3 is ruled** (Ian, 2026-09-30: "M3: whole-snapshot equals pure-insert control"). The plan's
+A2 code already carries it: both edit orders, each compared to a pure insert at the same
+position. Use it as written. If Step 2's controls do not come out at +1 ttfv1 / +1 unevidenced /
+0 orphans, the fixture is wrong: debug it before writing code.
 
 Context to load (nothing else up front):
 1. `docs/superpowers/2026-09-28-curriculum-LEDGER.md`

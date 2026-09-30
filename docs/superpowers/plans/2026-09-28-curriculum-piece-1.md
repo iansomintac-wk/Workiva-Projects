@@ -43,7 +43,7 @@ Task 1's measurements found items that §4 does not cover. Per the plan prompt, 
 
 - **M1: `activity.sessionNumber` is positional and stored.** Measured: deleting Carbon session 2 moves **32 of 38** session-linked logged calls (6 accounts) under a different session title. The number drives completed count (`sessionsCompletedCount`), next open session (`nextOpenSessionNumber`), the gap signal (`customerSessionGapSignal`), runway and Gantt dates, the debrief prompt (`buildSessionDebriefPrompt` reads `templates[activity.sessionNumber - 1]`), and Gainsight backfill numbering (`planSessionBackfill`). Options: (a) stamp `activity.sessionId` and resolve by it; (b) leave it to piece 2 pinning, which stops the curriculum changing under in-flight accounts; (c) widen Task 5's delete confirmation to state how many accounts have logged calls on or after this session. A task for it would slot in after Task 5.
 - **M2: `totalSessions` versus curriculum length.** Deleting a template from a curriculum no longer than an account's `totalSessions` pads a "not yet configured" placeholder at the tail (`getSessionTemplateSet` → `placeholderSessionTemplate`). This is a code read only, not measured: Carbon has 12 templates against `totalSessions` 8, so the probe can't show it.
-- **M3: A2's pass condition "`ttfvDays` unchanged" cannot hold on a derived-First-Value account.** Measured: a **pure insert** of a ttfv1 deliverable already drives the derived `ttfvDays` to null (60…150 → null on 6/6), because the new criterion is correctly unevidenced. Pass 0 does not change that. Task 3 writes A2 as "**`ttfvDays` equals the pure-insert control**" (null when derived, unchanged when recorded). Ian confirms or rewords **before build session 2**.
+- **M3: A2's pass condition "`ttfvDays` unchanged" cannot hold on a derived-First-Value account.** Measured: a **pure insert** of a ttfv1 deliverable already drives the derived `ttfvDays` to null (60…150 → null on 6/6), because the new criterion is correctly unevidenced. Pass 0 does not change that. The plan first proposed "`ttfvDays` equals the pure-insert control", but that also passes on today's buggy code (both null). **Ruled by Ian 2026-09-30: "M3: whole-snapshot equals pure-insert control".** Task 3's A2 compares ttfv1 count, unevidenced, orphans, duplicate text and `ttfvDays` to a pure insert at the same position, in both edit orders.
 - **M4: §4d's "per-deliverable ticks inside a note re-key by deliverable id" is moot.** `sessionNotes[n].deliverables` is keyed by label **text**, is written by nothing at runtime (the listener writes only `prep`), and is read only by the v11→12 migration and by self-checks. The plan leaves the ticks untouched. Proposed: drop that sentence from §4d.
 - **M5: source correction.** The I5 figures are not in `VALIDATION.txt` in any commit (`git log -S"one duplicated"` finds only `d8266be` and `3c76a56`). They are now measured (Task 1).
 - **Export before upgrade: nothing in the app enforces it.** It is documented at `VALIDATION.txt:350-354` ("Export JSON before opening this build against live data") and in the Phase A plan (`plans/2026-09-09-outcome-phase-a.md:1143`). In code: no prompt, and no automatic pre-migration copy. `-prerepair-` is written only when repairs drop something; `-rejected-` only on failed validation. The 14-day backup nag and the 42-day prompt are time-based, not schema-based. **Ian decides** whether piece 1 adds an in-app prompt. If yes, it becomes Task 6b (same session as Task 6 is too much, so it gets its own session).
@@ -352,7 +352,7 @@ git commit -m "Curriculum piece 1 task 2: template ids and the single deliverabl
 
 ## Task 3: Criteria match by id (pass 0)
 
-**Model:** Sonnet. **Session:** build 2. **Blocked on:** Ian's ruling on M3 (A2's `ttfvDays` condition).
+**Model:** Sonnet. **Session:** build 2. **M3 ruled** (2026-09-30): "M3: whole-snapshot equals pure-insert control". A2 below already uses it.
 **Satisfies:** A1, A2.
 **Mutations:**
 - A1: remove pass 0 from `matchStoredCriteria`, i.e. delete the `templates.forEach` block that reads `byDl`.
@@ -448,15 +448,21 @@ git commit -m "Curriculum piece 1 task 2: template ids and the single deliverabl
   })();
 ```
 
-  A2 check (I5). Its `ttfvDays` assertion uses the M3 wording; update it if Ian rules otherwise.
+  A2 check (I5). Its pass condition is Ian's M3 ruling (2026-09-30): "M3: whole-snapshot equals
+  pure-insert control". `ttfvDays` alone cannot fail on the I5 bug: measured, the bug and the
+  pure-insert control are both `null` on the derived path, and on the recorded path it never
+  moves. The counts are what tell correct from broken (control 10/1/0, bug 11/2/1).
 
 ```js
   (function(){
     /* A2 — I5: insert one deliverable AND reword another in the same ttfv1 session.
        Measured before piece 1 (task 1): ttfv1 9 -> 11, unevidenced 0 -> 2, one
-       orphaned duplicate. Pass: +1 criterion (the new one), 1 unevidenced, no
-       orphan, and ttfvDays equal to a PURE insert's (M3: a new unevidenced ttfv1
-       criterion correctly un-derives First Value; pass 0 cannot and must not hide that). */
+       orphaned duplicate. Pass (Ian's M3 ruling): in BOTH edit orders, the whole
+       criteria snapshot equals a PURE insert at the same position, and the reworded
+       criterion keeps its evidence. The control must itself show +1 ttfv1, 1
+       unevidenced, 0 orphans, so a degenerate control cannot make this pass.
+       ttfvDays is in the snapshot as a regression guard only: a new unevidenced
+       ttfv1 criterion correctly un-derives First Value in both. */
     const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
     let ok = false, detail = '';
     try{
@@ -465,23 +471,32 @@ git commit -m "Curriculum piece 1 task 2: template ids and the single deliverabl
       const tpl = DATA.config.sessionTemplates[fx.mod][0];
       const orig = deliverableRows(tpl);
       const c = fx.accts[0];
-      const t1 = () => outcomeCriteriaFor(c).filter(x => x.stage === 'ttfv1');
-      const base = t1().length;
-      setSessionDeliverables(tpl, [{id:null, text:'NEW deliverable'}].concat(orig));
-      _renderMemoResets.forEach(r => r());
-      const ttfvPureInsert = ttfvDays(c);
-      const rows = [{id:null, text:'NEW deliverable'}].concat(orig.map(r => ({id:r.id, text:r.text})));
-      rows[rows.length - 1].text += ' (reworded)';
-      setSessionDeliverables(tpl, rows);
-      _renderMemoResets.forEach(r => r());
-      const list = outcomeCriteriaFor(c);
-      const after = list.filter(x => x.stage === 'ttfv1').length;
-      const unev = list.filter(x => !x.evidence).length;
-      const orphan = list.filter(x => x.source === 'no longer in the curriculum').length;
-      const rewordedKept = list.some(x => x.source === 'curriculum (reworded since)' && x.evidence);
-      ok = fx.ticked > 0 && after === base + 1 && unev === 1 && orphan === 0 && rewordedKept
-        && ttfvDays(c) === ttfvPureInsert;
-      detail = JSON.stringify({ticked: fx.ticked, base, after, unev, orphan, rewordedKept, ttfv: ttfvDays(c), ttfvPureInsert});
+      const snap = () => {
+        _renderMemoResets.forEach(r => r());
+        const list = outcomeCriteriaFor(c), texts = list.map(x => x.text);
+        return {ttfv1: list.filter(x => x.stage === 'ttfv1').length,
+          unev: list.filter(x => !x.evidence).length,
+          orphan: list.filter(x => x.source === 'no longer in the curriculum').length,
+          dupText: texts.length - new Set(texts).size, ttfv: ttfvDays(c),
+          rewordedKept: list.some(x => x.source === 'curriculum (reworded since)' && x.evidence)};
+      };
+      const base = snap();
+      const NEW = {id:null, text:'NEW deliverable'};
+      const copy = () => orig.map(r => ({id:r.id, text:r.text}));
+      const run = rows => { setSessionDeliverables(tpl, rows); return snap(); };
+      // Order A: insert at the front, reword the last. Order B: reword the first, insert at the end.
+      const ctlA = run([NEW].concat(copy()));
+      const a = copy(); a[a.length - 1].text += ' (reworded)';
+      const gotA = run([NEW].concat(a));
+      const ctlB = run(copy().concat([NEW]));
+      const b = copy(); b[0].text += ' (reworded)';
+      const gotB = run(b.concat([NEW]));
+      const counts = s => JSON.stringify([s.ttfv1, s.unev, s.orphan, s.dupText, s.ttfv]);
+      const ctlOk = [ctlA, ctlB].every(s => s.ttfv1 === base.ttfv1 + 1 && s.unev === base.unev + 1 && s.orphan === 0);
+      ok = fx.ticked > 0 && ctlOk
+        && counts(gotA) === counts(ctlA) && gotA.rewordedKept
+        && counts(gotB) === counts(ctlB) && gotB.rewordedKept;
+      detail = JSON.stringify({ticked: fx.ticked, base, ctlA, gotA, ctlB, gotB});
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     _renderMemoResets.forEach(r => r());
@@ -489,7 +504,7 @@ git commit -m "Curriculum piece 1 task 2: template ids and the single deliverabl
   })();
 ```
 
-- [ ] **Step 2: Run `--expect 373` and confirm both fail.** Expected: `371/373`, with A1 failing on `reworded > 0` (or `wrongOwner > 0`) and A2 failing on `after === base + 2`, `orphan === 1`. Record the red detail strings; they are the before-numbers.
+- [ ] **Step 2: Run `--expect 373` and confirm both fail.** Expected: `371/373`, with A1 failing on `reworded > 0` (or `wrongOwner > 0`) and A2 failing with `gotA`/`gotB` at ttfv1 +2, unev +2, orphan 1 against controls at +1/+1/0 (task 1 measured 11/2/1 vs 10/1/0 on Carbon). If a control is not +1/+1/0, the fixture is wrong: stop and debug before writing code. Record the red detail strings; they are the before-numbers.
 
 - [ ] **Step 3: Extract the matching core and add pass 0.** Replace the body of `outcomeCriteriaFor` from `getSessionTemplateSet(customer).forEach(...)` down to (not including) the orphan loop with a call to this new pure function. Place it directly above `outcomeCriteriaFor` and keep the existing pass 1/2 comments inside it:
 
@@ -1009,7 +1024,7 @@ function sessionDeleteImpact(templateKey, sessionId){
 |---|---|---|---|
 | plan (done) | 1 (measure) + this plan | Opus | `sessions/curriculum-piece-1-plan.md` |
 | build 1 | 2 ids + writer | Sonnet | `sessions/curriculum-piece-1-build-1.md` |
-| build 2 | 3 pass 0 (needs the M3 ruling) | Sonnet | `sessions/curriculum-piece-1-build-2.md` |
+| build 2 | 3 pass 0 (M3 ruled 2026-09-30) | Sonnet | `sessions/curriculum-piece-1-build-2.md` |
 | build 3 | 4 notes + runbook by id | Sonnet | `sessions/curriculum-piece-1-build-3.md` |
 | build 4 | 5 editor + delete confirm (+ frontend-design, layout only) | Sonnet | `sessions/curriculum-piece-1-build-4.md` |
 | build 5 | 6 migration + dry-run | Sonnet | `sessions/curriculum-piece-1-build-5.md` |

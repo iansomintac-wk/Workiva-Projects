@@ -223,7 +223,7 @@ the brief §4).
 | # | Check | Pass | Mutation that must turn it red |
 |---|---|---|---|
 | A1 | Delete session 2 on an evidenced Carbon book (3a setup) | 0 `reworded since`, which was 6. Only the deleted session's criteria go to "no longer in the curriculum". Every later criterion keeps its own evidence, verified by id. | Remove pass 0 |
-| A2 | I5 reproduction (insert one and reword another in one session) | +1 criterion (the new one), 1 unevidenced, no duplicate, `ttfvDays` unchanged | Mint a new id on reword |
+| A2 | I5 reproduction (insert one and reword another in one session) | In both edit orders, the criteria snapshot (ttfv1 count, unevidenced, orphans, duplicate text, `ttfvDays`) equals a pure insert at the same position, and the reworded criterion keeps its evidence. Amended by M3, ruled by Ian 2026-09-30; was "`ttfvDays` unchanged" | Mint a new id on reword |
 | A3 | Rename a session with an authored script | Runbook source stays `authored` | Remove the id lookup in `authoredRunbookFor` |
 | A4 | Reorder deliverables, and reorder sessions | Evidence and notes follow their items | Key notes by number again |
 | A5 | Migration invariant on the seeded book with evidence ticked | Deep-equal criteria, verdict and `ttfvDays` before and after; every placed item is stamped | Skip the stamping step |

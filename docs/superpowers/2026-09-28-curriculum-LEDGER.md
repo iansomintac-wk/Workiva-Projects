@@ -5,7 +5,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 | Piece | Spec | Session prompt | State | Self-checks after | Commit |
 |---|---|---|---|---|---|
-| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **building (task 2 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). Build 2 waits for the M3 ruling | **371/371** measured 2026-09-30 (guide 18/18) → 379 planned | task 2: `29689c4` |
+| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **building (task 2 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). Build 2 can start (M3 ruled 2026-09-30) | **371/371** measured 2026-09-30 (guide 18/18) → 379 planned | task 2: `29689c4` |
 | 2 Versioned curriculum + pinning | not written (outline in umbrella §2) | not written | after piece 1 | | |
 | 3 Authoring UI + runbook editor | not written (outline in umbrella §2) | not written | after piece 2 | | |
 | 4 Share, fork, upgrade | not written (outline in umbrella §2) | not written | after piece 3 | | |
@@ -35,7 +35,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
    *derived* (60…150 → null). The demo seed *records* `achievedOn`, which `getFirstValue()`
    prefers, so there `ttfvDays` doesn't move. Also measured: a **pure insert** alone makes the derived
    `ttfvDays` null, which is correct and unchanged by piece 1. So A2's "`ttfvDays` unchanged" can't
-   hold as worded (**M3**, needs a ruling). Source correction: the I5 figures were never in
+   hold as worded (**M3**, ruled 2026-09-30, see "Decisions made"). Source correction: the I5 figures were never in
    `VALIDATION.txt` (`git log -S` finds them only in `d8266be` and `3c76a56`).
 2. **§3d: notes do shift.** Deleting Carbon session 2 puts **42 of 48** prep notes under the wrong
    session. Positional keys the spec does not cover, sent back as amendments rather than planned:
@@ -52,10 +52,17 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 - M1 activities: (a) key by session id / (b) leave to piece 2 pinning / (c) state the call impact in the delete confirmation
 - M2 placeholder padding: include or defer
-- M3 A2's `ttfvDays` wording: the plan proposes "equals the pure-insert control". **Blocks build 2.**
 - M4 drop §4d's tick re-key sentence
 - Export-before-upgrade prompt: yes (task 6b) / no
 - Plan choices P1–P4 (plan header): accept or overrule before build 1
+
+## Decisions made (Ian)
+
+- **M3, 2026-09-30**, verbatim: "M3: whole-snapshot equals pure-insert control". Why the plan's
+  proposal was not enough: measured on Carbon (derived First Value), the I5 bug gives
+  ttfv1/unev/orphan/`ttfvDays` = 11/2/1/null and the pure-insert control 10/1/0/null. So
+  "`ttfvDays` equals the control" passes on broken code. The counts tell them apart. Applied in
+  plan Task 3's A2 code, spec §5's A2 row and the build-2 prompt. Build 2 is unblocked.
 
 ## Rules carried between sessions
 
