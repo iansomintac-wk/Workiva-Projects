@@ -45,7 +45,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        369/369 passed, 0 failed
+  window.runSelfChecks()        371/371 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -572,6 +572,53 @@ GUARD LIVENESS PROOF (suite 369 -> 369, a later pass over the same v74.5)
     unfinished part of the same pattern.
   - The suite count is unchanged at 369: the probe is a direct call to
     `_recordKeyDivergence()`, not a new `check()` call.
+
+CURRICULUM IDENTITY — TASK 2 (suite 369 -> 371)
+  - Session templates gain `id`, deliverables gain a parallel
+    `deliverableIds[]`, and `setSessionDeliverables` is the only writer of
+    either (plan docs/superpowers/plans/2026-09-28-curriculum-piece-1.md,
+    Task 2). Two new checks: `identity: shipped defaults carry deterministic
+    ids, and ensureTemplateIds is idempotent` (c2a) and `identity: only
+    setSessionDeliverables writes deliverables/deliverableIds, and editor
+    actions keep them aligned` (A6).
+  - RED first, before any implementation: `runSelfChecks: 369/371 passed,
+    2 failed`, the two failures being the new checks, `defaultSessionId is
+    not defined` and `setSessionDeliverables is not defined`.
+  - Existing checks that mutated a template's deliverables now go through
+    the writer (insert/reword/restore keep the row's id; `t.deliverables =
+    []` became `setSessionDeliverables(t, [])`). No other assertion changed.
+  - MUTATION PROOF, A6. Mutation (production code, openCurriculumModal's
+    deliverables handler): restored
+    `DATA.config.sessionTemplates[curKey()][idx].deliverables =
+    area.value.split('\n').map(s=>s.trim()).filter(Boolean);`
+    Red: `370/371 passed, 1 failed` —
+    `FAIL  identity: only setSessionDeliverables writes deliverables/deliverableIds, and editor actions keep them aligned — {"scanLive":true,"hits":["rables,10);\n      DATA.config.sessionTemplates[curKey()][idx].delivera"],"aligned":true}`
+    Revert: handler back to `applyDeliverablesTextarea(...)`; grep finds no
+    remnant.
+  - A FIRST RUN OF THIS PROOF FAILED TO GO RED, and that was a bug in the
+    check, not the mutation. The plan's receiver pattern allowed one `[..]`
+    group, so the chained receiver `DATA.config.sessionTemplates[curKey()]
+    [idx]` never matched and the same mutation left the suite at 371/371.
+    The pattern now accepts any run of `[..]` and `(..)` groups. Separately,
+    the check's liveness sample `'x.deliverables = y'` matched the scan
+    itself; it is now built by concatenation so the line cannot hit itself.
+  - MUTATION PROOF, c2a. Mutation (production code): `defaultSessionId`
+    returned `hexId('ss_')` instead of the deterministic id.
+    Red: `370/371 passed, 1 failed` —
+    `FAIL  identity: shipped defaults carry deterministic ids, and ensureTemplateIds is idempotent — {"stamped":84,"wrong":["Sustainability#0","Sustainability#1","Sustainability#2","Sustainability#3","Sustainability#4"],"first":85,"second":0,"sameAsDefaults":true,"customOk":true}`
+    Revert: `defaultSessionId` restored to `'ss_' + templateKeySlug(key) +
+    '_' + String(i + 1).padStart(2, '0')`.
+  - Final: `runSelfChecks: 371/371 passed, 0 failed`, exit 0; guide
+    `runGuideSelfChecks: 18/18 passed, 0 failed`.
+  - Both mutation proofs were re-run independently before commit (A6's
+    body had changed after the plan): each gave 370/371 with only its own
+    check failing, and each revert was byte-identical to the green file.
+  - Probes, re-run on this code (2026-09-30): output byte-identical to the
+    same run on the unchanged base, as expected (nothing matches by id yet).
+    Spec probe: Carbon 66 evidenced; delete_session2 reworded [0,6] on 6/6
+    accounts, evInCurr 11->8, orphaned 0->3, unevidenced 0->3, 18 detached;
+    no-op and delete-last controls 0; rename_s1_runbook authored->standard.
+    Measure probe: 66 ticked; I5 ttfv1 9 -> 11 as in plan task 1.
 
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded

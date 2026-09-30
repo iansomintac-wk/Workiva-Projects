@@ -3778,6 +3778,111 @@ const DEFAULT_SESSION_TEMPLATES = {
   ]
 };
 
+/* ============ CURRICULUM IDENTITY (piece 1) ============
+   Sessions and deliverables carry opaque ids so that everything recorded
+   against them (criteria evidence, session notes, authored runbooks) follows
+   the item, not its text or position. deliverables[] stays an array of
+   strings; ids live in the parallel deliverableIds[]. setSessionDeliverables()
+   is the ONLY writer of either array (self-check A6 scans for others).
+   Shipped defaults get DETERMINISTIC ids so every browser that ships the
+   same default agrees on identity; user-minted ids are random. */
+const SESSION_ID_RE = /^ss_[a-z0-9_]+$/;
+const DELIVERABLE_ID_RE = /^dl_[a-z0-9_]+$/;
+function hexId(prefix){
+  const b = new Uint8Array(4);
+  if(window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(b);
+  else for(let i = 0; i < 4; i++) b[i] = Math.floor(Math.random() * 256);
+  return prefix + Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+}
+function templateKeySlug(key){ return String(key).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''); }
+function defaultSessionId(key, i){ return 'ss_' + templateKeySlug(key) + '_' + String(i + 1).padStart(2, '0'); }
+function defaultDeliverableId(key, i, j){ return 'dl_' + templateKeySlug(key) + '_' + String(i + 1).padStart(2, '0') + '_' + String(j + 1).padStart(2, '0'); }
+/* THE writer. rows: [{id|null, text}]. id:null (or an invalid/duplicate id)
+   mints a new one. Empty text drops the row. Text is stored as given — callers
+   trim — so stamping ids onto a default can never alter its wording. */
+function setSessionDeliverables(tpl, rows){
+  const seen = new Set(), texts = [], ids = [];
+  (Array.isArray(rows) ? rows : []).forEach(r => {
+    if(!r || typeof r.text !== 'string' || !r.text.trim()) return;
+    let id = (typeof r.id === 'string' && DELIVERABLE_ID_RE.test(r.id) && !seen.has(r.id)) ? r.id : hexId('dl_');
+    while(seen.has(id)) id = hexId('dl_');
+    seen.add(id); texts.push(r.text); ids.push(id);
+  });
+  tpl.deliverables = texts;
+  tpl.deliverableIds = ids;
+  return tpl;
+}
+function deliverableRows(tpl){
+  const ids = Array.isArray(tpl.deliverableIds) ? tpl.deliverableIds : [];
+  return (Array.isArray(tpl.deliverables) ? tpl.deliverables : []).map((text, j) => ({id: ids[j] || null, text}));
+}
+function stampDefaultTemplateIds(){
+  Object.entries(DEFAULT_SESSION_TEMPLATES).forEach(([key, list]) => list.forEach((tpl, i) => {
+    tpl.id = defaultSessionId(key, i);
+    setSessionDeliverables(tpl, tpl.deliverables.map((text, j) => ({id: defaultDeliverableId(key, i, j), text})));
+  }));
+}
+stampDefaultTemplateIds();
+/* Assigns ids ONLY where they are absent. A template that already carries
+   deliverableIds is left alone even if malformed: the import validator rejects
+   that (plan task 7) rather than re-minting, which would silently orphan
+   evidence. A template still equal to a shipped default by key, position and
+   title gets the default's deterministic ids (deliverables matched by exact
+   text); anything else is random. Non-string deliverables are left for the
+   shape validator to reject. Returns how many templates it changed. */
+function ensureTemplateIds(sessionTemplates){
+  if(!isRecordObject(sessionTemplates)) return 0;
+  let changed = 0;
+  Object.entries(sessionTemplates).forEach(([key, list]) => {
+    if(!Array.isArray(list)) return;
+    const defaults = Array.isArray(DEFAULT_SESSION_TEMPLATES[key]) ? DEFAULT_SESSION_TEMPLATES[key] : [];
+    const usedS = new Set(list.map(t => t && t.id).filter(Boolean));
+    list.forEach((tpl, i) => {
+      if(!isRecordObject(tpl)) return;
+      const def = (defaults[i] && defaults[i].title === tpl.title) ? defaults[i] : null;
+      let touched = false;
+      if(tpl.id === undefined){
+        tpl.id = (def && !usedS.has(def.id)) ? def.id : hexId('ss_');
+        usedS.add(tpl.id); touched = true;
+      }
+      if(tpl.deliverableIds === undefined && Array.isArray(tpl.deliverables)
+         && tpl.deliverables.every(t => typeof t === 'string')){
+        const byText = new Map();
+        if(def) def.deliverables.forEach((t, j) => { if(!byText.has(t)) byText.set(t, def.deliverableIds[j]); });
+        const taken = new Set();
+        setSessionDeliverables(tpl, tpl.deliverables.map(text => {
+          const id = byText.get(text);
+          if(id && !taken.has(id)){ taken.add(id); return {id, text}; }
+          return {id: null, text};
+        }));
+        touched = true;
+      }
+      if(touched) changed++;
+    });
+  });
+  return changed;
+}
+function newSessionTemplate(templates){
+  const tpl = {id: hexId('ss_'), title: `Session ${templates.length + 1}`,
+    ttfvStage: templates.length < 7 ? 'ttfv1' : 'ttfv2', enable: []};
+  return setSessionDeliverables(tpl, []);
+}
+function removeSessionTemplate(templates, idx){ templates.splice(idx, 1); }
+/* INTERIM until the per-row editor (plan task 5). A textarea cannot express
+   identity: a line that is unchanged keeps its id; anything else is new. */
+function applyDeliverablesTextarea(tpl, value){
+  const prior = new Map();
+  deliverableRows(tpl).forEach(r => { if(!prior.has(r.text)) prior.set(r.text, r.id); });
+  const used = new Set();
+  const rows = String(value).split('\n').map(s => s.trim()).filter(Boolean).map(text => {
+    let id = prior.get(text) || null;
+    if(id && used.has(id)) id = null;
+    if(id) used.add(id);
+    return {id, text};
+  });
+  return setSessionDeliverables(tpl, rows);
+}
+
 
 /* ============ v57: SESSION RUNBOOKS ============
    The Session Plan grows from bullet lists into a full 45-minute run script
@@ -4589,6 +4694,8 @@ function applyDataBackfills(data){
       data.config.sessionTemplates[m] = JSON.parse(JSON.stringify(DEFAULT_SESSION_TEMPLATES[m]));
     }
   });
+  // Piece 1: any template entering the app (defaults backfilled above, a new module's [], an older book) gets ids before anything reads it. Mints only where absent; the v12->v13 migration (plan task 6) is what stamps stored criteria.
+  ensureTemplateIds(data.config.sessionTemplates);
 
   // Backfill + sanitize every stored customer record through the exact same path
   // imports and archive-restores use. DATA already points at `data` for both real
@@ -5939,6 +6046,16 @@ function safeSessionTemplateForRender(template, customer, sessionNumber){
     enable: Array.isArray(template.enable) ? template.enable.filter(x=>typeof x==='string') : fallback.enable,
     deliverables: Array.isArray(template.deliverables) ? template.deliverables.filter(x=>typeof x==='string') : fallback.deliverables
   };
+  // Piece 1: identity passes through only when it is aligned with the text.
+  // A misaligned template (only possible by bypassing setSessionDeliverables)
+  // renders with no ids, so it can never attach evidence by a wrong id.
+  if(typeof template.id === 'string' && SESSION_ID_RE.test(template.id)) safe.id = template.id;
+  if(Array.isArray(template.deliverables) && Array.isArray(template.deliverableIds)
+     && template.deliverableIds.length === template.deliverables.length
+     && template.deliverables.every(x => typeof x === 'string')
+     && template.deliverableIds.every(x => typeof x === 'string' && DELIVERABLE_ID_RE.test(x))){
+    safe.deliverableIds = template.deliverableIds.slice();
+  }
   // v57: a user-authored runbook stored on the template passes through when
   // structurally valid (this sanitizer previously stripped unknown fields,
   // which would have silently discarded it).
@@ -9229,7 +9346,7 @@ function _runSelfChecksInner(){
       const mod = DATA.config.modules[0];
       DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
       const tpl = DATA.config.sessionTemplates[mod][0];
-      tpl.deliverables = ['Alpha', 'Bravo', 'Charlie'];
+      setSessionDeliverables(tpl, ['Alpha', 'Bravo', 'Charlie'].map(text => ({id:null, text})));
       const c = {id:'__ins1__', name:'Steal Co', module:mod,
         stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
         totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
@@ -9239,7 +9356,9 @@ function _runSelfChecksInner(){
         sourceSession:1, sourceIndex:1, sourceCount:3}], removed:[]};
       c.outcomeEvidence = {oc_bravo: {on:null, by:'osm'}};
       DATA.customers = [c]; DATA.activities = {__ins1__: []};
-      tpl.deliverables = ['Alpha', 'Xray', 'Bravo', 'Charlie'];   // insert at index 1
+      const insRows = deliverableRows(tpl);
+      insRows.splice(1, 0, {id:null, text:'Xray'});   // insert at index 1
+      setSessionDeliverables(tpl, insRows);
       const list = outcomeCriteriaFor(c);
       const xray = list.find(x => x.text === 'Xray');
       const bravo = list.find(x => x.id === 'oc_bravo');
@@ -9305,15 +9424,20 @@ function _runSelfChecksInner(){
       const originalText = original.text;
 
       // (a) REWORD the deliverable in place. Evidence must follow it.
-      DATA.config.sessionTemplates[mod][0].deliverables[0] = originalText + ' (reworded)';
+      const rwTpl = DATA.config.sessionTemplates[mod][0];
+      const rwRows = deliverableRows(rwTpl);
+      rwRows[0].text = originalText + ' (reworded)';   // same id: a reword is not a new deliverable
+      setSessionDeliverables(rwTpl, rwRows);
       _renderMemoResets.forEach(r => r());
       const reworded = outcomeCriteriaFor(c).find(x => x.id === evidencedId);
       const survivedReword = !!reworded && !!reworded.evidence
         && reworded.source === 'curriculum (reworded since)' && reworded.text === originalText;
 
       // (b) Restore, then INSERT a new deliverable at index 0.
-      DATA.config.sessionTemplates[mod][0].deliverables[0] = originalText;
-      DATA.config.sessionTemplates[mod][0].deliverables.unshift('BRAND NEW DELIVERABLE');
+      const rsRows = deliverableRows(rwTpl);
+      rsRows[0].text = originalText;   // restore keeps the id
+      rsRows.unshift({id:null, text:'BRAND NEW DELIVERABLE'});
+      setSessionDeliverables(rwTpl, rsRows);
       _renderMemoResets.forEach(r => r());
       const after = outcomeCriteriaFor(c);
       const inserted = after.find(x => x.text === 'BRAND NEW DELIVERABLE');
@@ -9330,6 +9454,80 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     _renderMemoResets.forEach(r => r());
     check('phaseA rewording follows evidence, and inserting neither moves nor inherits it', ok, detail);
+  })();
+  (function(){
+    /* c2a — curriculum identity (piece 1). Shipped defaults carry DETERMINISTIC
+       ids so every browser shipping the same default agrees on identity, and
+       ensureTemplateIds() is idempotent and never re-mints an id it already set. */
+    let ok = false, detail = '';
+    const prevT = DATA.config.sessionTemplates;
+    try{
+      let stamped = 0, wrong = [];
+      Object.entries(DEFAULT_SESSION_TEMPLATES).forEach(([key, list]) => list.forEach((tpl, i) => {
+        stamped++;
+        if(tpl.id !== defaultSessionId(key, i)) wrong.push(key + '#' + i);
+        (tpl.deliverables || []).forEach((_, j) => {
+          if((tpl.deliverableIds || [])[j] !== defaultDeliverableId(key, i, j)) wrong.push(key + '#' + i + '.' + j);
+        });
+      }));
+      const copy = JSON.parse(JSON.stringify(DEFAULT_SESSION_TEMPLATES));
+      Object.values(copy).forEach(list => list.forEach(t => { delete t.id; delete t.deliverableIds; }));
+      copy.__custom__ = [{title:'Custom session', ttfvStage:'ttfv1', enable:[], deliverables:['A','B']}];
+      const first = ensureTemplateIds(copy);
+      const snap = JSON.stringify(copy);
+      const second = ensureTemplateIds(copy);
+      const sameAsDefaults = Object.keys(DEFAULT_SESSION_TEMPLATES).every(k =>
+        JSON.stringify(copy[k].map(t => [t.id, t.deliverableIds])) ===
+        JSON.stringify(DEFAULT_SESSION_TEMPLATES[k].map(t => [t.id, t.deliverableIds])));
+      const custom = copy.__custom__[0];
+      const customOk = SESSION_ID_RE.test(custom.id) && custom.deliverableIds.length === 2
+        && custom.deliverableIds.every(x => DELIVERABLE_ID_RE.test(x));
+      ok = stamped > 0 && wrong.length === 0 && first > 0 && second === 0
+        && JSON.stringify(copy) === snap && sameAsDefaults && customOk;
+      detail = JSON.stringify({stamped, wrong: wrong.slice(0, 5), first, second, sameAsDefaults, customOk});
+    }catch(err){ detail = err.message; }
+    DATA.config.sessionTemplates = prevT;
+    check('identity: shipped defaults carry deterministic ids, and ensureTemplateIds is idempotent', ok, detail);
+  })();
+  (function(){
+    /* A6 — curriculum identity (piece 1). setSessionDeliverables is the ONLY code
+       allowed to write a template's deliverables/deliverableIds. Two halves:
+       (1) a source scan: no other code assigns or mutates those arrays;
+       (2) every editor action leaves the two arrays the same length. */
+    let ok = false, detail = '';
+    const prevT = DATA.config.sessionTemplates;
+    try{
+      const src = Array.from(document.scripts).filter(s => !s.src).map(s => s.textContent).join('\n');
+      const rest = src.split(setSessionDeliverables.toString()).join('');
+      // The receiver is an identifier followed by ANY run of [..] / (..) groups, so
+      // chained receivers like DATA.config.sessionTemplates[curKey()][idx] are seen.
+      const re = new RegExp('([A-Za-z_$][\\w$]*(?:\\[[^\\]\\n]*\\]|\\([^)\\n]*\\))*)\\.(deliverables|deliverableIds)'
+        + '\\s*(?:=(?!=)|\\[[^\\]\\n]*\\]\\s*=(?!=)|\\.(?:push|pop|shift|unshift|splice|sort|reverse)\\()', 'g');
+      // Not stored templates: a session NOTE's legacy label-keyed .deliverables
+      // map, and safeSessionTemplateForRender's throwaway render copy `safe`.
+      const EXEMPT_RECEIVER = /^(note|safe|sessionNotes\[[^\]]*\])$/;
+      // The sample is built by concatenation so this line cannot match its own scan.
+      const sampleLive = new RegExp(re.source).test('x.deliver' + 'ables = y');
+      const hits = []; let m;
+      while((m = re.exec(rest))){ if(!EXEMPT_RECEIVER.test(m[1])) hits.push(rest.slice(Math.max(0, m.index - 30), m.index + 40)); }
+      const scanLive = src.length > 100000 && src.indexOf('function setSessionDeliverables') !== -1 && sampleLive;
+
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const key = DATA.config.modules[0];
+      const list = DATA.config.sessionTemplates[key];
+      list.push(newSessionTemplate(list));
+      applyDeliverablesTextarea(list[list.length - 1], 'one\ntwo\n\nthree');
+      applyDeliverablesTextarea(list[0], (list[0].deliverables || []).concat(['added']).join('\n'));
+      removeSessionTemplate(list, 1);
+      const aligned = Object.values(DATA.config.sessionTemplates).every(l => !Array.isArray(l) || l.every(t =>
+        Array.isArray(t.deliverableIds) && t.deliverableIds.length === t.deliverables.length
+        && new Set(t.deliverableIds).size === t.deliverableIds.length));
+      ok = scanLive && hits.length === 0 && aligned;
+      detail = JSON.stringify({scanLive, hits: hits.slice(0, 3), aligned});
+    }catch(err){ detail = err.message; }
+    DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity: only setSessionDeliverables writes deliverables/deliverableIds, and editor actions keep them aligned', ok, detail);
   })();
   (function(){
     /* Un-ticking DELETES the entry and keeps the criterion, so re-ticking reuses
@@ -9485,7 +9683,7 @@ function _runSelfChecksInner(){
     try{
       const mod = DATA.config.modules[0];
       DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
-      DATA.config.sessionTemplates[mod].forEach(t => { t.deliverables = []; });
+      DATA.config.sessionTemplates[mod].forEach(t => { setSessionDeliverables(t, []); });
       const c = {id:'__empty1__', name:'Empty Co', module:mod,
         stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
         totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
@@ -9787,7 +9985,7 @@ function _runSelfChecksInner(){
 
       // (b) Outcome chosen, but the curriculum has no deliverables.
       DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
-      DATA.config.sessionTemplates[mod].forEach(t => { t.deliverables = []; });
+      DATA.config.sessionTemplates[mod].forEach(t => { setSessionDeliverables(t, []); });
       _renderMemoResets.forEach(r => r());
       c.compliance.outcomePlan.outcomeNumber = 4;
       const v = outcomeVerdict(c);
@@ -10199,7 +10397,7 @@ function _runSelfChecksInner(){
       // `c`'s 9 ttfv1 criteria from part (a) would still be there after the wipe
       // and t1.length would never reach 0.
       DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
-      DATA.config.sessionTemplates[mod].forEach(t => { t.deliverables = []; });
+      DATA.config.sessionTemplates[mod].forEach(t => { setSessionDeliverables(t, []); });
       _renderMemoResets.forEach(r => r());
       const c2 = {id:'__pb9b__', name:'Empty Co 2', module:mod,
         stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
@@ -22664,13 +22862,13 @@ function openCurriculumModal(){
       if(!DATA.config.sessionTemplates[curKey()]) DATA.config.sessionTemplates[curKey()] = [];
       const templates = DATA.config.sessionTemplates[curKey()];
       if(templates.length >= 12){ showToast('Maximum of 12 sessions'); return; }
-      templates.push({title:`Session ${templates.length+1}`, ttfvStage: templates.length < 7 ? 'ttfv1' : 'ttfv2', enable:[], deliverables:[]});
+      templates.push(newSessionTemplate(templates));
       saveData(); renderModalBody(); render();
     });
 
     $$('[data-cur-remove-session]').forEach(btn => btn.addEventListener('click', ()=>{
       const idx = parseInt(btn.dataset.curRemoveSession,10);
-      DATA.config.sessionTemplates[curKey()].splice(idx,1);
+      removeSessionTemplate(DATA.config.sessionTemplates[curKey()], idx);
       saveData(); renderModalBody(); render();
     }));
 
@@ -22691,7 +22889,7 @@ function openCurriculumModal(){
     }));
     $$('[data-cur-deliverables]').forEach(area => area.addEventListener('change', ()=>{
       const idx = parseInt(area.dataset.curDeliverables,10);
-      DATA.config.sessionTemplates[curKey()][idx].deliverables = area.value.split('\n').map(s=>s.trim()).filter(Boolean);
+      applyDeliverablesTextarea(DATA.config.sessionTemplates[curKey()][idx], area.value);
       saveData(); render();
     }));
 
