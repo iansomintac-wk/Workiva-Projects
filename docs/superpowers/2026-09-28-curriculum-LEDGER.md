@@ -5,7 +5,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 | Piece | Spec | Session prompt | State | Self-checks after | Commit |
 |---|---|---|---|---|---|
-| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **built (tasks 2–7 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). **Reviewed 2026-09-30: with fixes** (`evidence/curriculum-piece-1-review.md`). **Review fixes done 2026-09-30** on branch `curriculum-piece-1-fixes` (D1–D3, R2, R3, R4, R1, M3r, M4r, M6r, M7r parts 1+3; see "Review fixes"). **Merged to `master` 2026-09-30** (Ian). **Follow-ups M1r, M2r built 2026-09-30** on branch `curriculum-piece-1-followups` (see "Follow-ups (M1r, M2r)"), awaiting Ian's look call and merge. Next: `sessions/curriculum-m1-calls-spec.md` | **389/389** measured 2026-09-30 after follow-ups (guide 18/18); 387/387 at merge | task 2: `29689c4`; task 3: `2a57350`; task 4: `dd1ccf4`; task 5: `05e2356`; task 6: `a9da098`; task 7: `ec2f175` + `d4c2c00` (SHA re-measure); follow-ups: M1r `23394e7`, M2r `a24181f`; ledger: see git log |
+| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **built (tasks 2–7 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). **Reviewed 2026-09-30: with fixes** (`evidence/curriculum-piece-1-review.md`). **Review fixes done 2026-09-30** on branch `curriculum-piece-1-fixes` (D1–D3, R2, R3, R4, R1, M3r, M4r, M6r, M7r parts 1+3; see "Review fixes"). **Merged to `master` 2026-09-30** (Ian). **Follow-ups M1r, M2r built 2026-09-30** on branch `curriculum-piece-1-followups` (see "Follow-ups (M1r, M2r)"), **merged to `master` 2026-09-30** (Ian). Next: `sessions/curriculum-m1-calls-spec.md` | **389/389** measured 2026-09-30 after follow-ups (guide 18/18); 387/387 at merge | task 2: `29689c4`; task 3: `2a57350`; task 4: `dd1ccf4`; task 5: `05e2356`; task 6: `a9da098`; task 7: `ec2f175` + `d4c2c00` (SHA re-measure); follow-ups: M1r `23394e7`, M2r `a24181f`; ledger: see git log |
 | 2 Versioned curriculum + pinning | not written (outline in umbrella §2) | not written | after piece 1 | | |
 | 3 Authoring UI + runbook editor | not written (outline in umbrella §2) | not written | after piece 2 | | |
 | 4 Share, fork, upgrade | not written (outline in umbrella §2) | not written | after piece 3 | | |
@@ -63,6 +63,8 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 ## Decisions made (Ian)
 
+- **Merge follow-ups M1r, M2r, 2026-09-30**, verbatim: "merge" (after the look-call page of the four editor captures).
+  `curriculum-piece-1-followups` fast-forwarded into `master` (389/389, guide 18/18).
 - **Merge, M1r, M2r, M7r part 2, 2026-09-30**, verbatim: "Merge it, and record M1r, M2r yes and M7r accept".
   - **Merge:** `curriculum-piece-1-fixes` fast-forwarded into `master` (piece 1 plus the review fixes, 387/387).
   - **M1r yes:** confirm before a curriculum edit drops a deliverable id that has evidence, and name the count. No prompt with
