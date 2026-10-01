@@ -5,7 +5,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 | Piece | Spec | Session prompt | State | Self-checks after | Commit |
 |---|---|---|---|---|---|
-| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **building (tasks 2–4 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). Next: build 4 (`sessions/curriculum-piece-1-build-4.md`) | **375/375** measured 2026-09-30 (guide 18/18) → 379 planned | task 2: `29689c4`; task 3: `2a57350`; task 4: see git log |
+| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **building (tasks 2–5 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). Next: build 5 (`sessions/curriculum-piece-1-build-5.md`) | **377/377** measured 2026-09-30 (guide 18/18) → 379 planned | task 2: `29689c4`; task 3: `2a57350`; task 4: `dd1ccf4`; task 5: see git log |
 | 2 Versioned curriculum + pinning | not written (outline in umbrella §2) | not written | after piece 1 | | |
 | 3 Authoring UI + runbook editor | not written (outline in umbrella §2) | not written | after piece 2 | | |
 | 4 Share, fork, upgrade | not written (outline in umbrella §2) | not written | after piece 3 | | |
@@ -92,6 +92,26 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
   c4b red (backfill: `compared 0`; validator: `Import rejected … Session ss_carbon_01`). Four
   mutation proofs, each 374/375 with only its own check red, recorded in `VALIDATION.txt`.
 - Implementer (Sonnet) inferred the RED summary line rather than capturing it; it was re-measured.
+
+## Task 5 results (build 4, 2026-09-30, measured)
+
+- Before: suite 375/375, guide 18/18. RED (new checks, no actions yet): `374/377`, A4
+  `moveDeliverableRow is not defined`, c5b `sessionDeleteImpact is not defined`, A6
+  `addDeliverableRow is not defined`.
+- After: suite **377/377**, guide **18/18** (re-run by the orchestrator, not just read from the implementer).
+- Mutation proofs (in `VALIDATION.txt`): `sessionNoteKey` → number: 375/377 (A4 and Task 4's c4b red);
+  textarea-style split handler: 376/377 (A6 only); evidence filter dropped in `sessionDeleteImpact`:
+  376/377 (c5b only, impact 4 where 3 have evidence).
+- M1 still pending, so the delete confirmation is plan Step 5 as written (no logged-call sentence).
+- Editor pass (headless Chrome over CDP, real DOM events): reword keeps id, reorder and session
+  move/back, add, clear-removes, ✕, delete → Cancel keeps 12 sessions. Screenshots routed to Ian;
+  look not judged.
+- **Correction: I expected the delete confirmation on the demo seed to say 6 accounts. It said 0, and 0 is
+  right.** The demo seed evidences no criteria; the 6/6 in "Baseline" comes from the spec probe, which ticks
+  evidence first. With all criteria evidenced on 5 of the 6 Carbon accounts (55 ticked), it says
+  "5 accounts have evidence on this session's deliverables".
+- Deviation, kept: clearing a deliverable's input removes the row and so re-renders the modal (the plan
+  re-renders only the app on reword, which would leave a blank input and shifted row indices).
 
 ## Rules carried between sessions
 

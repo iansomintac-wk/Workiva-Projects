@@ -45,7 +45,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        375/375 passed, 0 failed
+  window.runSelfChecks()        377/377 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -734,6 +734,72 @@ CURRICULUM IDENTITY — TASK 4 (suite 373 -> 375)
     the probe writes notes directly under NUMERIC keys, the unmigrated shape,
     which still follows position. Task 6's migration re-keys them by session
     id. Other measure figures as after Task 3.
+
+CURRICULUM IDENTITY — TASK 5 (suite 375 -> 377)
+  - Per-row deliverable editor, session reorder, delete confirmation (plan
+    Task 5). New identity-block actions: `moveSessionTemplate`,
+    `moveDeliverableRow`, `rewordDeliverableRow` (keeps the row's id; empty
+    text removes it), `addDeliverableRow`, `removeDeliverableRow`, and
+    `sessionDeleteImpact(templateKey, sessionId)`. `applyDeliverablesTextarea`
+    is deleted. `openCurriculumModal` now renders one text input per
+    deliverable with move/remove buttons, an add input, and session up/down
+    buttons; removing a session asks for confirmation with the real count of
+    accounts that have evidence on its deliverables. Two new checks:
+    `identity A4: reordering deliverables and sessions keeps evidence and moves
+    notes with their session` and `identity c5b: session delete impact counts
+    only accounts with evidence on it`; the A6 check's action list now calls the
+    new actions (source scan kept).
+  - RED first, before any implementation: `runSelfChecks: 374/377 passed, 3
+    failed`:
+    `FAIL  identity A4: ... — moveDeliverableRow is not defined`,
+    `FAIL  identity c5b: ... — sessionDeleteImpact is not defined`,
+    `FAIL  identity: only setSessionDeliverables writes ... — addDeliverableRow is not defined`.
+  - MUTATION PROOF, A4. Mutation (production code): `sessionNoteKey` returns
+    `String(sessionNumber)`. Red: `375/377 passed, 2 failed`, A4
+    `{"ticked":22,"movedD":true,"movedS":true,"kept":22,"lost":0,"notesCompared":16,"notesWrong":4,"s2IsOldS1":true,"prep2":"P:ss_carbon_02","prep1":"P:ss_carbon_01"}`
+    and, as expected, the Task 4 check `identity: session notes follow their
+    session through a delete` (`{"ticked":22,"compared":16,"wrong":14}`).
+    Revert: `cmp` identical to the green file.
+  - MUTATION PROOF, A6. Mutation (production code, the `data-cur-dl` change
+    handler in openCurriculumModal): assign
+    `DATA.config.sessionTemplates[curKey()][i].deliverables = inp.value.split('\n').map(s=>s.trim()).filter(Boolean);`
+    in place of the reword. Red: `376/377 passed, 1 failed` (only A6):
+    `{"scanLive":true,"hits":["lue.trim();\n      DATA.config.sessionTemplates[curKey()][i].deliverabl"],"aligned":true}`.
+    Revert: `cmp` identical. (A first attempt produced a syntax error in the
+    page from a mis-escaped `\n` in the mutation itself, not a red check; it is
+    not counted.)
+  - MUTATION PROOF, c5b. Mutation (production code): in `sessionDeleteImpact`
+    the evidence filter dropped (`cr => ids.has(cr.sourceDeliverableId)`).
+    Red: `376/377 passed, 1 failed` (only c5b):
+    `{"ticked":33,"extraUnevidenced":true,"onModule":4,"impact":4,"missing":0}`
+    (4 accounts counted, 3 have evidence). Revert: `cmp` identical.
+  - Deviation from the plan's handler: clearing a deliverable's input removes
+    the row (rewordDeliverableRow with empty text), so that one case also
+    re-renders the modal; otherwise a blank input would stay on screen and
+    later rows' `data-cur-dl` indices would point at the wrong deliverable.
+    Non-empty rewords re-render only the app, so focus stays.
+  - No check body was changed to make a proof pass, and no existing check was
+    edited apart from the A6 action list the plan names.
+  - Final: `runSelfChecks: 377/377 passed, 0 failed`; guide
+    `runGuideSelfChecks: 18/18 passed, 0 failed`.
+  - Editor pass (plan Step 6), headless Chrome 1440x900, real DOM events on
+    the real modal, demo seed, module Carbon (12 sessions). Reword session 1
+    deliverable 1: text changed, id `dl_carbon_01_01` kept. Move it down: ids
+    `[dl_carbon_01_02, dl_carbon_01_01]`, focus on the moved row's input.
+    Session 1 down and back: ids swap and restore; first session's up button
+    disabled. Add: 2 -> 3 rows, 3 ids, focus back on the add input; a blank add
+    is ignored. Clearing a row's input removes it (2 rows shown); the remove
+    button drops text and id together. Delete session 2 then Cancel: 12
+    sessions remain, confirm closed.
+  - Delete-confirmation count, measured twice. Plain demo seed: "No account
+    has evidence on this session's deliverables." That is correct: all 6 Carbon
+    accounts resolve to the edited list and carry `dl_carbon_02_01`, but the
+    seed evidences 0 criteria. (I expected 6 there; the 6/6 figure in the
+    ledger is from the spec probe, which ticks evidence first.) With all
+    criteria evidenced on 5 of the 6 accounts (55 ticked via
+    setOutcomeEvidence): "Remove session 2, "Measure: Scope 1 & 2 Setup"? 5
+    accounts have evidence on this session's deliverables; it will show as "no
+    longer in the curriculum"." Screenshots routed to Ian, look not judged.
 
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded

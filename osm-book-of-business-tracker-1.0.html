@@ -3868,19 +3868,42 @@ function newSessionTemplate(templates){
   return setSessionDeliverables(tpl, []);
 }
 function removeSessionTemplate(templates, idx){ templates.splice(idx, 1); }
-/* INTERIM until the per-row editor (plan task 5). A textarea cannot express
-   identity: a line that is unchanged keeps its id; anything else is new. */
-function applyDeliverablesTextarea(tpl, value){
-  const prior = new Map();
-  deliverableRows(tpl).forEach(r => { if(!prior.has(r.text)) prior.set(r.text, r.id); });
-  const used = new Set();
-  const rows = String(value).split('\n').map(s => s.trim()).filter(Boolean).map(text => {
-    let id = prior.get(text) || null;
-    if(id && used.has(id)) id = null;
-    if(id) used.add(id);
-    return {id, text};
-  });
+function moveSessionTemplate(templates, idx, dir){
+  const j = idx + dir;
+  if(idx < 0 || idx >= templates.length || j < 0 || j >= templates.length) return false;
+  const [t] = templates.splice(idx, 1); templates.splice(j, 0, t);
+  return true;
+}
+function moveDeliverableRow(tpl, j, dir){
+  const rows = deliverableRows(tpl), k = j + dir;
+  if(j < 0 || j >= rows.length || k < 0 || k >= rows.length) return false;
+  const [r] = rows.splice(j, 1); rows.splice(k, 0, r);
+  setSessionDeliverables(tpl, rows);
+  return true;
+}
+/* Editing an input is a REWORD: the id is kept. Clearing it removes the row. */
+function rewordDeliverableRow(tpl, j, text){
+  const rows = deliverableRows(tpl);
+  if(rows[j]) rows[j].text = String(text).trim();
   return setSessionDeliverables(tpl, rows);
+}
+function addDeliverableRow(tpl, text){
+  return setSessionDeliverables(tpl, deliverableRows(tpl).concat([{id:null, text:String(text).trim()}]));
+}
+function removeDeliverableRow(tpl, j){
+  const rows = deliverableRows(tpl); rows.splice(j, 1);
+  return setSessionDeliverables(tpl, rows);
+}
+/* Impact of deleting a session, from real data (spec §4b): how many accounts
+   on THIS curriculum have evidence on its deliverables. */
+function sessionDeleteImpact(templateKey, sessionId){
+  const list = DATA.config.sessionTemplates[templateKey];
+  const tpl = Array.isArray(list) ? list.find(t => t && t.id === sessionId) : null;
+  if(!tpl) return {accounts: 0};
+  const ids = new Set(tpl.deliverableIds || []);
+  const accounts = DATA.customers.filter(c => resolveRawCurriculum(c) === list
+    && outcomeCriteriaFor(c).some(cr => cr.evidence && ids.has(cr.sourceDeliverableId))).length;
+  return {accounts};
 }
 
 
@@ -9697,6 +9720,79 @@ function _runSelfChecksInner(){
     check('identity: session notes follow their session through a delete', ok, detail);
   })();
   (function(){
+    /* A4 — reordering deliverables and sessions keeps every evidenced criterion
+       (same criterion id, found by sourceDeliverableId) and moves each session's
+       note WITH its session (spec §3d/§4b: notes keyed by session id, not number). */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const fx = _identityFixture(2);
+      const list = DATA.config.sessionTemplates[fx.mod];
+      const oldS1Id = list[0].id, oldS2Id = list[1].id;
+      fx.accts.forEach(c => { for(let n = 1; n <= c.totalSessions; n++){
+        getSessionNote(c, n).prep = 'P:' + getSessionTemplate(c, n).id; } });
+      const before = new Map(fx.accts.map(c => [c.id, new Map(outcomeCriteriaFor(c)
+        .filter(x => x.evidence).map(x => [x.sourceDeliverableId, x.id]))]));
+      const movedD = moveDeliverableRow(list[0], 0, +1);
+      const movedS = moveSessionTemplate(list, 0, +1);
+      _renderMemoResets.forEach(r => r());
+      let kept = 0, lost = 0, notesCompared = 0, notesWrong = 0;
+      fx.accts.forEach(c => {
+        const after = new Map(outcomeCriteriaFor(c).map(x => [x.sourceDeliverableId, x]));
+        before.get(c.id).forEach((critId, dlId) => {
+          const x = after.get(dlId);
+          if(x && x.evidence && x.id === critId) kept++; else lost++;
+        });
+        for(let n = 1; n <= c.totalSessions; n++){
+          const p = readSessionNote(c, n).prep;
+          if(!p) continue;
+          notesCompared++;
+          if(p !== 'P:' + getSessionTemplate(c, n).id) notesWrong++;
+        }
+      });
+      const c0 = fx.accts[0];
+      const s2IsOldS1 = getSessionTemplate(c0, 2).id === oldS1Id;
+      const prep2 = readSessionNote(c0, 2).prep, prep1 = readSessionNote(c0, 1).prep;
+      ok = fx.ticked > 0 && movedD && movedS && kept > 0 && lost === 0
+        && notesCompared > 0 && notesWrong === 0 && s2IsOldS1
+        && prep2 === 'P:' + oldS1Id && prep1 === 'P:' + oldS2Id;
+      detail = JSON.stringify({ticked: fx.ticked, movedD, movedS, kept, lost, notesCompared, notesWrong, s2IsOldS1, prep2, prep1});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity A4: reordering deliverables and sessions keeps evidence and moves notes with their session', ok, detail);
+  })();
+  (function(){
+    /* c5b — the delete-impact count is real: it counts accounts with EVIDENCE on
+       the session's deliverables, not every account on the curriculum. The fixture
+       adds one unevidenced account on the same module so dropping the filter is
+       observable (3 becomes 4). */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const fx = _identityFixture(3);
+      const extra = {id:'__idfxextra__', name:'Identity Co extra', module:fx.mod,
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(extra);
+      DATA.customers.push(extra);
+      DATA.activities[extra.id] = [];
+      _renderMemoResets.forEach(r => r());
+      const list = DATA.config.sessionTemplates[fx.mod];
+      const extraUnevidenced = outcomeCriteriaFor(extra).length > 0 && outcomeCriteriaFor(extra).every(x => !x.evidence);
+      const onModule = DATA.customers.filter(c => c.module === fx.mod).length;
+      const impact = sessionDeleteImpact(fx.mod, list[1].id).accounts;
+      const missing = sessionDeleteImpact(fx.mod, 'ss_no_such_session').accounts;
+      ok = fx.ticked > 0 && extraUnevidenced && onModule === 4 && impact === 3 && missing === 0;
+      detail = JSON.stringify({ticked: fx.ticked, extraUnevidenced, onModule, impact, missing});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity c5b: session delete impact counts only accounts with evidence on it', ok, detail);
+  })();
+  (function(){
     /* c2a — curriculum identity (piece 1). Shipped defaults carry DETERMINISTIC
        ids so every browser shipping the same default agrees on identity, and
        ensureTemplateIds() is idempotent and never re-mints an id it already set. */
@@ -9757,8 +9853,14 @@ function _runSelfChecksInner(){
       const key = DATA.config.modules[0];
       const list = DATA.config.sessionTemplates[key];
       list.push(newSessionTemplate(list));
-      applyDeliverablesTextarea(list[list.length - 1], 'one\ntwo\n\nthree');
-      applyDeliverablesTextarea(list[0], (list[0].deliverables || []).concat(['added']).join('\n'));
+      const fresh = list[list.length - 1];
+      addDeliverableRow(fresh, 'one'); addDeliverableRow(fresh, 'two'); addDeliverableRow(fresh, 'three');
+      rewordDeliverableRow(fresh, 1, 'two (reworded)');
+      addDeliverableRow(list[0], 'added');
+      moveDeliverableRow(list[0], 0, +1);
+      removeDeliverableRow(fresh, 0);
+      rewordDeliverableRow(fresh, 0, '');
+      moveSessionTemplate(list, 0, +1);
       removeSessionTemplate(list, 1);
       const aligned = Object.values(DATA.config.sessionTemplates).every(l => !Array.isArray(l) || l.every(t =>
         Array.isArray(t.deliverableIds) && t.deliverableIds.length === t.deliverables.length
@@ -23004,7 +23106,7 @@ function openCurriculumModal(){
         <div id="cur-session-list">
           ${templates.map((t,i) => `
             <div class="session-card" style="margin-bottom:10px;">
-              <div class="field-row">
+              <div class="field-row" style="align-items:flex-end;">
                 <div class="field" style="flex:2;">
                   <label>Session ${i+1} title</label>
                   <input type="text" data-cur-title="${i}" value="${escapeAttr(t.title)}">
@@ -23016,14 +23118,23 @@ function openCurriculumModal(){
                     <option value="ttfv2" ${t.ttfvStage==='ttfv2'?'selected':''}>TTFV-2</option>
                   </select>
                 </div>
+                <button class="btn btn-sm" data-cur-move-session="${i}|-1" aria-label="Move session ${i+1} up" ${i===0?'disabled':''}>↑</button>
+                <button class="btn btn-sm" data-cur-move-session="${i}|1" aria-label="Move session ${i+1} down" ${i===templates.length-1?'disabled':''}>↓</button>
               </div>
               <div class="field">
                 <label>What to enable/present (one per line)</label>
                 <textarea data-cur-enable="${i}">${escapeHtml((t.enable||[]).join('\n'))}</textarea>
               </div>
               <div class="field">
-                <label>Deliverables (one per line)</label>
-                <textarea data-cur-deliverables="${i}">${escapeHtml((t.deliverables||[]).join('\n'))}</textarea>
+                <label>Deliverables</label>
+                ${deliverableRows(t).map((r,j,rows) => `
+                <div class="field-row" style="align-items:center; margin-bottom:0;">
+                  <input type="text" data-cur-dl="${i}|${j}" value="${escapeAttr(r.text)}" aria-label="Session ${i+1} deliverable ${j+1}" style="flex:1; min-width:0;">
+                  <button class="btn btn-sm" data-cur-dl-move="${i}|${j}|-1" aria-label="Move deliverable ${j+1} up" ${j===0?'disabled':''}>↑</button>
+                  <button class="btn btn-sm" data-cur-dl-move="${i}|${j}|1" aria-label="Move deliverable ${j+1} down" ${j===rows.length-1?'disabled':''}>↓</button>
+                  <button class="btn btn-danger btn-sm" data-cur-dl-remove="${i}|${j}" aria-label="Remove deliverable ${j+1}">✕</button>
+                </div>`).join('')}
+                <input type="text" data-cur-dl-new="${i}" placeholder="Add a deliverable" aria-label="Session ${i+1}: add a deliverable">
               </div>
               <button class="btn btn-danger btn-sm" data-cur-remove-session="${i}">Remove session</button>
             </div>
@@ -23109,8 +23220,22 @@ function openCurriculumModal(){
 
     $$('[data-cur-remove-session]').forEach(btn => btn.addEventListener('click', ()=>{
       const idx = parseInt(btn.dataset.curRemoveSession,10);
-      removeSessionTemplate(DATA.config.sessionTemplates[curKey()], idx);
+      const list = DATA.config.sessionTemplates[curKey()];
+      const tpl = list[idx];
+      const n = sessionDeleteImpact(curKey(), tpl.id).accounts;
+      const impact = n === 0 ? 'No account has evidence on this session\'s deliverables.'
+        : `${n} account${n===1?' has':'s have'} evidence on this session's deliverables; it will show as "no longer in the curriculum".`;
+      showConfirmModal(`Remove session ${idx+1}, "${tpl.title}"? ${impact}`, ()=>{
+        removeSessionTemplate(list, idx);
+        saveData(); renderModalBody(); render();
+      });
+    }));
+
+    $$('[data-cur-move-session]').forEach(btn => btn.addEventListener('click', ()=>{
+      const [idx, dir] = btn.dataset.curMoveSession.split('|').map(Number);
+      if(!moveSessionTemplate(DATA.config.sessionTemplates[curKey()], idx, dir)) return;
       saveData(); renderModalBody(); render();
+      const t = backdrop.querySelector(`[data-cur-title="${idx + dir}"]`); if(t) t.focus();
     }));
 
     $$('[data-cur-title]').forEach(inp => inp.addEventListener('change', ()=>{
@@ -23128,10 +23253,36 @@ function openCurriculumModal(){
       DATA.config.sessionTemplates[curKey()][idx].enable = area.value.split('\n').map(s=>s.trim()).filter(Boolean);
       saveData(); render();
     }));
-    $$('[data-cur-deliverables]').forEach(area => area.addEventListener('change', ()=>{
-      const idx = parseInt(area.dataset.curDeliverables,10);
-      applyDeliverablesTextarea(DATA.config.sessionTemplates[curKey()][idx], area.value);
-      saveData(); render();
+    /* Deliverables are edited per row. Rewording keeps the row's id and re-renders
+       only the app, so focus stays in the input; every other action re-renders
+       the modal too and puts focus back where the user was working. */
+    $$('[data-cur-dl]').forEach(inp => inp.addEventListener('change', ()=>{
+      const [i, j] = inp.dataset.curDl.split('|').map(Number);
+      const tpl = DATA.config.sessionTemplates[curKey()][i];
+      const cleared = !inp.value.trim();
+      rewordDeliverableRow(tpl, j, inp.value);
+      saveData();
+      if(cleared) renderModalBody();   // the row is gone; redraw the list
+      render();
+    }));
+    $$('[data-cur-dl-move]').forEach(btn => btn.addEventListener('click', ()=>{
+      const [i, j, dir] = btn.dataset.curDlMove.split('|').map(Number);
+      if(!moveDeliverableRow(DATA.config.sessionTemplates[curKey()][i], j, dir)) return;
+      saveData(); renderModalBody(); render();
+      const el = backdrop.querySelector(`[data-cur-dl="${i}|${j + dir}"]`); if(el) el.focus();
+    }));
+    $$('[data-cur-dl-remove]').forEach(btn => btn.addEventListener('click', ()=>{
+      const [i, j] = btn.dataset.curDlRemove.split('|').map(Number);
+      removeDeliverableRow(DATA.config.sessionTemplates[curKey()][i], j);
+      saveData(); renderModalBody(); render();
+    }));
+    $$('[data-cur-dl-new]').forEach(inp => inp.addEventListener('change', ()=>{
+      const i = parseInt(inp.dataset.curDlNew,10);
+      const text = inp.value.trim();
+      if(!text) return;
+      addDeliverableRow(DATA.config.sessionTemplates[curKey()][i], text);
+      saveData(); renderModalBody(); render();
+      const el = backdrop.querySelector(`[data-cur-dl-new="${i}"]`); if(el) el.focus();
     }));
 
     $('#cur-close-btn').addEventListener('click', ()=> backdrop.remove());
