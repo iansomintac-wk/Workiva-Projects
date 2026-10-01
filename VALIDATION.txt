@@ -29,8 +29,8 @@ tree is CRLF and hashes differently from the blob. The guide is the same
 shape: LF blob, CRLF working tree.
 
   osm-book-of-business-tracker-1.0.html   (LF blob, `git cat-file -p
-    :<file> | sha256sum`, 1,632,025 bytes, LF blob; re-measured in fix M4r; the autocrlf working tree hashes differently)
-    704c91d0535487e76a1aeaeec5600e7c095bc2e87e1478b833eb5841dd61cab5
+    :<file> | sha256sum`, 1,633,009 bytes, LF blob; re-measured in fix M4r (empty-key pin); the autocrlf working tree hashes differently)
+    549426ea5e60137ecc9dea41e16174669a24d0b48b1ff42ebb989b5569b8e60a
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -1172,5 +1172,15 @@ CURRICULUM IDENTITY — FIX M4r (suite 384 -> 385)
     `--from 11`: Accounts 12, Ticks before 57, Evidence after 56, ticks lost 0,
     notes changed 1 (unexplained 0), second-pass doubling false. `--from 12`:
     Placed 21, Stamped 21, unstamped 0, notes moved 45, lost 0, verdict changed 0,
-    idempotent true, Live true. SHA-256 block re-measured (tracker 704c91d0...,
-    1,632,025 bytes, LF blob).
+    idempotent true, Live true. SHA-256 block re-measured (tracker 549426ea...,
+    1,633,009 bytes, LF blob).
+  - EMPTY-KEY PIN (second fixture inside the same check, count stays 385). MEASURED
+    runtime for `config.sessionTemplates['Sustainability (CSRD)'] = []`:
+    applyDataBackfills only adds a MISSING key (`!x` is false for []), so the key
+    stays [] after prepareBookData (csrdLen 0), and resolveRawCurriculum skips an
+    empty set, so a CSRD account resolves the BASE curriculum (csrdOnly 0). The
+    `=== undefined` guard is therefore correct: migration uses base for [] too.
+    Fixture: same account, key [], 11 criteria evidenced, stamped 11, orphaned 0.
+    MUTATION (guard dropped, fallback also for []): `runSelfChecks: 384/385`, FAIL
+    with `"empty":{...,"csrdOnly":0,"stamped":11,"evidencedAfter":11,"orphaned":4,
+    "csrdLen":0}`. Restore: cmp identical; 385/385; guide 18/18.

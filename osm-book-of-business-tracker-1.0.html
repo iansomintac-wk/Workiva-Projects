@@ -9835,38 +9835,51 @@ function _runSelfChecksInner(){
      csrdOnly > 0 = evidenced criteria whose id is not a base id), converted to a
      v12 book with the CSRD key removed. Expectations are literals. */
   (function(){
+    /* Two fixtures. 'absent': the CSRD key is missing (migration must use the shipped
+       CSRD default, which the backfill then installs). 'empty': the key exists as []
+       — applyDataBackfills only adds a MISSING key and resolveRawCurriculum ignores
+       an empty set, so runtime keeps [] and resolves the BASE curriculum; migration
+       must agree (csrdOnly 0 and the key still [] after prepare). */
     const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
-    let ok = false, detail = '';
-    try{
-      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
-      const c = {id:'__idm4r__', name:'Identity M4r Co', module:'Sustainability', reportsCSRD:true,
-        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
-        totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
-      backfillCustomerRecord(c);
-      DATA.customers = [c]; DATA.activities = {[c.id]: []};
-      _renderMemoResets.forEach(r => r());
-      let ticked = 0;
-      outcomeCriteriaFor(c).forEach(cr => { if(setOutcomeEvidence(c, cr, {on: isoAddDays(todayISO(), -30), by:'customer'})) ticked++; });
-      const evidencedBefore = outcomeCriteriaFor(c).filter(x => x.evidence).length;
-      const baseIds = new Set([].concat(...DATA.config.sessionTemplates['Sustainability'].map(t => t.deliverableIds || [])));
-      const csrdOnly = outcomeCriteriaFor(c).filter(x => x.evidence && !baseIds.has(x.sourceDeliverableId)).length;
-      const book = _v12Book([c]);
-      delete book.config.sessionTemplates['Sustainability (CSRD)'];
-      const prepared = prepareBookData(cloneData(book), 'SelfCheck');
-      const rc = prepared.customers[0];
-      const stamped = rc.outcomeCriteria.items.filter(x => x.sourceDeliverableId).length;
-      DATA.customers = prepared.customers; DATA.config.sessionTemplates = prepared.config.sessionTemplates;
-      _renderMemoResets.forEach(r => r());
-      const rows = outcomeCriteriaFor(rc);
-      const evidencedAfter = rows.filter(x => x.evidence).length;
-      const orphaned = rows.filter(x => x.evidence && x.source === 'no longer in the curriculum').length;
-      ok = ticked > 0 && stamped > 0 && csrdOnly > 0 && ticked === 11 && evidencedBefore === 11 && csrdOnly === 4
-        && stamped === 11 && evidencedAfter === 11 && orphaned === 0;
-      detail = JSON.stringify({ticked, evidencedBefore, csrdOnly, stamped, evidencedAfter, orphaned});
-    }catch(err){ detail = err.message; }
+    const out = {};
+    let ok = true, err0 = '';
+    ['absent', 'empty'].forEach(mode => {
+      try{
+        DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+        if(mode === 'empty') DATA.config.sessionTemplates['Sustainability (CSRD)'] = [];
+        const c = {id:'__idm4r__', name:'Identity M4r Co', module:'Sustainability', reportsCSRD:true,
+          stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+          totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+        backfillCustomerRecord(c);
+        DATA.customers = [c]; DATA.activities = {[c.id]: []};
+        _renderMemoResets.forEach(r => r());
+        let ticked = 0;
+        outcomeCriteriaFor(c).forEach(cr => { if(setOutcomeEvidence(c, cr, {on: isoAddDays(todayISO(), -30), by:'customer'})) ticked++; });
+        const evidencedBefore = outcomeCriteriaFor(c).filter(x => x.evidence).length;
+        const baseIds = new Set([].concat(...DATA.config.sessionTemplates['Sustainability'].map(t => t.deliverableIds || [])));
+        const csrdOnly = outcomeCriteriaFor(c).filter(x => x.evidence && !baseIds.has(x.sourceDeliverableId)).length;
+        const book = _v12Book([c]);
+        if(mode === 'absent') delete book.config.sessionTemplates['Sustainability (CSRD)'];
+        const prepared = prepareBookData(cloneData(book), 'SelfCheck');
+        const rc = prepared.customers[0];
+        const stamped = rc.outcomeCriteria.items.filter(x => x.sourceDeliverableId).length;
+        const csrdLen = (prepared.config.sessionTemplates['Sustainability (CSRD)'] || []).length;
+        DATA.customers = prepared.customers; DATA.config.sessionTemplates = prepared.config.sessionTemplates;
+        _renderMemoResets.forEach(r => r());
+        const rows = outcomeCriteriaFor(rc);
+        const evidencedAfter = rows.filter(x => x.evidence).length;
+        const orphaned = rows.filter(x => x.evidence && x.source === 'no longer in the curriculum').length;
+        const want = mode === 'absent'
+          ? {ticked: 11, evidencedBefore: 11, csrdOnly: 4, stamped: 11, evidencedAfter: 11, orphaned: 0, csrdLen: 12}
+          : {ticked: 11, evidencedBefore: 11, csrdOnly: 0, stamped: 11, evidencedAfter: 11, orphaned: 0, csrdLen: 0};
+        const got = {ticked, evidencedBefore, csrdOnly, stamped, evidencedAfter, orphaned, csrdLen};
+        out[mode] = got;
+        if(!(ticked > 0 && stamped > 0 && JSON.stringify(got) === JSON.stringify(want))) ok = false;
+      }catch(err){ ok = false; err0 = err.message; }
+    });
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     _renderMemoResets.forEach(r => r());
-    check('identity M4r: a v12 CSRD account whose config lacks the CSRD key migrates against the CSRD defaults and orphans nothing', ok, detail);
+    check('identity M4r: a v12 CSRD account whose config lacks the CSRD key migrates against the CSRD defaults and orphans nothing', ok, JSON.stringify(out) + err0);
   })();
   (function(){
     /* c4b — session notes follow their session through a delete (spec §3d;
