@@ -39,6 +39,7 @@
 | 6 | c6a–c6c | 427 (measured; 425 + c6d, c6e from the task 6 fix) |
 | 7 | none in-page; the scenario run is a separate 6-check run (A3–A8) | 427 |
 | F1 | f1a–f1d (final-review fix I1, I2) | 431 (measured) |
+| F2 | f2a–f2e (final-review Minor 1, 2, 3, 4, 11) | 436 (measured) |
 
 ## Plan-level choices (made here, because the spec is silent; Ian may overrule them before build 1)
 

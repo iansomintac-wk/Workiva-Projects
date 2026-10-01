@@ -4579,7 +4579,9 @@ function plannedSessionTotal(c){
 function validateGraduationDraft(c, d){
   d = d || {};
   const missing = [], p = primaryGoal(c), note = cleanGoalText(d.note, 500);
-  const willHaveGoal = !!p || !!(d.newGoal && cleanGoalText(d.newGoal.text, 300));
+  const newGoalOk = !!(d.newGoal && cleanGoalText(d.newGoal.text, 300) && GOAL_TYPES.some(t => t.key === d.newGoal.type));
+  const willHaveGoal = !!p || newGoalOk;
+  if(!p && d.newGoal && cleanGoalText(d.newGoal.text, 300) && !newGoalOk) missing.push('goalType');
   if(willHaveGoal){
     if(!['met','partly','not_met'].includes(d.verdict)) missing.push('verdict');
     if(!note) missing.push('note');
@@ -4622,7 +4624,7 @@ function confirmGraduation(c, d){
   if(!validateGraduationDraft(c, d).ok) return false;
   markUndoable('graduate');
   const inline = !!d.newGoal && !primaryGoal(c);            // applyGraduation will create the goal on the way
-  if(!applyGraduation(c, d)) return false;
+  if(!applyGraduation(c, d)){ markUndoable(null); return false; }
   const gp = primaryGoal(c);
   if(gp && inline) commitGoalEvent(c, 'created', gp, {defer: true});
   if(gp && gp.verdict) commitGoalEvent(c, 'verdict', gp, {defer: true});
@@ -7419,13 +7421,13 @@ function customerPaceSignal(c){
 function customerGateSignal(c){
   const completed = sessionsCompletedCount(c);
   const missing = missingGates(c, {excludePaceOutcomes:true}).map(g=>g.label);
-  if(missing.length && completed >= Math.ceil(c.totalSessions * 0.6)) return {type:'late_gate', missing, completed, total: c.totalSessions};
+  if(missing.length && completed >= Math.ceil(c.totalSessions * 0.6)) return {type:'late_gate', missing, completed, total: plannedSessionTotal(c)};   // threshold on the raw plan; the shown total is the planned one
   return null;
 }
 function customerGradReadySignal(c){
   if(c.stage === 'graduated') return null;
   const completed = sessionsCompletedCount(c);
-  if(completed >= c.totalSessions && !c.targetGraduationDate) return {type:'ready_to_set_date', completed, total: c.totalSessions};
+  if(completed >= c.totalSessions && !c.targetGraduationDate) return {type:'ready_to_set_date', completed, total: plannedSessionTotal(c)};
   return null;
 }
 // Distinct from customerKeywordSignal's single-most-recent-note check — this
@@ -7591,7 +7593,7 @@ const SIGNAL_DEFS = [
     detect:c=>{ const fv = getFirstValue(c);
       if(!fv.definition || fv.evidence.length || fv.derivedFrom) return null;
       const completed = sessionsCompletedCount(c);
-      return completed >= Math.ceil(c.totalSessions * 0.5) ? {completed, total: c.totalSessions} : null; },
+      return completed >= Math.ceil(c.totalSessions * 0.5) ? {completed, total: plannedSessionTotal(c)} : null; },
     action:null,
     step:(c,sig)=>`${sig.completed}/${sig.total} sessions done with first value defined but no evidence logged — look for the moment on the next call and mark it in Log Activity.`,
     portfolio:n=>`${n} account${n===1?'':'s'} are past halfway with a first-value definition but no logged evidence — the value story is missing where it matters most.`},
@@ -16287,6 +16289,102 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA;
     check('grad-plan f1d: a graduated account\'s goal panel has no Change goal button, a live one does (I2)', ok, detail);
   })();
+  /* ---- Final-review fix F2 (Minor 1, 2, 3, 4, 11): packet punctuation, draft validation and undo label, shape backfill, planned totals, one implementation line ---- */
+  (function(){                                   // f2a
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__f2a__'); DATA.customers = [c];
+      createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      changePrimaryGoal(c, {type:'setup_next', text:'Ready for next cycle', changeReason:'Scope changed.'});
+      const sec = gp5Goals(gp5Packet(c));
+      const one = sec.includes('because Scope changed.') && !sec.includes('..');
+      const c2 = gp4Cust('__f2a2__'); DATA.customers = [c2];
+      createGoal(c2, {type:'publish', text:'A'});
+      changePrimaryGoal(c2, {type:'setup_next', text:'B', changeReason:'Why?!'});
+      const sec2 = gp5Goals(gp5Packet(c2));
+      const two = sec2.includes('because Why.') && !/[?!]\./.test(sec2);
+      ok = one && two;
+      detail = JSON.stringify({one, two, sec, sec2});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan f2a: a change reason that ends in punctuation does not double the full stop in the packet (Minor 1)', ok, detail);
+  })();
+  (function(){                                   // f2b
+    let ok = false, detail = '';
+    try{
+      const data = {config: {}, activities: {}, customers: [
+        {id:'a', name:'A'},
+        {id:'b', name:'B', goals: [], exit: null, graduation: null},
+        {id:'c', name:'C', stage:'graduated', graduation: {on:'2026-09-01', noGoal:true}}]};
+      repairAuxiliaryCollections(data);
+      const [a, b, cc] = data.customers;
+      const shaped = c => Array.isArray(c.goals) && c.goals.length === 0 && c.exit === null && c.graduation === null;
+      const aOk = shaped(a), bOk = shaped(b);
+      const cOk = Array.isArray(cc.goals) && cc.exit === null && !!cc.graduation && cc.graduation.noGoal === true;
+      ok = aOk && bOk && cOk;
+      detail = JSON.stringify({a: [a.goals, a.exit, a.graduation], bOk, c: [cc.goals, cc.exit, cc.graduation]});
+    }catch(err){ detail = err.message; }
+    check('grad-plan f2b: repair backfills goals [], exit null and graduation null where absent and never invents or drops a value (Minor 3)', ok, detail);
+  })();
+  (function(){                                   // f2c
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__f2c__', 8); DATA.customers = [c];
+      createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      gp4Acts(c, [1,2,3,4,5]);
+      c.firstValue = {definition: 'Report published', evidence: []};
+      const applied = applyGraduation(c, {verdict:'met', note:'n', exitReason:'goal_met_early'});
+      const gate = customerGateSignal(c), nve = SIGNAL_DEFS.find(d => d.key === 'no_value_evidence').detect(c);
+      const gateOk = !!gate && gate.total === 5 && gate.completed === 5;
+      const nveOk = !!nve && nve.total === 5 && nve.completed === 5;
+      ok = applied && gateOk && nveOk;
+      detail = JSON.stringify({applied, gate: gate && {completed: gate.completed, total: gate.total}, nve});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan f2c: late_gate and no_value_evidence show the planned session total (5, not 8) for an early-exit account (Minor 4)', ok, detail);
+  })();
+  (function(){                                   // f2d
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__f2d__', 8); c.implementation = {phase:'build'}; DATA.customers = [c];
+      createGoal(c, {type:'publish', text:'x'});
+      const applied = applyGraduation(c, {verdict:'partly', note:'n', exitReason:'no_more_enablement'});
+      const pt = plannedSessionTotal(c);
+      const lines = gp5Packet(c).split('\n');
+      const reasonLines = lines.filter(l => l.includes('No more enablement needed'));
+      const notNeeded = lines.filter(l => /not needed/i.test(l));
+      const start = lines.find(l => l.startsWith('(curriculum not started')) || '';
+      ok = applied && pt === 0 && inImplementation(c) && reasonLines.length === 1 && notNeeded.length === 1 && !!start;
+      detail = JSON.stringify({applied, pt, reasonLines: reasonLines.length, notNeeded: notNeeded.length, start});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan f2d: graduating straight out of implementation prints the exit reason once, and the curriculum line does not repeat it (Minor 11)', ok, detail);
+  })();
+  (function(){                                   // f2e
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__f2e__', 6); DATA.customers = [c];
+      gp4Acts(c, [1,2,3,4,5,6]);
+      const draft = {newGoal: {type: 'bogus', text: 'Goal'}, verdict: 'met', note: 'n'};
+      const valid = validateGraduationDraft(c, draft).ok;
+      markUndoable(null);
+      const confirmed = confirmGraduation(c, draft);
+      const label = _undoLabel;
+      const good = validateGraduationDraft(c, {newGoal: {type:'publish', text:'Goal'}, verdict:'met', note:'n'}).ok;
+      ok = !valid && !confirmed && label === null && good && c.stage !== 'graduated';
+      detail = JSON.stringify({valid, confirmed, label, good, stage: c.stage});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan f2e: a draft with an unknown goal type is invalid and a refused confirm leaves no undo label (Minor 2)', ok, detail);
+  })();
   (function(){                                   // c4d
     const prevC = DATA.customers, prevA = DATA.activities;
     let ok = false, detail = '';
@@ -16316,7 +16414,7 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     check('grad-plan c4e: the kanban drop, table select and panel select all go through requestStageChange; changeStage still schedules the review', ok, detail);
   })();
-  (function(){                                   // c4i
+  (function(){                                   // c4f
     const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
     let ok = false, detail = '';
     try{
@@ -21056,7 +21154,7 @@ function buildGoalsSectionLines(c){
   } else L.push('Primary goal: none recorded');
   getGoals(c).filter(g => g.verdict === 'replaced' && g.supersededBy).forEach(g => {
     const to = getGoals(c).find(x => x.id === g.supersededBy);
-    L.push(`Changed ${fmtDate(g.verdictOn)}: ${g.text} → ${to ? to.text : '(removed)'}, because ${g.changeReason}.`);
+    L.push(`Changed ${fmtDate(g.verdictOn)}: ${g.text} → ${to ? to.text : '(removed)'}, because ${String(g.changeReason || '').replace(/[.!?\s]+$/, '')}.`);
   });
   const ex = getExit(c);
   if(ex){
@@ -21102,7 +21200,7 @@ function buildKnowledgeTransferText(c){
   else L.push('(none recorded — worth filling in on the Coordination tab before transferring)');
 
   L.push('', '— SESSION HISTORY —');
-  if(inImplementation(c)) L.push(`(curriculum not started — account was still in implementation${getExit(c) ? '; planned sessions recorded as not needed: ' + roleLabel(EXIT_REASONS, getExit(c).reason, 'other') : ''})`);
+  if(inImplementation(c)) L.push(`(curriculum not started — account was still in implementation${getExit(c) ? '; see the early exit under GOALS' : ''})`);
   else {
     const templates = getSessionTemplateSet(c);
     const skipped = new Set((getExit(c) || {}).sessionsNotNeeded || []);
@@ -24009,13 +24107,13 @@ The draft is discarded. The risk itself stays open.`)) return;
     const c = DATA.customers.find(x => x.id === b.dataset.goalAck);
     if(!c) return;
     markUndoable('goal');
-    if(ackGoalChange(c)){ saveData(); render(); }
+    if(ackGoalChange(c)){ saveData(); render(); } else markUndoable(null);
   }));
   $$('[data-goal-gate]').forEach(b => b.addEventListener('change', ()=>{
     const {c, gid, tid} = goalTarget(b, 'goalGate');
     if(!c) return;
     markUndoable('goal gate');
-    if(setGoalGateDone(c, gid, tid, b.checked)){ saveData(); render(); }
+    if(setGoalGateDone(c, gid, tid, b.checked)){ saveData(); render(); } else markUndoable(null);
   }));
   $$('[data-goal-gate-note]').forEach(b => b.addEventListener('change', ()=>{
     const {c, gid, tid} = goalTarget(b, 'goalGateNote');
@@ -24024,7 +24122,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     /* No render(): a blur-triggered re-render replaces the button the user is
        clicking, so the click is lost (same reason as #comp-outcome-text). The
        input already shows what was typed; only the stored value needs saving. */
-    if(setGoalGateNote(c, gid, tid, b.value)) saveData();
+    if(setGoalGateNote(c, gid, tid, b.value)) saveData(); else markUndoable(null);
   }));
   $$('[data-goal-gate-rename]').forEach(b => b.addEventListener('change', ()=>{
     const {c, gid, tid} = goalTarget(b, 'goalGateRename');
@@ -24033,9 +24131,12 @@ The draft is discarded. The risk itself stays open.`)) return;
     if(renameGoalGate(c, gid, tid, b.value)){
       saveData();
       b.value = cleanGoalText(b.value, 200);
+      const cb = b.parentElement && b.parentElement.querySelector('[data-goal-gate]');   // keep the checkbox's name in step with the rename
+      if(cb) cb.setAttribute('aria-label', 'Done: ' + b.value);
     } else {
       const gt = findGoalGate(c, gid, tid);
       if(gt) b.value = gt.text;   // restore in place, no render (see above)
+      markUndoable(null);
       showToast('A gate needs some text.');
     }
   }));
@@ -24045,7 +24146,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     const {c, gid, tid} = goalTarget(b, 'goalGateRemove');
     if(!c) return;
     markUndoable('goal gate');
-    if(removeGoalGate(c, gid, tid)){ saveData(); render(); }
+    if(removeGoalGate(c, gid, tid)){ saveData(); render(); } else markUndoable(null);
   }));
   $$('[data-goal-gate-add]').forEach(b => b.addEventListener('click', ()=>{
     const {c, gid} = goalTarget(b, 'goalGateAdd');
@@ -24053,7 +24154,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     if(!c || !inp) return;
     markUndoable('goal gate');
     if(addGoalGate(c, gid, inp.value)){ saveData(); render(); }
-    else showToast('Type the gate text first.');
+    else { markUndoable(null); showToast('Type the gate text first.'); }
   }));
   $$('[data-goal-verdict]').forEach(b => b.addEventListener('change', ()=>{
     const {c, gid} = goalTarget(b, 'goalVerdict');
@@ -24063,6 +24164,7 @@ The draft is discarded. The risk itself stays open.`)) return;
       const g = findGoal(c, gid);
       if(g){ g.verdict = null; g.verdictOn = null; g.verdictNote = ''; saveData(); render(); }
     } else if(setGoalVerdict(c, gid, b.value, '')){ commitGoalEvent(c, 'verdict', findGoal(c, gid)); render(); }
+    else markUndoable(null);
   }));
 
   /* v87 readiness strip. "Not now" is permanent for that gap — the reference
@@ -25582,12 +25684,12 @@ function openGainsightCopyModal(customerId){
 function renderGoalGatesSettings(){
   const cfg = DATA.config.goalGates || {};
   const keys = Array.from(new Set([...Object.keys(cfg), ...(DATA.config.modules || [])]));
-  const rows = keys.map(k => {
+  const rows = keys.map((k, ki) => {
     const set = cfg[k] || {};
     return `<div class="section-title" style="margin-top:10px;">${escapeHtml(k)}</div>
       <div class="field-row" style="flex-wrap:wrap;">${GOAL_TYPES.map(t => `<div class="field" style="min-width:200px;">
-        <label>${escapeHtml(t.label)}</label>
-        <textarea data-goal-gates="${escapeAttr(k)}|${escapeAttr(t.key)}" style="min-height:90px; font-family:var(--font-mono); font-size:var(--text-xs);">${escapeHtml((Array.isArray(set[t.key]) ? set[t.key] : []).join('\n'))}</textarea>
+        <label for="gp-gates-${ki}-${escapeAttr(t.key)}">${escapeHtml(t.label)}</label>
+        <textarea id="gp-gates-${ki}-${escapeAttr(t.key)}" data-goal-gates="${escapeAttr(k)}|${escapeAttr(t.key)}" style="min-height:90px; font-family:var(--font-mono); font-size:var(--text-xs);">${escapeHtml((Array.isArray(set[t.key]) ? set[t.key] : []).join('\n'))}</textarea>
       </div>`).join('')}</div>`;
   }).join('');
   return `<details class="advanced-settings">
@@ -26739,6 +26841,11 @@ function repairAuxiliaryCollections(data){
   });
   (data.customers || []).forEach(c => {
     if(!isRecordObject(c)) return;
+    // Graduation plan (spec 3.4): every customer carries the three fields. Backfill only what is absent;
+    // an existing value (including a historic graduation of null) is never touched or invented.
+    if(c.goals === undefined) c.goals = [];
+    if(c.exit === undefined) c.exit = null;
+    if(c.graduation === undefined) c.graduation = null;
     // v68: handoff records — same boundary discipline, but keys the registry no
     // longer knows are KEPT on purpose (provisional format; see normalizeHandoff).
     ['handoffIn','handoffOut'].forEach(k => {

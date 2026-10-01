@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        431/431 passed, 0 failed
+  window.runSelfChecks()        436/436 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -150,12 +150,12 @@ check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
 four remaining failures are exactly the pre-existing, verified-non-defect
 four above, which need a populated book on their own terms and are not
 this defect. The tracker suite as a whole therefore still needs seeding to
-run clean, so — at the CURRENT suite count, 431 (369 when this paragraph was
+run clean, so — at the CURRENT suite count, 436 (369 when this paragraph was
 written, after v74.5 was added; the count moves with every graduation-plan task) —
 the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 431
+       --seed demo-seed.js --expect 436
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -395,7 +395,7 @@ Not exercised in this run:
     force one through. Measured instead, per the instruction to measure the
     gap rather than assert it away: removing `saveData();` from BOTH
     listeners and running `node tools/selfcheck.mjs
-    osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 427`
+    osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 436`
     still reports `369/369 passed, 0 failed`, exit 0 (re-measured against
     this record's own suite count — now 369, after v74.5 — and reverted
     immediately after; the earlier record of this same measurement had
@@ -1412,3 +1412,18 @@ GRADUATION PLAN FINAL-REVIEW FIX F1 — EXIT/GRADUATION ONLY WHILE GRADUATED; NO
   - c4i no longer asserts a kept exit on a live stage (that behaviour is the I1 bug); its re-opened view is f1a.
   - RED: 4 FAIL (f1a-f1d). GREEN: `runSelfChecks: 431/431 passed, 0 failed`.
     Evidence: docs/superpowers/evidence/graduation-plan-final-fix-F1.md.
+
+GRADUATION PLAN FINAL-REVIEW FIX F2 — CODE-SIDE MINORS 1, 2, 3, 4, 5, 11, 13 (suite 431 -> 436)
+  Five checks written first and seen failing (f2a-f2e), then fixed.
+  - M1  packet "because <reason>." strips trailing . ! ? before the full stop.
+  - M2  validateGraduationDraft rejects a new goal with an unknown type ('goalType' missing); a refused confirm
+        and the no-op goal-panel handlers (ack, gate done/note/remove/add/rename, verdict) clear the undo label.
+  - M3  repairAuxiliaryCollections backfills goals [], exit null, graduation null when absent; never invents one.
+  - M4  late_gate, no_value_evidence and ready_to_set_date show plannedSessionTotal(c); thresholds still use the raw plan.
+  - M5  the c4f check comment said c4i; corrected.
+  - M11 the implementation line reads "... see the early exit under GOALS"; the reason is printed once.
+        plannedSessionTotal is 0 there (all planned sessions are not needed): kept, it is correct.
+  - M13 Settings Graduation-gates labels now use for/id; the gate checkbox aria-label follows an in-place rename.
+  - RED: 5 FAIL (f2a-f2e). GREEN: `runSelfChecks: 436/436 passed, 0 failed`; guide 18/18;
+    `runGraduationScenarios: 6/6 passed, 0 failed`.
+    Evidence: docs/superpowers/evidence/graduation-plan-final-fix-F2.md.
