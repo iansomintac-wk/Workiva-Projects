@@ -4603,6 +4603,16 @@ function applyGraduation(c, d){
   changeStage(c, 'graduated');
   return true;
 }
+const GOAL_GAINSIGHT_KIND = 'Success Plan objective';
+function goalGainsightPayload(event, goal){
+  const base = 'Update Success Plan objective: ' + goal.text;
+  return event === 'verdict' ? `${base} — verdict: ${(GOAL_VERDICTS.find(v => v.key === goal.verdict) || {}).label || goal.verdict}` : base;
+}
+// One item per goal event (spec 4.5, plan P5). UI layer only; local queue, nothing is sent (G07 open).
+function commitGoalEvent(c, event, goal){
+  if(!c || !goal || !['created','changed','verdict'].includes(event)) return false;
+  return queueGainsightItem(GOAL_GAINSIGHT_KIND, c, goalGainsightPayload(event, goal));
+}
 function requestStageChange(c, stageKey){
   if(stageKey === 'graduated' && c.stage !== 'graduated'){ openGraduationConfirmModal(c); render(); return; }
   changeStage(c, stageKey); saveData(); render();
@@ -16376,6 +16386,69 @@ function _runSelfChecksInner(){
     check('grad-plan c5e: a historic graduation reads "Graduated before goal tracking." (ruling M1)', ok, detail);
   })();
 
+  /* ---- Graduation Plan task 6: Gainsight queue items and Settings gates ---- */
+  (function(){                                   // c6a
+    const hadKey = Object.prototype.hasOwnProperty.call(DATA, 'gainsightQueue'), prevQ = DATA.gainsightQueue;
+    let ok = false, detail = '';
+    try{
+      DATA.gainsightQueue = [];
+      const c = gp4Cust('__gp6a__');
+      const g = {text:'Publish FY2026 report', verdict:'met'};
+      commitGoalEvent(c, 'created', g);
+      const afterCreate = DATA.gainsightQueue.slice();
+      commitGoalEvent(c, 'changed', g);
+      commitGoalEvent(c, 'verdict', g);
+      const q = DATA.gainsightQueue;
+      const one = afterCreate.length === 1 && afterCreate[0].kind === 'Success Plan objective'
+        && afterCreate[0].payload === 'Update Success Plan objective: Publish FY2026 report';
+      const three = q.length === 3 && q[1].payload === 'Update Success Plan objective: Publish FY2026 report';
+      const tail = q[2] && / — verdict: Met$/.test(q[2].payload);
+      ok = one && three && !!tail;
+      detail = JSON.stringify({createdAdded: afterCreate.length, total: q.length, kind: afterCreate[0] && afterCreate[0].kind, verdictPayload: q[2] && q[2].payload});
+    }catch(err){ detail = err.message; }
+    if(hadKey) DATA.gainsightQueue = prevQ; else delete DATA.gainsightQueue;
+    check('grad-plan c6a: commitGoalEvent queues exactly one Success Plan objective item per event (created, changed, verdict)', ok, detail);
+  })();
+  (function(){                                   // c6b
+    let ok = false, detail = '';
+    try{
+      const cnt = (fn, s) => (String(fn).match(new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+      const form = cnt(openGoalFormModal, 'commitGoalEvent(');
+      const conf = cnt(openGraduationConfirmModal, 'commitGoalEvent(');
+      const verd = String(attachEvents).includes('data-goal-verdict') && cnt(attachEvents, 'commitGoalEvent(');
+      const addAcct = cnt(openAddCustomerModal, 'commitGoalEvent(');
+      const pure = ['createGoal', 'changePrimaryGoal', 'setGoalVerdict', 'applyGraduation']
+        .every(n => !String(({createGoal, changePrimaryGoal, setGoalVerdict, applyGraduation})[n]).includes('queueGainsightItem'));
+      ok = form === 1 && conf === 2 && verd === 1 && addAcct === 1 && pure;
+      detail = JSON.stringify({form, conf, verd, addAcct, pure});
+    }catch(err){ detail = err.message; }
+    check('grad-plan c6b: the goal form, graduation confirm, verdict select and new-account form each call commitGoalEvent; the domain functions never queue (P5)', ok, detail);
+  })();
+  (function(){                                   // c6c
+    let ok = false, detail = '';
+    try{
+      const raw = {domains: DATA.config.domains.slice(), domainSlots: DATA.config.domains.slice(), outcomes: DATA.config.outcomeNames.slice(),
+        riskKeywords: DATA.config.advisorRiskKeywords.join('\n'), positiveKeywords: DATA.config.advisorPositiveKeywords.join('\n'),
+        keywordMaxAgeDays:'30', riskWatchDays:'10', riskAlertDays:'21', defaultPaceDays:'7', dueSoonDays:'7', neglectDays:'21',
+        gradReviewDays:'30', implQuietDays:'35'};
+      const draft = parseSettingsDraft(Object.assign({}, raw, {goalGates: {'Financial Reporting': {publish: ' Filing submitted \n\n'}, GRC: {}}}));
+      const fr = draft.goalGates && draft.goalGates['Financial Reporting'];
+      const grc = draft.goalGates && draft.goalGates.GRC;
+      const parsed = !!fr && JSON.stringify(fr.publish) === '["Filing submitted"]'
+        && !!grc && GOAL_TYPES.every(t => Array.isArray(grc[t.key]) && grc[t.key].length === 0);
+      const cand = applySettingsDraft(cloneData(DATA), draft);
+      const wrote = JSON.stringify(cand.config.goalGates['Financial Reporting'].publish) === '["Filing submitted"]';
+      const plain = parseSettingsDraft(raw);
+      const before = JSON.stringify(DATA.config.goalGates);
+      const kept = plain.goalGates === undefined && JSON.stringify(applySettingsDraft(cloneData(DATA), plain).config.goalGates) === before;
+      const d = defaultGoalGatesConfig()['Financial Reporting'];
+      const empty = GOAL_TYPES.every(t => d[t.key].length === 0);
+      ok = parsed && wrote && kept && empty;
+      detail = JSON.stringify({parsed, wrote, kept, empty});
+    }catch(err){ detail = err.message; }
+    check('grad-plan c6c: Settings gates parse one per line, write config.goalGates only when present, and FR/GRC defaults stay empty', ok, detail);
+  })();
+
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
@@ -23860,7 +23933,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     if(b.value === ''){
       const g = findGoal(c, gid);
       if(g){ g.verdict = null; g.verdictOn = null; g.verdictNote = ''; saveData(); render(); }
-    } else if(setGoalVerdict(c, gid, b.value, '')){ saveData(); render(); }
+    } else if(setGoalVerdict(c, gid, b.value, '')){ commitGoalEvent(c, 'verdict', findGoal(c, gid)); render(); }
   }));
 
   /* v87 readiness strip. "Not now" is permanent for that gap — the reference
@@ -24800,7 +24873,7 @@ function openGoalFormModal(c, mode, onDone){
     if(!g){ showToast('That goal could not be saved.'); return; }
     const meet = backdrop.querySelector('#gf-meeting').value;
     if(isRealISODate(meet)) setHandoffField(c, 'in', 'handoffMeetingOn', meet);
-    saveData();
+    commitGoalEvent(c, isChange ? 'changed' : 'created', g);   // saves; one queue item per event
     backdrop.remove();
     showToast(isChange ? 'Goal changed. Check the target date.' : g.primary ? 'Hand-off goal set.' : 'Secondary goal added.');
     render();
@@ -24880,8 +24953,13 @@ function openGraduationConfirmModal(c){
     const d = draft();
     if(!validateGraduationDraft(c, d).ok) return;
     markUndoable('graduate');
+    const inline = !!d.newGoal && !primaryGoal(c);          // applyGraduation will create the goal on the way
     if(!applyGraduation(c, d)){ showToast('That graduation could not be saved.'); return; }
-    saveData();
+    const gp = primaryGoal(c);
+    let queued = false;
+    if(gp && inline) queued = commitGoalEvent(c, 'created', gp) || queued;
+    if(gp && gp.verdict) queued = commitGoalEvent(c, 'verdict', gp) || queued;   // queueGainsightItem saves
+    if(!queued) saveData();
     backdrop.remove();
     showToast(`${c.name} graduated.`);
     render();
@@ -25066,6 +25144,7 @@ function openAddCustomerModal(){
     candidate.customers.push(customer);
     candidate.activities[customer.id] = [];
     if(!commitDataCandidate(candidate)) return;
+    if(newGoalText && primaryGoal(customer)) commitGoalEvent(customer, 'created', primaryGoal(customer));   // after the account is saved
     backdrop.remove();
     showToast('Account added');
     render();
@@ -25373,6 +25452,36 @@ function openGainsightCopyModal(customerId){
   });
 }
 
+/* Graduation gates settings (spec 4.6): one textarea per module x goal type, one gate per line.
+   Inputs here never call render() (a blur must not swallow the next click); values are read on Save. */
+function renderGoalGatesSettings(){
+  const cfg = DATA.config.goalGates || {};
+  const keys = Array.from(new Set([...Object.keys(cfg), ...(DATA.config.modules || [])]));
+  const rows = keys.map(k => {
+    const set = cfg[k] || {};
+    return `<div class="section-title" style="margin-top:10px;">${escapeHtml(k)}</div>
+      <div class="field-row" style="flex-wrap:wrap;">${GOAL_TYPES.map(t => `<div class="field" style="min-width:200px;">
+        <label>${escapeHtml(t.label)}</label>
+        <textarea data-goal-gates="${escapeAttr(k)}|${escapeAttr(t.key)}" style="min-height:90px; font-family:var(--font-mono); font-size:var(--text-xs);">${escapeHtml((Array.isArray(set[t.key]) ? set[t.key] : []).join('\n'))}</textarea>
+      </div>`).join('')}</div>`;
+  }).join('');
+  return `<details class="advanced-settings">
+    <summary>Graduation gates (default checklist per goal type)</summary>
+    <div class="advanced-settings-body">
+      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:0 0 8px;">One gate per line. Editing these defaults changes new goals only. Existing goals keep the gates they were created with. Financial Reporting and GRC start empty until their content is agreed.</p>
+      ${rows}
+    </div>
+  </details>`;
+}
+function readGoalGatesSettings(root){
+  const out = {};
+  root.querySelectorAll('[data-goal-gates]').forEach(el => {
+    const i = el.getAttribute('data-goal-gates').lastIndexOf('|');
+    const k = el.getAttribute('data-goal-gates').slice(0, i), t = el.getAttribute('data-goal-gates').slice(i + 1);
+    (out[k] = out[k] || {})[t] = el.value;
+  });
+  return out;
+}
 function parseSettingsDraft(raw){
   // v48 finding B: keep the POSITIONAL slots ('' = that domain was deleted)
   // alongside the compacted list. The old code compacted first, so deleting a
@@ -25406,7 +25515,22 @@ function parseSettingsDraft(raw){
   // clock, which is the exact confusion this threshold exists to prevent.
   if(!Number.isFinite(implQuietDays) || implQuietDays < 14 || implQuietDays > 180) throw new Error('Implementation check-in must be between 14 and 180 days.');
   const parseKeywordList = value => value.split('\n').map(s=>s.trim().toLowerCase()).filter(Boolean);
+  // Graduation gates (spec 4.6): one gate per line, per module x type. Absent = leave config.goalGates alone.
+  let goalGates;
+  if(isRecordObject(raw.goalGates)){
+    const lists = {};
+    Object.keys(raw.goalGates).forEach(k => {
+      const row = isRecordObject(raw.goalGates[k]) ? raw.goalGates[k] : {};
+      lists[k] = {};
+      GOAL_TYPES.forEach(t => {
+        lists[k][t.key] = String(row[t.key] == null ? '' : row[t.key]).split('\n')
+          .map(s => cleanGoalText(s, 200)).filter(Boolean).slice(0, MAX_GOAL_GATES);
+      });
+    });
+    goalGates = normalizeGoalGatesConfig(lists, DATA.config.modules);
+  }
   return {
+    goalGates,
     domains,
     domainSlots, // v48: index-aligned with the pre-save domain list
     outcomes,
@@ -25446,6 +25570,7 @@ function applySettingsDraft(candidate, draft){
   candidate.config.neglectDays = draft.neglectDays;
   candidate.config.gradReviewDays = draft.gradReviewDays;
   candidate.config.implQuietDays = draft.implQuietDays;
+  if(draft.goalGates) candidate.config.goalGates = draft.goalGates;   // defaults for NEW goals only; existing goals keep their copied gates
   return candidate;
 }
 
@@ -25673,6 +25798,7 @@ function openSettingsModal(){
           <p style="color:var(--text-faint); font-size:var(--text-xs); margin:-4px 0 8px;">A note past this age stops counting toward risk/positive language and the escalating-language pattern check — otherwise one old note on a quiet account can keep flagging it forever.</p>
         </div>
       </details>
+      ${renderGoalGatesSettings()}
       <div class="section-title">Risk thresholds (days since last activity)</div>
       <div class="field-row">
         <div class="field"><label>Watch after</label><input type="number" id="watch-days" value="${DATA.config.riskWatchDays}"></div>
@@ -25870,7 +25996,8 @@ function openSettingsModal(){
         dueSoonDays: backdrop.querySelector('#due-soon-days').value,
         neglectDays: backdrop.querySelector('#neglect-days').value,
         gradReviewDays: backdrop.querySelector('#grad-review-days').value,
-        implQuietDays: backdrop.querySelector('#impl-quiet-days').value
+        implQuietDays: backdrop.querySelector('#impl-quiet-days').value,
+        goalGates: readGoalGatesSettings(backdrop)
       });
     }catch(err){ showToast(err.message); return; }
     const candidate = applySettingsDraft(cloneData(DATA), draft);

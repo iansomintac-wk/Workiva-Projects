@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        422/422 passed, 0 failed
+  window.runSelfChecks()        425/425 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1355,3 +1355,11 @@ GRADUATION PLAN TASK 5 — GOALS SECTION OF THE KNOWLEDGE-TRANSFER PACKET (suite
     No length cap added.
   - Ruling M1: graduated + no goals + no exit reads "No goal recorded." when c.graduation.noGoal, else
     "Graduated before goal tracking." (c5d, c5e).
+
+GRADUATION PLAN TASK 6 — GAINSIGHT ITEMS AND SETTINGS GATES (suite 422 -> 425)
+  - RED first: c6a-c6c written before production code; `--expect 425` gave 422/425, 3 FAIL.
+  - GREEN: `425/425`, guide `18/18` (runGuideSelfChecks, osm-runway-onboarding-1.0.html).
+  - MUTATION PROOF (production), restored (cmp identical) then green `425/425`: queueGainsightItem called
+    twice in commitGoalEvent -> c6a FAIL (`createdAdded":2,"total":6`).
+  - commitGoalEvent is the only queue path for goal events (plan P5): goal form (create + change, also the Go-Live
+    goal form), verdict select, graduation confirm (created for an inline goal, then verdict), new-account form.

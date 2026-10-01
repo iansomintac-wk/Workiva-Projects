@@ -36,7 +36,7 @@
 | 3 | c3a–c3d | 407 (measured) |
 | 4 | c4a–c4h (c4i, c4j added by the Task 4 fix) | 417 (measured) |
 | 5 | c5a–c5e | 422 (measured) |
-| 6 | c6a–c6c | 425 |
+| 6 | c6a–c6c | 425 (measured) |
 | 7 | none in-page; the scenario run is a separate 6-check run (A3–A8) | 425 |
 
 ## Plan-level choices (made here, because the spec is silent; Ian may overrule them before build 1)
