@@ -29,8 +29,8 @@ tree is CRLF and hashes differently from the blob. The guide is the same
 shape: LF blob, CRLF working tree.
 
   osm-book-of-business-tracker-1.0.html   (LF blob, `git cat-file -p
-    :<file> | sha256sum`, 1,610,349 bytes, LF blob; re-measured in fix R2 (message tightening); the autocrlf working tree hashes differently)
-    adf7fd738f47b1e0d4a2168a89e203e2b3c4340208f76011df083d5202f67604
+    :<file> | sha256sum`, 1,615,219 bytes, LF blob; re-measured in fix R3; the autocrlf working tree hashes differently)
+    1b6664fd6bbc655d9ca113696b1d1f33c9e2bc397a501d2536f75ca85afb0352
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        380/380 passed, 0 failed
+  window.runSelfChecks()        381/381 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -981,3 +981,47 @@ sampled the one deliverable label identical in both curricula.
 
 A check that has never been seen to fail is not evidence. That rule is worth
 keeping for anyone editing this file.
+
+CURRICULUM IDENTITY — FIX R3 (suite 380 -> 381)
+  - Archive restore skipped v12 -> v13. `prepareArchiveData` built its shell from
+    `defaultData()`, already at schema 13, so `migrateData` ran nothing for an older
+    archive record: criteria stayed unstamped (positional matching, A1's bug) and
+    session notes stayed numeric-keyed. The same shape skipped v11 -> v12 before
+    this branch. Now the shell carries the archive's own `schemaVersion`; a
+    version stated in the file is passed through (`assertDataEnvelope` still
+    rejects a bad or newer one). `archiveCustomer` now writes
+    `schemaVersion: CURRENT_SCHEMA_VERSION` into every archive it exports.
+  - ASSUMED VERSION for an archive with none (every archive exported before this
+    fix). Measured in a throwaway copy, not trusted from the review: running
+    v11 -> v12 over a v12 record is NOT safe. A v12 record keeps its legacy ticks
+    in sessionNotes, so a v12 record whose evidence the user had cleared got it
+    back (evidence records 10 at assumed 12, 11 at assumed 11). v12 -> v13 over
+    an already-v13 (stamped, id-keyed) record, and a re-run over a migrated v12
+    record, were identical to the untouched record (assumed 11 and 12 both).
+    A v11-shaped record restored as 12 loses its note ticks (evidence 0; as 11: 1,
+    stamped, notes re-keyed). So no single version is safe for every record; the
+    version is read from the record's shape. v11 -> v12 gives EVERY customer an
+    `outcomeCriteria` object, so a record with one is treated as 12, one without
+    as 11. That is the oldest version safe for each record. Archives older than
+    v11 are not migrated below 11 (unchanged).
+  - RED first: `runSelfChecks: 380/381` with `FAIL  identity R3: ... —
+    {"evidencedBefore":11,"stamped":0,"notesBefore":8,"notesById":0,"numericLeft":8,"totalSessions":8}`.
+  - Fixture: `_identityFixture(3)` through `_v12Book` (unversioned v12-shaped record,
+    8 numeric note keys, 11 evidenced), restored through the real
+    `prepareArchiveData` (the function `handleRestoreArchiveFile` calls). Asserts
+    stamped > 0 and equal to evidenced-before, notes keyed by session id, no numeric
+    key left. Two controls inside the same check: a v12 record with a cleared
+    evidence and a legacy tick restores with its evidence count unchanged (no
+    resurrection), and a v11-shaped record (no outcomeCriteria) turns its note
+    tick into exactly one evidence record.
+  - MUTATION PROOF (production code): the `shell.schemaVersion` carry-over removed.
+    Red: `runSelfChecks: 380/381`, FAIL identity R3
+    `{"evidencedBefore":11,"stamped":0,"notesBefore":8,"notesById":0,"numericLeft":8,"totalSessions":8,"noResurrect":true,"v11Migrated":false}`.
+    Restore: `cmp fixed.html tracker` printed nothing; then green.
+  - MEASURED THIS SESSION: suite `381/381`, guide `18/18`. Dry runs after the fix:
+    `--from 11`: Accounts 12, Ticks before 57, Evidence after 56, ticks lost 0,
+    non-null dates 0, notes changed 1 (unexplained 0), second-pass doubling false.
+    `--from 12`: Accounts 6, Evidenced 22, Placed 21, Stamped 21, unstamped 0,
+    notes moved 45, lost 0, verdict changed 0, idempotent true, Live true. (Both
+    use prepareBookData, so they do not exercise the archive path; the R3 check does.)
+    SHA-256 block re-measured (tracker LF blob 1b6664fd..., 1,615,219 bytes, LF blob).

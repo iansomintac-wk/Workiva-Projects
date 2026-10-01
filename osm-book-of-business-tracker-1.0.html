@@ -9992,6 +9992,64 @@ function _runSelfChecksInner(){
     _renderMemoResets.forEach(r => r());
     check('identity A7: ids survive export and import (random-id session, evidence, and the v12 invariant through the wire)', ok, detail);
   })();
+  /* R3 — archive restore must run the migrations an archive's own schema needs.
+     prepareArchiveData built its shell from defaultData(), which is already at
+     CURRENT_SCHEMA_VERSION, so a pre-piece-1 archive skipped v12 -> v13: criteria
+     stayed unstamped (positional) and notes stayed numeric-keyed. The archive here
+     is a v12-shaped record (_v12Book), UNVERSIONED like every archive exported
+     before the fix, restored through the real prepareArchiveData. LIVENESS:
+     evidencedBefore > 0 and stamped > 0, and stamped equals evidencedBefore. */
+  (function(){
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const fx = _identityFixture(3);
+      fx.accts.forEach(c => { for(let n = 1; n <= c.totalSessions; n++){
+        getSessionNote(c, n).prep = 'P' + n; } });
+      const book = _v12Book(fx.accts);
+      const rec = book.customers[0];
+      DATA.customers = book.customers;
+      _renderMemoResets.forEach(r => r());
+      const evidencedBefore = outcomeCriteriaFor(rec).filter(x => x.evidence).length;
+      const notesBefore = Object.keys(rec.sessionNotes).filter(k => /^\d+$/.test(k)).length;
+      const archive = {archivedFrom: 'obm-book-of-business-tracker', archiveFormatVersion: 1,
+        archivedDate: todayISO(), customer: rec, activities: [], healthHistory: []};
+      const restored = prepareArchiveData(JSON.parse(JSON.stringify(archive))).customer;
+      DATA.customers = [restored];
+      _renderMemoResets.forEach(r => r());
+      const stamped = restored.outcomeCriteria.items.filter(r =>
+        r.sourceSessionId && r.sourceDeliverableId && restored.outcomeEvidence[r.id]).length;
+      let notesById = 0, numericLeft = 0;
+      for(let n = 1; n <= restored.totalSessions; n++){
+        const t = getSessionTemplate(restored, n);
+        if(t && t.id && restored.sessionNotes[t.id] && restored.sessionNotes[t.id].prep === 'P' + n) notesById++;
+        if(restored.sessionNotes[String(n)] !== undefined) numericLeft++;
+      }
+      /* Controls for the version inferred from shape. (a) v12 record: a legacy tick
+         still sits in its notes but the user cleared that evidence; restore must not
+         resurrect it (re-running v11 -> v12 would). (b) v11 record (no outcomeCriteria):
+         its note tick must become evidence (v11 -> v12 must run). */
+      const lab = getSessionTemplate(rec, 1).deliverables[0];
+      const run = r => prepareArchiveData({customer: JSON.parse(JSON.stringify(r)), activities: []}).customer;
+      const cleared = JSON.parse(JSON.stringify(rec));
+      cleared.sessionNotes['1'].deliverables = {[lab]: true};
+      clearOutcomeEvidence(cleared, outcomeCriteriaFor(cleared).find(x => x.text === lab).id);
+      const evKeys = r => Object.keys(r.outcomeEvidence).length;
+      const noResurrect = evKeys(run(cleared)) === evKeys(cleared);
+      const v11rec = JSON.parse(JSON.stringify(rec));
+      delete v11rec.outcomeCriteria; delete v11rec.outcomeEvidence;
+      v11rec.sessionNotes['1'].deliverables = {[lab]: true};
+      const v11Migrated = evKeys(run(v11rec)) === 1;
+      ok = evidencedBefore > 0 && notesBefore > 0 && stamped > 0 && stamped === evidencedBefore
+        && notesById === restored.totalSessions && numericLeft === 0 && noResurrect && v11Migrated;
+      detail = JSON.stringify({evidencedBefore, stamped, notesBefore, notesById, numericLeft,
+        totalSessions: restored.totalSessions, noResurrect, v11Migrated});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity R3: restoring a v12-shaped archive stamps its criteria and re-keys its notes', ok, detail);
+  })();
   /* R2 — ids must be unique across a whole curriculum key, not just inside one
      session. A repeated deliverable id (two sessions) or session id (twice in a key)
      imports cleanly without the per-key check and misplaces evidence. Across
@@ -24113,6 +24171,7 @@ function archiveCustomer(customerId){
   const record = {
     archivedFrom: 'obm-book-of-business-tracker',
     archiveFormatVersion: 1,
+    schemaVersion: CURRENT_SCHEMA_VERSION, // the shape `customer` is in; restore migrates from it (R3)
     archivedDate: todayISO(),
     customer: c,
     activities: DATA.activities[c.id] || [],
@@ -25004,6 +25063,17 @@ function prepareArchiveData(parsed){
   if(!Array.isArray(activities)) rejectData('Archive', 'activities must be an array.');
   if(!Array.isArray(healthHistory)) rejectData('Archive', 'healthHistory must be an array.');
   const shell = defaultData();
+  /* The shell must carry the ARCHIVE's schema, not defaultData()'s current one, or
+     migrateData skips every step the record still needs (R3). A stated version is
+     passed through as-is (assertDataEnvelope rejects a bad or newer one). Archives
+     written before the field existed carry none, so the version comes from the
+     record's shape: v11 -> v12 gives EVERY customer an outcomeCriteria object, so
+     a record with one is at least v12 and one without is v11. Re-running v11 -> v12
+     over a v12 record would resurrect evidence its user had cleared (the legacy
+     ticks stay in sessionNotes), so it must not be the blanket assumption; v12 -> 13
+     is safe to run on any v12-or-later record (VALIDATION, fix R3). */
+  shell.schemaVersion = parsed.schemaVersion !== undefined ? parsed.schemaVersion
+    : (isRecordObject(customer.outcomeCriteria) ? 12 : 11);
   shell.config = cloneData(DATA.config);
   shell.customers = [customer];
   shell.activities = {[customer.id]: activities};
