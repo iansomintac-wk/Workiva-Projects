@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        403/403 passed, 0 failed
+  window.runSelfChecks()        407/403 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1320,3 +1320,10 @@ GRADUATION PLAN TASK 2 FIX (suite 401 -> 403)
   - c2f: planText fallback of goalHintText now covered; mutation (fallback line removed) -> FAIL c2f
     (`{"hint":null}`), restored (cmp identical). c2g: secondary-goals <details> open state follows ui.goalSecOpen.
   - Gate rename/note edits no longer call render() (blur re-render ate the next click); open state kept in ui.goalSecOpen.
+
+GRADUATION PLAN TASK 3 — GOAL CHANGE (suite 403 -> 407)
+  - RED first: c3a-c3d written before production code; `403/407`, 4 FAIL (`changePrimaryGoal is not defined`, ...).
+  - GREEN: `407/407`, guide `18/18`.
+  - MUTATION PROOF (production), restored (cmp identical) then green: carry-over `o.done &&` removed from
+    changePrimaryGoal. The plan's c3b alone stayed green (only "Metrics mapped" is shared and it was ticked),
+    so c3b gained an undone-account case; with it the mutation gives FAIL c3b (`"undoneStays":false`).

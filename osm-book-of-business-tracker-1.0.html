@@ -4511,6 +4511,35 @@ function goalHintText(c){
   if(plan) return {from: 'the success outcome plan', text: plan};
   return null;
 }
+/* Goal change (R6). The old primary closes as 'replaced' and keeps the reason (P3);
+   gates carry over only when done AND the text is identical. */
+function changePrimaryGoal(c, d){
+  d = d || {};
+  const old = primaryGoal(c);
+  const reason = cleanGoalText(d.changeReason, 300);
+  const type = GOAL_TYPES.some(t => t.key === d.type) ? d.type : null;
+  const text = cleanGoalText(d.text, 300);
+  if(!old || !reason || !type || !text || getGoals(c).length >= MAX_GOALS) return null;
+  const fresh = {id: hexId('gl_'), type, text, targetCycle: cleanGoalText(d.targetCycle, 40), primary: true,
+    source: d.source === 'handoff' ? 'handoff' : 'osm', createdOn: todayISO(),
+    gates: defaultGateTextsFor(c, type).map(t => ({id: hexId('gt_'), text: t, done: false, on: null, note: ''})),
+    verdict: null, verdictOn: null, verdictNote: '', supersededBy: null, changeReason: '', ackOn: null};
+  fresh.gates.forEach(g => {
+    const prev = old.gates.find(o => o.done && o.text === g.text);
+    if(prev){ g.done = true; g.on = prev.on; g.note = prev.note; }
+  });
+  old.verdict = 'replaced'; old.verdictOn = todayISO(); old.supersededBy = fresh.id;
+  old.primary = false; old.changeReason = reason;
+  c.goals.push(fresh);
+  return fresh;
+}
+function goalCreatedByChange(c, goal){ return goal ? (getGoals(c).find(g => g.supersededBy === goal.id) || null) : null; }
+function customerGoalChangedSignal(c){
+  const p = primaryGoal(c), old = goalCreatedByChange(c, p);
+  if(!p || !old || p.ackOn) return null;           // state-based: no day or count threshold
+  return {goalId: p.id, from: old.text, to: p.text, reason: old.changeReason};
+}
+function ackGoalChange(c){ const p = primaryGoal(c); if(!p || p.ackOn || !goalCreatedByChange(c, p)) return false; p.ackOn = todayISO(); return true; }
 
 /* ---- Schema versioning ----
    Every structural change to the DATA shape bumps CURRENT_SCHEMA_VERSION and adds an
@@ -7467,6 +7496,13 @@ const SIGNAL_DEFS = [
     action:null,
     step:(c,sig)=>`${sig.completed}/${sig.total} sessions done with first value defined but no evidence logged — look for the moment on the next call and mark it in Log Activity.`,
     portfolio:n=>`${n} account${n===1?'':'s'} are past halfway with a first-value definition but no logged evidence — the value story is missing where it matters most.`},
+  {key:'goal_changed', severity:()=>2,
+    // Graduation plan (R6): the hand-off goal was superseded; the target date was
+    // set against the OLD goal. State-based — clears when the OSM confirms the date.
+    detect:c=>customerGoalChangedSignal(c),
+    action:(c,sig)=>({action:'Check the target graduation date against the new goal', reasons:[`Goal changed from "${trimToLength(sig.from, 80)}" to "${trimToLength(sig.to, 80)}" — ${trimToLength(sig.reason, 120)}`]}),
+    step:(c,sig)=>`The hand-off goal changed ("${trimToLength(sig.to, 80)}"). Confirm the target graduation date still holds, then mark it checked on the Overview tab.`,
+    portfolio:null},
   {key:'late_gate', severity:()=>2,
     detect:c=>customerGateSignal(c),
     action:(c,sig)=>({action:'Close the highest-priority Gainsight compliance gap', reasons:[`${sig.completed}/${sig.total} sessions done but still missing: ${sig.missing.join(', ')}`]}),
@@ -15864,6 +15900,86 @@ function _runSelfChecksInner(){
     check('grad-plan c2g: the secondary-goals details renders open exactly when ui.goalSecOpen is set', ok, detail);
   })();
 
+  function gp3Cust(){
+    return {id:'__gp3__', name:'GP3 Test', module:'Sustainability', stage:'ttfv1', totalSessions:8,
+      implementationDate: todayISO(), stageHistory:[], domainScores:{}, notes:'', sessionNotes:{},
+      riskOverride:null, compliance: defaultCompliance(), goals:[], exit:null};
+  }
+  (function(){                                   // c3a
+    const prevC = DATA.customers;
+    let ok = false, detail = '';
+    try{
+      const c = gp3Cust(); DATA.customers = [c];
+      const first = createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      const none = changePrimaryGoal(c, {type:'setup_next', text:'Ready for next cycle', changeReason:''});
+      const fresh = changePrimaryGoal(c, {type:'setup_next', text:'Ready for next cycle', changeReason:'Data owner left'});
+      ok = none === null && !!fresh && first.verdict === 'replaced' && first.verdictOn === todayISO() && first.primary === false
+        && first.supersededBy === fresh.id && first.changeReason === 'Data owner left'
+        && primaryGoal(c).id === fresh.id && getGoals(c).length === 2;
+      detail = JSON.stringify({none, fresh: !!fresh, len: getGoals(c).length});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC;
+    check('grad-plan c3a: changing the primary goal needs a reason, closes the old goal as replaced and makes the new one primary', ok, detail);
+  })();
+  (function(){                                   // c3b
+    const prevC = DATA.customers;
+    let ok = false, detail = '';
+    try{
+      const c = gp3Cust(); DATA.customers = [c];
+      const first = createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      const byText = t => first.gates.find(x => x.text === t);
+      setGoalGateDone(c, first.id, byText('Metrics mapped to target frameworks').id, true);
+      setGoalGateDone(c, first.id, byText('Report published or filed').id, true);
+      setGoalGateDone(c, first.id, byText('Data collection tasks sent and returned').id, true);
+      const onMapped = byText('Metrics mapped to target frameworks').on;
+      const fresh = changePrimaryGoal(c, {type:'setup_next', text:'Ready for next cycle', changeReason:'Scope shift'});
+      const nt = t => fresh.gates.find(x => x.text === t);
+      const carried = nt('Metrics mapped to target frameworks').done === true && nt('Metrics mapped to target frameworks').on === onMapped;
+      const nearly = nt('Data collection tasks sent').done === false;
+      const others = fresh.gates.filter(x => x.text !== 'Metrics mapped to target frameworks').every(x => x.done === false);
+      // an identical-text gate that was NOT done must not arrive done
+      const u = gp3Cust(); u.id = '__gp3u__'; DATA.customers = [u];
+      createGoal(u, {type:'publish', text:'Publish FY2026 report'});
+      const uf = changePrimaryGoal(u, {type:'setup_next', text:'Ready for next cycle', changeReason:'Scope shift'});
+      const undoneStays = uf.gates.every(x => x.done === false && x.on === null);
+      ok = carried && nearly && others && undoneStays;
+      detail = JSON.stringify({carried, nearly, others, undoneStays});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC;
+    check('grad-plan c3b: a goal change carries over only done gates with identical text', ok, detail);
+  })();
+  (function(){                                   // c3c
+    const prevC = DATA.customers;
+    let ok = false, detail = '';
+    try{
+      const c = gp3Cust(); const never = gp3Cust(); never.id = '__gp3n__'; DATA.customers = [c, never];
+      createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      createGoal(never, {type:'publish', text:'Publish FY2026 report'});
+      const def = SIGNAL_DEFS.find(d => d.key === 'goal_changed');
+      const silentBefore = def && def.detect(c) === null;
+      changePrimaryGoal(c, {type:'setup_next', text:'Ready for next cycle', changeReason:'Data owner left'});
+      const sig = def.detect(c);
+      const live = !!sig && sig.reason === 'Data owner left';
+      const silentNever = def.detect(never) === null;
+      const a1 = ackGoalChange(c), after = def.detect(c) === null, a2 = ackGoalChange(c);
+      const tab = SIGNAL_PANEL_TAB.goal_changed === 'overview' && Number.isFinite(effortMinutesFor('signal:goal_changed'));
+      ok = silentBefore && live && silentNever && a1 === true && after && a2 === false && tab;
+      detail = JSON.stringify({silentBefore, live, silentNever, a1, after, a2, tab});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC;
+    check('grad-plan c3c: goal_changed fires after a change, stays silent otherwise, clears once acknowledged', ok, detail);
+  })();
+  (function(){                                   // c3d
+    let ok = false, detail = '';
+    try{
+      const re = /daysSince|DATA\.config|Days\b|\d{2,}/;
+      const a = String(customerGoalChangedSignal), b = String(SIGNAL_DEFS.find(d => d.key === 'goal_changed').detect);
+      ok = !re.test(a) && !re.test(b);
+      detail = JSON.stringify({a: re.test(a), b: re.test(b)});
+    }catch(err){ detail = err.message; }
+    check('grad-plan c3d: goal_changed reads no day count, config value or number', ok, detail);
+  })();
+
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
@@ -19137,6 +19253,7 @@ const EFFORT_MIN = {
   'signal:behind_target': 20,      // re-plan the graduation path
   'signal:slow_pace': 20,
   'signal:no_value_evidence': 15,
+  'signal:goal_changed': 5,        // confirm the target date against the new goal
   'signal:late_gate': 10,
   'signal:thin_milestone_prep': 25, // prep is the work
   'signal:domain_imbalance': 10,
@@ -19166,7 +19283,7 @@ function effortMinutesFor(source){
 const SIGNAL_PANEL_TAB = {
   flagged:'activity', escalating_risk:'sessions', behind_target:'sessions',
   stalled:'sessions', risk_language:'activity', no_value_evidence:'overview',
-  late_gate:'gainsight', thin_milestone_prep:'sessions', domain_imbalance:'details',
+  goal_changed:'overview', late_gate:'gainsight', thin_milestone_prep:'sessions', domain_imbalance:'details',
   slow_pace:'sessions', ready_to_set_date:'details', value_undefined:'overview',
   renewal_pressure:'sessions',
   positive_language:'activity', fast_pace:'sessions', session_gap:'activity'
@@ -21375,11 +21492,15 @@ function renderGoalPanel(c){
   }
   const tally = goalCriteriaTally(c);
   const secs = secondaryGoals(c);
+  const changed = customerGoalChangedSignal(c), targetOn = c.targetGraduationDate || '';
   return `
     <div class="section-card" style="margin-top:16px;">
-      <div class="section-title" style="margin-top:0;">Hand-off goal <span class="badge badge-watch">PRIMARY</span></div>
+      <div class="section-title" style="margin-top:0;">Hand-off goal <span class="badge badge-watch">PRIMARY</span>
+        <button class="btn btn-sm" style="float:right;" data-goal-change="${escapeAttr(c.id)}">Change goal</button></div>
       <p style="margin:0; font-size:var(--text-base); color:var(--text);">${escapeHtml(goal.text)}</p>
       <p class="gp-meta">${escapeHtml(type(goal))}${goal.targetCycle ? ' · ' + escapeHtml(goal.targetCycle) : ''} · ${goal.source === 'handoff' ? 'from the hand-off' : 'set by OSM'}${goal.createdOn ? ' · set ' + escapeHtml(fmtDate(goal.createdOn)) : ''}</p>
+      ${changed ? `<p class="gp-meta" style="margin:8px 0 0; color:var(--text);">Goal changed from "${escapeHtml(trimToLength(changed.from, 80))}" (${escapeHtml(trimToLength(changed.reason, 120))}) — target date ${targetOn ? escapeHtml(fmtDate(targetOn)) + ' ' : ''}still right?
+        <button class="btn btn-sm" data-goal-ack="${escapeAttr(c.id)}">Target date checked</button></p>` : ''}
       ${renderGoalGateRows(c, goal)}
       <p class="gp-meta" style="margin-top:8px;">${tally.evidenced} of ${tally.total} outcome criteria evidenced</p>
       <div class="gp-sec">
@@ -23243,6 +23364,16 @@ The draft is discarded. The risk itself stays open.`)) return;
     const c = DATA.customers.find(x => x.id === b.dataset.goalNew);
     if(c) openGoalFormModal(c, 'create', ()=>{});
   }));
+  $$('[data-goal-change]').forEach(b => b.addEventListener('click', ()=>{
+    const c = DATA.customers.find(x => x.id === b.dataset.goalChange);
+    if(c) openGoalFormModal(c, 'change', ()=>{});
+  }));
+  $$('[data-goal-ack]').forEach(b => b.addEventListener('click', ()=>{
+    const c = DATA.customers.find(x => x.id === b.dataset.goalAck);
+    if(!c) return;
+    markUndoable('goal');
+    if(ackGoalChange(c)){ saveData(); render(); }
+  }));
   $$('[data-goal-gate]').forEach(b => b.addEventListener('change', ()=>{
     const {c, gid, tid} = goalTarget(b, 'goalGate');
     if(!c) return;
@@ -24179,14 +24310,21 @@ function showConfirmModal(message, onConfirm, confirmLabel){
 /* Graduation Plan: the goal form. Task 2 ships mode 'create'; Task 3 adds 'change'.
    The hint is shown, never auto-filled. onDone(goal) runs after a goal was created. */
 function openGoalFormModal(c, mode, onDone){
-  if(mode !== 'create') return;
+  if(mode !== 'create' && mode !== 'change') return;
+  if(mode === 'change' && !primaryGoal(c)) return;
+  const isChange = mode === 'change';
   const hint = goalHintText(c);
   const handoff = getHandoff(c, 'in').values.handoffMeetingOn || '';
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   backdrop.innerHTML = `
     <div class="modal" style="max-width:460px;">
-      <h3>${primaryGoal(c) ? 'Add a secondary goal' : 'Set the hand-off goal'}</h3>
+      <h3>${isChange ? 'Change the hand-off goal' : primaryGoal(c) ? 'Add a secondary goal' : 'Set the hand-off goal'}</h3>
+      ${isChange ? `<p class="gp-meta" style="margin:0 0 10px;">Current goal: ${escapeHtml(primaryGoal(c).text)}. It closes as replaced; gates already done with identical text carry over.</p>
+      <div class="field" style="margin-bottom:10px;">
+        <label for="gf-reason">Why did the goal change?</label>
+        <textarea id="gf-reason" rows="2" maxlength="300" placeholder="Required"></textarea>
+      </div>` : ''}
       ${hint ? `<p class="gp-meta" style="margin:0 0 10px;">From ${escapeHtml(hint.from)}: <span style="color:var(--text-dim); user-select:all;">${escapeHtml(hint.text)}</span></p>` : ''}
       <div class="field" style="margin-bottom:10px;">
         <label for="gf-type">Goal type</label>
@@ -24216,15 +24354,20 @@ function openGoalFormModal(c, mode, onDone){
   backdrop.querySelector('#gf-save').addEventListener('click', ()=>{
     const text = backdrop.querySelector('#gf-text').value;
     if(!cleanGoalText(text, 300)){ showToast('Write the goal first.'); return; }
+    const fields = {type: backdrop.querySelector('#gf-type').value, text,
+      targetCycle: backdrop.querySelector('#gf-cycle').value, source: backdrop.querySelector('#gf-source').value};
+    if(isChange){
+      fields.changeReason = backdrop.querySelector('#gf-reason').value;
+      if(!cleanGoalText(fields.changeReason, 300)){ showToast('Say why the goal changed.'); return; }
+    }
     markUndoable('goal');
-    const g = createGoal(c, {type: backdrop.querySelector('#gf-type').value, text,
-      targetCycle: backdrop.querySelector('#gf-cycle').value, source: backdrop.querySelector('#gf-source').value});
+    const g = isChange ? changePrimaryGoal(c, fields) : createGoal(c, fields);
     if(!g){ showToast('That goal could not be saved.'); return; }
     const meet = backdrop.querySelector('#gf-meeting').value;
     if(isRealISODate(meet)) setHandoffField(c, 'in', 'handoffMeetingOn', meet);
     saveData();
     backdrop.remove();
-    showToast(g.primary ? 'Hand-off goal set.' : 'Secondary goal added.');
+    showToast(isChange ? 'Goal changed. Check the target date.' : g.primary ? 'Hand-off goal set.' : 'Secondary goal added.');
     render();
     if(typeof onDone === 'function') onDone(g);
   });

@@ -33,7 +33,7 @@
 | baseline (measured 2026-10-01 by the run lead) | — | 389 |
 | 1 | c1a–c1g | 396 (measured) |
 | 2 | c2a–c2g (c2f, c2g added by the Task 2 fix) | 403 (measured) |
-| 3 | c3a–c3d | 407 |
+| 3 | c3a–c3d | 407 (measured) |
 | 4 | c4a–c4h | 415 |
 | 5 | c5a–c5e | 420 |
 | 6 | c6a–c6c | 423 |
