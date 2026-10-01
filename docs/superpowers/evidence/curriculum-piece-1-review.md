@@ -137,6 +137,6 @@ into Ian's M1 ruling**; until then the CHANGELOG must say calls stay positional.
 
 ## Decisions for Ian (new from this review)
 
-- **R1** CSRD ids: (a) same-text CSRD deliverables share the base id / (b) accept and disclose. **Blocks merge.**
+- **R1** CSRD ids: (a) same-text CSRD deliverables share the base id / (b) accept and disclose. **Ruled (a), 2026-09-30** ("Let's go A"; ledger, "Decisions made").
 - **R5** fold session reorder into M1 (activities), or ship reorder with the CHANGELOG caveat.
 - **M1r/M2r** deliverable-removal confirmation; restore bulk paste — yes/no each.

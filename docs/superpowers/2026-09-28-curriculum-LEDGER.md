@@ -5,7 +5,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 | Piece | Spec | Session prompt | State | Self-checks after | Commit |
 |---|---|---|---|---|---|
-| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **built (tasks 2–7 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). **Reviewed 2026-09-30: with fixes** (`evidence/curriculum-piece-1-review.md`). Next: Ian rules R1 (blocks merge), then fixes (`sessions/curriculum-piece-1-fixes.md`, Sonnet) | **379/379** measured 2026-09-30 (guide 18/18) | task 2: `29689c4`; task 3: `2a57350`; task 4: `dd1ccf4`; task 5: `05e2356`; task 6: `a9da098`; task 7: `ec2f175` + `d4c2c00` (SHA re-measure); ledger: see git log |
+| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **built (tasks 2–7 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). **Reviewed 2026-09-30: with fixes** (`evidence/curriculum-piece-1-review.md`). Next: fixes (R1 ruled (a)) (`sessions/curriculum-piece-1-fixes.md`, Sonnet) | **379/379** measured 2026-09-30 (guide 18/18) | task 2: `29689c4`; task 3: `2a57350`; task 4: `dd1ccf4`; task 5: `05e2356`; task 6: `a9da098`; task 7: `ec2f175` + `d4c2c00` (SHA re-measure); ledger: see git log |
 | 2 Versioned curriculum + pinning | not written (outline in umbrella §2) | not written | after piece 1 | | |
 | 3 Authoring UI + runbook editor | not written (outline in umbrella §2) | not written | after piece 2 | | |
 | 4 Share, fork, upgrade | not written (outline in umbrella §2) | not written | after piece 3 | | |
@@ -50,8 +50,6 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 ## Decisions pending (Ian)
 
-- **R1 (review) CSRD ids. Blocks merge.** Turning on CSRD orphans every evidenced criterion (branch 0/11 kept, master 11/11),
-  because CSRD default ids are slugged from the CSRD key. (a) Same-text CSRD deliverables reuse the base id, or (b) accept and disclose.
 - **R5 (review)** session reorder re-labels logged calls. Fold it into M1, or ship with a CHANGELOG caveat.
 - **M1r/M2r (review)** confirmation when a deliverable is removed; restore bulk paste. Yes or no for each.
 
@@ -62,6 +60,13 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 - Plan choices P1–P4 (plan header): accept or overrule before build 1
 
 ## Decisions made (Ian)
+
+- **R1, 2026-09-30**, verbatim: "Let's go A". Option (a): a default CSRD deliverable whose text equals the base
+  curriculum's deliverable at the same session and position reuses that base deliverable's deterministic id.
+  Session ids stay per curriculum. Measured on `DEFAULT_SESSION_TEMPLATES` at `58f3bb8`: Sustainability (CSRD)
+  9 of 15 match (the same 9 match text anywhere), Sustainability + Carbon (CSRD) 7 of 12. 0 ambiguous, 0 duplicate
+  texts, 0 shifted. Within each key the ids stay unique (fits R2). The fix check toggles CSRD with evidence > 0 and asserts
+  9 kept, 6 CSRD-only unevidenced, base-only orphaned. c2a changes. Merge is no longer blocked by a ruling, only by the fixes.
 
 - **M3, 2026-09-30**, verbatim: "M3: whole-snapshot equals pure-insert control". Why the plan's
   proposal was not enough: measured on Carbon (derived First Value), the I5 bug gives
@@ -199,7 +204,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 - Re-measured: suite **379/379**, guide **18/18**, `--from 11` and `--from 12` both exit 0 with the ledger's figures, spec
   probe as after Task 7. All A1–A7 have a production mutation on record. All except A6 (structural) gate on evidence > 0.
   Mutation re-run by the lead: A3 (id lookup removed from `authoredRunbookFor`) gave 378/379, only A3 red, as recorded.
-- Verdict **with fixes**: 5 important (R1 CSRD orphaning, needs a ruling; R2 duplicate ids within a curriculum pass import;
+- Verdict **with fixes**: 5 important (R1 CSRD orphaning, ruled (a) the same day; R2 duplicate ids within a curriculum pass import;
   R3 archive restore skips v12→13; R4 unplaced orphans stay positional; R5 reorder vs M1), 7 minor, 3 docs.
   Ranked list: `evidence/curriculum-piece-1-review.md`.
 - **Correction to Task 6 above: the tracker blob has 0 CR bytes** at master and HEAD. 25,179 is its line count, not a CR count.

@@ -15,9 +15,8 @@ Where the work is: branch `curriculum-piece-1` (`58f3bb8`). The review branch
 `curriculum-piece-1-review` adds only docs (this prompt, the review file, the ledger row). Merge or
 cherry-pick it first.
 
-**Gate:** R1 needs Ian's ruling (ledger, "Decisions pending"). If it isn't recorded verbatim in the
-ledger, do everything else and stop before R1. R5, M1r and M2r are also Ian's calls. Do only what the ledger
-records as ruled.
+**R1 is ruled (a)** (ledger, "Decisions made"): build it as recorded there. R5, M1r and M2r are Ian's
+calls. Do only what the ledger records as ruled.
 
 Context to load (nothing else up front):
 1. `docs/superpowers/2026-09-28-curriculum-LEDGER.md`
@@ -26,7 +25,7 @@ Context to load (nothing else up front):
 
 Baseline first: suite `--seed demo-seed.js --expect 379` must read 379/379, and guide 18/18.
 
-Order: D1, D2 (docs only) → R2 → R3 → R4 → R1 (if ruled) → M3r, M4r, M6r, M7r → anything else ruled.
+Order: D1, D2 (docs only) → R2 → R3 → R4 → R1 → M3r, M4r, M6r, M7r → anything else ruled.
 
 For each fix:
 - Write the new check first and capture it **red** on the current code.
