@@ -15,7 +15,7 @@ rather than trusting an empty leak list at face value — see THE GUARD'S OWN
 LIVENESS PROOF and GUARD LIVENESS PROOF below.
 
 SHA-256
-Re-measured 2026-09-30 at curriculum piece 1 task 6 (branch curriculum-piece-1),
+Re-measured 2026-09-30 at curriculum piece 1 task 7 (branch curriculum-piece-1),
 after every other edit in that commit was final. The tracker figures are stale
 the moment the HTML changes; re-measure, don't edit in place.
 
@@ -27,9 +27,9 @@ working-tree and blob forms are the same bytes. The guide is the reverse
 of what the block said. Its blob is LF and unchanged, while its working tree
 in this checkout (core.autocrlf=true) is CRLF.
 
-  osm-book-of-business-tracker-1.0.html   (1,602,055 bytes, working tree
-    = staged blob, both measured)
-    3a3e1b629b92acb881f555b30d2e39da55f215f9c1a4d00ab115203f01f9a077
+  osm-book-of-business-tracker-1.0.html   (1,607,191 bytes, working tree
+    = committed blob, both measured)
+    ad0c1fdd818e89253e9bb7fb79c603cf895c28adfd097300dda995298d4bdff6
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -916,9 +916,13 @@ CURRICULUM IDENTITY — TASK 7 (suite 378 -> 379)
     (unexplained 0), second pass no doubling. Dry run --from 12 (exit 0):
     6 accounts, 22 evidenced, 21 placed / 21 stamped, 0 unstamped, 45 notes
     moved, 0 lost, 0 verdicts changed, idempotent, Live: true.
-  - CARRIED, not re-measured: the SHA-256 block at the top of this file; the
-    earlier tasks' individual mutation proofs; the statement that the migration
-    has not run against a real book (still true; Export JSON first).
+  - MEASURED in the Task 7 fix round: the SHA-256 block at the top of this file
+    (tracker ad0c1fdd..., 1,607,191 bytes; guide unchanged, working tree
+    96cb2787..., blob 598bbb86...). The first Task 7 commit left it carried and
+    therefore false; it also fixed one comment typo ("A5 —the").
+  - CARRIED, not re-measured: the earlier tasks' individual mutation proofs; the
+    statement that the migration has not run against a real book (still true;
+    Export JSON first).
 
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded

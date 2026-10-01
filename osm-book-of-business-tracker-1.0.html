@@ -9916,7 +9916,7 @@ function _runSelfChecksInner(){
       schema: prepared.schemaVersion, verdictsEqual, numericLeft, idempotent})};
   }
   (function(){
-    /* A5 —the 12 -> 13 migration changes NO verdict, stamps every item it can
+    /* A5 — the 12 -> 13 migration changes NO verdict, stamps every item it can
        place, and moves numeric notes to session ids. Pass 2 (index) is exercised
        by one pure-reword legacy record. Liveness: evidenced > 0 and stamped > 0. */
     const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
