@@ -31,13 +31,13 @@
 | After task | New checks (ids) | Suite `--expect` (ESTIMATE) |
 |---|---|---|
 | baseline (measured 2026-10-01 by the run lead) | — | 389 |
-| 1 | c1a–c1f | 395 |
-| 2 | c2a–c2e | 400 |
-| 3 | c3a–c3d | 404 |
-| 4 | c4a–c4g | 411 |
-| 5 | c5a–c5c | 414 |
-| 6 | c6a–c6c | 417 |
-| 7 | none in-page; the scenario run is a separate 6-check run (A3–A8) | 417 |
+| 1 | c1a–c1g | 396 |
+| 2 | c2a–c2e | 401 |
+| 3 | c3a–c3d | 405 |
+| 4 | c4a–c4h | 413 |
+| 5 | c5a–c5e | 418 |
+| 6 | c6a–c6c | 421 |
+| 7 | none in-page; the scenario run is a separate 6-check run (A3–A8) | 421 |
 
 ## Plan-level choices (made here, because the spec is silent; Ian may overrule them before build 1)
 
@@ -73,11 +73,11 @@
 - `SUSTAINABILITY_GOAL_GATES` = `{publish:[5], setup_next:[5], program:[3], disclosure:[3]}`.
 - `defaultGoalGatesConfig() → {<key>: {publish:[], setup_next:[], program:[], disclosure:[]}}`.
 - `cleanGoalText(v, max) → string`.
-- `normalizeGoalGate(g) → gate|null`, `normalizeGoal(g) → goal|null`, `normalizeGoals(arr) → goal[]`, `normalizeExit(x) → exit|null`, `normalizeGoalGatesConfig(cfg, modules) → map`.
+- `normalizeGoalGate(g) → gate|null`, `normalizeGoal(g) → goal|null`, `normalizeGoals(arr) → goal[]`, `normalizeExit(x) → exit|null`, `normalizeGraduation(x) → {on, noGoal}|null` (ruling M1), `normalizeGoalGatesConfig(cfg, modules) → map`.
 - `getGoals(c) → goal[]` (never creates), `primaryGoal(c) → goal|null` (`primary && verdict !== 'replaced'`), `secondaryGoals(c) → goal[]`, `getExit(c) → exit|null`.
 - `goalGateKeyFor(c) → string`, `defaultGateTextsFor(c, type) → string[]` (a copy).
 
-- [ ] **Step 1: Write the six failing checks** in the new "Graduation Plan" block. They follow the shape of `identity A5` (`:10190-10210`): save, then `try`, then restore in `finally`, then `check`.
+- [ ] **Step 1: Write the seven failing checks** in the new "Graduation Plan" block. They follow the shape of `identity A5` (`:10190-10210`): save, then `try`, then restore in `finally`, then `check`.
 
 ```js
   /* ---- Graduation Plan (spec 2026-10-01) ---- */
@@ -96,7 +96,7 @@
   })();
 ```
 
-  The other five checks, by name and assertion:
+  The other six checks, by name and assertion:
   - **c1b** `normalizeGoals` given two live primaries (`createdOn` `2026-03-01` and `2026-02-01`) keeps only the earlier one as `primary:true`, and forces `primary:false` on any `verdict:'replaced'` goal.
   - **c1c** `normalizeExit`: a bad `on` returns `null`; an unknown reason becomes `reason:null`; `note` is clamped to 500; `sessionsNotNeeded` keeps only `/^(ss_[a-z0-9_]+|\d+)$/` strings, de-duplicated.
   - **c1d** `defaultGoalGatesConfig()`:
@@ -105,14 +105,16 @@
     - `'Financial Reporting'` and `'GRC'` have `[]` for all four types.
   - **c1e** a v13 book from `cloneData(DATA)` with `schemaVersion = 13`, `delete config.goalGates`, every customer's `goals`/`exit` deleted, and one extra module `'Custom Module'` in `config.modules`. After `prepareBookData(…, 'SelfCheck')`:
     - `schemaVersion === 14`;
-    - every customer has `Array.isArray(goals) && goals.length === 0 && exit === null`;
+    - every customer has `Array.isArray(goals) && goals.length === 0 && exit === null && graduation === null` (ruling M1: historic graduations stay `null`, no record is invented);
     - `goalGates` has the 7 keys plus `'Custom Module'` (all 4 types empty);
     - a second `prepareBookData` pass leaves `goals`, `exit` and `goalGates` JSON-identical.
 
     Liveness: `customers.length > 0`. Restore `DATA.customers`/`DATA.config` in `finally`.
   - **c1f** `CURRENT_SCHEMA_VERSION === 14` and `isRecordObject(defaultData().config.goalGates)`.
 
-- [ ] **Step 2: Run the suite and see red.** Run the suite command with `--expect 395`. Expected: `runSelfChecks: 389/395 passed, 6 failed`, and every `grad-plan c1*` line reads FAIL (`normalizeGoal is not defined` and similar).
+  - **c1g** (ruling M1) `normalizeGraduation`: `{on:'2026-09-30', noGoal:1}` gives `{on:'2026-09-30', noGoal:true}`; `{on:'2026-09-30'}` gives `noGoal:false`; a bad `on` (`'2026-13-40'`, `''`, a number), a non-object, `null` and `undefined` all give `null`; extra keys are dropped.
+
+- [ ] **Step 2: Run the suite and see red.** Run the suite command with `--expect 396`. Expected: `runSelfChecks: 389/396 passed, 7 failed`, and every `grad-plan c1*` line reads FAIL (`normalizeGoal is not defined` and similar).
 
 - [ ] **Step 3: Write the data section and the normalisers** after `DEFAULT_OUTCOME_NAMES`:
 
@@ -183,6 +185,10 @@ function normalizeExit(x){
   return {on: x.on, reason: EXIT_REASONS.some(r => r.key === x.reason) ? x.reason : null,
     note: cleanGoalText(x.note, 500), sessionsNotNeeded: Array.from(new Set(ids)).slice(0, 12)};
 }
+function normalizeGraduation(x){   // ruling M1: marker written by the graduation confirm
+  if(!isRecordObject(x) || !isRealISODate(x.on)) return null;
+  return {on: x.on, noGoal: !!x.noGoal};
+}
 function normalizeGoalGatesConfig(cfg, modules){
   const src = isRecordObject(cfg) ? cfg : {};
   const defaults = defaultGoalGatesConfig();
@@ -214,7 +220,7 @@ function defaultGateTextsFor(c, type){
 - [ ] **Step 4: Add the migration step, the schema bump, the `defaultData` entry and the backfill normalise:**
 
 ```js
-const CURRENT_SCHEMA_VERSION = 14; // graduation plan: + c.goals, c.exit, config.goalGates
+const CURRENT_SCHEMA_VERSION = 14; // graduation plan: + c.goals, c.exit, c.graduation, config.goalGates
 …
   if(v === 13){
     /* v13 -> v14 (graduation plan). Additive. INFERS NOTHING: no goal is guessed
@@ -224,6 +230,7 @@ const CURRENT_SCHEMA_VERSION = 14; // graduation plan: + c.goals, c.exit, config
       if(!isRecordObject(c)) return;
       c.goals = c.goals === undefined ? [] : normalizeGoals(c.goals);
       c.exit = c.exit === undefined ? null : normalizeExit(c.exit);
+      c.graduation = c.graduation === undefined ? null : normalizeGraduation(c.graduation);   // M1: historic graduations stay null
     });
     if(isRecordObject(data.config)) data.config.goalGates = normalizeGoalGatesConfig(data.config.goalGates, data.config.modules);
     v = 14;
@@ -235,9 +242,10 @@ const CURRENT_SCHEMA_VERSION = 14; // graduation plan: + c.goals, c.exit, config
 ```js
     if(c.goals !== undefined) c.goals = normalizeGoals(c.goals);
     if(c.exit !== undefined) c.exit = normalizeExit(c.exit);
+    if(c.graduation !== undefined) c.graduation = normalizeGraduation(c.graduation);
 ```
 
-- [ ] **Step 5: Re-run the suite and see it pass.** With `--expect 395` the expected result is `395/395 passed, 0 failed`, exit 0. Then run the guide suite and expect `18/18`.
+- [ ] **Step 5: Re-run the suite and see it pass.** With `--expect 396` the expected result is `396/396 passed, 0 failed`, exit 0. Then run the guide suite and expect `18/18`.
 
 - [ ] **Step 6: Write `tools/legacy-seed-v13.js`** in the style of `tools/legacy-seed-v12.js`. It is an IIFE that clones `DATA.config`, deletes `cfg.goalGates`, pushes `'Custom Module'` into `cfg.modules` (with `cfg.sessionTemplates['Custom Module'] = cfg.sessionTemplates['Carbon'].slice(0, 6)`), and builds seven accounts with no `goals`/`exit` keys:
   - Verdant Sustainability (live, Sustainability);
@@ -254,12 +262,12 @@ const CURRENT_SCHEMA_VERSION = 14; // graduation plan: + c.goals, c.exit, config
   - Accept `13` in the `FROM` guard.
   - Make the defaults `tools/legacy-seed-v13.js` and `.artifacts/migration-dryrun-v13.md`.
   - Update the usage comment.
-  - Add an `if (FROM === '13') {…}` branch modelled on the `FROM === '12'` branch. In-page it runs `prepareBookData(clone(raw), 'DryRun13')` and reports, per account, `goalsIsEmptyArray`, `exitIsNull` and `stage`. It also reports `goalGates` keys and per-key gate lengths, `defaultModulesPresent = DEFAULT_MODULES.filter(m => goalGates[m]).length`, `historicGraduatedWithExit`, and idempotence (a second `prepareBookData` pass gives identical goals, exit and goalGates).
+  - Add an `if (FROM === '13') {…}` branch modelled on the `FROM === '12'` branch. In-page it runs `prepareBookData(clone(raw), 'DryRun13')` and reports, per account, `goalsIsEmptyArray`, `exitIsNull`, `graduationIsNull` and `stage`. It also reports `goalGates` keys and per-key gate lengths, `defaultModulesPresent = DEFAULT_MODULES.filter(m => goalGates[m]).length`, `historicGraduatedWithExit`, and idempotence (a second `prepareBookData` pass gives identical goals, exit and goalGates).
 
   Console summary (the A2 evidence):
 
 ```
-Schema 13 -> 14  Accounts: 7  goals:[] 7/7  exit:null 7/7
+Schema 13 -> 14  Accounts: 7  goals:[] 7/7  exit:null 7/7  graduation:null 7/7
 goalGates: default modules 5/5 (+2 CSRD, +1 other)  Sustainability 5/5/3/3  Financial Reporting 0/0/0/0  GRC 0/0/0/0  Custom Module 0/0/0/0
 Historic graduated with an invented exit (must be 0): 0  Second-pass idempotent: true  Console errors: 0
 ```
@@ -268,7 +276,7 @@ Historic graduated with an invented exit (must be 0): 0  Second-pass idempotent:
 
   Run: `node tools/migration-dryrun.mjs osm-book-of-business-tracker-1.0.html --from 13 > .artifacts/grad-plan/dry13.log 2>&1; tail -4 .artifacts/grad-plan/dry13.log; echo exit=$?`. Expected: the three lines above, then `exit=0`. Also re-run `--from 12`; it must still exit 0 (the chain now ends at 14).
 
-- [ ] **Step 8: Record the mutation proof and commit.** Mutation: in the `v === 13` step, change `c.exit = c.exit === undefined ? null : …` to leave `exit` absent. c1e must go red (`exit === null` fails on 7 of 7), then restore. Write the proof to `VALIDATION.txt`, and update the counts in `README.txt:74`, `VALIDATION.txt:47` and `CHANGELOG.txt:36` to 395.
+- [ ] **Step 8: Record the mutation proof and commit.** Mutation: in the `v === 13` step, change `c.exit = c.exit === undefined ? null : …` to leave `exit` absent. c1e must go red (`exit === null` fails on 7 of 7; the same mutation on the `graduation` line must also turn c1e red), then restore. Write the proof to `VALIDATION.txt`, and update the counts in `README.txt:74`, `VALIDATION.txt:47` and `CHANGELOG.txt:36` to 396.
 
 ```bash
 git add osm-book-of-business-tracker-1.0.html tools/legacy-seed-v13.js tools/migration-dryrun.mjs README.txt VALIDATION.txt CHANGELOG.txt
@@ -317,7 +325,7 @@ git commit -m "Graduation plan task 1: schema 14 (goals, exit, goalGates), norma
   - **c2d** `goalCriteriaTally(c)` equals `{evidenced: outcomeCriteriaFor(c).filter(x=>x.evidence).length, total: outcomeCriteriaFor(c).length}`. Liveness: `total > 0`. On a `'Financial Reporting'` customer, `createGoal` returns a goal with `gates.length === 0`, no throw, and `renderGoalPanel(c)` contains `0 gates`.
   - **c2e** `HANDOFF_IN_FIELDS` has `handoffMeetingOn` with `type:'date'`; `renderHandoffTab(c)` renders `type="date"` for it. `goalHintText` returns the `promisedOutcomes` text first and falls back to `firstValue.definition`.
 
-- [ ] **Step 2: Run the suite and see red.** With `--expect 400`, expect `395/400 passed, 5 failed` (the `grad-plan c2*` lines).
+- [ ] **Step 2: Run the suite and see red.** With `--expect 401`, expect `396/401 passed, 5 failed` (the `grad-plan c2*` lines).
 
 - [ ] **Step 3: Write the domain functions** (after Task 1's section):
 
@@ -367,9 +375,9 @@ function goalCriteriaTally(c){ const l = outcomeCriteriaFor(c); return {evidence
   - In `openAddCustomerModal`, add an optional "Hand-off goal" type and text pair. The customer literal gains `goals: [], exit: null`. When text is typed, call `createGoal(customer, {...})` before `candidate.customers.push(customer)`.
   - In the `#btn-impl-golive` confirm callback, after `markImplementationGoLive(c)` and `saveData()`, add `if(!primaryGoal(c)) openGoalFormModal(c, 'create');`.
 
-- [ ] **Step 7: Re-run the suite (`--expect 400`, expected `400/400`) and the guide (`18/18`).** Record the mutation proof: in `createGoal`, drop the `!String(op.planText…).trim()` guard. c2b must go red. Then restore.
+- [ ] **Step 7: Re-run the suite (`--expect 401`, expected `401/401`) and the guide (`18/18`).** Record the mutation proof: in `createGoal`, drop the `!String(op.planText…).trim()` guard. c2b must go red. Then restore.
 
-- [ ] **Step 8: Update the counts to 400 and commit.**
+- [ ] **Step 8: Update the counts to 401 and commit.**
 
 ```bash
 git add osm-book-of-business-tracker-1.0.html README.txt VALIDATION.txt CHANGELOG.txt
@@ -414,7 +422,7 @@ git commit -m "Graduation plan task 2: goal panel, create form, gate checklist, 
     - `ackGoalChange(c)` a second time returns `false`.
   - **c3d** No-threshold source scan for `goal_changed`: `String(customerGoalChangedSignal)` and `String(SIGNAL_DEFS.find(d=>d.key==='goal_changed').detect)` must not match `/daysSince|DATA\.config|Days\b|\d{2,}/`. Task 4's c4g makes the same scan of `ready_to_graduate`.
 
-- [ ] **Step 2: Run the suite and see red.** With `--expect 404`, expect `400/404 passed, 4 failed`.
+- [ ] **Step 2: Run the suite and see red.** With `--expect 405`, expect `401/405 passed, 4 failed`.
 
 - [ ] **Step 3: Write `changePrimaryGoal` and its helpers:**
 
@@ -466,9 +474,9 @@ function ackGoalChange(c){ const p = primaryGoal(c); if(!p || p.ackOn || !goalCr
   - While `customerGoalChangedSignal(c)` is non-null, it shows a status line ("Goal changed — target date X still right?") with a "Target date checked" button (`data-goal-ack`). The handler does `markUndoable('goal')`, `ackGoalChange`, `saveData()`, `render()`.
   - `openGoalFormModal(c, 'change')` reuses the create form and adds a required "Why did the goal change?" textarea. Submit is refused with a toast when it is empty.
 
-- [ ] **Step 6: Re-run the suite** (`--expect 404`): expected `404/404`. Run the guide (`18/18`). Mutation proof: remove the `o.done &&` from the carry-over find. c3b must go red, then restore.
+- [ ] **Step 6: Re-run the suite** (`--expect 405`): expected `405/405`. Run the guide (`18/18`). Mutation proof: remove the `o.done &&` from the carry-over find. c3b must go red, then restore.
 
-- [ ] **Step 7: Update the counts to 404, then commit.**
+- [ ] **Step 7: Update the counts to 405, then commit.**
 
 ```bash
 git add osm-book-of-business-tracker-1.0.html README.txt VALIDATION.txt CHANGELOG.txt
@@ -495,16 +503,16 @@ git commit -m "Graduation plan task 3: goal change with history, gate carry-over
 - Modify `README.txt:74`, `VALIDATION.txt:47`, `CHANGELOG.txt:36`.
 
 **Interfaces:**
-- Consumes: `primaryGoal`, `getExit`, `normalizeExit`, `EXIT_REASONS`, `createGoal`, `setGoalVerdict`, `cleanGoalText`, `changeStage`, `getSessionActivity`, `getSessionTemplateSet`, `inImplementation`.
+- Consumes: `primaryGoal`, `getExit`, `normalizeExit`, `todayISO`, `EXIT_REASONS`, `createGoal`, `setGoalVerdict`, `cleanGoalText`, `changeStage`, `getSessionActivity`, `getSessionTemplateSet`, `inImplementation`.
 - Produces:
   - `customerReadyToGraduateSignal(c) → {goalId, gates, verdictMet}|null` and the `SIGNAL_DEFS` key `ready_to_graduate`.
   - `unheldPlannedSessions(c) → string[]`: a session id, or `String(n)` when the template has no id.
   - `plannedSessionTotal(c) → number`.
   - `validateGraduationDraft(c, draft) → {ok, missing:string[], notePrompt:string|null, openGates:string[], unheld:string[]}`.
-  - `applyGraduation(c, draft) → bool`, with `draft = {verdict, note, exitReason, exitNote, noGoal, newGoal:{type,text,targetCycle,source}|undefined}`.
+  - `applyGraduation(c, draft) → bool` (also writes `c.graduation = {on: today, noGoal}`; `p` is read after any `newGoal` is created, so `noGoal` is true only when no live primary goal exists), with `draft = {verdict, note, exitReason, exitNote, noGoal, newGoal:{type,text,targetCycle,source}|undefined}`.
   - `requestStageChange(c, stageKey)` and `openGraduationConfirmModal(c)`.
 
-- [ ] **Step 1: Write seven failing checks.** Each uses a synthetic customer plus `DATA.activities[c.id]` holding session activities, swapped and restored.
+- [ ] **Step 1: Write eight failing checks.** Each uses a synthetic customer plus `DATA.activities[c.id]` holding session activities, swapped and restored.
   - **c4a** (A4 unit) `ready_to_graduate`:
     - fires on a live account with `targetGraduationDate` set and every primary gate done;
     - stays `null` without a target date, in implementation (`implementation:{phase:'build'}`), when graduated, or with no primary goal;
@@ -522,8 +530,9 @@ git commit -m "Graduation plan task 3: goal change with history, gate carry-over
   - **c4e** source scan: the bodies of the three UI handlers contain `requestStageChange(` and no `changeStage(` call. They are found by their selectors `data-dropzone`, `data-table-stage` and `#stage-select` in `String(bindEvents)`, or in whichever function holds `:22269` (grep for it). And `String(changeStage)` still contains `scheduleGradReview`.
   - **c4f** the tally reads `plannedSessionTotal`: `buildKnowledgeTransferText(c)` for the c4c account contains `5/5 sessions logged` and `Session 6 — … : not needed (early exit)`.
   - **c4g** No-threshold source scan for `ready_to_graduate`: `String(customerReadyToGraduateSignal)` and its `SIGNAL_DEFS` `detect` must not match `/daysSince|DATA\.config|Days\b|\d{2,}/`.
+  - **c4h** (ruling M1) the graduation marker. `applyGraduation` on an account with a primary goal gives `c.graduation` deep-equal to `{on: todayISO(), noGoal: false}`. With no goal and `{noGoal:true}` it gives `{on: todayISO(), noGoal: true}`. With no goal and `newGoal` it gives `noGoal:false`. A draft that fails validation leaves `c.graduation` null.
 
-- [ ] **Step 2: Run the suite and see red.** With `--expect 411`, expect `404/411 passed, 7 failed` (c4a–c4g).
+- [ ] **Step 2: Run the suite and see red.** With `--expect 413`, expect `405/413 passed, 8 failed` (c4a–c4h).
 
 - [ ] **Step 3: Write the domain functions:**
 
@@ -574,6 +583,7 @@ function applyGraduation(c, d){
   const p = primaryGoal(c);
   if(p) setGoalVerdict(c, p.id, d.verdict, d.note);
   if(v.unheld.length) c.exit = normalizeExit({on: todayISO(), reason: d.exitReason, note: d.exitNote, sessionsNotNeeded: v.unheld});
+  c.graduation = {on: todayISO(), noGoal: !p};   // ruling M1: marks "graduated with no goal recorded" apart from a historic graduation (null)
   changeStage(c, 'graduated');
   return true;
 }
@@ -618,9 +628,9 @@ function requestStageChange(c, stageKey){
   - Leave `nextOpenSessionNumber`, the runway loop (`:6751`), migrations and self-check fixtures alone.
   - In the SESSION HISTORY loop (`:19934-19937`), print `not needed (early exit)` when the template id or `String(i+1)` is in `getExit(c).sessionsNotNeeded`.
 
-- [ ] **Step 7: Re-run the suite and the guide.** The suite with `--expect 411` should give `411/411`; the guide `18/18`. Mutation proof: in `customerReadyToGraduateSignal`, change `p.gates.length >= 1 &&` to nothing. c4a must go red (the FR 0-gate case fires), then restore.
+- [ ] **Step 7: Re-run the suite and the guide.** The suite with `--expect 413` should give `413/413`; the guide `18/18`. Mutation proof: in `customerReadyToGraduateSignal`, change `p.gates.length >= 1 &&` to nothing. c4a must go red (the FR 0-gate case fires), then restore.
 
-- [ ] **Step 8: Update the counts to 411 and commit.**
+- [ ] **Step 8: Update the counts to 413 and commit.**
 
 ```bash
 git add osm-book-of-business-tracker-1.0.html README.txt VALIDATION.txt CHANGELOG.txt
@@ -641,7 +651,7 @@ git commit -m "Graduation plan task 4: graduation confirm (verdict, note, early 
 - Consumes: `GOAL_TYPES`, `GOAL_VERDICTS`, `EXIT_REASONS`, `primaryGoal`, `secondaryGoals`, `getGoals`, `getExit`, `goalCriteriaTally`, `getGradReview`, `GRAD_REVIEW_VERDICTS`, `getSessionTemplateSet`, `fmtDate`.
 - Produces: `buildGoalsSectionLines(c) → string[]`, which starts with `'— GOALS —'` and has no trailing blank line.
 
-- [ ] **Step 1: Write three failing checks.**
+- [ ] **Step 1: Write five failing checks.**
   - **c5a** For an account with a primary goal, `buildKnowledgeTransferText(c).split('\n')`:
     - has `'— GOALS —'` at index 4 (after the three header lines and one blank);
     - has `'— ACCOUNT —'` after it;
@@ -650,11 +660,12 @@ git commit -m "Graduation plan task 4: graduation confirm (verdict, note, early 
   - **c5b** (A6 unit) after `changePrimaryGoal` from "Publish FY2026 report" to "Ready for next cycle" with reason "Data owner left", the text contains exactly ``Changed ${fmtDate(todayISO())}: Publish FY2026 report → Ready for next cycle, because Data owner left.``.
   - **c5c** (A5 and A7 units):
     - the c4c-style early-exit account's packet contains `Early exit: Goal met early` and `Sessions marked not needed: Session 6`;
-    - a graduated account with no goals and no exit contains `Graduated before goal tracking.`;
     - an FR account with a goal contains `Gates: 0 gates` and the build does not throw;
     - an account with an answered `gradReview` contains `Graduation check-back: Still using it`.
+  - **c5d** (ruling M1) a graduated account with `graduation:{on:'2026-09-30', noGoal:true}`, no goals and no exit: the GOALS section contains `No goal recorded.` and does not contain `Graduated before goal tracking.`.
+  - **c5e** (ruling M1) a graduated account with `graduation:null`, no goals and no exit: the GOALS section contains `Graduated before goal tracking.` and does not contain `No goal recorded.`.
 
-- [ ] **Step 2: Run the suite and see red.** With `--expect 414`, expect `411/414 passed, 3 failed`.
+- [ ] **Step 2: Run the suite and see red.** With `--expect 418`, expect `413/418 passed, 5 failed` (c5a–c5e).
 
 - [ ] **Step 3: Write `buildGoalsSectionLines`:**
 
@@ -678,7 +689,7 @@ function buildGoalsSectionLines(c){
   });
   const ex = getExit(c);
   if(ex){ /* "Early exit: <label>[ — note]. Sessions marked not needed: Session N — <title>; …" */ }
-  else if(c.stage === 'graduated' && !getGoals(c).length) L.push('Graduated before goal tracking.');
+  else if(c.stage === 'graduated' && !getGoals(c).length) L.push(c.graduation && c.graduation.noGoal ? 'No goal recorded.' : 'Graduated before goal tracking.');   // M1: marker splits the two cases
   secondaryGoals(c).forEach(g => L.push(`Secondary goal [${typeLabel(g.type)}]: ${g.text} — ${g.verdict ? verdictLabel(g.verdict) : 'no verdict'}`));
   const gr = getGradReview(c);
   if(gr && gr.verdict) L.push(`Graduation check-back: ${(GRAD_REVIEW_VERDICTS.find(v => v.key === gr.verdict) || {}).label} on ${fmtDate(gr.doneOn)}${gr.note ? ` — ${gr.note}` : ''}`);
@@ -686,13 +697,13 @@ function buildGoalsSectionLines(c){
 }
 ```
 
-  Fill in the exit branch for real: map each `sessionsNotNeeded` id to `Session N — title` through `getSessionTemplateSet(c)` (an id match, or a numeric string to an index).
+  The graduated-with-no-goals line (ruling M1) reads `c.graduation`: `noGoal:true` gives "No goal recorded."; `graduation` null gives "Graduated before goal tracking.". Fill in the exit branch for real: map each `sessionsNotNeeded` id to `Session N — title` through `getSessionTemplateSet(c)` (an id match, or a numeric string to an index).
 
 - [ ] **Step 4: Insert the section in `buildKnowledgeTransferText`:** after `L.push('');` (`:19912`) add `buildGoalsSectionLines(c).forEach(x => L.push(x)); L.push('');`. Nothing else changes order. `promisedOutcomes` stays under WHAT WAS SOLD.
 
-- [ ] **Step 5: Re-run the suite and the guide.** The suite with `--expect 414` should give `414/414`; the guide `18/18`. Measure the packet lengths on the demo book (seed, then `DATA.customers.map(c => buildKnowledgeTransferText(c).length)` via a throwaway probe tail, logged to `.artifacts/grad-plan/packet-len.log`). Record min, median and max in `VALIDATION.txt` next to the spec's 691–1,714 (median 1,281). No cap is added.
+- [ ] **Step 5: Re-run the suite and the guide.** The suite with `--expect 418` should give `418/418`; the guide `18/18`. Measure the packet lengths on the demo book (seed, then `DATA.customers.map(c => buildKnowledgeTransferText(c).length)` via a throwaway probe tail, logged to `.artifacts/grad-plan/packet-len.log`). Record min, median and max in `VALIDATION.txt` next to the spec's 691–1,714 (median 1,281). No cap is added.
 
-- [ ] **Step 6: Record the mutation proof** (move the GOALS insert to after SESSION HISTORY; c5a goes red; restore). **Update the counts to 414, then commit.**
+- [ ] **Step 6: Record the mutation proof** (move the GOALS insert to after SESSION HISTORY; c5a goes red; restore). **Update the counts to 418, then commit.**
 
 ```bash
 git add osm-book-of-business-tracker-1.0.html README.txt VALIDATION.txt CHANGELOG.txt
@@ -737,7 +748,7 @@ git commit -m "Graduation plan task 5: GOALS section leads the knowledge-transfe
 
     `validRaw` is built from the current `DATA.config` exactly as the existing settings checks build theirs (grep `parseSettingsDraft(` in the suite and copy that fixture).
 
-- [ ] **Step 2: Run the suite and see red.** With `--expect 417`, expect `414/417 passed, 3 failed`.
+- [ ] **Step 2: Run the suite and see red.** With `--expect 421`, expect `418/421 passed, 3 failed`.
 
 - [ ] **Step 3: Write the queue helper:**
 
@@ -761,9 +772,9 @@ function commitGoalEvent(c, event, goal){
   - In `parseSettingsDraft`, turn it into lists: split on `\n`, `cleanGoalText(…, 200)`, filter empties, cap at 20, then `normalizeGoalGatesConfig(parsed, DATA.config.modules)`.
   - In `applySettingsDraft`, add `if(draft.goalGates) candidate.config.goalGates = draft.goalGates;`.
 
-- [ ] **Step 5: Re-run the suite and the guide.** The suite with `--expect 417` should give `417/417`; the guide `18/18`. Mutation proof: in `commitGoalEvent`, call `queueGainsightItem` twice. c6a must go red (`items added 2`), then restore.
+- [ ] **Step 5: Re-run the suite and the guide.** The suite with `--expect 421` should give `421/421`; the guide `18/18`. Mutation proof: in `commitGoalEvent`, call `queueGainsightItem` twice. c6a must go red (`items added 2`), then restore.
 
-- [ ] **Step 6: Update the counts to 417 and commit.**
+- [ ] **Step 6: Update the counts to 421 and commit.**
 
 ```bash
 git add osm-book-of-business-tracker-1.0.html README.txt VALIDATION.txt CHANGELOG.txt
@@ -790,7 +801,7 @@ git commit -m "Graduation plan task 6: Success Plan items in the Gainsight queue
   - Readiness: wait for `typeof window[seedPaths.length ? 'runSelfChecks' : fnName] === 'function'`. After seeding, if `typeof window[fnName] !== 'function'`, print `window.${fnName}() was not defined by the seed.` and exit 2.
   - `--verbose`: also return passing results `{name, detail}` (detail capped at 300) and print `  PASS  ${name} — ${detail}` before the summary line.
 
-  Verify that nothing else moved: re-run the suite (`--expect 417` → `417/417`) and the guide (`18/18`).
+  Verify that nothing else moved: re-run the suite (`--expect 421` → `421/421`) and the guide (`18/18`).
 
 - [ ] **Step 2: Write `tools/graduation-scenarios-seed.js`**, which runs after `demo-seed.js`. It defines `window.runGraduationScenarios`, which returns six results:
   - **A3**
@@ -829,11 +840,11 @@ git commit -m "Graduation plan task 6: Success Plan items in the Gainsight queue
 
   Expected: six `PASS  A3…` to `PASS  A8…` lines, each with its measured value, then `runGraduationScenarios: 6/6 passed, 0 failed`, exit 0. To prove the run can fail, temporarily break the seed's A3 expectation to `rows === 1`, see `5/6`, then restore. This is the seed's own liveness check; production code is not mutated here.
 
-- [ ] **Step 4: Re-run the A1 and A2 evidence.** Run the suite (`--expect 417` → `417/417`), the guide (`18/18`), `node tools/migration-dryrun.mjs osm-book-of-business-tracker-1.0.html --from 13` (exit 0, the three summary lines) and `--from 12` (exit 0).
+- [ ] **Step 4: Re-run the A1 and A2 evidence.** Run the suite (`--expect 421` → `421/421`), the guide (`18/18`), `node tools/migration-dryrun.mjs osm-book-of-business-tracker-1.0.html --from 13` (exit 0, the three summary lines) and `--from 12` (exit 0).
 
 - [ ] **Step 5: Write the docs.**
   - README.txt gets a "Graduation plan" section: the goal on the Overview tab, gates, Change goal, the graduation confirm and early exit, the GOALS block in the packet, the Settings → Graduation gates block (FR/GRC empty by design), and the run commands from Steps 3–4.
-  - CHANGELOG.txt gets the 1.0 bullets: schema 14, goals and gates, the two signals, the packet GOALS section, Success Plan queue items, and the suite count `417`.
+  - CHANGELOG.txt gets the 1.0 bullets: schema 14, goals and gates, the two signals, the packet GOALS section, Success Plan queue items, and the suite count `421`.
   - VALIDATION.txt gets the A1–A8 table with the **measured** values from the logs (copy the detail strings) and the command for each.
 
 - [ ] **Step 6: Commit the code and the docs together.**
@@ -860,4 +871,4 @@ The run then stops for merge.
 
 - §3.1 fields → Task 1. §3.2/§3.3 → Task 1 (`defaultGoalGatesConfig`) and Task 6 (Settings). §3.4 → Task 1. §3.1 reuse: `planText` → Task 2; `gradReview` untouched → Task 5 prints it; `handoffMeetingOn` → Task 2.
 - §4.1 → Task 2. §4.2 → Task 2. §4.3 → Task 3. §4.4 → Task 4. §4.5 → Task 6. §4.6 → Task 6. §5 → Task 5. A1–A8 → Task 7 (plus the unit checks in Tasks 1–6).
-- Open ambiguities are carried as P1–P6 above, plus one more. A graduation through the confirm's "no goal recorded" path with every session held leaves no goals and no exit, the same data as a historic graduation, so its packet also reads "Graduated before goal tracking." Telling the two apart needs a stored marker, which the spec does not define. That needs Ian's ruling.
+- Open ambiguities are carried as P1–P6 above. One more was ruled by Ian as **M1**: a graduation through the confirm's "no goal recorded" path with every session held would leave no goals and no exit, the same data as a historic graduation. The confirm now stores `c.graduation = {on, noGoal}` (Task 4), the migration leaves historic graduations `null` (Task 1), and the packet tells the two apart: "No goal recorded." against "Graduated before goal tracking." (Task 5). This is not open any more.
