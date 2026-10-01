@@ -42,3 +42,4 @@ None filed yet.
 ## Log
 
 - 2026-10-01: baseline measured; worktree created; plan written (`8e19294`, top model; 7 tasks, steps 8/8/7/8/6/6/7, estimated suite 389→417). Plan-level choices P1-P6 plus one open question (no-goal graduation vs historic graduation marker). Stopped for Ian's plan approval.
+- 2026-10-01: **Ian approved the plan** ("Approve as written", P1-P6 included). **Ruling M1 (no-goal marker):** Ian chose "Store a marker": the confirm writes a small graduation record (e.g. `c.graduation = {on, noGoal:true}`), so the packet says "No goal recorded" plainly, as §4.4 wants. This adds one field to schema 14. Plan amended for it before build 1.
