@@ -5,7 +5,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 | Piece | Spec | Session prompt | State | Self-checks after | Commit |
 |---|---|---|---|---|---|
-| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **building (tasks 2–6 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). Next: build 6 (`sessions/curriculum-piece-1-build-6.md`) | **378/378** measured 2026-09-30 (guide 18/18) → 379 planned | task 2: `29689c4`; task 3: `2a57350`; task 4: `dd1ccf4`; task 5: `05e2356`; task 6: see git log |
+| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **built (tasks 2–7 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). Next: review (`sessions/curriculum-piece-1-review.md`) | **379/379** measured 2026-09-30 (guide 18/18) | task 2: `29689c4`; task 3: `2a57350`; task 4: `dd1ccf4`; task 5: `05e2356`; task 6: `a9da098`; task 7: `ec2f175` + `d4c2c00` (SHA re-measure); ledger: see git log |
 | 2 Versioned curriculum + pinning | not written (outline in umbrella §2) | not written | after piece 1 | | |
 | 3 Authoring UI + runbook editor | not written (outline in umbrella §2) | not written | after piece 2 | | |
 | 4 Share, fork, upgrade | not written (outline in umbrella §2) | not written | after piece 3 | | |
@@ -141,6 +141,32 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
   carries CRLF (25,179 CR lines at master `85672e6`), so its two forms coincide; the guide is LF-blob,
   CRLF-tree. Re-measured and rewritten.
 - Evidence: `docs/superpowers/evidence/curriculum-piece-1-task6.md`.
+
+## Task 7 results (build 6, 2026-09-30, measured)
+
+- Before: suite 378/378, guide 18/18 (measured by the lead). RED: `FAIL identity A7 … serializeBook is not defined`
+  (implementer, captured verbatim).
+- After, measured by the lead at `d4c2c00`: suite **379/379**, guide **18/18**. `--from 11`: exit 0, 57 ticks -> 56 evidence,
+  0 lost, notes changed 1 (unexplained 0). `--from 12`: exit 0, 6 accounts, 22 evidenced, 21 placed / 21 stamped, 45 notes
+  moved, 0 lost, 0 verdict changes, idempotent. Spec probe: Carbon 66 ticked, `delete_session2` affected 6, reworded
+  `[0,0]` ×6, orphaned `[0,1]` ×6, 6 detached; no-op and delete-last 0; `rename_s1_runbook ["authored","authored"]`.
+  Measure probe: base ttfv1 9; I5 ttfv1 10, unev 1, orphan 0, reworded 1. All as after Task 6.
+- `serializeBook` is the one serializer for `exportData` and `fsWriteNow`. Left alone: the localStorage save (persistence),
+  the single-customer archive record, and the queue/ICS/CSV/text/HTML exports (none writes a whole book).
+  `prepareBookData` order: `migrateData` -> `applyDataBackfills` -> `assertNormalizedBookData`, so id-less legacy books get
+  ids before the new id validation runs.
+- Mutation proofs (in `VALIDATION.txt`): the plan's replacer in `serializeBook` -> A7 red (`randomPresent:false,
+  idsSame:false`), and v99 red too; making the `deliverableIds` reject unreachable -> A7 red (`threw:false`). Both reverted.
+  The lead re-ran the replacer mutation at `d4c2c00`: exit 1, only A7 (`ticked:4, randomPresent:false, idsSame:false`) and
+  v99 red; revert hash `ad0c1fdd…` identical; 379/379 again.
+- **Lead ruling: check `v99` changed.** Its clause required the literal `JSON.stringify(DATA, null, 2)` in `fsWriteNow`,
+  which routing through `serializeBook` breaks. It now requires `serializeBook(DATA)` there and
+  `JSON.stringify(data, null, 2)` in `serializeBook`. Nothing else in v99 changed.
+- **Correction: VALIDATION's SHA-256 block was stale again.** Task 7's first commit marked it "carried" while the tracker had
+  changed (stated `3a3e1b62…`, measured `942536ef…`). Re-measured in `d4c2c00`: tracker `ad0c1fdd…` (1,607,191 bytes;
+  the one byte is a restored comment space). Guide unchanged.
+- Deferred to the review: import validation checks `deliverableIds` uniqueness only within a template, so duplicate session
+  ids across templates, or duplicate deliverable ids across sessions, pass import.
 
 ## Rules carried between sessions
 
