@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        417/417 passed, 0 failed
+  window.runSelfChecks()        422/422 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1341,3 +1341,17 @@ GRADUATION PLAN TASK 4 FIX — EARLY-EXIT TALLY AND IMPLEMENTATION GUARD (suite 
   - GREEN: `417/417`, guide `18/18`.
   - Sessions marked not needed now count as resolved on every tally and bar (sessionProgressPct,
     plannedSessionTotal); unheldPlannedSessions no longer skips accounts in implementation (spec 4.4).
+
+GRADUATION PLAN TASK 5 — GOALS SECTION OF THE KNOWLEDGE-TRANSFER PACKET (suite 417 -> 422)
+  - RED first: c5a-c5e written before production code; `--expect 422` gave 417/422, 5 FAIL.
+  - GREEN: `422/422`, guide `18/18`.
+  - MUTATION PROOF (production), restored (cmp identical) then green `422/422`: the
+    `buildGoalsSectionLines(c)` insert in buildKnowledgeTransferText removed -> 5 FAIL (c5a-c5e).
+    Not the plan's "move after SESSION HISTORY" variant; removal is the stronger mutation and c5a pins the order.
+  - Packet length on the demo book (17 accounts, measured with a throwaway probe, chars):
+      before  min 691, median 1,281, max 1,529
+      after   min 730, median 1,320, max 1,568   (+39 chars on every account)
+    Spec §8 quoted 691-1,714, median 1,281; min and median match, the max measured 1,529 here, not 1,714.
+    No length cap added.
+  - Ruling M1: graduated + no goals + no exit reads "No goal recorded." when c.graduation.noGoal, else
+    "Graduated before goal tracking." (c5d, c5e).

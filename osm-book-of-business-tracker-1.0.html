@@ -16272,6 +16272,110 @@ function _runSelfChecksInner(){
     check('grad-plan c4h: graduating through the confirm writes the graduation marker; a failed draft writes none', ok, detail);
   })();
 
+  /* ---- Graduation Plan task 5: the GOALS section of the knowledge-transfer packet ---- */
+  function gp5Packet(c){          // the packet builds the risk hub, which prunes riskLog: swap and restore
+    const prevLog = DATA.riskLog; DATA.riskLog = {};
+    try{ return buildKnowledgeTransferText(c); } finally { DATA.riskLog = prevLog; }
+  }
+  function gp5Goals(t){           // the GOALS section only
+    const lines = t.split('\n'), a = lines.indexOf('— GOALS —');
+    if(a < 0) return '';
+    let b = lines.findIndex((x, i) => i > a && /^— .* —$/.test(x));
+    if(b < 0) b = lines.length;
+    return lines.slice(a, b).join('\n');
+  }
+  (function(){                                   // c5a
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__gp5a__'); DATA.customers = [c];
+      const g = createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      g.gates = ['A one','B two','C three','D four','E five'].map((t, i) => ({id:'gt_gp5a' + i, text:t, done: i < 2, on: i < 2 ? todayISO() : null, note:''}));
+      const lines = gp5Packet(c).split('\n');
+      const idx = k => lines.indexOf('— ' + k + ' —');
+      const order = ['GOALS','ACCOUNT','PEOPLE','SESSION HISTORY','OPEN AT TRANSFER','FROM THE OSM'].map(idx);
+      const inOrder = order.every((n, i) => n >= 0 && (i === 0 || n > order[i - 1]));
+      const first = idx('GOALS') === 4;
+      const sec = gp5Goals(lines.join('\n'));
+      const t = goalCriteriaTally(c);
+      const gates = sec.includes('Gates: 2 of 5 done. Open: C three; D four; E five');
+      const crit = sec.includes(`Criteria: ${t.evidenced} of ${t.total} evidenced`);
+      ok = first && inOrder && gates && crit;
+      detail = JSON.stringify({first, inOrder, gates, crit, order});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan c5a: GOALS leads the packet, the other sections keep their order, gates and criteria are stated', ok, detail);
+  })();
+  (function(){                                   // c5b
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__gp5b__'); DATA.customers = [c];
+      createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      changePrimaryGoal(c, {type:'setup_next', text:'Ready for next cycle', changeReason:'Data owner left'});
+      const want = `Changed ${fmtDate(todayISO())}: Publish FY2026 report → Ready for next cycle, because Data owner left.`;
+      const sec = gp5Goals(gp5Packet(c));
+      ok = sec.split('\n').includes(want);
+      detail = JSON.stringify({want, sec});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan c5b: a goal change prints as "Changed <date>: old → new, because <reason>."', ok, detail);
+  })();
+  (function(){                                   // c5c
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__gp5c__'); DATA.customers = [c];
+      createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      gp4Acts(c, [1,2,3,4,5]);
+      applyGraduation(c, {verdict:'partly', note:'n', exitReason:'goal_met_early', exitNote:'Customer self-sufficient'});
+      const s1 = gp5Goals(gp5Packet(c));
+      const exit = s1.includes('Early exit: Goal met early') && s1.includes('Customer self-sufficient') && s1.includes('Sessions marked not needed: Session 6');
+      const fr = gp4Cust('__gp5cf__'); fr.module = 'Financial Reporting'; DATA.customers = [fr];
+      createGoal(fr, {type:'publish', text:'File the 10-K'});
+      const s2 = gp5Goals(gp5Packet(fr));
+      const zero = s2.includes('Gates: 0 gates');
+      const gr = gp4Cust('__gp5cg__'); DATA.customers = [gr];
+      createGoal(gr, {type:'publish', text:'x'});
+      gr.gradReview = normalizeGradReview({dueOn: todayISO(), doneOn: todayISO(), verdict:'held', note:''});
+      const s3 = gp5Goals(gp5Packet(gr));
+      const check_ = s3.includes('Graduation check-back: Still using it');
+      ok = exit && zero && check_;
+      detail = JSON.stringify({exit, zero, check_, s1, s2});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan c5c: the packet shows the early-exit reason, note and unneeded sessions, "0 gates", and the check-back verdict', ok, detail);
+  })();
+  (function(){                                   // c5d
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__gp5d__'); c.stage = 'graduated'; c.graduation = {on:'2026-09-30', noGoal:true}; DATA.customers = [c];
+      const sec = gp5Goals(gp5Packet(c));
+      ok = sec.includes('No goal recorded.') && !sec.includes('Graduated before goal tracking.');
+      detail = sec;
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan c5d: graduated through the no-goal choice reads "No goal recorded." (ruling M1)', ok, detail);
+  })();
+  (function(){                                   // c5e
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__gp5e__'); c.stage = 'graduated'; c.graduation = null; DATA.customers = [c];
+      const sec = gp5Goals(gp5Packet(c));
+      ok = sec.includes('Graduated before goal tracking.') && !sec.includes('No goal recorded.');
+      detail = sec;
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan c5e: a historic graduation reads "Graduated before goal tracking." (ruling M1)', ok, detail);
+  })();
+
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
@@ -20735,12 +20839,48 @@ function buildGainsightBatchText(c, items){
    The FACTS are composed from the book every time it is generated. Nothing
    factual is retyped, so the packet cannot go stale the way a hand-written
    summary does — the only typed parts are the things the book cannot know. */
+function buildGoalsSectionLines(c){
+  const L = ['— GOALS —'];
+  const typeLabel = k => (GOAL_TYPES.find(t => t.key === k) || {}).label || 'Goal';
+  const verdictLabel = k => (GOAL_VERDICTS.find(v => v.key === k) || {}).label || k;
+  const p = primaryGoal(c);
+  if(p){
+    L.push(`Primary goal [${typeLabel(p.type)}]: ${p.text}${p.targetCycle ? ` (cycle ${p.targetCycle})` : ''}`);
+    L.push(p.verdict ? `Verdict: ${verdictLabel(p.verdict)} on ${fmtDate(p.verdictOn)}${p.verdictNote ? ` — ${p.verdictNote}` : ''}` : 'Verdict: not recorded yet');
+    const open = p.gates.filter(g => !g.done);
+    L.push(p.gates.length ? `Gates: ${p.gates.length - open.length} of ${p.gates.length} done.${open.length ? ' Open: ' + open.map(g => g.text).join('; ') : ''}` : 'Gates: 0 gates');
+    const t = goalCriteriaTally(c);
+    L.push(`Criteria: ${t.evidenced} of ${t.total} evidenced`);
+  } else L.push('Primary goal: none recorded');
+  getGoals(c).filter(g => g.verdict === 'replaced' && g.supersededBy).forEach(g => {
+    const to = getGoals(c).find(x => x.id === g.supersededBy);
+    L.push(`Changed ${fmtDate(g.verdictOn)}: ${g.text} → ${to ? to.text : '(removed)'}, because ${g.changeReason}.`);
+  });
+  const ex = getExit(c);
+  if(ex){
+    const templates = getSessionTemplateSet(c);
+    const names = ex.sessionsNotNeeded.map(id => {
+      let i = templates.findIndex(t => t.id === id);
+      if(i < 0 && /^\d+$/.test(id)) i = Number(id) - 1;
+      const t = templates[i];
+      return i >= 0 ? `Session ${i + 1}${t && t.title ? ' — ' + t.title : ''}` : `Session ${id}`;
+    });
+    L.push(`Early exit: ${ex.reason ? roleLabel(EXIT_REASONS, ex.reason, 'Other') : 'reason not recorded'}${ex.note ? ` — ${ex.note}` : ''} (${fmtDate(ex.on)}).${names.length ? ' Sessions marked not needed: ' + names.join('; ') : ''}`);
+  }
+  else if(c.stage === 'graduated' && !getGoals(c).length) L.push(c.graduation && c.graduation.noGoal ? 'No goal recorded.' : 'Graduated before goal tracking.');   // M1: marker splits the two cases
+  secondaryGoals(c).forEach(g => L.push(`Secondary goal [${typeLabel(g.type)}]: ${g.text} — ${g.verdict ? verdictLabel(g.verdict) : 'no verdict'}`));
+  const gr = getGradReview(c);
+  if(gr && gr.verdict) L.push(`Graduation check-back: ${(GRAD_REVIEW_VERDICTS.find(v => v.key === gr.verdict) || {}).label} on ${fmtDate(gr.doneOn)}${gr.note ? ` — ${gr.note}` : ''}`);
+  return L;
+}
 function buildKnowledgeTransferText(c){
   const L = [];
   const val = (dir, key) => (getHandoff(c, dir).values[key] || '').trim();
   L.push(`KNOWLEDGE TRANSFER — ${c.name}`);
   L.push(`Prepared ${fmtDate(todayISO())} from the OSM Book of Business Tracker.`);
   L.push('WORKING DRAFT — provisional field set, not an official Workiva handoff format.');
+  L.push('');
+  buildGoalsSectionLines(c).forEach(x => L.push(x));
   L.push('');
   L.push('— ACCOUNT —');
   L.push(`Module: ${c.module} · Stage: ${(DATA.config.stages.find(s=>s.key===c.stage)||{}).label || c.stage}`);
