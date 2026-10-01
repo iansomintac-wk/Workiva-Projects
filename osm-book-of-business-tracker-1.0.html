@@ -3840,12 +3840,16 @@ stampDefaultTemplateIds();
    title gets the default's deterministic ids (deliverables matched by exact
    text); anything else is random. Non-string deliverables are left for the
    shape validator to reject. Returns how many templates it changed. */
+const LEGACY_TEMPLATE_KEYS = {'Both': 'Sustainability + Carbon', 'Both (CSRD)': 'Sustainability + Carbon (CSRD)'};
 function ensureTemplateIds(sessionTemplates){
   if(!isRecordObject(sessionTemplates)) return 0;
   let changed = 0;
   Object.entries(sessionTemplates).forEach(([key, list]) => {
     if(!Array.isArray(list)) return;
-    const defaults = Array.isArray(DEFAULT_SESSION_TEMPLATES[key]) ? DEFAULT_SESSION_TEMPLATES[key] : [];
+    /* M3r: this runs in migrateData, before applyDataBackfills renames the legacy
+       'Both' keys, so resolve the shipped default through the same mapping. */
+    const defKey = LEGACY_TEMPLATE_KEYS[key] || key;
+    const defaults = Array.isArray(DEFAULT_SESSION_TEMPLATES[defKey]) ? DEFAULT_SESSION_TEMPLATES[defKey] : [];
     const usedS = new Set(list.map(t => t && t.id).filter(Boolean));
     list.forEach((tpl, i) => {
       if(!isRecordObject(tpl)) return;
@@ -9759,6 +9763,58 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     _renderMemoResets.forEach(r => r());
     check('identity A3: renaming a session keeps its authored runbook', ok, detail);
+  })();
+  /* M3r — a legacy book keyed 'Both' / 'Both (CSRD)' (no ids, schema 12) must come
+     out of prepareBookData with the SHIPPED default ids under the renamed keys, not
+     random ones: ensureTemplateIds runs in migrateData, before applyDataBackfills
+     renames the keys, and used to look defaults up by the legacy key (no match).
+     Expectations are literals. FIXTURE: one evidenced Sustainability + Carbon
+     account (LIVENESS: ticked > 0, and every tick survives), converted to the
+     legacy shape. 'Both (CSRD)' is checked on ids only (its session 1 is
+     'ss_sustainability_carbon_csrd_01'). The runbook lookup uses a title that
+     matches nothing, so only the id can resolve it. */
+  (function(){
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates, prevM = DATA.config.modules;
+    let ok = false, detail = '';
+    try{
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const c = {id:'__idm3r__', name:'Identity M3r Co', module:'Sustainability + Carbon',
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:12, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {[c.id]: []};
+      _renderMemoResets.forEach(r => r());
+      let ticked = 0;
+      outcomeCriteriaFor(c).forEach(cr => { if(setOutcomeEvidence(c, cr, {on: isoAddDays(todayISO(), -30), by:'customer'})) ticked++; });
+      const evidencedBefore = outcomeCriteriaFor(c).filter(x => x.evidence).length;
+      const book = _v12Book([c]);
+      const T = book.config.sessionTemplates;
+      T['Both'] = T['Sustainability + Carbon']; delete T['Sustainability + Carbon'];
+      T['Both (CSRD)'] = T['Sustainability + Carbon (CSRD)']; delete T['Sustainability + Carbon (CSRD)'];
+      book.config.modules = book.config.modules.map(m => m === 'Sustainability + Carbon' ? 'Both' : m);
+      book.customers[0].module = 'Both';
+      const prepared = prepareBookData(cloneData(book), 'SelfCheck');
+      const P = prepared.config.sessionTemplates;
+      const base = P['Sustainability + Carbon'] || [], csrd = P['Sustainability + Carbon (CSRD)'] || [];
+      const baseIds = base.map(t => t.id), csrdIds = csrd.map(t => t.id);
+      const wantBase = Array.from({length: 12}, (_, i) => 'ss_sustainability_carbon_' + String(i + 1).padStart(2, '0'));
+      const idsOk = baseIds.slice(0, 12).join() === wantBase.join() && csrdIds[0] === 'ss_sustainability_carbon_csrd_01'
+        && P['Both'] === undefined && P['Both (CSRD)'] === undefined;
+      DATA.customers = prepared.customers; DATA.config.sessionTemplates = P;
+      _renderMemoResets.forEach(r => r());
+      const rc = prepared.customers[0];
+      const evidencedAfter = outcomeCriteriaFor(rc).filter(x => x.evidence).length;
+      const byId = id => authoredRunbookFor(rc, 'A Session Title That Does Not Exist', id);
+      const resolved = baseIds.filter(id => byId(id)).length;
+      const shippedResolved = wantBase.filter(id => rbLibraryIdIndex()[id]).length;
+      ok = ticked > 0 && evidencedBefore === ticked && evidencedAfter === ticked && idsOk
+        && shippedResolved > 0 && resolved === shippedResolved;
+      detail = JSON.stringify({ticked, evidencedBefore, evidencedAfter, idsOk, base0: baseIds[0],
+        csrd0: csrdIds[0], resolved, shippedResolved});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT; DATA.config.modules = prevM;
+    _renderMemoResets.forEach(r => r());
+    check('identity M3r: legacy Both / Both (CSRD) books get the shipped default ids after the rename and keep their authored runbooks', ok, detail);
   })();
   (function(){
     /* c4b — session notes follow their session through a delete (spec §3d;

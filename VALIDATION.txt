@@ -29,8 +29,8 @@ tree is CRLF and hashes differently from the blob. The guide is the same
 shape: LF blob, CRLF working tree.
 
   osm-book-of-business-tracker-1.0.html   (LF blob, `git cat-file -p
-    :<file> | sha256sum`, 1,624,079 bytes, LF blob; re-measured in fix R1; the autocrlf working tree hashes differently)
-    161a0b6f806735e7c5eb4b96734ce8e9e638ea71714104fafbc40fec7d7bbed5
+    :<file> | sha256sum`, 1,628,191 bytes, LF blob; re-measured in fix M3r; the autocrlf working tree hashes differently)
+    e159414c8392f8329e23191bf68afb7a25739d15d1c80417fa6238418d3cb66b
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        383/383 passed, 0 failed
+  window.runSelfChecks()        384/384 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1106,3 +1106,40 @@ CURRICULUM IDENTITY — FIX R1 (suite 382 -> 383)
     notes moved 45, lost 0, verdict changed 0, idempotent true, Live true.
     SHA-256 block re-measured (tracker LF blob 161a0b6f..., 1,624,079 bytes, LF blob).
     README/VALIDATION's `382/381` typo is now `383/383`.
+
+CURRICULUM IDENTITY — FIX M3r (suite 383 -> 384)
+------------------------------------------------
+  - Finding: a legacy book keyed `Both` / `Both (CSRD)` got random session ids.
+    `ensureTemplateIds` runs inside migrateData, before applyDataBackfills renames
+    those keys, and looked shipped defaults up by the legacy key, so nothing
+    matched and `hexId('ss_')` was used. `rbLibraryIdIndex` (shipped ids) then
+    never matched, so A3's guarantee (authored runbook found by session id)
+    silently failed for those books.
+  - CHANGED: `ensureTemplateIds` resolves the default through
+    `LEGACY_TEMPLATE_KEYS` (`Both` -> `Sustainability + Carbon`, `Both (CSRD)` ->
+    `Sustainability + Carbon (CSRD)`), the same mapping the backfill applies.
+    Ids already present are untouched (the `tpl.id === undefined` guard is
+    unchanged), so nothing already stamped is re-minted. M4r (the key
+    `migrationCurriculumFor` resolves for a legacy module) is NOT touched or
+    affected: this change only decides which ids a template receives.
+  - RED first: `runSelfChecks: 383/384` with `FAIL  identity M3r: legacy Both /
+    Both (CSRD) books get the shipped default ids after the rename and keep their
+    authored runbooks — {"ticked":12,"evidencedBefore":12,"evidencedAfter":12,
+    "idsOk":false,"base0":"ss_b05817e5","csrd0":"ss_faafd243","resolved":0,
+    "shippedResolved":3}`.
+  - Fixture: one Sustainability + Carbon account, plan of 12, all 12 criteria
+    ticked (ticked > 0 asserted), converted by _v12Book to schema 12 with the
+    templates re-keyed `Both` / `Both (CSRD)` and module `Both`. After
+    prepareBookData: literal ids `ss_sustainability_carbon_01..12` under the
+    renamed key, `ss_sustainability_carbon_csrd_01` under the CSRD key, no legacy
+    keys left, evidence 12 -> 12, and authoredRunbookFor (bogus title, id only)
+    resolves the same 3 sessions the shipped ids do.
+  - MUTATION PROOF (production code): `const defKey = key;` in place of the
+    mapping. Red: `runSelfChecks: 383/384`, same FAIL (`resolved:0`). Restore:
+    `cmp fixed.html tracker` printed nothing; then green.
+  - MEASURED THIS SESSION: suite `384/384`, guide `18/18`. Dry runs after the fix:
+    `--from 11`: Accounts 12, Ticks before 57, Evidence after 56, ticks lost 0,
+    notes changed 1 (unexplained 0), second-pass doubling false. `--from 12`:
+    Placed 21, Stamped 21, unstamped 0, notes moved 45, lost 0, verdict changed 0,
+    idempotent true, Live true. SHA-256 block re-measured (tracker e159414c...,
+    1,628,191 bytes, LF blob).
