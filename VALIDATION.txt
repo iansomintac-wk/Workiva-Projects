@@ -30,7 +30,7 @@ shape: LF blob, CRLF working tree.
 
   osm-book-of-business-tracker-1.0.html   (LF blob, `git cat-file -p
     :<file> | sha256sum`, 1,636,423 bytes, LF blob; re-measured in fix M6r; the autocrlf working tree hashes differently)
-    e2d87b7512c438a401173b6f4dcfb4cbde525b1c7d8efe33a5c47dfa6089b82e
+    cc3ad8e9903c1103f75e297d45b482f7ca5aa1a867d3ebc02674ac0ad23b7fab
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        386/386 passed, 0 failed
+  window.runSelfChecks()        387/387 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1214,3 +1214,34 @@ CURRICULUM IDENTITY — FIX M6r (suite 385 -> 386)
   - MEASURED THIS SESSION: suite `386/386`, guide `18/18`, dry runs --from 11 and
     --from 12 exit 0. SHA-256 block re-measured (tracker e2d87b75..., 1,636,423
     bytes, LF blob).
+
+CURRICULUM IDENTITY — FIX M7r (suite 386 -> 387)
+  - WHAT: duplicated logic, no behaviour change. Part 1: the v11 -> v12 step tested
+    session-id note keys with a hard-coded `/^ss_[a-z0-9_]+$/`; it now uses
+    SESSION_ID_RE. Compared first: SESSION_ID_RE is `/^ss_[a-z0-9_]+$/`, the same
+    pattern character for character, so no key is accepted by one and not the other.
+    Part 3: applyDataBackfills renamed the sessionTemplates `Both` and `Both (CSRD)`
+    keys with literals; it now loops over LEGACY_TEMPLATE_KEYS (the modules[] and
+    customers[].module `Both` branches are untouched).
+  - NOT CHANGED, part 2: the v12 -> v13 set builder is not equivalent to
+    safeSessionTemplateForRender, so it was left as is and reported. The builder does
+    not check id with SESSION_ID_RE, does not check deliverableIds with
+    DELIVERABLE_ID_RE or per-element string-ness (it only compares lengths and falls
+    back to []), and for a non-record or deliverables-less template it yields
+    `{deliverables: []}` where the helper yields a placeholder with one deliverable.
+    Folding them together would change which criteria a malformed book places.
+  - RED first: `runSelfChecks: 386/387`, `FAIL  identity M7r: ... {"v11Len":4721,
+    "v11Shared":false,"v11Literal":true,"bfShared":false,"bfLiteral":true}`.
+  - CHECK: source scan (v99 style): the v11 step contains `SESSION_ID_RE.test(key)`
+    and not the literal; applyDataBackfills references LEGACY_TEMPLATE_KEYS and has no
+    `sessionTemplates['Both'...]` literal.
+  - MUTATION PROOF (production): the v11 literal restored. Red: `386/387`, same FAIL
+    (v11Shared false, v11Literal true). Restore: cmp fixed.html tracker printed
+    nothing; then green.
+  - DRY RUNS, before and after the change, output files identical (diff empty):
+    `--from 11`: Ticks before 57, Evidence after 56, Ticks lost 0, second-pass
+    doubling false. `--from 12`: Evidenced 22, Placed 21, Stamped 21, unstamped 0,
+    Notes moved 45, lost 0, idempotent true, Live true. Suite incl. identity M3r,
+    M4r, R3, R4 stayed green.
+  - MEASURED THIS SESSION: suite `387/387`, guide `18/18`. SHA-256 block re-measured
+    (tracker cc3ad8e9..., 1,637,646 bytes, LF blob).

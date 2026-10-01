@@ -4624,7 +4624,7 @@ function migrateData(data){
            this only matters when this step is re-run over a book the v12 -> v13
            step already re-keyed (its ticks are evidence already; reading them again
            would mint orphan duplicates). */
-        if(/^ss_[a-z0-9_]+$/.test(key)) return;
+        if(SESSION_ID_RE.test(key)) return;
         const numericKey = /^\d+$/.test(key);
         const sessionNumber = numericKey ? parseInt(key, 10) : null;
         /* A non-numeric key is unusable as a session reference here, and
@@ -4801,18 +4801,16 @@ function applyDataBackfills(data){
     const idx = data.config.modules.indexOf('Both');
     data.config.modules[idx] = 'Sustainability + Carbon';
   }
-  if(data.config.sessionTemplates['Both']){
-    data.config.sessionTemplates['Sustainability + Carbon'] = data.config.sessionTemplates['Both'];
-    delete data.config.sessionTemplates['Both'];
-  }
+  // M7r: the template-key renames read LEGACY_TEMPLATE_KEYS. The CSRD template
+  // has its own legacy key and migrates independently of whether the base "Both"
+  // module is still present in the modules array.
+  Object.keys(LEGACY_TEMPLATE_KEYS).forEach(legacyKey=>{
+    if(data.config.sessionTemplates[legacyKey]){
+      data.config.sessionTemplates[LEGACY_TEMPLATE_KEYS[legacyKey]] = data.config.sessionTemplates[legacyKey];
+      delete data.config.sessionTemplates[legacyKey];
+    }
+  });
   (data.customers||[]).forEach(c=>{ if(c.module === 'Both') c.module = 'Sustainability + Carbon'; });
-
-  // The CSRD template used its own legacy key and must migrate independently
-  // of whether the base "Both" module is still present in the modules array.
-  if(data.config.sessionTemplates['Both (CSRD)']){
-    data.config.sessionTemplates['Sustainability + Carbon (CSRD)'] = data.config.sessionTemplates['Both (CSRD)'];
-    delete data.config.sessionTemplates['Both (CSRD)'];
-  }
 
   if(!data.config.sessionTemplates['Sustainability (CSRD)']) data.config.sessionTemplates['Sustainability (CSRD)'] = JSON.parse(JSON.stringify(DEFAULT_SESSION_TEMPLATES['Sustainability (CSRD)'] || []));
   if(!data.config.sessionTemplates['Sustainability + Carbon (CSRD)']) data.config.sessionTemplates['Sustainability + Carbon (CSRD)'] = JSON.parse(JSON.stringify(DEFAULT_SESSION_TEMPLATES['Sustainability + Carbon (CSRD)'] || []));
@@ -10189,6 +10187,25 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     _renderMemoResets.forEach(r => r());
     check('identity M6r: session-note keys are read from the template in hand, not a per-call rebuild of the template set', ok, detail);
+  })();
+  /* M7r — de-duplication, no behaviour change. Source scan (the v99 style):
+     (1) the v11 -> v12 step tests session-id keys with SESSION_ID_RE, not a copy of
+         its pattern; (3) applyDataBackfills renames the legacy 'Both' template keys
+         by reading LEGACY_TEMPLATE_KEYS, not by repeating them as literals.
+     (2) the v12 -> v13 set builder is NOT folded into safeSessionTemplateForRender:
+         the two checks differ (see the ledger), so that part is reported, not changed. */
+  (function(){
+    const src = String(migrateData);
+    const a = src.indexOf('if(v === 11){'), b = src.indexOf('if(v === 12){');
+    const v11 = (a >= 0 && b > a) ? src.slice(a, b) : '';
+    const bf = String(applyDataBackfills);
+    const v11Shared = v11.length > 0 && v11.indexOf('SESSION_ID_RE.test(key)') !== -1;
+    const v11Literal = v11.indexOf('ss_[a-z0-9_]+') !== -1;
+    const bfShared = bf.indexOf('LEGACY_TEMPLATE_KEYS') !== -1;
+    const bfLiteral = /sessionTemplates\['Both( \(CSRD\))?'\]/.test(bf);
+    check('identity M7r: the v11 step uses SESSION_ID_RE and the template-key renames read LEGACY_TEMPLATE_KEYS, no duplicated literals',
+      v11Shared && !v11Literal && bfShared && !bfLiteral,
+      JSON.stringify({v11Len: v11.length, v11Shared, v11Literal, bfShared, bfLiteral}));
   })();
   /* R3 — archive restore must run the migrations an archive's own schema needs.
      prepareArchiveData built its shell from defaultData(), which is already at

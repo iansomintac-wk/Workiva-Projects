@@ -33,7 +33,7 @@ OSM Runway — release notes
     - Single-level undo, Quick log, deep-linking into the right account tab,
       a Coordination tab, a Handoff tab (PROVISIONAL field set), and a
       Progress Report export.
-    - 386 console-callable self-checks: window.runSelfChecks().
+    - 387 console-callable self-checks: window.runSelfChecks().
 
   THE GUIDE. A companion onboarding and competency guide covering the tracker
   end to end, with a guided and a quick path, a practice mode, a challenge, and
@@ -73,7 +73,7 @@ curriculum-piece-1, not yet merged).
       session. Ids survive Export JSON, Import JSON and the file backup. An
       import with malformed ids is rejected rather than repaired, because
       repairing would orphan its evidence.
-    - 386 self-checks (was 369).
+    - 387 self-checks (was 369).
     - Export JSON before first opening this build on a real book: schema 13
       is not readable by an older build.
 
