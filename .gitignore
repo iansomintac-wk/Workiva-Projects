@@ -47,6 +47,11 @@ desktop.ini
 *.swp
 *~
 
+# Workiva-internal documents (hand-off templates, graduation criteria, Gainsight
+# field lists, CSM hand-over examples) dropped in for research sessions. Company
+# material, same rule as customer data: read in place, never versioned.
+docs/research/internal/
+
 # tools/inspect.mjs capture output — instrumentation artefacts (text/png/json
 # dumps of rendered views), not project files.
 .artifacts/

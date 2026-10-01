@@ -51,8 +51,8 @@ OSM Runway — release notes
     - The Progress Report is a snapshot, not a live view.
     - Automatic backup costs one click per session, not zero.
 
-Curriculum piece 1 — stable ids for sessions and deliverables (branch
-curriculum-piece-1, not yet merged).
+Curriculum piece 1 — stable ids for sessions and deliverables (merged to
+master 2026-09-30, with the review fixes and follow-ups M1r, M2r).
 
   Evidence, notes and runbooks used to hang off a session's NUMBER and a
   deliverable's WORDING, so deleting session 2 or rewording a line silently
