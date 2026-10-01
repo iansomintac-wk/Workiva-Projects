@@ -71,7 +71,7 @@ Verifying a change
 ------------------
 Both halves carry console-callable self-check suites. After any edit:
 
-  tracker:  window.runSelfChecks()        must be 389/389 (seed demo-seed.js first)
+  tracker:  window.runSelfChecks()        must be 396/396 (seed demo-seed.js first)
   guide:    window.runGuideSelfChecks()   must be 18/18
 
 See VALIDATION.txt for the last run and for what it did and did not cover.

@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 // Dry-run harness for the schema migrations that touch recorded evidence.
-//   node tools/migration-dryrun.mjs [file.html] [--from 11|12] [--seed <seed.js>] [--out <report.md>]
+//   node tools/migration-dryrun.mjs [file.html] [--from 11|12|13] [--seed <seed.js>] [--out <report.md>]
+//   --from 13:           the v13 -> v14 graduation-plan migration: every account gets goals [],
+//                        exit null and graduation null (nothing invented, a historic graduation
+//                        gets no exit record), config.goalGates covers every module, a second
+//                        pass changes nothing (seed tools/legacy-seed-v13.js, report
+//                        .artifacts/migration-dryrun-v13.md).
 //   --from 11 (default): the v11 -> v12 outcome-criteria/evidence migration, then 12 -> 13
 //                        (seed tools/legacy-seed.js, report .artifacts/migration-dryrun.md).
 //   --from 12:           the v12 -> v13 curriculum-identity migration (piece 1): every verdict
@@ -41,9 +46,9 @@ const positional = args.filter((a, i) =>
 
 const target = resolve(positional[0] || 'osm-book-of-business-tracker-1.0.html');
 const FROM = flag('from', '11');
-if (FROM !== '11' && FROM !== '12') { console.error(`--from must be 11 or 12, got ${FROM}`); process.exit(2); }
-const seedPath = resolve(flag('seed', FROM === '12' ? 'tools/legacy-seed-v12.js' : 'tools/legacy-seed.js'));
-const outPath = resolve(flag('out', FROM === '12' ? '.artifacts/migration-dryrun-v12.md' : '.artifacts/migration-dryrun.md'));
+if (FROM !== '11' && FROM !== '12' && FROM !== '13') { console.error(`--from must be 11, 12 or 13, got ${FROM}`); process.exit(2); }
+const seedPath = resolve(flag('seed', FROM === '13' ? 'tools/legacy-seed-v13.js' : FROM === '12' ? 'tools/legacy-seed-v12.js' : 'tools/legacy-seed.js'));
+const outPath = resolve(flag('out', FROM === '13' ? '.artifacts/migration-dryrun-v13.md' : FROM === '12' ? '.artifacts/migration-dryrun-v12.md' : '.artifacts/migration-dryrun.md'));
 /* A RANDOM port per invocation — see selfcheck.mjs: a fixed one lets a Chrome
    that outlived its launcher (SIGKILL doesn't reliably take the process tree
    down on Windows) keep answering for a stale page holding a previous build. */
@@ -201,6 +206,67 @@ if (!seedResult.startsWith('ok:')) {
   process.exit(2);
 }
 console.log(`Seeded: ${seedResult.slice(3)}`);
+
+// --from 13: the v13 -> v14 graduation-plan migration (additive; infers nothing).
+if (FROM === '13') {
+  const v13Expr = `(() => { try {
+    function clone(x){ return JSON.parse(JSON.stringify(x)); }
+    const raw = window.__LEGACY_BOOK__;
+    if(!raw) return JSON.stringify({__harnessError__: 'window.__LEGACY_BOOK__ was not set by the seed'});
+    const rawById = {}; raw.customers.forEach(c => { rawById[c.id] = c; });
+    const prepared = prepareBookData(clone(raw), 'DryRun13');
+    const gg = prepared.config.goalGates || {};
+    const types = ['publish', 'setup_next', 'program', 'disclosure'];
+    const lens = k => gg[k] ? types.map(t => (gg[k][t] || []).length).join('/') : 'missing';
+    const perAccount = prepared.customers.map(c => ({id: c.id, name: c.name, stage: c.stage,
+      goalsIsEmptyArray: Array.isArray(c.goals) && c.goals.length === 0,
+      exitIsNull: c.exit === null, graduationIsNull: c.graduation === null,
+      rawHadNone: rawById[c.id].goals === undefined && rawById[c.id].exit === undefined && rawById[c.id].graduation === undefined}));
+    const keys = Object.keys(gg);
+    const csrdKeys = keys.filter(k => / \\(CSRD\\)$/.test(k));
+    const otherKeys = keys.filter(k => DEFAULT_MODULES.indexOf(k) === -1 && csrdKeys.indexOf(k) === -1);
+    const snap = x => JSON.stringify([x.customers.map(c => [c.goals, c.exit, c.graduation]), x.config.goalGates]);
+    const again = prepareBookData(clone(prepared), 'DryRun13-2');
+    return JSON.stringify({schemaBefore: raw.schemaVersion, schemaAfter: prepared.schemaVersion, current: CURRENT_SCHEMA_VERSION,
+      perAccount, goalGateKeys: keys, defaultModulesPresent: DEFAULT_MODULES.filter(m => gg[m]).length,
+      defaultModules: DEFAULT_MODULES.length, csrdKeys: csrdKeys.length, otherKeys: otherKeys.length,
+      lens: {Sustainability: lens('Sustainability'), FinancialReporting: lens('Financial Reporting'), GRC: lens('GRC'), Custom: lens('Custom Module')},
+      historicGraduatedWithExit: prepared.customers.filter(c => c.stage === 'graduated' && (c.exit !== null || c.goals.length > 0)).length,
+      idempotent: snap(again) === snap(prepared)});
+  } catch (e) { return JSON.stringify({__harnessError__: String(e && e.stack || e)}); } })()`;
+  const raw13 = await evaluate(v13Expr, 'v13 analysis');
+  let r13;
+  try { r13 = JSON.parse(raw13); } catch { console.error('v13 analysis returned an unreadable result:', raw13); process.exit(2); }
+  if (r13.__harnessError__) { console.error('Harness failure inside the page: ' + r13.__harnessError__); process.exit(2); }
+  const pa13 = r13.perAccount;
+  const n13 = pa13.length;
+  const cnt = k => pa13.filter(p => p[k]).length;
+  const live13 = n13 > 0 && cnt('rawHadNone') === n13 && pa13.some(p => p.stage === 'graduated');
+  const lines13 = [
+    '# Migration dry run — v13 -> v14 graduation plan', '',
+    `Generated ${new Date().toISOString()} against \`${target.split(/[\\/]/).pop()}\`, seeded from \`${seedPath.split(/[\\/]/).pop()}\`.`, '',
+    `Schema: ${r13.schemaBefore} -> ${r13.schemaAfter} (app current: ${r13.current})`, '',
+    '| Account | stage | goals [] | exit null | graduation null |',
+    '|---|---|---|---|---|',
+    ...pa13.map(p => `| ${p.name} | ${p.stage} | ${p.goalsIsEmptyArray} | ${p.exitIsNull} | ${p.graduationIsNull} |`), '',
+    `goalGates keys: ${r13.goalGateKeys.join(', ')}`, '',
+    `Second pass leaves goals, exit, graduation and goalGates unchanged: **${r13.idempotent}**`, '',
+    `Liveness (every raw account had no goals/exit/graduation, one is graduated): **${live13}**`, ''
+  ];
+  mkdirSync(dirname(outPath), { recursive: true });
+  writeFileSync(outPath, lines13.join('\n') + '\n', 'utf8');
+  console.log(`Report written to ${outPath}`);
+  console.log('');
+  console.log(`Schema ${r13.schemaBefore} -> ${r13.schemaAfter}  Accounts: ${n13}  goals:[] ${cnt('goalsIsEmptyArray')}/${n13}  exit:null ${cnt('exitIsNull')}/${n13}  graduation:null ${cnt('graduationIsNull')}/${n13}`);
+  console.log(`goalGates: default modules ${r13.defaultModulesPresent}/${r13.defaultModules} (+${r13.csrdKeys} CSRD, +${r13.otherKeys} other)  Sustainability ${r13.lens.Sustainability}  Financial Reporting ${r13.lens.FinancialReporting}  GRC ${r13.lens.GRC}  Custom Module ${r13.lens.Custom}`);
+  console.log(`Historic graduated with an invented exit (must be 0): ${r13.historicGraduatedWithExit}  Second-pass idempotent: ${r13.idempotent}  Console errors: ${pageErrors.length}`);
+  if (pageErrors.length) { for (const e of pageErrors) console.log('  ' + e.split('\n')[0]); }
+  const ok13 = r13.schemaAfter === r13.current && live13 && cnt('goalsIsEmptyArray') === n13 && cnt('exitIsNull') === n13
+    && cnt('graduationIsNull') === n13 && r13.defaultModulesPresent === r13.defaultModules && r13.csrdKeys === 2 && r13.otherKeys === 1
+    && r13.lens.Sustainability === '5/5/3/3' && r13.lens.FinancialReporting === '0/0/0/0' && r13.lens.GRC === '0/0/0/0'
+    && r13.lens.Custom === '0/0/0/0' && r13.historicGraduatedWithExit === 0 && r13.idempotent && !pageErrors.length;
+  process.exit(ok13 ? 0 : 1);
+}
 
 // --from 12: the v12 -> v13 identity migration. Same shape as the v11 analysis —
 // everything computed in-page with the app's own functions.

@@ -31,7 +31,7 @@
 | After task | New checks (ids) | Suite `--expect` (ESTIMATE) |
 |---|---|---|
 | baseline (measured 2026-10-01 by the run lead) | — | 389 |
-| 1 | c1a–c1g | 396 |
+| 1 | c1a–c1g | 396 (measured) |
 | 2 | c2a–c2e | 401 |
 | 3 | c3a–c3d | 405 |
 | 4 | c4a–c4h | 413 |

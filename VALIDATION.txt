@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        389/389 passed, 0 failed
+  window.runSelfChecks()        396/396 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1297,3 +1297,13 @@ CURRICULUM IDENTITY — FIX M2r (suite 388 -> 389)
   - DRY RUNS: `--from 11` and `--from 12` exit 0, unchanged.
   - MEASURED THIS SESSION: suite `389/389`, guide `18/18`. SHA-256 block re-measured
     (tracker bbace191..., 1,647,097 bytes, LF blob).
+
+GRADUATION PLAN TASK 1 — SCHEMA 14 AND DATA (suite 389 -> 396)
+  - RED first: 7 checks c1a-c1g written before any production code; `389/396`, every
+    `grad-plan c1*` FAIL (`normalizeGoal is not defined` and similar; c1f `schema 13`).
+  - GREEN: `396/396`, guide `18/18`.
+  - MUTATION PROOF (production), two runs, each restored (cmp against the saved copy)
+    then green `396/396`:
+      (1) v13 step left `c.exit` absent: `395/396`, FAIL c1e ("shapeOk":false).
+      (2) v13 step left `c.graduation` absent (ruling M1): `395/396`, FAIL c1e ("shapeOk":false).
+  - DRY RUNS: `--from 13` (new, seed tools/legacy-seed-v13.js) exit 0; `--from 12` exit 0.

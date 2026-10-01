@@ -4338,12 +4338,109 @@ const DEFAULT_OUTCOME_NAMES = [
   'Accelerate Decision Making','Enable Flexible Work','Enhance Data Control & Governance'
 ];
 
+/* ============ GRADUATION PLAN (spec 2026-10-01): data ============
+   c.goals[] (one live primary + optional secondaries) and c.exit; config.goalGates
+   per module key. Gates are COPIED into a goal at creation — editing the defaults
+   later never rewrites an existing goal. FR and GRC ship EMPTY (R10). */
+const GOAL_TYPES = [
+  {key:'publish',    label:"Publish this cycle's report/filing"},
+  {key:'setup_next', label:'Set up for next cycle'},
+  {key:'program',    label:'Program / data only'},
+  {key:'disclosure', label:'Disclosure submission'}];
+const GOAL_VERDICTS = [{key:'met',label:'Met'},{key:'partly',label:'Partly met'},{key:'not_met',label:'Not met'},{key:'replaced',label:'Replaced'}];
+const EXIT_REASONS = [{key:'goal_met_early',label:'Goal met early'},{key:'no_more_enablement',label:'No more enablement needed'},
+  {key:'paused_or_risk',label:'Paused or at risk'},{key:'other',label:'Other'}];
+const SUSTAINABILITY_GOAL_GATES = {
+  publish: ['Metrics mapped to target frameworks','Data collection tasks sent and returned','Factbook connected to the report via a live link','Report reviewed by the customer','Report published or filed'],
+  setup_next: ['Metrics mapped to target frameworks','Data collection tasks sent','Factbook connected to at least one reporting output','Next reporting cycle plan established','Roll-forward walked through with the customer'],
+  program: ['Topics and metrics configured','Data collection tasks sent and returned','Factbook connected'],
+  disclosure: ['Metrics mapped to the disclosure framework','Responses drafted in Workiva','Submission made']};
+const GOAL_GATE_SHARED_KEYS = ['Sustainability','Carbon','Sustainability + Carbon','Sustainability (CSRD)','Sustainability + Carbon (CSRD)'];
+const MAX_GOALS = 20, MAX_GOAL_GATES = 20;
+const GOAL_ID_RE = /^gl_[0-9a-f]{8}$/, GATE_ID_RE = /^gt_[0-9a-f]{8}$/;
+function emptyGoalGateSet(){ return {publish:[], setup_next:[], program:[], disclosure:[]}; }
+function defaultGoalGatesConfig(){
+  const out = {};
+  DEFAULT_MODULES.forEach(m => { out[m] = emptyGoalGateSet(); });
+  GOAL_GATE_SHARED_KEYS.forEach(k => { out[k] = JSON.parse(JSON.stringify(SUSTAINABILITY_GOAL_GATES)); });
+  return out;
+}
+function cleanGoalText(v, max){ return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max); }
+function normalizeGoalGate(g){
+  if(!isRecordObject(g)) return null;
+  const text = cleanGoalText(g.text, 200);
+  if(!text) return null;
+  return {id: GATE_ID_RE.test(g.id) ? g.id : hexId('gt_'), text, done: g.done === true,
+    on: isRealISODate(g.on) ? g.on : null, note: cleanGoalText(g.note, 300)};
+}
+function normalizeGoal(g){
+  if(!isRecordObject(g)) return null;
+  const text = cleanGoalText(g.text, 300);
+  if(!text) return null;
+  const verdict = GOAL_VERDICTS.some(v => v.key === g.verdict) ? g.verdict : null;
+  return {id: GOAL_ID_RE.test(g.id) ? g.id : hexId('gl_'),
+    type: GOAL_TYPES.some(t => t.key === g.type) ? g.type : null,
+    text, targetCycle: cleanGoalText(g.targetCycle, 40),
+    primary: g.primary === true && verdict !== 'replaced',
+    source: (g.source === 'handoff' || g.source === 'osm') ? g.source : null,
+    createdOn: isRealISODate(g.createdOn) ? g.createdOn : null,
+    gates: (Array.isArray(g.gates) ? g.gates : []).map(normalizeGoalGate).filter(Boolean).slice(0, MAX_GOAL_GATES),
+    verdict, verdictOn: isRealISODate(g.verdictOn) ? g.verdictOn : null,
+    verdictNote: cleanGoalText(g.verdictNote, 500),
+    supersededBy: GOAL_ID_RE.test(g.supersededBy) ? g.supersededBy : null,
+    changeReason: cleanGoalText(typeof g.changeReason === 'string' ? g.changeReason : '', 300),
+    ackOn: isRealISODate(g.ackOn) ? g.ackOn : null};
+}
+function normalizeGoals(arr){
+  const seen = new Set();
+  const list = (Array.isArray(arr) ? arr : []).map(normalizeGoal).filter(g => g && !seen.has(g.id) && seen.add(g.id)).slice(0, MAX_GOALS);
+  const live = list.filter(g => g.primary).sort((a, b) => String(a.createdOn || '9999') < String(b.createdOn || '9999') ? -1 : 1);
+  live.slice(1).forEach(g => { g.primary = false; });   // keep the earliest live primary
+  return list;
+}
+function normalizeExit(x){
+  if(!isRecordObject(x) || !isRealISODate(x.on)) return null;
+  const ids = (Array.isArray(x.sessionsNotNeeded) ? x.sessionsNotNeeded : []).filter(s => typeof s === 'string' && /^(ss_[a-z0-9_]+|\d+)$/.test(s));
+  return {on: x.on, reason: EXIT_REASONS.some(r => r.key === x.reason) ? x.reason : null,
+    note: cleanGoalText(x.note, 500), sessionsNotNeeded: Array.from(new Set(ids)).slice(0, 12)};
+}
+function normalizeGraduation(x){   // ruling M1: marker written by the graduation confirm
+  if(!isRecordObject(x) || !isRealISODate(x.on)) return null;
+  return {on: x.on, noGoal: !!x.noGoal};
+}
+function normalizeGoalGatesConfig(cfg, modules){
+  const src = isRecordObject(cfg) ? cfg : {};
+  const defaults = defaultGoalGatesConfig();
+  const out = {};
+  const keys = new Set([...Object.keys(defaults), ...(Array.isArray(modules) ? modules : []), ...Object.keys(src)]);
+  keys.forEach(k => {
+    const set = isRecordObject(src[k]) ? src[k] : (defaults[k] || emptyGoalGateSet());
+    out[k] = emptyGoalGateSet();
+    Object.keys(out[k]).forEach(t => { out[k][t] = (Array.isArray(set[t]) ? set[t] : [])
+      .map(s => cleanGoalText(s, 200)).filter(Boolean).slice(0, MAX_GOAL_GATES); });
+  });
+  return out;
+}
+function getGoals(c){ return Array.isArray(c && c.goals) ? c.goals : []; }
+function primaryGoal(c){ return getGoals(c).find(g => g.primary && g.verdict !== 'replaced') || null; }
+function secondaryGoals(c){ return getGoals(c).filter(g => !g.primary && g.verdict !== 'replaced'); }
+function getExit(c){ return isRecordObject(c && c.exit) ? c.exit : null; }
+function goalGateKeyFor(c){
+  const gg = (DATA && DATA.config && DATA.config.goalGates) || {};
+  const csrd = c && c.reportsCSRD ? c.module + ' (CSRD)' : null;
+  return (csrd && isRecordObject(gg[csrd])) ? csrd : (c && c.module);
+}
+function defaultGateTextsFor(c, type){
+  const set = ((DATA && DATA.config && DATA.config.goalGates) || {})[goalGateKeyFor(c)];
+  return isRecordObject(set) && Array.isArray(set[type]) ? set[type].slice() : [];
+}
+
 /* ---- Schema versioning ----
    Every structural change to the DATA shape bumps CURRENT_SCHEMA_VERSION and adds an
    explicit step in migrateData(). backfillCustomerRecord remains for per-record field
    defaults on legacy/imported records, but new-shape changes get a numbered migration —
    version-blind additive guessing is how backfill logic rots. */
-const CURRENT_SCHEMA_VERSION = 13; // piece 1: + curriculum identity (template ids, criterion stamps, notes by session id)
+const CURRENT_SCHEMA_VERSION = 14; // graduation plan: + c.goals, c.exit, c.graduation, config.goalGates (13: curriculum identity)
 
 /* The single gate for clock times. Accepts "H:MM" and "HH:MM" on a 24h clock and
    returns a zero-padded "HH:MM"; everything else returns null and the field is
@@ -4748,6 +4845,19 @@ function migrateData(data){
     });
     v = 13;
   }
+  if(v === 13){
+    /* v13 -> v14 (graduation plan). Additive. INFERS NOTHING: no goal is guessed
+       from free text, and historic graduations get no exit record — the packet
+       says "graduated before goal tracking" instead of inventing one. */
+    (data.customers || []).forEach(c => {
+      if(!isRecordObject(c)) return;
+      c.goals = c.goals === undefined ? [] : normalizeGoals(c.goals);
+      c.exit = c.exit === undefined ? null : normalizeExit(c.exit);
+      c.graduation = c.graduation === undefined ? null : normalizeGraduation(c.graduation);   // M1: historic graduations stay null
+    });
+    if(isRecordObject(data.config)) data.config.goalGates = normalizeGoalGatesConfig(data.config.goalGates, data.config.modules);
+    v = 14;
+  }
   data.schemaVersion = v;
   // Sanity: contradictory risk thresholds (watch >= alert) make the watch tier
   // unreachable and invert the risk ladder silently — reset both to defaults.
@@ -4784,7 +4894,8 @@ function defaultData(){
       dueSoonDays: 7,   // v49: flag an unscheduled next session due within this many days
       neglectDays: 21,  // v49: flag an account with no touchpoint in this many days and nothing scheduled
       gradReviewDays: 30, // v88: how long after graduation to ask whether it held
-      implQuietDays: 35  // v92: how long a partner-led build may go quiet before Copilot counts it
+      implQuietDays: 35, // v92: how long a partner-led build may go quiet before Copilot counts it
+      goalGates: defaultGoalGatesConfig() // schema 14: per-module readiness gates copied into a goal at creation
     },
     customers: [],
     activities: {}, // customerId -> [activity,...]
@@ -15442,6 +15553,108 @@ function _runSelfChecksInner(){
       && String(fsScheduleBackup).indexOf('clearTimeout') !== -1);
   })();
 
+  /* ---- Graduation Plan (spec 2026-10-01) ---- */
+  (function(){                                   // c1a
+    let ok = false, detail = '';
+    try{
+      const g = normalizeGoal({id:'gl_0000000a', type:'bogus', text:'  x '.repeat(200), targetCycle:'FY2026',
+        primary:true, source:'nope', createdOn:'2026-13-40', gates:[{text:''},{id:'gt_1', text:'Gate', done:'yes'}],
+        verdict:'great', verdictNote:'n'.repeat(900), supersededBy:5, changeReason:7, ackOn:'x'});
+      ok = g && g.type === null && g.text.length === 300 && g.source === null && g.createdOn === null
+        && g.gates.length === 1 && g.gates[0].done === false && g.verdict === null && g.verdictNote.length === 500
+        && g.supersededBy === null && g.changeReason === '' && g.ackOn === null && normalizeGoal({text:''}) === null;
+      detail = JSON.stringify(g).slice(0, 280);
+    }catch(err){ detail = err.message; }
+    check('grad-plan c1a: normalizeGoal clamps text and drops unknown enums to null', ok, detail);
+  })();
+  (function(){                                   // c1b
+    let ok = false, detail = '';
+    try{
+      const out = normalizeGoals([
+        {id:'gl_00000001', type:'publish', text:'Later', primary:true, createdOn:'2026-03-01'},
+        {id:'gl_00000002', type:'publish', text:'Earlier', primary:true, createdOn:'2026-02-01'},
+        {id:'gl_00000003', type:'program', text:'Old', primary:true, verdict:'replaced', createdOn:'2026-01-01'}]);
+      const byId = id => out.find(g => g.id === id);
+      ok = out.length === 3 && byId('gl_00000002').primary === true && byId('gl_00000001').primary === false
+        && byId('gl_00000003').primary === false && out.filter(g => g.primary).length === 1;
+      detail = JSON.stringify(out.map(g => [g.id, g.primary]));
+    }catch(err){ detail = err.message; }
+    check('grad-plan c1b: normalizeGoals keeps the earliest live primary and un-primaries replaced goals', ok, detail);
+  })();
+  (function(){                                   // c1c
+    let ok = false, detail = '';
+    try{
+      const e = normalizeExit({on:'2026-09-30', reason:'weird', note:'n'.repeat(900),
+        sessionsNotNeeded:['ss_ab1', 'ss_ab1', '4', 'bad id', 7, 'ss_X']});
+      ok = normalizeExit({on:'2026-13-40', reason:'other'}) === null && normalizeExit(null) === null
+        && e && e.reason === null && e.note.length === 500
+        && JSON.stringify(e.sessionsNotNeeded) === JSON.stringify(['ss_ab1', '4'])
+        && normalizeExit({on:'2026-09-30', reason:'other'}).reason === 'other';
+      detail = JSON.stringify(e).slice(0, 200);
+    }catch(err){ detail = err.message; }
+    check('grad-plan c1c: normalizeExit rejects a bad date, nulls an unknown reason, clamps note and session ids', ok, detail);
+  })();
+  (function(){                                   // c1d
+    let ok = false, detail = '';
+    try{
+      const d = defaultGoalGatesConfig();
+      const keys = Object.keys(d);
+      const sus = ['Sustainability','Carbon','Sustainability + Carbon','Sustainability (CSRD)','Sustainability + Carbon (CSRD)'];
+      const lens = k => ['publish','setup_next','program','disclosure'].map(t => d[k][t].length).join('/');
+      const empty = k => ['publish','setup_next','program','disclosure'].every(t => Array.isArray(d[k][t]) && d[k][t].length === 0);
+      ok = DEFAULT_MODULES.every(m => keys.indexOf(m) !== -1)
+        && keys.indexOf('Sustainability (CSRD)') !== -1 && keys.indexOf('Sustainability + Carbon (CSRD)') !== -1
+        && sus.every(k => lens(k) === '5/5/3/3') && empty('Financial Reporting') && empty('GRC');
+      detail = keys.map(k => k + '=' + lens(k)).join('; ');
+    }catch(err){ detail = err.message; }
+    check('grad-plan c1d: default goal gates cover every module, Sustainability 5/5/3/3, FR and GRC empty', ok, detail);
+  })();
+  (function(){                                   // c1e
+    const prevC = DATA.customers, prevCfg = DATA.config;
+    let ok = false, detail = '';
+    try{
+      const book = cloneData(DATA);
+      book.schemaVersion = 13;
+      delete book.config.goalGates;
+      book.config.modules = book.config.modules.concat(['Custom Module']);
+      book.config.sessionTemplates['Custom Module'] = (book.config.sessionTemplates.Carbon || []).slice(0, 6);
+      book.customers.forEach(c => { delete c.goals; delete c.exit; delete c.graduation; });
+      const p = prepareBookData(book, 'SelfCheck');
+      const live = p.customers.length > 0;
+      const shapeOk = p.customers.every(c => Array.isArray(c.goals) && c.goals.length === 0 && c.exit === null && c.graduation === null);
+      const gg = p.config.goalGates;
+      const keys = Object.keys(gg);
+      const ggOk = keys.length === 8 && keys.indexOf('Custom Module') !== -1
+        && ['publish','setup_next','program','disclosure'].every(t => gg['Custom Module'][t].length === 0);
+      const snap = x => JSON.stringify([x.customers.map(c => [c.goals, c.exit, c.graduation]), x.config.goalGates]);
+      const before = snap(p);
+      const again = prepareBookData(cloneData(p), 'SelfCheck');
+      ok = live && p.schemaVersion === 14 && shapeOk && ggOk && snap(again) === before;
+      detail = JSON.stringify({live, schema: p.schemaVersion, shapeOk, ggKeys: keys.length, ggOk, idem: snap(again) === before});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.config = prevCfg;
+    check('grad-plan c1e: v13 -> v14 gives goals [], exit null, graduation null, goalGates; second pass identical', ok, detail);
+  })();
+  (function(){                                   // c1f
+    let ok = false, detail = '';
+    try{
+      ok = CURRENT_SCHEMA_VERSION === 14 && isRecordObject(defaultData().config.goalGates);
+      detail = 'schema ' + CURRENT_SCHEMA_VERSION;
+    }catch(err){ detail = err.message; }
+    check('grad-plan c1f: schema is 14 and defaultData carries config.goalGates', ok, detail);
+  })();
+  (function(){                                   // c1g
+    let ok = false, detail = '';
+    try{
+      const a = normalizeGraduation({on:'2026-09-30', noGoal:1, extra:'x'});
+      const b = normalizeGraduation({on:'2026-09-30'});
+      ok = JSON.stringify(a) === JSON.stringify({on:'2026-09-30', noGoal:true}) && b && b.noGoal === false
+        && [{on:'2026-13-40'}, {on:''}, {on:20260930}, 'x', 5, null, undefined].every(v => normalizeGraduation(v) === null);
+      detail = JSON.stringify([a, b]);
+    }catch(err){ detail = err.message; }
+    check('grad-plan c1g: normalizeGraduation keeps {on, noGoal} and nulls anything else', ok, detail);
+  })();
+
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
@@ -25234,6 +25447,10 @@ function repairAuxiliaryCollections(data){
       const clean = normalizeGradReview(c.gradReview);
       if(clean) c.gradReview = clean; else { delete c.gradReview; if(report) report.droppedOrphanCollections++; }
     }
+    // schema 14: normalise the graduation-plan records when present; never create them here.
+    if(c.goals !== undefined) c.goals = normalizeGoals(c.goals);
+    if(c.exit !== undefined) c.exit = normalizeExit(c.exit);
+    if(c.graduation !== undefined) c.graduation = normalizeGraduation(c.graduation);
     [['stakeholders', normalizeStakeholder, MAX_STAKEHOLDERS],
      ['blockers', normalizeBlocker, MAX_BLOCKERS],
      ['commitments', normalizeCommitment, MAX_COMMITMENTS],
