@@ -43,7 +43,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        378/378 passed, 0 failed
+  window.runSelfChecks()        379/379 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -867,6 +867,58 @@ CURRICULUM IDENTITY — TASK 6 (suite 377 -> 378)
   - Final: `runSelfChecks: 378/378 passed, 0 failed`; guide
     `runGuideSelfChecks: 18/18 passed, 0 failed`. The SHA-256 block at the top of
     this file was NOT re-measured in this task.
+
+CURRICULUM IDENTITY — TASK 7 (suite 378 -> 379)
+  - Ids survive export and import (plan Task 7, A7). New `serializeBook(data)`
+    is the one serializer for every whole book that leaves the app: `exportData`
+    and `fsWriteNow` (the file backup) both call it. The localStorage save in
+    `saveData` is persistence and the customer-archive download is one customer,
+    not a book; both were left alone. `assertSessionTemplate` now rejects a
+    template whose id is not `SESSION_ID_RE`, or whose `deliverableIds` is not a
+    unique array of `DELIVERABLE_ID_RE` strings the same length as
+    `deliverables`. It runs from `assertNormalizedBookData`, which
+    `prepareBookData` calls AFTER migrateData / applyDataBackfills
+    (ensureTemplateIds), so legacy books without ids are repaired first and only
+    a malformed id can be rejected. Never re-minted: that would orphan evidence.
+  - The Task 6 A5 comparison is factored into suite helper `_a5Invariant(book)`;
+    A5 calls it and stays green.
+  - `v99 the file handle is never written...` asserted that `fsWriteNow`'s source
+    contains `JSON.stringify(DATA, null, 2)`. It now asserts `fsWriteNow` contains
+    `serializeBook(DATA)` and `serializeBook` contains
+    `JSON.stringify(data, null, 2)`. No other clause changed.
+  - RED first: `runSelfChecks: 378/379` with
+    `FAIL  identity A7: ... — serializeBook is not defined`. (The first run also
+    failed the A6 writer scan, on my own A7 negative case assigning
+    `.deliverableIds` on an envelope; reworked to Object.assign. Not a defect in
+    production.)
+  - A7 fixture: a user-minted session (id matches /^ss_[0-9a-f]{8}$/) with two
+    deliverables, moved to index 0, evidenced on 2 accounts (ticked 4); ids and
+    stamps compared before/after serializeBook -> prepareBookData; then a v12
+    book through serializeBook -> `_a5Invariant`; then a v13 envelope with one
+    template's deliverableIds one short must throw.
+  - MUTATION PROOF 1 (production code): serializeBook replaced with
+    `JSON.stringify(data, (k, v) => (k === 'id' && typeof v === 'string' && /^ss_/.test(v)) || k === 'deliverableIds' ? undefined : v, 2)`.
+    Red: A7 `{"ticked":4,"randomPresent":false,"idsSame":false,...,"threw":true,"id":"ss_49734012","before":6487,"after":6415}`
+    (v99 also red, by design: its serializeBook clause no longer matches).
+    Revert: `diff` identical to the pre-mutation file, then green.
+  - MUTATION PROOF 2 (production code): the `rejectData` for deliverable ids in
+    `assertSessionTemplate` made unreachable (`... ) false && rejectData(`). Red:
+    A7 `{"ticked":4,"randomPresent":true,"idsSame":true,...,"threw":false,...}`.
+    Revert: `diff` identical, then green.
+  - MEASURED THIS SESSION: suite `379/379`, guide `18/18` (after revert).
+    Spec probe: delete_session2 reworded [0,0], orphaned [0,1], unevidenced
+    [0,1], evInCurr [11,10], 6 accounts detached, controls (noop, delete_last) 0,
+    rename_s1_runbook ["authored","authored"]. Measurement probe: I5 both orders
+    ttfv1 10, unev 1, orphan 0 (reworded 1, pure insert control reworded 0);
+    notes 42 of 48, activities 32 of 38 (unchanged: the probe writes numeric
+    keys and never migrates). Dry run default (--from 11, exit 0): 12 accounts,
+    57 ticks in, 56 evidence out, 0 ticks lost, 0 non-null dates, notes changed 1
+    (unexplained 0), second pass no doubling. Dry run --from 12 (exit 0):
+    6 accounts, 22 evidenced, 21 placed / 21 stamped, 0 unstamped, 45 notes
+    moved, 0 lost, 0 verdicts changed, idempotent, Live: true.
+  - CARRIED, not re-measured: the SHA-256 block at the top of this file; the
+    earlier tasks' individual mutation proofs; the statement that the migration
+    has not run against a real book (still true; Export JSON first).
 
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded

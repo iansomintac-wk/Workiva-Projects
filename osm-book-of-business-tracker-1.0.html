@@ -9874,8 +9874,49 @@ function _runSelfChecksInner(){
     book.schemaVersion = 12;
     return book;
   }
+  /* Piece 1 helper (task 6 A5; task 7 A7 reuses it): the migration invariant on a
+     schema-12 book built by _v12Book. It installs the book's customers and
+     templates into DATA, prepares it, and leaves the PREPARED book's customers
+     and templates installed — the CALLER restores DATA. Returns {ok, detail,
+     rewordedBefore}; ok does NOT include rewordedBefore (A5 and A7 assert it). */
+  function _a5Invariant(book){
+    const strip = list => list.map(x => { const y = Object.assign({}, x); delete y.sourceSessionId; delete y.sourceDeliverableId; return y; });
+    const triple = c => JSON.stringify([strip(outcomeCriteriaFor(c)), outcomeVerdict(c), ttfvDays(c)]);
+    DATA.customers = book.customers; DATA.config.sessionTemplates = book.config.sessionTemplates;
+    _renderMemoResets.forEach(r => r());
+    const beforeTriples = book.customers.map(triple);
+    const placedIds = book.customers.map(c => outcomeCriteriaFor(c)
+      .filter(x => !x.provisional && String(x.source).startsWith('curriculum')).map(x => x.id));
+    const rewordedBefore = outcomeCriteriaFor(book.customers[0]).some(x => x.source === 'curriculum (reworded since)');
+    const evidencedBefore = book.customers.reduce((s, c) => s + outcomeCriteriaFor(c).filter(x => x.evidence).length, 0);
+    const prepared = prepareBookData(cloneData(book), 'SelfCheck');
+    DATA.customers = prepared.customers; DATA.config.sessionTemplates = prepared.config.sessionTemplates;
+    _renderMemoResets.forEach(r => r());
+    const verdictsEqual = prepared.customers.every((c, i) => triple(c) === beforeTriples[i]);
+    let stamped = 0, unstamped = 0, numericLeft = 0;
+    prepared.customers.forEach((c, i) => {
+      const items = c.outcomeCriteria.items;
+      placedIds[i].forEach(id => {
+        const rec = items.find(r => r.id === id);
+        if(rec && rec.sourceDeliverableId && rec.sourceSessionId) stamped++; else unstamped++;
+      });
+      Object.keys(c.sessionNotes).forEach(k => {
+        if(/^\d+$/.test(k)){
+          const t = getSessionTemplate(c, parseInt(k, 10));
+          if(parseInt(k, 10) <= c.totalSessions && t && t.id) numericLeft++;
+        }
+      });
+    });
+    const again = prepareBookData(cloneData(prepared), 'SelfCheck');
+    const idempotent = again.customers.every((c, i) =>
+      JSON.stringify(c.outcomeCriteria) === JSON.stringify(prepared.customers[i].outcomeCriteria));
+    const ok = evidencedBefore > 0 && stamped > 0 && prepared.schemaVersion === CURRENT_SCHEMA_VERSION
+      && verdictsEqual && unstamped === 0 && numericLeft === 0 && idempotent;
+    return {ok, rewordedBefore, detail: JSON.stringify({evidencedBefore, stamped, unstamped, rewordedBefore,
+      schema: prepared.schemaVersion, verdictsEqual, numericLeft, idempotent})};
+  }
   (function(){
-    /* A5 — the 12 -> 13 migration changes NO verdict, stamps every item it can
+    /* A5 —the 12 -> 13 migration changes NO verdict, stamps every item it can
        place, and moves numeric notes to session ids. Pass 2 (index) is exercised
        by one pure-reword legacy record. Liveness: evidenced > 0 and stamped > 0. */
     const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
@@ -9887,45 +9928,69 @@ function _runSelfChecksInner(){
         getSessionNote(c, n).prep = 'P' + n; } });
       const reworded = fx.accts[0].outcomeCriteria.items[0];
       reworded.text = reworded.text + ' (reworded after it was ticked)';
-      const book = _v12Book(fx.accts);
-      const strip = list => list.map(x => { const y = Object.assign({}, x); delete y.sourceSessionId; delete y.sourceDeliverableId; return y; });
-      const triple = c => JSON.stringify([strip(outcomeCriteriaFor(c)), outcomeVerdict(c), ttfvDays(c)]);
-      DATA.customers = book.customers; DATA.config.sessionTemplates = book.config.sessionTemplates;
-      _renderMemoResets.forEach(r => r());
-      const beforeTriples = book.customers.map(triple);
-      const placedIds = book.customers.map(c => outcomeCriteriaFor(c)
-        .filter(x => !x.provisional && String(x.source).startsWith('curriculum')).map(x => x.id));
-      const rewordedBefore = outcomeCriteriaFor(book.customers[0]).some(x => x.source === 'curriculum (reworded since)');
-      const evidencedBefore = book.customers.reduce((s, c) => s + outcomeCriteriaFor(c).filter(x => x.evidence).length, 0);
-      const prepared = prepareBookData(cloneData(book), 'SelfCheck');
-      DATA.customers = prepared.customers; DATA.config.sessionTemplates = prepared.config.sessionTemplates;
-      _renderMemoResets.forEach(r => r());
-      const verdictsEqual = prepared.customers.every((c, i) => triple(c) === beforeTriples[i]);
-      let stamped = 0, unstamped = 0, numericLeft = 0;
-      prepared.customers.forEach((c, i) => {
-        const items = c.outcomeCriteria.items;
-        placedIds[i].forEach(id => {
-          const rec = items.find(r => r.id === id);
-          if(rec && rec.sourceDeliverableId && rec.sourceSessionId) stamped++; else unstamped++;
-        });
-        Object.keys(c.sessionNotes).forEach(k => {
-          if(/^\d+$/.test(k)){
-            const t = getSessionTemplate(c, parseInt(k, 10));
-            if(parseInt(k, 10) <= c.totalSessions && t && t.id) numericLeft++;
-          }
-        });
-      });
-      const again = prepareBookData(cloneData(prepared), 'SelfCheck');
-      const idempotent = again.customers.every((c, i) =>
-        JSON.stringify(c.outcomeCriteria) === JSON.stringify(prepared.customers[i].outcomeCriteria));
-      ok = evidencedBefore > 0 && stamped > 0 && rewordedBefore && prepared.schemaVersion === CURRENT_SCHEMA_VERSION
-        && verdictsEqual && unstamped === 0 && numericLeft === 0 && idempotent;
-      detail = JSON.stringify({evidencedBefore, stamped, unstamped, rewordedBefore, schema: prepared.schemaVersion,
-        verdictsEqual, numericLeft, idempotent});
+      const r = _a5Invariant(_v12Book(fx.accts));
+      ok = r.ok && r.rewordedBefore;
+      detail = r.detail;
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     _renderMemoResets.forEach(r => r());
     check('identity A5: v12 -> v13 migration keeps every verdict and stamps every placed item', ok, detail);
+  })();
+  /* A7 — ids survive export and import. LIVENESS: the fixture carries a
+     USER-MINTED (random-hex) session with deliverables and evidence. Default ids
+     are deterministic, so ensureTemplateIds would re-mint them identically and a
+     serializer that dropped them could not turn this red; a random id can't be
+     re-minted, only carried. */
+  (function(){
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const fx = _identityFixture(2);
+      const list = DATA.config.sessionTemplates[fx.mod];
+      const mine = newSessionTemplate(list);
+      addDeliverableRow(mine, 'User deliverable one'); addDeliverableRow(mine, 'User deliverable two');
+      list.push(mine);
+      for(let i = list.length - 1; i > 0; i--) moveSessionTemplate(list, i, -1);   // to index 0, so totalSessions reaches it
+      _renderMemoResets.forEach(r => r());
+      const mineIds = new Set(mine.deliverableIds);
+      let ticked = 0;
+      fx.accts.forEach(c => outcomeCriteriaFor(c).forEach(cr => {
+        if(mineIds.has(cr.sourceDeliverableId) && setOutcomeEvidence(c, cr, {on: isoAddDays(todayISO(), -5), by:'customer'})) ticked++;
+      }));
+      const snapIds = () => ({
+        templates: Object.entries(DATA.config.sessionTemplates).map(([k, l]) => [k, l.map(t => [t.id, t.deliverableIds])]),
+        items: DATA.customers.map(c => c.outcomeCriteria.items.map(r => [r.id, r.sourceDeliverableId, r.sourceSessionId]))
+      });
+      const before = JSON.stringify(snapIds());
+      const env = JSON.parse(serializeBook(DATA));
+      const back = prepareBookData(env, 'SelfCheck');
+      DATA.customers = back.customers; DATA.config.sessionTemplates = back.config.sessionTemplates;
+      const after = JSON.stringify(snapIds());
+      const randomPresent = SESSION_ID_RE.test(mine.id) && /^ss_[0-9a-f]{8}$/.test(mine.id)
+        && back.config.sessionTemplates[fx.mod][0].id === mine.id;
+      const idsSame = before === after;
+      // Second half: a v12 book, serialized then imported, satisfies the A5 invariant.
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const fx2 = _identityFixture(3);
+      fx2.accts.forEach(c => { for(let n = 1; n <= c.totalSessions; n++){ getSessionNote(c, n).prep = 'P' + n; } });
+      fx2.accts[0].outcomeCriteria.items[0].text += ' (reworded after it was ticked)';
+      const wire = JSON.parse(serializeBook(_v12Book(fx2.accts)));
+      const inv = _a5Invariant(wire);
+      // Negative: a v13 envelope whose one template has deliverableIds one short must throw.
+      const bad = cloneData(back);   // not via serializeBook: this half tests the validator, not the serializer
+      const badTpl = bad.config.sessionTemplates[fx.mod][0];
+      // Tampers with a parsed ENVELOPE, not a stored template, via assign so the A6 writer scan stays honest.
+      Object.assign(badTpl, {deliverableIds: badTpl['deliverableIds'].slice(0, -1)});
+      let threw = false;
+      try{ prepareBookData(bad, 'SelfCheck'); }catch(e){ threw = /deliverable ids/.test(e.message); }
+      ok = ticked > 0 && randomPresent && idsSame && inv.ok && inv.rewordedBefore && threw;
+      detail = JSON.stringify({ticked, randomPresent, idsSame, inv: inv.detail, threw,
+        id: mine.id, before: before.length, after: after.length});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity A7: ids survive export and import (random-id session, evidence, and the v12 invariant through the wire)', ok, detail);
   })();
   (function(){
     /* c2a — curriculum identity (piece 1). Shipped defaults carry DETERMINISTIC
@@ -14817,7 +14882,8 @@ function _runSelfChecksInner(){
       && String(fsIdb).indexOf('indexedDB.open') !== -1
       && String(fsStoreHandle).indexOf('DATA') === -1
       && String(fsStoreHandle).indexOf('localStorage') === -1
-      && String(fsWriteNow).indexOf('JSON.stringify(DATA, null, 2)') !== -1);
+      && String(fsWriteNow).indexOf('serializeBook(DATA)') !== -1
+      && String(serializeBook).indexOf('JSON.stringify(data, null, 2)') !== -1);
 
     /* Writing must not loop. The write stamps lastExportedAt, and stamping through
        saveData() would schedule another write, which would stamp again. */
@@ -24165,6 +24231,8 @@ async function fsForget(){
   _fsHandle = null; _fsState = fsSupported() ? 'unset' : 'unsupported'; _fsError = '';
   render();
 }
+// The one serializer for every book that leaves the app (export, file backup). Self-check A7 proves ids survive it.
+function serializeBook(data){ return JSON.stringify(data, null, 2); }
 async function fsWriteNow(silent){
   /* The guard that matters. The suite hands DATA fabricated books; writing one of
      those to the user's real backup file would be the worst bug this project
@@ -24173,7 +24241,7 @@ async function fsWriteNow(silent){
   _fsWriting = true;
   try{
     const w = await _fsHandle.createWritable();
-    await w.write(JSON.stringify(DATA, null, 2));
+    await w.write(serializeBook(DATA));
     await w.close();
     _fsLastWriteAt = Date.now();
     _fsError = '';
@@ -24221,7 +24289,7 @@ function exportData(){
   const previousStamp = DATA.lastExportedAt;
   DATA.lastExportedAt = todayISO();
   if(!saveData()) DATA.lastExportedAt = previousStamp;
-  const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:'application/json'});
+  const blob = new Blob([serializeBook(DATA)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = 'book-of-business-export.json';
@@ -24754,6 +24822,12 @@ function assertSessionTemplate(template, source, key, index){
   ['enable','deliverables'].forEach(field=>{
     if(!Array.isArray(template[field]) || template[field].some(x=>typeof x!=='string')) rejectData(source, `sessionTemplates[${key}] session ${index+1}.${field} is invalid.`);
   });
+  // Identity (piece 1). Runs after ensureTemplateIds, so only a malformed id can fail here.
+  // Rejected, never re-minted: re-minting would silently orphan that book's evidence.
+  if(typeof template.id !== 'string' || !SESSION_ID_RE.test(template.id)) rejectData(source, `sessionTemplates[${key}] session ${index+1} has an invalid id.`);
+  const dIds = template.deliverableIds;
+  if(!Array.isArray(dIds) || dIds.length !== template.deliverables.length
+     || dIds.some(x=>typeof x!=='string' || !DELIVERABLE_ID_RE.test(x)) || new Set(dIds).size !== dIds.length) rejectData(source, `sessionTemplates[${key}] session ${index+1} has deliverable ids that do not match its deliverables.`);
 }
 
 function assertNormalizedBookData(data, source){

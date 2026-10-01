@@ -33,7 +33,7 @@ OSM Runway — release notes
     - Single-level undo, Quick log, deep-linking into the right account tab,
       a Coordination tab, a Handoff tab (PROVISIONAL field set), and a
       Progress Report export.
-    - 378 console-callable self-checks: window.runSelfChecks().
+    - 379 console-callable self-checks: window.runSelfChecks().
 
   THE GUIDE. A companion onboarding and competency guide covering the tracker
   end to end, with a guided and a quick path, a practice mode, a challenge, and
@@ -50,6 +50,29 @@ OSM Runway — release notes
     - Signal calibration needs four resolutions before it means anything.
     - The Progress Report is a snapshot, not a live view.
     - Automatic backup costs one click per session, not zero.
+
+Curriculum piece 1 — stable ids for sessions and deliverables (branch
+curriculum-piece-1, not yet merged).
+
+  Evidence, notes and runbooks used to hang off a session's NUMBER and a
+  deliverable's WORDING, so deleting session 2 or rewording a line silently
+  detached ticks and moved notes onto the wrong session. Sessions and
+  deliverables now carry ids and everything keys on those.
+
+    - Settings has a per-row deliverable editor: reword a line, reorder it,
+      add or remove one. Rewording keeps the line's evidence.
+    - Sessions can be reordered. Notes, authored runbooks and evidence stay
+      with the session, not the position.
+    - Deleting a session asks first and says how many accounts have evidence
+      on it.
+    - Schema 13. Opening an older book migrates it in place: no verdict
+      changes, every placeable tick is stamped, numbered notes move to their
+      session. Ids survive Export JSON, Import JSON and the file backup. An
+      import with malformed ids is rejected rather than repaired, because
+      repairing would orphan its evidence.
+    - 379 self-checks (was 378).
+    - Export JSON before first opening this build on a real book: schema 13
+      is not readable by an older build.
 
 
 Development history
