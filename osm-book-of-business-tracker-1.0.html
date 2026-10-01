@@ -3895,9 +3895,26 @@ function moveDeliverableRow(tpl, j, dir){
   setSessionDeliverables(tpl, rows);
   return true;
 }
-/* Editing an input is a REWORD: the id is kept. Clearing it removes the row. */
+/* Accounts with evidence on one deliverable id of the curriculum that holds tpl. */
+function deliverableDropImpact(tpl, deliverableId){
+  const key = Object.keys(DATA.config.sessionTemplates).find(k => (DATA.config.sessionTemplates[k] || []).indexOf(tpl) !== -1);
+  const list = key === undefined ? null : DATA.config.sessionTemplates[key];
+  if(!list || !deliverableId) return {accounts: 0};
+  return {accounts: DATA.customers.filter(c => resolveRawCurriculum(c) === list
+    && outcomeCriteriaFor(c).some(cr => cr.evidence && cr.sourceDeliverableId === deliverableId)).length};
+}
+/* M1r: dropping a deliverable id that has evidence asks first. True = go ahead. */
+function confirmDropDeliverable(tpl, j){
+  const id = (tpl.deliverableIds || [])[j];
+  const n = deliverableDropImpact(tpl, id).accounts;
+  if(n === 0) return true;
+  return window.confirm(`Remove this deliverable? ${n} account${n===1?' has':'s have'} evidence on it. Evidence will show as "no longer in the curriculum", and retyping it will not bring it back.`);
+}
+/* Editing an input is a REWORD: the id is kept. Clearing it removes the row
+   (confirmed when evidenced; null means the user cancelled and nothing changed). */
 function rewordDeliverableRow(tpl, j, text){
   const rows = deliverableRows(tpl);
+  if(rows[j] && !String(text).trim() && !confirmDropDeliverable(tpl, j)) return null;
   if(rows[j]) rows[j].text = String(text).trim();
   return setSessionDeliverables(tpl, rows);
 }
@@ -3905,6 +3922,7 @@ function addDeliverableRow(tpl, text){
   return setSessionDeliverables(tpl, deliverableRows(tpl).concat([{id:null, text:String(text).trim()}]));
 }
 function removeDeliverableRow(tpl, j){
+  if(!confirmDropDeliverable(tpl, j)) return null;
   const rows = deliverableRows(tpl); rows.splice(j, 1);
   return setSessionDeliverables(tpl, rows);
 }
@@ -9988,6 +10006,60 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     _renderMemoResets.forEach(r => r());
     check('identity c5b: session delete impact counts only accounts with evidence on it', ok, detail);
+  })();
+  (function(){
+    /* M1r — dropping a deliverable that has evidence asks first and names the
+       account count; cancel changes nothing; no evidence or a reword never asks.
+       Fixture: 3 accounts, every criterion evidenced, so each shipped deliverable
+       is evidenced on exactly 3 accounts. window.confirm is stubbed and restored. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    const realConfirm = window.confirm;
+    let ok = false, detail = '';
+    try{
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const fx = _identityFixture(3);
+      const tpl = DATA.config.sessionTemplates[fx.mod][0];
+      const orphaned = id => fx.accts.filter(c => outcomeCriteriaFor(c).some(x =>
+        x.sourceDeliverableId === id && x.evidence && x.source === 'no longer in the curriculum')).length;
+      const evidenced = id => fx.accts.filter(c => outcomeCriteriaFor(c).some(x =>
+        x.sourceDeliverableId === id && x.evidence && x.source !== 'no longer in the curriculum')).length;
+      let calls = [], answer = false;
+      window.confirm = msg => { calls.push(String(msg)); return answer; };
+      const id0 = tpl.deliverableIds[0], id1 = tpl.deliverableIds[1], len0 = tpl.deliverables.length;
+      const evBefore = evidenced(id0);
+      // (1) cancel: id and evidence kept, one prompt naming 3
+      answer = false;
+      rewordDeliverableRow(tpl, 0, '');
+      removeDeliverableRow(tpl, 0);
+      const cancelKept = tpl.deliverableIds[0] === id0 && tpl.deliverables.length === len0;
+      const cancelCalls = calls.length, cancelMsg = calls[0] || '';
+      const cancelEvidenced = evidenced(id0);
+      // (4) reword keeps the id and never asks
+      calls = [];
+      rewordDeliverableRow(tpl, 1, 'Reworded deliverable text');
+      const rewordCalls = calls.length, rewordKept = tpl.deliverableIds[1] === id1;
+      // (2) confirm: id removed, evidence orphaned as today
+      calls = []; answer = true;
+      removeDeliverableRow(tpl, 0);
+      const confirmCalls = calls.length;
+      const removed = tpl.deliverableIds.indexOf(id0) === -1 && tpl.deliverables.length === len0 - 1;
+      _renderMemoResets.forEach(r => r());
+      const orphanedAfter = orphaned(id0);
+      // (3) an unevidenced deliverable drops without a prompt
+      calls = [];
+      addDeliverableRow(tpl, 'Fresh deliverable with no evidence');
+      removeDeliverableRow(tpl, tpl.deliverables.length - 1);
+      const freshCalls = calls.length;
+      ok = fx.ticked > 0 && evBefore === 3 && cancelKept && cancelCalls === 2 && /\b3 accounts\b/.test(cancelMsg)
+        && cancelEvidenced === 3 && rewordCalls === 0 && rewordKept
+        && confirmCalls === 1 && removed && orphanedAfter === 3 && freshCalls === 0;
+      detail = JSON.stringify({ticked: fx.ticked, evBefore, cancelKept, cancelCalls, namesCount: /\b3 accounts\b/.test(cancelMsg), cancelEvidenced,
+        rewordCalls, rewordKept, confirmCalls, removed, orphanedAfter, freshCalls});
+    }catch(err){ detail = err.message; }
+    window.confirm = realConfirm;
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity M1r: dropping an evidenced deliverable confirms with the account count; cancel changes nothing', ok, detail);
   })();
   /* Piece 1 helper (task 6; task 7 reuses it): turns live fixture accounts into
      a schema-12 book as it existed BEFORE identity — no template ids, no stamps on
@@ -23871,7 +23943,7 @@ function openCurriculumModal(){
       const [i, j] = inp.dataset.curDl.split('|').map(Number);
       const tpl = DATA.config.sessionTemplates[curKey()][i];
       const cleared = !inp.value.trim();
-      rewordDeliverableRow(tpl, j, inp.value);
+      if(rewordDeliverableRow(tpl, j, inp.value) === null){ renderModalBody(); return; }   // cancelled: restore the input
       saveData();
       if(cleared) renderModalBody();   // the row is gone; redraw the list
       render();
@@ -23884,7 +23956,7 @@ function openCurriculumModal(){
     }));
     $$('[data-cur-dl-remove]').forEach(btn => btn.addEventListener('click', ()=>{
       const [i, j] = btn.dataset.curDlRemove.split('|').map(Number);
-      removeDeliverableRow(DATA.config.sessionTemplates[curKey()][i], j);
+      if(removeDeliverableRow(DATA.config.sessionTemplates[curKey()][i], j) === null) return;
       saveData(); renderModalBody(); render();
     }));
     $$('[data-cur-dl-new]').forEach(inp => inp.addEventListener('change', ()=>{

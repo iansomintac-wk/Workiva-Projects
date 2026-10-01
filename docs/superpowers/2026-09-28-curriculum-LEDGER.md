@@ -263,3 +263,8 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
     it to 383/383, and the fix brief now greps both sides of the count.
   - The review's M6r "~144 sanitizations" counted a different unit. Measured set rebuilds per plan render went 14 → 2 (26 before
     with `outcomeCriteriaFor` unfrozen), and the portfolio pass went 17 → 15 (floor 15).
+
+## Follow-ups (M1r, M2r)
+
+- **M1r (removing or clearing an evidenced deliverable orphaned evidence with no prompt).** Ian ruled: "Merge it, and record M1r, M2r yes and M7r accept". `rewordDeliverableRow` (cleared text) and `removeDeliverableRow` now confirm via `confirmDropDeliverable`, naming the account count from `deliverableDropImpact`; cancel changes nothing, zero evidence or a reword never prompts. Suite 387 -> 388, guide 18/18.
+  RED: `387/388`, `cancelKept:false, cancelCalls:0, confirmCalls:0` (33 ticks, 3 accounts evidenced). Mutation (`n === 0` -> `n >= 0`, never asks): `387/388`, same FAIL; cmp identical; 388/388, guide 18/18. Dry runs unchanged (`--from 11` 57 -> 56, 0 lost; `--from 12` 21 stamped, 0 lost). LF blob 1,642,357 bytes.

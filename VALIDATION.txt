@@ -29,8 +29,8 @@ tree is CRLF and hashes differently from the blob. The guide is the same
 shape: LF blob, CRLF working tree.
 
   osm-book-of-business-tracker-1.0.html   (LF blob, `git cat-file -p
-    :<file> | sha256sum`, 1,636,423 bytes, LF blob; re-measured in fix M6r; the autocrlf working tree hashes differently)
-    cc3ad8e9903c1103f75e297d45b482f7ca5aa1a867d3ebc02674ac0ad23b7fab
+    :<file> | sha256sum`, 1,642,357 bytes, LF blob; re-measured in fix M1r; the autocrlf working tree hashes differently)
+    87151c043868f8a99b3678a95f04dfa63ef0791cf1dc75a385acf75b0d371f40
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        387/387 passed, 0 failed
+  window.runSelfChecks()        388/388 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1245,3 +1245,30 @@ CURRICULUM IDENTITY — FIX M7r (suite 386 -> 387)
     M4r, R3, R4 stayed green.
   - MEASURED THIS SESSION: suite `387/387`, guide `18/18`. SHA-256 block re-measured
     (tracker cc3ad8e9..., 1,637,646 bytes, LF blob).
+
+CURRICULUM IDENTITY — FIX M1r (suite 387 -> 388)
+  - WHAT CHANGED: removing a deliverable row, or clearing its input to retype it,
+    drops the id inside setSessionDeliverables, so evidence on every account was
+    orphaned with no prompt. rewordDeliverableRow (when the text is cleared) and
+    removeDeliverableRow now call confirmDropDeliverable(tpl, j), which counts the
+    accounts with evidence on that deliverable id (deliverableDropImpact, the
+    per-deliverable twin of sessionDeleteImpact) and, if above 0, asks
+    window.confirm naming the count. Cancel returns null and changes nothing; the
+    editor handlers redraw the modal (input) or return (remove). Zero evidence: no
+    prompt. A reword keeps the id and never asks.
+  - RED first: `runSelfChecks: 387/388`, `FAIL  identity M1r: ... {"ticked":33,
+    "evBefore":3,"cancelKept":false,"cancelCalls":0,...,"confirmCalls":0,
+    "removed":false,"orphanedAfter":3,"freshCalls":0}`.
+  - FIXTURE: 3 accounts on Carbon, every criterion evidenced (33 ticks); the first
+    deliverable is evidenced on exactly 3 accounts. window.confirm is stubbed and
+    restored. Asserts: cancel keeps id and evidence with 2 prompts naming "3
+    accounts"; reword 0 prompts and id kept; confirm 1 prompt, id removed, 3
+    accounts orphaned; an unevidenced added deliverable drops with 0 prompts.
+  - MUTATION PROOF (production): confirmDropDeliverable made to always return true.
+    Red: `387/388`, same FAIL (cancelKept false, cancelCalls 0). Restore: cmp
+    fixed.html tracker printed nothing; then green.
+  - DRY RUNS: `--from 11` exit 0 (12 accounts, 57 ticks, 56 evidence, 0 lost);
+    `--from 12` exit 0 (6 accounts, 22 evidenced, 21 placed, 21 stamped, 45 notes
+    moved, 0 lost).
+  - MEASURED THIS SESSION: suite `388/388`, guide `18/18`. SHA-256 block re-measured
+    (tracker 87151c04..., 1,642,357 bytes, LF blob).
