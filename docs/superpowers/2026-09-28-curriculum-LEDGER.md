@@ -56,6 +56,15 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
   `[]` vs a one-deliverable placeholder), so it was not merged: that would change migration on malformed books. Its one real
   effect: a malformed string id survives `ensureTemplateIds`, the migration stamps evidence with it, runtime drops the id, and that
   evidence is orphaned. Option: add the id regexes to the builder's check. Fix or accept?
+  **Probe 2026-09-30 (measured, after the fixes):** that orphaning cannot happen. The v12 legacy book (`tools/legacy-seed-v12.js`)
+  through `prepareBookData`: control loads (Aldridge Energy 5 evidenced, 0 orphaned); Carbon session 1 with deliverable id
+  `BAD ID!` → rejected ("…has deliverable ids that do not match its deliverables."); session id `BAD SESSION` → rejected
+  ("…has an invalid id."). `assertNormalizedBookData` runs after `migrateData` in `prepareBookData`, the only production
+  caller of `migrateData`, and saved data, undo snapshots, import and archive restore all go through it. The book is
+  refused whole, so nothing loads half-stamped. Lead recommends **accept**.
+- **Next sessions (prompts written 2026-09-30, not started):** `sessions/curriculum-piece-1-followups.md` (M1r/M2r run;
+  gated on Ian ruling each one yes) and `sessions/curriculum-m1-calls-spec.md` (M1 + R5 + M2 talk: brainstorm and spec
+  with Ian). Subagent protocols now live in `sessions/curriculum-subagent-brief.md` and `sessions/curriculum-checker-brief.md`.
 
 - M1 activities: (a) key by session id / (b) leave to piece 2 pinning / (c) state the call impact in the delete confirmation
 - M2 placeholder padding: include or defer
