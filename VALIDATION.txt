@@ -29,8 +29,8 @@ tree is CRLF and hashes differently from the blob. The guide is the same
 shape: LF blob, CRLF working tree.
 
   osm-book-of-business-tracker-1.0.html   (LF blob, `git cat-file -p
-    :<file> | sha256sum`, 1,615,219 bytes, LF blob; re-measured in fix R3; the autocrlf working tree hashes differently)
-    1b6664fd6bbc655d9ca113696b1d1f33c9e2bc397a501d2536f75ca85afb0352
+    :<file> | sha256sum`, 1,618,917 bytes, LF blob; re-measured in fix R4; the autocrlf working tree hashes differently)
+    8887df18fd5aee17eaa94227ec73d52d8c31ef97d28572a51abefef2cd1ec8b2
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        381/381 passed, 0 failed
+  window.runSelfChecks()        382/381 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1025,3 +1025,39 @@ CURRICULUM IDENTITY — FIX R3 (suite 380 -> 381)
     notes moved 45, lost 0, verdict changed 0, idempotent true, Live true. (Both
     use prepareBookData, so they do not exercise the archive path; the R3 check does.)
     SHA-256 block re-measured (tracker LF blob 1b6664fd..., 1,615,219 bytes, LF blob).
+
+CURRICULUM IDENTITY — FIX R4 (suite 381 -> 382)
+  - Unplaced v12 orphans stayed eligible for the positional passes. A record the
+    v12 -> v13 migration could not place stayed unstamped, so `matchStoredCriteria`
+    passes 1-2 tried it on every render; after a session delete or reorder an
+    orphan `{sourceSession:3, sourceIndex:1, sourceCount:N}` claimed whichever
+    session then sat at 3 with N deliverables and showed its evidence there.
+  - CHOICE: the migration marks every record it leaves unplaced (no
+    `sourceDeliverableId`, has a `sourceSession`) with `unplaced: true`, and passes
+    1-2 skip flagged records. Chosen over "freeze every unstamped record at
+    runtime" because a flag names exactly what the migration failed to place, so
+    unstamped records of any other origin keep their existing behaviour; placement
+    during migration (and the archive path that re-runs it) is untouched because
+    the flag is written only after the migration's own match. An orphan still falls
+    through to the 'no longer in the curriculum' row, so every orphan count is
+    unchanged.
+  - RED first: `runSelfChecks: 381/382` with `FAIL  identity R4: an unplaced v12
+    orphan is never matched by position after a session delete —
+    {"unplaced":1,"evidenced":11,"stolen":1,"orphaned":0,"slotEvidence":true}`.
+  - Fixture: `_identityFixture(1)` through `_v12Book`, plus an extra evidenced
+    record for session 3 index 1 (different text; sourceCount = session 4's
+    deliverable count) and session 4's own index-1 record removed so that slot is
+    free. Migrated through `prepareBookData`; setup asserts unplaced > 0 and
+    evidenced > 0. Session 3 is then deleted; asserts the orphan's evidence does
+    not attach to any deliverable and it is still reported as 'no longer in the
+    curriculum'.
+  - MUTATION PROOF (production code): `&& !s.unplaced` removed from the `legacy`
+    filter. Red: `runSelfChecks: 381/382`, FAIL identity R4
+    `{"unplaced":1,"evidenced":11,"stolen":1,"orphaned":0,"slotEvidence":true}`.
+    Restore: `cmp fixed.html tracker` printed nothing; then green.
+  - MEASURED THIS SESSION: suite `382/382`, guide `18/18`. Dry runs after the fix:
+    `--from 11`: Accounts 12, Ticks before 57, Evidence after 56, ticks lost 0,
+    non-null dates 0, notes changed 1 (unexplained 0), second-pass doubling false.
+    `--from 12`: Accounts 6, Evidenced 22, Placed 21, Stamped 21, unstamped 0,
+    notes moved 45, lost 0, verdict changed 0, idempotent true, Live true.
+    SHA-256 block re-measured (tracker LF blob 8887df18..., 1,618,917 bytes, LF blob).

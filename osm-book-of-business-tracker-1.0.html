@@ -4650,7 +4650,7 @@ function migrateData(data){
           is unchanged mid-migration, so that matching is correct right now) is
           run against the account's own curriculum with an EXPLICIT count, and
           every stored item it places is stamped with sourceSessionId /
-          sourceDeliverableId. Items it cannot place stay unstamped and keep
+          sourceDeliverableId. Items it cannot place stay unstamped, are flagged unplaced, and keep
           their 'no longer in the curriculum' state.
        3. Numeric sessionNotes keys move to the session id.
        Never through getSessionTemplateSet(): this runs before applyDataBackfills,
@@ -4672,6 +4672,10 @@ function migrateData(data){
         rec.sourceSessionId = set[i].id;
         rec.sourceDeliverableId = dl;
       }));
+      /* R4: what the positional passes could not place is an orphan for good. Without
+         this flag it would stay eligible for passes 1-2 on every render and, after a
+         delete or reorder, claim an unrelated deliverable at the same number. */
+      stored.forEach(r => { if(isRecordObject(r) && !r.sourceDeliverableId && r.sourceSession) r.unplaced = true; });
       if(isRecordObject(c.sessionNotes)) Object.keys(c.sessionNotes).forEach(key => {
         if(!/^\d+$/.test(key)) return;
         const n = parseInt(key, 10);
@@ -6213,13 +6217,14 @@ function outcomeCriterionKey(sessionNumber, index){ return 's' + sessionNumber +
    id WHEREVER it now sits (any session, any index). Such a record never
    falls through to text or index — if its id is gone, it is 'no longer in
    the curriculum'. That rule is what closes spec §3a/§3b. Passes 1 and 2 run
-   only on records WITHOUT a sourceDeliverableId (legacy/imported bridge).
+   only on records WITHOUT a sourceDeliverableId (legacy/imported bridge) and
+   not flagged `unplaced` (set by the v12 -> v13 migration on what it could not place).
    templates: session order, each {id?, deliverables:[string], deliverableIds?}. */
 function matchStoredCriteria(stored, templates){
   const claimed = new Set();
   const byDl = new Map();
   stored.forEach(s => { if(s && s.sourceDeliverableId && !byDl.has(s.sourceDeliverableId)) byDl.set(s.sourceDeliverableId, s); });
-  const legacy = stored.filter(s => s && !s.sourceDeliverableId);
+  const legacy = stored.filter(s => s && !s.sourceDeliverableId && !s.unplaced);
   const matched = templates.map(t => new Array((t.deliverables || []).length).fill(null));
   templates.forEach((tpl, i) => (tpl.deliverables || []).forEach((_, idx) => {
     const id = Array.isArray(tpl.deliverableIds) ? tpl.deliverableIds[idx] : null;
@@ -10049,6 +10054,52 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     _renderMemoResets.forEach(r => r());
     check('identity R3: restoring a v12-shaped archive stamps its criteria and re-keys its notes', ok, detail);
+  })();
+  /* R4 — a v12 record the migration could not place must never be matched by
+     position afterwards. Unstamped records stay eligible for passes 1-2 on every
+     render, so after a session delete an orphan {sourceSession:3, sourceIndex:1,
+     sourceCount:N} claims whichever session now sits at 3 with N deliverables
+     and shows its evidence on an unrelated deliverable. FIXTURE: a v12 book with
+     an extra evidenced record for session 3 index 1 (different text, so the real
+     record takes the slot and the extra one cannot be placed), sourceCount equal
+     to session 4's deliverable count, and session 4's own index-1 record removed
+     so that slot is free. LIVENESS: unplaced > 0 and evidenced > 0 in setup. */
+  (function(){
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const fx = _identityFixture(1);
+      const c0 = fx.accts[0];
+      const tplLen = n => getSessionTemplate(c0, n).deliverables.length;
+      const items = c0.outcomeCriteria.items;
+      const s4i1 = items.find(r => r.sourceSession === 4 && r.sourceIndex === 1);
+      items.splice(items.indexOf(s4i1), 1);
+      delete c0.outcomeEvidence[s4i1.id];
+      const real = items.find(r => r.sourceSession === 3 && r.sourceIndex === 1);
+      const orphanId = 'oc_r4orphan';
+      items.push({id: orphanId, text: 'A deliverable that session 3 no longer carries',
+        stage: real.stage, sourceSession: 3, sourceIndex: 1, sourceCount: tplLen(4)});
+      c0.outcomeEvidence[orphanId] = Object.assign({}, c0.outcomeEvidence[real.id]);
+      const book = _v12Book(fx.accts);
+      const prepared = prepareBookData(cloneData(book), 'SelfCheck');
+      DATA.customers = prepared.customers; DATA.config.sessionTemplates = prepared.config.sessionTemplates;
+      _renderMemoResets.forEach(r => r());
+      const pc = prepared.customers[0];
+      const unplaced = pc.outcomeCriteria.items.filter(r => !r.sourceDeliverableId && pc.outcomeEvidence[r.id]).length;
+      const evidenced = outcomeCriteriaFor(pc).filter(x => x.evidence).length;
+      removeSessionTemplate(DATA.config.sessionTemplates[pc.module], 2);
+      _renderMemoResets.forEach(r => r());
+      const rows = outcomeCriteriaFor(pc);
+      const stolen = rows.filter(x => x.evidence && x.id === orphanId && x.source !== 'no longer in the curriculum').length;
+      const orphaned = rows.filter(x => x.id === orphanId && x.source === 'no longer in the curriculum' && x.evidence).length;
+      const slot = rows.find(x => x.sourceSession === 3 && x.sourceIndex === 1);
+      ok = unplaced > 0 && evidenced > 0 && stolen === 0 && orphaned === 1 && !!slot && !slot.evidence;
+      detail = JSON.stringify({unplaced, evidenced, stolen, orphaned, slotEvidence: !!(slot && slot.evidence)});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity R4: an unplaced v12 orphan is never matched by position after a session delete', ok, detail);
   })();
   /* R2 — ids must be unique across a whole curriculum key, not just inside one
      session. A repeated deliverable id (two sessions) or session id (twice in a key)
