@@ -87,7 +87,10 @@ Default FR and GRC gates (schema 15, ruling M3).
     - Schema 15. Opening a schema 14 book fills each EMPTY Financial Reporting
       or GRC list from the new defaults. A list someone typed, every other
       module, and the gates already copied into an existing goal are left
-      alone. Export JSON before first opening this build on a real book:
+      alone. A list an OSM deliberately emptied in Settings before this
+      build cannot be told apart from one never set, so it is filled once;
+      empty it again and it stays empty. Export JSON before first opening
+      this build on a real book:
       schema 15 is not readable by an older build.
     - 437 self-checks (was 436); tools/legacy-seed-v14.js and
       migration-dryrun.mjs --from 14 cover the v14 -> v15 step.

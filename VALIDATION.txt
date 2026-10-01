@@ -29,12 +29,13 @@ the tracker's blob and working tree are both LF and hash identically (0 CR
 bytes, measured). The guide is different: LF blob, CRLF working tree
 (859 CR lines), so its two hashes differ.
 
-  osm-book-of-business-tracker-1.0.html   (re-measured in F3: the earlier
-    87151c04... / 1,642,357 figure was stale; and the working tree now has 0 CR
-    bytes, so it equals the LF blob despite core.autocrlf=true)
-    GIT BLOB (`git cat-file -p HEAD:<file> | sha256sum`, 1,751,637 bytes)
-    WORKING TREE (`sha256sum <file>`, `wc -c`, 1,751,637 bytes, 0 CR bytes)
-    3dab70bbc96df1ec6f2844328600883cb18f5fa02acc8b4b464267cecfe4c713
+  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 after
+    ruling M3, schema 15; the F3 figure 3dab70bb... / 1,751,637 is now stale.
+    The working tree has 0 CR bytes, so it equals the LF blob despite
+    core.autocrlf=true)
+    GIT BLOB (`git cat-file -p HEAD:<file> | sha256sum`, 1,759,470 bytes)
+    WORKING TREE (`sha256sum <file>`, `wc -c`, 1,759,470 bytes, 0 CR bytes)
+    38301a5a9e744163982e8cd6d3a698f0097fc447853dab187c4976956d04ad7c
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
