@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        407/403 passed, 0 failed
+  window.runSelfChecks()        415/415 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1327,3 +1327,10 @@ GRADUATION PLAN TASK 3 — GOAL CHANGE (suite 403 -> 407)
   - MUTATION PROOF (production), restored (cmp identical) then green: carry-over `o.done &&` removed from
     changePrimaryGoal. The plan's c3b alone stayed green (only "Metrics mapped" is shared and it was ticked),
     so c3b gained an undone-account case; with it the mutation gives FAIL c3b (`"undoneStays":false`).
+
+GRADUATION PLAN TASK 4 — GRADUATION CONFIRM (suite 407 -> 415)
+  - RED first: c4a-c4h written before production code; 8 FAIL (`customerReadyToGraduateSignal is not defined`, ...).
+  - GREEN: `415/415`, guide `18/18`.
+  - MUTATION PROOF (production), restored then green `415/415`: `p.gates.length >= 1 &&` removed from
+    customerReadyToGraduateSignal -> FAIL c4a (`"frZero":false`).
+  - Ruling M1: applyGraduation writes c.graduation = {on, noGoal} (c4h).

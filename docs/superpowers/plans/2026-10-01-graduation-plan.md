@@ -34,7 +34,7 @@
 | 1 | c1a–c1g | 396 (measured) |
 | 2 | c2a–c2g (c2f, c2g added by the Task 2 fix) | 403 (measured) |
 | 3 | c3a–c3d | 407 (measured) |
-| 4 | c4a–c4h | 415 |
+| 4 | c4a–c4h | 415 (measured) |
 | 5 | c5a–c5e | 420 |
 | 6 | c6a–c6c | 423 |
 | 7 | none in-page; the scenario run is a separate 6-check run (A3–A8) | 423 |

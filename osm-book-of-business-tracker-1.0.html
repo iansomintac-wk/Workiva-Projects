@@ -3209,7 +3209,7 @@ const PLAYBOOK_DEFS = [
      {key:'chase',     label:'Chase once, in writing, with the cost of the delay stated',       dueIn:5,  who:'you'},
      {key:'escalate',  label:'Escalate internally if it is ours, or to the sponsor if theirs',  dueIn:9,  who:'you'}
    ]},
-  {key:'grad_ready', title:'Graduation readiness', signals:['ready_to_set_date','no_value_evidence'],
+  {key:'grad_ready', title:'Graduation readiness', signals:['ready_to_set_date','ready_to_graduate','no_value_evidence'],
    when:'The account is close to done and you want the handoff to hold.',
    steps:[
      {key:'evidence',  label:'Write down the evidence that first value actually landed',        dueIn:0,  who:'you'},
@@ -4541,6 +4541,66 @@ function customerGoalChangedSignal(c){
 }
 function ackGoalChange(c){ const p = primaryGoal(c); if(!p || p.ackOn || !goalCreatedByChange(c, p)) return false; p.ackOn = todayISO(); return true; }
 
+/* Graduation (R4, R5, ruling M1). Ready means a target date is set and the primary
+   goal's gates are all done, or the OSM already judged it met. A goal with 0 gates
+   (Financial Reporting) is never "all done", only "met". State-based: no threshold. */
+function customerReadyToGraduateSignal(c){
+  if(!c || c.stage === 'graduated' || inImplementation(c) || !c.targetGraduationDate) return null;
+  const p = primaryGoal(c);
+  if(!p) return null;
+  const allGates = p.gates.length >= 1 && p.gates.every(g => g.done);
+  return (allGates || p.verdict === 'met') ? {goalId: p.id, gates: p.gates.length, verdictMet: p.verdict === 'met'} : null;
+}
+function unheldPlannedSessions(c){
+  if(!c || inImplementation(c)) return [];   // curriculum not started: nothing was "planned and skipped"
+  const set = getSessionTemplateSet(c), out = [];
+  for(let n = 1; n <= c.totalSessions; n++){
+    if(getSessionActivity(c, n)) continue;
+    const t = set[n - 1]; out.push(t && t.id ? t.id : String(n));
+  }
+  return out;
+}
+function plannedSessionTotal(c){
+  const ex = getExit(c);
+  if(!ex || !ex.sessionsNotNeeded.length) return c.totalSessions;
+  const unheld = new Set(unheldPlannedSessions(c));
+  return c.totalSessions - ex.sessionsNotNeeded.filter(id => unheld.has(id)).length;
+}
+function validateGraduationDraft(c, d){
+  d = d || {};
+  const missing = [], p = primaryGoal(c), note = cleanGoalText(d.note, 500);
+  const willHaveGoal = !!p || !!(d.newGoal && cleanGoalText(d.newGoal.text, 300));
+  if(willHaveGoal){
+    if(!['met','partly','not_met'].includes(d.verdict)) missing.push('verdict');
+    if(!note) missing.push('note');
+  } else if(!d.noGoal) missing.push('goal');
+  const openGates = p ? p.gates.filter(g => !g.done).map(g => g.text) : [];
+  const notePrompt = (p && d.verdict === 'met' && openGates.length)
+    ? `Met with ${openGates.length} open gate${openGates.length === 1 ? '' : 's'} (${openGates.join('; ')}). Say why that is acceptable.` : null;
+  const unheld = unheldPlannedSessions(c);
+  if(unheld.length){
+    if(!EXIT_REASONS.some(r => r.key === d.exitReason)) missing.push('exitReason');
+    else if(d.exitReason === 'other' && !cleanGoalText(d.exitNote, 500)) missing.push('exitNote');
+  }
+  return {ok: !missing.length, missing, notePrompt, openGates, unheld};   // a prompt, never a block (R4)
+}
+function applyGraduation(c, d){
+  d = d || {};
+  const v = validateGraduationDraft(c, d);
+  if(!v.ok) return false;                                   // validate first: a failed draft creates nothing
+  if(d.newGoal && !primaryGoal(c) && !createGoal(c, d.newGoal)) return false;
+  const p = primaryGoal(c);                                 // read after any newGoal is created
+  if(p) setGoalVerdict(c, p.id, d.verdict, d.note);
+  if(v.unheld.length) c.exit = normalizeExit({on: todayISO(), reason: d.exitReason, note: d.exitNote, sessionsNotNeeded: v.unheld});
+  c.graduation = {on: todayISO(), noGoal: !p};              // ruling M1: "graduated with no goal recorded" vs a historic graduation (null)
+  changeStage(c, 'graduated');
+  return true;
+}
+function requestStageChange(c, stageKey){
+  if(stageKey === 'graduated' && c.stage !== 'graduated'){ openGraduationConfirmModal(c); render(); return; }
+  changeStage(c, stageKey); saveData(); render();
+}
+
 /* ---- Schema versioning ----
    Every structural change to the DATA shape bumps CURRENT_SCHEMA_VERSION and adds an
    explicit step in migrateData(). backfillCustomerRecord remains for per-record field
@@ -5681,7 +5741,7 @@ function accountNextAction(c){
        to mean nearly finished, healthy, on schedule, owing them nothing, and
        carrying more than one solution. */
     out.transition = {kind:'mature',
-      why:`Multi-solution account at ${sessionsCompletedCount(c)} of ${c.totalSessions} sessions, ${healthScore(c)}% health, on schedule and with nothing outstanding. The remaining sessions are worth less to them than an early, well-prepared CSM handoff.`};
+      why:`Multi-solution account at ${sessionsCompletedCount(c)} of ${plannedSessionTotal(c)} sessions, ${healthScore(c)}% health, on schedule and with nothing outstanding. The remaining sessions are worth less to them than an early, well-prepared CSM handoff.`};
   }
   return out;
 }
@@ -6855,7 +6915,7 @@ function projectedGraduationDate(customer){
     return actualGraduationDate(customer);
   }
   const completed = sessionsCompletedCount(customer);
-  const remaining = Math.max(0, customer.totalSessions - completed);
+  const remaining = Math.max(0, plannedSessionTotal(customer) - completed);
   if(remaining === 0) return todayISO();
   const daysRemaining = Math.round(remaining * sessionPaceDays(customer));
   const d = new Date(todayISO() + 'T00:00:00');
@@ -7531,6 +7591,13 @@ const SIGNAL_DEFS = [
     action:()=>({action:'Set a target graduation date', reasons:['All planned sessions are logged with no target date set']}),
     step:()=>`All planned sessions are logged with no target graduation date set — this account looks ready to move into graduation prep.`,
     portfolio:n=>`${n} account${n===1?'':'s'} have completed all planned sessions with no graduation date set — worth setting one now.`},
+  {key:'ready_to_graduate', severity:()=>1,
+    // Graduation plan: target date set and the primary goal's gates all done, or the
+    // OSM already judged it met. State-based — no numeric threshold.
+    detect:c=>customerReadyToGraduateSignal(c),
+    action:()=>({action:'Record the goal verdict and graduate', reasons:['The primary goal reads ready and a target graduation date is set']}),
+    step:()=>`The primary hand-off goal reads ready (all gates done, or judged met) — record the verdict and graduate.`,
+    portfolio:n=>`${n} account${n===1?'':'s'} read ready to graduate against their hand-off goal.`},
   {key:'value_undefined', severity:()=>1,
     // v43 Spec 4: two sessions in with no first-value sentence written. Nudge
     // only — step text, no action, no portfolio bullet. Fires regardless of
@@ -15980,6 +16047,175 @@ function _runSelfChecksInner(){
     check('grad-plan c3d: goal_changed reads no day count, config value or number', ok, detail);
   })();
 
+  /* ---- Graduation Plan task 4: graduation confirm, early exit, ready_to_graduate ---- */
+  function gp4Cust(id, total){
+    return {id: id || '__gp4__', name:'GP4 Test', module:'Sustainability', stage:'ttfv1', totalSessions: total || 6,
+      implementationDate: todayISO(), stageHistory:[], domainScores:{}, notes:'', sessionNotes:{},
+      riskOverride:null, compliance: defaultCompliance(), goals:[], exit:null, targetGraduationDate: null};
+  }
+  function gp4Acts(c, nums){
+    DATA.activities[c.id] = nums.map(n => ({id:'gp4a' + n, type:'call', sessionNumber:n, date: todayISO(), notes:'', outcome:'', customerId:c.id}));
+  }
+  function gp4Done(c){ (primaryGoal(c).gates || []).forEach(g => { g.done = true; g.on = todayISO(); }); }
+  (function(){                                   // c4a
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const def = SIGNAL_DEFS.find(d => d.key === 'ready_to_graduate');
+      const c = gp4Cust(); DATA.customers = [c];
+      createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      const noDate = customerReadyToGraduateSignal(c) === null;
+      c.targetGraduationDate = todayISO();
+      const open = customerReadyToGraduateSignal(c) === null;
+      gp4Done(c);
+      const fires = !!customerReadyToGraduateSignal(c) && !!def && !!def.detect(c);
+      const impl = gp4Cust('__gp4i__'); impl.implementation = {phase:'build'}; impl.targetGraduationDate = todayISO();
+      createGoal(impl, {type:'publish', text:'x'}); gp4Done(impl);
+      const inImpl = customerReadyToGraduateSignal(impl) === null;
+      const grad = gp4Cust('__gp4g__'); grad.stage = 'graduated'; grad.targetGraduationDate = todayISO();
+      createGoal(grad, {type:'publish', text:'x'}); gp4Done(grad);
+      const gradNull = customerReadyToGraduateSignal(grad) === null;
+      const nogoal = gp4Cust('__gp4n__'); nogoal.targetGraduationDate = todayISO();
+      const noGoalNull = customerReadyToGraduateSignal(nogoal) === null;
+      const fr = gp4Cust('__gp4f__'); fr.module = 'Financial Reporting'; fr.targetGraduationDate = todayISO();
+      const g = createGoal(fr, {type:'publish', text:'Report'});
+      const frZero = g.gates.length === 0 && customerReadyToGraduateSignal(fr) === null;
+      setGoalVerdict(fr, g.id, 'met', 'ok');
+      const frMet = !!customerReadyToGraduateSignal(fr) && customerReadyToGraduateSignal(fr).verdictMet === true;
+      const play = PLAYBOOK_DEFS.find(d => d.key === 'grad_ready').signals.includes('ready_to_graduate');
+      const tab = SIGNAL_PANEL_TAB.ready_to_graduate === 'overview' && effortMinutesFor('signal:ready_to_graduate') === 10;
+      ok = noDate && open && fires && inImpl && gradNull && noGoalNull && frZero && frMet && play && tab;
+      detail = JSON.stringify({noDate, open, fires, inImpl, gradNull, noGoalNull, frZero, frMet, play, tab});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan c4a: ready_to_graduate fires on all-gates-done or a met verdict (0 gates only when met), needs a date and a live account', ok, detail);
+  })();
+  (function(){                                   // c4b
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust(); DATA.customers = [c];
+      const p = createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      p.gates.slice(0, 3).forEach(g => { g.done = true; g.on = todayISO(); });
+      gp4Acts(c, [1,2,3,4,5,6]);
+      const a = validateGraduationDraft(c, {verdict:'met', note:''});
+      const blocked = a.ok === false && a.missing.includes('note') && !!a.notePrompt && p.gates.slice(3).every(g => a.notePrompt.includes(g.text)) && a.openGates.length === 2;
+      const b = validateGraduationDraft(c, {verdict:'met', note:'Customer will file next week'});
+      const unblocked = b.ok === true;
+      const applied = applyGraduation(c, {verdict:'met', note:'Customer will file next week'});
+      ok = blocked && unblocked && applied === true && c.stage === 'graduated' && primaryGoal(c).verdict === 'met';
+      detail = JSON.stringify({blocked, unblocked, applied, stage: c.stage});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan c4b: a met verdict with open gates prompts for the note and never blocks', ok, detail);
+  })();
+  (function(){                                   // c4c
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust(); DATA.customers = [c];
+      createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      gp4Acts(c, [1,2,3,4,5]);
+      const base = {verdict:'partly', note:'n'};
+      const noReason = validateGraduationDraft(c, base).missing.includes('exitReason');
+      const noNote = validateGraduationDraft(c, Object.assign({exitReason:'other'}, base)).missing.includes('exitNote');
+      const six = getSessionTemplateSet(c)[5], sixId = six && six.id ? six.id : '6';
+      const applied = applyGraduation(c, Object.assign({exitReason:'goal_met_early'}, base));
+      const ex = getExit(c);
+      ok = noReason && noNote && applied && !!ex && ex.reason === 'goal_met_early' && ex.sessionsNotNeeded.length === 1
+        && ex.sessionsNotNeeded[0] === sixId && plannedSessionTotal(c) === 5 && sessionsCompletedCount(c) === 5;
+      detail = JSON.stringify({noReason, noNote, applied, ex, planned: plannedSessionTotal(c)});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan c4c: an early exit needs a reason, records the unheld session, and shrinks the planned total', ok, detail);
+  })();
+  (function(){                                   // c4d
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust(); DATA.customers = [c]; gp4Acts(c, [1,2,3,4,5,6]);
+      const needGoal = validateGraduationDraft(c, {}).missing.includes('goal');
+      const noGoalOk = validateGraduationDraft(c, {noGoal:true}).ok === true;
+      const applied = applyGraduation(c, {newGoal:{type:'program', text:'Data program live'}, verdict:'partly', note:'n'});
+      const p = primaryGoal(c);
+      ok = needGoal && noGoalOk && applied && c.stage === 'graduated' && !!p && p.text === 'Data program live' && p.verdict === 'partly';
+      detail = JSON.stringify({needGoal, noGoalOk, applied, goal: p && p.text});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan c4d: graduating with no goal needs the no-goal choice or a new goal, which is created on the way', ok, detail);
+  })();
+  (function(){                                   // c4e
+    let ok = false, detail = '';
+    try{
+      const src = String(attachEvents);
+      const calls = (src.match(/requestStageChange\(/g) || []).length;
+      const direct = /[^.\w]changeStage\(/.test(src);
+      const keeps = String(changeStage).includes('scheduleGradReview');
+      const sel = ['dataset.dropzone', 'data-table-stage', '#stage-select'].every(s => src.includes(s));
+      ok = calls === 3 && !direct && keeps && sel;
+      detail = JSON.stringify({calls, direct, keeps, sel});
+    }catch(err){ detail = err.message; }
+    check('grad-plan c4e: the kanban drop, table select and panel select all go through requestStageChange; changeStage still schedules the review', ok, detail);
+  })();
+  (function(){                                   // c4f
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      DATA.riskLog = {};   // the packet builds the risk hub, which prunes/stamps riskLog
+      const c = gp4Cust(); DATA.customers = [c];
+      createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      gp4Acts(c, [1,2,3,4,5]);
+      applyGraduation(c, {verdict:'partly', note:'n', exitReason:'goal_met_early'});
+      const t = buildKnowledgeTransferText(c);
+      const six = getSessionTemplateSet(c)[5];
+      const tally = t.includes('5/5 sessions logged');
+      const line = t.includes(`Session 6 — ${six.title}: not needed (early exit)`);
+      ok = tally && line;
+      detail = JSON.stringify({tally, line});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    check('grad-plan c4f: the packet tally reads the planned total and marks the unneeded session', ok, detail);
+  })();
+  (function(){                                   // c4g
+    let ok = false, detail = '';
+    try{
+      const re = /daysSince|DATA\.config|Days\b|\d{2,}/;
+      const a = String(customerReadyToGraduateSignal), b = String(SIGNAL_DEFS.find(d => d.key === 'ready_to_graduate').detect);
+      ok = !re.test(a) && !re.test(b);
+      detail = JSON.stringify({a: re.test(a), b: re.test(b)});
+    }catch(err){ detail = err.message; }
+    check('grad-plan c4g: ready_to_graduate reads no day count, config value or number', ok, detail);
+  })();
+  (function(){                                   // c4h
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const t = todayISO();
+      const a = gp4Cust('__gp4ha__'); DATA.customers = [a]; gp4Acts(a, [1,2,3,4,5,6]);
+      createGoal(a, {type:'publish', text:'x'});
+      applyGraduation(a, {verdict:'met', note:'n'});
+      const withGoal = JSON.stringify(a.graduation) === JSON.stringify({on:t, noGoal:false});
+      const b = gp4Cust('__gp4hb__'); DATA.customers = [b]; gp4Acts(b, [1,2,3,4,5,6]);
+      applyGraduation(b, {noGoal:true});
+      const noGoal = JSON.stringify(b.graduation) === JSON.stringify({on:t, noGoal:true});
+      const d = gp4Cust('__gp4hc__'); DATA.customers = [d]; gp4Acts(d, [1,2,3,4,5,6]);
+      applyGraduation(d, {newGoal:{type:'program', text:'y'}, verdict:'met', note:'n'});
+      const newGoal = JSON.stringify(d.graduation) === JSON.stringify({on:t, noGoal:false});
+      const e = gp4Cust('__gp4hd__'); DATA.customers = [e]; gp4Acts(e, [1,2,3,4,5,6]);
+      const failed = applyGraduation(e, {}) === false && !e.graduation && e.stage === 'ttfv1';
+      ok = withGoal && noGoal && newGoal && failed;
+      detail = JSON.stringify({withGoal, noGoal, newGoal, failed});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan c4h: graduating through the confirm writes the graduation marker; a failed draft writes none', ok, detail);
+  })();
+
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
@@ -17555,7 +17791,7 @@ function renderRow(c){
              <span class="session-next-label">Next — Session ${nextSession.number}: ${escapeHtml(nextSession.template.title)}</span>`
           : `<span class="session-tag ttfv2">Complete</span><span class="session-next-label">All ${c.totalSessions} sessions logged</span>`
         }
-        <span class="session-count-label">${completed}/${c.totalSessions} sessions</span>
+        <span class="session-count-label">${completed}/${plannedSessionTotal(c)} sessions</span>
       </div>
       ${renderRunwayStrip(c)}`}
     </div>
@@ -17602,7 +17838,7 @@ function renderTableView(){
         </td>
         <td>${inImplementation(c) ? '—' : healthScore(c) + '%'}</td>
         <td>${d===null?'—':d+'d'}</td>
-        <td>${completed}/${c.totalSessions}</td>
+        <td>${completed}/${plannedSessionTotal(c)}</td>
         <td>${renderGradTag(c)}</td>
       </tr>
     `;
@@ -17662,7 +17898,7 @@ function renderKanbanCard(c){
       </div>
       <div class="session-bar-wrap">
         <div class="session-bar"><div class="session-bar-fill" style="width:${pct}%"></div></div>
-        <div class="session-bar-label">${completed}/${c.totalSessions}</div>
+        <div class="session-bar-label">${completed}/${plannedSessionTotal(c)}</div>
       </div>
       <div class="kanban-card-meta">${d===null ? 'no activity' : d+'d since contact'}${inImplementation(c) ? '' : ' · ' + renderGradTag(c)}</div>
     </div>
@@ -18341,7 +18577,7 @@ function buildRiskExecSummary(item){
     String(item.detail || '').replace(/\s+/g, ' ').trim(),
     inImplementation(c)
       ? `In implementation, ${implPhaseLabel(getImplementationState(c).phase)}.`
-      : `${healthScore(c)}% health, ${sessionsCompletedCount(c)}/${c.totalSessions} sessions.`,
+      : `${healthScore(c)}% health, ${sessionsCompletedCount(c)}/${plannedSessionTotal(c)} sessions.`,
     `Source: ${riskProvenanceLabel(item)}; ${state}.`
   ].filter(Boolean).map(p => /[.!?…]$/.test(p) ? p : p + '.');
   let out = '';
@@ -19258,6 +19494,7 @@ const EFFORT_MIN = {
   'signal:thin_milestone_prep': 25, // prep is the work
   'signal:domain_imbalance': 10,
   'signal:ready_to_set_date': 5,
+  'signal:ready_to_graduate': 10,  // record the verdict and graduate
   'signal:value_undefined': 5,
   'signal:positive_language': 5,
   'signal:fast_pace': 5,
@@ -19283,7 +19520,7 @@ function effortMinutesFor(source){
 const SIGNAL_PANEL_TAB = {
   flagged:'activity', escalating_risk:'sessions', behind_target:'sessions',
   stalled:'sessions', risk_language:'activity', no_value_evidence:'overview',
-  goal_changed:'overview', late_gate:'gainsight', thin_milestone_prep:'sessions', domain_imbalance:'details',
+  goal_changed:'overview', ready_to_graduate:'overview', late_gate:'gainsight', thin_milestone_prep:'sessions', domain_imbalance:'details',
   slow_pace:'sessions', ready_to_set_date:'details', value_undefined:'overview',
   renewal_pressure:'sessions',
   positive_language:'activity', fast_pace:'sessions', session_gap:'activity'
@@ -20453,7 +20690,7 @@ function buildKnowledgeTransferText(c){
   L.push(`Module: ${c.module} · Stage: ${(DATA.config.stages.find(s=>s.key===c.stage)||{}).label || c.stage}`);
   L.push(`Implemented: ${fmtDate(c.implementationDate)}${c.targetGraduationDate ? ` · Target graduation: ${fmtDate(c.targetGraduationDate)}` : ''}`);
   if(!inImplementation(c)){
-    L.push(`Status at transfer: ${accountStateLabel(c)} · ${sessionsCompletedCount(c)}/${c.totalSessions} sessions logged`);
+    L.push(`Status at transfer: ${accountStateLabel(c)} · ${sessionsCompletedCount(c)}/${plannedSessionTotal(c)} sessions logged`);
   } else {
     const impl = getImplementationState(c);
     L.push(`Status at transfer: in partner-led implementation (${implPhaseLabel(impl.phase)})${impl.partner ? ` · partner: ${impl.partner}` : ''}`);
@@ -20470,9 +20707,11 @@ function buildKnowledgeTransferText(c){
   if(inImplementation(c)) L.push('(curriculum not started — account was still in implementation)');
   else {
     const templates = getSessionTemplateSet(c);
+    const skipped = new Set((getExit(c) || {}).sessionsNotNeeded || []);
     templates.forEach((tpl, i) => {
       const act = getSessionActivity(c, i + 1);
-      L.push(`Session ${i+1} — ${tpl.title}: ${act ? 'held ' + fmtDate(act.date) : 'not held'}`);
+      const notNeeded = !act && (skipped.has(tpl.id) || skipped.has(String(i + 1)));
+      L.push(`Session ${i+1} — ${tpl.title}: ${act ? 'held ' + fmtDate(act.date) : notNeeded ? 'not needed (early exit)' : 'not held'}`);
     });
   }
 
@@ -21841,7 +22080,7 @@ function renderDetailsTab(c, risk){
     </div>
     <div class="session-bar-wrap" style="margin-bottom:16px;">
       <div class="session-bar"><div class="session-bar-fill" style="width:${c.totalSessions ? (sessionsCompletedCount(c)/c.totalSessions*100) : 0}%"></div></div>
-      <div class="session-bar-label">${sessionsCompletedCount(c)}/${c.totalSessions} sessions logged</div>
+      <div class="session-bar-label">${sessionsCompletedCount(c)}/${plannedSessionTotal(c)} sessions logged</div>
     </div>
 
     <!-- v89: editable by hand as well as by import. An import you cannot correct
@@ -22878,7 +23117,7 @@ The draft is discarded. The risk itself stays open.`)) return;
       zone.closest('.kanban-col').classList.remove('drag-over');
       const custId = e.dataTransfer.getData('text/plain');
       const cust = DATA.customers.find(x=>x.id===custId);
-      if(cust){ changeStage(cust, zone.dataset.dropzone); saveData(); render(); }
+      if(cust){ requestStageChange(cust, zone.dataset.dropzone); }
     });
   });
 
@@ -22907,7 +23146,7 @@ The draft is discarded. The risk itself stays open.`)) return;
 
   $$('[data-table-stage]').forEach(sel => sel.addEventListener('change', e=>{
     const cust = DATA.customers.find(c=>c.id===sel.dataset.tableStage);
-    if(cust){ changeStage(cust, e.target.value); saveData(); render(); }
+    if(cust){ requestStageChange(cust, e.target.value); }
   }));
   $$('[data-table-risk]').forEach(sel => sel.addEventListener('change', e=>{
     const cust = DATA.customers.find(c=>c.id===sel.dataset.tableRisk);
@@ -23731,7 +23970,7 @@ The draft is discarded. The risk itself stays open.`)) return;
       applyCSRDToggle(c, e.target.checked);
       if(saveData()) showToast(e.target.checked ? 'CSRD curriculum applied (where defined)' : 'Reverted to base curriculum'); render();
     });
-    $('#stage-select') && $('#stage-select').addEventListener('change', e=>{ changeStage(c, e.target.value); saveData(); render(); });
+    $('#stage-select') && $('#stage-select').addEventListener('change', e=>{ requestStageChange(c, e.target.value); });
     $('#total-sessions') && $('#total-sessions').addEventListener('change', e=>{
       let n = parseInt(e.target.value, 10) || 8;
       const minSessions = minimumPlannedSessions(c);
@@ -24371,6 +24610,87 @@ function openGoalFormModal(c, mode, onDone){
     render();
     if(typeof onDone === 'function') onDone(g);
   });
+}
+
+/* Graduation Plan: the confirm every UI stage change to Graduated passes through
+   (requestStageChange). Inputs only re-validate the draft; none calls render(), so a
+   blur never swallows the next click. A "met" verdict with open gates prompts for the
+   note and never blocks (R4/A8). */
+function openGraduationConfirmModal(c){
+  const p = primaryGoal(c);
+  const unheldIds = unheldPlannedSessions(c);
+  const set = getSessionTemplateSet(c);
+  const unheldTitles = unheldIds.map(id => { const i = set.findIndex(t => t.id === id); const n = i >= 0 ? i + 1 : parseInt(id, 10);
+    const t = set[n - 1]; return `Session ${n}${t ? ' — ' + t.title : ''}`; });
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="modal" style="max-width:480px;">
+      <h3>Graduate ${escapeHtml(c.name)}</h3>
+      ${p ? `<p class="gp-meta" style="margin:0 0 10px;">Primary goal: ${escapeHtml(p.text)} (${p.gates.filter(g => g.done).length} of ${p.gates.length} gates done)</p>` : `
+      <p class="gp-meta" style="margin:0 0 10px;">No hand-off goal is set. Add one now, or graduate without one.</p>
+      <div id="gc-nogoal-wrap">
+        <div class="field" style="margin-bottom:10px;"><label for="gc-gtype">Goal type</label>
+          <select id="gc-gtype">${GOAL_TYPES.map(t => `<option value="${escapeAttr(t.key)}">${escapeHtml(t.label)}</option>`).join('')}</select></div>
+        <div class="field" style="margin-bottom:10px;"><label for="gc-gtext">Goal</label>
+          <textarea id="gc-gtext" rows="2" maxlength="300" placeholder="What was this account meant to be able to do?"></textarea></div>
+        <label class="checklist-item" style="margin:0 0 10px;"><input type="checkbox" id="gc-nogoal"> Graduate with no goal recorded</label>
+      </div>`}
+      <div id="gc-verdict-wrap">
+        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;">
+          ${GOAL_VERDICTS.filter(v => v.key !== 'replaced').map(v => `<label class="checklist-item" style="margin:0;"><input type="radio" name="gc-verdict" value="${escapeAttr(v.key)}"> ${escapeHtml(v.label)}</label>`).join('')}
+        </div>
+        <p id="gc-prompt" class="gp-meta" style="display:none; margin:0 0 6px; color:var(--warn, var(--text-dim));"></p>
+        <div class="field" style="margin-bottom:10px;"><label for="gc-note">Verdict note</label>
+          <textarea id="gc-note" rows="2" maxlength="500" placeholder="One line on why"></textarea></div>
+      </div>
+      ${unheldIds.length ? `<div id="gc-exit-wrap" style="margin-bottom:10px;">
+        <p class="gp-meta" style="margin:0 0 6px;">Early exit. Not held: ${unheldTitles.map(escapeHtml).join('; ')}</p>
+        <div class="field" style="margin-bottom:8px;"><label for="gc-exit">Why graduate early?</label>
+          <select id="gc-exit"><option value="">Choose a reason</option>${EXIT_REASONS.map(r => `<option value="${escapeAttr(r.key)}">${escapeHtml(r.label)}</option>`).join('')}</select></div>
+        <div class="field" style="margin-bottom:0;"><label for="gc-exitnote">Exit note (required for Other)</label>
+          <input type="text" id="gc-exitnote" maxlength="500"></div>
+      </div>` : ''}
+      <div class="modal-actions">
+        <button class="btn" id="gc-cancel">Cancel</button>
+        <button class="btn btn-primary" id="gc-ok" disabled>Graduate</button>
+      </div>
+    </div>`;
+  document.body.appendChild(backdrop);
+  const q = s => backdrop.querySelector(s);
+  const draft = () => {
+    const d = {note: q('#gc-note').value};
+    const v = q('input[name="gc-verdict"]:checked'); if(v) d.verdict = v.value;
+    if(!p){
+      if(q('#gc-nogoal').checked) d.noGoal = true;
+      else if(cleanGoalText(q('#gc-gtext').value, 300)) d.newGoal = {type: q('#gc-gtype').value, text: q('#gc-gtext').value, source: 'osm'};
+    }
+    if(q('#gc-exit')){ d.exitReason = q('#gc-exit').value; d.exitNote = q('#gc-exitnote').value; }
+    return d;
+  };
+  const refresh = () => {
+    const d = draft(), r = validateGraduationDraft(c, d);
+    const hasGoal = !!p || !!d.newGoal;
+    q('#gc-verdict-wrap').style.display = hasGoal ? '' : 'none';
+    const pr = q('#gc-prompt'); pr.style.display = r.notePrompt ? 'block' : 'none'; pr.textContent = r.notePrompt || '';
+    q('#gc-ok').disabled = !r.ok;
+  };
+  backdrop.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', refresh); el.addEventListener('change', refresh);   // never render(): a blur must not swallow the next click
+  });
+  q('#gc-cancel').addEventListener('click', ()=>backdrop.remove());
+  backdrop.addEventListener('click', e=>{ if(e.target===backdrop) backdrop.remove(); });
+  q('#gc-ok').addEventListener('click', ()=>{
+    const d = draft();
+    if(!validateGraduationDraft(c, d).ok) return;
+    markUndoable('graduate');
+    if(!applyGraduation(c, d)){ showToast('That graduation could not be saved.'); return; }
+    saveData();
+    backdrop.remove();
+    showToast(`${c.name} graduated.`);
+    render();
+  });
+  refresh();
 }
 
 function renderNewCsrdField(moduleName){
@@ -25672,7 +25992,7 @@ function categorizeAccountForReport(c){
       ? 'Projected to miss the target graduation date'
       : riskReasonText(c)};
   }
-  return {key:'active', reason: `Last touchpoint ${d} day${d===1?'':'s'} ago · ${sessionsDone}/${c.totalSessions} sessions complete`};
+  return {key:'active', reason: `Last touchpoint ${d} day${d===1?'':'s'} ago · ${sessionsDone}/${plannedSessionTotal(c)} sessions complete`};
 }
 function buildProgressReportModel(){
   const groups = {};
@@ -25684,7 +26004,7 @@ function buildProgressReportModel(){
       name: c.name, module: c.module,
       stage: impl ? `Implementation · ${implPhaseLabel(getImplementationState(c).phase)}` : (DATA.config.stages.find(s=>s.key===c.stage) || {label:c.stage}).label,
       health: impl ? null : healthScore(c),
-      sessions: `${sessionsCompletedCount(c)}/${c.totalSessions}`,
+      sessions: `${sessionsCompletedCount(c)}/${plannedSessionTotal(c)}`,
       days: daysSince(lastActivityDate(c.id) || c.implementationDate),
       reason: cat.reason,
       nextAction: getRecommendedAction(c).action
