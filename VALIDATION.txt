@@ -29,8 +29,8 @@ tree is CRLF and hashes differently from the blob. The guide is the same
 shape: LF blob, CRLF working tree.
 
   osm-book-of-business-tracker-1.0.html   (LF blob, `git cat-file -p
-    :<file> | sha256sum`, 1,628,191 bytes, LF blob; re-measured in fix M3r; the autocrlf working tree hashes differently)
-    e159414c8392f8329e23191bf68afb7a25739d15d1c80417fa6238418d3cb66b
+    :<file> | sha256sum`, 1,632,025 bytes, LF blob; re-measured in fix M4r; the autocrlf working tree hashes differently)
+    704c91d0535487e76a1aeaeec5600e7c095bc2e87e1478b833eb5841dd61cab5
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        384/384 passed, 0 failed
+  window.runSelfChecks()        385/385 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1143,3 +1143,34 @@ CURRICULUM IDENTITY — FIX M3r (suite 383 -> 384)
     Placed 21, Stamped 21, unstamped 0, notes moved 45, lost 0, verdict changed 0,
     idempotent true, Live true. SHA-256 block re-measured (tracker e159414c...,
     1,628,191 bytes, LF blob).
+
+CURRICULUM IDENTITY — FIX M4r (suite 384 -> 385)
+  - WHAT: the v12 -> v13 step (and v11 -> v12) resolved a CSRD account's curriculum
+    via `migrationCurriculumFor` BEFORE `applyDataBackfills` adds a missing
+    `<module> (CSRD)` key. With the key absent the account was migrated against the
+    BASE curriculum and then resolved to the CSRD defaults at runtime, so evidence
+    on non-shared positions stamped base ids that do not exist there (permanent
+    orphans). R1 had already limited the damage to the non-shared positions.
+  - CHANGED: `migrationCurriculumFor` falls back, read-only, to the shipped default
+    for the account's CSRD key (through `LEGACY_TEMPLATE_KEYS`) only when the
+    config has NO such key (`undefined`; an existing key, even empty, behaves as
+    before). Those default templates already carry the ids the backfill copies, so
+    stamps agree; nothing already stamped is re-minted.
+  - RED first: `runSelfChecks: 384/385` with `FAIL  identity M4r: a v12 CSRD
+    account whose config lacks the CSRD key migrates against the CSRD defaults and
+    orphans nothing — {"ticked":11,"evidencedBefore":11,"csrdOnly":4,"stamped":11,
+    "evidencedAfter":11,"orphaned":4}`. Measured loss on current code: 4 of 11
+    evidenced criteria (the CSRD-only positions) orphaned.
+  - Fixture: one Sustainability account, reportsCSRD, plan of 8, all 11 runtime
+    criteria evidenced (4 on CSRD-only positions), converted by _v12Book to
+    schema 12 with the `Sustainability (CSRD)` key deleted. After prepareBookData:
+    literal 11 stamped, 11 evidenced, 0 orphaned.
+  - MUTATION PROOF (production code): `allTemplates[csrdKey] === undefined` in the
+    fallback replaced by `false`. Red: `runSelfChecks: 384/385`, same FAIL
+    (`orphaned:4`). Restore: `cmp fixed.html tracker` printed nothing; then green.
+  - MEASURED THIS SESSION: suite `385/385`, guide `18/18`. Dry runs after the fix:
+    `--from 11`: Accounts 12, Ticks before 57, Evidence after 56, ticks lost 0,
+    notes changed 1 (unexplained 0), second-pass doubling false. `--from 12`:
+    Placed 21, Stamped 21, unstamped 0, notes moved 45, lost 0, verdict changed 0,
+    idempotent true, Live true. SHA-256 block re-measured (tracker 704c91d0...,
+    1,632,025 bytes, LF blob).
