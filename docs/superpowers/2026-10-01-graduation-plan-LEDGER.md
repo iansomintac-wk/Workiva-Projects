@@ -26,7 +26,7 @@ Paid runs approved: none ($0).
 
 | Id | Expected | Measured | Where |
 |---|---|---|---|
-| A1 | 389 + new checks, 0 failed | **427/427**, 0 failed (389 + 38 new) | lead re-run at `35352b1` |
+| A1 | 389 + new checks, 0 failed | **427/427**, 0 failed (389 + 38 new) at `35352b1`; **436/436**, 0 failed after the review fixes (389 + 47 new) | lead re-run at `35352b1` and `2b816fd` |
 | A2 | all accounts `goals:[]`, `exit:null`; 5 default modules in `config.goalGates` | v13 seed, 7 accounts: `goals:[]` 7/7, `exit:null` 7/7, `graduation:null` 7/7; default modules 5/5 (+2 CSRD, +1 other); Sustainability gates 5/5/3/3; FR 0/0/0/0; GRC 0/0/0/0; invented exits 0; second pass idempotent; 0 console errors | lead re-run at `f99a948` |
 | A3 | 0 Today rows from `goal_changed` + `ready_to_graduate` after migration | rows=0, detect=0, out of 15 Today rows on 17 accounts; `goals:[]` 17/17, `exit:null` 17/17, schema 14 | scenario run, lead re-run at `35352b1` |
 | A4 | Scenario A: `ready_to_graduate` fires | fired=true (gates 5/5, sessions 8/8). **Headline:** `late_gate` while the account's 3 Gainsight compliance gates are open; `ready_to_graduate` ("Record the goal verdict and graduate") once they are closed, with a Today row | same |
@@ -34,6 +34,26 @@ Paid runs approved: none ($0).
 | A6 | Scenario C: change line in packet; `goal_changed` until acknowledged | packet "Changed Oct 1, 2026: Publish FY2026 report → Ready for next year's reporting cycle, because Report moved to consultants; customer owns next cycle."; fires before ack (true), not after (false); headline before = `goal_changed` with a Today row, after = `next_session` | same |
 | A7 | FR account: goal, verdict, graduate; packet "0 gates" | gates=0 (the shipped FR default), `confirmGraduation`=true, stage graduated, verdict partly; packet "Gates: 0 gates" | same |
 | A8 | met + open gates: confirm asks note, does not block | asked=true, blocked=false; with no note `{ok:false, missing:[note], notePrompt:"Met with 2 open gates (…). Say why that is acceptable."}` (a note is always required, §4.4); with a note ok=true and the confirm succeeds | same |
+
+## Final review (top model, `e780666..cb6cf8d`)
+
+Report: `evidence/graduation-plan-final-review.md`. Verdict: **ready to merge with fixes**, with 2 Important issues and 13 Minor.
+
+| Round | Findings | Commit | Checker | Lead re-run |
+|---|---|---|---|---|
+| F1 | I1: an exit record survived re-opening and was never rewritten on re-graduation. I2: "Change goal" was offered on graduated accounts | `aad7c8b` | pass with notes | 431/431, scenarios 6/6 |
+| F2 | Minor 1-5, 11, 13 + stale gate `aria-label` | `6bb0a54` | pass with notes | 436/436, scenarios 6/6 |
+| F3 | Minor 6-10 (docs, SHA-256 re-measure, spec §5/§8 correction notes) | `2b816fd` | pass with notes | 436/436, scenarios 6/6; tracker SHA-256 `3dab70bb…c713`, 1,751,637 bytes |
+
+**Listed, not fixed:** Minor 12. c4e and c6b count source text; behavioural coverage comes from c6d and the A5/A7 scenarios.
+**Lead decision for Ian to confirm or overrule (I1):** when an account leaves Graduated, its stored `c.exit` and `c.graduation`
+are **kept, not deleted**. They take effect only while the stage is graduated (`getExit`/`getGraduation`), and every graduation
+rewrites both. The alternative is to clear both when an account is re-opened.
+**Other notes carried:**
+- The Excel import bypasses the confirm (P1).
+- The click guard on "Change goal" and the Settings DOM have no headless check.
+- `confirmGraduation` ignores the `saveData` return, as the old code did.
+- The F3 evidence note says the "same counts" phrase doesn't exist. It does, at spec lines 281-282, split across a line break. The correction notes cover it.
 
 ## Look calls for Ian (batched)
 
@@ -53,3 +73,4 @@ evidence notes:
 - 2026-10-01: baseline measured; worktree created; plan written (`8e19294`, top model; 7 tasks, steps 8/8/7/8/6/6/7, estimated suite 389→417). Plan-level choices P1-P6 plus one open question (no-goal graduation vs historic graduation marker). Stopped for Ian's plan approval.
 - 2026-10-01: **Ian approved the plan** ("Approve as written", P1-P6 included). **Ruling M1 (no-goal marker):** Ian chose "Store a marker": the confirm writes a small graduation record (e.g. `c.graduation = {on, noGoal:true}`), so the packet says "No goal recorded" plainly, as §4.4 wants. This adds one field to schema 14. Plan amended for it before build 1.
 - 2026-10-01: tasks 1-7 built and checked; A1-A8 measured (table above). Next: final whole-branch review on the top model.
+- 2026-10-01: final review fixes F1-F3 built and checked; final verification at `2b816fd`: suite 436/436, scenarios 6/6, A2 dry-run exit 0. **Stopped for Ian's merge call** (branch `graduation-plan`).
