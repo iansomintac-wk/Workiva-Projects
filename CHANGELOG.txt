@@ -62,7 +62,10 @@ curriculum-piece-1, not yet merged).
     - Settings has a per-row deliverable editor: reword a line, reorder it,
       add or remove one. Rewording keeps the line's evidence.
     - Sessions can be reordered. Notes, authored runbooks and evidence stay
-      with the session, not the position.
+      with the session, not the position. Logged calls (activities) still
+      match by session number, so deleting or reordering a session moves its
+      calls to whichever session now holds that number. That is pending a
+      decision (M1) and has not been changed.
     - Deleting a session asks first and says how many accounts have evidence
       on it.
     - Schema 13. Opening an older book migrates it in place: no verdict
@@ -70,7 +73,7 @@ curriculum-piece-1, not yet merged).
       session. Ids survive Export JSON, Import JSON and the file backup. An
       import with malformed ids is rejected rather than repaired, because
       repairing would orphan its evidence.
-    - 379 self-checks (was 378).
+    - 379 self-checks (was 369).
     - Export JSON before first opening this build on a real book: schema 13
       is not readable by an older build.
 

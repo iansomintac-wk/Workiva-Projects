@@ -149,7 +149,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 - **The migration has not run against a real book.** It has run only against the fixtures and the two seeds.
 - Correction: VALIDATION.txt's SHA-256 block had been stale since before piece 1. The tracker blob itself
   carries CRLF (25,179 CR lines at master `85672e6`), so its two forms coincide; the guide is LF-blob,
-  CRLF-tree. Re-measured and rewritten.
+  CRLF-tree. Re-measured and rewritten. (Corrected in fixes: 25,179 was the line count; the tracker blob has 0 CR bytes, `ad0c1fdd…` is the LF blob.)
 - Evidence: `docs/superpowers/evidence/curriculum-piece-1-task6.md`.
 
 ## Task 7 results (build 6, 2026-09-30, measured)
@@ -209,3 +209,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
   Ranked list: `evidence/curriculum-piece-1-review.md`.
 - **Correction to Task 6 above: the tracker blob has 0 CR bytes** at master and HEAD. 25,179 is its line count, not a CR count.
   `ad0c1fdd…` is the LF blob. VALIDATION's wording gets fixed in the fix session (D1).
+
+## Review fixes (2026-09-30)
+
+- **D1–D3 (docs).** Measured: tracker blob at HEAD has 0 CR bytes, LF-blob SHA-256 starts `ad0c1fdd`; `check(` lines added master..HEAD = 10, master VALIDATION said 369/369, so 369 + 10 = 379. Changed: VALIDATION SHA wording (LF blob; autocrlf tree hashes differently), CHANGELOG "was 378" to "was 369", CHANGELOG now says logged calls still match by session number (pending M1), Task 6 ledger line marked corrected. No tracker edit, no count bump.

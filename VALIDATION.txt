@@ -21,14 +21,15 @@ the moment the HTML changes; re-measure, don't edit in place.
 
 Correction: the previous block (tracker 815cd57a… working tree / 774b4b79…
 LF blob) had been stale since before piece 1. It said the tracker's two forms
-differ, with an LF blob. In fact the tracker blob itself carries CRLF: 25,179
-CR lines at master 85672e6, and 25,905 now. So for the tracker the
-working-tree and blob forms are the same bytes. The guide is the reverse
-of what the block said. Its blob is LF and unchanged, while its working tree
-in this checkout (core.autocrlf=true) is CRLF.
+differ, with an LF blob. Corrected again in the review fixes (D1): the
+tracker blob is LF too (0 CR bytes at master and HEAD; 25,179 was its line
+count at master 85672e6, not a CR count), so ad0c1fdd... below is the LF
+blob hash. This checkout has core.autocrlf=true, so the tracker working
+tree is CRLF and hashes differently from the blob. The guide is the same
+shape: LF blob, CRLF working tree.
 
-  osm-book-of-business-tracker-1.0.html   (1,607,191 bytes, working tree
-    = committed blob, both measured)
+  osm-book-of-business-tracker-1.0.html   (LF blob, `git cat-file -p
+    HEAD:<file> | sha256sum`; the autocrlf working tree hashes differently)
     ad0c1fdd818e89253e9bb7fb79c603cf895c28adfd097300dda995298d4bdff6
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
