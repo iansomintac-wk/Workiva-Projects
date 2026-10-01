@@ -5,7 +5,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 | Piece | Spec | Session prompt | State | Self-checks after | Commit |
 |---|---|---|---|---|---|
-| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **building (tasks 2–5 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). Next: build 5 (`sessions/curriculum-piece-1-build-5.md`) | **377/377** measured 2026-09-30 (guide 18/18) → 379 planned | task 2: `29689c4`; task 3: `2a57350`; task 4: `dd1ccf4`; task 5: see git log |
+| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **building (tasks 2–6 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). Next: build 6 (`sessions/curriculum-piece-1-build-6.md`) | **378/378** measured 2026-09-30 (guide 18/18) → 379 planned | task 2: `29689c4`; task 3: `2a57350`; task 4: `dd1ccf4`; task 5: `05e2356`; task 6: see git log |
 | 2 Versioned curriculum + pinning | not written (outline in umbrella §2) | not written | after piece 1 | | |
 | 3 Authoring UI + runbook editor | not written (outline in umbrella §2) | not written | after piece 2 | | |
 | 4 Share, fork, upgrade | not written (outline in umbrella §2) | not written | after piece 3 | | |
@@ -112,6 +112,35 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
   "5 accounts have evidence on this session's deliverables".
 - Deviation, kept: clearing a deliverable's input removes the row and so re-renders the modal (the plan
   re-renders only the app on reword, which would leave a blank input and shifted row indices).
+
+## Task 6 results (build 5, 2026-09-30, measured)
+
+- Before: suite 377/377, guide 18/18, v11 dry-run exit 0 (12 accounts, 57 ticks -> 56 evidence, 0 lost,
+  `sessionNotes changed accounts: 1`, which was reported but never gated). RED: `377/378`, A5
+  `stamped:0, unstamped:33, evidencedBefore:33, schema:12`.
+- After: suite **378/378**, guide **18/18**. `--from 11`: exit 0, 0 ticks lost, notes changed 1
+  (unexplained 0). `--from 12`: exit 0, 6 accounts, 22 evidenced, 21 placed / 21 stamped (the 22nd is the
+  orphan), 45 notes moved, 0 lost, 0 verdict changes, second pass idempotent. Re-run by the lead, not
+  just read from the implementer.
+- The `sessionNotes changed: 1` is `legacy-badkey` (key `'3 '`), dropped by `backfillCustomerRecord` v48.
+  The v11 dry-run now compares notes modulo the numeric -> id re-key, and an unexplained difference **fails**
+  it (exit 1). Before, it was only reported.
+- Mutation proofs: the implementer skipped the stamping loop (A5 red `stamped:0`, `--from 12` exit 1,
+  "placed but unstamped 21"). A fresh checker ran two more: skipping the notes re-key (A5 `numericLeft:24`,
+  `--from 12` exit 1) and dropping only `sourceDeliverableId` (A5 `stamped:0`). Each was reverted
+  byte-identical.
+- **Unplanned production change, kept (Ian may overrule):** the v11 -> 12 step now skips `ss_` note keys.
+  Once v12 -> 13 existed, `phaseA the migration is idempotent` went red: it forces `schemaVersion = 11` over
+  an already-migrated book, and the v11 step read `ss_` keys as bad keys and minted duplicate orphans. A
+  real v11 book can't have `ss_` keys, so real migrations are unchanged. The checker's alternative is to
+  change that check instead and keep production cleaner.
+- Probes unchanged from Task 4, as expected: spec `delete_session2` reworded `[0,0]`, orphaned `[0,1]`;
+  measure probe notes still 42/48, because it writes numeric keys after load.
+- **The migration has not run against a real book.** It has run only against the fixtures and the two seeds.
+- Correction: VALIDATION.txt's SHA-256 block had been stale since before piece 1. The tracker blob itself
+  carries CRLF (25,179 CR lines at master `85672e6`), so its two forms coincide; the guide is LF-blob,
+  CRLF-tree. Re-measured and rewritten.
+- Evidence: `docs/superpowers/evidence/curriculum-piece-1-task6.md`.
 
 ## Rules carried between sessions
 

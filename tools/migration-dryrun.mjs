@@ -1,6 +1,12 @@
 #!/usr/bin/env node
-// Dry-run harness for the v11 -> v12 outcome-criteria/evidence migration.
-//   node tools/migration-dryrun.mjs [file.html] [--seed tools/legacy-seed.js] [--out .artifacts/migration-dryrun.md]
+// Dry-run harness for the schema migrations that touch recorded evidence.
+//   node tools/migration-dryrun.mjs [file.html] [--from 11|12] [--seed <seed.js>] [--out <report.md>]
+//   --from 11 (default): the v11 -> v12 outcome-criteria/evidence migration, then 12 -> 13
+//                        (seed tools/legacy-seed.js, report .artifacts/migration-dryrun.md).
+//   --from 12:           the v12 -> v13 curriculum-identity migration (piece 1): every verdict
+//                        unchanged, every placed item stamped, numeric notes re-keyed to
+//                        session ids (seed tools/legacy-seed-v12.js, report
+//                        .artifacts/migration-dryrun-v12.md).
 // Builds a legacy (schemaVersion 11) book in the page, snapshots every ticked
 // deliverable, runs the book through the app's REAL import boundary
 // (prepareBookData), snapshots the result, reconciles every tick against its
@@ -34,8 +40,10 @@ const positional = args.filter((a, i) =>
   !a.startsWith('--') && !(i > 0 && args[i - 1].startsWith('--')));
 
 const target = resolve(positional[0] || 'osm-book-of-business-tracker-1.0.html');
-const seedPath = resolve(flag('seed', 'tools/legacy-seed.js'));
-const outPath = resolve(flag('out', '.artifacts/migration-dryrun.md'));
+const FROM = flag('from', '11');
+if (FROM !== '11' && FROM !== '12') { console.error(`--from must be 11 or 12, got ${FROM}`); process.exit(2); }
+const seedPath = resolve(flag('seed', FROM === '12' ? 'tools/legacy-seed-v12.js' : 'tools/legacy-seed.js'));
+const outPath = resolve(flag('out', FROM === '12' ? '.artifacts/migration-dryrun-v12.md' : '.artifacts/migration-dryrun.md'));
 /* A RANDOM port per invocation — see selfcheck.mjs: a fixed one lets a Chrome
    that outlived its launcher (SIGKILL doesn't reliably take the process tree
    down on Windows) keep answering for a stale page holding a previous build. */
@@ -194,6 +202,97 @@ if (!seedResult.startsWith('ok:')) {
 }
 console.log(`Seeded: ${seedResult.slice(3)}`);
 
+// --from 12: the v12 -> v13 identity migration. Same shape as the v11 analysis —
+// everything computed in-page with the app's own functions.
+if (FROM === '12') {
+  const v12Expr = `(() => { try {
+    function clone(x){ return JSON.parse(JSON.stringify(x)); }
+    const raw = window.__LEGACY_BOOK__;
+    if(!raw) return JSON.stringify({__harnessError__: 'window.__LEGACY_BOOK__ was not set by the seed'});
+    const reset = () => { if(typeof _renderMemoResets !== 'undefined') _renderMemoResets.forEach(r => r()); };
+    const strip = list => list.map(x => { const y = Object.assign({}, x); delete y.sourceSessionId; delete y.sourceDeliverableId; return y; });
+    const triple = c => JSON.stringify([strip(outcomeCriteriaFor(c)), outcomeVerdict(c), ttfvDays(c)]);
+    const prevData = DATA;
+    let before, after;
+    try {
+      // BEFORE: the same book, normalized but NOT migrated — today's matching (passes 1 and 2).
+      const b = clone(raw);
+      DATA = b; normalizeActivityCollections(b); applyDataBackfills(b); reset();
+      before = {schema: raw.schemaVersion, accts: b.customers.map(c => ({id: c.id, name: c.name,
+        triple: triple(c),
+        evidenced: outcomeCriteriaFor(c).filter(x => x.evidence).length,
+        placed: outcomeCriteriaFor(c).filter(x => !x.provisional && String(x.source).indexOf('curriculum') === 0).map(x => x.id)}))};
+    } finally { DATA = prevData; reset(); }
+    // AFTER: the REAL import path.
+    const prepared = prepareBookData(clone(raw), 'DryRun12');
+    try {
+      DATA = prepared; reset();
+      after = prepared.customers.map(c => {
+        const cur = (prepared.config.sessionTemplates[c.module] || []);
+        const key = (c.reportsCSRD && Array.isArray(prepared.config.sessionTemplates[c.module + ' (CSRD)'])) ? c.module + ' (CSRD)' : c.module;
+        const list = prepared.config.sessionTemplates[key] || cur;
+        return {id: c.id, triple: triple(c), items: c.outcomeCriteria.items,
+          sessionIds: list.slice(0, c.totalSessions).map(t => t && t.id),
+          notes: c.sessionNotes};
+      });
+    } finally { DATA = prevData; reset(); }
+    const rawById = {}; raw.customers.forEach(c => { rawById[c.id] = c; });
+    const perAccount = before.accts.map((bf, i) => {
+      const af = after[i];
+      const stamped = bf.placed.filter(id => { const r = af.items.find(x => x.id === id); return r && r.sourceDeliverableId && r.sourceSessionId; }).length;
+      const rawNotes = rawById[bf.id].sessionNotes || {};
+      let moved = 0, lostOrChanged = 0;
+      Object.keys(rawNotes).forEach(k => {
+        const sid = af.sessionIds[parseInt(k, 10) - 1];
+        const where = sid ? sid : k;   // a session with no id (placeholder tail) keeps its numeric key
+        if(sid){ if(af.notes[k] !== undefined) lostOrChanged++; else moved++; }
+        if(JSON.stringify(af.notes[where]) !== JSON.stringify(rawNotes[k])) lostOrChanged++;
+      });
+      const numericLeftWithId = Object.keys(af.notes).filter(k => /^\\d+$/.test(k) && af.sessionIds[parseInt(k,10)-1]).length;
+      return {id: bf.id, name: bf.name, verdictSame: bf.triple === af.triple, evidenced: bf.evidenced,
+        placed: bf.placed.length, stamped, unstamped: bf.placed.length - stamped,
+        notesMoved: moved, notesLostOrChanged: lostOrChanged, numericLeftWithId};
+    });
+    const again = prepareBookData(clone(prepared), 'DryRun12-2');
+    const idem = again.customers.map((c, i) => JSON.stringify([c.outcomeCriteria, c.outcomeEvidence, c.sessionNotes])
+      === JSON.stringify([prepared.customers[i].outcomeCriteria, prepared.customers[i].outcomeEvidence, prepared.customers[i].sessionNotes]));
+    return JSON.stringify({schemaBefore: before.schema, schemaAfter: prepared.schemaVersion,
+      current: CURRENT_SCHEMA_VERSION, perAccount, idempotent: idem.every(Boolean)});
+  } catch (e) { return JSON.stringify({__harnessError__: String(e && e.stack || e)}); } })()`;
+  const raw12 = await evaluate(v12Expr, 'v12 analysis');
+  let r12;
+  try { r12 = JSON.parse(raw12); } catch { console.error('v12 analysis returned an unreadable result:', raw12); process.exit(2); }
+  if (r12.__harnessError__) { console.error('Harness failure inside the page: ' + r12.__harnessError__); process.exit(2); }
+  const pa = r12.perAccount;
+  const sum = k => pa.reduce((s, p) => s + p[k], 0);
+  const totals = {accounts: pa.length, evidenced: sum('evidenced'), placed: sum('placed'), stamped: sum('stamped'),
+    unstamped: sum('unstamped'), notesMoved: sum('notesMoved'), notesBad: sum('notesLostOrChanged'),
+    numericLeft: sum('numericLeftWithId'), verdictChanged: pa.filter(p => !p.verdictSame).length};
+  const live = totals.evidenced > 0 && totals.stamped > 0 && totals.notesMoved > 0;
+  const lines12 = [
+    '# Migration dry run — v12 -> v13 curriculum identity', '',
+    `Generated ${new Date().toISOString()} against \`${target.split(/[\\/]/).pop()}\`, seeded from \`${seedPath.split(/[\\/]/).pop()}\`.`, '',
+    `Schema: ${r12.schemaBefore} -> ${r12.schemaAfter} (app current: ${r12.current})`, '',
+    '| Account | verdict same | evidenced | placed | stamped | unstamped | notes moved | notes lost/changed | numeric left (with id) |',
+    '|---|---|---|---|---|---|---|---|---|',
+    ...pa.map(p => `| ${p.name} | ${p.verdictSame} | ${p.evidenced} | ${p.placed} | ${p.stamped} | ${p.unstamped} | ${p.notesMoved} | ${p.notesLostOrChanged} | ${p.numericLeftWithId} |`), '',
+    `Second pass leaves criteria, evidence and notes unchanged: **${r12.idempotent}**`, '',
+    `Liveness (evidenced > 0, stamped > 0, notes moved > 0): **${live}**`, ''
+  ];
+  mkdirSync(dirname(outPath), { recursive: true });
+  writeFileSync(outPath, lines12.join('\n') + '\n', 'utf8');
+  console.log(`Report written to ${outPath}`);
+  console.log('');
+  console.log(`Schema ${r12.schemaBefore} -> ${r12.schemaAfter}  Accounts: ${totals.accounts}  Evidenced: ${totals.evidenced}`);
+  console.log(`Placed: ${totals.placed}  Stamped: ${totals.stamped}  Placed but unstamped (must be 0): ${totals.unstamped}`);
+  console.log(`Notes moved: ${totals.notesMoved}  Notes lost/changed (must be 0): ${totals.notesBad}  Numeric keys left on a session with an id (must be 0): ${totals.numericLeft}`);
+  console.log(`Verdict changed accounts (must be 0): ${totals.verdictChanged}  Second-pass idempotent: ${r12.idempotent}  Live: ${live}`);
+  if (pageErrors.length) { console.log(`\n${pageErrors.length} console error(s) on load:`); for (const e of pageErrors) console.log('  ' + e.split('\n')[0]); }
+  const ok12 = r12.schemaAfter === r12.current && live && totals.unstamped === 0 && totals.notesBad === 0
+    && totals.numericLeft === 0 && totals.verdictChanged === 0 && r12.idempotent && !pageErrors.length;
+  process.exit(ok12 ? 0 : 1);
+}
+
 // 2/3/4/5. Snapshot before, run the REAL import path (prepareBookData), snapshot
 // after, reconcile every tick, and check a second pass for doubling. All done
 // in-page so every computation uses the app's own functions — no reimplementing
@@ -244,12 +343,25 @@ const analysisExpr = `(() => { try {
     evList.forEach(e=>{ if(e.on !== null) nonNullDates.push({customerId:c.id, name:c.name, evidenceId:e.id, on:e.on}); });
 
     const b = beforeById[c.id];
-    const beforeNotesStr = b ? JSON.stringify(b.sessionNotes||{}) : null;
-    const afterNotesStr = JSON.stringify(c.sessionNotes||{});
-    if(beforeNotesStr !== afterNotesStr){
+    /* The 12 -> 13 step (piece 1) moves a numeric note key to its session id, so
+       compare modulo that re-key. What must hold: after the re-key, the notes are
+       exactly the before notes minus the keys backfillCustomerRecord drops as unusable
+       (SESSION_NOTE_KEY_RE). Anything else is a lost or changed note. */
+    const cur = curriculumFor(after.config, c);
+    const rekeyed = {};
+    Object.keys(c.sessionNotes||{}).forEach(k=>{
+      let nk = k;
+      if(/^ss_/.test(k)){ const i = cur.findIndex(t=>t && t.id === k); if(i >= 0) nk = String(i+1); }
+      rekeyed[nk] = c.sessionNotes[k];
+    });
+    const keep = {};
+    Object.keys((b && b.sessionNotes)||{}).forEach(k=>{ if(/^(\\d+|ss_[a-z0-9_]+)$/.test(k)) keep[k] = b.sessionNotes[k]; });
+    const norm = o => JSON.stringify(Object.keys(o).sort().map(k=>[k,o[k]]));
+    const unexplained = norm(rekeyed) !== norm(keep);
+    if(b && norm(b.sessionNotes||{}) !== norm(rekeyed)){
       sessionNotesChanged.push({customerId:c.id, name:c.name,
-        beforeKeys: b ? Object.keys(b.sessionNotes||{}) : [],
-        afterKeys: Object.keys(c.sessionNotes||{})});
+        beforeKeys: Object.keys(b.sessionNotes||{}),
+        afterKeys: Object.keys(c.sessionNotes||{}), unexplained});
     }
 
     const curriculum = curriculumFor(after.config, c);
@@ -388,15 +500,17 @@ push('');
 push('## sessionNotes integrity');
 push('');
 if (result.sessionNotesChanged.length === 0) {
-  push('`sessionNotes` is byte-identical, before vs. after, for every account.');
+  push('`sessionNotes` is identical, before vs. after (modulo the numeric-key -> session-id re-key), for every account.');
 } else {
-  push('`sessionNotes` differs for these accounts after the full `prepareBookData` pass (migration + backfills):');
+  push('`sessionNotes` differs (modulo the numeric-key -> session-id re-key) for these accounts after the full `prepareBookData` pass (migrations + backfills):');
   push('');
   for (const s of result.sessionNotesChanged) {
     push(`- **${s.name}** (\`${s.customerId}\`) — before keys: ${JSON.stringify(s.beforeKeys)}, after keys: ${JSON.stringify(s.afterKeys)}`);
   }
   push('');
-  push('This is expected for `legacy-badkey`: `migrateData` (the v11->v12 step under test) leaves `sessionNotes` untouched and migrates the `\'3 \'`-keyed tick into a custom criterion; the key itself is then deleted by `backfillCustomerRecord` (pre-existing v48 behavior — "an unusable note shell is removed rather than rejecting the whole book" — that runs immediately afterward as part of the same `prepareBookData` call, not by the new migration). The tick survives as evidence; only the unusable shell is gone.');
+  push('Expected only for `legacy-badkey`: the v11->v12 step migrates the `\'3 \'`-keyed tick into a custom criterion; the key itself is then deleted by `backfillCustomerRecord` (pre-existing v48 behavior — "an unusable note shell is removed rather than rejecting the whole book" — which runs in the same `prepareBookData` call). The tick survives as evidence; only the unusable shell is gone. An account is flagged UNEXPLAINED if its notes differ from "before, minus unusable keys, modulo the re-key": that would be a lost or changed note and fails the run.');
+  push('');
+  for (const s of result.sessionNotesChanged) push(`- ${s.name}: ${s.unexplained ? '**UNEXPLAINED**' : 'explained (unusable key dropped)'}`);
 }
 push('');
 
@@ -433,7 +547,7 @@ console.log(`Report written to ${outPath}`);
 console.log('');
 console.log(`Accounts: ${result.totalAccountsBefore}  Ticks before: ${result.totalTicksBefore}  Evidence after: ${result.totalEvidenceAfter}`);
 console.log(`Ticks lost: ${result.vanished.length}  Non-null evidence dates: ${result.nonNullDates.length}  sourceCount:0 anomalies: ${result.sourceCountZero.length}`);
-console.log(`sessionNotes changed accounts: ${result.sessionNotesChanged.length}  Second-pass doubling: ${result.anyDoubled}`);
+console.log(`sessionNotes changed accounts: ${result.sessionNotesChanged.length} (unexplained: ${result.sessionNotesChanged.filter(s=>s.unexplained).length})  Second-pass doubling: ${result.anyDoubled}`);
 if (pageErrors.length) {
   console.log(`\n${pageErrors.length} console error(s) on load:`);
   for (const e of pageErrors) console.log('  ' + e.split('\n')[0]);
@@ -443,5 +557,6 @@ let code = 0;
 if (result.vanished.length > 0) code = 1;
 if (result.nonNullDates.length > 0) code = 1;
 if (result.anyDoubled) code = 1;
+if (result.sessionNotesChanged.some(s => s.unexplained)) code = 1;
 if (pageErrors.length) code = 1;
 process.exit(code);

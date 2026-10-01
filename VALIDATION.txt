@@ -15,28 +15,26 @@ rather than trusting an empty leak list at face value — see THE GUARD'S OWN
 LIVENESS PROOF and GUARD LIVENESS PROOF below.
 
 SHA-256
-Two pairs, because the two forms genuinely differ (core.autocrlf=true on this
-Windows checkout), and stating only one has already been wrong once this
-branch. Re-measured last, after every other edit in this pass was final, per
-the standing instruction; the tracker figures below are stale the moment the
-HTML changes and only the moment it changes; re-measure, don't edit in place.
+Re-measured 2026-09-30 at curriculum piece 1 task 6 (branch curriculum-piece-1),
+after every other edit in that commit was final. The tracker figures are stale
+the moment the HTML changes; re-measure, don't edit in place.
 
-WORKING TREE (CRLF) — what `sha256sum`/`stat` on a checked-out Windows file
-gives you, and what a human opening the file in a Windows editor has:
-  osm-book-of-business-tracker-1.0.html   (1,584,337 bytes)
-    815cd57a225d4124778c69ab62251d6b44ca80e993c94371c750ae7c5e578860
-  osm-runway-onboarding-1.0.html          (185,641 bytes)
+Correction: the previous block (tracker 815cd57a… working tree / 774b4b79…
+LF blob) had been stale since before piece 1. It said the tracker's two forms
+differ, with an LF blob. In fact the tracker blob itself carries CRLF: 25,179
+CR lines at master 85672e6, and 25,905 now. So for the tracker the
+working-tree and blob forms are the same bytes. The guide is the reverse
+of what the block said. Its blob is LF and unchanged, while its working tree
+in this checkout (core.autocrlf=true) is CRLF.
+
+  osm-book-of-business-tracker-1.0.html   (1,602,055 bytes, working tree
+    = staged blob, both measured)
+    3a3e1b629b92acb881f555b30d2e39da55f215f9c1a4d00ab115203f01f9a077
+  osm-runway-onboarding-1.0.html
+    GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
-
-GIT BLOB (LF) — what `git cat-file -p HEAD:<file> | sha256sum` gives you on
-any platform, and what a checkout that does not convert line endings has
-(measured this pass via the staged index blob, `git cat-file -p
-:<file> | sha256sum`, before the commit that makes it HEAD):
-  osm-book-of-business-tracker-1.0.html   (1,559,158 bytes)
-    774b4b7967ec413df7eb3e5b03bcc66931f2c89edb61089f40e62092dff5b74f
-  osm-runway-onboarding-1.0.html          (185,641 bytes — no CRLF in this
-    file, so the two forms coincide) same hash as above — byte-identical
-    across this entire branch, confirmed again this pass:
+    WORKING TREE (CRLF, this checkout, 186,500 bytes)
+    96cb278786d56a62b1dcef7ce56b907c5b94671f01efbb2445764aef1090a542
     `git diff HEAD -- osm-runway-onboarding-1.0.html` is empty.
 
 
@@ -45,7 +43,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        377/377 passed, 0 failed
+  window.runSelfChecks()        378/378 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -801,13 +799,84 @@ CURRICULUM IDENTITY — TASK 5 (suite 375 -> 377)
     accounts have evidence on this session's deliverables; it will show as "no
     longer in the curriculum"." Screenshots routed to Ian, look not judged.
 
+CURRICULUM IDENTITY — TASK 6 (suite 377 -> 378)
+  - Schema 12 -> 13 migration (plan Task 6). CURRENT_SCHEMA_VERSION is 13.
+    `migrationCurriculumFor(data, c)` is the v11 -> v12 curriculum resolution
+    extracted unchanged and now shared by both steps. The new v12 step gives
+    every stored template ids (`ensureTemplateIds`), runs today's matching
+    (passes 1 and 2) against each account's own curriculum with an explicit plan
+    length, stamps `sourceSessionId` / `sourceDeliverableId` on every stored
+    item it places, and moves numeric `sessionNotes` keys to the session id. One
+    new check, `identity A5: v12 -> v13 migration keeps every verdict and stamps
+    every placed item`, built on a suite helper `_v12Book(accts)` that Task 7
+    reuses. `tools/migration-dryrun.mjs` gained `--from 11|12` and
+    `tools/legacy-seed-v12.js` is its schema-12 seed.
+  - RED first, before any implementation: `runSelfChecks: 377/378 passed, 1
+    failed`:
+    `FAIL  identity A5: ... — {"evidencedBefore":33,"stamped":0,"unstamped":33,"rewordedBefore":true,"schema":12,"verdictsEqual":true,"numericLeft":24,"idempotent":true}`.
+  - Two first-pass failures after implementing, both mine and both fixed:
+    a regex written without its backslash in the new step (`/^d+$/`, so no
+    notes moved: `numericLeft` stayed 24; found by printing the note keys), and
+    `phaseA the migration is idempotent`, which forces a migrated book back to
+    schema 11 and re-runs the v11 step. That step now skips session-id note keys
+    (`ss_...`), which a real v11 book never has; without it the re-run read the
+    ticks under the id keys again and minted a duplicate orphan
+    (`{"evidenceOnce":1,"evidenceTwice":2,"itemsOnce":1,"itemsTwice":2}`).
+  - MUTATION PROOF, A5. Mutation (production code): the stamping
+    `matched.forEach((row, i) => row.forEach((rec, idx) => {...}))` block in the
+    v12 step commented out. Red: `377/378 passed, 1 failed`, A5
+    `{"evidencedBefore":33,"stamped":0,"unstamped":33,"rewordedBefore":true,"schema":13,"verdictsEqual":true,"numericLeft":0,"idempotent":true}`.
+    `verdictsEqual` stays true under this mutation, because the reader falls
+    back to text and index matching for unstamped records; the stamp assertion is
+    what catches it. Revert: `cmp` identical to the green file, then 378/378.
+  - Trap fixes. The Phase A import check read `c.sessionNotes['1']`; it now
+    reads `readSessionNote(c, 1)`, same intent (the legacy ticks survive). No
+    other suite fixture assumes 12 is current (the rest of the grep for
+    `schemaVersion: 12` is a book handed to `prepareBookData`, which migrates it).
+  - DRY RUN, `node tools/migration-dryrun.mjs` (default, `--from 11`, exit 0):
+    12 accounts, 57 ticks in, 56 evidence out, 0 ticks lost, 0 non-null dates,
+    second pass changes nothing. `sessionNotes` changed on 1 account
+    (`legacy-badkey`, unexplained: 0): the `'3 '`-keyed note is dropped as an
+    unusable key by `backfillCustomerRecord` (v48, pre-existing). Before this
+    task the harness counted any difference as "changed" and did not gate on it;
+    it now compares modulo the numeric -> id re-key and fails the run if an
+    account's notes differ from "before, minus unusable keys, re-keyed". Without
+    the modulo, the 12->13 step would have made it 12 of 12.
+  - DRY RUN, `node tools/migration-dryrun.mjs --from 12` (exit 0): 6 accounts
+    (normal, CSRD, reworded, orphan, `totalSessions: "8"` as a string, a module
+    with 5 templates against a plan of 8), 22 evidence records, 21 placed and
+    21 stamped, 0 placed-but-unstamped (the 22nd is the orphan, correctly left
+    unstamped), 45 notes moved (6 x 8 less the short account's 3 sessions that
+    have no template and so no id), 0 notes lost or changed, 0 verdicts changed,
+    second pass unchanged, schema 12 -> 13.
+  - MUTATION PROOF, dry run `--from 12`. Same mutation (stamping block commented
+    out): exit 1, `Placed: 21  Stamped: 0  Placed but unstamped (must be 0): 21`
+    and `Live: false`. Revert: `cmp` identical, exit 0 again.
+  - Probes re-run: spec probe `delete_session2` reworded [0,0], evInCurr 11 -> 10,
+    orphaned 0 -> 1, unevidenced 0 -> 1, 6 detached, controls 0, runbook
+    `["authored","authored"]` (as after Task 4). Measurement probe: I5 both
+    orders ttfv1 9 -> 10, unev 0 -> 1, orphan 0, reworded 1 (equal to the pure
+    insert control); notes `notesShownUnderWrongSession` 42 of 48 and
+    activities 32 of 38, both unchanged: the probe writes numeric keys directly
+    and never goes through a migration, so no movement was expected.
+  - THE MIGRATION HAS NOT RUN AGAINST A REAL BOOK. Both dry runs use synthetic
+    books built in headless Chrome. Before the first load of this build on real
+    data: Export JSON (the book is rewritten in place, schema 13 is not
+    readable by an older build, and a real book will have shapes no seed
+    imagined).
+  - Final: `runSelfChecks: 378/378 passed, 0 failed`; guide
+    `runGuideSelfChecks: 18/18 passed, 0 failed`. The SHA-256 block at the top of
+    this file was NOT re-measured in this task.
+
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded
   tools/inspect.mjs          renders a view (optionally a --panel customer's
                              --panel-tab, both guarded against a bogus id/tab)
                              and captures text, PNG and structure
   tools/legacy-seed.js       a schemaVersion 11 book with seven awkward shapes
+  tools/legacy-seed-v12.js   a schemaVersion 12 book with six shapes (--from 12)
   tools/migration-dryrun.mjs runs a book through prepareBookData and reconciles
+                             (--from 11|12)
   demo-seed-today.js         a book with calls on today, at real clock times
 
 
