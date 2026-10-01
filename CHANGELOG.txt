@@ -78,6 +78,41 @@ master 2026-09-30, with the review fixes and follow-ups M1r, M2r).
       is not readable by an older build.
 
 
+Graduation plan — goals, gates, graduation confirm (schema 14).
+
+  Graduating used to mean "the sessions are done". It now means the customer's
+  goal was judged, and the One Document says so.
+
+    - Schema 14. Opening an older book migrates it in place: every account gets
+      an empty goals list, no exit and no graduation marker; the per-module
+      gate defaults are added to config. No verdicts or exits are invented for
+      accounts that graduated earlier. Export JSON before first opening this
+      build on a real book: schema 14 is not readable by an older build.
+    - Goals and gates. A primary goal on the Overview tab, with readiness gates
+      copied in from the module's defaults and editable per account. Financial
+      Reporting and GRC have NO default gates (a goal there is judged by verdict
+      alone); the panel and the packet read "0 gates".
+    - Change goal. The old goal closes as replaced and keeps the reason; only
+      done gates with identical wording carry over. New signal goal_changed
+      asks you to confirm the target graduation date, and clears once marked.
+    - Graduation confirm. A verdict and note are asked for. "Met" with open
+      gates prompts for a reason and never blocks. A graduation with no goal
+      needs the explicit "no goal recorded" choice or a new goal. New signal
+      ready_to_graduate (target date set and all gates done, or verdict met).
+    - Early exit. Graduating with planned sessions unheld asks for an exit
+      reason and records those sessions as not needed; every tally and bar then
+      reads held of held (5/5). One action, one save, one Undo step.
+    - One Document. The knowledge-transfer packet opens with a GOALS section:
+      goal, verdict, gates, criteria, any change with its reason, the early
+      exit, the check-back. "No goal recorded." and "Graduated before goal
+      tracking." are told apart.
+    - Success Plan items in the Gainsight queue for goal created, changed and
+      verdict. The queue still has no transport; nothing is sent.
+    - Settings -> Graduation gates: the default gates per module and goal type.
+    - 427 self-checks (was 389). New: tools/graduation-scenarios-seed.js, six
+      end-to-end scenarios run headlessly; tools/selfcheck.mjs takes a
+      comma-separated --seed list and a --verbose flag.
+
 Development history
 -------------------
 This build came out of a long prototyping run. The version-by-version record of

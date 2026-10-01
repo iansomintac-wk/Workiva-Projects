@@ -67,11 +67,70 @@ reading mode — in separate osm-guide-* keys. It never reads or writes the
 tracker's data.
 
 
+Graduation plan
+---------------
+Graduating an account now rests on a goal the OSM wrote down, not on a session
+count alone.
+
+  Goal        Each account has a primary goal on the Overview tab: what the
+              customer is trying to get done (publish a report, stand up a
+              program, set up for the next cycle). The hand-off and first-value
+              notes are offered as a hint to copy from, never auto-filled.
+  Gates       A goal carries readiness gates, copied in when it is created and
+              editable per account (tick, note, rename, add, remove). The
+              defaults for each module live in Settings -> Graduation gates.
+              Financial Reporting and GRC ship with NO default gates, by
+              design: a goal there is judged by the OSM's verdict, and the
+              packet says "0 gates" rather than inventing a checklist.
+  Change goal Changing the primary goal closes the old one as replaced, keeps
+              the reason, and carries over only gates that were already done
+              with identical wording. The signal "goal_changed" then asks you
+              to confirm the target graduation date against the new goal, and
+              clears when you mark it checked.
+  Graduating  The stage change to Graduated opens a confirm: a verdict (met,
+              partly, not met) and a note. "Met" with open gates asks for a
+              note saying why that is acceptable; it never blocks. A
+              graduation with no goal needs an explicit "no goal recorded"
+              choice or a new goal written there and then. The signal
+              "ready_to_graduate" fires when a target date is set and every
+              gate of the primary goal is done (or the verdict is already met).
+  Early exit  If planned sessions were never held, the confirm asks for an exit
+              reason (goal met early, customer self-sufficient, ... other) and
+              records those sessions as not needed. Every tally and bar then
+              reads held of held (5/5, not 5/6).
+  One Document The knowledge-transfer packet now opens with a GOALS section: the
+              goal, verdict, gates (done of total, and which are open),
+              criteria, any goal change ("Changed <date>: old -> new, because
+              <reason>."), the early exit with its reason, and the graduation
+              check-back. A graduation with no goal reads "No goal recorded.";
+              one from before goal tracking reads "Graduated before goal
+              tracking."
+  Gainsight   Goal created, changed and verdict events queue "Success Plan
+              objective" items in the local Gainsight queue. Nothing is sent.
+
+Opening an older book migrates it to schema 14 in place (no goals, no exits, no
+invented verdicts). Export JSON first: schema 14 is not readable by an older
+build.
+
+Running the graduation checks headlessly (needs Chrome or Edge):
+
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 427
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
+       --seed demo-seed.js,tools/graduation-scenarios-seed.js \
+       --fn runGraduationScenarios --verbose --expect 6
+
+The second runs six end-to-end scenarios (A3-A8) and prints the measured value
+for each. --seed takes a comma-separated list, run in order; --verbose also
+prints the passing checks with their detail. Migration dry runs:
+node tools/migration-dryrun.mjs osm-book-of-business-tracker-1.0.html --from 13
+(and --from 12).
+
+
 Verifying a change
 ------------------
 Both halves carry console-callable self-check suites. After any edit:
 
-  tracker:  window.runSelfChecks()        must be 425/425 (seed demo-seed.js first)
+  tracker:  window.runSelfChecks()        must be 427/427 (seed demo-seed.js first)
   guide:    window.runGuideSelfChecks()   must be 18/18
 
 See VALIDATION.txt for the last run and for what it did and did not cover.

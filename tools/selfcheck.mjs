@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Headless runner for the tracker's in-page self-check suite.
-//   node tools/selfcheck.mjs [file.html] [--seed demo-seed.js] [--fn runSelfChecks] [--expect 318]
+//   node tools/selfcheck.mjs [file.html] [--seed demo-seed.js[,second-seed.js]] [--fn runSelfChecks] [--expect 318] [--verbose]
 // Exit 0 when every check passes and the count matches --expect.
 // NOT part of the distributable bundle — dev tooling, like docs/.
 
@@ -29,6 +29,8 @@ const positional = args.filter((a, i) =>
 const target = resolve(positional[0] || 'osm-book-of-business-tracker-1.0.html');
 const fnName = flag('fn', 'runSelfChecks');
 const expect = flag('expect', null);
+const verbose = args.includes('--verbose');
+const seedPaths = (flag('seed', '') || '').split(',').filter(Boolean);
 const width = Number(flag('width', 1440));
 const height = Number(flag('height', 900));
 /* A RANDOM port per invocation. A fixed one lets a Chrome that outlived its
@@ -169,7 +171,7 @@ const readyDeadline = Date.now() + 30000;
 let ready = false;
 while (Date.now() < readyDeadline) {
   const r = await send('Runtime.evaluate', {
-    expression: `document.readyState === 'complete' && typeof window[${JSON.stringify(fnName)}] === 'function'`,
+    expression: `document.readyState === 'complete' && typeof window[${JSON.stringify(seedPaths.length ? 'runSelfChecks' : fnName)}] === 'function'`,
     returnByValue: true,
   });
   if (r.result?.value === true) { ready = true; break; }
@@ -181,8 +183,8 @@ if (!ready) {
   process.exit(2);
 }
 
-const seedPath = flag('seed', null);
-if (seedPath) {
+for (const seedPath of seedPaths) {
+  if (!existsSync(resolve(seedPath))) { console.error(`No such file: ${resolve(seedPath)}`); process.exit(2); }
   const seedSrc = readFileSync(resolve(seedPath), 'utf8');
   const seeded = await send('Runtime.evaluate', {
     expression: `(() => { try { ${seedSrc}
@@ -204,6 +206,14 @@ if (seedPath) {
   }
   console.log(`seeded ${v.slice(3)} accounts from ${seedPath}`);
 }
+if (seedPaths.length) {
+  const has = await send('Runtime.evaluate', {
+    expression: `typeof window[${JSON.stringify(fnName)}] === 'function'`, returnByValue: true });
+  if (has.result?.value !== true) {
+    console.error(`window.${fnName}() was not defined by the seed.`);
+    process.exit(2);
+  }
+}
 
 const run = await send('Runtime.evaluate', {
   expression: `(() => {
@@ -211,6 +221,7 @@ const run = await send('Runtime.evaluate', {
       const r = window[${JSON.stringify(fnName)}]();
       const list = Array.isArray(r) ? r : (r && r.results) || [];
       return JSON.stringify({ ok: true, total: list.length,
+        passes: ${verbose ? 'true' : 'false'} ? list.filter(x => x.ok).map(x => ({ name: x.name, detail: String(x.detail || '').slice(0, 1000) })) : [],
         failed: list.filter(x => !x.ok).map(x => ({ name: x.name, detail: String(x.detail || '').slice(0, 300) })) });
     } catch (e) { return JSON.stringify({ ok: false, error: String(e && e.stack || e) }); }
   })()`,
@@ -234,6 +245,7 @@ if (out.total === 0) {
 }
 
 const passed = out.total - out.failed.length;
+if (verbose) for (const p of out.passes) console.log(`  PASS  ${p.name}${p.detail ? ` — ${p.detail}` : ''}`);
 console.log(`${fnName}: ${passed}/${out.total} passed, ${out.failed.length} failed`);
 for (const f of out.failed) console.log(`  FAIL  ${f.name}${f.detail ? ` — ${f.detail}` : ''}`);
 if (pageErrors.length) {

@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        425/425 passed, 0 failed
+  window.runSelfChecks()        427/427 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -150,11 +150,12 @@ check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
 four remaining failures are exactly the pre-existing, verified-non-defect
 four above, which need a populated book on their own terms and are not
 this defect. The tracker suite as a whole therefore still needs seeding to
-run clean, so — at the CURRENT suite count, 369, after v74.5 was added —
+run clean, so — at the CURRENT suite count, 427 (369 when this paragraph was
+written, after v74.5 was added; the count moves with every graduation-plan task) —
 the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 369
+       --seed demo-seed.js --expect 427
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -394,7 +395,7 @@ Not exercised in this run:
     force one through. Measured instead, per the instruction to measure the
     gap rather than assert it away: removing `saveData();` from BOTH
     listeners and running `node tools/selfcheck.mjs
-    osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 369`
+    osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 427`
     still reports `369/369 passed, 0 failed`, exit 0 (re-measured against
     this record's own suite count — now 369, after v74.5 — and reverted
     immediately after; the earlier record of this same measurement had
@@ -1351,7 +1352,9 @@ GRADUATION PLAN TASK 5 — GOALS SECTION OF THE KNOWLEDGE-TRANSFER PACKET (suite
   - Packet length on the demo book (17 accounts, measured with a throwaway probe, chars):
       before  min 691, median 1,281, max 1,529
       after   min 730, median 1,320, max 1,568   (+39 chars on every account)
-    Spec §8 quoted 691-1,714, median 1,281; min and median match, the max measured 1,529 here, not 1,714.
+    Spec §8 quoted 691-1,714, median 1,281; min and median match. The max measured 1,529 on demo-seed.js;
+    the 1,714 matches demo-seed-today.js (1,751 after - 39 = 1,712, derived, not measured on pre-change HTML).
+    The spec's range mixes the two seeds. Figures above are demo-seed.js.
     No length cap added.
   - Ruling M1: graduated + no goals + no exit reads "No goal recorded." when c.graduation.noGoal, else
     "Graduated before goal tracking." (c5d, c5e).
@@ -1363,3 +1366,38 @@ GRADUATION PLAN TASK 6 — GAINSIGHT ITEMS AND SETTINGS GATES (suite 422 -> 425)
     twice in commitGoalEvent -> c6a FAIL (`createdAdded":2,"total":6`).
   - commitGoalEvent is the only queue path for goal events (plan P5): goal form (create + change, also the Go-Live
     goal form), verdict select, graduation confirm (created for an inline goal, then verdict), new-account form.
+
+GRADUATION PLAN TASK 6 FIX — ONE ACTION, ONE SAVE, ONE UNDO STEP (`c975f90`, suite 425 -> 427)
+  - Graduating with an inline goal saved twice and overwrote the undo snapshot; confirmGraduation now
+    marks undoable once, defers the goal-event queue items and saves once. goalGates also normalised on load
+    (repairAuxiliaryCollections).
+  - GREEN: `427/427`, guide `18/18`. Evidence: docs/superpowers/evidence/graduation-plan-task6-fix.md.
+
+GRADUATION PLAN TASK 7 — SCENARIO SEED, HEADLESS ACCEPTANCE RUN, DOCS (suite stays 427)
+  No in-page check added; the six scenarios run in their own function. Measured 2026-10-01, throwaway
+  Chrome profile, on demo-seed.js then tools/graduation-scenarios-seed.js (packet lengths elsewhere in
+  this record are demo-seed.js unless a seed is named).
+  - A1  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 427
+        -> `runSelfChecks: 427/427 passed, 0 failed`; guide (osm-runway-onboarding-1.0.html, --fn
+        runGuideSelfChecks --expect 18) -> `18/18`.
+  - A2  node tools/migration-dryrun.mjs osm-book-of-business-tracker-1.0.html --from 13 -> exit 0:
+        `Schema 13 -> 14  Accounts: 7  goals:[] 7/7  exit:null 7/7  graduation:null 7/7`;
+        `--from 12` -> exit 0, Second-pass idempotent: true.
+  - A3-A8  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
+             --seed demo-seed.js,tools/graduation-scenarios-seed.js --fn runGraduationScenarios --verbose --expect 6
+        -> `runGraduationScenarios: 6/6 passed, 0 failed`. Measured values:
+    A3  migrated demo book (v13 -> v14): rows=0 detect=0 accounts=17 (15 Today rows in all), goals:[] 17/17, exit:null 17/17.
+    A4  ready_to_graduate fired=true, gates=5/5, sessions=8/8. Headline is late_gate while the three Gainsight
+        compliance gates are open (late_gate sits ahead of it in the registry); with them closed the headline is
+        ready_to_graduate ("Record the goal verdict and graduate") and it is a Today row.
+    A5  confirmGraduation=true, exit.reason=goal_met_early, week=7, tally=5/5, packet line
+        "Early exit: Goal met early (Oct 1, 2026). Sessions marked not needed: Session 6 — First Draft Report Review".
+    A6  packet line "Changed Oct 1, 2026: Publish FY2026 report → Ready for next year's reporting cycle, because
+        Report moved to consultants; customer owns next cycle."; goal_changed fired before ack=true, after
+        ackGoalChange=false; headline before = goal_changed (a Today row), after = next_session (no row).
+    A7  FR account: gates=0, confirmGraduation=true, stage=graduated, verdict=partly, packet line "Gates: 0 gates".
+    A8  met + 2 open gates: asked=true blocked=false promptLen=111; validation without a note returns
+        ok:false, missing:["note"] and a notePrompt; with a note ok:true and confirmGraduation=true.
+  - LIVENESS: seed missing -> exit 2 ("No such file"); fn not defined by the seed -> exit 2; A3 expectation
+    broken to rows === 1 -> `5/6`, FAIL A3, exit 1; restored -> 6/6.
+  - Evidence: docs/superpowers/evidence/graduation-plan-task7.md and graduation-plan-task7-scenarios.log.
