@@ -4609,9 +4609,22 @@ function goalGainsightPayload(event, goal){
   return event === 'verdict' ? `${base} — verdict: ${(GOAL_VERDICTS.find(v => v.key === goal.verdict) || {}).label || goal.verdict}` : base;
 }
 // One item per goal event (spec 4.5, plan P5). UI layer only; local queue, nothing is sent (G07 open).
-function commitGoalEvent(c, event, goal){
+// Saves unless opts.defer: an action that queues several events defers them all and saves once.
+function commitGoalEvent(c, event, goal, opts){
   if(!c || !goal || !['created','changed','verdict'].includes(event)) return false;
-  return queueGainsightItem(GOAL_GAINSIGHT_KIND, c, goalGainsightPayload(event, goal));
+  return queueGainsightItem(GOAL_GAINSIGHT_KIND, c, goalGainsightPayload(event, goal), opts);
+}
+// What the graduation confirm's OK runs: one action, one saveData, so Undo restores the pre-graduation book.
+function confirmGraduation(c, d){
+  if(!validateGraduationDraft(c, d).ok) return false;
+  markUndoable('graduate');
+  const inline = !!d.newGoal && !primaryGoal(c);            // applyGraduation will create the goal on the way
+  if(!applyGraduation(c, d)) return false;
+  const gp = primaryGoal(c);
+  if(gp && inline) commitGoalEvent(c, 'created', gp, {defer: true});
+  if(gp && gp.verdict) commitGoalEvent(c, 'verdict', gp, {defer: true});
+  saveData();
+  return true;
 }
 function requestStageChange(c, stageKey){
   if(stageKey === 'graduated' && c.stage !== 'graduated'){ openGraduationConfirmModal(c); render(); return; }
@@ -16414,7 +16427,7 @@ function _runSelfChecksInner(){
     try{
       const cnt = (fn, s) => (String(fn).match(new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
       const form = cnt(openGoalFormModal, 'commitGoalEvent(');
-      const conf = cnt(openGraduationConfirmModal, 'commitGoalEvent(');
+      const conf = cnt(confirmGraduation, 'commitGoalEvent(') + (String(openGraduationConfirmModal).includes('confirmGraduation(') ? 0 : 100);
       const verd = String(attachEvents).includes('data-goal-verdict') && cnt(attachEvents, 'commitGoalEvent(');
       const addAcct = cnt(openAddCustomerModal, 'commitGoalEvent(');
       const pure = ['createGoal', 'changePrimaryGoal', 'setGoalVerdict', 'applyGraduation']
@@ -16447,6 +16460,45 @@ function _runSelfChecksInner(){
       detail = JSON.stringify({parsed, wrote, kept, empty});
     }catch(err){ detail = err.message; }
     check('grad-plan c6c: Settings gates parse one per line, write config.goalGates only when present, and FR/GRC defaults stay empty', ok, detail);
+  })();
+  (function(){                                   // c6d
+    /* Models saveData's undo rule on an in-memory store (the real one is blocked while the suite
+       runs): snapshot = the store as it stood BEFORE the latest save. Two saves in one action
+       leave the post-action state as the snapshot, which is the defect this guards. */
+    const realSave = saveData, prevC = DATA.customers, prevA = DATA.activities, hadKey = Object.prototype.hasOwnProperty.call(DATA, 'gainsightQueue'), prevQ = DATA.gainsightQueue;
+    let ok = false, detail = '';
+    try{
+      const c = gp4Cust('__gp6d__'); c.stage = 'ttfv1';
+      DATA.customers = [c]; DATA.gainsightQueue = [];
+      let store = JSON.stringify(DATA), snapshot = null, saves = 0;
+      saveData = function(){ saves++; snapshot = store; store = JSON.stringify(DATA); return true; };
+      const done = confirmGraduation(c, {verdict:'met', note:'Report filed', exitReason:'goal_met_early', newGoal:{type:'publish', text:'Publish FY2026 report', source:'osm'}});
+      const snapC = snapshot && JSON.parse(snapshot).customers.find(x => x.id === '__gp6d__');
+      const pre = !!snapC && snapC.stage !== 'graduated' && (snapC.goals || []).length === 0 && !snapC.graduation;
+      const items = DATA.gainsightQueue.length;
+      ok = done === true && saves === 1 && pre && c.stage === 'graduated' && !!primaryGoal(c) && items === 2;
+      detail = JSON.stringify({done, saves, snapStage: snapC && snapC.stage, snapGoals: snapC && (snapC.goals || []).length, items});
+    }catch(err){ detail = err.message; }
+    saveData = realSave;
+    DATA.customers = prevC; DATA.activities = prevA;
+    if(hadKey) DATA.gainsightQueue = prevQ; else delete DATA.gainsightQueue;
+    check('grad-plan c6d: graduating with an inline goal saves once, so the undo snapshot is the pre-action book', ok, detail);
+  })();
+  (function(){                                   // c6e
+    let ok = false, detail = '';
+    try{
+      const raw = defaultData(); raw.config.goalGates.Sustainability.publish = 'not a list';
+      raw.config.goalGates.Sustainability.program = ['  Kept  ', 42, null, 'x'.repeat(500)];
+      raw.config.goalGates.Sustainability.setup_next = Array.from({length: MAX_GOAL_GATES + 5}, (_, i) => 'Gate ' + i);
+      const out = prepareBookData(JSON.parse(JSON.stringify(raw)), 'Import');
+      const s = out.config.goalGates.Sustainability;
+      const lists = Array.isArray(s.publish) && s.publish.length === 0;
+      const strings = s.program[0] === 'Kept' && s.program.every(x => typeof x === 'string' && x.length <= 200);
+      const capped = s.setup_next.length === MAX_GOAL_GATES;
+      ok = lists && strings && capped;
+      detail = JSON.stringify({lists, strings, capped, program: s.program.map(x => x.length)});
+    }catch(err){ detail = err.message; }
+    check('grad-plan c6e: the load repair pass cleans a hand-edited config.goalGates (non-array lists, non-string entries, long lines, too many gates)', ok, detail);
   })();
 
   // Last two checks on purpose — everything above has had its chance to leak by now.
@@ -18919,10 +18971,11 @@ function buildRiskCtaText(item){
 function getGainsightQueue(){
   return Array.isArray(DATA.gainsightQueue) ? DATA.gainsightQueue : [];
 }
-function queueGainsightItem(kind, customer, payloadText){
+function queueGainsightItem(kind, customer, payloadText, opts){
   if(!Array.isArray(DATA.gainsightQueue)) DATA.gainsightQueue = [];
   DATA.gainsightQueue.push({id: uid(), date: todayISO(), customerId: customer.id,
     customerName: customer.name, kind, payload: payloadText, status: 'queued'});
+  if(opts && opts.defer) return true;   // the caller saves once, so one user action leaves one undo snapshot
   return saveData();
 }
 // THE seam. A future backend/middleware implements the transport; until then
@@ -24952,14 +25005,7 @@ function openGraduationConfirmModal(c){
   q('#gc-ok').addEventListener('click', ()=>{
     const d = draft();
     if(!validateGraduationDraft(c, d).ok) return;
-    markUndoable('graduate');
-    const inline = !!d.newGoal && !primaryGoal(c);          // applyGraduation will create the goal on the way
-    if(!applyGraduation(c, d)){ showToast('That graduation could not be saved.'); return; }
-    const gp = primaryGoal(c);
-    let queued = false;
-    if(gp && inline) queued = commitGoalEvent(c, 'created', gp) || queued;
-    if(gp && gp.verdict) queued = commitGoalEvent(c, 'verdict', gp) || queued;   // queueGainsightItem saves
-    if(!queued) saveData();
+    if(!confirmGraduation(c, d)){ showToast('That graduation could not be saved.'); return; }
     backdrop.remove();
     showToast(`${c.name} graduated.`);
     render();
@@ -25143,8 +25189,11 @@ function openAddCustomerModal(){
     const candidate = cloneData(DATA);
     candidate.customers.push(customer);
     candidate.activities[customer.id] = [];
-    if(!commitDataCandidate(candidate)) return;
-    if(newGoalText && primaryGoal(customer)) commitGoalEvent(customer, 'created', primaryGoal(customer));   // after the account is saved
+    // One save: the queue item goes into the candidate just before the write, so the undo snapshot stays the pre-add book (as on master).
+    if(!commitDataCandidate(candidate, () => {
+      if(newGoalText && primaryGoal(customer)) commitGoalEvent(customer, 'created', primaryGoal(customer), {defer: true});
+      return saveData();
+    })) return;
     backdrop.remove();
     showToast('Account added');
     render();
@@ -26595,6 +26644,8 @@ function normalizeActivityCollections(data){
    any of these was the finding-A failure. */
 function repairAuxiliaryCollections(data){
   const report = _repairReport;
+  // schema 14: same normaliser as the v13 -> v14 step, so a hand-edited schema-14 book is repaired too.
+  if(isRecordObject(data.config)) data.config.goalGates = normalizeGoalGatesConfig(data.config.goalGates, data.config.modules);
   const ids = new Set((data.customers || []).map(c => isRecordObject(c) ? c.id : null));
   /* v67: the hostile path for the coordination collections. Same normalizers the
      UI writes through, so validation cannot drift between the two. A non-array

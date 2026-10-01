@@ -36,8 +36,8 @@
 | 3 | c3a–c3d | 407 (measured) |
 | 4 | c4a–c4h (c4i, c4j added by the Task 4 fix) | 417 (measured) |
 | 5 | c5a–c5e | 422 (measured) |
-| 6 | c6a–c6c | 425 (measured) |
-| 7 | none in-page; the scenario run is a separate 6-check run (A3–A8) | 425 |
+| 6 | c6a–c6c | 427 (measured; 425 + c6d, c6e from the task 6 fix) |
+| 7 | none in-page; the scenario run is a separate 6-check run (A3–A8) | 427 |
 
 ## Plan-level choices (made here, because the spec is silent; Ian may overrule them before build 1)
 
@@ -801,7 +801,7 @@ git commit -m "Graduation plan task 6: Success Plan items in the Gainsight queue
   - Readiness: wait for `typeof window[seedPaths.length ? 'runSelfChecks' : fnName] === 'function'`. After seeding, if `typeof window[fnName] !== 'function'`, print `window.${fnName}() was not defined by the seed.` and exit 2.
   - `--verbose`: also return passing results `{name, detail}` (detail capped at 300) and print `  PASS  ${name} — ${detail}` before the summary line.
 
-  Verify that nothing else moved: re-run the suite (`--expect 425` → `425/425`) and the guide (`18/18`).
+  Verify that nothing else moved: re-run the suite (`--expect 427` → `427/427`) and the guide (`18/18`).
 
 - [ ] **Step 2: Write `tools/graduation-scenarios-seed.js`**, which runs after `demo-seed.js`. It defines `window.runGraduationScenarios`, which returns six results:
   - **A3**
@@ -840,11 +840,11 @@ git commit -m "Graduation plan task 6: Success Plan items in the Gainsight queue
 
   Expected: six `PASS  A3…` to `PASS  A8…` lines, each with its measured value, then `runGraduationScenarios: 6/6 passed, 0 failed`, exit 0. To prove the run can fail, temporarily break the seed's A3 expectation to `rows === 1`, see `5/6`, then restore. This is the seed's own liveness check; production code is not mutated here.
 
-- [ ] **Step 4: Re-run the A1 and A2 evidence.** Run the suite (`--expect 425` → `425/425`), the guide (`18/18`), `node tools/migration-dryrun.mjs osm-book-of-business-tracker-1.0.html --from 13` (exit 0, the three summary lines) and `--from 12` (exit 0).
+- [ ] **Step 4: Re-run the A1 and A2 evidence.** Run the suite (`--expect 427` → `427/427`), the guide (`18/18`), `node tools/migration-dryrun.mjs osm-book-of-business-tracker-1.0.html --from 13` (exit 0, the three summary lines) and `--from 12` (exit 0).
 
 - [ ] **Step 5: Write the docs.**
   - README.txt gets a "Graduation plan" section: the goal on the Overview tab, gates, Change goal, the graduation confirm and early exit, the GOALS block in the packet, the Settings → Graduation gates block (FR/GRC empty by design), and the run commands from Steps 3–4.
-  - CHANGELOG.txt gets the 1.0 bullets: schema 14, goals and gates, the two signals, the packet GOALS section, Success Plan queue items, and the suite count `425`.
+  - CHANGELOG.txt gets the 1.0 bullets: schema 14, goals and gates, the two signals, the packet GOALS section, Success Plan queue items, and the suite count `427`.
   - VALIDATION.txt gets the A1–A8 table with the **measured** values from the logs (copy the detail strings) and the command for each.
 
 - [ ] **Step 6: Commit the code and the docs together.**
