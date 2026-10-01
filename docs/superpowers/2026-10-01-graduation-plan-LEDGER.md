@@ -14,7 +14,7 @@ Paid runs approved: none ($0).
 
 | # | Task | State | Commit | Check command | Measured result (lead re-run) | Deviation from spec (reason) |
 |---|---|---|---|---|---|---|
-| 1 | Schema 14 and data | planned | | | | |
+| 1 | Schema 14 and data | **done, checked** (checker: pass with notes, no blockers) | `f99a948` | suite `--expect 396`; `node tools/migration-dryrun.mjs osm-book-of-business-tracker-1.0.html --from 13` | **396/396**, exit 0; dry-run exit 0 (A2 below). Evidence `evidence/graduation-plan-task1.md` | M1 `c.graduation` added (Ian's ruling). Backfill normalise sits in `repairAuxiliaryCollections` at the `gradReview` site, the same location the plan meant. Historic CHANGELOG "389" line left as history. |
 | 2 | Goal panel | planned | | | | |
 | 3 | Goal change | planned | | | | |
 | 4 | Graduation confirm | planned | | | | |
@@ -27,7 +27,7 @@ Paid runs approved: none ($0).
 | Id | Expected | Measured | Where |
 |---|---|---|---|
 | A1 | 389 + new checks, 0 failed | | |
-| A2 | all accounts `goals:[]`, `exit:null`; 5 default modules in `config.goalGates` | | |
+| A2 | all accounts `goals:[]`, `exit:null`; 5 default modules in `config.goalGates` | v13 seed, 7 accounts: `goals:[]` 7/7, `exit:null` 7/7, `graduation:null` 7/7; default modules 5/5 (+2 CSRD, +1 other); Sustainability gates 5/5/3/3; FR 0/0/0/0; GRC 0/0/0/0; invented exits 0; second pass idempotent; 0 console errors | lead re-run at `f99a948` |
 | A3 | 0 Today rows from `goal_changed` + `ready_to_graduate` after migration | | |
 | A4 | Scenario A: `ready_to_graduate` fires | | |
 | A5 | Scenario B: exit reason, held of held, packet shows reason | | |
