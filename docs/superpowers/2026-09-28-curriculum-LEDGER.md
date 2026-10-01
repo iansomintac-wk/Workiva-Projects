@@ -5,7 +5,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 | Piece | Spec | Session prompt | State | Self-checks after | Commit |
 |---|---|---|---|---|---|
-| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **built (tasks 2–7 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). **Reviewed 2026-09-30: with fixes** (`evidence/curriculum-piece-1-review.md`). Next: fixes (R1 ruled (a)) (`sessions/curriculum-piece-1-fixes.md`, Sonnet) | **379/379** measured 2026-09-30 (guide 18/18) | task 2: `29689c4`; task 3: `2a57350`; task 4: `dd1ccf4`; task 5: `05e2356`; task 6: `a9da098`; task 7: `ec2f175` + `d4c2c00` (SHA re-measure); ledger: see git log |
+| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **built (tasks 2–7 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). **Reviewed 2026-09-30: with fixes** (`evidence/curriculum-piece-1-review.md`). **Review fixes done 2026-09-30** on branch `curriculum-piece-1-fixes` (D1–D3, R2, R3, R4, R1, M3r, M4r, M6r, M7r parts 1+3; see "Review fixes"). Merge is Ian's call | **387/387** measured 2026-09-30 after fixes (guide 18/18) | task 2: `29689c4`; task 3: `2a57350`; task 4: `dd1ccf4`; task 5: `05e2356`; task 6: `a9da098`; task 7: `ec2f175` + `d4c2c00` (SHA re-measure); ledger: see git log |
 | 2 Versioned curriculum + pinning | not written (outline in umbrella §2) | not written | after piece 1 | | |
 | 3 Authoring UI + runbook editor | not written (outline in umbrella §2) | not written | after piece 2 | | |
 | 4 Share, fork, upgrade | not written (outline in umbrella §2) | not written | after piece 3 | | |
@@ -52,6 +52,10 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 - **R5 (review)** session reorder re-labels logged calls. Fold it into M1, or ship with a CHANGELOG caveat.
 - **M1r/M2r (review)** confirmation when a deliverable is removed; restore bulk paste. Yes or no for each.
+- **M7r part 2 (fixes)** the v12→13 template-set builder differs from `safeSessionTemplateForRender` (no id-regex checks;
+  `[]` vs a one-deliverable placeholder), so it was not merged: that would change migration on malformed books. Its one real
+  effect: a malformed string id survives `ensureTemplateIds`, the migration stamps evidence with it, runtime drops the id, and that
+  evidence is orphaned. Option: add the id regexes to the builder's check. Fix or accept?
 
 - M1 activities: (a) key by session id / (b) leave to piece 2 pinning / (c) state the call impact in the delete confirmation
 - M2 placeholder padding: include or defer
@@ -231,3 +235,23 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
   RED: `385/386`, `planRebuilds:14, bound:3, portfolioRebuilds:17, floor:15`. Mutation (`tpl ||` removed): `385/386`, same FAIL; cmp identical; 386/386, guide 18/18. LF blob 1,636,423 bytes.
 - **M7r (duplicate logic).** Parts 1 and 3 done, part 2 pushed back. The v11 step now uses `SESSION_ID_RE` (same pattern as the literal, compared); applyDataBackfills renames the `Both` / `Both (CSRD)` template keys by looping `LEGACY_TEMPLATE_KEYS`. Part 2 not changed: the v12 -> v13 builder differs from `safeSessionTemplateForRender` (no id/deliverableId regex checks, `{deliverables: []}` instead of a placeholder), so merging would change migration behaviour; needs a ruling.
   RED: `386/387`, `v11Literal:true, bfLiteral:true`. Mutation (v11 literal restored): `386/387`, same FAIL; cmp identical; 387/387, guide 18/18. Dry runs identical before/after (`--from 11` 57 -> 56, lost 0; `--from 12` 22/21/21, 45 notes, idempotent). LF blob 1,637,646 bytes.
+- **Lead verification at `9d39b52` (measured by the lead this session).** Baseline before any fix: suite 379/379, guide 18/18.
+  After each fix the lead re-ran the suite on the real file and it passed at 380, 380, 381, 382, 383, 384, 385, 385, 386 and 387.
+  A fresh Sonnet checker re-ran each new check red on the pre-fix code and red under a mutation of its own; all confirmed.
+  Final: suite **387/387**, guide **18/18**, spec probe unchanged (Carbon 66; `delete_session2` reworded `[0,0]` ×6,
+  orphaned `[0,1]` ×6, 6 detached; controls 0; `rename_s1_runbook ["authored","authored"]`). `--from 11` exit 0 (12 accounts,
+  57 ticks → 56 evidence, 0 lost, notes changed 1, unexplained 0). `--from 12` exit 0 (6 accounts, 22 evidenced, 21 placed /
+  21 stamped, 45 notes moved, 0 lost, 0 verdict changes, idempotent).
+- **Not done (not ruled):** R5, M1r and M2r are Ian's calls. M5r: c2a's true-by-construction half was fixed inside R1 (literal ids,
+  9/15 and 7/12). A6's missing evidence guard stays as it is (a structural check). M7r part 2 went to "Decisions pending".
+- **Accepted residuals found by the checkers (read, not run):**
+  - R3: an unversioned archive older than v11 skips v1–v10, the same as before the fix. `backfillCustomerRecord` covers stageHistory,
+    all but its date.
+  - R3: a hand-edited `schemaVersion:0` on a v12 record re-runs v11→12 and resurrects cleared evidence. That is the user's own edit.
+  - R4: `materializeOutcomeCriterion` still dedupes positionally without the `unplaced` gate, but only for a template without
+    `deliverableIds`. Import rejects those, so no check can go red on it.
+- **Corrections.**
+  - Fix R4's commit `41ab79a` wrote `382/381` in README and VALIDATION, a half-applied count bump. R1's commit `6ea1be6` corrected
+    it to 383/383, and the fix brief now greps both sides of the count.
+  - The review's M6r "~144 sanitizations" counted a different unit. Measured set rebuilds per plan render went 14 → 2 (26 before
+    with `outcomeCriteriaFor` unfrozen), and the portfolio pass went 17 → 15 (floor 15).
