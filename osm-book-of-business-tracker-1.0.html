@@ -3918,8 +3918,28 @@ function rewordDeliverableRow(tpl, j, text){
   if(rows[j]) rows[j].text = String(text).trim();
   return setSessionDeliverables(tpl, rows);
 }
+/* M2r: pasted or typed multi-line text is one deliverable per non-empty trimmed line. */
+function splitDeliverableLines(text){
+  return String(text).split(/\r\n|\r|\n/).map(l => l.trim()).filter(Boolean);
+}
 function addDeliverableRow(tpl, text){
-  return setSessionDeliverables(tpl, deliverableRows(tpl).concat([{id:null, text:String(text).trim()}]));
+  const lines = splitDeliverableLines(text);
+  if(String(text).indexOf('\n') === -1 && String(text).indexOf('\r') === -1)   // single line: as before
+    return setSessionDeliverables(tpl, deliverableRows(tpl).concat([{id:null, text:String(text).trim()}]));
+  return setSessionDeliverables(tpl, deliverableRows(tpl).concat(lines.map(t => ({id:null, text:t}))));
+}
+/* M2r paste rule: a multi-line paste into row j leaves row j exactly as it is and
+   inserts one new row per line right after it. Returns false for single-line text
+   (the browser pastes normally). Never removes or rewrites an existing row. */
+function insertDeliverableLines(tpl, j, text){
+  const t = String(text);
+  if(t.indexOf('\n') === -1 && t.indexOf('\r') === -1) return false;
+  const lines = splitDeliverableLines(t);
+  if(!lines.length) return false;
+  const rows = deliverableRows(tpl);
+  rows.splice(j + 1, 0, ...lines.map(x => ({id:null, text:x})));
+  setSessionDeliverables(tpl, rows);
+  return true;
 }
 function removeDeliverableRow(tpl, j){
   if(!confirmDropDeliverable(tpl, j)) return null;
@@ -10060,6 +10080,44 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     _renderMemoResets.forEach(r => r());
     check('identity M1r: dropping an evidenced deliverable confirms with the account count; cancel changes nothing', ok, detail);
+  })();
+  (function(){
+    /* M2r — multi-line text becomes one deliverable per non-empty trimmed line,
+       through addDeliverableRow and through a paste into a deliverable input
+       (insertDeliverableLines, the paste handler's core). Existing ids, order and
+       evidence are untouched. Fixture: 3 accounts, every criterion evidenced. */
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const fx = _identityFixture(3);
+      const tpl = DATA.config.sessionTemplates[fx.mod][0];
+      const evidencedCount = () => fx.accts.reduce((n, c) => n + outcomeCriteriaFor(c).filter(x => x.evidence).length, 0);
+      const priorIds = tpl.deliverableIds.slice(), priorLen = priorIds.length, evBefore = evidencedCount();
+      addDeliverableRow(tpl, 'a\nb\n\nc');
+      const added = tpl.deliverables.slice(priorLen), addedIds = tpl.deliverableIds.slice(priorLen);
+      const addOk = tpl.deliverables.length === priorLen + 3 && added.join('|') === 'a|b|c'
+        && new Set(addedIds).size === 3 && addedIds.every(id => id && priorIds.indexOf(id) === -1)
+        && tpl.deliverableIds.slice(0, priorLen).join() === priorIds.join();
+      _renderMemoResets.forEach(r => r());
+      const evAfterAdd = evidencedCount();
+      // paste into row 0: lines go in as new rows right after it; row 0 untouched
+      const ids1 = tpl.deliverableIds.slice(), text0 = tpl.deliverables[0], len1 = ids1.length;
+      const single = insertDeliverableLines(tpl, 0, 'just one line');
+      const pasted = insertDeliverableLines(tpl, 0, 'x\r\n  y  \n\nz\n');
+      const newIds = tpl.deliverableIds.filter(id => ids1.indexOf(id) === -1);
+      const pasteOk = single === false && pasted === true && tpl.deliverables.length === len1 + 3
+        && tpl.deliverables.slice(1, 4).join('|') === 'x|y|z' && tpl.deliverables[0] === text0
+        && tpl.deliverableIds[0] === ids1[0] && tpl.deliverableIds.slice(4).join() === ids1.slice(1).join()
+        && newIds.length === 3 && new Set(newIds).size === 3;
+      _renderMemoResets.forEach(r => r());
+      const evAfterPaste = evidencedCount();
+      ok = fx.ticked > 0 && evBefore === 33 && evAfterAdd === 33 && evAfterPaste === 33 && addOk && pasteOk;
+      detail = JSON.stringify({ticked: fx.ticked, evBefore, evAfterAdd, evAfterPaste, addOk, pasteOk, added: added.join('|'), single, pasted});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity M2r: multi-line text becomes one deliverable per line; existing ids and evidence kept', ok, detail);
   })();
   /* Piece 1 helper (task 6; task 7 reuses it): turns live fixture accounts into
      a schema-12 book as it existed BEFORE identity — no template ids, no stamps on
@@ -23947,6 +24005,21 @@ function openCurriculumModal(){
       saveData();
       if(cleared) renderModalBody();   // the row is gone; redraw the list
       render();
+    }));
+    $$('[data-cur-dl]').forEach(inp => inp.addEventListener('paste', e=>{
+      const [i, j] = inp.dataset.curDl.split('|').map(Number);
+      const txt = (e.clipboardData && e.clipboardData.getData('text')) || '';
+      if(!/[\r\n]/.test(txt.trim())) return;   // single line: let the browser paste
+      e.preventDefault();
+      if(insertDeliverableLines(DATA.config.sessionTemplates[curKey()][i], j, txt)){ saveData(); renderModalBody(); render(); }
+    }));
+    $$('[data-cur-dl-new]').forEach(inp => inp.addEventListener('paste', e=>{
+      const i = parseInt(inp.dataset.curDlNew,10);
+      const txt = (e.clipboardData && e.clipboardData.getData('text')) || '';
+      if(!/[\r\n]/.test(txt.trim())) return;
+      e.preventDefault();
+      addDeliverableRow(DATA.config.sessionTemplates[curKey()][i], txt);
+      saveData(); renderModalBody(); render();
     }));
     $$('[data-cur-dl-move]').forEach(btn => btn.addEventListener('click', ()=>{
       const [i, j, dir] = btn.dataset.curDlMove.split('|').map(Number);

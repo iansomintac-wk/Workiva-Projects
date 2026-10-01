@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        388/388 passed, 0 failed
+  window.runSelfChecks()        389/389 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1272,3 +1272,28 @@ CURRICULUM IDENTITY — FIX M1r (suite 387 -> 388)
     moved, 0 lost).
   - MEASURED THIS SESSION: suite `388/388`, guide `18/18`. SHA-256 block re-measured
     (tracker 87151c04..., 1,642,357 bytes, LF blob).
+
+CURRICULUM IDENTITY — FIX M2r (suite 388 -> 389)
+  - WHAT CHANGED: the "one per line" textarea became one input per deliverable, so a
+    pasted list became a single deliverable. addDeliverableRow now splits text with
+    newlines into one new deliverable per non-empty trimmed line (splitDeliverableLines),
+    each with a fresh id; single-line text is unchanged. A paste handler on the
+    data-cur-dl and data-cur-dl-new inputs does the same when the clipboard text has
+    newlines. PASTE RULE for an existing row: insertDeliverableLines(tpl, j, text)
+    leaves row j exactly as it is (id, text, evidence) and inserts one new row per line
+    right after it. It never removes or rewrites an existing row.
+  - RED first: `FAIL  identity M2r: ... — insertDeliverableLines is not defined`
+    (388/389; the helper did not exist, the add path asserted in the same check).
+  - FIXTURE: 3 accounts on Carbon, every criterion evidenced (33 ticks). Asserts
+    "a\nb\n\nc" through addDeliverableRow gives exactly 3 new deliverables a|b|c with 3
+    unique new ids, prior ids unchanged in order, evidence 33 before and after; a
+    multi-line paste into row 0 ("x\r\n  y  \n\nz\n") inserts x|y|z after row 0, row 0
+    untouched, later ids shifted but unchanged, evidence still 33; single-line paste
+    returns false. The paste is exercised via insertDeliverableLines; the DOM paste
+    event itself (clipboardData) is not driven by the suite.
+  - MUTATION PROOF (production): addDeliverableRow kept only the first line
+    (lines.slice(0,1)). Red: `388/389`, FAIL ... "addOk":false,"added":"a". Restore:
+    cmp fixed.html tracker printed nothing; then green.
+  - DRY RUNS: `--from 11` and `--from 12` exit 0, unchanged.
+  - MEASURED THIS SESSION: suite `389/389`, guide `18/18`. SHA-256 block re-measured
+    (tracker bbace191..., 1,647,097 bytes, LF blob).
