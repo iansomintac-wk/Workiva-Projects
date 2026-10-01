@@ -2022,7 +2022,7 @@ function aiCustomerSnapshot(c){
     healthScore: healthScore(c),
     daysSinceLastTouch: d,
     sessionsCompleted: sessionsCompletedCount(c),
-    totalSessions: c.totalSessions,
+    totalSessions: plannedSessionTotal(c),
     missingGates: missingGatesText(c),
     nextSessionTitle: nextSession ? nextSession.template.title : null,
     nextSessionStage: nextSession ? nextSession.template.ttfvStage : null,
@@ -4552,13 +4552,20 @@ function customerReadyToGraduateSignal(c){
   return (allGates || p.verdict === 'met') ? {goalId: p.id, gates: p.gates.length, verdictMet: p.verdict === 'met'} : null;
 }
 function unheldPlannedSessions(c){
-  if(!c || inImplementation(c)) return [];   // curriculum not started: nothing was "planned and skipped"
+  if(!c) return [];                          // spec 4.4 applies to every account, including one graduated straight out of implementation
   const set = getSessionTemplateSet(c), out = [];
   for(let n = 1; n <= c.totalSessions; n++){
     if(getSessionActivity(c, n)) continue;
     const t = set[n - 1]; out.push(t && t.id ? t.id : String(n));
   }
   return out;
+}
+/* Display total for every user-facing session tally and progress bar: the plan minus
+   sessions the OSM marked not needed at an early exit (spec 4.4: "5 of 5, not 5 of 6").
+   The curriculum editor and the planned-session floor keep the raw c.totalSessions. */
+function sessionProgressPct(c){
+  const t = plannedSessionTotal(c);
+  return t > 0 ? Math.min(100, sessionsCompletedCount(c) / t * 100) : 0;
 }
 function plannedSessionTotal(c){
   const ex = getExit(c);
@@ -6161,7 +6168,13 @@ function minimumPlannedSessions(customer){
 function nextOpenSessionNumber(customer){
   const acts = DATA.activities[customer.id] || [];
   const used = new Set(acts.map(a=>a.sessionNumber).filter(Boolean));
-  for(let n=1; n<=customer.totalSessions; n++){ if(!used.has(n)) return n; }
+  const ex = getExit(customer), skip = (ex && ex.sessionsNotNeeded.length) ? new Set(ex.sessionsNotNeeded) : null;
+  const set = skip ? getSessionTemplateSet(customer) : null;
+  for(let n=1; n<=customer.totalSessions; n++){
+    if(used.has(n)) continue;
+    if(skip){ const t = set[n - 1]; if(skip.has(t && t.id ? t.id : String(n))) continue; }   // marked not needed at an early exit: resolved, not "next"
+    return n;
+  }
   return null;
 }
 
@@ -16132,6 +16145,49 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA;
     check('grad-plan c4c: an early exit needs a reason, records the unheld session, and shrinks the planned total', ok, detail);
   })();
+  (function(){                                   // c4i
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__gp4f2__', 8); DATA.customers = [c];
+      createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      gp4Acts(c, [1,2,3,4,5]);
+      const applied = applyGraduation(c, {verdict:'met', note:'n', exitReason:'goal_met_early'});
+      const risk = computeRisk(c);
+      const row = renderRow(c), card = renderKanbanCard(c), det = renderDetailsTab(c, risk), snap = renderAccountSnapshot(c, risk);
+      const stand = accountStanding(c), ghost = cardGhostFigure(c, 'outcome');
+      const bar = h => { const m = /session-bar-fill" style="width:([\d.]+)%/.exec(h); return m ? parseFloat(m[1]) : null; };
+      const cat = categorizeAccountForReport(Object.assign({}, c, {stage: 'ttfv2'}));   // exit kept, stage live: reaches the sessions-complete branch
+      const kb = bar(card), db = bar(det);
+      ok = applied && plannedSessionTotal(c) === 5 && kb === 100 && db === 100
+        && card.includes('5/5') && !card.includes('5/8') && det.includes('5/5 sessions logged') && !det.includes('/8')
+        && row.includes('5/5') && !row.includes('/8') && !/All 8 sessions/.test(row) && /All 5 sessions logged/.test(row)
+        && snap.includes('/5') && !snap.includes('/8')
+        && stand.total === 5 && ghost === '5/5' && aiCustomerSnapshot(c).totalSessions === 5
+        && /(All 5 sessions complete|5\/5 sessions complete)/.test(cat.reason);
+      detail = JSON.stringify({applied, kb, db, card5: card.includes('5/5'), det5: det.includes('5/5 sessions logged'), row5: row.includes('5/5'), rowAll: /All 5 sessions logged/.test(row), snap: snap.includes('/8'), st: stand.total, ghost, ai: aiCustomerSnapshot(c).totalSessions, cat: cat.reason});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan c4i: an early-exit account (8 planned, 5 held, 3 not needed) reads 5/5 and a 100% bar on every tally surface', ok, detail);
+  })();
+  (function(){                                   // c4j
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__gp4g2__', 8); c.implementation = {phase:'build'}; DATA.customers = [c];
+      createGoal(c, {type:'publish', text:'x'});
+      const unheld = unheldPlannedSessions(c);
+      const needs = validateGraduationDraft(c, {verdict:'partly', note:'n'}).missing.includes('exitReason');
+      const applied = applyGraduation(c, {verdict:'partly', note:'n', exitReason:'goal_met_early'});
+      const ex = getExit(c);
+      ok = unheld.length === 8 && needs && applied && !!ex && ex.reason === 'goal_met_early';
+      detail = JSON.stringify({unheld: unheld.length, needs, applied, ex});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan c4j: graduating an account still in implementation needs an exit reason when planned sessions are unheld (spec 4.4)', ok, detail);
+  })();
   (function(){                                   // c4d
     const prevC = DATA.customers, prevA = DATA.activities;
     let ok = false, detail = '';
@@ -16161,7 +16217,7 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     check('grad-plan c4e: the kanban drop, table select and panel select all go through requestStageChange; changeStage still schedules the review', ok, detail);
   })();
-  (function(){                                   // c4f
+  (function(){                                   // c4i
     const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
     let ok = false, detail = '';
     try{
@@ -17789,7 +17845,7 @@ function renderRow(c){
         ${nextSession
           ? `<span class="session-tag ${nextSession.template.ttfvStage}">${nextSession.template.ttfvStage==='ttfv1'?'TTFV-1':'TTFV-2'}</span>
              <span class="session-next-label">Next — Session ${nextSession.number}: ${escapeHtml(nextSession.template.title)}</span>`
-          : `<span class="session-tag ttfv2">Complete</span><span class="session-next-label">All ${c.totalSessions} sessions logged</span>`
+          : `<span class="session-tag ttfv2">Complete</span><span class="session-next-label">All ${plannedSessionTotal(c)} sessions logged</span>`
         }
         <span class="session-count-label">${completed}/${plannedSessionTotal(c)} sessions</span>
       </div>
@@ -17887,7 +17943,7 @@ function renderKanban(){
 function renderKanbanCard(c){
   const risk = computeRisk(c);
   const completed = sessionsCompletedCount(c);
-  const pct = c.totalSessions ? (completed / c.totalSessions) * 100 : 0;
+  const pct = sessionProgressPct(c);
   const d = daysSince(lastActivityDate(c.id) || c.implementationDate);
   return `
     <div class="kanban-card" draggable="true" data-id="${c.id}">
@@ -18620,7 +18676,7 @@ WHAT THE TRACKER OBSERVED: ${item.detail}
 PROVENANCE: ${riskProvenanceLabel(item)}
 STATUS: ${inImplementation(c)
   ? 'In implementation, phase ' + implPhaseLabel(getImplementationState(c).phase)
-  : accountStateLabel(c) + ', ' + healthScore(c) + '% health, ' + sessionsCompletedCount(c) + '/' + c.totalSessions + ' sessions logged'}
+  : accountStateLabel(c) + ', ' + healthScore(c) + '% health, ' + sessionsCompletedCount(c) + '/' + plannedSessionTotal(c) + ' sessions logged'}
 
 RECENT NOTES:
 ${notes || '(no recent notes logged)'}
@@ -18670,7 +18726,7 @@ function buildRiskCtaText(item){
     `Risk reason (suggested): ${(item.category || taxonomyForHubItem(item)).label}${(item.category && item.category.phrase) ? ` — keyword match: "${item.category.phrase}"` : ''} — confirm the reason code in Gainsight`,
     `Current status: ${inImplementation(c)
       ? 'In implementation (partner-led, phase ' + implPhaseLabel(getImplementationState(c).phase) + ')'
-      : accountStateLabel(c) + ' · ' + healthScore(c) + '% health · ' + sessionsCompletedCount(c) + '/' + c.totalSessions + ' sessions'}`,
+      : accountStateLabel(c) + ' · ' + healthScore(c) + '% health · ' + sessionsCompletedCount(c) + '/' + plannedSessionTotal(c) + ' sessions'}`,
     `Recommended action: ${rec.action}`,
     rec.reasons.length ? `Why: ${rec.reasons.join('; ')}` : null,
     '',
@@ -19061,7 +19117,7 @@ function cardGhostFigure(c, editor){
   }
   // outcome, csat, and the plain decks all hang off session progress, which is
   // the number the whole book is starved of.
-  return sessionsCompletedCount(c) + '/' + (Number.isFinite(c.totalSessions) ? c.totalSessions : 0);
+  return sessionsCompletedCount(c) + '/' + (Number.isFinite(c.totalSessions) ? plannedSessionTotal(c) : 0);
 }
 
 function renderCopilot(){
@@ -20067,7 +20123,7 @@ function accountStanding(c){
     lastDays: last ? daysSince(last.date) : null,
     logged: acts.length,
     sessions: sessionsCompletedCount(c),
-    total: c.totalSessions,
+    total: plannedSessionTotal(c),
     firstValue: fv.achievedOn || null,
     questions: collectOpenQuestions(c)
   };
@@ -20704,7 +20760,7 @@ function buildKnowledgeTransferText(c){
   else L.push('(none recorded — worth filling in on the Coordination tab before transferring)');
 
   L.push('', '— SESSION HISTORY —');
-  if(inImplementation(c)) L.push('(curriculum not started — account was still in implementation)');
+  if(inImplementation(c)) L.push(`(curriculum not started — account was still in implementation${getExit(c) ? '; planned sessions recorded as not needed: ' + roleLabel(EXIT_REASONS, getExit(c).reason, 'other') : ''})`);
   else {
     const templates = getSessionTemplateSet(c);
     const skipped = new Set((getExit(c) || {}).sessionsNotNeeded || []);
@@ -21656,7 +21712,7 @@ function renderAccountSnapshot(c, risk){
     cell('Health', `${healthScore(c)}%${healthTrendArrowHtml(c)}`,
       `Readiness ${hb.domainPoints}/${hb.domainMax} + Gainsight ${hb.compliancePoints}/${hb.complianceMax}`),
     cell('Last touch', d === null ? faint('none yet') : `${d}d ago`),
-    cell('Sessions', `${sessionsCompletedCount(c)}${faint('/' + c.totalSessions)}`),
+    cell('Sessions', `${sessionsCompletedCount(c)}${faint('/' + plannedSessionTotal(c))}`),
     cell('Readiness', `${hb.domainPoints}${faint('/' + hb.domainMax + ' pts')}`),
     cell('Gainsight', `${hb.compliancePoints}${faint('/' + hb.complianceMax + ' pts')}`, missingGatesText(c)),
     cell('Next session', cov
@@ -22079,7 +22135,7 @@ function renderDetailsTab(c, risk){
       </div>
     </div>
     <div class="session-bar-wrap" style="margin-bottom:16px;">
-      <div class="session-bar"><div class="session-bar-fill" style="width:${c.totalSessions ? (sessionsCompletedCount(c)/c.totalSessions*100) : 0}%"></div></div>
+      <div class="session-bar"><div class="session-bar-fill" style="width:${sessionProgressPct(c)}%"></div></div>
       <div class="session-bar-label">${sessionsCompletedCount(c)}/${plannedSessionTotal(c)} sessions logged</div>
     </div>
 
@@ -25973,10 +26029,10 @@ function categorizeAccountForReport(c){
   if(isPaused(c)) return {key:'paused', reason: `Paused until ${fmtDate(c.pause.until)}${c.pause.reason ? ' — ' + c.pause.reason : ''}`};
   const sessionsDone = sessionsCompletedCount(c);
   const gatesMissing = missingGates(c).filter(g=>!g.isPaceOutcome);
-  if(c.stage === 'grad_ready' || (sessionsDone >= c.totalSessions && gatesMissing.length === 0)){
+  if(c.stage === 'grad_ready' || (sessionsDone >= plannedSessionTotal(c) && gatesMissing.length === 0)){
     return {key:'csm_ready', reason: c.stage === 'grad_ready'
       ? 'In Graduation Ready stage'
-      : `All ${c.totalSessions} sessions complete and compliance gates met`};
+      : `All ${plannedSessionTotal(c)} sessions complete and compliance gates met`};
   }
   const d = daysSince(lastActivityDate(c.id) || c.implementationDate);
   if(d !== null && d >= DATA.config.riskAlertDays) return {key:'quiet', reason: `${d} days since last touchpoint (off-track threshold is ${DATA.config.riskAlertDays})`};

@@ -34,10 +34,10 @@
 | 1 | c1a–c1g | 396 (measured) |
 | 2 | c2a–c2g (c2f, c2g added by the Task 2 fix) | 403 (measured) |
 | 3 | c3a–c3d | 407 (measured) |
-| 4 | c4a–c4h | 415 (measured) |
-| 5 | c5a–c5e | 420 |
-| 6 | c6a–c6c | 423 |
-| 7 | none in-page; the scenario run is a separate 6-check run (A3–A8) | 423 |
+| 4 | c4a–c4h (c4i, c4j added by the Task 4 fix) | 417 (measured) |
+| 5 | c5a–c5e | 422 |
+| 6 | c6a–c6c | 425 |
+| 7 | none in-page; the scenario run is a separate 6-check run (A3–A8) | 425 |
 
 ## Plan-level choices (made here, because the spec is silent; Ian may overrule them before build 1)
 
@@ -532,7 +532,7 @@ git commit -m "Graduation plan task 3: goal change with history, gate carry-over
   - **c4g** No-threshold source scan for `ready_to_graduate`: `String(customerReadyToGraduateSignal)` and its `SIGNAL_DEFS` `detect` must not match `/daysSince|DATA\.config|Days\b|\d{2,}/`.
   - **c4h** (ruling M1) the graduation marker. `applyGraduation` on an account with a primary goal gives `c.graduation` deep-equal to `{on: todayISO(), noGoal: false}`. With no goal and `{noGoal:true}` it gives `{on: todayISO(), noGoal: true}`. With no goal and `newGoal` it gives `noGoal:false`. A draft that fails validation leaves `c.graduation` null.
 
-- [ ] **Step 2: Run the suite and see red.** With `--expect 415`, expect `407/415 passed, 8 failed` (c4a–c4h).
+- [ ] **Step 2: Run the suite and see red.** With `--expect 417`, expect `407/417 passed, 10 failed` (c4a–c4j).
 
 - [ ] **Step 3: Write the domain functions:**
 
@@ -628,9 +628,9 @@ function requestStageChange(c, stageKey){
   - Leave `nextOpenSessionNumber`, the runway loop (`:6751`), migrations and self-check fixtures alone.
   - In the SESSION HISTORY loop (`:19934-19937`), print `not needed (early exit)` when the template id or `String(i+1)` is in `getExit(c).sessionsNotNeeded`.
 
-- [ ] **Step 7: Re-run the suite and the guide.** The suite with `--expect 415` should give `415/415`; the guide `18/18`. Mutation proof: in `customerReadyToGraduateSignal`, change `p.gates.length >= 1 &&` to nothing. c4a must go red (the FR 0-gate case fires), then restore.
+- [ ] **Step 7: Re-run the suite and the guide.** The suite with `--expect 417` should give `417/417`; the guide `18/18`. Mutation proof: in `customerReadyToGraduateSignal`, change `p.gates.length >= 1 &&` to nothing. c4a must go red (the FR 0-gate case fires), then restore.
 
-- [ ] **Step 8: Update the counts to 415 and commit.**
+- [ ] **Step 8: Update the counts to 417 and commit.**
 
 ```bash
 git add osm-book-of-business-tracker-1.0.html README.txt VALIDATION.txt CHANGELOG.txt
@@ -665,7 +665,7 @@ git commit -m "Graduation plan task 4: graduation confirm (verdict, note, early 
   - **c5d** (ruling M1) a graduated account with `graduation:{on:'2026-09-30', noGoal:true}`, no goals and no exit: the GOALS section contains `No goal recorded.` and does not contain `Graduated before goal tracking.`.
   - **c5e** (ruling M1) a graduated account with `graduation:null`, no goals and no exit: the GOALS section contains `Graduated before goal tracking.` and does not contain `No goal recorded.`.
 
-- [ ] **Step 2: Run the suite and see red.** With `--expect 420`, expect `415/420 passed, 5 failed` (c5a–c5e).
+- [ ] **Step 2: Run the suite and see red.** With `--expect 422`, expect `417/422 passed, 5 failed` (c5a–c5e).
 
 - [ ] **Step 3: Write `buildGoalsSectionLines`:**
 
@@ -701,9 +701,9 @@ function buildGoalsSectionLines(c){
 
 - [ ] **Step 4: Insert the section in `buildKnowledgeTransferText`:** after `L.push('');` (`:19912`) add `buildGoalsSectionLines(c).forEach(x => L.push(x)); L.push('');`. Nothing else changes order. `promisedOutcomes` stays under WHAT WAS SOLD.
 
-- [ ] **Step 5: Re-run the suite and the guide.** The suite with `--expect 420` should give `420/420`; the guide `18/18`. Measure the packet lengths on the demo book (seed, then `DATA.customers.map(c => buildKnowledgeTransferText(c).length)` via a throwaway probe tail, logged to `.artifacts/grad-plan/packet-len.log`). Record min, median and max in `VALIDATION.txt` next to the spec's 691–1,714 (median 1,281). No cap is added.
+- [ ] **Step 5: Re-run the suite and the guide.** The suite with `--expect 422` should give `422/422`; the guide `18/18`. Measure the packet lengths on the demo book (seed, then `DATA.customers.map(c => buildKnowledgeTransferText(c).length)` via a throwaway probe tail, logged to `.artifacts/grad-plan/packet-len.log`). Record min, median and max in `VALIDATION.txt` next to the spec's 691–1,714 (median 1,281). No cap is added.
 
-- [ ] **Step 6: Record the mutation proof** (move the GOALS insert to after SESSION HISTORY; c5a goes red; restore). **Update the counts to 420, then commit.**
+- [ ] **Step 6: Record the mutation proof** (move the GOALS insert to after SESSION HISTORY; c5a goes red; restore). **Update the counts to 422, then commit.**
 
 ```bash
 git add osm-book-of-business-tracker-1.0.html README.txt VALIDATION.txt CHANGELOG.txt
@@ -748,7 +748,7 @@ git commit -m "Graduation plan task 5: GOALS section leads the knowledge-transfe
 
     `validRaw` is built from the current `DATA.config` exactly as the existing settings checks build theirs (grep `parseSettingsDraft(` in the suite and copy that fixture).
 
-- [ ] **Step 2: Run the suite and see red.** With `--expect 423`, expect `420/423 passed, 3 failed`.
+- [ ] **Step 2: Run the suite and see red.** With `--expect 425`, expect `422/425 passed, 3 failed`.
 
 - [ ] **Step 3: Write the queue helper:**
 
@@ -772,9 +772,9 @@ function commitGoalEvent(c, event, goal){
   - In `parseSettingsDraft`, turn it into lists: split on `\n`, `cleanGoalText(…, 200)`, filter empties, cap at 20, then `normalizeGoalGatesConfig(parsed, DATA.config.modules)`.
   - In `applySettingsDraft`, add `if(draft.goalGates) candidate.config.goalGates = draft.goalGates;`.
 
-- [ ] **Step 5: Re-run the suite and the guide.** The suite with `--expect 423` should give `423/423`; the guide `18/18`. Mutation proof: in `commitGoalEvent`, call `queueGainsightItem` twice. c6a must go red (`items added 2`), then restore.
+- [ ] **Step 5: Re-run the suite and the guide.** The suite with `--expect 425` should give `425/425`; the guide `18/18`. Mutation proof: in `commitGoalEvent`, call `queueGainsightItem` twice. c6a must go red (`items added 2`), then restore.
 
-- [ ] **Step 6: Update the counts to 423 and commit.**
+- [ ] **Step 6: Update the counts to 425 and commit.**
 
 ```bash
 git add osm-book-of-business-tracker-1.0.html README.txt VALIDATION.txt CHANGELOG.txt
@@ -801,7 +801,7 @@ git commit -m "Graduation plan task 6: Success Plan items in the Gainsight queue
   - Readiness: wait for `typeof window[seedPaths.length ? 'runSelfChecks' : fnName] === 'function'`. After seeding, if `typeof window[fnName] !== 'function'`, print `window.${fnName}() was not defined by the seed.` and exit 2.
   - `--verbose`: also return passing results `{name, detail}` (detail capped at 300) and print `  PASS  ${name} — ${detail}` before the summary line.
 
-  Verify that nothing else moved: re-run the suite (`--expect 423` → `423/423`) and the guide (`18/18`).
+  Verify that nothing else moved: re-run the suite (`--expect 425` → `425/425`) and the guide (`18/18`).
 
 - [ ] **Step 2: Write `tools/graduation-scenarios-seed.js`**, which runs after `demo-seed.js`. It defines `window.runGraduationScenarios`, which returns six results:
   - **A3**
@@ -840,11 +840,11 @@ git commit -m "Graduation plan task 6: Success Plan items in the Gainsight queue
 
   Expected: six `PASS  A3…` to `PASS  A8…` lines, each with its measured value, then `runGraduationScenarios: 6/6 passed, 0 failed`, exit 0. To prove the run can fail, temporarily break the seed's A3 expectation to `rows === 1`, see `5/6`, then restore. This is the seed's own liveness check; production code is not mutated here.
 
-- [ ] **Step 4: Re-run the A1 and A2 evidence.** Run the suite (`--expect 423` → `423/423`), the guide (`18/18`), `node tools/migration-dryrun.mjs osm-book-of-business-tracker-1.0.html --from 13` (exit 0, the three summary lines) and `--from 12` (exit 0).
+- [ ] **Step 4: Re-run the A1 and A2 evidence.** Run the suite (`--expect 425` → `425/425`), the guide (`18/18`), `node tools/migration-dryrun.mjs osm-book-of-business-tracker-1.0.html --from 13` (exit 0, the three summary lines) and `--from 12` (exit 0).
 
 - [ ] **Step 5: Write the docs.**
   - README.txt gets a "Graduation plan" section: the goal on the Overview tab, gates, Change goal, the graduation confirm and early exit, the GOALS block in the packet, the Settings → Graduation gates block (FR/GRC empty by design), and the run commands from Steps 3–4.
-  - CHANGELOG.txt gets the 1.0 bullets: schema 14, goals and gates, the two signals, the packet GOALS section, Success Plan queue items, and the suite count `423`.
+  - CHANGELOG.txt gets the 1.0 bullets: schema 14, goals and gates, the two signals, the packet GOALS section, Success Plan queue items, and the suite count `425`.
   - VALIDATION.txt gets the A1–A8 table with the **measured** values from the logs (copy the detail strings) and the command for each.
 
 - [ ] **Step 6: Commit the code and the docs together.**

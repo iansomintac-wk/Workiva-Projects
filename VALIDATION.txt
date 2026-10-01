@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        415/415 passed, 0 failed
+  window.runSelfChecks()        417/417 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1334,3 +1334,10 @@ GRADUATION PLAN TASK 4 — GRADUATION CONFIRM (suite 407 -> 415)
   - MUTATION PROOF (production), restored then green `415/415`: `p.gates.length >= 1 &&` removed from
     customerReadyToGraduateSignal -> FAIL c4a (`"frZero":false`).
   - Ruling M1: applyGraduation writes c.graduation = {on, noGoal} (c4h).
+
+GRADUATION PLAN TASK 4 FIX — EARLY-EXIT TALLY AND IMPLEMENTATION GUARD (suite 415 -> 417)
+  - RED first: c4i, c4j written before production code; `--expect 417` gave 415/417 with both FAIL
+    (c4i `"kb":62.5,"db":62.5,"st":8,"ghost":"5/8"`; c4j `"unheld":0,"needs":false`).
+  - GREEN: `417/417`, guide `18/18`.
+  - Sessions marked not needed now count as resolved on every tally and bar (sessionProgressPct,
+    plannedSessionTotal); unheldPlannedSessions no longer skips accounts in implementation (spec 4.4).
