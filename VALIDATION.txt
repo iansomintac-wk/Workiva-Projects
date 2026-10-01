@@ -29,8 +29,8 @@ tree is CRLF and hashes differently from the blob. The guide is the same
 shape: LF blob, CRLF working tree.
 
   osm-book-of-business-tracker-1.0.html   (LF blob, `git cat-file -p
-    :<file> | sha256sum`, 1,618,917 bytes, LF blob; re-measured in fix R4; the autocrlf working tree hashes differently)
-    8887df18fd5aee17eaa94227ec73d52d8c31ef97d28572a51abefef2cd1ec8b2
+    :<file> | sha256sum`, 1,624,079 bytes, LF blob; re-measured in fix R1; the autocrlf working tree hashes differently)
+    161a0b6f806735e7c5eb4b96734ce8e9e638ea71714104fafbc40fec7d7bbed5
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        382/381 passed, 0 failed
+  window.runSelfChecks()        383/383 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1061,3 +1061,48 @@ CURRICULUM IDENTITY — FIX R4 (suite 381 -> 382)
     `--from 12`: Accounts 6, Evidenced 22, Placed 21, Stamped 21, unstamped 0,
     notes moved 45, lost 0, verdict changed 0, idempotent true, Live true.
     SHA-256 block re-measured (tracker LF blob 8887df18..., 1,618,917 bytes, LF blob).
+
+
+CURRICULUM IDENTITY — FIX R1 (suite 382 -> 383)
+  - FINDING: turning CSRD on orphaned every evidenced criterion, because
+    `Sustainability (CSRD)` deliverables carried `dl_sustainability_csrd_*` ids
+    while the account's evidence was stamped with the base `dl_sustainability_*`
+    ids. Ian ruled option (a), 2026-09-30 ("Let's go A").
+  - CHANGED: `stampDefaultTemplateIds` now stamps default deliverables through
+    `defaultDeliverableIdFor`: a `<module> (CSRD)` deliverable whose text equals
+    the base module's deliverable at the same session index and position reuses
+    the base's deterministic id. Session ids stay per curriculum. Ids stay unique
+    within each key (R2's per-key reject is still green); the same ids now repeat
+    across keys, which R2 allows. `ensureTemplateIds` and the v12 -> 13 migration
+    take their ids from the stamped defaults, so they agree with runtime
+    (unchanged code). User-authored templates are untouched. The #csrd-toggle
+    handler's body moved into `applyCSRDToggle(c, on)` (same two assignments) so a
+    check can drive the real path.
+  - MEASURED overlap on DEFAULT_SESSION_TEMPLATES (re-measured before building):
+    Sustainability (CSRD) 9 of 15, Sustainability + Carbon (CSRD) 7 of 12.
+  - RED first: `runSelfChecks: 382/383` with `FAIL  identity R1: flipping CSRD on
+    keeps evidence on the 9 shared deliverables and flipping it off loses none —
+    {"ticked":15,...,"on":{"live":15,"liveEvidenced":0,"liveBlank":15,"orphans":15,
+    "orphansEvidenced":15},...}`.
+  - Fixture: one Sustainability account, plan of 12, all 15 base criteria ticked
+    (ticked === 15 asserted). Hard-coded expectations after the toggle: 9 evidenced
+    in curriculum, 6 unevidenced (CSRD-only), 6 base-only evidence rows orphaned;
+    after toggling back off: 15 evidenced, 0 orphans.
+  - c2a MODIFIED (not new): its id half compared defaults to `defaultDeliverableId`,
+    true by construction. This also addresses M5r's c2a half. It now asserts
+    literals: base `dl_sustainability_01_01`, CSRD shared position equal to that
+    literal, a CSRD-only position `dl_sustainability_csrd_02_01`, session ids still
+    per curriculum, ids unique within the key, and shared counts 9/15 and 7/12.
+    The idempotence half is kept.
+  - MUTATION PROOF (production code): the base-id reuse in `defaultDeliverableIdFor`
+    replaced by the key's own id. Red: `runSelfChecks: 381/383`, FAIL identity R1
+    (`liveEvidenced:0`) and FAIL c2a (`"Sustainability (CSRD) shared 0/15"`,
+    `"Sustainability + Carbon (CSRD) shared 0/12"`). Restore: `cmp fixed.html tracker`
+    printed nothing; then green.
+  - MEASURED THIS SESSION: suite `383/383`, guide `18/18`. Dry runs after the fix
+    (no new orphans): `--from 11`: Accounts 12, Ticks before 57, Evidence after 56,
+    ticks lost 0, notes changed 1 (unexplained 0), second-pass doubling false.
+    `--from 12`: Accounts 6, Evidenced 22, Placed 21, Stamped 21, unstamped 0,
+    notes moved 45, lost 0, verdict changed 0, idempotent true, Live true.
+    SHA-256 block re-measured (tracker LF blob 161a0b6f..., 1,624,079 bytes, LF blob).
+    README/VALIDATION's `382/381` typo is now `383/383`.

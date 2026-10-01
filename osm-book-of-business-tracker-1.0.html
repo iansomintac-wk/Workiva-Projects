@@ -3816,10 +3816,20 @@ function deliverableRows(tpl){
   const ids = Array.isArray(tpl.deliverableIds) ? tpl.deliverableIds : [];
   return (Array.isArray(tpl.deliverables) ? tpl.deliverables : []).map((text, j) => ({id: ids[j] || null, text}));
 }
+/* Ian's R1 ruling (a): a default "<module> (CSRD)" deliverable whose text equals
+   the base module's deliverable at the same session and position reuses the BASE
+   deliverable's id, so switching CSRD on keeps evidence on the shared deliverables.
+   Session ids stay per curriculum. Ids stay unique within a key (positions are). */
+function defaultDeliverableIdFor(key, i, j, text){
+  const base = String(key).endsWith(' (CSRD)') ? String(key).slice(0, -' (CSRD)'.length) : null;
+  const bt = base && Array.isArray(DEFAULT_SESSION_TEMPLATES[base]) ? DEFAULT_SESSION_TEMPLATES[base][i] : null;
+  return (bt && Array.isArray(bt.deliverables) && bt.deliverables[j] === text)
+    ? defaultDeliverableId(base, i, j) : defaultDeliverableId(key, i, j);
+}
 function stampDefaultTemplateIds(){
   Object.entries(DEFAULT_SESSION_TEMPLATES).forEach(([key, list]) => list.forEach((tpl, i) => {
     tpl.id = defaultSessionId(key, i);
-    setSessionDeliverables(tpl, tpl.deliverables.map((text, j) => ({id: defaultDeliverableId(key, i, j), text})));
+    setSessionDeliverables(tpl, tpl.deliverables.map((text, j) => ({id: defaultDeliverableIdFor(key, i, j, text), text})));
   }));
 }
 stampDefaultTemplateIds();
@@ -6182,6 +6192,12 @@ function resolveRawCurriculum(customer){
   }
   if(!templates) templates = DATA.config.sessionTemplates[customer.module];
   return Array.isArray(templates) ? templates : [];
+}
+/* What the #csrd-toggle handler does to the account (extracted so a self-check can
+   drive the real path). Evidence is untouched; session notes are cleared. */
+function applyCSRDToggle(c, on){
+  c.reportsCSRD = !!on;
+  c.sessionNotes = {};
 }
 function getSessionTemplateSet(customer){
   const templates = resolveRawCurriculum(customer);
@@ -10133,6 +10149,53 @@ function _runSelfChecksInner(){
     _renderMemoResets.forEach(r => r());
     check('identity R2: a repeated session id or deliverable id inside one curriculum key is rejected on import; the same ids across keys still import', ok, detail);
   })();
+  /* R1 — turning CSRD on must not orphan evidence on deliverables the CSRD
+     curriculum shares with the base. Ian's ruling (a): a default CSRD deliverable
+     whose text equals the base's at the same session and position reuses the
+     base id. EXPECTATIONS ARE HARD-CODED from DEFAULT_SESSION_TEMPLATES as measured
+     2026-09-30: Sustainability has 15 deliverables over 12 sessions; 9 of the 15
+     CSRD deliverables are shared (s1#0, s1#1, s2#1, s3#0, s3#1, s5#0, s7#0, s10#0,
+     s12#0), so 9 stay evidenced, 6 base-only evidence rows are orphaned, and the 6
+     CSRD-only rows are unevidenced. FIXTURE: one Sustainability account, plan of
+     12, every base criterion ticked (LIVENESS: ticked === 15). The flag goes
+     through applyCSRDToggle, the function the #csrd-toggle handler calls. */
+  (function(){
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      const c = {id:'__idr1__', name:'Identity R1 Co', module:'Sustainability',
+        stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+        totalSessions:12, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(c);
+      DATA.customers = [c]; DATA.activities = {[c.id]: []};
+      _renderMemoResets.forEach(r => r());
+      let ticked = 0;
+      outcomeCriteriaFor(c).forEach(cr => { if(setOutcomeEvidence(c, cr, {on: isoAddDays(todayISO(), -30), by:'customer'})) ticked++; });
+      const split = () => {
+        const rows = outcomeCriteriaFor(c);
+        const orphan = rows.filter(x => x.source === 'no longer in the curriculum');
+        const live = rows.filter(x => x.source !== 'no longer in the curriculum');
+        return {live: live.length, liveEvidenced: live.filter(x => x.evidence).length,
+          liveBlank: live.filter(x => !x.evidence).length, orphans: orphan.length,
+          orphansEvidenced: orphan.filter(x => x.evidence).length};
+      };
+      const off0 = split();
+      applyCSRDToggle(c, true);
+      _renderMemoResets.forEach(r => r());
+      const on = split();
+      applyCSRDToggle(c, false);
+      _renderMemoResets.forEach(r => r());
+      const off1 = split();
+      ok = ticked === 15 && off0.liveEvidenced === 15 && off0.orphans === 0
+        && on.live === 15 && on.liveEvidenced === 9 && on.liveBlank === 6
+        && on.orphans === 6 && on.orphansEvidenced === 6
+        && off1.liveEvidenced === 15 && off1.orphans === 0 && off1.live === 15;
+      detail = JSON.stringify({ticked, off0, on, off1});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity R1: flipping CSRD on keeps evidence on the 9 shared deliverables and flipping it off loses none', ok, detail);
+  })();
   (function(){
     /* c2a — curriculum identity (piece 1). Shipped defaults carry DETERMINISTIC
        ids so every browser shipping the same default agrees on identity, and
@@ -10140,14 +10203,27 @@ function _runSelfChecksInner(){
     let ok = false, detail = '';
     const prevT = DATA.config.sessionTemplates;
     try{
+      /* HARD-CODED expectations (review M5r: comparing to the id function was true
+         by construction). Measured 2026-09-30: of the CSRD defaults, 9 of 15
+         (Sustainability) and 7 of 12 (Sustainability + Carbon) reuse a base id. */
       let stamped = 0, wrong = [];
-      Object.entries(DEFAULT_SESSION_TEMPLATES).forEach(([key, list]) => list.forEach((tpl, i) => {
-        stamped++;
-        if(tpl.id !== defaultSessionId(key, i)) wrong.push(key + '#' + i);
-        (tpl.deliverables || []).forEach((_, j) => {
-          if((tpl.deliverableIds || [])[j] !== defaultDeliverableId(key, i, j)) wrong.push(key + '#' + i + '.' + j);
-        });
-      }));
+      const D = DEFAULT_SESSION_TEMPLATES;
+      const lit = (cond, tag) => { if(!cond) wrong.push(tag); };
+      Object.values(D).forEach(list => list.forEach(() => { stamped++; }));
+      lit(D['Sustainability'][0].id === 'ss_sustainability_01', 'base session id literal');
+      lit(D['Sustainability'][0].deliverableIds[0] === 'dl_sustainability_01_01', 'base deliverable id literal');
+      lit(D['Sustainability (CSRD)'][0].id === 'ss_sustainability_csrd_01', 'csrd session id stays per curriculum');
+      lit(D['Sustainability (CSRD)'][0].deliverableIds[0] === 'dl_sustainability_01_01', 'csrd shared position reuses the base id');
+      lit(D['Sustainability (CSRD)'][1].deliverableIds[0] === 'dl_sustainability_csrd_02_01', 'csrd-only position keeps a csrd id');
+      const sharedCount = k => {
+        const baseIds = new Set([].concat(...D[k.replace(' (CSRD)', '')].map(t => t.deliverableIds)));
+        const all = [].concat(...D[k].map(t => t.deliverableIds));
+        lit(new Set(all).size === all.length, k + ' ids unique within the key');
+        return all.filter(x => baseIds.has(x)).length + '/' + all.length;
+      };
+      const sharedS = sharedCount('Sustainability (CSRD)'), sharedSC = sharedCount('Sustainability + Carbon (CSRD)');
+      lit(sharedS === '9/15', 'Sustainability (CSRD) shared ' + sharedS);
+      lit(sharedSC === '7/12', 'Sustainability + Carbon (CSRD) shared ' + sharedSC);
       const copy = JSON.parse(JSON.stringify(DEFAULT_SESSION_TEMPLATES));
       Object.values(copy).forEach(list => list.forEach(t => { delete t.id; delete t.deliverableIds; }));
       copy.__custom__ = [{title:'Custom session', ttfvStage:'ttfv1', enable:[], deliverables:['A','B']}];
@@ -10162,7 +10238,7 @@ function _runSelfChecksInner(){
         && custom.deliverableIds.every(x => DELIVERABLE_ID_RE.test(x));
       ok = stamped > 0 && wrong.length === 0 && first > 0 && second === 0
         && JSON.stringify(copy) === snap && sameAsDefaults && customOk;
-      detail = JSON.stringify({stamped, wrong: wrong.slice(0, 5), first, second, sameAsDefaults, customOk});
+      detail = JSON.stringify({stamped, wrong: wrong.slice(0, 5), sharedS, sharedSC, first, second, sameAsDefaults, customOk});
     }catch(err){ detail = err.message; }
     DATA.config.sessionTemplates = prevT;
     check('identity: shipped defaults carry deterministic ids, and ensureTemplateIds is idempotent', ok, detail);
@@ -22641,8 +22717,7 @@ The draft is discarded. The risk itself stays open.`)) return;
       render(); // revert the select visually unless/until confirmed
     });
     $('#csrd-toggle') && $('#csrd-toggle').addEventListener('change', e=>{
-      c.reportsCSRD = e.target.checked;
-      c.sessionNotes = {};
+      applyCSRDToggle(c, e.target.checked);
       if(saveData()) showToast(e.target.checked ? 'CSRD curriculum applied (where defined)' : 'Reverted to base curriculum'); render();
     });
     $('#stage-select') && $('#stage-select').addEventListener('change', e=>{ changeStage(c, e.target.value); saveData(); render(); });
