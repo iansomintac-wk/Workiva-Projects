@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        396/396 passed, 0 failed
+  window.runSelfChecks()        401/401 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1307,3 +1307,11 @@ GRADUATION PLAN TASK 1 — SCHEMA 14 AND DATA (suite 389 -> 396)
       (1) v13 step left `c.exit` absent: `395/396`, FAIL c1e ("shapeOk":false).
       (2) v13 step left `c.graduation` absent (ruling M1): `395/396`, FAIL c1e ("shapeOk":false).
   - DRY RUNS: `--from 13` (new, seed tools/legacy-seed-v13.js) exit 0; `--from 12` exit 0.
+
+GRADUATION PLAN TASK 2 — GOAL PANEL (suite 396 -> 401)
+  - RED first: 5 checks c2a-c2e written before any production code; `396/401`, every
+    `grad-plan c2*` FAIL (`createGoal is not defined`, `goalCriteriaTally is not defined`, ...).
+  - GREEN: `401/401`, guide `18/18`.
+  - MUTATION PROOF (production), restored (cmp against the saved copy) then green `401/401`:
+    createGoal's planText guard dropped (`!String(op.planText||'').trim()`): FAIL c2b
+    (`["Publish FY2026 report","Publish FY2026 report"]`; an existing plan was overwritten).

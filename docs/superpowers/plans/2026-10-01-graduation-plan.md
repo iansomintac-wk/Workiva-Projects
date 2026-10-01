@@ -32,7 +32,7 @@
 |---|---|---|
 | baseline (measured 2026-10-01 by the run lead) | — | 389 |
 | 1 | c1a–c1g | 396 (measured) |
-| 2 | c2a–c2e | 401 |
+| 2 | c2a–c2e | 401 (measured) |
 | 3 | c3a–c3d | 405 |
 | 4 | c4a–c4h | 413 |
 | 5 | c5a–c5e | 418 |
