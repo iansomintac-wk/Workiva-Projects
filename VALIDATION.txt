@@ -29,8 +29,8 @@ tree is CRLF and hashes differently from the blob. The guide is the same
 shape: LF blob, CRLF working tree.
 
   osm-book-of-business-tracker-1.0.html   (LF blob, `git cat-file -p
-    :<file> | sha256sum`, 1,610,110 bytes, LF blob; re-measured in fix R2; the autocrlf working tree hashes differently)
-    7d4db080ff7284c2214dd253709579e217df86e94ccaec5be8b0adeca5b3f09a
+    :<file> | sha256sum`, 1,610,349 bytes, LF blob; re-measured in fix R2 (message tightening); the autocrlf working tree hashes differently)
+    adf7fd738f47b1e0d4a2168a89e203e2b3c4340208f76011df083d5202f67604
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -949,7 +949,14 @@ CURRICULUM IDENTITY — FIX R2 (suite 379 -> 380)
     Restore: `cmp fixed.html tracker` printed nothing; then green.
   - MEASURED THIS SESSION: suite `380/380`, guide `18/18`. The real seed, the
     rename/backfill path and every other check stayed green with the new reject.
-    SHA-256 block re-measured (tracker LF blob 7d4db080..., 1,610,110 bytes).
+  - TIGHTENED (second commit): cases (a) and (b) now assert the thrown message
+    matches the per-key rejection text ("repeats a deliverable id used elsewhere
+    in the same curriculum" / "repeats a session id used earlier in the same
+    curriculum"), not just that something threw. Mutations, each red 379/380:
+    session reject unreachable -> dupSession null; deliverable reject
+    unreachable -> dupDeliverable null (the other case's message still present).
+    `cmp fixed2.html tracker` printed nothing; then suite 380/380.
+    SHA-256 block re-measured (tracker LF blob adf7fd73..., 1,610,349 bytes, after the message tightening).
 
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded

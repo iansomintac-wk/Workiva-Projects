@@ -10015,7 +10015,9 @@ function _runSelfChecksInner(){
       const msgB = tries(t => Object.assign(t[fx.mod][3], {id: t[fx.mod][2]['id']}));
       const msgC = tries(t => Object.assign(t[otherKey][0], {id: t[fx.mod][0]['id'],
         deliverables: t[fx.mod][0]['deliverables'].slice(), deliverableIds: t[fx.mod][0]['deliverableIds'].slice()}));
-      ok = fx.ticked > 0 && !!otherKey && msgA !== null && msgB !== null && msgC === null;
+      // The message must be the per-key duplicate rejection, so an unrelated rejection cannot pass.
+      ok = fx.ticked > 0 && !!otherKey && /repeats a deliverable id used elsewhere in the same curriculum/.test(msgA || '')
+        && /repeats a session id used earlier in the same curriculum/.test(msgB || '') && msgC === null;
       detail = JSON.stringify({ticked: fx.ticked, otherKey, dupDeliverable: msgA, dupSession: msgB, acrossKeys: msgC});
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
