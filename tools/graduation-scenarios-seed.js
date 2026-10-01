@@ -129,10 +129,10 @@ window.runGraduationScenarios = function(){
       detail: `packetLine=${JSON.stringify(line)} firedBeforeAck=${before} firedAfterAck=${after} headlineBefore=${recBefore.key} (${JSON.stringify(recBefore.action)}) todayRowBefore=${!!rowBefore} headlineAfter=${recAfter.key} todayRowAfter=${!!rowAfter}`};
   });
 
-  run('A7 FR account (empty gates): goal, verdict, graduate; packet "0 gates"', () => {
-    const c = gsAcct('gsFR', {module: 'Financial Reporting', totalSessions: 6});
+  run('A7 GRC disclosure goal (empty default list): goal, verdict, graduate; packet "0 gates"', () => {
+    const c = gsAcct('gsFR', {module: 'GRC', totalSessions: 6});
     DATA.customers = [c]; gsHeld(c, [1,2,3,4,5,6], -45);
-    const g = createGoal(c, {type: 'publish', text: 'File the 10-K'});
+    const g = createGoal(c, {type: 'disclosure', text: 'Submit the SOX 404 certification'});
     const gates = g.gates.length;
     const done = confirmGraduation(c, {verdict: 'partly', note: 'Filing done, review cycle still manual'});
     const p = primaryGoal(c);

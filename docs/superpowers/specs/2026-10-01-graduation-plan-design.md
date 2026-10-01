@@ -119,6 +119,11 @@ external term is adopted.
 **Financial Reporting and GRC: empty lists** until Ian supplies content (R10). Goals on those accounts still
 work, because the verdict rests on OSM judgement plus criteria evidence (R4).
 
+> **Note, 2026-10-01 (ruling M3).** Ian approved the FR and GRC lists
+> (`drafts/2026-10-01-fr-grc-gates-DRAFT.md`) and asked for them as editable defaults. Financial Reporting now ships
+> 5/5/3/3 gates and GRC 5/5/3/0 (GRC disclosure stays empty); OSMs still edit them in Settings. This supersedes the
+> "empty lists" paragraph above (R10). Existing goals keep the gates they were copied with.
+
 ### 3.4 Migration v13 → v14
 
 Follows the existing chain in `migrateData` (`if(v === 13){…; v = 14}`) and bumps `CURRENT_SCHEMA_VERSION` to 14.
@@ -128,6 +133,11 @@ Follows the existing chain in `migrateData` (`if(v === 13){…; v = 14}`) and bu
 - **No goal is guessed from free text.** Existing accounts show "No goal yet" with a starting-point hint (§4.1).
 - Historic graduations get no `exit` record. The packet says "graduated before goal tracking" rather than
   inventing one.
+
+> **Note, 2026-10-01 (ruling M3): migration v14 → v15.** `CURRENT_SCHEMA_VERSION` is now 15 (`if(v === 14){…; v = 15}`).
+> For `Financial Reporting` and `GRC` only, each goal type whose list is empty or absent is filled from the new
+> defaults. A non-empty list is never overwritten; no other module and no existing goal's gates are touched; a second
+> pass changes nothing.
 - Normalisers (in the same style as `normalizeGradReview`) clamp text lengths, drop unknown enum values to
   `null`, and repair "more than one live primary" by keeping the earliest.
 
@@ -272,6 +282,7 @@ characters (§8).
 | A5 | Scenario B graduated in week 7 | `exit.reason` recorded; tally reads held of held; packet GOALS shows the reason |
 | A6 | Scenario C | packet shows "Changed <date>: Publish FY2026 report → …, because …"; `goal_changed` fires until acknowledged |
 | A7 | An FR account (empty gates) | a goal can be created, verdict recorded and graduated; packet shows "0 gates" without error |
+| A7 (retargeted, M3) | A GRC account with a `disclosure` goal (0 gates) | same assertions; FR now ships gates, so the empty-list case is GRC disclosure |
 | A8 | Graduation with the "met" verdict and open gates | confirm asks for the note and does not block |
 
 ## 8. Numbers and their evidence

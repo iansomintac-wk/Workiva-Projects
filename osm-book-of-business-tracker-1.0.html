@@ -4348,7 +4348,7 @@ const DEFAULT_OUTCOME_NAMES = [
 /* ============ GRADUATION PLAN (spec 2026-10-01): data ============
    c.goals[] (one live primary + optional secondaries) and c.exit; config.goalGates
    per module key. Gates are COPIED into a goal at creation — editing the defaults
-   later never rewrites an existing goal. FR and GRC ship EMPTY (R10). */
+   later never rewrites an existing goal. FR and GRC ship the approved lists as defaults (ruling M3; GRC disclosure empty). */
 const GOAL_TYPES = [
   {key:'publish',    label:"Publish this cycle's report/filing"},
   {key:'setup_next', label:'Set up for next cycle'},
@@ -4362,6 +4362,18 @@ const SUSTAINABILITY_GOAL_GATES = {
   setup_next: ['Metrics mapped to target frameworks','Data collection tasks sent','Factbook connected to at least one reporting output','Next reporting cycle plan established','Roll-forward walked through with the customer'],
   program: ['Topics and metrics configured','Data collection tasks sent and returned','Factbook connected'],
   disclosure: ['Metrics mapped to the disclosure framework','Responses drafted in Workiva','Submission made']};
+/* Ruling M3 (Ian, 2026-10-01): the approved FR and GRC lists ship as DEFAULTS. OSMs still edit them per book in
+   Settings -> Graduation gates. Source: docs/superpowers/drafts/2026-10-01-fr-grc-gates-DRAFT.md. GRC disclosure stays empty. */
+const FR_GOAL_GATES = {
+  publish: ['Source spreadsheet data linked into the filing document','XBRL tagging completed and validated','Test filing completed with no critical issues','Certification and sign-off cycle completed','Filing submitted'],
+  setup_next: ['Source spreadsheet data linked into the filing document','XBRL tagging completed and validated','Next reporting period folder rolled forward with copies of all source files','Cross-functional reviewers (legal, IR, auditors) given access','Roll-forward walked through with the customer'],
+  program: ['Roles assigned to reporting leads and IT contact','Source spreadsheet data linked into a document','First linked presentation produced from source data'],
+  disclosure: ['XBRL tagging completed and validated','Test filing completed with no critical issues','Submission made']};
+const GRC_GOAL_GATES = {
+  publish: ['Risk library populated','Control library populated and mapped to risks','Workpaper cycle completed through review and approval','Issues tracked to an action plan or resolution','Report issued to stakeholders'],
+  setup_next: ['Control library populated and mapped to risks','Audit universe populated with the customer\'s audit areas','Next audit project created with phase dates','Assessment cycle sent to process and control owners','Next cycle walked through with the customer'],
+  program: ['Team members assigned the correct GRC roles','Risk library populated','Control library populated and mapped to risks'],
+  disclosure: []};
 const GOAL_GATE_SHARED_KEYS = ['Sustainability','Carbon','Sustainability + Carbon','Sustainability (CSRD)','Sustainability + Carbon (CSRD)'];
 const MAX_GOALS = 20, MAX_GOAL_GATES = 20;
 const GOAL_ID_RE = /^gl_[0-9a-f]{8}$/, GATE_ID_RE = /^gt_[0-9a-f]{8}$/;
@@ -4370,6 +4382,8 @@ function defaultGoalGatesConfig(){
   const out = {};
   DEFAULT_MODULES.forEach(m => { out[m] = emptyGoalGateSet(); });
   GOAL_GATE_SHARED_KEYS.forEach(k => { out[k] = JSON.parse(JSON.stringify(SUSTAINABILITY_GOAL_GATES)); });
+  out['Financial Reporting'] = JSON.parse(JSON.stringify(FR_GOAL_GATES));   // M3
+  out.GRC = JSON.parse(JSON.stringify(GRC_GOAL_GATES));                      // M3
   return out;
 }
 function cleanGoalText(v, max){ return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max); }
@@ -4641,7 +4655,7 @@ function requestStageChange(c, stageKey){
    explicit step in migrateData(). backfillCustomerRecord remains for per-record field
    defaults on legacy/imported records, but new-shape changes get a numbered migration —
    version-blind additive guessing is how backfill logic rots. */
-const CURRENT_SCHEMA_VERSION = 14; // graduation plan: + c.goals, c.exit, c.graduation, config.goalGates (13: curriculum identity)
+const CURRENT_SCHEMA_VERSION = 15; // 15: FR/GRC default gate lists filled where empty (M3); 14: + c.goals, c.exit, c.graduation, config.goalGates (13: curriculum identity)
 
 /* The single gate for clock times. Accepts "H:MM" and "HH:MM" on a 24h clock and
    returns a zero-padded "HH:MM"; everything else returns null and the field is
@@ -5058,6 +5072,22 @@ function migrateData(data){
     });
     if(isRecordObject(data.config)) data.config.goalGates = normalizeGoalGatesConfig(data.config.goalGates, data.config.modules);
     v = 14;
+  }
+  if(v === 14){
+    /* v14 -> v15 (ruling M3). Fill an EMPTY (or absent) FR/GRC gate list from the new defaults, per goal type.
+       A non-empty list is never overwritten; no other module and no existing goal's copied gates are touched.
+       GRC disclosure has an empty default, so it stays empty. Idempotent. */
+    if(isRecordObject(data.config)){
+      const gg = isRecordObject(data.config.goalGates) ? data.config.goalGates : (data.config.goalGates = {});
+      const fill = {'Financial Reporting': FR_GOAL_GATES, 'GRC': GRC_GOAL_GATES};
+      Object.keys(fill).forEach(m => {
+        if(!isRecordObject(gg[m])) gg[m] = emptyGoalGateSet();
+        Object.keys(fill[m]).forEach(t => {
+          if(!Array.isArray(gg[m][t]) || gg[m][t].length === 0) gg[m][t] = fill[m][t].slice();
+        });
+      });
+    }
+    v = 15;
   }
   data.schemaVersion = v;
   // Sanity: contradictory risk thresholds (watch >= alert) make the watch tier
@@ -15816,6 +15846,16 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     check('grad-plan c1c: normalizeExit rejects a bad date, nulls an unknown reason, clamps note and session ids', ok, detail);
   })();
+  const M3_FR_GATES = {
+    publish: ['Source spreadsheet data linked into the filing document','XBRL tagging completed and validated','Test filing completed with no critical issues','Certification and sign-off cycle completed','Filing submitted'],
+    setup_next: ['Source spreadsheet data linked into the filing document','XBRL tagging completed and validated','Next reporting period folder rolled forward with copies of all source files','Cross-functional reviewers (legal, IR, auditors) given access','Roll-forward walked through with the customer'],
+    program: ['Roles assigned to reporting leads and IT contact','Source spreadsheet data linked into a document','First linked presentation produced from source data'],
+    disclosure: ['XBRL tagging completed and validated','Test filing completed with no critical issues','Submission made']};
+  const M3_GRC_GATES = {
+    publish: ['Risk library populated','Control library populated and mapped to risks','Workpaper cycle completed through review and approval','Issues tracked to an action plan or resolution','Report issued to stakeholders'],
+    setup_next: ['Control library populated and mapped to risks','Audit universe populated with the customer\'s audit areas','Next audit project created with phase dates','Assessment cycle sent to process and control owners','Next cycle walked through with the customer'],
+    program: ['Team members assigned the correct GRC roles','Risk library populated','Control library populated and mapped to risks'],
+    disclosure: []};
   (function(){                                   // c1d
     let ok = false, detail = '';
     try{
@@ -15826,10 +15866,12 @@ function _runSelfChecksInner(){
       const empty = k => ['publish','setup_next','program','disclosure'].every(t => Array.isArray(d[k][t]) && d[k][t].length === 0);
       ok = DEFAULT_MODULES.every(m => keys.indexOf(m) !== -1)
         && keys.indexOf('Sustainability (CSRD)') !== -1 && keys.indexOf('Sustainability + Carbon (CSRD)') !== -1
-        && sus.every(k => lens(k) === '5/5/3/3') && empty('Financial Reporting') && empty('GRC');
+        && sus.every(k => lens(k) === '5/5/3/3') && lens('Financial Reporting') === '5/5/3/3' && lens('GRC') === '5/5/3/0'
+        && JSON.stringify(d['Financial Reporting']) === JSON.stringify(M3_FR_GATES) && JSON.stringify(d.GRC) === JSON.stringify(M3_GRC_GATES)
+        && empty('Carbon') === false && d.GRC.disclosure.length === 0;
       detail = keys.map(k => k + '=' + lens(k)).join('; ');
     }catch(err){ detail = err.message; }
-    check('grad-plan c1d: default goal gates cover every module, Sustainability 5/5/3/3, FR and GRC empty', ok, detail);
+    check('grad-plan c1d: default goal gates cover every module, Sustainability 5/5/3/3, FR 5/5/3/3 and GRC 5/5/3/0 with the approved text (M3)', ok, detail);
   })();
   (function(){                                   // c1e
     const prevC = DATA.customers, prevCfg = DATA.config;
@@ -15847,23 +15889,61 @@ function _runSelfChecksInner(){
       const gg = p.config.goalGates;
       const keys = Object.keys(gg);
       const ggOk = keys.length === 8 && keys.indexOf('Custom Module') !== -1
-        && ['publish','setup_next','program','disclosure'].every(t => gg['Custom Module'][t].length === 0);
+        && ['publish','setup_next','program','disclosure'].every(t => gg['Custom Module'][t].length === 0)
+        && JSON.stringify(gg['Financial Reporting']) === JSON.stringify(M3_FR_GATES) && JSON.stringify(gg.GRC) === JSON.stringify(M3_GRC_GATES);
       const snap = x => JSON.stringify([x.customers.map(c => [c.goals, c.exit, c.graduation]), x.config.goalGates]);
       const before = snap(p);
       const again = prepareBookData(cloneData(p), 'SelfCheck');
-      ok = live && p.schemaVersion === 14 && shapeOk && ggOk && snap(again) === before;
+      ok = live && p.schemaVersion === 15 && shapeOk && ggOk && snap(again) === before;
       detail = JSON.stringify({live, schema: p.schemaVersion, shapeOk, ggKeys: keys.length, ggOk, idem: snap(again) === before});
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.config = prevCfg;
-    check('grad-plan c1e: v13 -> v14 gives goals [], exit null, graduation null, goalGates; second pass identical', ok, detail);
+    check('grad-plan c1e: v13 -> v15 gives goals [], exit null, graduation null, goalGates with FR and GRC filled; second pass identical', ok, detail);
   })();
   (function(){                                   // c1f
     let ok = false, detail = '';
     try{
-      ok = CURRENT_SCHEMA_VERSION === 14 && isRecordObject(defaultData().config.goalGates);
+      ok = CURRENT_SCHEMA_VERSION === 15 && isRecordObject(defaultData().config.goalGates);
       detail = 'schema ' + CURRENT_SCHEMA_VERSION;
     }catch(err){ detail = err.message; }
-    check('grad-plan c1f: schema is 14 and defaultData carries config.goalGates', ok, detail);
+    check('grad-plan c1f: schema is 15 and defaultData carries config.goalGates', ok, detail);
+  })();
+  (function(){                                   // c1h (ruling M3: v14 -> v15 fills empty FR/GRC lists only)
+    const prevC = DATA.customers, prevCfg = DATA.config;
+    let ok = false, detail = '';
+    try{
+      const types = ['publish','setup_next','program','disclosure'];
+      const book = cloneData(DATA);
+      book.schemaVersion = 14;
+      const gg = book.config.goalGates;
+      types.forEach(t => { gg['Financial Reporting'][t] = []; gg.GRC[t] = []; });
+      gg['Financial Reporting'].publish = ['Typed by an OSM'];          // a non-empty custom list must survive
+      gg.Sustainability.program = ['Only this one'];                     // other modules are not touched
+      gg['Custom Module'] = {publish: ['Custom A'], setup_next: [], program: [], disclosure: []};
+      book.config.modules = book.config.modules.concat(['Custom Module']);
+      book.config.sessionTemplates['Custom Module'] = (book.config.sessionTemplates.Carbon || []).slice(0, 6);
+      const c0 = book.customers[0];
+      c0.goals = [{id: 'gl_0000abcd', type: 'publish', text: 'Existing goal', targetCycle: '', primary: true, source: 'osm', createdOn: '2026-09-01',
+        gates: [], verdict: null, verdictOn: null, verdictNote: '', supersededBy: null, changeReason: '', ackOn: null}];
+      const p = prepareBookData(book, 'SelfCheck');
+      const g = p.config.goalGates;
+      const fr = g['Financial Reporting'], grc = g.GRC;
+      const frOk = JSON.stringify(fr.publish) === '["Typed by an OSM"]'
+        && JSON.stringify(fr.setup_next) === JSON.stringify(M3_FR_GATES.setup_next)
+        && JSON.stringify(fr.program) === JSON.stringify(M3_FR_GATES.program)
+        && JSON.stringify(fr.disclosure) === JSON.stringify(M3_FR_GATES.disclosure);
+      const grcOk = JSON.stringify(grc) === JSON.stringify(M3_GRC_GATES) && grc.disclosure.length === 0;
+      const othersOk = JSON.stringify(g.Sustainability.program) === '["Only this one"]'
+        && JSON.stringify(g['Custom Module'].publish) === '["Custom A"]' && g['Custom Module'].setup_next.length === 0
+        && JSON.stringify(g.Carbon) === JSON.stringify(SUSTAINABILITY_GOAL_GATES);
+      const goalOk = p.customers[0].goals.length === 1 && p.customers[0].goals[0].gates.length === 0;
+      const again = prepareBookData(cloneData(p), 'SelfCheck');
+      const idem = JSON.stringify(again.config.goalGates) === JSON.stringify(p.config.goalGates);
+      ok = p.schemaVersion === 15 && frOk && grcOk && othersOk && goalOk && idem;
+      detail = JSON.stringify({schema: p.schemaVersion, frOk, grcOk, othersOk, goalOk, idem});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.config = prevCfg;
+    check('grad-plan c1h: v14 -> v15 fills empty FR/GRC lists, keeps a typed FR list, other modules and existing goals untouched, second pass identical', ok, detail);
   })();
   (function(){                                   // c1g
     let ok = false, detail = '';
@@ -15943,14 +16023,14 @@ function _runSelfChecksInner(){
       const list = outcomeCriteriaFor(c);
       const tally = goalCriteriaTally(c);
       const tallyOk = tally.total === list.length && tally.evidenced === list.filter(x => x.evidence).length && tally.total > 0;
-      const f = gp2Cust('Financial Reporting'); DATA.customers = [f];
-      const fg = createGoal(f, {type:'publish', text:'Publish the filing'});
+      const f = gp2Cust('GRC'); DATA.customers = [f];
+      const fg = createGoal(f, {type:'disclosure', text:'Submit the disclosure'});
       const html = renderGoalPanel(f);
       ok = tallyOk && !!fg && fg.gates.length === 0 && html.indexOf('0 gates') !== -1;
       detail = JSON.stringify({tally, fr: fg && fg.gates.length, zero: html.indexOf('0 gates') !== -1});
     }catch(err){ detail = err.message; }
     DATA.customers = prevC;
-    check('grad-plan c2d: criteria tally matches outcomeCriteriaFor; a Financial Reporting goal has 0 gates and the panel says so', ok, detail);
+    check('grad-plan c2d: criteria tally matches outcomeCriteriaFor; a GRC disclosure goal (empty default list) has 0 gates and the panel says so', ok, detail);
   })();
   (function(){                                   // c2e
     const prevC = DATA.customers;
@@ -16119,8 +16199,8 @@ function _runSelfChecksInner(){
       const gradNull = customerReadyToGraduateSignal(grad) === null;
       const nogoal = gp4Cust('__gp4n__'); nogoal.targetGraduationDate = todayISO();
       const noGoalNull = customerReadyToGraduateSignal(nogoal) === null;
-      const fr = gp4Cust('__gp4f__'); fr.module = 'Financial Reporting'; fr.targetGraduationDate = todayISO();
-      const g = createGoal(fr, {type:'publish', text:'Report'});
+      const fr = gp4Cust('__gp4f__'); fr.module = 'GRC'; fr.targetGraduationDate = todayISO();
+      const g = createGoal(fr, {type:'disclosure', text:'Report'});
       const frZero = g.gates.length === 0 && customerReadyToGraduateSignal(fr) === null;
       setGoalVerdict(fr, g.id, 'met', 'ok');
       const frMet = !!customerReadyToGraduateSignal(fr) && customerReadyToGraduateSignal(fr).verdictMet === true;
@@ -16531,8 +16611,8 @@ function _runSelfChecksInner(){
       applyGraduation(c, {verdict:'partly', note:'n', exitReason:'goal_met_early', exitNote:'Customer self-sufficient'});
       const s1 = gp5Goals(gp5Packet(c));
       const exit = s1.includes('Early exit: Goal met early') && s1.includes('Customer self-sufficient') && s1.includes('Sessions marked not needed: Session 6');
-      const fr = gp4Cust('__gp5cf__'); fr.module = 'Financial Reporting'; DATA.customers = [fr];
-      createGoal(fr, {type:'publish', text:'File the 10-K'});
+      const fr = gp4Cust('__gp5cf__'); fr.module = 'GRC'; DATA.customers = [fr];
+      createGoal(fr, {type:'disclosure', text:'Submit the disclosure'});
       const s2 = gp5Goals(gp5Packet(fr));
       const zero = s2.includes('Gates: 0 gates');
       const gr = gp4Cust('__gp5cg__'); DATA.customers = [gr];
@@ -16628,12 +16708,12 @@ function _runSelfChecksInner(){
       const plain = parseSettingsDraft(raw);
       const before = JSON.stringify(DATA.config.goalGates);
       const kept = plain.goalGates === undefined && JSON.stringify(applySettingsDraft(cloneData(DATA), plain).config.goalGates) === before;
-      const d = defaultGoalGatesConfig()['Financial Reporting'];
-      const empty = GOAL_TYPES.every(t => d[t.key].length === 0);
-      ok = parsed && wrote && kept && empty;
-      detail = JSON.stringify({parsed, wrote, kept, empty});
+      const d = defaultGoalGatesConfig();
+      const filled = JSON.stringify(d['Financial Reporting']) === JSON.stringify(M3_FR_GATES) && JSON.stringify(d.GRC) === JSON.stringify(M3_GRC_GATES);
+      ok = parsed && wrote && kept && filled;
+      detail = JSON.stringify({parsed, wrote, kept, filled});
     }catch(err){ detail = err.message; }
-    check('grad-plan c6c: Settings gates parse one per line, write config.goalGates only when present, and FR/GRC defaults stay empty', ok, detail);
+    check('grad-plan c6c: Settings gates parse one per line, write config.goalGates only when present, and FR/GRC ship the approved gate lists as editable defaults (M3)', ok, detail);
   })();
   (function(){                                   // c6d
     /* Models saveData's undo rule on an in-memory store (the real one is blocked while the suite
@@ -22204,7 +22284,7 @@ function renderGoalGateRows(c, g){
         <button class="btn btn-sm" data-goal-gate-remove="${escapeAttr(c.id)}|${escapeAttr(g.id)}|${escapeAttr(gt.id)}" aria-label="Remove gate">Remove</button>
       </div>`).join('');
   return `
-      <p class="gp-meta" style="margin:6px 0 2px;">${done} of ${g.gates.length} ${g.gates.length === 1 ? 'gate' : 'gates'}${g.gates.length === 0 ? ' (this book ships no default gates; add your own)' : ''}</p>
+      <p class="gp-meta" style="margin:6px 0 2px;">${done} of ${g.gates.length} ${g.gates.length === 1 ? 'gate' : 'gates'}${g.gates.length === 0 ? ' (no default gates for this module and goal type; add your own)' : ''}</p>
       ${rows}
       ${live ? `<div class="gp-gate">
         <input type="text" class="gp-gate-text" maxlength="200" placeholder="Add a gate" id="gp-add-${escapeAttr(g.id)}" aria-label="New gate text">
@@ -25695,7 +25775,7 @@ function renderGoalGatesSettings(){
   return `<details class="advanced-settings">
     <summary>Graduation gates (default checklist per goal type)</summary>
     <div class="advanced-settings-body">
-      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:0 0 8px;">One gate per line. Editing these defaults changes new goals only. Existing goals keep the gates they were created with. Financial Reporting and GRC start empty until their content is agreed.</p>
+      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:0 0 8px;">One gate per line. Editing these defaults changes new goals only. Existing goals keep the gates they were created with. Financial Reporting and GRC start with the approved draft lists (GRC disclosure submission is empty); edit them to match your customers.</p>
       ${rows}
     </div>
   </details>`;

@@ -79,9 +79,11 @@ count alone.
   Gates       A goal carries readiness gates, copied in when it is created and
               editable per account (tick, note, rename, add, remove). The
               defaults for each module live in Settings -> Graduation gates.
-              Financial Reporting and GRC ship with NO default gates, by
-              design: a goal there is judged by the OSM's verdict, and the
-              packet says "0 gates" rather than inventing a checklist.
+              Financial Reporting (5/5/3/3) and GRC (5/5/3/0) ship default
+              gates too (schema 15, see below); where a list is empty (GRC
+              disclosure submission, or one you emptied), a goal there is
+              judged by the OSM's verdict and the packet says "0 gates"
+              rather than inventing a checklist.
   Change goal Changing the primary goal closes the old one as replaced, keeps
               the reason, and carries over only gates that were already done
               with identical wording. The signal "goal_changed" then asks you
@@ -117,13 +119,21 @@ count alone.
   Gainsight   Goal created, changed and verdict events queue "Success Plan
               objective" items in the local Gainsight queue. Nothing is sent.
 
-Opening an older book migrates it to schema 14 in place (no goals, no exits, no
-invented verdicts). Export JSON first: schema 14 is not readable by an older
+Opening an older book migrates it to schema 15 in place (no goals, no exits, no
+invented verdicts). Export JSON first: schema 15 is not readable by an older
 build.
+
+Default gates for Financial Reporting and GRC (ruling M3, schema 15): Financial
+Reporting ships 5/5/3/3 gates and GRC 5/5/3/0 (publish / set up next cycle /
+program / disclosure), the lists in docs/superpowers/drafts/2026-10-01-fr-grc-gates-DRAFT.md.
+They are defaults only: edit them per book in Settings -> Graduation gates.
+Opening a schema 14 book fills only the lists that are empty; a list someone has
+typed, other modules, and the gates already copied into an existing goal are
+never touched. GRC disclosure submission stays empty.
 
 Running the graduation checks headlessly (needs Chrome or Edge):
 
-  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 436
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 437
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
@@ -132,14 +142,14 @@ The second runs six end-to-end scenarios (A3-A8) and prints the measured value
 for each. --seed takes a comma-separated list, run in order; --verbose also
 prints the passing checks with their detail. Migration dry runs:
 node tools/migration-dryrun.mjs osm-book-of-business-tracker-1.0.html --from 13
-(and --from 12).
+(and --from 14, --from 12).
 
 
 Verifying a change
 ------------------
 Both halves carry console-callable self-check suites. After any edit:
 
-  tracker:  window.runSelfChecks()        must be 436/436 (seed demo-seed.js first)
+  tracker:  window.runSelfChecks()        must be 437/437 (seed demo-seed.js first)
   guide:    window.runGuideSelfChecks()   must be 18/18
 
 See VALIDATION.txt for the last run and for what it did and did not cover.

@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 // Dry-run harness for the schema migrations that touch recorded evidence.
-//   node tools/migration-dryrun.mjs [file.html] [--from 11|12|13] [--seed <seed.js>] [--out <report.md>]
-//   --from 13:           the v13 -> v14 graduation-plan migration: every account gets goals [],
+//   node tools/migration-dryrun.mjs [file.html] [--from 11|12|13|14] [--seed <seed.js>] [--out <report.md>]
+//   --from 14:           the v14 -> v15 default-gates migration (ruling M3): empty Financial
+//                        Reporting and GRC gate lists are filled from the shipped defaults, a typed
+//                        list and every other module are kept, an existing goal's copied gates are
+//                        untouched, a second pass changes nothing (seed tools/legacy-seed-v14.js,
+//                        report .artifacts/migration-dryrun-v14.md).
+//   --from 13:           the v13 -> v14 graduation-plan migration (and on to v15, so Financial Reporting
+//                        and GRC end 5/5/3/3 and 5/5/3/0 gates): every account gets goals [],
 //                        exit null and graduation null (nothing invented, a historic graduation
 //                        gets no exit record), config.goalGates covers every module, a second
 //                        pass changes nothing (seed tools/legacy-seed-v13.js, report
@@ -46,9 +52,9 @@ const positional = args.filter((a, i) =>
 
 const target = resolve(positional[0] || 'osm-book-of-business-tracker-1.0.html');
 const FROM = flag('from', '11');
-if (FROM !== '11' && FROM !== '12' && FROM !== '13') { console.error(`--from must be 11, 12 or 13, got ${FROM}`); process.exit(2); }
-const seedPath = resolve(flag('seed', FROM === '13' ? 'tools/legacy-seed-v13.js' : FROM === '12' ? 'tools/legacy-seed-v12.js' : 'tools/legacy-seed.js'));
-const outPath = resolve(flag('out', FROM === '13' ? '.artifacts/migration-dryrun-v13.md' : FROM === '12' ? '.artifacts/migration-dryrun-v12.md' : '.artifacts/migration-dryrun.md'));
+if (!['11', '12', '13', '14'].includes(FROM)) { console.error(`--from must be 11, 12, 13 or 14, got ${FROM}`); process.exit(2); }
+const seedPath = resolve(flag('seed', FROM === '14' ? 'tools/legacy-seed-v14.js' : FROM === '13' ? 'tools/legacy-seed-v13.js' : FROM === '12' ? 'tools/legacy-seed-v12.js' : 'tools/legacy-seed.js'));
+const outPath = resolve(flag('out', FROM === '14' ? '.artifacts/migration-dryrun-v14.md' : FROM === '13' ? '.artifacts/migration-dryrun-v13.md' : FROM === '12' ? '.artifacts/migration-dryrun-v12.md' : '.artifacts/migration-dryrun.md'));
 /* A RANDOM port per invocation — see selfcheck.mjs: a fixed one lets a Chrome
    that outlived its launcher (SIGKILL doesn't reliably take the process tree
    down on Windows) keep answering for a stale page holding a previous build. */
@@ -207,8 +213,10 @@ if (!seedResult.startsWith('ok:')) {
 }
 console.log(`Seeded: ${seedResult.slice(3)}`);
 
-// --from 13: the v13 -> v14 graduation-plan migration (additive; infers nothing).
-if (FROM === '13') {
+// --from 13: the v13 -> v14 graduation-plan migration (additive; infers nothing), carried on to v15.
+// --from 14: the v14 -> v15 default-gates migration (ruling M3). Same harness, different expectations.
+if (FROM === '13' || FROM === '14') {
+  const V14 = FROM === '14';
   const v13Expr = `(() => { try {
     function clone(x){ return JSON.parse(JSON.stringify(x)); }
     const raw = window.__LEGACY_BOOK__;
@@ -220,6 +228,7 @@ if (FROM === '13') {
     const lens = k => gg[k] ? types.map(t => (gg[k][t] || []).length).join('/') : 'missing';
     const perAccount = prepared.customers.map(c => ({id: c.id, name: c.name, stage: c.stage,
       goalsIsEmptyArray: Array.isArray(c.goals) && c.goals.length === 0,
+      goalsKept: JSON.stringify(c.goals) === JSON.stringify(rawById[c.id].goals), rawHasShape: rawById[c.id].goals !== undefined,
       exitIsNull: c.exit === null, graduationIsNull: c.graduation === null,
       rawHadNone: rawById[c.id].goals === undefined && rawById[c.id].exit === undefined && rawById[c.id].graduation === undefined}));
     const keys = Object.keys(gg);
@@ -230,6 +239,7 @@ if (FROM === '13') {
     return JSON.stringify({schemaBefore: raw.schemaVersion, schemaAfter: prepared.schemaVersion, current: CURRENT_SCHEMA_VERSION,
       perAccount, goalGateKeys: keys, defaultModulesPresent: DEFAULT_MODULES.filter(m => gg[m]).length,
       defaultModules: DEFAULT_MODULES.length, csrdKeys: csrdKeys.length, otherKeys: otherKeys.length,
+      frPublishFirst: ((gg['Financial Reporting'] || {}).publish || [])[0] || null, customPublish: ((gg['Custom Module'] || {}).publish || []).join('|'),
       lens: {Sustainability: lens('Sustainability'), FinancialReporting: lens('Financial Reporting'), GRC: lens('GRC'), Custom: lens('Custom Module')},
       historicGraduatedWithExit: prepared.customers.filter(c => c.stage === 'graduated' && (c.exit !== null || c.goals.length > 0)).length,
       idempotent: snap(again) === snap(prepared)});
@@ -241,15 +251,17 @@ if (FROM === '13') {
   const pa13 = r13.perAccount;
   const n13 = pa13.length;
   const cnt = k => pa13.filter(p => p[k]).length;
-  const live13 = n13 > 0 && cnt('rawHadNone') === n13 && pa13.some(p => p.stage === 'graduated');
+  const live13 = n13 > 0 && pa13.some(p => p.stage === 'graduated')
+    && (V14 ? cnt('rawHasShape') === n13 : cnt('rawHadNone') === n13);
   const lines13 = [
-    '# Migration dry run — v13 -> v14 graduation plan', '',
+    V14 ? '# Migration dry run — v14 -> v15 default FR/GRC gates (M3)' : '# Migration dry run — v13 -> v14 graduation plan, on to v15', '',
     `Generated ${new Date().toISOString()} against \`${target.split(/[\\/]/).pop()}\`, seeded from \`${seedPath.split(/[\\/]/).pop()}\`.`, '',
     `Schema: ${r13.schemaBefore} -> ${r13.schemaAfter} (app current: ${r13.current})`, '',
     '| Account | stage | goals [] | exit null | graduation null |',
     '|---|---|---|---|---|',
     ...pa13.map(p => `| ${p.name} | ${p.stage} | ${p.goalsIsEmptyArray} | ${p.exitIsNull} | ${p.graduationIsNull} |`), '',
     `goalGates keys: ${r13.goalGateKeys.join(', ')}`, '',
+    `Gates per list (publish/setup_next/program/disclosure): Sustainability ${r13.lens.Sustainability}, Financial Reporting ${r13.lens.FinancialReporting}, GRC ${r13.lens.GRC}, Custom Module ${r13.lens.Custom}`, '',
     `Second pass leaves goals, exit, graduation and goalGates unchanged: **${r13.idempotent}**`, '',
     `Liveness (every raw account had no goals/exit/graduation, one is graduated): **${live13}**`, ''
   ];
@@ -259,12 +271,15 @@ if (FROM === '13') {
   console.log('');
   console.log(`Schema ${r13.schemaBefore} -> ${r13.schemaAfter}  Accounts: ${n13}  goals:[] ${cnt('goalsIsEmptyArray')}/${n13}  exit:null ${cnt('exitIsNull')}/${n13}  graduation:null ${cnt('graduationIsNull')}/${n13}`);
   console.log(`goalGates: default modules ${r13.defaultModulesPresent}/${r13.defaultModules} (+${r13.csrdKeys} CSRD, +${r13.otherKeys} other)  Sustainability ${r13.lens.Sustainability}  Financial Reporting ${r13.lens.FinancialReporting}  GRC ${r13.lens.GRC}  Custom Module ${r13.lens.Custom}`);
+  if (V14) console.log(`Existing goals unchanged: ${cnt('goalsKept')}/${n13}  FR publish[0]: ${JSON.stringify(r13.frPublishFirst)}  Custom Module publish: ${JSON.stringify(r13.customPublish)}`);
   console.log(`Historic graduated with an invented exit (must be 0): ${r13.historicGraduatedWithExit}  Second-pass idempotent: ${r13.idempotent}  Console errors: ${pageErrors.length}`);
   if (pageErrors.length) { for (const e of pageErrors) console.log('  ' + e.split('\n')[0]); }
-  const ok13 = r13.schemaAfter === r13.current && live13 && cnt('goalsIsEmptyArray') === n13 && cnt('exitIsNull') === n13
+  const shapeOk13 = V14 ? cnt('goalsKept') === n13 : cnt('goalsIsEmptyArray') === n13;
+  const wantFR = V14 ? '1/5/3/3' : '5/5/3/3', wantCustom = V14 ? '1/0/0/0' : '0/0/0/0';   // v14 seed: one typed FR gate, one typed Custom gate
+  const ok13 = r13.schemaAfter === r13.current && r13.current === 15 && live13 && shapeOk13 && cnt('exitIsNull') === n13
     && cnt('graduationIsNull') === n13 && r13.defaultModulesPresent === r13.defaultModules && r13.csrdKeys === 2 && r13.otherKeys === 1
-    && r13.lens.Sustainability === '5/5/3/3' && r13.lens.FinancialReporting === '0/0/0/0' && r13.lens.GRC === '0/0/0/0'
-    && r13.lens.Custom === '0/0/0/0' && r13.historicGraduatedWithExit === 0 && r13.idempotent && !pageErrors.length;
+    && r13.lens.Sustainability === '5/5/3/3' && r13.lens.FinancialReporting === wantFR && r13.lens.GRC === '5/5/3/0'
+    && (!V14 || r13.frPublishFirst === 'Typed by an OSM') && r13.lens.Custom === wantCustom && r13.historicGraduatedWithExit === 0 && r13.idempotent && !pageErrors.length;
   process.exit(ok13 ? 0 : 1);
 }
 

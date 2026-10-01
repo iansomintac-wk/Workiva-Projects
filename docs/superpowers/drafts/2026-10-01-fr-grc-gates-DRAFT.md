@@ -1,12 +1,13 @@
 # FR and GRC graduation gates: DRAFT for Ian and the FR OSMs, 2026-10-01
 
-**Status: approved for now by Ian, 2026-10-01** ("approved for now. I want this to still be editable after I meet with
+**Status: shipped as the defaults, 2026-10-01 (ruling M3).** Approved for now by Ian, 2026-10-01** ("approved for now. I want this to still be editable after I meet with
 them"). It will be revised after his meeting with the FR OSMs.
 - **Where the gates live:** in each book's Settings → "Graduation gates", one gate per line, where they stay editable.
   They are stored in the book data (`config.goalGates`), so they travel with backups. G24 covers other settings, not
   these.
-- **The shipped tracker is unchanged:** it still ships FR and GRC with empty lists (R10). Hard-coding the lists as
-  defaults is left until the content is final.
+- **Now the shipped defaults (ruling M3):** Ian asked for these lists as default values that OSMs can still change.
+  Schema 15 fills empty FR and GRC lists with them (FR 5/5/3/3, GRC 5/5/3/0); a list already typed is never
+  overwritten. They are revised after the FR OSM meeting.
 
 **Source.** Every gate is restated from a deliverable in the tracker's own curriculum (`DEFAULT_SESSION_TEMPLATES`
 in `osm-book-of-business-tracker-1.0.html`, master `d5b9526`). The session that supplies it is named in brackets. No

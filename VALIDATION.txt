@@ -48,7 +48,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        436/436 passed, 0 failed
+  window.runSelfChecks()        437/437 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -154,12 +154,12 @@ check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
 four remaining failures are exactly the pre-existing, verified-non-defect
 four above, which need a populated book on their own terms and are not
 this defect. The tracker suite as a whole therefore still needs seeding to
-run clean, so — at the CURRENT suite count, 436 (369 when this paragraph was
+run clean, so — at the CURRENT suite count, 437 (369 when this paragraph was
 written, after v74.5 was added; the count moves with every graduation-plan task) —
 the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 436
+       --seed demo-seed.js --expect 437
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -399,7 +399,7 @@ Not exercised in this run:
     force one through. Measured instead, per the instruction to measure the
     gap rather than assert it away: removing `saveData();` from BOTH
     listeners and running `node tools/selfcheck.mjs
-    osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 436`
+    osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 369`
     still reports `369/369 passed, 0 failed`, exit 0 (re-measured against
     this record's own suite count — now 369, after v74.5 — and reverted
     immediately after; the earlier record of this same measurement had
@@ -1431,3 +1431,23 @@ GRADUATION PLAN FINAL-REVIEW FIX F2 — CODE-SIDE MINORS 1, 2, 3, 4, 5, 11, 13 (
   - RED: 5 FAIL (f2a-f2e). GREEN: `runSelfChecks: 436/436 passed, 0 failed`; guide 18/18;
     `runGraduationScenarios: 6/6 passed, 0 failed`.
     Evidence: docs/superpowers/evidence/graduation-plan-final-fix-F2.md.
+
+FR/GRC DEFAULT GATES — RULING M3, SCHEMA 14 -> 15 (suite 436 -> 437)
+  Ian: "Can't you do that for me and set it as a default value that can be changed by OSMs after?" The approved
+  lists in docs/superpowers/drafts/2026-10-01-fr-grc-gates-DRAFT.md are now the shipped defaults (FR 5/5/3/3, GRC
+  5/5/3/0, GRC disclosure empty). Branch fr-grc-default-gates.
+  - defaultGoalGatesConfig() carries FR_GOAL_GATES and GRC_GOAL_GATES; CURRENT_SCHEMA_VERSION 15; migrateData
+    v14 -> v15 fills an empty or absent FR/GRC list per goal type, never overwrites a non-empty one, touches no other
+    module and no existing goal's gates; idempotent.
+  - Checks first, seen failing (5 FAIL before the code: c1d, c1e, c1f, c1h, c6c), then the code. c1d/c1e/c1f/c6c now
+    assert the new truth (exact text, schema 15, a v13 book ends at 15 with FR/GRC filled); new c1h covers the v14
+    step (fills empty lists, keeps a typed FR list, Sustainability/Carbon/Custom Module untouched, an existing goal's
+    gates untouched, second pass identical). c2d, c4a and c5c needed a goal with 0 gates and moved from an FR publish
+    goal to a GRC disclosure goal; their assertions are unchanged.
+  - Scenario A7 retargeted the same way (GRC account, disclosure goal, 0 gates; same assertions).
+  - GREEN: `runSelfChecks: 437/437 passed, 0 failed`; `runGraduationScenarios: 6/6 passed, 0 failed`.
+  - DRY RUN `--from 13` (exit 0): Schema 13 -> 15, Financial Reporting 5/5/3/3, GRC 5/5/3/0, Custom Module 0/0/0/0,
+    second pass idempotent. DRY RUN `--from 14` (new, seed tools/legacy-seed-v14.js, exit 0): Schema 14 -> 15,
+    Financial Reporting 1/5/3/3 (typed publish gate kept), GRC 5/5/3/0, Custom Module 1/0/0/0, existing goals
+    unchanged 7/7, second pass idempotent.
+  Evidence: docs/superpowers/evidence/fr-grc-default-gates.md.
