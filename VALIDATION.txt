@@ -15,22 +15,26 @@ rather than trusting an empty leak list at face value — see THE GUARD'S OWN
 LIVENESS PROOF and GUARD LIVENESS PROOF below.
 
 SHA-256
-Re-measured 2026-09-30 at curriculum piece 1 task 7 (branch curriculum-piece-1),
-after every other edit in that commit was final. The tracker figures are stale
-the moment the HTML changes; re-measure, don't edit in place.
+Re-measured 2026-10-01 at graduation-plan final-review fix F3 (head 6bb0a54,
+branch graduation-plan), after every other edit in that commit was final. The
+tracker figures are stale the moment the HTML changes; re-measure, don't edit
+in place.
 
 Correction: the previous block (tracker 815cd57a… working tree / 774b4b79…
 LF blob) had been stale since before piece 1. It said the tracker's two forms
 differ, with an LF blob. Corrected again in the review fixes (D1): the
 tracker blob is LF too (0 CR bytes at master and HEAD; 25,179 was its line
-count at master 85672e6, not a CR count), so ad0c1fdd... below is the LF
-blob hash. This checkout has core.autocrlf=true, so the tracker working
-tree is CRLF and hashes differently from the blob. The guide is the same
-shape: LF blob, CRLF working tree.
+count at master 85672e6, not a CR count). Superseded by F3 (2026-10-01):
+the tracker's blob and working tree are both LF and hash identically (0 CR
+bytes, measured). The guide is different: LF blob, CRLF working tree
+(859 CR lines), so its two hashes differ.
 
-  osm-book-of-business-tracker-1.0.html   (LF blob, `git cat-file -p
-    :<file> | sha256sum`, 1,642,357 bytes, LF blob; re-measured in fix M1r; the autocrlf working tree hashes differently)
-    87151c043868f8a99b3678a95f04dfa63ef0791cf1dc75a385acf75b0d371f40
+  osm-book-of-business-tracker-1.0.html   (re-measured in F3: the earlier
+    87151c04... / 1,642,357 figure was stale; and the working tree now has 0 CR
+    bytes, so it equals the LF blob despite core.autocrlf=true)
+    GIT BLOB (`git cat-file -p HEAD:<file> | sha256sum`, 1,751,637 bytes)
+    WORKING TREE (`sha256sum <file>`, `wc -c`, 1,751,637 bytes, 0 CR bytes)
+    3dab70bbc96df1ec6f2844328600883cb18f5fa02acc8b4b464267cecfe4c713
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508

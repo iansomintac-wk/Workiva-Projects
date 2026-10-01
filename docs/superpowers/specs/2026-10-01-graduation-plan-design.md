@@ -207,6 +207,8 @@ All existing sections keep their order after GOALS. `promisedOutcomes` stays und
 promise and the verdict can be read side by side. No length cap is added. The current packets measure 691-1,714
 characters (§8).
 
+> Correction 2026-10-01 (run): 1,714 is the max on demo-seed-today.js; on demo-seed.js the max is 1,529 (measured in task 5). The "same counts" claim held for counts but not for packet lengths.
+
 ## 6. Gaps closed and left
 
 | Gap | Closed by | State |
@@ -288,12 +290,14 @@ counts.
 | Outcome criteria per account / evidenced | 11 / 0 on every account | MEASURED |
 | `ready_to_set_date` firing on live accounts | 0 of 12 | MEASURED |
 | Graduated account sessions held | 1 of 8 (the "N of planned forever" symptom of G18) | MEASURED |
-| Current CSM packet length | 691-1,714 characters, median 1,281 | MEASURED |
+| Current CSM packet length | 691-1,714 characters, median 1,281 (see correction below) | MEASURED |
 | New Today rows after migration | 0 expected (no goals exist after migration) | ESTIMATE, to be measured as A3 |
 | Default gates per type | 5 / 5 / 3 / 3 | content choice (R12), not a threshold |
 | New signal thresholds | none: both new signals are state-based, with no day or count threshold | design |
 | Sessions per goal, readiness thresholds, minutes saved | not specified; the design needs none | n/a |
 | Probe coverage gap | the demo book has no FR/GRC account and no goals; A7 and the scenario seed cover those paths | noted |
+
+> Correction 2026-10-01 (run): 1,714 is the max on demo-seed-today.js; on demo-seed.js the max is 1,529 (measured in task 5). The "same counts" claim held for counts but not for packet lengths.
 
 ### Appendix: probe tail
 

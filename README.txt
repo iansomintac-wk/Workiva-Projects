@@ -95,9 +95,12 @@ count alone.
               "ready_to_graduate" fires when a target date is set and every
               gate of the primary goal is done (or the verdict is already met).
   Early exit  If planned sessions were never held, the confirm asks for an exit
-              reason (goal met early, customer self-sufficient, ... other) and
-              records those sessions as not needed. Every tally and bar then
-              reads held of held (5/5, not 5/6).
+              reason (Goal met early, No more enablement needed, Paused or at
+              risk, Other) and records those sessions as not needed. Every
+              tally and bar then reads held of held (5/5, not 5/6). The exit
+              applies only while the account is graduated: re-open it and the
+              stored exit is kept but ignored, so it reads held of planned
+              again (5/8) until it graduates again.
   One Document The knowledge-transfer packet now opens with a GOALS section: the
               goal, verdict, gates (done of total, and which are open),
               criteria, any goal change ("Changed <date>: old -> new, because
@@ -105,6 +108,12 @@ count alone.
               check-back. A graduation with no goal reads "No goal recorded.";
               one from before goal tracking reads "Graduated before goal
               tracking."
+              The log form's "Session # (of N planned)" deliberately shows the
+              raw curriculum total, not the early-exit planned total.
+              The Excel import bypasses the graduation confirm (approved plan
+              choice P1): an account imported as Graduated has no verdict or
+              graduation marker, and with no goal its packet reads "Graduated
+              before goal tracking."
   Gainsight   Goal created, changed and verdict events queue "Success Plan
               objective" items in the local Gainsight queue. Nothing is sent.
 
