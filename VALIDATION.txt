@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        427/427 passed, 0 failed
+  window.runSelfChecks()        431/431 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -150,12 +150,12 @@ check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
 four remaining failures are exactly the pre-existing, verified-non-defect
 four above, which need a populated book on their own terms and are not
 this defect. The tracker suite as a whole therefore still needs seeding to
-run clean, so — at the CURRENT suite count, 427 (369 when this paragraph was
+run clean, so — at the CURRENT suite count, 431 (369 when this paragraph was
 written, after v74.5 was added; the count moves with every graduation-plan task) —
 the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 427
+       --seed demo-seed.js --expect 431
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -1401,3 +1401,14 @@ GRADUATION PLAN TASK 7 — SCENARIO SEED, HEADLESS ACCEPTANCE RUN, DOCS (suite s
   - LIVENESS: seed missing -> exit 2 ("No such file"); fn not defined by the seed -> exit 2; A3 expectation
     broken to rows === 1 -> `5/6`, FAIL A3, exit 1; restored -> 6/6.
   - Evidence: docs/superpowers/evidence/graduation-plan-task7.md and graduation-plan-task7-scenarios.log.
+
+GRADUATION PLAN FINAL-REVIEW FIX F1 — EXIT/GRADUATION ONLY WHILE GRADUATED; NO CHANGE GOAL ONCE GRADUATED (suite 427 -> 431)
+  Review items I1 and I2. Four checks written first and seen failing (f1a-f1d), then fixed.
+  - I1  getExit(c) and new getGraduation(c) return the stored value only while c.stage === 'graduated'; the
+        stored c.exit and c.graduation are kept when an account leaves Graduated (no data deleted). Every
+        graduation (applyGraduation) rewrites both: exit = null when no sessions are unheld. A re-opened
+        early-exit account reads 5/8 with session 6 next; re-graduating with all held prints no early exit.
+  - I2  renderGoalPanel omits the Change goal button for a graduated account; the click handler also refuses.
+  - c4i no longer asserts a kept exit on a live stage (that behaviour is the I1 bug); its re-opened view is f1a.
+  - RED: 4 FAIL (f1a-f1d). GREEN: `runSelfChecks: 431/431 passed, 0 failed`.
+    Evidence: docs/superpowers/evidence/graduation-plan-final-fix-F1.md.

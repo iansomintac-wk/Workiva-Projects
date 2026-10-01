@@ -4431,7 +4431,10 @@ function normalizeGoalGatesConfig(cfg, modules){
 function getGoals(c){ return Array.isArray(c && c.goals) ? c.goals : []; }
 function primaryGoal(c){ return getGoals(c).find(g => g.primary && g.verdict !== 'replaced') || null; }
 function secondaryGoals(c){ return getGoals(c).filter(g => !g.primary && g.verdict !== 'replaced'); }
-function getExit(c){ return isRecordObject(c && c.exit) ? c.exit : null; }
+/* c.exit and c.graduation are kept when an account leaves Graduated (nothing is deleted) but are in
+   effect ONLY while c.stage === 'graduated'. Every reader goes through these two accessors. */
+function getExit(c){ return (c && c.stage === 'graduated' && isRecordObject(c.exit)) ? c.exit : null; }
+function getGraduation(c){ return (c && c.stage === 'graduated' && isRecordObject(c.graduation)) ? c.graduation : null; }
 function goalGateKeyFor(c){
   const gg = (DATA && DATA.config && DATA.config.goalGates) || {};
   const csrd = c && c.reportsCSRD ? c.module + ' (CSRD)' : null;
@@ -4598,7 +4601,7 @@ function applyGraduation(c, d){
   if(d.newGoal && !primaryGoal(c) && !createGoal(c, d.newGoal)) return false;
   const p = primaryGoal(c);                                 // read after any newGoal is created
   if(p) setGoalVerdict(c, p.id, d.verdict, d.note);
-  if(v.unheld.length) c.exit = normalizeExit({on: todayISO(), reason: d.exitReason, note: d.exitNote, sessionsNotNeeded: v.unheld});
+  c.exit = v.unheld.length ? normalizeExit({on: todayISO(), reason: d.exitReason, note: d.exitNote, sessionsNotNeeded: v.unheld}) : null;   // every graduation rewrites it: a re-graduation never inherits an old exit
   c.graduation = {on: todayISO(), noGoal: !p};              // ruling M1: "graduated with no goal recorded" vs a historic graduation (null)
   changeStage(c, 'graduated');
   return true;
@@ -16181,15 +16184,13 @@ function _runSelfChecksInner(){
       const row = renderRow(c), card = renderKanbanCard(c), det = renderDetailsTab(c, risk), snap = renderAccountSnapshot(c, risk);
       const stand = accountStanding(c), ghost = cardGhostFigure(c, 'outcome');
       const bar = h => { const m = /session-bar-fill" style="width:([\d.]+)%/.exec(h); return m ? parseFloat(m[1]) : null; };
-      const cat = categorizeAccountForReport(Object.assign({}, c, {stage: 'ttfv2'}));   // exit kept, stage live: reaches the sessions-complete branch
       const kb = bar(card), db = bar(det);
       ok = applied && plannedSessionTotal(c) === 5 && kb === 100 && db === 100
         && card.includes('5/5') && !card.includes('5/8') && det.includes('5/5 sessions logged') && !det.includes('/8')
         && row.includes('5/5') && !row.includes('/8') && !/All 8 sessions/.test(row) && /All 5 sessions logged/.test(row)
         && snap.includes('/5') && !snap.includes('/8')
-        && stand.total === 5 && ghost === '5/5' && aiCustomerSnapshot(c).totalSessions === 5
-        && /(All 5 sessions complete|5\/5 sessions complete)/.test(cat.reason);
-      detail = JSON.stringify({applied, kb, db, card5: card.includes('5/5'), det5: det.includes('5/5 sessions logged'), row5: row.includes('5/5'), rowAll: /All 5 sessions logged/.test(row), snap: snap.includes('/8'), st: stand.total, ghost, ai: aiCustomerSnapshot(c).totalSessions, cat: cat.reason});
+        && stand.total === 5 && ghost === '5/5' && aiCustomerSnapshot(c).totalSessions === 5;
+      detail = JSON.stringify({applied, kb, db, card5: card.includes('5/5'), det5: det.includes('5/5 sessions logged'), row5: row.includes('5/5'), rowAll: /All 5 sessions logged/.test(row), snap: snap.includes('/8'), st: stand.total, ghost, ai: aiCustomerSnapshot(c).totalSessions});
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA;
     check('grad-plan c4i: an early-exit account (8 planned, 5 held, 3 not needed) reads 5/5 and a 100% bar on every tally surface', ok, detail);
@@ -16210,6 +16211,81 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA;
     check('grad-plan c4j: graduating an account still in implementation needs an exit reason when planned sessions are unheld (spec 4.4)', ok, detail);
+  })();
+  /* ---- Final-review fix F1 (I1, I2): exit/graduation apply only while graduated; re-graduation rewrites them; no Change goal once graduated ---- */
+  (function(){                                   // f1a
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__f1a__', 8); DATA.customers = [c];
+      createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      gp4Acts(c, [1,2,3,4,5]);
+      const applied = applyGraduation(c, {verdict:'met', note:'n', exitReason:'goal_met_early'});
+      const gradPlanned = plannedSessionTotal(c), gradNext = nextOpenSessionNumber(c);
+      changeStage(c, 'ttfv2');
+      const stored = !!c.exit && c.exit.sessionsNotNeeded.length === 3 && !!c.graduation;   // non-destructive: values kept
+      const planned = plannedSessionTotal(c), next = nextOpenSessionNumber(c), card = renderKanbanCard(c);
+      ok = applied && gradPlanned === 5 && gradNext === null && stored && getExit(c) === null && !getGraduation(c)
+        && planned === 8 && next === 6 && card.includes('5/8') && !card.includes('5/5');
+      detail = JSON.stringify({applied, gradPlanned, gradNext, stored, planned, next, c58: card.includes('5/8')});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan f1a: a re-opened early-exit account keeps its stored exit but reads 5/8 with session 6 next (I1)', ok, detail);
+  })();
+  (function(){                                   // f1b
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__f1b__', 8); DATA.customers = [c];
+      createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      gp4Acts(c, [1,2,3,4,5]);
+      const first = applyGraduation(c, {verdict:'met', note:'n', exitReason:'goal_met_early'});
+      changeStage(c, 'ttfv2');
+      gp4Acts(c, [1,2,3,4,5,6,7,8]);
+      const again = applyGraduation(c, {verdict:'met', note:'n'});
+      const goals = gp5Goals(gp5Packet(c));
+      ok = first && again && c.stage === 'graduated' && c.exit === null && getExit(c) === null && plannedSessionTotal(c) === 8
+        && !/Early exit/.test(goals) && !/not needed/.test(goals) && !!c.graduation && c.graduation.noGoal === false;
+      detail = JSON.stringify({first, again, exit: c.exit, early: /Early exit/.test(goals), grad: c.graduation});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan f1b: re-graduating with every session held clears the old exit and the packet states no early exit (I1)', ok, detail);
+  })();
+  (function(){                                   // f1c
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__f1c__', 8); DATA.customers = [c];
+      gp4Acts(c, [1,2,3,4,5]);
+      const applied = applyGraduation(c, {noGoal:true, exitReason:'goal_met_early'});
+      const gradHtml = renderGoalPanel(c);
+      changeStage(c, 'ttfv2');
+      const html = renderGoalPanel(c);
+      ok = applied && gradHtml === '' && html.includes('No goal yet') && html.includes('data-goal-new');
+      detail = JSON.stringify({applied, gradEmpty: gradHtml === '', banner: html.includes('No goal yet')});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan f1c: a re-opened no-goal account shows the "No goal yet" banner again (I1)', ok, detail);
+  })();
+  (function(){                                   // f1d
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      DATA.activities = Object.assign({}, prevA);
+      const c = gp4Cust('__f1d__', 6); DATA.customers = [c];
+      createGoal(c, {type:'publish', text:'Publish FY2026 report'});
+      gp4Acts(c, [1,2,3,4,5,6]);
+      const live = renderGoalPanel(c).includes('data-goal-change');
+      applyGraduation(c, {verdict:'met', note:'n'});
+      const grad = renderGoalPanel(c);
+      ok = live && c.stage === 'graduated' && !grad.includes('data-goal-change') && grad.includes('Publish FY2026 report');
+      detail = JSON.stringify({live, gradHasChange: grad.includes('data-goal-change')});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('grad-plan f1d: a graduated account\'s goal panel has no Change goal button, a live one does (I2)', ok, detail);
   })();
   (function(){                                   // c4d
     const prevC = DATA.customers, prevA = DATA.activities;
@@ -20993,7 +21069,7 @@ function buildGoalsSectionLines(c){
     });
     L.push(`Early exit: ${ex.reason ? roleLabel(EXIT_REASONS, ex.reason, 'Other') : 'reason not recorded'}${ex.note ? ` — ${ex.note}` : ''} (${fmtDate(ex.on)}).${names.length ? ' Sessions marked not needed: ' + names.join('; ') : ''}`);
   }
-  else if(c.stage === 'graduated' && !getGoals(c).length) L.push(c.graduation && c.graduation.noGoal ? 'No goal recorded.' : 'Graduated before goal tracking.');   // M1: marker splits the two cases
+  else if(c.stage === 'graduated' && !getGoals(c).length) L.push(getGraduation(c) && getGraduation(c).noGoal ? 'No goal recorded.' : 'Graduated before goal tracking.');   // M1: marker splits the two cases
   secondaryGoals(c).forEach(g => L.push(`Secondary goal [${typeLabel(g.type)}]: ${g.text} — ${g.verdict ? verdictLabel(g.verdict) : 'no verdict'}`));
   const gr = getGradReview(c);
   if(gr && gr.verdict) L.push(`Graduation check-back: ${(GRAD_REVIEW_VERDICTS.find(v => v.key === gr.verdict) || {}).label} on ${fmtDate(gr.doneOn)}${gr.note ? ` — ${gr.note}` : ''}`);
@@ -22041,7 +22117,7 @@ function renderGoalPanel(c){
   const goal = primaryGoal(c);
   const type = g => (GOAL_TYPES.find(t => t.key === g.type) || {label: 'Goal'}).label;
   if(!goal){
-    if(c.stage === 'graduated' || getExit(c)) return '';
+    if(c.stage === 'graduated') return '';
     const hint = goalHintText(c);
     return `
     <div class="section-card" style="margin-top:16px;">
@@ -22057,7 +22133,7 @@ function renderGoalPanel(c){
   return `
     <div class="section-card" style="margin-top:16px;">
       <div class="section-title" style="margin-top:0;">Hand-off goal <span class="badge badge-watch">PRIMARY</span>
-        <button class="btn btn-sm" style="float:right;" data-goal-change="${escapeAttr(c.id)}">Change goal</button></div>
+        ${c.stage === 'graduated' ? '' : `<button class="btn btn-sm" style="float:right;" data-goal-change="${escapeAttr(c.id)}">Change goal</button>`}</div>
       <p style="margin:0; font-size:var(--text-base); color:var(--text);">${escapeHtml(goal.text)}</p>
       <p class="gp-meta">${escapeHtml(type(goal))}${goal.targetCycle ? ' · ' + escapeHtml(goal.targetCycle) : ''} · ${goal.source === 'handoff' ? 'from the hand-off' : 'set by OSM'}${goal.createdOn ? ' · set ' + escapeHtml(fmtDate(goal.createdOn)) : ''}</p>
       ${changed ? `<p class="gp-meta" style="margin:8px 0 0; color:var(--text);">Goal changed from "${escapeHtml(trimToLength(changed.from, 80))}" (${escapeHtml(trimToLength(changed.reason, 120))}) — target date ${targetOn ? escapeHtml(fmtDate(targetOn)) + ' ' : ''}still right?
@@ -23927,7 +24003,7 @@ The draft is discarded. The risk itself stays open.`)) return;
   }));
   $$('[data-goal-change]').forEach(b => b.addEventListener('click', ()=>{
     const c = DATA.customers.find(x => x.id === b.dataset.goalChange);
-    if(c) openGoalFormModal(c, 'change', ()=>{});
+    if(c && c.stage !== 'graduated') openGoalFormModal(c, 'change', ()=>{});   // I2: a graduated verdict is not blanked
   }));
   $$('[data-goal-ack]').forEach(b => b.addEventListener('click', ()=>{
     const c = DATA.customers.find(x => x.id === b.dataset.goalAck);

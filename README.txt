@@ -114,7 +114,7 @@ build.
 
 Running the graduation checks headlessly (needs Chrome or Edge):
 
-  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 427
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 431
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
@@ -130,7 +130,7 @@ Verifying a change
 ------------------
 Both halves carry console-callable self-check suites. After any edit:
 
-  tracker:  window.runSelfChecks()        must be 427/427 (seed demo-seed.js first)
+  tracker:  window.runSelfChecks()        must be 431/431 (seed demo-seed.js first)
   guide:    window.runGuideSelfChecks()   must be 18/18
 
 See VALIDATION.txt for the last run and for what it did and did not cover.
