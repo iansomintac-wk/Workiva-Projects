@@ -5,7 +5,7 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 
 | Piece | Spec | Session prompt | State | Self-checks after | Commit |
 |---|---|---|---|---|---|
-| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **built (tasks 2–7 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). **Reviewed 2026-09-30: with fixes** (`evidence/curriculum-piece-1-review.md`). **Review fixes done 2026-09-30** on branch `curriculum-piece-1-fixes` (D1–D3, R2, R3, R4, R1, M3r, M4r, M6r, M7r parts 1+3; see "Review fixes"). Merge is Ian's call | **387/387** measured 2026-09-30 after fixes (guide 18/18) | task 2: `29689c4`; task 3: `2a57350`; task 4: `dd1ccf4`; task 5: `05e2356`; task 6: `a9da098`; task 7: `ec2f175` + `d4c2c00` (SHA re-measure); ledger: see git log |
+| 1 Stable identity | specs/2026-09-28-curriculum-identity-design.md §3–6 | plan: sessions/curriculum-piece-1-plan.md; build: sessions/curriculum-piece-1-build-1…6.md; review: sessions/curriculum-piece-1-review.md | **built (tasks 2–7 done)** on branch `curriculum-piece-1` (plans/2026-09-28-curriculum-piece-1.md). **Reviewed 2026-09-30: with fixes** (`evidence/curriculum-piece-1-review.md`). **Review fixes done 2026-09-30** on branch `curriculum-piece-1-fixes` (D1–D3, R2, R3, R4, R1, M3r, M4r, M6r, M7r parts 1+3; see "Review fixes"). **Merged to `master` 2026-09-30** (Ian). Next: `sessions/curriculum-piece-1-followups.md` (M1r, M2r) and `sessions/curriculum-m1-calls-spec.md` | **387/387** measured 2026-09-30 after fixes (guide 18/18) | task 2: `29689c4`; task 3: `2a57350`; task 4: `dd1ccf4`; task 5: `05e2356`; task 6: `a9da098`; task 7: `ec2f175` + `d4c2c00` (SHA re-measure); ledger: see git log |
 | 2 Versioned curriculum + pinning | not written (outline in umbrella §2) | not written | after piece 1 | | |
 | 3 Authoring UI + runbook editor | not written (outline in umbrella §2) | not written | after piece 2 | | |
 | 4 Share, fork, upgrade | not written (outline in umbrella §2) | not written | after piece 3 | | |
@@ -51,19 +51,8 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 ## Decisions pending (Ian)
 
 - **R5 (review)** session reorder re-labels logged calls. Fold it into M1, or ship with a CHANGELOG caveat.
-- **M1r/M2r (review)** confirmation when a deliverable is removed; restore bulk paste. Yes or no for each.
-- **M7r part 2 (fixes)** the v12→13 template-set builder differs from `safeSessionTemplateForRender` (no id-regex checks;
-  `[]` vs a one-deliverable placeholder), so it was not merged: that would change migration on malformed books. Its one real
-  effect: a malformed string id survives `ensureTemplateIds`, the migration stamps evidence with it, runtime drops the id, and that
-  evidence is orphaned. Option: add the id regexes to the builder's check. Fix or accept?
-  **Probe 2026-09-30 (measured, after the fixes):** that orphaning cannot happen. The v12 legacy book (`tools/legacy-seed-v12.js`)
-  through `prepareBookData`: control loads (Aldridge Energy 5 evidenced, 0 orphaned); Carbon session 1 with deliverable id
-  `BAD ID!` → rejected ("…has deliverable ids that do not match its deliverables."); session id `BAD SESSION` → rejected
-  ("…has an invalid id."). `assertNormalizedBookData` runs after `migrateData` in `prepareBookData`, the only production
-  caller of `migrateData`, and saved data, undo snapshots, import and archive restore all go through it. The book is
-  refused whole, so nothing loads half-stamped. Lead recommends **accept**.
 - **Next sessions (prompts written 2026-09-30, not started):** `sessions/curriculum-piece-1-followups.md` (M1r/M2r run;
-  gated on Ian ruling each one yes) and `sessions/curriculum-m1-calls-spec.md` (M1 + R5 + M2 talk: brainstorm and spec
+  both ruled yes, see "Decisions made") and `sessions/curriculum-m1-calls-spec.md` (M1 + R5 + M2 talk: brainstorm and spec
   with Ian). Subagent protocols now live in `sessions/curriculum-subagent-brief.md` and `sessions/curriculum-checker-brief.md`.
 
 - M1 activities: (a) key by session id / (b) leave to piece 2 pinning / (c) state the call impact in the delete confirmation
@@ -73,6 +62,16 @@ Decisions are in spec §1. Each piece gets its own spec, plan and build.
 - Plan choices P1–P4 (plan header): accept or overrule before build 1
 
 ## Decisions made (Ian)
+
+- **Merge, M1r, M2r, M7r part 2, 2026-09-30**, verbatim: "Merge it, and record M1r, M2r yes and M7r accept".
+  - **Merge:** `curriculum-piece-1-fixes` fast-forwarded into `master` (piece 1 plus the review fixes, 387/387).
+  - **M1r yes:** confirm before a curriculum edit drops a deliverable id that has evidence, and name the count. No prompt with
+    zero evidence or on a reword. Built by `sessions/curriculum-piece-1-followups.md`.
+  - **M2r yes:** text pasted with several lines becomes one deliverable per non-empty line, each with a new id; existing ids,
+    order and evidence unchanged. Same session.
+  - **M7r part 2 accept:** the v12→13 builder stays as it is. Probe 2026-09-30 (measured): a v12 book with a malformed
+    deliverable id or session id is rejected whole by `prepareBookData` (control loads, 5 evidenced), on every load path, so the
+    "stamped then unreachable" case cannot occur.
 
 - **R1, 2026-09-30**, verbatim: "Let's go A". Option (a): a default CSRD deliverable whose text equals the base
   curriculum's deliverable at the same session and position reuses that base deliverable's deterministic id.
