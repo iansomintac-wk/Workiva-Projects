@@ -2436,7 +2436,7 @@ function buildCallPrepContext(c){
     const templates = getSessionTemplateSet(c);
     templates.forEach((tpl, i) => {
       const act = getSessionActivity(c, i+1);
-      const prep = (readSessionNote(c, i+1).prep || '').trim();
+      const prep = (readSessionNote(c, i+1, tpl).prep || '').trim();
       lines.push(`Session ${i+1} — ${tpl.title}: ${act ? 'completed ' + fmtDate(act.date) : 'not yet held'}${prep ? ` · prep note: "${prep}"` : ''}`);
     });
     const cov = computeCoverage(c);
@@ -4100,7 +4100,7 @@ function buildSessionScriptText(customer, num, tpl, rb){
   });
   lines.push('DELIVERABLES TO CONFIRM BEFORE ENDING:');
   (tpl.deliverables || []).forEach(d => lines.push('  [ ] ' + d));
-  const prep = (readSessionNote(customer, num).prep || '').trim();
+  const prep = (readSessionNote(customer, num, tpl).prep || '').trim();
   if(prep){ lines.push(''); lines.push('YOUR PREP NOTES FOR THIS SESSION:'); lines.push('  ' + prep.replace(/\n/g, '\n  ')); }
   return lines.join('\n');
 }
@@ -6550,13 +6550,15 @@ function getNextSessionInfo(customer){
    shape (or a placeholder session with no id); it is read as a fallback and
    moved to the id key the first time the note is written. */
 const SESSION_NOTE_KEY_RE = /^(\d+|ss_[a-z0-9_]+)$/;
-function sessionNoteKey(customer, sessionNumber){
-  const tpl = getSessionTemplate(customer, sessionNumber);
-  return (tpl && tpl.id) ? tpl.id : String(sessionNumber);
+/* tpl is optional: a caller that already holds this session's template passes it
+   so the key does not rebuild the whole template set per lookup (review M6r). */
+function sessionNoteKey(customer, sessionNumber, tpl){
+  const t = tpl || getSessionTemplate(customer, sessionNumber);
+  return (t && t.id) ? t.id : String(sessionNumber);
 }
-function readSessionNote(customer, sessionNumber){
+function readSessionNote(customer, sessionNumber, tpl){
   const notes = (customer && customer.sessionNotes) || {};
-  const key = sessionNoteKey(customer, sessionNumber);
+  const key = sessionNoteKey(customer, sessionNumber, tpl);
   const hit = notes[key] || (key !== String(sessionNumber) ? notes[sessionNumber] : null);
   return hit ? hit : {deliverables:{}, prep:''};
 }
@@ -7098,7 +7100,7 @@ function customerThinPrepSignal(c){
   if(c.stage === 'graduated') return null;
   const nextSession = getNextSessionInfo(c);
   if(!nextSession || !isMilestoneSession(nextSession.template)) return null;
-  const note = readSessionNote(c, nextSession.number);
+  const note = readSessionNote(c, nextSession.number, nextSession.template);
   if((note.prep || '').trim().length < 20){
     return {type:'thin_milestone_prep', sessionNumber: nextSession.number, title: nextSession.template.title};
   }
@@ -10133,6 +10135,60 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
     _renderMemoResets.forEach(r => r());
     check('identity A7: ids survive export and import (random-id session, evidence, and the v12 invariant through the wire)', ok, detail);
+  })();
+  /* M6r — sessionNoteKey rebuilt the whole template set on every call, so one
+     12-session plan render cost ~n^2 sanitizations and a portfolio signal pass
+     rebuilt the set once per account for a key the caller already had in hand.
+     Counted by wrapping the global getSessionTemplateSet (top-level function
+     declarations are global properties, so internal callers hit the wrapper;
+     `intercepted` proves it by calling getSessionTemplate once). LIVENESS: notes
+     keyed by session id > 0, and the keys read back equal tpl.id of the set. */
+  (function(){
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    const orig = getSessionTemplateSet, origCrit = outcomeCriteriaFor;
+    let ok = false, detail = '';
+    try{
+      let calls = 0;
+      getSessionTemplateSet = function(c){ calls++; return orig(c); };
+      getSessionTemplate(prevC[0], 1);
+      const intercepted = calls === 1;
+      // (1) one portfolio signal pass over the seeded book
+      // Floor: one rebuild per open account for getNextSessionInfo itself; the key lookup must add none.
+      const floor = prevC.filter(c => c.stage !== 'graduated' && getNextSessionInfo(c)).length;
+      calls = 0;
+      prevC.forEach(c => { customerThinPrepSignal(c); });
+      const portfolioRebuilds = calls, portfolioAccts = prevC.length;
+      // (2) one render of a full plan
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const fx = _identityFixture(1);
+      const c = fx.accts[0];
+      const len = (DATA.config.sessionTemplates[fx.mod] || []).length;
+      c.totalSessions = Math.min(12, len);
+      _renderMemoResets.forEach(r => r());
+      const set = orig(c);
+      const expectKeys = set.map((t, i) => (t && t.id) ? t.id : String(i + 1));
+      c.sessionNotes = {};
+      let keyed = 0;
+      expectKeys.forEach((k, i) => { if(/^ss_/.test(k)){ c.sessionNotes[k] = {deliverables:{}, prep:'P' + (i + 1)}; keyed++; } });
+      // outcomeCriteriaFor walks the set once per card for its own reasons (not
+      // this finding); freeze it so the count isolates the note-key lookups.
+      const crit0 = outcomeCriteriaFor(c);
+      outcomeCriteriaFor = function(){ return crit0; };
+      calls = 0;
+      renderSessionPlanTab(c);
+      const planRebuilds = calls;
+      const keysBack = expectKeys.map((k, i) => sessionNoteKey(c, i + 1));
+      const keysEqual = JSON.stringify(keysBack) === JSON.stringify(expectKeys);
+      const bound = 3;
+      ok = intercepted && keyed > 0 && c.totalSessions >= 8 && keysEqual
+        && planRebuilds <= bound && portfolioRebuilds <= floor;
+      detail = JSON.stringify({intercepted, sessions: c.totalSessions, keyed, keysEqual,
+        planRebuilds, bound, portfolioAccts, floor, portfolioRebuilds});
+    }catch(err){ detail = err.message; }
+    getSessionTemplateSet = orig; outcomeCriteriaFor = origCrit;
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity M6r: session-note keys are read from the template in hand, not a per-call rebuild of the template set', ok, detail);
   })();
   /* R3 — archive restore must run the migrations an archive's own schema needs.
      prepareArchiveData built its shell from defaultData(), which is already at
@@ -18911,7 +18967,7 @@ function callsScheduledToday(){
     .filter(x => x.on === todayISO())
     .map(x => {
       const next = getNextSessionInfo(x.c);
-      const prep = next && (readSessionNote(x.c, next.number).prep || '').trim();
+      const prep = next && (readSessionNote(x.c, next.number, next.template).prep || '').trim();
       return Object.assign(x, {next, prepped: !!prep, last: getMostRecentActivity(x.c.id), at: getNextSessionTime(x.c)});
     })
     .sort((a,b)=>{
@@ -21301,7 +21357,7 @@ function renderSessionPlanTab(c){
 
 function renderSessionCard(c, num, tpl, isNext){
   const act = getSessionActivity(c, num);
-  const note = readSessionNote(c, num);   // v97: rendering must not write
+  const note = readSessionNote(c, num, tpl);   // v97: rendering must not write
   const done = !!act;
   return `
     <div class="session-card ${done?'done':''} ${isNext?'next':''}">

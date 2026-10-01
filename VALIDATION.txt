@@ -29,8 +29,8 @@ tree is CRLF and hashes differently from the blob. The guide is the same
 shape: LF blob, CRLF working tree.
 
   osm-book-of-business-tracker-1.0.html   (LF blob, `git cat-file -p
-    :<file> | sha256sum`, 1,633,009 bytes, LF blob; re-measured in fix M4r (empty-key pin); the autocrlf working tree hashes differently)
-    549426ea5e60137ecc9dea41e16174669a24d0b48b1ff42ebb989b5569b8e60a
+    :<file> | sha256sum`, 1,636,423 bytes, LF blob; re-measured in fix M6r; the autocrlf working tree hashes differently)
+    e2d87b7512c438a401173b6f4dcfb4cbde525b1c7d8efe33a5c47dfa6089b82e
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        385/385 passed, 0 failed
+  window.runSelfChecks()        386/386 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1184,3 +1184,33 @@ CURRICULUM IDENTITY — FIX M4r (suite 384 -> 385)
     MUTATION (guard dropped, fallback also for []): `runSelfChecks: 384/385`, FAIL
     with `"empty":{...,"csrdOnly":0,"stamped":11,"evidencedAfter":11,"orphaned":4,
     "csrdLen":0}`. Restore: cmp identical; 385/385; guide 18/18.
+
+CURRICULUM IDENTITY — FIX M6r (suite 385 -> 386)
+  - WHAT: `sessionNoteKey` rebuilt the whole template set (getSessionTemplate ->
+    getSessionTemplateSet -> one sanitization per session) on every call, so a
+    12-session plan render did ~n^2 sanitizations and the portfolio signal pass
+    rebuilt the set again for a key the caller already had.
+  - CHANGED: `sessionNoteKey` and `readSessionNote` take an optional `tpl`; with it
+    the key is `tpl.id` (or the numeric fallback), without it the old lookup runs,
+    so returned keys are identical. Callers holding the template pass it:
+    renderSessionCard, the plan text export, buildSessionScriptText,
+    customerThinPrepSignal, callsScheduledToday.
+  - MEASURED BEFORE (set rebuilds = calls to getSessionTemplateSet, counted by
+    wrapping the global inside the check; `intercepted:true` proves the wrapper
+    sees internal calls). One renderSessionPlanTab, 12 sessions (outcomeCriteriaFor
+    frozen, it rebuilds once per card for its own reasons): 14 (12 key lookups + 2).
+    Unfrozen: 26. One customerThinPrepSignal pass over the 17 seeded accounts: 17
+    (floor 15 = one getNextSessionInfo per open account).
+  - MEASURED AFTER: plan render 2 (bound 3); portfolio pass 15 (= floor).
+  - RED first (check run with the per-call rebuild): `runSelfChecks: 385/386`,
+    `FAIL  identity M6r: ... {"intercepted":true,"sessions":12,"keyed":12,
+    "keysEqual":true,"planRebuilds":14,"bound":3,"portfolioAccts":17,"floor":15,
+    "portfolioRebuilds":17}`.
+  - LIVENESS: keyed 12 notes by session id > 0; keysEqual compares sessionNoteKey
+    for every session with tpl.id of the independently built set.
+  - MUTATION PROOF (production): `tpl ||` removed in sessionNoteKey. Red:
+    `385/386`, same FAIL (planRebuilds 14, portfolioRebuilds 17). Restore: cmp
+    fixed.html tracker printed nothing; then green.
+  - MEASURED THIS SESSION: suite `386/386`, guide `18/18`, dry runs --from 11 and
+    --from 12 exit 0. SHA-256 block re-measured (tracker e2d87b75..., 1,636,423
+    bytes, LF blob).
