@@ -8037,6 +8037,7 @@ let ui = {
   search: '',
   filterModule: 'all',
   filterRisk: 'all',
+  goalSecOpen: false, // Graduation Plan: the secondary-goals <details> stays open across render (session-only)
   filterLifecycle: 'all', // v56: all | implementation | live | graduated — session-only, like the other filters
   sortBy: 'risk',
   openCustomerId: null,
@@ -15830,6 +15831,39 @@ function _runSelfChecksInner(){
     check('grad-plan c2e: hand-off meeting date is a date input; goal hint prefers promised outcomes, then first value', ok, detail);
   })();
 
+  (function(){                                   // c2f: the planText fallback of the hint
+    const prevC = DATA.customers;
+    let ok = false, detail = '';
+    try{
+      const c = gp2Cust(); DATA.customers = [c];
+      c.firstValue = {definition:'', evidence:[], achievedOn:null};
+      delete c.handoffIn;
+      c.compliance.outcomePlan.planText = 'Plan fallback text';
+      const hint = goalHintText(c);
+      const html = renderGoalPanel(c);
+      ok = !!hint && hint.text === 'Plan fallback text' && html.indexOf('Plan fallback text') !== -1;
+      detail = JSON.stringify({hint});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC;
+    check('grad-plan c2f: with no promised outcomes and no first value definition, the goal hint falls back to the success outcome plan text', ok, detail);
+  })();
+  (function(){                                   // c2g: secondary-goals <details> keeps its open state across render
+    const prevC = DATA.customers, prevOpen = ui.goalSecOpen;
+    let ok = false, detail = '';
+    try{
+      const c = gp2Cust(); DATA.customers = [c];
+      createGoal(c, {type:'publish', text:'Primary goal'});
+      ui.goalSecOpen = false;
+      const closed = /<details id="gp-sec-details"(?![^>]*\bopen\b)/.test(renderGoalPanel(c));
+      ui.goalSecOpen = true;
+      const open = /<details id="gp-sec-details"[^>]*\bopen\b/.test(renderGoalPanel(c));
+      ok = closed && open;
+      detail = JSON.stringify({closed, open});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; ui.goalSecOpen = prevOpen;
+    check('grad-plan c2g: the secondary-goals details renders open exactly when ui.goalSecOpen is set', ok, detail);
+  })();
+
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
@@ -21349,7 +21383,7 @@ function renderGoalPanel(c){
       ${renderGoalGateRows(c, goal)}
       <p class="gp-meta" style="margin-top:8px;">${tally.evidenced} of ${tally.total} outcome criteria evidenced</p>
       <div class="gp-sec">
-        <details>
+        <details id="gp-sec-details"${ui.goalSecOpen ? ' open' : ''}>
           <summary class="gp-meta" style="cursor:pointer;">Secondary goals (${secs.length})</summary>
           ${secs.map(s => `
             <div class="gp-sec">
@@ -23219,15 +23253,26 @@ The draft is discarded. The risk itself stays open.`)) return;
     const {c, gid, tid} = goalTarget(b, 'goalGateNote');
     if(!c) return;
     markUndoable('goal gate note');
-    if(setGoalGateNote(c, gid, tid, b.value)){ saveData(); render(); }
+    /* No render(): a blur-triggered re-render replaces the button the user is
+       clicking, so the click is lost (same reason as #comp-outcome-text). The
+       input already shows what was typed; only the stored value needs saving. */
+    if(setGoalGateNote(c, gid, tid, b.value)) saveData();
   }));
   $$('[data-goal-gate-rename]').forEach(b => b.addEventListener('change', ()=>{
     const {c, gid, tid} = goalTarget(b, 'goalGateRename');
     if(!c) return;
     markUndoable('goal gate');
-    if(renameGoalGate(c, gid, tid, b.value)){ saveData(); render(); }
-    else { showToast('A gate needs some text.'); render(); }
+    if(renameGoalGate(c, gid, tid, b.value)){
+      saveData();
+      b.value = cleanGoalText(b.value, 200);
+    } else {
+      const gt = findGoalGate(c, gid, tid);
+      if(gt) b.value = gt.text;   // restore in place, no render (see above)
+      showToast('A gate needs some text.');
+    }
   }));
+  const goalSecDetails = document.getElementById('gp-sec-details');
+  if(goalSecDetails) goalSecDetails.addEventListener('toggle', ()=>{ ui.goalSecOpen = goalSecDetails.open; });
   $$('[data-goal-gate-remove]').forEach(b => b.addEventListener('click', ()=>{
     const {c, gid, tid} = goalTarget(b, 'goalGateRemove');
     if(!c) return;
