@@ -29,8 +29,8 @@ tree is CRLF and hashes differently from the blob. The guide is the same
 shape: LF blob, CRLF working tree.
 
   osm-book-of-business-tracker-1.0.html   (LF blob, `git cat-file -p
-    HEAD:<file> | sha256sum`; the autocrlf working tree hashes differently)
-    ad0c1fdd818e89253e9bb7fb79c603cf895c28adfd097300dda995298d4bdff6
+    :<file> | sha256sum`, 1,610,110 bytes, LF blob; re-measured in fix R2; the autocrlf working tree hashes differently)
+    7d4db080ff7284c2214dd253709579e217df86e94ccaec5be8b0adeca5b3f09a
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -44,7 +44,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        379/379 passed, 0 failed
+  window.runSelfChecks()        380/380 passed, 0 failed
   window.runGuideSelfChecks()    18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -924,6 +924,32 @@ CURRICULUM IDENTITY — TASK 7 (suite 378 -> 379)
   - CARRIED, not re-measured: the earlier tasks' individual mutation proofs; the
     statement that the migration has not run against a real book (still true;
     Export JSON first).
+
+CURRICULUM IDENTITY — FIX R2 (suite 379 -> 380)
+  - Duplicate ids inside one curriculum key. `assertSessionTemplate` checked
+    `deliverableIds` uniqueness only within one session, so a book carrying the
+    same deliverable id in two sessions, or the same session id twice, of one
+    key imported cleanly and misplaced evidence. `assertNormalizedBookData` now
+    rejects, per curriculum key, a repeated session id or a repeated deliverable
+    id anywhere in that key (`rejectData`, never re-minted). NOT across keys:
+    renaming the Sustainability module re-adds `Sustainability (CSRD)` with the
+    same deterministic ids, so the same ids in two keys must keep importing.
+  - RED first: `runSelfChecks: 379/380` with `FAIL  identity R2: ... —
+    {"ticked":22,"otherKey":"Sustainability","dupDeliverable":null,"dupSession":null,"acrossKeys":null}`
+    (neither duplicate threw).
+  - Fixture: `_identityFixture(2)` (ticked 22); a serialized book with (a) a
+    deliverable id of Carbon session 2 copied into session 5, (b) session 3's id
+    copied onto session 4, each must throw on prepareBookData; (c) control:
+    Sustainability session 1 given Carbon session 1's id, deliverables and
+    deliverable ids, must not throw.
+  - MUTATION PROOF (production code): both per-key rejects made unreachable
+    (`if(false && seenSessions.has(...)) rejectData`, same for deliverables).
+    Red: `runSelfChecks: 379/380`, FAIL identity R2 with
+    `{"ticked":22,"otherKey":"Sustainability","dupDeliverable":null,"dupSession":null,"acrossKeys":null}`.
+    Restore: `cmp fixed.html tracker` printed nothing; then green.
+  - MEASURED THIS SESSION: suite `380/380`, guide `18/18`. The real seed, the
+    rename/backfill path and every other check stayed green with the new reject.
+    SHA-256 block re-measured (tracker LF blob 7d4db080..., 1,610,110 bytes).
 
 TOOLING ADDED (not part of the distributable bundle)
   tools/selfcheck.mjs        headless suite runner, exit-coded

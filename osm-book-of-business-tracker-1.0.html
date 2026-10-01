@@ -9992,6 +9992,36 @@ function _runSelfChecksInner(){
     _renderMemoResets.forEach(r => r());
     check('identity A7: ids survive export and import (random-id session, evidence, and the v12 invariant through the wire)', ok, detail);
   })();
+  /* R2 — ids must be unique across a whole curriculum key, not just inside one
+     session. A repeated deliverable id (two sessions) or session id (twice in a key)
+     imports cleanly without the per-key check and misplaces evidence. Across
+     DIFFERENT keys the same ids are legitimate (renaming a module re-adds
+     'Sustainability (CSRD)' with the same deterministic ids), so control (c) must
+     keep importing. */
+  (function(){
+    const prevC = DATA.customers, prevA = DATA.activities, prevT = DATA.config.sessionTemplates;
+    let ok = false, detail = '';
+    try{
+      DATA.config.sessionTemplates = JSON.parse(JSON.stringify(prevT));
+      const fx = _identityFixture(2);
+      // Each case tampers with a parsed ENVELOPE (via assign, so the A6 writer scan stays honest).
+      const tries = f => {
+        const env = JSON.parse(serializeBook(DATA));
+        f(env.config.sessionTemplates);
+        try{ prepareBookData(env, 'SelfCheck'); return null; }catch(e){ return e.message; }
+      };
+      const otherKey = Object.keys(DATA.config.sessionTemplates).find(k => k !== fx.mod && DATA.config.sessionTemplates[k].length >= 1);
+      const msgA = tries(t => Object.assign(t[fx.mod][4], {deliverableIds: [t[fx.mod][1]['deliverableIds'][0]].concat(t[fx.mod][4]['deliverableIds'].slice(1))}));
+      const msgB = tries(t => Object.assign(t[fx.mod][3], {id: t[fx.mod][2]['id']}));
+      const msgC = tries(t => Object.assign(t[otherKey][0], {id: t[fx.mod][0]['id'],
+        deliverables: t[fx.mod][0]['deliverables'].slice(), deliverableIds: t[fx.mod][0]['deliverableIds'].slice()}));
+      ok = fx.ticked > 0 && !!otherKey && msgA !== null && msgB !== null && msgC === null;
+      detail = JSON.stringify({ticked: fx.ticked, otherKey, dupDeliverable: msgA, dupSession: msgB, acrossKeys: msgC});
+    }catch(err){ detail = err.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.config.sessionTemplates = prevT;
+    _renderMemoResets.forEach(r => r());
+    check('identity R2: a repeated session id or deliverable id inside one curriculum key is rejected on import; the same ids across keys still import', ok, detail);
+  })();
   (function(){
     /* c2a — curriculum identity (piece 1). Shipped defaults carry DETERMINISTIC
        ids so every browser shipping the same default agrees on identity, and
@@ -24845,6 +24875,17 @@ function assertNormalizedBookData(data, source){
   Object.entries(cfg.sessionTemplates).forEach(([key,templates])=>{
     if(!Array.isArray(templates)) rejectData(source, `sessionTemplates[${key}] must be an array.`);
     templates.forEach((template,i)=>assertSessionTemplate(template,source,key,i));
+    // Identity: unique across the whole key (not just per session). NOT across keys: a module
+    // rename re-adds Sustainability (CSRD) with the same deterministic ids. Rejected, never re-minted.
+    const seenSessions = new Set(), seenDeliverables = new Set();
+    templates.forEach((template,i)=>{
+      if(seenSessions.has(template.id)) rejectData(source, `sessionTemplates[${key}] session ${i+1} repeats a session id used earlier in the same curriculum.`);
+      seenSessions.add(template.id);
+      template.deliverableIds.forEach(d=>{
+        if(seenDeliverables.has(d)) rejectData(source, `sessionTemplates[${key}] session ${i+1} repeats a deliverable id used elsewhere in the same curriculum.`);
+        seenDeliverables.add(d);
+      });
+    });
   });
   if(!(cfg.riskWatchDays > 0 && cfg.riskAlertDays > cfg.riskWatchDays)) rejectData(source, 'risk thresholds are invalid.');
   if(!(cfg.defaultPaceDays > 0) || !(cfg.keywordSignalMaxAgeDays > 0)) rejectData(source, 'pace or keyword-age settings are invalid.');
