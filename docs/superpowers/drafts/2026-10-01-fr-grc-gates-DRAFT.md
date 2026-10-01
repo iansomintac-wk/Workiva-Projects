@@ -1,8 +1,12 @@
 # FR and GRC graduation gates: DRAFT for Ian and the FR OSMs, 2026-10-01
 
-**Status: draft, not adopted.** The tracker ships Financial Reporting and GRC with **empty** gate lists (ruling R10).
-Nothing below goes into the tracker until Ian approves it. Once approved, it goes in through Settings → "Graduation
-gates", one gate per line; there is no code change.
+**Status: approved for now by Ian, 2026-10-01** ("approved for now. I want this to still be editable after I meet with
+them"). It will be revised after his meeting with the FR OSMs.
+- **Where the gates live:** in each book's Settings → "Graduation gates", one gate per line, where they stay editable.
+  They are stored in the book data (`config.goalGates`), so they travel with backups. G24 covers other settings, not
+  these.
+- **The shipped tracker is unchanged:** it still ships FR and GRC with empty lists (R10). Hard-coding the lists as
+  defaults is left until the content is final.
 
 **Source.** Every gate is restated from a deliverable in the tracker's own curriculum (`DEFAULT_SESSION_TEMPLATES`
 in `osm-book-of-business-tracker-1.0.html`, master `d5b9526`). The session that supplies it is named in brackets. No
