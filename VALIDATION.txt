@@ -32,20 +32,19 @@ blob), so the two hash differently. The guide is the same: LF blob, CRLF
 working tree (859 CR lines), so its two hashes differ.
 
   osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task
-    A4, after the one-gate-list change; the A3 figure 0b486bf8... is now stale. The blob is LF;
+    A5, after time-saved was retired; the A4 figure 2d28fb97... is now stale. The blob is LF;
     the working tree depends on the checkout: CRLF in the trim-and-integration
     worktree, LF where core.autocrlf is off. Earlier "0 CR bytes" statements
     described a different checkout.)
-    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,193,120 bytes)
-    2d28fb97b1a91bd8cde82ea8182dc2d6b1a16d206d357c38da60da989a97b966
-    WORKING TREE (CRLF, this checkout, `sha256sum <file>`, 1,212,437 bytes)
-    c142f3a571232e6c6e872719b66981add90c7eb59659cc782342b175b906157c
-  osm-runway-onboarding-1.0.html
-    GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
-    598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
-    WORKING TREE (CRLF, this checkout, 186,500 bytes)
-    96cb278786d56a62b1dcef7ce56b907c5b94671f01efbb2445764aef1090a542
-    `git diff HEAD -- osm-runway-onboarding-1.0.html` is empty.
+    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,172,380 bytes)
+    c95879ea173fc4437d6fcdf148d240275ddde04205612fc798b2f297fee5acd7
+    WORKING TREE (CRLF, this checkout, `sha256sum <file>`, 1,191,330 bytes)
+    01e8561561ca0c52cd159ecdbf3a35c6e7f0b252b4389ef20e166db8417257c3
+  osm-runway-onboarding-1.0.html   (changed at A5: two time-saved cards replaced/removed; the 598bbb86... figure is stale)
+    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 183,964 bytes)
+    d3e4c8723caca88abb1947264049704d1e23cfb466553854561ce86ffdd9a392
+    WORKING TREE (this checkout, `sha256sum <file>`, 184,822 bytes)
+    ab5b092b6f01dc78e755b4ca78627cc3438a1355b5b42c47f60e3609af9a9b74
 
 
 WHAT WAS VERIFIED
@@ -53,7 +52,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   435/435 passed, 0 failed
+  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   428/428 passed, 0 failed
   window.runGuideSelfChecks()                                              18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -159,12 +158,12 @@ check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
 four remaining failures are exactly the pre-existing, verified-non-defect
 four above, which need a populated book on their own terms and are not
 this defect. The tracker suite as a whole therefore still needs seeding to
-run clean, so — at the CURRENT suite count, 435 (369 when this paragraph was
+run clean, so — at the CURRENT suite count, 428 (369 when this paragraph was
 written, after v74.5 was added; the count moves with every graduation-plan task) —
 the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 435
+       --seed demo-seed.js --expect 428
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -1515,6 +1514,41 @@ TRIM A4 — ONE GATE LIST (suite 432 -> 435)
   - GREEN: `runSelfChecks: 435/435 passed, 0 failed`; `runGraduationScenarios: 6/6`; guide 18/18 (guide unchanged;
     it quotes no gate label). Tracker blob 1,191,426 -> 1,193,120.
   Evidence: docs/superpowers/evidence/trim-and-integration/A4.md.
+
+TRIM A5 — TIME-SAVED RETIRED (suite 435 -> 428; ruling R6)
+  - Removed: IMPACT_EVENTS, trackImpact and its 15 live call lines, the impact store/log/window/summary functions,
+    buildImpactReport, downloadImpactReport, downloadImpactCsv, renderImpactSettings, attachImpactSettings, both
+    impactMinutes editors, the Settings "Time saved" block and its CSV/reset buttons, the Settings "Time-Saved Report"
+    button, the day-close "Download the time-saved report" button, "What moved today" (the N actions / about X saved
+    line), the minutes in the wrap-up line and modal, the progress report's impact line and model field, and the
+    stored dayClose.minutes write. The Settings motion switch lived inside renderImpactSettings; it is now its own
+    "Motion" block and its change handler is bound when Settings opens.
+  - Left inert (no migration, CURRENT_SCHEMA_VERSION unchanged at 15): DATA.impact, DATA.impactLog,
+    config.impactMinutes, dayClose.minutes/runningTotal. Their repair/backfill lines stay so an old book round-trips;
+    a comment at the repair site says so. MAX_IMPACT_LOG stays for the repair. demo-seed.js no longer carries an
+    impact object (it was inert).
+  - Guide: the "Time saved, and where it lives" card became "Wrapping up the day" (what the close shows now), the
+    "Time saved, by the day" card was removed, and the progress-report card no longer mentions an impact estimate.
+  - RED first: a5a alone -> 435/436 passed, 1 failed ({"gone":false,"dayHasSaved":true,"wrapHasSaved":true,
+    "reportHasImpact":true}).
+  - Suite 435 -> 428: +1 'trim a5a'; -8 removed, each testing only deleted code: 'v58 impact: counts × default
+    minutes, config override wins, total aggregates'; 'v101 asking what the day saved you does not stamp a key onto
+    the book'; 'v98 time saved can be asked for by day, week and month, not just lifetime'; 'v98 a window the log
+    cannot cover is reported as partial, never as a small number'; 'v98 the report says its numbers are estimates,
+    and names what was queued today'; 'v98 Copilot work is counted, not just Today work'; 'v98 the day close reads a
+    figure that exists'; 'v98 the dated log is versioned, migrated and repaired like every other shape'. Edited (not
+    removed): 'v67 quick log builds the same checklist scaffolding as the full form' (dropped its trackImpact half);
+    'v73 the day can only be wrapped up once per day' (no minutes argument; asserts rec.minutes is not stored); the
+    renderToday purity snippet no longer snapshots DATA.impact. The 'v58 boundary ... impact events numeric-only'
+    check stays (it tests the retained repair). The plan estimated 433 from a 438 baseline; measured 435 -> 428.
+  - MUTATION PROOF: putting "Closes today and shows 5m saved." back into renderDayClose turned a5a red
+    ({"gone":true,"dayHasSaved":true,...}). Restored.
+  - GREEN: runSelfChecks: 428/428; runGraduationScenarios: 6/6; runGuideSelfChecks: 18/18; migration dry run --from 14
+    exit 0; refcount 0 for trackImpact, IMPACT_EVENTS, buildImpactReport, downloadImpactReport, downloadImpactCsv,
+    renderImpactSettings (and for computeImpactSummary, fmtImpactDuration, impactPeriods, attachImpactSettings,
+    getImpactStore, readImpactStore, getImpactLog, impactMinutesFor, impactWindow). Tracker blob 1,193,120 -> 1,172,380;
+    working tree 1,212,437 -> 1,191,330.
+  Evidence: docs/superpowers/evidence/trim-and-integration/A5.md.
 
 FR/GRC DEFAULT GATES — RULING M3, SCHEMA 14 -> 15 (suite 436 -> 437)
   Ian: "Can't you do that for me and set it as a default value that can be changed by OSMs after?" The approved

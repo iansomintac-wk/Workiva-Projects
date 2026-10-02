@@ -27,13 +27,14 @@ OSM Runway — release notes
     - Gainsight CSV import with value weighting and renewal pressure, and a
       Gainsight sync queue. The queue has no transport — it is a staging list
       you work from, not an integration.
-    - A dated record of time saved, reportable by day, week and month.
+    - (A dated record of time saved shipped here and was retired afterwards; see
+      Trim A5.)
     - Automatic backup to a file you choose (File System Access API), plus
       Export/Import JSON. See README.txt for the honest limit on "automatic".
     - Single-level undo, Quick log, deep-linking into the right account tab,
       a Coordination tab, a Handoff tab (PROVISIONAL field set), and a
       Progress Report export.
-    - 435 self-checks, run by tools/selfcheck.mjs (suite in tools/selfchecks.js).
+    - 428 self-checks, run by tools/selfcheck.mjs (suite in tools/selfchecks.js).
 
   THE GUIDE. A companion onboarding and competency guide covering the tracker
   end to end, with a guided and a quick path, a practice mode, a challenge, and
@@ -46,7 +47,8 @@ OSM Runway — release notes
     - The Handoff field set is PROVISIONAL. It is a product open question, not
       an oversight.
     - The Gainsight sync queue has no transport.
-    - Impact minutes are an editable assumption, not a measurement.
+    - (Impact minutes were an editable assumption; retired with the time-saved
+      record, see Trim A5.)
     - The Progress Report is a snapshot, not a live view.
     - Automatic backup costs one click per session, not zero.
 
@@ -94,6 +96,19 @@ Trim A4 — one gate list (suite 432 -> 435).
       sentences; both now show the gate name with the reason or instruction under it.
     - The two graduation-date tests are named (gradDateMissing, gradDateDrifted).
     - Suite: +3 added (trim a4a-a4c), none removed; see VALIDATION.txt (TRIM A4).
+
+Trim A5 — time-saved retired (suite 435 -> 428).
+
+    - The time-saved meter is gone: the Settings "Time saved" block, the minutes
+      editors, the CSV download, the Time-Saved Report (Settings and the end-of-day
+      button), the "N actions, about X saved" line in the day close, the minutes
+      figure in the wrap-up, and the time-saved line in the manager progress report.
+      The 15 places that counted actions no longer do. Wrap up the day still closes
+      the day once and shows beats walked and items queued.
+    - Old books keep DATA.impact, DATA.impactLog, config.impactMinutes and
+      dayClose.minutes as inert fields: nothing reads them, no migration, schema
+      version unchanged. The Settings motion switch moved out of that block unchanged.
+    - Suite: +1 added (trim a5a), -8 removed; see VALIDATION.txt (TRIM A5).
 
 Curriculum piece 1 — stable ids for sessions and deliverables (merged to
 master 2026-09-30, with the review fixes and follow-ups M1r, M2r).

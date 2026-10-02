@@ -278,6 +278,22 @@ function _runSelfChecksInner(){
     finally{ DATA.customers = prevC; DATA.activities = prevA; _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); }
     check('trim a4c: one label per gate on Today, the account card and the Gainsight section', ok, detail);
   })();
+  (function(){                                                  // a5a
+    let ok = false, detail = '';
+    try{
+      const gone = typeof trackImpact === 'undefined' && typeof IMPACT_EVENTS === 'undefined'
+        && typeof buildImpactReport === 'undefined' && typeof downloadImpactReport === 'undefined'
+        && typeof downloadImpactCsv === 'undefined' && typeof renderImpactSettings === 'undefined'
+        && typeof computeImpactSummary === 'undefined';
+      const dayHtml = renderDayClose(buildDayTimeline());
+      const wrapSrc = String(showWrapUpModal);
+      const reportSrc = String(buildProgressReportHtml);
+      ok = gone && !/saved/i.test(dayHtml) && !/saved/i.test(wrapSrc) && !/impact/i.test(reportSrc);
+      detail = JSON.stringify({gone, dayHasSaved: /saved/i.test(dayHtml), wrapHasSaved: /saved/i.test(wrapSrc),
+        reportHasImpact: /impact/i.test(reportSrc)});
+    }catch(err){ detail = err.message; }
+    check('trim a5a: time-saved is retired; day close, wrap-up and progress report carry no saved-minutes line', ok, detail);
+  })();
   const badSupp = DATA.customers.filter(c => c.signalSuppressions &&
     Object.values(c.signalSuppressions).some(sup => !sup || !ISO_DATE_RE.test(sup.until || '') || !sup.source));
   check('every suppression has a valid expiry and source', badSupp.length === 0, badSupp.map(c=>c.name).join(', '));
@@ -774,47 +790,9 @@ function _runSelfChecksInner(){
     check('v59 hub + CTA: category signal from a note, structural silence maps to No Contact, CTA states the suggestion', ok, detail);
   })();
 
-  // v58 invariants: impact math is counts × assumptions with config override;
-  // the risk hub respects pause semantics (flags pierce, keyword signals
+  // v58 invariants: the risk hub respects pause semantics (flags pierce, keyword signals
   // don't); the queue round-trips the boundary; the CTA draft carries the
   // account and its recommendation.
-  (function(){
-    // v58a: DATA.impact must be restored by PRESENCE, not by value — the same
-    // fix v98's check already applies to this exact field two check-blocks
-    // down. `DATA.impact = savedImpact` when savedImpact is undefined leaves
-    // DATA with an OWN impact property set to undefined, which was not there
-    // at suite entry: v74.4's whole-book diff reads that via Object.keys and
-    // reports it added. Snapshotting through JSON mirrors savedLog just below.
-    const savedImpact = JSON.stringify(DATA.impact === undefined ? null : DATA.impact),
-      savedCfg = DATA.config.impactMinutes;
-    // v98: trackImpact now also appends to DATA.impactLog, so this check has to
-    // put that back too or it leaks a key onto a book that never had one.
-    const savedLog = DATA.impactLog === undefined ? null : JSON.stringify(DATA.impactLog);
-    // v74.5: check() now also checkpoints the book's own key set, so calling
-    // it INSIDE the try — while DATA.impact/impactLog are still the synthetic
-    // values, before the finally below restores them — reports a real (if
-    // momentary) leak on every run. Every other check in this suite computes
-    // ok/detail, restores the book, THEN calls check(); this block now does
-    // the same. What is asserted, and the values tested, are unchanged.
-    let ok = false, detail = '';
-    try{
-      DATA.impact = undefined; DATA.config.impactMinutes = {};
-      trackImpact('activity_logged'); trackImpact('activity_logged'); trackImpact('partner_note_imported', 5);
-      let sum = computeImpactSummary();
-      const baseOk = sum.rows.find(r=>r.key==='activity_logged').total === 2 * 4
-        && sum.rows.find(r=>r.key==='partner_note_imported').total === 5 * 2;
-      DATA.config.impactMinutes = {activity_logged: 10};
-      sum = computeImpactSummary();
-      ok = baseOk && sum.rows.find(r=>r.key==='activity_logged').total === 20
-        && sum.totalMinutes === 20 + 10;
-      detail = `total=${sum.totalMinutes}`;
-    } catch(err){ detail = err.message; } finally {
-      const ri = JSON.parse(savedImpact); if(ri === null) delete DATA.impact; else DATA.impact = ri;
-      DATA.config.impactMinutes = savedCfg;
-      if(savedLog === null) delete DATA.impactLog; else DATA.impactLog = JSON.parse(savedLog);
-    }
-    check('v58 impact: counts × default minutes, config override wins, total aggregates', ok, detail);
-  })();
   (function(){
     let ok = false, detail = '';
     try{
@@ -1084,17 +1062,9 @@ function _runSelfChecksInner(){
     // every live risk — a self-check must not write to the real book's memory.
     // Same snapshot/restore contract the v58/v59 hub checks use.
     const riskLogSnapshot = JSON.parse(JSON.stringify(DATA.riskLog || {}));
-    // renderToday() -> renderDayClose() -> computeImpactSummary() ->
-    // getImpactStore() is a SECOND, undocumented side effect: getImpactStore()
-    // lazily creates DATA.impact on first read when it does not already exist.
-    // Invisible on a seeded book (the key is already there); on an unseeded
-    // one it leaks a key this check never asked for. Restored by presence, the
-    // same shape as the v58 check's DATA.impact fix, not by always assigning.
-    const impactSnapshot = JSON.stringify(DATA.impact === undefined ? null : DATA.impact);
     let html;
     try{ html = renderToday(); } finally {
       DATA.riskLog = riskLogSnapshot;
-      const ri = JSON.parse(impactSnapshot); if(ri === null) delete DATA.impact; else DATA.impact = ri;
     }
     /* v69: the "START HERE" label is gone — first position carries that meaning
        on its own. The invariant it protected is unchanged and still the point:
@@ -3860,46 +3830,6 @@ function _runSelfChecksInner(){
     check('phaseB the first-value tick label tells a derived date from a recorded one', ok, detail);
   })();
   (function(){
-    /* v101: asking what the day saved you must not stamp a key onto the book.
-       The fourth instance of a family this branch has already fixed three
-       times — getDayClose() at v90, getGainsightQueue() at v95, and the
-       readSessionNote()/getSessionNote() split at v97 (see the comment above
-       readSessionNote) — and never extended to computeImpactSummary(), a
-       PURE READ that called getImpactStore(), the WRITER, and inherited its
-       lazy DATA.impact = {...} on first touch. Restore by PRESENCE, not by
-       value: DATA.impact = undefined leaves an OWN property set to undefined,
-       which Object.keys(DATA) still reports as added — the exact bug the v58
-       and Today-tab checks above already had to fix twice in this same field. */
-    const hadImpact = Object.prototype.hasOwnProperty.call(DATA, 'impact');
-    const savedImpact = hadImpact ? JSON.stringify(DATA.impact) : null;
-    let ok = false, detail = '';
-    try{
-      delete DATA.impact;
-      const sum = computeImpactSummary();
-      const noKeyStamped = !Object.prototype.hasOwnProperty.call(DATA, 'impact');
-      const rowsMatch = Array.isArray(sum.rows) && sum.rows.length === IMPACT_EVENTS.length;
-      const zeroTotal = sum.totalMinutes === 0;
-      const usableSince = isRealISODate(sum.since);
-      ok = noKeyStamped && rowsMatch && zeroTotal && usableSince;
-      detail = JSON.stringify({noKeyStamped, rowsMatch, zeroTotal, usableSince,
-        rows: sum.rows.length, totalMinutes: sum.totalMinutes, since: sum.since});
-    }catch(err){ detail = err.message; }
-    finally{
-      // Guarded: if DATA.impact were ever an OWN property whose VALUE is
-      // undefined (the assign-through-undefined defect this file has already
-      // fixed twice — the v58 and Today-tab DATA.impact leaks), then
-      // JSON.stringify(DATA.impact) above returns the undefined VALUE, not
-      // the string "undefined", so savedImpact is undefined too. Unguarded,
-      // JSON.parse(undefined) throws a SyntaxError right here, and because
-      // this is a finally block that throw escapes the IIFE and aborts the
-      // whole suite instead of just failing this one check. Unreachable
-      // today, but restore by presence rather than trust JSON.parse blindly.
-      if(hadImpact) DATA.impact = savedImpact !== undefined ? JSON.parse(savedImpact) : undefined;
-      else delete DATA.impact;
-    }
-    check('v101 asking what the day saved you does not stamp a key onto the book', ok, detail);
-  })();
-  (function(){
     /* Phase 3 / FIX 1. Excluding the headline from the drivers list must not
        just move a rule around — it must actually stop the same sentence
        rendering twice under Why and What do I do, and a beat with a REAL
@@ -4595,10 +4525,10 @@ function _runSelfChecksInner(){
     try{
       DATA.dayClose = {};
       const before = dayIsClosed();
-      closeTheDay({minutes: 107, beats: 14, queued: 6});
+      closeTheDay({beats: 14, queued: 6});
       const after = dayIsClosed();
       const rec = getDayClose();
-      ok = !before && after && rec.minutes === 107 && rec.beats === 14 && rec.queued === 6;
+      ok = !before && after && rec.minutes === undefined && rec.beats === 14 && rec.queued === 6;
       detail = JSON.stringify({before, after, rec});
     }catch(err){ detail = err.message; }
     /* v90: was `DATA.dayClose = prev`. On a book that has never closed a day
@@ -5446,8 +5376,7 @@ function _runSelfChecksInner(){
       return d.schemaVersion === CURRENT_SCHEMA_VERSION && CURRENT_SCHEMA_VERSION >= 4;
     })());
   check('v67 quick log builds the same checklist scaffolding as the full form',
-    String(openQuickLogModal).indexOf('ACTIVITY_TYPES[type] || []') !== -1 &&
-    String(openQuickLogModal).indexOf('trackImpact') !== -1);
+    String(openQuickLogModal).indexOf('ACTIVITY_TYPES[type] || []') !== -1);
   (function(){
     /* v68 handoff. The load-bearing promise of a PLACEHOLDER format is that
        changing it later cannot destroy what someone typed — so that is what
@@ -7427,74 +7356,13 @@ function _runSelfChecksInner(){
       'a diagnostic may read anything and must change nothing');
   })();
 
-  /* ---- v98 dated impact, the report, and two dead controls ---- */
+  /* ---- v98 two dead controls (the dated-impact half of this block retired in A5) ---- */
   (function(){
-    const realLog = DATA.impactLog === undefined ? null : JSON.stringify(DATA.impactLog);
-    const realImp = JSON.stringify(DATA.impact === undefined ? null : DATA.impact);
-    let today = null, week = null, month = null, uncovered = null, report = '';
-    try{
-      const T = todayISO();
-      /* Earliest entry is INSIDE the month window on purpose: `covered` asks
-         whether the log reaches back far enough to speak for the window, and a
-         log that begins 20 days ago cannot speak for the last 30. The first
-         draft of this fixture started 40 days back, which covers the window
-         fine and asserted the opposite of what it meant to. */
-      DATA.impactLog = [
-        {date: isoAddDays(T, -20), key:'activity_logged', n: 2},   // month only
-        {date: isoAddDays(T, -3),  key:'copilot_read',    n: 1},   // week + month
-        {date: T,                  key:'card_edit',       n: 4}    // all three
-      ];
-      today = impactWindow(T, T);
-      week = impactWindow(isoAddDays(T, -6), T);
-      month = impactWindow(isoAddDays(T, -29), T);
-      uncovered = month.covered;
-      report = buildImpactReport();
-    } finally {
-      if(realLog === null) delete DATA.impactLog; else DATA.impactLog = JSON.parse(realLog);
-      const ri = JSON.parse(realImp); if(ri === null) delete DATA.impact; else DATA.impact = ri;
-    }
-
-    check('v98 time saved can be asked for by day, week and month, not just lifetime',
-      today.totalMinutes === 4 * impactMinutesFor('card_edit')
-      && week.totalMinutes === today.totalMinutes + impactMinutesFor('copilot_read')
-      && month.totalMinutes === week.totalMinutes + 2 * impactMinutesFor('activity_logged')
-      && month.covered === false,   // the log begins inside the window
-      JSON.stringify({d:today.totalMinutes, w:week.totalMinutes, m:month.totalMinutes}));
-
-    /* The empty-denominator rule, again. A log that began after the window opened
-       must SAY so rather than report a small number as though the window were
-       measured and found quiet. */
-    check('v98 a window the log cannot cover is reported as partial, never as a small number',
-      uncovered === false && report.indexOf('only partly covered') !== -1,
-      JSON.stringify({covered: uncovered, hasNotice: report.indexOf('only partly covered') !== -1}));
-
-    check('v98 the report says its numbers are estimates, and names what was queued today',
-      report.indexOf('ESTIMATE') !== -1
-      && report.indexOf('QUEUED FOR GAINSIGHT TODAY') !== -1
-      && report.indexOf('TODAY') !== -1 && report.indexOf('LAST 7 DAYS') !== -1
-      && report.indexOf('LAST 30 DAYS') !== -1);
-
-    // The Copilot surfaces now count toward the figure.
-    check('v98 Copilot work is counted, not just Today work',
-      ['copilot_read','card_edit','question_drafted','session_backfilled'].every(k =>
-        IMPACT_EVENTS.some(e => e.key === k))
-      && String(generateCopilotRead).indexOf("trackImpact('copilot_read')") !== -1
-      && String(attachEvents).indexOf("trackImpact('card_edit')") !== -1);
-
     /* Two controls that looked live and were not. The beat had cursor:pointer and
-       a lede saying "Click one" with nothing bound; the day close read fields off
-       computeImpactSummary() that it has never returned. */
+       a lede saying "Click one" with nothing bound. */
     check('v98 clicking a beat selects it — the control the lede has always promised',
       String(attachEvents).indexOf('[data-day-step]') !== -1
       && String(attachEvents).indexOf('setTodayFocus(id)') !== -1);
-
-    /* Asserted on the CODE, not the source text: the comment above the fix names
-       the old expression, so a naive indexOf finds it in the very comment
-       explaining that it is gone. */
-    check('v98 the day close reads a figure that exists',
-      String(renderDayClose).indexOf('impactPeriods().day') !== -1
-      && !/\$\{impact\s*&&\s*impact\.events/.test(String(renderDayClose)),
-      'it read impact.events and impact.minutes, which computeImpactSummary has never returned');
 
     check('v98 the flyout can be widened, and the preference is a browser one',
       typeof getPanelWide === 'function' && typeof savePanelWide === 'function'
@@ -7502,16 +7370,6 @@ function _runSelfChecksInner(){
       && String(savePanelWide).indexOf('DATA') === -1
       && PANEL_WIDTH_KEY !== STORAGE_KEY);
 
-    /* >= rather than ===, matching the >= 4 / >= 9 / >= 10 clauses elsewhere in
-       this suite. What matters is that the dated log landed at a schema version
-       and has a migration behind it, not which version happens to be current —
-       pinning that coupled this check to every future bump, and it broke on the
-       very next one. */
-    check('v98 the dated log is versioned, migrated and repaired like every other shape',
-      CURRENT_SCHEMA_VERSION >= 11
-      && String(migrateData).indexOf('impactLog') !== -1
-      && String(repairAuxiliaryCollections).indexOf('impactLog') !== -1
-      && String(trackImpact).indexOf('MAX_IMPACT_LOG') !== -1);
   })();
 
   /* ---- v99 the automatic backup ---- */

@@ -38,8 +38,8 @@
   1.0 — First working prototype.
         A single-file book of business you keep on your own machine: a Today tab
         whose axis is the workday, risk and health scoring driven by one signal
-        registry, an AI Copilot layer, Gainsight CSV import, a dated record of
-        time saved, and automatic backup to a file you choose.
+        registry, an AI Copilot layer, Gainsight CSV import, and automatic
+        backup to a file you choose.
         The development record that produced this build — the version-by-version
         reasoning behind individual lines — is archived under docs/history/.
         Comment markers like "v72" throughout this file point into that record.
@@ -1036,24 +1036,18 @@
   .close-split{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;
     border-top:1px solid var(--border-soft); padding-top:12px;}
 
-  /* The wrap-up. One moment a day, and the only place the OSM meets the
-     time-saved number while working. It is a modal because it is a full stop,
-     not a status line — and it states that it is an estimate, in the same
-     breath as the number, because that is the honest way to be congratulated. */
+  /* The wrap-up. One moment a day. It is a modal because it is a full stop,
+     not a status line. */
   .wrapup{text-align:center; padding:var(--space-2) var(--space-1);}
   .wrapup h3{margin:0 0 var(--space-2); font-family:var(--font-display); font-weight:800;
     font-size:var(--text-2xl); letter-spacing:-.02em; color:var(--text);}
-  .wrapup-figure{font-family:var(--font-display); font-weight:800; letter-spacing:-.04em;
-    font-size:var(--text-3xl); color:var(--accent-info); line-height:1;}
-  .wrapup-figure small{display:block; margin-top:var(--space-half); font-family:var(--font-mono);
-    font-size:var(--text-xs); font-weight:400; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint);}
   .wrapup-stats{display:flex; justify-content:center; gap:var(--space-3); flex-wrap:wrap;
     margin-top:var(--space-2); padding-top:var(--space-compact); border-top:1px solid var(--border-soft);}
   .wrapup-stat b{display:block; font-size:var(--text-lg); color:var(--text);}
   .wrapup-stat span{font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-faint);
     text-transform:uppercase; letter-spacing:.05em;}
 
-  /* Impact table in Settings. */
+  /* Two-column table rows (the Settings component-weights table). */
   /* v74: curriculum fit */
   .fit-card{margin:0 0 var(--space-2); padding:var(--space-compact); border:1px solid var(--border-soft);
     border-radius:10px; background:var(--bg-card-hover);}
@@ -2154,7 +2148,6 @@ Rules: 60-120 words per section. Write from a customer success, implementation a
     const res = await callAiAPI(prompt, {maxTokens: 3200});
     if(ui.aiChapters.req !== myReq) return;
     const sections = parseAiSections(res.text);
-    trackImpact('copilot_read');
     ui.aiChapters = {loading:false, sections, error:'', req:myReq,
       raw: Object.keys(sections).length ? '' : res.text,
       truncated: !!res.truncated,
@@ -2377,7 +2370,6 @@ async function generateCustomerAiBrief(customerId){
     const coverageNote = ctx.activitiesTotal > ctx.activitiesShown
       ? `Built from the ${ctx.activitiesShown} most recent of ${ctx.activitiesTotal} logged activities.\n\n`
       : '';
-    trackImpact('callprep_generated'); // v58
     ui.aiCustomerBriefs[customerId] = {loading:false, text: coverageNote + res.text + (res.truncated ? '\n\n[Response hit the length cap and may be cut off — regenerate if it ends mid-thought.]' : ''), error:'', req:myReq};
   } catch(e){
     if(ui.aiCustomerBriefs[customerId] && ui.aiCustomerBriefs[customerId].req !== myReq) return;
@@ -2793,7 +2785,6 @@ async function generateSessionDebrief(customerId, activityId){
       const act = (DATA.activities[customerId] || []).find(x => x.id === activityId);
       if(act && applyThreadAnswers(act, callReview.answers)) saveData();
     }
-    trackImpact('debrief_generated'); // v58
     ui.sessionDebriefs[activityId] = {loading:false, text: res.text + (res.truncated ? '\n\n[Response hit the length cap and may be cut off — regenerate if it ends mid-thought.]' : ''), error:'', req:myReq, extraction, callReview};
   } catch(e){
     if(ui.sessionDebriefs[activityId] && ui.sessionDebriefs[activityId].req !== myReq) return;
@@ -4990,7 +4981,7 @@ function applyDataBackfills(data){
   if(!data.config.defaultPaceDays) data.config.defaultPaceDays = 14;
   if(!data.config.dueSoonDays) data.config.dueSoonDays = 7;   // v49 additive config default
   if(!data.config.neglectDays) data.config.neglectDays = 21;
-  if(!isRecordObject(data.config.impactMinutes)) data.config.impactMinutes = {}; // v58 additive  // v49 additive config default
+  if(!isRecordObject(data.config.impactMinutes)) data.config.impactMinutes = {}; // v58 additive. INERT since A5 (time-saved retired): nothing reads impactMinutes; kept so old books round-trip unchanged.
   if(!data.config.outcomeNames || !data.config.outcomeNames.length) data.config.outcomeNames = DEFAULT_OUTCOME_NAMES;
   if(!data.config.advisorRiskKeywords || !data.config.advisorRiskKeywords.length) data.config.advisorRiskKeywords = DEFAULT_ADVISOR_RISK_KEYWORDS.slice();
   if(!data.config.advisorPositiveKeywords || !data.config.advisorPositiveKeywords.length) data.config.advisorPositiveKeywords = DEFAULT_ADVISOR_POSITIVE_KEYWORDS.slice();
@@ -5170,7 +5161,7 @@ function performUndo(){
    The mechanism: a user action mutates, calls saveData(), and correctly captures
    the pre-mutation localStorage as the undo snapshot. Then it calls render() —
    and rendering itself writes. getWeeklyDigest() stamps a baseline, the signal
-   layer clears expired suppressions, trackImpact() bumps a counter; each calls
+   layer clears expired suppressions; each calls
    queueSave(), which defers to a setTimeout that fires moments later. By then
    the "value already in localStorage" — the thing v66 correctly identified as
    the pre-change state, for free — is the POST-change state. The snapshot gets
@@ -9637,12 +9628,9 @@ function renderGantt(){
 /* ============ RENDER: GAINSIGHT TO-DO ============ */
 /* ============ RENDER: COPILOT ============ */
 
-/* ============ v58: IMPACT METER, RISK HUB, GAINSIGHT SYNC SCAFFOLD ============
-   Three demo-feedback features, each honest about what it is:
-   - Impact: REAL usage counts from this browser x YOUR editable minutes-per-
-     action assumptions = an estimate for positioning, never presented as a
-     measurement. Counts live in DATA.impact (additive, rides exports);
-     assumptions in DATA.config.impactMinutes.
+/* ============ v58: RISK HUB, GAINSIGHT SYNC SCAFFOLD ============
+   Demo-feedback features, each honest about what it is (the impact meter that
+   once sat first in this list was retired in A5):
    - Risk Hub: one aggregation of every risk surface the tracker already
      computes (at-risk classification, flagged notes, risk language,
      behind-target, implementation risks/pauses) with a one-click At-Risk CTA
@@ -9653,212 +9641,12 @@ function renderGantt(){
      persists in the book; the transport deliberately does not exist, and the
      UI says "not connected" rather than pretending. Export the queue as
      JSON to hand to middleware (or paste manually) meanwhile. */
-const IMPACT_EVENTS = [
-  {key:'activity_logged',       label:'Activities logged (structured note + auto admin checklist)', minutes:4},
-  {key:'debrief_generated',     label:'Session debriefs (coverage, verified Q&A, recap email draft)', minutes:12},
-  {key:'callprep_generated',    label:'AI call-prep syntheses (context switch without re-reading history)', minutes:8},
-  {key:'partner_note_imported', label:'Partner notes imported (vs retyping from the partner tracker)', minutes:2},
-  {key:'progress_report',       label:'Manager progress reports assembled', minutes:25},
-  {key:'script_opened',         label:'Session run scripts opened (45-minute prep from a standing runbook)', minutes:10},
-  {key:'gainsight_copy',        label:'Gainsight summaries drafted for pasting', minutes:3},
-  {key:'cta_drafted',           label:'At-Risk CTA drafts prepared for Gainsight', minutes:6},
-  /* v98: the Copilot surfaces. Every estimate below is what the alternative
-     costs, not what the feature "feels worth" — the card back saves the round
-     trip to the account and back, the read saves assembling a portfolio review by
-     hand, the backfill grid saves a panel visit per session. Coarse, and labelled
-     as estimates everywhere they appear, exactly like the originals. */
-  {key:'copilot_read',          label:'AI portfolio reads (four lenses over the whole book at once)', minutes:15},
-  {key:'card_edit',             label:'Records updated from a card back (no round trip to the account)', minutes:2},
-  {key:'question_drafted',      label:'Customer answers drafted from the logged question', minutes:6},
-  {key:'session_backfilled',    label:'Sessions caught up in the backfill grid (vs one panel visit each)', minutes:3},
-  {key:'value_imported',        label:'Commercial fields imported from a Gainsight CSV', minutes:1}
-];
-/* v101: reading what the day saved you must not CREATE the record that
-   answers it — the fourth instance of this family, after getDayClose() at
-   v90, getGainsightQueue() at v95, and the readSessionNote()/getSessionNote()
-   split at v97. computeImpactSummary() is a pure summary called from render
-   paths with no reason to expect a write, but it called getImpactStore()
-   below and inherited that function's lazy DATA.impact = {...} on first
-   touch — invisible on a seeded book (the key is already there), and a
-   stamped key on an empty one. Same remedy as the other three: a throwaway
-   in-memory default for readers, and only the writer below materializes
-   anything onto DATA. */
-function readImpactStore(){
-  const src = isRecordObject(DATA.impact) ? DATA.impact : {};
-  return {
-    events: isRecordObject(src.events) ? src.events : {},
-    since: isRealISODate(src.since) ? src.since : todayISO()
-  };
-}
-function getImpactStore(){
-  if(!isRecordObject(DATA.impact)) DATA.impact = {events:{}, since: todayISO()};
-  if(!isRecordObject(DATA.impact.events)) DATA.impact.events = {};
-  if(!isRealISODate(DATA.impact.since)) DATA.impact.since = todayISO();
-  return DATA.impact;
-}
-/* v98: DATA.impact.events is a lifetime counter with a since-date, which can
-   answer "how much in total" and nothing else. A daily, weekly or monthly figure
-   needs DATED events, so every increment is now also appended to a log.
-
-   Capped at 4000 entries — roughly three years of heavy use — and pruned from the
-   front, because an unbounded array inside a book that is exported as one JSON
-   file is a slow leak nobody notices until the export gets big. The cumulative
-   counter stays exactly as it was, so every existing surface is untouched. */
+/* Retired (A5, R6): the time-saved meter, report and CSV are gone. Books saved
+   before this still carry DATA.impact, DATA.impactLog and config.impactMinutes;
+   they are inert (nothing reads them) and repairAuxiliaryCollections cleans them
+   so an old book round-trips unchanged. No migration; the schema version is unchanged. */
 const MAX_IMPACT_LOG = 4000;
-function getImpactLog(){
-  return Array.isArray(DATA.impactLog) ? DATA.impactLog : [];
-}
-function trackImpact(key, n){
-  const st = getImpactStore();
-  const count = Number.isFinite(n) && n > 0 ? Math.round(n) : 1;
-  st.events[key] = (st.events[key] || 0) + count;
-  if(!Array.isArray(DATA.impactLog)) DATA.impactLog = [];
-  const today = todayISO();
-  const last = DATA.impactLog[DATA.impactLog.length - 1];
-  // Same key, same day: add to the existing row rather than growing the log.
-  if(last && last.date === today && last.key === key) last.n += count;
-  else DATA.impactLog.push({date: today, key, n: count});
-  if(DATA.impactLog.length > MAX_IMPACT_LOG){
-    DATA.impactLog.splice(0, DATA.impactLog.length - MAX_IMPACT_LOG);
-  }
-  queueSave();
-}
-/* Minutes saved inside a window, from the dated log. Returns null rather than
-   zero when the log cannot cover the window — a book that started logging on
-   Tuesday must not report "0 minutes saved last month" as though the month were
-   measured and found empty. */
-function impactWindow(fromISO, toISO){
-  const log = getImpactLog();
-  if(!log.length) return null;
-  const earliest = log.reduce((m, e) => e.date < m ? e.date : m, log[0].date);
-  const rows = {};
-  let total = 0;
-  log.forEach(e => {
-    if(e.date < fromISO || e.date > toISO) return;
-    const mins = impactMinutesFor(e.key) * e.n;
-    if(!rows[e.key]) rows[e.key] = {key: e.key, count: 0, minutes: 0};
-    rows[e.key].count += e.n;
-    rows[e.key].minutes += mins;
-    total += mins;
-  });
-  return {from: fromISO, to: toISO, totalMinutes: total,
-    covered: earliest <= fromISO,
-    loggingSince: earliest,
-    rows: Object.values(rows).sort((a, b) => b.minutes - a.minutes)
-      .map(r => Object.assign({label: (IMPACT_EVENTS.find(e => e.key === r.key) || {}).label || r.key}, r))};
-}
-function impactPeriods(){
-  const today = todayISO();
-  return {
-    day:   impactWindow(today, today),
-    week:  impactWindow(isoAddDays(today, -6), today),
-    month: impactWindow(isoAddDays(today, -29), today)
-  };
-}
-function impactMinutesFor(key){
-  const cfg = DATA.config.impactMinutes || {};
-  if(Number.isFinite(cfg[key]) && cfg[key] >= 0) return cfg[key];
-  const def = IMPACT_EVENTS.find(e => e.key === key);
-  return def ? def.minutes : 0;
-}
-function computeImpactSummary(){
-  const st = readImpactStore();
-  const rows = IMPACT_EVENTS.map(e => {
-    const count = Number.isFinite(st.events[e.key]) ? st.events[e.key] : 0;
-    const minutes = impactMinutesFor(e.key);
-    return {key: e.key, label: e.label, count, minutes, total: count * minutes};
-  });
-  return {rows, totalMinutes: rows.reduce((sum, r) => sum + r.total, 0), since: st.since};
-}
-/* ============ v98: THE TIME-SAVED REPORT ============
-   The impact meter could say "4h 20m since March" and nothing else. This answers
-   the question a manager actually asks — how much this week, how much this month
-   — and the one an OSM asks, which is what went into the queue today.
 
-   TWO HONESTY RULES, and they are the reason this is worth reading at all:
-   1. Every minute here is an ESTIMATE from IMPACT_EVENTS, not a measurement. The
-      report says so at the top, once, in the same sentence as the total.
-   2. It never claims a window it cannot cover. A log that started on Tuesday
-      reports the month as "logging began 3 days ago", not as a small number.
-      An empty denominator lying is the failure mode this whole file is built
-      against. */
-function buildImpactReport(){
-  const L = [];
-  const periods = impactPeriods();
-  const lifetime = computeImpactSummary();
-  const q = getGainsightQueue();
-  const today = todayISO();
-  const todaysQueue = q.filter(x => x.date === today);
-
-  L.push('TIME SAVED — OSM Book of Business Tracker');
-  L.push('Generated ' + fmtDate(today));
-  L.push('');
-  L.push('Every figure below is an ESTIMATE built from the per-action assumptions in');
-  L.push('Settings, not a measurement of your actual time. They are deliberately coarse.');
-  L.push('');
-
-  const block = (title, w) => {
-    L.push('— ' + title + ' —');
-    if(!w){
-      L.push('  Nothing logged yet. This report starts counting from the first tracked action.');
-      L.push('');
-      return;
-    }
-    if(!w.covered){
-      L.push('  Logging began ' + fmtDate(w.loggingSince) + ', so this window is only partly covered.');
-    }
-    L.push('  ' + fmtImpactDuration(w.totalMinutes) + ' saved' +
-      (w.rows.length ? ' across ' + w.rows.reduce((n, r) => n + r.count, 0) + ' actions' : ''));
-    w.rows.forEach(r => {
-      L.push('    ' + String(r.count).padStart(4) + ' x  ' + r.label);
-      L.push('           ' + fmtImpactDuration(r.minutes));
-    });
-    if(!w.rows.length) L.push('    (no tracked actions in this window)');
-    L.push('');
-  };
-  block('TODAY', periods.day);
-  block('LAST 7 DAYS', periods.week);
-  block('LAST 30 DAYS', periods.month);
-
-  L.push('— SINCE ' + fmtDate(lifetime.since).toUpperCase() + ' —');
-  L.push('  ' + fmtImpactDuration(lifetime.totalMinutes) + ' saved in total');
-  lifetime.rows.filter(r => r.count).forEach(r => {
-    L.push('    ' + String(r.count).padStart(4) + ' x  ' + r.label + '  (' + fmtImpactDuration(r.total) + ')');
-  });
-  L.push('');
-
-  /* What went into the queue today — the thing an OSM wants at 5pm, and the one
-     part of this report that is a COUNT of real records rather than an estimate. */
-  L.push('— QUEUED FOR GAINSIGHT TODAY (' + todaysQueue.length + ') —');
-  if(!todaysQueue.length){
-    L.push('  Nothing queued today.');
-  } else {
-    const byKind = {};
-    todaysQueue.forEach(x => { (byKind[x.kind] = byKind[x.kind] || []).push(x); });
-    Object.keys(byKind).sort().forEach(kind => {
-      L.push('  ' + kind + ' (' + byKind[kind].length + ')');
-      byKind[kind].forEach(x => L.push('    - ' + x.customerName + (x.status && x.status !== 'queued' ? ' [' + x.status + ']' : '')));
-    });
-  }
-  L.push('');
-  const stillQueued = q.filter(x => x.status === 'queued').length;
-  if(stillQueued) L.push('  ' + stillQueued + ' item' + (stillQueued === 1 ? '' : 's') + ' still sitting in the queue overall.');
-  L.push('');
-  L.push('These are counts of what the tracker did. Whether it saved you the time it');
-  L.push('claims is a judgement only you can make — the assumptions are editable.');
-  return L.join(String.fromCharCode(10));
-}
-function downloadImpactReport(){
-  const name = 'time-saved-' + todayISO() + '.txt';
-  downloadTextFile(name, buildImpactReport());
-  trackImpact('progress_report');
-  showToast('Report downloaded. Every figure in it is an estimate, and it says so.');
-}
-
-function fmtImpactDuration(mins){
-  const h = Math.floor(mins / 60), m = Math.round(mins % 60);
-  return h ? `${h}h ${m}m` : `${m}m`;
-}
 /* ---- Risk Hub ---- */
 
 /* ---- v59: team-confirmed risk taxonomy ----
@@ -9945,10 +9733,8 @@ function riskAttention(it){
    was made, and if the account later deteriorates past that point the risk RETURNS
    and says why it came back. A false positive today should not blind the tab to a
    real problem next month. */
-/* The wrap-up record. The OSM sees the time-saved figure exactly once a day, when
-   they say the day is done — not as a permanent scoreboard on a working tab. The
-   running total still accumulates in DATA.impact for leadership reporting; this
-   only remembers WHICH day was last closed, so the moment cannot fire twice. */
+/* The wrap-up record. It only remembers WHICH day was last closed, so the moment
+   cannot fire twice. */
 /* v90: reading must not CREATE. dayIsClosed() runs on every Today render, and
    the old version materialised DATA.dayClose as a side effect of being asked a
    question — so merely looking at the tab added a key to the book, and the
@@ -9963,7 +9749,6 @@ function closeTheDay(stats){
   if(!isRecordObject(DATA.dayClose)) DATA.dayClose = {};
   const rec = DATA.dayClose;
   rec.date = todayISO();
-  rec.minutes = Number.isFinite(stats && stats.minutes) ? stats.minutes : 0;
   rec.beats = Number.isFinite(stats && stats.beats) ? stats.beats : 0;
   rec.queued = Number.isFinite(stats && stats.queued) ? stats.queued : 0;
   saveData();
@@ -11098,9 +10883,8 @@ const TODAY_SOURCE_MAP = TODAY_SOURCE_DEFS.reduce((m,d)=>{ m[d.source] = d; retu
 
    These are ASSUMPTIONS, not measurements — deliberately coarse, and labelled
    as estimates everywhere they appear. They are separate from
-   DATA.config.impactMinutes, which measures time SAVED by using the tracker for
-   the Impact meter; that is a different quantity and conflating the two would
-   corrupt both. Kept as constants rather than another Settings dial: an
+   the retired time-saved minutes (DATA.config.impactMinutes, now inert), which
+   measured something else. Kept as constants rather than another Settings dial: an
    estimate you are invited to tune implies a precision none of this has. */
 const EFFORT_MIN = {
   // v88: a play step is scoped to be one act, which is what makes the sequence
@@ -11831,7 +11615,6 @@ async function generateThreadAnswer(activityId, threadId){
     const res = await callAiAPI(buildThreadAnswerPrompt(cust, act, thread), {maxTokens: 700});
     thread.a = String(res.text || '').replace(/\s+/g, ' ').trim().slice(0, 2000);
     thread.answeredOn = todayISO();
-    trackImpact('question_drafted');
     ui.threadAnswerAi[threadId] = {loading:false, error:''};
     saveData();
     showToast('Draft answer saved to the question. Read it before you send it.');
@@ -11980,7 +11763,6 @@ function renderDayClose(day){
   const weekAhead = DATA.customers
     .map(c => ({c, on: getNextSessionScheduled(c)}))
     .filter(x => x.on && (() => { const d = calendarDayDiff(x.on, todayISO()); return d !== null && d > 0 && d <= 7; })());
-  const impact = computeImpactSummary();
   return `
     <div class="day-close" data-day-close>
       <div class="dm-head"><span class="dm-eyebrow">The close</span><h3>What you queued today</h3></div>
@@ -12001,9 +11783,9 @@ function renderDayClose(day){
 
       <div class="close-wrap">
         ${dayIsClosed()
-          ? `<p class="bp-basis">${icon('check')} You wrapped up ${fmtDate(getDayClose().date)} — ${fmtImpactDuration(getDayClose().minutes)} saved, ${getDayClose().beats} beat${getDayClose().beats===1?'':'s'} walked. Tomorrow starts a new count.</p>`
+          ? `<p class="bp-basis">${icon('check')} You wrapped up ${fmtDate(getDayClose().date)} — ${getDayClose().beats} beat${getDayClose().beats===1?'':'s'} walked. Tomorrow starts a new count.</p>`
           : `<button class="btn btn-primary" data-wrap-day>Wrap up the day</button>
-             <span class="bp-basis">Closes today and shows what the tracker saved you.</span>`}
+             <span class="bp-basis">Closes today and counts the beats you walked.</span>`}
       </div>
 
       <!-- v98: the two things worth doing at the end of a day, offered at the end
@@ -12012,7 +11794,6 @@ function renderDayClose(day){
            the browser will not let a page write to disk unprompted, so the next
            best thing is asking at the moment you have finished. -->
       <div class="close-actions">
-        <button class="btn btn-sm" data-download-report>Download the time-saved report</button>
         <button class="btn btn-sm ${(function(){ const d = DATA.lastExportedAt ? daysSince(DATA.lastExportedAt) : null; return (d === null || d > 0) ? 'btn-primary' : ''; })()}" data-backup-now>Back up the book</button>
         <span class="bp-basis">${(function(){
           const d = DATA.lastExportedAt ? daysSince(DATA.lastExportedAt) : null;
@@ -12023,20 +11804,6 @@ function renderDayClose(day){
       </div>
 
       <div class="close-split">
-        <div>
-          <div class="lbl">What moved today</div>
-          <!-- v98: this read impact.events and impact.minutes, neither of which
-               computeImpactSummary() has ever returned — it returns {rows,
-               totalMinutes, since}. So this line has always said "Nothing logged
-               yet today", on every book, forever. It was also reaching for a
-               LIFETIME total to describe today. Both fixed by the dated log. -->
-          <div class="close-stat">${(function(){
-            const d = impactPeriods().day;
-            if(!d || !d.rows.length) return 'Nothing tracked yet today.';
-            const n = d.rows.reduce((sum, r) => sum + r.count, 0);
-            return `${n} action${n===1?'':'s'} · about ${fmtImpactDuration(d.totalMinutes)} saved`;
-          })()}</div>
-        </div>
         <div>
           <div class="lbl">The rest of the week</div>
           <div class="close-stat">${weekAhead.length ? `${weekAhead.length} session${weekAhead.length===1?'':'s'} already on the calendar — <button class="link-btn" data-goto-accounts>see the accounts</button>` : 'No sessions scheduled in the next 7 days.'}</div>
@@ -12481,7 +12248,6 @@ function openQuickLogModal(){
       checklist: (ACTIVITY_TYPES[type] || []).map(label => ({label, done:false})),
       flagged: backdrop.querySelector('#ql-flag').checked
     });
-    trackImpact('activity_logged');
     saveData();
     close();
     render();
@@ -12824,10 +12590,6 @@ function openBackfillModal(){
     if(!plan.length){ showToast('Nothing entered — fill in at least one row.'); return; }
     markUndoable('session backfill');
     const res = applySessionBackfill(plan);
-    if(res.created) trackImpact('session_backfilled', res.created);
-    /* Deliberately NOT trackImpact('activity_logged'): impact counts touchpoints
-       the tracker prompted you to make. Catching up on history you already did is
-       record-keeping, and counting it would flatter the number. */
     saveData();
     close();
     render();
@@ -14562,10 +14324,9 @@ function attachEvents(){
   $('#import-partner-sheet-input') && $('#import-partner-sheet-input').addEventListener('change', handlePartnerSheetFile);
   $('#import-values-input') && $('#import-values-input').addEventListener('change', handleValuesFile);
   $('#btn-progress-report') && $('#btn-progress-report').addEventListener('click', downloadProgressReport);
-  // v58: Risk Hub + Gainsight queue + impact assumptions (Copilot tab)
+  // v58: Risk Hub + Gainsight queue (Copilot tab)
   function openCtaModal(item){
     const text = buildRiskCtaText(item);
-    trackImpact('cta_drafted');
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop';
     backdrop.innerHTML = `
@@ -14607,7 +14368,6 @@ function attachEvents(){
     if(!item) return;
     if(queueGainsightItem('At-Risk CTA', item.c, buildRiskCtaText(item))){
       markRiskActioned(item, false); // v60
-      trackImpact('cta_drafted');
       showToast('Queued for Gainsight — exports as JSON until the push transport is connected');
     }
     render();
@@ -14650,16 +14410,6 @@ The draft is discarded. The risk itself stays open.`)) return;
     downloadGainsightQueue();
     showToast('Queue exported — hand the JSON to your middleware or work it manually');
   });
-  $$('[data-impact-min]').forEach(inp => inp.addEventListener('change', ()=>{
-    const v = parseInt(inp.value, 10);
-    if(!isRecordObject(DATA.config.impactMinutes)) DATA.config.impactMinutes = {};
-    if(Number.isFinite(v) && v >= 0 && v <= 240){
-      DATA.config.impactMinutes[inp.dataset.impactMin] = v;
-      saveData(); render();
-    } else {
-      showToast('Minutes must be between 0 and 240'); render();
-    }
-  }));
   $('#btn-add-customer') && $('#btn-add-customer').addEventListener('click', openAddCustomerModal);
 
   /* v94: the same control, a bigger job. It now produces the four-lens read that
@@ -14891,7 +14641,6 @@ The draft is discarded. The risk itself stays open.`)) return;
     if(target) target.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'center'});
   }));
   $$('[data-download-gainsight]').forEach(b => b.addEventListener('click', ()=> downloadGainsightQueue()));
-  $$('[data-download-report]').forEach(b => b.addEventListener('click', downloadImpactReport));
   $$('[data-backup-now]').forEach(b => b.addEventListener('click', exportData));
   $$('[data-thread-ai]').forEach(btn => btn.addEventListener('click', ()=>{
     const [actId, threadId] = btn.dataset.threadAi.split('|');
@@ -14943,32 +14692,15 @@ The draft is discarded. The risk itself stays open.`)) return;
     showToast('Logged — the staleness clock is reset.');
     render();
   }));
-  /* v73: the wrap-up. The ONE time a day an OSM meets the time-saved figure while
-     working. It reports the day's own delta, not the running total, so it cannot
-     drift into a scoreboard — and it says "estimate" beside the number. */
+  /* v73: the wrap-up. Closes the day once and says how many beats were walked
+     and how much is queued for Gainsight. (A5: it no longer reports minutes.) */
   $$('[data-wrap-day]').forEach(b => b.addEventListener('click', ()=>{
     if(dayIsClosed()) return;
     const day = buildDayTimeline();
-    const before = getDayClose();
-    const sum = computeImpactSummary();
-    // The day's share is everything counted since the last wrap-up.
-    const priorTotal = Number.isFinite(before.runningTotal) ? before.runningTotal : 0;
-    const minutes = Math.max(0, sum.totalMinutes - priorTotal);
     const queued = getGainsightQueue().filter(q => q.status === 'queued').length;
-    const rec = closeTheDay({minutes, beats: day.beats.length, queued});
-    rec.runningTotal = sum.totalMinutes; // baseline for tomorrow
-    saveData();
+    const rec = closeTheDay({beats: day.beats.length, queued});
     showWrapUpModal(rec);
     render();
-  }));
-  $$('[data-impact-min]').forEach(inp => inp.addEventListener('change', ()=>{
-    if(!isRecordObject(DATA.config.impactMinutes)) DATA.config.impactMinutes = {};
-    const n = parseInt(inp.value, 10);
-    if(Number.isFinite(n) && n >= 0 && n <= 600) DATA.config.impactMinutes[inp.dataset.impactMin] = n;
-    else delete DATA.config.impactMinutes[inp.dataset.impactMin];
-    saveData();
-    const host = document.getElementById('impact-settings');
-    if(host){ host.innerHTML = renderImpactSettings(); attachImpactSettings(host); }
   }));
   $$('[data-component-weight]').forEach(inp => inp.addEventListener('change', ()=>{
     if(!isRecordObject(DATA.config.componentWeights)) DATA.config.componentWeights = {};
@@ -14982,15 +14714,6 @@ The draft is discarded. The risk itself stays open.`)) return;
     if(Number.isInteger(n) && n > 0 && n <= 104) DATA.config.standardWindowWeeks = n;
     else delete DATA.config.standardWindowWeeks;
     saveData();
-  });
-  $('#btn-export-impact-csv') && $('#btn-export-impact-csv').addEventListener('click', ()=> downloadImpactCsv());
-  $('#btn-reset-impact') && $('#btn-reset-impact').addEventListener('click', ()=>{
-    DATA.impact = {events:{}, since: todayISO()};
-    const rec = getDayClose(); delete rec.runningTotal;
-    saveData();
-    const host = document.getElementById('impact-settings');
-    if(host){ host.innerHTML = renderImpactSettings(); attachImpactSettings(host); }
-    showToast('Time-saved counter reset. Counting from today.');
   });
   $$('[data-day-density]').forEach(b => b.addEventListener('click', ()=>{
     const d = b.dataset.dayDensity;
@@ -15118,7 +14841,6 @@ The draft is discarded. The risk itself stays open.`)) return;
      the rail silently jump. Called after render(), so the DOM it inspects is the
      rebuilt one. */
   const dkAfterWrite = (deckId, custId, what) => {
-    trackImpact('card_edit');
     saveData(); render();
     const stillThere = !!document.querySelector(
       '[data-deck="' + cssEscape(deckId) + '"] .dk-card[data-dk-id="' + cssEscape(custId) + '"]');
@@ -16035,7 +15757,6 @@ The draft is discarded. The risk itself stays open.`)) return;
       if(!tpl) return;
       const rb = buildSessionRunbook(cust, tpl);
       const text = buildSessionScriptText(cust, num, tpl, rb);
-      trackImpact('script_opened'); // v58
       const backdrop = document.createElement('div');
       backdrop.className = 'modal-backdrop';
       backdrop.innerHTML = `
@@ -16120,7 +15841,6 @@ The draft is discarded. The risk itself stays open.`)) return;
         try{ addFirstValueEvidence(candidateCustomer, activity); } finally { DATA = previous; }
       }
       if(!commitDataCandidate(candidate)) return;
-      trackImpact('activity_logged'); // v58
       ui.panelTab = 'activity';
       showToast(flagged ? 'Activity logged and flagged as priority'
         : isFirstValue ? 'Activity logged — first value evidence recorded'
@@ -16811,7 +16531,6 @@ function openGainsightCopyModal(customerId){
   const c = DATA.customers.find(x=>x.id===customerId);
   if(!c) return;
   const text = buildGainsightCopyText(c);
-  trackImpact('gainsight_copy'); // v58
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   backdrop.innerHTML = `
@@ -16968,15 +16687,6 @@ function applySettingsDraft(candidate, draft){
   return candidate;
 }
 
-/* ============ v73: TIME SAVED, AS REPORTING ============
-   This used to sit on the Copilot tab, where an OSM saw a growing "time saved"
-   figure every time they went looking for portfolio advice. That is a number for
-   a leadership conversation, not a number you act on between calls, and putting
-   it on a working surface made the tab partly about the tool's own worth.
-
-   It now lives in Settings, where the assumptions can be edited beside it, and
-   reaches the OSM exactly once a day through the wrap-up. The counts keep
-   accruing either way. */
 /* The motion switch lives in Settings beside the other per-browser preferences.
    It is a display choice, not book data, so it never touches DATA. */
 function renderMotionSetting(){
@@ -16997,78 +16707,6 @@ function renderMotionSetting(){
     </div>`;
 }
 
-function renderImpactSettings(){
-  const sum = computeImpactSummary();
-  return `
-    ${renderMotionSetting()}
-    <div class="impact-grid">
-      ${IMPACT_EVENTS.map(e => {
-        const row = sum.rows.find(r => r.key === e.key) || {count:0, total:0};
-        return `
-        <div class="impact-row">
-          <div class="impact-label">${escapeHtml(e.label)}</div>
-          <div class="impact-count"><span class="lbl">counted</span> ${row.count}</div>
-          <div class="impact-mins">
-            <label class="sr-only" for="impact-min-${escapeAttr(e.key)}">Minutes saved per ${escapeHtml(e.label)}</label>
-            <input type="number" min="0" max="600" step="1" id="impact-min-${escapeAttr(e.key)}"
-              data-impact-min="${escapeAttr(e.key)}" value="${impactMinutesFor(e.key)}"> <span class="lbl">min each</span>
-          </div>
-          <div class="impact-total">${fmtImpactDuration(row.total)}</div>
-        </div>`;
-      }).join('')}
-      <div class="impact-row impact-sum">
-        <div class="impact-label"><strong>Total since ${fmtDate(sum.since)}</strong></div>
-        <div class="impact-count"></div><div class="impact-mins"></div>
-        <div class="impact-total"><strong>${fmtImpactDuration(sum.totalMinutes)}</strong></div>
-      </div>
-    </div>
-    <p class="bp-basis">Estimate. The counts are real events; the minutes are the assumptions above.</p>`;
-}
-/* CSV, because the audience is a spreadsheet. Carries the assumption next to the
-   count in every row, so nobody downstream can quote the total without seeing
-   what it was built from. */
-function downloadImpactCsv(){
-  const sum = computeImpactSummary();
-  const esc = v => `"${String(v).replace(/"/g, '""')}"`;
-  const lines = [['Event','Times counted','Minutes assumed each','Minutes saved'].map(esc).join(',')];
-  sum.rows.forEach(r => lines.push([r.label, r.count, r.minutes, r.total].map(esc).join(',')));
-  lines.push([].concat('TOTAL', '', '', sum.totalMinutes).map(esc).join(','));
-  lines.push('');
-  lines.push([esc('Counting since'), esc(sum.since)].join(','));
-  lines.push([esc('Exported'), esc(todayISO())].join(','));
-  lines.push([esc('Note'), esc('Counts are measured events. Minutes are assumptions set by the OSM in Settings, not measurements.')].join(','));
-  // CRLF built from char codes, not an escape sequence: this file has been
-  // spliced by heredoc-based tooling that silently collapses \r\n into real
-  // newlines, which breaks the string literal it lands in.
-  const CRLF = String.fromCharCode(13) + String.fromCharCode(10);
-  const blob = new Blob([lines.join(CRLF)], {type:'text/csv;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `runway-time-saved-${todayISO()}.csv`;
-  a.click();
-  setTimeout(()=>URL.revokeObjectURL(url), 1000);
-}
-
-/* Re-binds the impact inputs after the panel repaints in place. The settings
-   modal is not part of render(), so attachEvents() never sees it again. */
-function attachImpactSettings(host){
-  if(!host) return;
-  const motionSel = host.querySelector('#motion-mode');
-  if(motionSel) motionSel.addEventListener('change', ()=>{
-    saveMotionPref(motionSel.value);
-    document.body.classList.toggle('fx-on', motionEnabled());
-    showToast(motionEnabled() ? 'Motion on.' : 'Motion calmed.');
-  });
-  [...host.querySelectorAll('[data-impact-min]')].forEach(inp => inp.addEventListener('change', ()=>{
-    if(!isRecordObject(DATA.config.impactMinutes)) DATA.config.impactMinutes = {};
-    const n = parseInt(inp.value, 10);
-    if(Number.isFinite(n) && n >= 0 && n <= 600) DATA.config.impactMinutes[inp.dataset.impactMin] = n;
-    else delete DATA.config.impactMinutes[inp.dataset.impactMin];
-    saveData();
-    host.innerHTML = renderImpactSettings();
-    attachImpactSettings(host);
-  }));
-}
 /* v73: the dismissal composer. A verdict that a signal is a false positive is a
    claim a person is making about their own book, and the reason is what makes it
    reviewable in a month. prompt() could carry the string but not the weight: no
@@ -17125,12 +16763,10 @@ function showWrapUpModal(rec){
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wrapup-title">
       <div class="wrapup">
         <h3 id="wrapup-title">That&rsquo;s the day.</h3>
-        <div class="wrapup-figure">${fmtImpactDuration(rec.minutes)}<small>saved today</small></div>
         <div class="wrapup-stats">
           <div class="wrapup-stat"><b>${rec.beats}</b><span>beat${rec.beats===1?'':'s'} walked</span></div>
           <div class="wrapup-stat"><b>${rec.queued}</b><span>queued for Gainsight</span></div>
         </div>
-        <p class="bp-basis" style="margin-top:14px;">An estimate, from your own minute assumptions in Settings &mdash; the counts are real, the minutes are yours. The running total for leadership lives there too.</p>
       </div>
       <div class="modal-actions"><button class="btn btn-primary" id="modal-cancel">Close</button></div>
     </div>`;
@@ -17151,7 +16787,6 @@ function openSettingsModal(){
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
         <button class="btn btn-sm" id="btn-curriculum-settings">Session Curriculum</button>
         <button class="btn btn-sm" id="btn-backfill-settings" title="Catch the book up: enter completed session counts and dates for every live account in one grid, instead of one panel at a time">Backfill Sessions</button>
-        <button class="btn btn-sm" id="btn-time-saved-report" title="Daily, weekly and monthly time saved, plus what went into the Gainsight queue today">Time-Saved Report</button>
         <button class="btn btn-sm" id="btn-export-settings">Export JSON</button>
         <button class="btn btn-sm" id="btn-import-settings">Import JSON</button>
         <button class="btn btn-sm" id="btn-import-excel-settings">Import Excel</button>
@@ -17261,13 +16896,8 @@ function openSettingsModal(){
       <p style="color:var(--text-faint); font-size:var(--text-xs); margin:-4px 0 8px;">Used by <strong>Draft an answer</strong> on any open question in Today. This sets tone, length and format &mdash; it does not loosen the grounding rules: the answer is built from that customer's curriculum first, anything from general knowledge is labelled as such, and nothing is ever invented. Leave it blank and you get a plain, unstyled answer.</p>
       <label class="sr-only" for="ai-answer-instruction">Instruction for AI-drafted answers</label>
       <textarea id="ai-answer-instruction" rows="4" maxlength="2000" placeholder="e.g. Write in second person to the customer. Two short paragraphs, no bullet lists. Lead with the direct answer, then the caveat. Never promise a date.">${escapeHtml(getAiSettings().answerInstruction || '')}</textarea>
-      <div class="section-title">Time saved &mdash; reporting</div>
-      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:-4px 0 8px;">The tracker counts eight things it did for you and multiplies each by a minutes-saved assumption. <strong>The counts are measured; the minutes are your assumption.</strong> Edit any of them and every total recalculates. This lives here rather than on a working tab because it is a reporting number, not a decision you make during the day &mdash; you see it once, when you wrap up.</p>
-      <div id="impact-settings">${renderImpactSettings()}</div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
-        <button class="btn btn-sm" id="btn-export-impact-csv">Download for leadership (CSV)</button>
-        <button class="btn btn-sm" id="btn-reset-impact">Reset the counter</button>
-      </div>
+      <div class="section-title">Motion</div>
+      <div id="motion-settings">${renderMotionSetting()}</div>
       <div class="section-title">Danger zone</div>
       <button class="btn btn-danger btn-sm" id="btn-clear-all">Clear all data</button>
       <div class="modal-actions">
@@ -17300,7 +16930,12 @@ function openSettingsModal(){
     showConfirmModal('Turn off automatic backup? The file you chose stays where it is — the tracker just stops updating it, and you go back to exporting by hand.',
       ()=>{ backdrop.remove(); fsForget(); }, 'Turn it off');
   });
-  backdrop.querySelector('#btn-time-saved-report').addEventListener('click', downloadImpactReport);
+  const motionSel = backdrop.querySelector('#motion-mode');
+  if(motionSel) motionSel.addEventListener('change', ()=>{
+    saveMotionPref(motionSel.value);
+    document.body.classList.toggle('fx-on', motionEnabled());
+    showToast(motionEnabled() ? 'Motion on.' : 'Motion calmed.');
+  });
   backdrop.querySelector('#btn-export-settings').addEventListener('click', exportData);
   backdrop.querySelector('#btn-import-settings').addEventListener('click', ()=> document.getElementById('import-file-input').click());
   backdrop.querySelector('#btn-import-excel-settings').addEventListener('click', ()=> document.getElementById('import-excel-input').click());
@@ -17676,10 +17311,8 @@ function buildProgressReportModel(){
   // Within each category, the account waiting longest floats to the top.
   Object.values(groups).forEach(list => list.sort((a,b)=> (b.days ?? 9999) - (a.days ?? 9999)));
   const ttfv = portfolioTTFVStat();
-  const impact = computeImpactSummary(); // v58: labeled estimate, not a measurement
   return {
     generatedOn: todayISO(),
-    impact,
     total: DATA.customers.length,
     counts: Object.fromEntries(REPORT_CATEGORIES.map(cat => [cat.key, groups[cat.key].length])),
     gainsightPending: pendingGainsightItems().length,
@@ -17724,7 +17357,7 @@ function buildProgressReportHtml(model){
 <html><head><meta charset="utf-8"><title>OSM Book of Business — Progress Report ${esc(fmtDate(model.generatedOn))}</title></head>
 <body style="font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#222; max-width:960px; margin:24px auto; padding:0 16px;">
   <h1 style="margin:0; font-size:22px;">Book of Business — Progress Report</h1>
-  <p style="margin:4px 0 16px; font-size:12px; color:#666;">Generated ${esc(fmtDate(model.generatedOn))} · ${model.total} account${model.total===1?'':'s'} · ${model.gainsightPending} Gainsight item${model.gainsightPending===1?'':'s'} pending${model.ttfv ? ` · median time-to-first-value ${model.ttfv.median} days (n=${model.ttfv.n})` : ''}${model.impact.totalMinutes > 0 ? ` · est. ${esc(fmtImpactDuration(model.impact.totalMinutes))} of OSM admin time saved via the tracker since ${esc(fmtDate(model.impact.since))} (assumption-based estimate: real usage counts × the OSM's own minutes-per-task assumptions)` : ''}. Every account appears in exactly one category; each category states its rule. Produced by the OSM Book of Business Tracker — figures are deterministic, no AI.</p>
+  <p style="margin:4px 0 16px; font-size:12px; color:#666;">Generated ${esc(fmtDate(model.generatedOn))} · ${model.total} account${model.total===1?'':'s'} · ${model.gainsightPending} Gainsight item${model.gainsightPending===1?'':'s'} pending${model.ttfv ? ` · median time-to-first-value ${model.ttfv.median} days (n=${model.ttfv.n})` : ''}. Every account appears in exactly one category; each category states its rule. Produced by the OSM Book of Business Tracker — figures are deterministic, no AI.</p>
   <div style="display:flex; gap:10px; flex-wrap:wrap;">
     ${REPORT_CATEGORIES.map(cat => tile(cat.title, model.counts[cat.key], CAT_ACCENTS[cat.key])).join('')}
   </div>
@@ -17740,7 +17373,6 @@ function downloadProgressReport(){
   const a = document.createElement('a');
   a.href = url; a.download = `osm-progress-report-${todayISO()}.html`;
   a.click();
-  trackImpact('progress_report'); // v58
   setTimeout(()=>URL.revokeObjectURL(url), 1000);
   showToast('Progress report downloaded — open it in a browser or print to PDF for your manager.');
 }
@@ -18038,6 +17670,9 @@ function repairAuxiliaryCollections(data){
   /* v98: the dated log gets the same boundary treatment as everything else — a
      non-array is dropped, and rows that are not a real date plus a positive count
      are dropped individually rather than poisoning the whole report. */
+  /* INERT since A5 (time-saved retired): data.impactLog, data.impact and config.impactMinutes
+     are not read by anything. They are still normalised here so an old book round-trips
+     unchanged; no migration was added and the schema version is unchanged. */
   if(data.impactLog !== undefined){
     if(!Array.isArray(data.impactLog)){ delete data.impactLog; if(report) report.droppedOrphanCollections++; }
     else {
@@ -18830,7 +18465,6 @@ function openValueImportModal(headers, dataRows, fileName){
       if(!changing.length){ showToast('Nothing to import.'); return; }
       markUndoable('Gainsight import');
       const res = applyValueImport(rows);
-      if(res.accounts) trackImpact('value_imported', res.accounts);
       saveData();
       close();
       window.render();
@@ -18974,7 +18608,6 @@ function openPartnerNotesImportModal(headers, dataRows, fileName){
         });
       });
       if(!commitDataCandidate(candidate)) return;
-      trackImpact('partner_note_imported', toImport.length); // v58
       backdrop.remove();
       const accounts = new Set(toImport.map(x=>x.custId)).size;
       showToast(`Imported ${toImport.length} partner note${toImport.length===1?'':'s'} across ${accounts} account${accounts===1?'':'s'}${futureClamped ? ` (${futureClamped} future date${futureClamped===1?'':'s'} clamped to today)` : ''}`);

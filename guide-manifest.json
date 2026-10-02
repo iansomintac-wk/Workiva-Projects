@@ -13,14 +13,13 @@
   "openItems": [
     "The Handoff field set is PROVISIONAL - a product open question, not a documentation gap.",
     "The Gainsight sync queue stages items but has no transport.",
-    "Impact minutes are an editable assumption rather than a measurement.",
     "Automatic backup requires one user gesture per browser session."
   ],
-  "trackerSelfChecks": "tools/selfcheck.mjs injects the suite from tools/selfchecks.js (not shipped) - 435 checks. Must be 435/435 after any edit: node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 435. See VALIDATION.txt.",
+  "trackerSelfChecks": "tools/selfcheck.mjs injects the suite from tools/selfchecks.js (not shipped) - 428 checks. Must be 428/428 after any edit: node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 428. See VALIDATION.txt.",
   "guideSelfChecks": "window.runGuideSelfChecks() - 18 checks. Must be 18/18 after any edit.",
   "requiredChecks": [
     "both files open with no runtime exceptions, including from file://",
-    "tracker self-checks pass from the bundle location (435/435, seeded)",
+    "tracker self-checks pass from the bundle location (428/428, seeded)",
     "guide self-checks pass (18/18)",
     "tracker filename matches trackerFile and every data-tracker-link href in the guide",
     "no version numbers in user-visible prose beyond the 1.0 release label",

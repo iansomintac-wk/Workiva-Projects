@@ -161,7 +161,6 @@
     customers, activities,
     healthHistory: {}, riskLog: {}, pauseReturns: [],
     weeklySnapshot: {ids: [customers[3].id, customers[7].id], date: D(T,-7)},
-    impact: {events:{activity_logged: 64, gainsight_batch: 9}, since: D(T,-90)},
     lastExportedAt: D(T,-2)
   };
   const candidate = prepareBookData(book, 'best-state demo');
