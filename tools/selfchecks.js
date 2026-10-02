@@ -201,6 +201,83 @@ function _runSelfChecksInner(){
     finally{ KEYS.forEach(k => { try{ if(saved[k] === null || saved[k] === undefined) localStorage.removeItem(k); else localStorage.setItem(k, saved[k]); }catch(e){} }); }
     check('trim a3a: retired Gainsight/Workiva settings keys are removed once and their code is gone', ok, detail);
   })();
+  (function(){                                                  // a4a
+    let ok = false, detail = '';
+    try{
+      const set = gradDateMissing({targetGraduationDate:'2030-01-01'});
+      const blank = gradDateMissing({targetGraduationDate:''});
+      const absent = gradDateMissing({});
+      const def = ADMIN_GAP_DEFS.find(d => d.key === 'gradDate');
+      ok = set === false && blank === true && absent === true && !!def && def.missing === gradDateMissing;
+      detail = JSON.stringify({set, blank, absent, wired: !!def && def.missing === gradDateMissing});
+    }catch(err){ detail = err.message; }
+    check('trim a4a: gradDateMissing is true only when there is no target date, and feeds the admin list', ok, detail);
+  })();
+  (function(){                                                  // a4b
+    let ok = false, detail = '';
+    try{
+      const base = DATA.customers.find(x => x.stage !== 'graduated' && !isPaused(x) && !inImplementation(x));
+      if(!base) throw new Error('no live customer to clone');
+      const c = cloneData(base);
+      const anchor = c.stage === 'graduated' ? actualGraduationDate(c) : projectedGraduationDate(c);
+      if(!anchor) throw new Error('clone has no projected graduation date');
+      c.targetGraduationDate = isoAddDays(anchor, 60);
+      const far = gradDateDrifted(c);
+      c.targetGraduationDate = anchor;
+      const near = gradDateDrifted(c);
+      delete c.targetGraduationDate;
+      const none = gradDateDrifted(c);
+      const gate = GATE_DEFS.find(g => g.key === 'gradDate');
+      ok = far === true && near === false && none === false && isGradDateWithinTolerance(c) === null
+        && !!gate && gate.isMissing === gradDateDrifted;
+      detail = JSON.stringify({far, near, none, wired: !!gate && gate.isMissing === gradDateDrifted});
+    }catch(err){ detail = err.message; }
+    check('trim a4b: gradDateDrifted is true only past tolerance, false with no target date, and is the gradDate gate test', ok, detail);
+  })();
+  (function(){                                                  // a4c
+    const prevC = DATA.customers, prevA = DATA.activities;
+    let ok = false, detail = '';
+    try{
+      const base = DATA.customers.find(x => x.stage !== 'graduated' && !isPaused(x) && !inImplementation(x));
+      if(!base) throw new Error('no live customer to clone');
+      const c = cloneData(base);
+      c.id = '__a4c__'; c.name = 'Gate Label Co';
+      ['sentiment', 'outcomePlan', 'associatedPeopleCSAT'].forEach(k => { c.compliance[k].done = false; });
+      const anchor = projectedGraduationDate(c);
+      if(!anchor) throw new Error('clone has no projected graduation date');
+      c.targetGraduationDate = isoAddDays(anchor, 60);
+      DATA.customers = [c]; DATA.activities = {__a4c__: []};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const canon = new Set(GATE_DEFS.map(g => g.label));
+      const labels = {};
+      labels.card = missingGates(c).map(g => g.label);
+      labels.admin = adminGapList().map(g => g.def.label);
+      const gs = pendingGainsightItems().filter(it => it.kind === 'compliance' || it.kind === 'grad-review');
+      labels.gainsight = gs.map(it => it.label);
+      const adminHtml = renderAdminGaps();
+      const cardText = missingGatesText(c);
+      const gsHtml = gs.map(it => renderGainsightItemRow(it, {showCustomer:false})).join('');
+      // second pass: no target date, so the admin list also carries the date gate
+      delete c.targetGraduationDate;
+      _renderMemoResets.forEach(r => r());
+      labels.adminNoDate = adminGapList().map(g => g.def.label);
+      const adminNoDateHtml = renderAdminGaps();
+      const all = [].concat(labels.card, labels.admin, labels.gainsight, labels.adminNoDate);
+      const everyKnown = all.length > 0 && all.every(l => canon.has(l));
+      const eachGateShownEverywhere = GATE_DEFS.every(g =>
+        cardText.indexOf(g.label) !== -1 && gsHtml.indexOf(escapeHtml(g.label)) !== -1
+        && (g.key === 'gradDate' ? adminNoDateHtml : adminHtml).indexOf(escapeHtml(g.label)) !== -1);
+      const nonDateHaveAction = GATE_DEFS.filter(g => g.key !== 'gradDate')
+        .every(g => typeof g.gainsightAction === 'string' && g.gainsightAction.length > 0);
+      const sameSet = (a, b) => a.length === b.length && a.every(l => b.indexOf(l) !== -1);
+      ok = everyKnown && eachGateShownEverywhere && nonDateHaveAction
+        && sameSet(labels.card, [...canon]) && sameSet(labels.gainsight, [...canon])
+        && sameSet([...new Set(labels.admin.concat(labels.adminNoDate))], [...canon]);
+      detail = JSON.stringify(labels);
+    }catch(err){ detail = err.message; }
+    finally{ DATA.customers = prevC; DATA.activities = prevA; _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); }
+    check('trim a4c: one label per gate on Today, the account card and the Gainsight section', ok, detail);
+  })();
   const badSupp = DATA.customers.filter(c => c.signalSuppressions &&
     Object.values(c.signalSuppressions).some(sup => !sup || !ISO_DATE_RE.test(sup.until || '') || !sup.source));
   check('every suppression has a valid expiry and source', badSupp.length === 0, badSupp.map(c=>c.name).join(', '));

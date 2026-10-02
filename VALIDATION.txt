@@ -32,14 +32,14 @@ blob), so the two hash differently. The guide is the same: LF blob, CRLF
 working tree (859 CR lines), so its two hashes differ.
 
   osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task
-    A3, after the key-scaffold removal; the A2 figure ab3d1fd9... is now stale. The blob is LF;
+    A4, after the one-gate-list change; the A3 figure 0b486bf8... is now stale. The blob is LF;
     the working tree depends on the checkout: CRLF in the trim-and-integration
     worktree, LF where core.autocrlf is off. Earlier "0 CR bytes" statements
     described a different checkout.)
-    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,191,426 bytes)
-    0b486bf833ddc170a0ee70eef3761fa4043b5d51de7f39033b461bbd1c18d210
-    WORKING TREE (CRLF, this checkout, `sha256sum <file>`, 1,210,723 bytes)
-    a710e79e8946559f30ff4f86a5c5fba2b0bb54d530aa57f478eac51f267118d5
+    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,193,120 bytes)
+    2d28fb97b1a91bd8cde82ea8182dc2d6b1a16d206d357c38da60da989a97b966
+    WORKING TREE (CRLF, this checkout, `sha256sum <file>`, 1,212,437 bytes)
+    c142f3a571232e6c6e872719b66981add90c7eb59659cc782342b175b906157c
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -53,7 +53,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   432/432 passed, 0 failed
+  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   435/435 passed, 0 failed
   window.runGuideSelfChecks()                                              18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -159,12 +159,12 @@ check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
 four remaining failures are exactly the pre-existing, verified-non-defect
 four above, which need a populated book on their own terms and are not
 this defect. The tracker suite as a whole therefore still needs seeding to
-run clean, so — at the CURRENT suite count, 432 (369 when this paragraph was
+run clean, so — at the CURRENT suite count, 435 (369 when this paragraph was
 written, after v74.5 was added; the count moves with every graduation-plan task) —
 the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 432
+       --seed demo-seed.js --expect 435
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -1495,6 +1495,26 @@ TRIM A3 — KEY SCAFFOLDS OUT (suite 432 -> 432, net 0)
     GAINSIGHT_SETTINGS_KEY and the other removed names. Tracker blob 1,203,551 -> 1,191,426.
     SHA-256 block re-measured above (and corrected: blob and working tree each have their own hash).
   Evidence: docs/superpowers/evidence/trim-and-integration/A3.md.
+
+TRIM A4 — ONE GATE LIST (suite 432 -> 435)
+  - GATE_DEFS is now the only gate list and sits above ADMIN_GAP_DEFS. ADMIN_GAP_DEFS and GATE_EDITOR_KEY derive
+    from it; the compliance block of pendingGainsightItems is one loop over it. Each gate carries label,
+    complianceKey, adminKey, editor, contractKey, gainsightAction, gainsightActivityType, adminWhy.
+  - One label per gate (plan choice P2): Readiness Assessment, Success Outcome Plan, Graduation date SLA, CSAT contact.
+    Today's admin rows read the label then the reason; the Gainsight section shows the label in bold then the
+    instruction; the Today beat and the pasted batch text read "label: instruction". Admin row order is now GATE_DEFS
+    order (it was date, outcome, CSAT, readiness).
+  - Both grad-date tests are named: gradDateMissing (no target date; admin list) and gradDateDrifted (outside
+    tolerance; the gate and the grad-review item). complianceScore() untouched.
+  - RED first: a4a-a4c added alone -> 432/435 passed, 3 failed (a4a/a4b: "is not defined"; a4c: admin and Gainsight
+    labels differed from the gate labels).
+  - Suite 432 -> 435: +3 `trim a4a`, `trim a4b`, `trim a4c`; none removed or edited (the existing GATE_DEFS keys,
+    v91 and v94 checks pass unchanged). The plan estimated 438 from a 435 baseline; the measured baseline was 432.
+  - MUTATION PROOF: changing the CSAT admin label back to `No CSAT contact` turned a4c red (admin list:
+    ["Readiness Assessment","Success Outcome Plan","No CSAT contact"]). Restored; 435/435.
+  - GREEN: `runSelfChecks: 435/435 passed, 0 failed`; `runGraduationScenarios: 6/6`; guide 18/18 (guide unchanged;
+    it quotes no gate label). Tracker blob 1,191,426 -> 1,193,120.
+  Evidence: docs/superpowers/evidence/trim-and-integration/A4.md.
 
 FR/GRC DEFAULT GATES — RULING M3, SCHEMA 14 -> 15 (suite 436 -> 437)
   Ian: "Can't you do that for me and set it as a default value that can be changed by OSMs after?" The approved

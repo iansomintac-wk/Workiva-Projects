@@ -5679,20 +5679,50 @@ function nextActionList(){
    Each entry names the field, the accounts missing it, and hands over the same
    card back that fills it in. When a list empties it disappears — a checklist
    that keeps showing you a completed row is a checklist you stop reading. */
-const ADMIN_GAP_DEFS = [
-  {key:'gradDate',  label:'No committed graduation date', editor:'gradDate',
-   why:'Without one, the runway is measured against a projection instead of a promise.',
-   missing: c => !c.targetGraduationDate},
-  {key:'outcome',   label:'No Success Outcome Plan', editor:'outcome',
-   why:'The numbered outcome is what graduation is judged against.',
-   missing: c => !(c.compliance && c.compliance.outcomePlan && c.compliance.outcomePlan.done)},
-  {key:'csat',      label:'No CSAT contact', editor:'csat',
-   why:'Nobody is named to receive the survey, so the account cannot be measured at all.',
-   missing: c => !(c.compliance && c.compliance.associatedPeopleCSAT && c.compliance.associatedPeopleCSAT.done)},
-  {key:'readiness', label:'No readiness assessment', editor:'readiness',
-   why:'Two sentences, and it is the only qualitative read the tracker keeps.',
-   missing: c => !(c.compliance && c.compliance.sentiment && c.compliance.sentiment.done)}
+/* ---- Canonical compliance-gate registry ----
+   The ONE list of what the Gainsight gates are. The account card
+   (missingGatesText), Today's admin gaps (ADMIN_GAP_DEFS) and the Gainsight
+   section (pendingGainsightItems) all derive from it and show the same label.
+   It sits above ADMIN_GAP_DEFS because both are const and the second is built
+   from the first at load time.
+   Per gate: complianceKey = field on c.compliance (null for the date gate);
+   adminKey = the key the admin list and its deck ids use; editor = the card-back
+   editor that closes it; contractKey = name in the connector contract;
+   gainsightAction = the instruction shown under the label in the Gainsight
+   section (null for the date gate, whose instruction is built per account);
+   adminWhy = the reason line on Today.
+   Two grad-date tests exist ON PURPOSE and are named predicates: gradDateMissing
+   (no target date set; feeds the admin list) and gradDateDrifted (a target date
+   exists and the estimate is outside tolerance; the gate and the Gainsight
+   item). complianceScore() is intentionally NOT built on this: its grad-date
+   gate has a third meaning ("credit having a date set until the tolerance can
+   be evaluated"), and it is scoring logic, preserved as-is. */
+function gradDateMissing(c){ return !c.targetGraduationDate; }
+function gradDateDrifted(c){ return isGradDateWithinTolerance(c) === false; }
+const GATE_DEFS = [
+  {key:'sentiment',   label:'Readiness Assessment',  isPaceOutcome:false, complianceKey:'sentiment',
+   adminKey:'readiness', editor:'readiness', contractKey:'readinessAssessment',
+   gainsightAction:'Log Sentiment via Readiness Assessment timeline activity', gainsightActivityType:'Onboarding Success Plan',
+   adminWhy:'Two sentences, and it is the only qualitative read the tracker keeps.',
+   isMissing:c=>!c.compliance.sentiment.done},
+  {key:'outcomePlan', label:'Success Outcome Plan',  isPaceOutcome:false, complianceKey:'outcomePlan',
+   adminKey:'outcome', editor:'outcome', contractKey:'successPlan',
+   gainsightAction:'Create Success Outcome Plan (numbered outcomes 1–18)', gainsightActivityType:'Success Outcome Plan',
+   adminWhy:'The numbered outcome is what graduation is judged against.',
+   isMissing:c=>!c.compliance.outcomePlan.done},
+  {key:'gradDate',    label:'Graduation date SLA',   isPaceOutcome:true,  complianceKey:null,
+   adminKey:'gradDate', editor:'gradDate', contractKey:null,
+   gainsightAction:null, gainsightActivityType:'Graduation Date Accuracy',
+   adminWhy:'Without a committed date, the runway is measured against a projection instead of a promise.',
+   isMissing:gradDateDrifted, adminMissing:gradDateMissing},
+  {key:'csat',        label:'CSAT contact',          isPaceOutcome:false, complianceKey:'associatedPeopleCSAT',
+   adminKey:'csat', editor:'csat', contractKey:'csatContact',
+   gainsightAction:'Add Associated People for CSAT survey (Graduation Handoff call)', gainsightActivityType:'Graduation Success Plan',
+   adminWhy:'Nobody is named to receive the survey, so the account cannot be measured at all.',
+   isMissing:c=>!c.compliance.associatedPeopleCSAT.done}
 ];
+const ADMIN_GAP_DEFS = GATE_DEFS.map(g => ({key:g.adminKey, label:g.label, editor:g.editor, why:g.adminWhy,
+  missing: g.adminMissing || (c => !(c.compliance && c.compliance[g.complianceKey] && c.compliance[g.complianceKey].done))}));
 function adminGapList(){
   const eligible = DATA.customers.filter(c =>
     c.stage !== 'graduated' && !isPaused(c) && !inImplementation(c));
@@ -7104,18 +7134,7 @@ function riskReasonText(c){
    as-is. */
 /* v90: which card-back editor closes each gate. Keyed by the gate's LABEL
    because that is what getBatchingOpportunities() carries on a batch. */
-const GATE_EDITOR_KEY = {
-  'Readiness Assessment': 'readiness',
-  'Success Outcome Plan': 'outcome',
-  'Graduation date SLA':  'gradDate',
-  'CSAT contact':         'csat'
-};
-const GATE_DEFS = [
-  {key:'sentiment',   label:'Readiness Assessment',  isPaceOutcome:false, isMissing:c=>!c.compliance.sentiment.done},
-  {key:'outcomePlan', label:'Success Outcome Plan',  isPaceOutcome:false, isMissing:c=>!c.compliance.outcomePlan.done},
-  {key:'gradDate',    label:'Graduation date SLA',   isPaceOutcome:true,  isMissing:c=>isGradDateWithinTolerance(c)===false},
-  {key:'csat',        label:'CSAT contact',          isPaceOutcome:false, isMissing:c=>!c.compliance.associatedPeopleCSAT.done}
-];
+const GATE_EDITOR_KEY = Object.fromEntries(GATE_DEFS.map(g => [g.label, g.editor]));
 /* ============ v90: ONE DEFINITION PER GATE WRITE ============
    These four writes existed only inside bindBeatPane()'s event handlers, which
    made them unreachable from anywhere else — and the Copilot card backs need
@@ -7907,25 +7926,21 @@ function pendingGainsightItems(){
   });
   DATA.customers.forEach(c => {
     if(inImplementation(c)) return; // v52: compliance gates are onboarding admin — they start at Go-Live
-    if(!c.compliance.sentiment.done){
-      items.push({kind:'compliance', customerId:c.id, customerName:c.name, complianceKey:'sentiment',
-        label:'Log Sentiment via Readiness Assessment timeline activity', date:c.implementationDate, activityType:'Onboarding Success Plan'});
-    }
-    if(!c.compliance.outcomePlan.done){
-      items.push({kind:'compliance', customerId:c.id, customerName:c.name, complianceKey:'outcomePlan',
-        label:'Create Success Outcome Plan (numbered outcomes 1–18)', date:c.implementationDate, activityType:'Success Outcome Plan'});
-    }
-    if(!c.compliance.associatedPeopleCSAT.done){
-      items.push({kind:'compliance', customerId:c.id, customerName:c.name, complianceKey:'associatedPeopleCSAT',
-        label:'Add Associated People for CSAT survey (Graduation Handoff call)', date:c.implementationDate, activityType:'Graduation Success Plan'});
-    }
-    const withinTolerance = isGradDateWithinTolerance(c);
-    if(withinTolerance === false){
-      const diff = gradDateDiffDays(c);
-      items.push({kind:'grad-review', customerId:c.id, customerName:c.name,
-        label:`Estimated graduation date is ${Math.abs(diff)} days ${diff>0?'later than':'earlier than'} target — update in Gainsight`,
-        date:todayISO(), activityType:'Graduation Date Accuracy'});
-    }
+    // One loop over GATE_DEFS: the label is the gate's label, the instruction is
+    // what to do about it (built per account for the date gate).
+    GATE_DEFS.forEach(g => {
+      if(!g.isMissing(c)) return;
+      if(g.complianceKey){
+        items.push({kind:'compliance', customerId:c.id, customerName:c.name, complianceKey:g.complianceKey,
+          label:g.label, instruction:g.gainsightAction, date:c.implementationDate, activityType:g.gainsightActivityType});
+      }else{
+        const diff = gradDateDiffDays(c);
+        items.push({kind:'grad-review', customerId:c.id, customerName:c.name,
+          label:g.label,
+          instruction:`Estimated graduation date is ${Math.abs(diff)} days ${diff>0?'later than':'earlier than'} target — update in Gainsight`,
+          date:todayISO(), activityType:g.gainsightActivityType});
+      }
+    });
   });
   items.sort((a,b)=> a.date < b.date ? -1 : 1);
   return items;
@@ -11295,8 +11310,8 @@ function todayAccountCandidates(c, ctx){
   if(gates.length){
     const d = TODAY_SOURCE_MAP.gainsight_gate;
     out.push({source:'gainsight_gate', severity:d.severity,
-      headline: gates.length === 1 ? gates[0].label : `Close ${gates.length} Gainsight items that block graduation`,
-      reasons: gates.slice(0,3).map(it => it.label),
+      headline: gates.length === 1 ? gainsightItemText(gates[0]) : `Close ${gates.length} Gainsight items that block graduation`,
+      reasons: gates.slice(0,3).map(gainsightItemText),
       panelTab:'gainsight', chipLabel:`Gainsight (${gates.length})`, why:d.why});
   }
   if(chores.length){
@@ -11389,6 +11404,11 @@ function todayActionList(){
 // items get a Review button) and the per-customer Gainsight tab
 // (showCustomer:false — the account is already open, so 'review'-kind items
 // just point at the Overview tab). Previously two hand-copied blocks.
+// A gate item is "label" (the gate's one name) plus an optional instruction;
+// activity items have only a label. Plain text, not escaped.
+function gainsightItemText(it){
+  return it.instruction ? `${it.label}: ${it.instruction}` : it.label;
+}
 function renderGainsightItemRow(it, opts){
   const showCustomer = !!(opts && opts.showCustomer);
   const actionHtml = it.kind === 'activity'
@@ -11407,7 +11427,7 @@ function renderGainsightItemRow(it, opts){
       <div class="todo-left">
         ${showCustomer ? `<div class="todo-cust"><button data-open-cust="${it.customerId}">${escapeHtml(it.customerName)}</button></div>` : ''}
         <div class="todo-meta">${fmtDate(it.date)} · ${escapeHtml(it.activityType)}</div>
-        <div>${escapeHtml(it.label)}</div>
+        <div>${it.instruction ? `<strong>${escapeHtml(it.label)}</strong> ` : ''}${escapeHtml(it.instruction || it.label)}</div>
       </div>
       ${actionHtml}
     </div>
@@ -12277,7 +12297,7 @@ function renderCustomerGainsightTab(c){
    into a Gainsight timeline entry and not into this document. */
 function buildGainsightBatchText(c, items){
   const lines = [`Gainsight items outstanding for ${c.name} — ${fmtDate(todayISO())}`, ''];
-  items.forEach(it => lines.push(`- [${it.activityType}] ${it.label} (from ${fmtDate(it.date)})`));
+  items.forEach(it => lines.push(`- [${it.activityType}] ${gainsightItemText(it)} (from ${fmtDate(it.date)})`));
   lines.push('', `${items.length} item${items.length===1?'':'s'} total. Exported from the OSM Book of Business Tracker; nothing was pushed automatically.`);
   return lines.join('\n');
 }

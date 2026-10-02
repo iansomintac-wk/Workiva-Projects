@@ -33,7 +33,7 @@ OSM Runway — release notes
     - Single-level undo, Quick log, deep-linking into the right account tab,
       a Coordination tab, a Handoff tab (PROVISIONAL field set), and a
       Progress Report export.
-    - 432 self-checks, run by tools/selfcheck.mjs (suite in tools/selfchecks.js).
+    - 435 self-checks, run by tools/selfcheck.mjs (suite in tools/selfchecks.js).
 
   THE GUIDE. A companion onboarding and competency guide covering the tracker
   end to end, with a guided and a quick path, a practice mode, a challenge, and
@@ -84,6 +84,16 @@ Trim A3 — key scaffolds out (suite 432 -> 432).
       (obm-gainsight-settings-v1, obm-workiva-kb-settings-v1).
     - Suite: +1 added (trim a3a), -1 removed (workiva knowledge renderer safe when
       unconfigured); see VALIDATION.txt (TRIM A3).
+
+Trim A4 — one gate list (suite 432 -> 435).
+
+    - The four Gainsight gates are defined once (GATE_DEFS) and every surface reads
+      the same name: Readiness Assessment, Success Outcome Plan, Graduation date SLA,
+      CSAT contact. Today's "Records to bring up to date" used to say "No CSAT
+      contact", "No readiness assessment" and so on, and the Gainsight section used
+      sentences; both now show the gate name with the reason or instruction under it.
+    - The two graduation-date tests are named (gradDateMissing, gradDateDrifted).
+    - Suite: +3 added (trim a4a-a4c), none removed; see VALIDATION.txt (TRIM A4).
 
 Curriculum piece 1 — stable ids for sessions and deliverables (merged to
 master 2026-09-30, with the review fixes and follow-ups M1r, M2r).
