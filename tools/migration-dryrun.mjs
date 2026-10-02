@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Dry-run harness for the schema migrations that touch recorded evidence.
-//   node tools/migration-dryrun.mjs [file.html] [--from 11|12|13|14] [--seed <seed.js>] [--out <report.md>]
+//   node tools/migration-dryrun.mjs [file.html] [--from 11|12|13|14|15] [--seed <seed.js>] [--out <report.md>]
 //   --from 14:           the v14 -> v15 default-gates migration (ruling M3): empty Financial
 //                        Reporting and GRC gate lists are filled from the shipped defaults, a typed
 //                        list and every other module are kept, an existing goal's copied gates are
@@ -52,9 +52,9 @@ const positional = args.filter((a, i) =>
 
 const target = resolve(positional[0] || 'osm-book-of-business-tracker-1.0.html');
 const FROM = flag('from', '11');
-if (!['11', '12', '13', '14'].includes(FROM)) { console.error(`--from must be 11, 12, 13 or 14, got ${FROM}`); process.exit(2); }
-const seedPath = resolve(flag('seed', FROM === '14' ? 'tools/legacy-seed-v14.js' : FROM === '13' ? 'tools/legacy-seed-v13.js' : FROM === '12' ? 'tools/legacy-seed-v12.js' : 'tools/legacy-seed.js'));
-const outPath = resolve(flag('out', FROM === '14' ? '.artifacts/migration-dryrun-v14.md' : FROM === '13' ? '.artifacts/migration-dryrun-v13.md' : FROM === '12' ? '.artifacts/migration-dryrun-v12.md' : '.artifacts/migration-dryrun.md'));
+if (!['11', '12', '13', '14', '15'].includes(FROM)) { console.error(`--from must be 11, 12, 13, 14 or 15, got ${FROM}`); process.exit(2); }
+const seedPath = resolve(flag('seed', FROM === '15' ? 'tools/legacy-seed-v15.js' : FROM === '14' ? 'tools/legacy-seed-v14.js' : FROM === '13' ? 'tools/legacy-seed-v13.js' : FROM === '12' ? 'tools/legacy-seed-v12.js' : 'tools/legacy-seed.js'));
+const outPath = resolve(flag('out', FROM === '15' ? '.artifacts/migration-dryrun-v15.md' : FROM === '14' ? '.artifacts/migration-dryrun-v14.md' : FROM === '13' ? '.artifacts/migration-dryrun-v13.md' : FROM === '12' ? '.artifacts/migration-dryrun-v12.md' : '.artifacts/migration-dryrun.md'));
 /* A RANDOM port per invocation — see selfcheck.mjs: a fixed one lets a Chrome
    that outlived its launcher (SIGKILL doesn't reliably take the process tree
    down on Windows) keep answering for a stale page holding a previous build. */
@@ -213,6 +213,50 @@ if (!seedResult.startsWith('ok:')) {
 }
 console.log(`Seeded: ${seedResult.slice(3)}`);
 
+// --from 15: the v15 -> v16 step (C-1): queue items gain status/fields/externalId/sentAt/error; nothing is
+// added to activities (gong), customers (gainsight) or stakeholders (email); a second pass is JSON-identical.
+if (FROM === '15') {
+  const v15Expr = `(() => { try {
+    function clone(x){ return JSON.parse(JSON.stringify(x)); }
+    const raw = window.__LEGACY_BOOK__;
+    if(!raw) return JSON.stringify({__harnessError__: 'window.__LEGACY_BOOK__ was not set by the seed'});
+    const prepared = prepareBookData(clone(raw), 'DryRun15');
+    const again = prepareBookData(clone(prepared), 'DryRun15-2');
+    const q = prepared.gainsightQueue;
+    const acts = [].concat(...Object.keys(prepared.activities).map(k => prepared.activities[k]));
+    const rawActs = [].concat(...Object.keys(raw.activities).map(k => raw.activities[k]));
+    const rawTr = rawActs.filter(a => a.transcript).map(a => JSON.stringify(a.transcript)).join('|');
+    const sh = [].concat(...prepared.customers.map(c => c.stakeholders || []));
+    return JSON.stringify({schemaBefore: raw.schemaVersion, schemaAfter: prepared.schemaVersion, current: CURRENT_SCHEMA_VERSION,
+      queueRaw: raw.gainsightQueue.length, queueAfter: q.length,
+      queueShapeOk: q.every(x => x.status === 'queued' && JSON.stringify(x.fields) === '{}' && x.externalId === null && x.sentAt === null && x.error === null),
+      noGong: acts.every(a => a.gong === undefined), noGainsight: prepared.customers.every(c => c.gainsight === undefined),
+      transcriptKept: acts.filter(a => a.transcript).map(a => JSON.stringify(a.transcript)).join('|') === rawTr && rawTr.length > 0,
+      stakeholders: sh.length,
+      emailTrimmed: sh.some(s => s.email === 'sam@ember.invalid'),
+      noEmailAdded: sh.filter(s => s.id === 'sh-15-1').every(s => s.email === undefined),
+      idempotent: JSON.stringify(again) === JSON.stringify(prepared)});
+  } catch (e) { return JSON.stringify({__harnessError__: String(e && e.stack || e)}); } })()`;
+  const raw15 = await evaluate(v15Expr, 'v15 analysis');
+  let r15;
+  try { r15 = JSON.parse(raw15); } catch { console.error('v15 analysis returned an unreadable result:', raw15); process.exit(2); }
+  if (r15.__harnessError__) { console.error('Harness failure inside the page: ' + r15.__harnessError__); process.exit(2); }
+  const lines15 = ['# Migration dry run — v15 -> v16 (queue status, gong/gainsight, stakeholder email)', '',
+    `Generated ${new Date().toISOString()} against \`${target.split(/[\\/]/).pop()}\`, seeded from \`${seedPath.split(/[\\/]/).pop()}\`.`, '',
+    `Schema: ${r15.schemaBefore} -> ${r15.schemaAfter} (app current: ${r15.current})`, '',
+    `Queue items: ${r15.queueRaw} -> ${r15.queueAfter}; every item status queued, fields {}, externalId/sentAt/error null: **${r15.queueShapeOk}**`,
+    `No activity gained gong: **${r15.noGong}**; no customer gained gainsight: **${r15.noGainsight}**; transcript kept: **${r15.transcriptKept}**`,
+    `Stakeholders: ${r15.stakeholders}; one without email still has none: **${r15.noEmailAdded}**; a spaced email trimmed: **${r15.emailTrimmed}**`,
+    `Second pass JSON-identical: **${r15.idempotent}**  Console errors: ${pageErrors.length}`, ''];
+  mkdirSync(dirname(outPath), { recursive: true });
+  writeFileSync(outPath, lines15.join('\n') + '\n', 'utf8');
+  console.log(`Report written to ${outPath}`);
+  console.log(`Schema ${r15.schemaBefore} -> ${r15.schemaAfter}  Queue ${r15.queueRaw} -> ${r15.queueAfter} shape ${r15.queueShapeOk}  noGong ${r15.noGong}  noGainsight ${r15.noGainsight}  transcriptKept ${r15.transcriptKept}  noEmailAdded ${r15.noEmailAdded}  emailTrimmed ${r15.emailTrimmed}  idempotent ${r15.idempotent}  Console errors: ${pageErrors.length}`);
+  const ok15 = r15.schemaAfter === r15.current && r15.current === 16 && r15.queueRaw === 3 && r15.queueAfter === 3 && r15.queueShapeOk
+    && r15.noGong && r15.noGainsight && r15.transcriptKept && r15.noEmailAdded && r15.emailTrimmed && r15.idempotent && !pageErrors.length;
+  process.exit(ok15 ? 0 : 1);
+}
+
 // --from 13: the v13 -> v14 graduation-plan migration (additive; infers nothing), carried on to v15.
 // --from 14: the v14 -> v15 default-gates migration (ruling M3). Same harness, different expectations.
 if (FROM === '13' || FROM === '14') {
@@ -276,7 +320,7 @@ if (FROM === '13' || FROM === '14') {
   if (pageErrors.length) { for (const e of pageErrors) console.log('  ' + e.split('\n')[0]); }
   const shapeOk13 = V14 ? cnt('goalsKept') === n13 : cnt('goalsIsEmptyArray') === n13;
   const wantFR = V14 ? '1/5/3/3' : '5/5/3/3', wantCustom = V14 ? '1/0/0/0' : '0/0/0/0';   // v14 seed: one typed FR gate, one typed Custom gate
-  const ok13 = r13.schemaAfter === r13.current && r13.current === 15 && live13 && shapeOk13 && cnt('exitIsNull') === n13
+  const ok13 = r13.schemaAfter === r13.current && r13.current >= 15 && live13 && shapeOk13 && cnt('exitIsNull') === n13
     && cnt('graduationIsNull') === n13 && r13.defaultModulesPresent === r13.defaultModules && r13.csrdKeys === 2 && r13.otherKeys === 1
     && r13.lens.Sustainability === '5/5/3/3' && r13.lens.FinancialReporting === wantFR && r13.lens.GRC === '5/5/3/0'
     && (!V14 || r13.frPublishFirst === 'Typed by an OSM') && r13.lens.Custom === wantCustom && r13.historicGraduatedWithExit === 0 && r13.idempotent && !pageErrors.length;

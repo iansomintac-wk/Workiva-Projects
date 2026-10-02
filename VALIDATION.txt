@@ -31,15 +31,15 @@ blob is LF and its working tree is CRLF here (19,297 bytes longer than the
 blob), so the two hash differently. The guide is the same: LF blob, CRLF
 working tree (859 CR lines), so its two hashes differ.
 
-  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task
+  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task C-1 (schema 16); the A5 figure is superseded. Previously: trim task
     A5, after time-saved was retired; the A4 figure 2d28fb97... is now stale. The blob is LF;
     the working tree depends on the checkout: CRLF in the trim-and-integration
     worktree, LF where core.autocrlf is off. Earlier "0 CR bytes" statements
     described a different checkout.)
-    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,172,380 bytes)
-    c95879ea173fc4437d6fcdf148d240275ddde04205612fc798b2f297fee5acd7
-    WORKING TREE (CRLF, this checkout, `sha256sum <file>`, 1,191,330 bytes)
-    01e8561561ca0c52cd159ecdbf3a35c6e7f0b252b4389ef20e166db8417257c3
+    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,176,767 bytes)
+    b9c15187ca6b7894f86d35fe442ca403e8c9bf74b6d3398cccc2ba4cfa58301a
+    WORKING TREE (CRLF, this checkout, `sha256sum <file>`, 1,195,786 bytes)
+    d37b34af00ad2fc7af30391cac4551d7558711c50db179e38aa0bd3f4498b2c3
   osm-runway-onboarding-1.0.html   (changed at A5: two time-saved cards replaced/removed; the 598bbb86... figure is stale)
     GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 183,964 bytes)
     d3e4c8723caca88abb1947264049704d1e23cfb466553854561ce86ffdd9a392
@@ -52,7 +52,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   428/428 passed, 0 failed
+  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   434/434 passed, 0 failed
   window.runGuideSelfChecks()                                              18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -158,12 +158,12 @@ check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
 four remaining failures are exactly the pre-existing, verified-non-defect
 four above, which need a populated book on their own terms and are not
 this defect. The tracker suite as a whole therefore still needs seeding to
-run clean, so — at the CURRENT suite count, 428 (369 when this paragraph was
+run clean, so — at the CURRENT suite count, 434 (369 when this paragraph was
 written, after v74.5 was added; the count moves with every graduation-plan task) —
 the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 428
+       --seed demo-seed.js --expect 434
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -1601,3 +1601,29 @@ FR/GRC DEFAULT GATES — RULING M3, SCHEMA 14 -> 15 (suite 436 -> 437)
     Financial Reporting 1/5/3/3 (typed publish gate kept), GRC 5/5/3/0, Custom Module 1/0/0/0, existing goals
     unchanged 7/7, second pass idempotent.
   Evidence: docs/superpowers/evidence/fr-grc-default-gates.md.
+
+SCHEMA 15 -> 16 — TASK C-1 (suite 428 -> 434)
+  Connector groundwork. Branch trim-and-integration. CURRENT_SCHEMA_VERSION 16; migrateData v15 -> v16 rewrites each queue
+  item through normalizeQueueItem (status queued/sent/failed, fields, externalId, sentAt, error; an old prose-only item
+  opens as queued) and re-normalises stakeholders; no gong is added to an activity, no gainsight to a customer, no email to
+  a stakeholder. New normalisers normalizeGongLink, normalizeGainsightPull, normalizeQueueItem; the queue repair in
+  repairAuxiliaryCollections uses normalizeQueueItem (it used to force status 'queued', which lost a sent item on import);
+  queueGainsightItem stores opts.fields. Lead addition: an optional stakeholder `email` (kept trimmed, omitted when blank
+  or non-string; an email input on the Coordination add form; shown on the row), needed by C-3's email-only Gong match.
+  - Checks first, six seen failing (428/434 passed, 6 failed), then the code: c1a..c1f (trim). c1a normalizeGongLink
+    hostile input; c1b (K6) a sent item with externalId/sentAt/error/fields survives serializeBook -> prepareImportedData;
+    c1c an old prose-only item opens queued with fields {}, status bogus -> queued, a failed error clamped to 500; c1d
+    gainsight/gong survive and are normalised, non-record values dropped, gong never rewrites activity.summary; c1e schema
+    16, a v15 book lands on 16 adds no gong/gainsight, second pass identical; c1f stakeholder email (trim, omit, survive,
+    15 -> 16 adds none, the demo-seed email survives load).
+  - Three existing grad-plan checks assert "schema 15" after prepareBookData (c1e v13 -> 15, c1f, the M3 v14 check). They
+    now assert schemaVersion === CURRENT_SCHEMA_VERSION and CURRENT_SCHEMA_VERSION >= 15; their other assertions are
+    unchanged. tools/migration-dryrun.mjs: the --from 13/14 pass condition `current === 15` became `>= 15`.
+  - Mutation proof: status forced to 'queued' again -> 432/434 (c1b and c1c red); `if(email) out.email = email` removed ->
+    433/434 (c1f red); both restored.
+  - GREEN: `runSelfChecks: 434/434 passed, 0 failed`; `runGraduationScenarios: 6/6 passed, 0 failed`.
+  - DRY RUN `--from 15` (new, seed tools/legacy-seed-v15.js, exit 0): Schema 15 -> 16, queue 3 -> 3 all queued with fields
+    {} and null externalId/sentAt/error, no gong, no gainsight, transcript kept, a stakeholder without an email still has
+    none, a spaced email trimmed, second pass identical. `--from 14`, `--from 13`, `--from 11` exit 0.
+  - guide-manifest.json trackerSchemaVersion read 12 (stale since 13); set to 16 and the suite count to 434.
+  Evidence: docs/superpowers/evidence/trim-and-integration/C-1.md.

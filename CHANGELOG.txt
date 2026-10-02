@@ -238,3 +238,19 @@ in docs/history/:
 
 Comment markers such as "v72" or "v91" throughout the source point into that
 archive. They are provenance, not a version scheme.
+
+Schema 16 (task C-1, connector groundwork).
+
+    - Schema 16. Opening a schema 15 book rewrites each queued Gainsight item
+      to carry status (queued, sent or failed), fields, externalId, sentAt and
+      error; an old prose-only item opens as queued with empty fields. A sent
+      item keeps all of them through export and import. Nothing is sent yet.
+    - Activities may carry an optional Gong call link (gong) and accounts an
+      optional Gainsight pull record (gainsight). Neither is created for
+      existing records; when present they are cleaned on import (a javascript:
+      link is dropped, a Gong summary is capped at 4,000 characters, a call
+      summary never overwrites the activity's own summary).
+    - Stakeholders have an optional email on the Coordination tab. It is kept
+      through export and import. Existing stakeholders gain none.
+    - Export JSON before first opening this build on a real book: schema 16 is
+      not readable by an older build.

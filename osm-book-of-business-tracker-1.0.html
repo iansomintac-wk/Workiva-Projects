@@ -2890,9 +2890,14 @@ function normalizeStakeholder(s){
   if(!isRecordObject(s)) return null;
   const name = String(s.name || '').replace(/\s+/g, ' ').trim().slice(0, 80);
   if(!name) return null;
-  return {id: typeof s.id === 'string' && s.id ? s.id : uid(), name,
+  const out = {id: typeof s.id === 'string' && s.id ? s.id : uid(), name,
     role: STAKEHOLDER_ROLES.some(r => r.key === s.role) ? s.role : 'other',
     note: String(s.note || '').replace(/\s+/g, ' ').trim().slice(0, 200)};
+  /* Schema 16: optional email, so a Gong call that names only an attendee address can be matched (C-3).
+     Omitted when blank or not a string; never created on stakeholders that have none. */
+  const email = typeof s.email === 'string' ? s.email.replace(/\s+/g, '').slice(0, 200) : '';
+  if(email) out.email = email;
+  return out;
 }
 function normalizeBlocker(b){
   if(!isRecordObject(b)) return null;
@@ -3180,6 +3185,50 @@ function normalizeGradReview(g){
     doneOn: isRealISODate(g.doneOn) ? g.doneOn : null,
     verdict: GRAD_REVIEW_VERDICTS.some(v => v.key === g.verdict) ? g.verdict : null,
     note: String(g.note || '').replace(/\s+/g, ' ').trim().slice(0, 500)};
+}
+/* Schema 16 (C-1). Connector-era records. All optional and absent by default: a normaliser
+   runs only where the field is already present, and never creates it (header rule 4). */
+const GONG_MATCHED_BY = ['gainsightId', 'name', 'email', 'manual'];
+const GAINSIGHT_PULL_FIELDS = ['tier', 'arr', 'renewalDate', 'csmOwner', 'contacts', 'healthScore', 'gates'];
+const QUEUE_STATUSES = ['queued', 'sent', 'failed'];
+function isoStampOrNull(x){
+  return typeof x === 'string' && x.length <= 40 && Number.isFinite(Date.parse(x)) ? x : null;
+}
+function normalizeGongLink(x){
+  if(!isRecordObject(x)) return null;
+  const callId = typeof x.callId === 'string' ? x.callId.trim().slice(0, 200) : '';
+  if(!callId) return null;
+  const url = typeof x.url === 'string' && /^https?:\/\//i.test(x.url.trim()) ? x.url.trim().slice(0, 2000) : '';
+  const participants = (Array.isArray(x.participants) ? x.participants : []).filter(isRecordObject).slice(0, 50).map(p => ({
+    name: typeof p.name === 'string' ? p.name.replace(/\s+/g, ' ').trim().slice(0, 120) : '',
+    email: typeof p.email === 'string' ? p.email.trim().slice(0, 200) : '',
+    affiliation: typeof p.affiliation === 'string' ? p.affiliation.trim().slice(0, 40) : ''}));
+  return {callId, url,
+    startedAt: isoStampOrNull(x.startedAt),
+    durationSec: Number.isFinite(x.durationSec) && x.durationSec >= 0 ? x.durationSec : null,
+    participants,
+    summary: typeof x.summary === 'string' ? x.summary.slice(0, 4000) : '',
+    matchedBy: GONG_MATCHED_BY.indexOf(x.matchedBy) !== -1 ? x.matchedBy : 'manual'};
+}
+function normalizeGainsightPull(x){
+  if(!isRecordObject(x)) return null;
+  const pulledAt = isoStampOrNull(x.pulledAt);
+  if(!pulledAt) return null;
+  const values = {};
+  if(isRecordObject(x.values)) GAINSIGHT_PULL_FIELDS.forEach(k => { if(x.values[k] !== undefined) values[k] = cloneData(x.values[k]); });
+  return {pulledAt, values};
+}
+function normalizeQueueItem(q){
+  if(!isRecordObject(q) || typeof q.payload !== 'string' || typeof q.customerName !== 'string' || !isRealISODate(q.date)) return null;
+  return {id: typeof q.id === 'string' && q.id ? q.id : uid(), date: q.date,
+    customerId: typeof q.customerId === 'string' ? q.customerId : '',
+    customerName: q.customerName, kind: typeof q.kind === 'string' ? q.kind : 'item',
+    payload: q.payload,
+    fields: isRecordObject(q.fields) ? cloneData(q.fields) : {},
+    status: QUEUE_STATUSES.indexOf(q.status) !== -1 ? q.status : 'queued',
+    externalId: typeof q.externalId === 'string' && q.externalId ? q.externalId.slice(0, 200) : null,
+    sentAt: isoStampOrNull(q.sentAt),
+    error: typeof q.error === 'string' && q.error ? q.error.slice(0, 500) : null};
 }
 function gradReviewDays(){
   const n = DATA.config && DATA.config.gradReviewDays;
@@ -4490,7 +4539,7 @@ function requestStageChange(c, stageKey){
    explicit step in migrateData(). backfillCustomerRecord remains for per-record field
    defaults on legacy/imported records, but new-shape changes get a numbered migration —
    version-blind additive guessing is how backfill logic rots. */
-const CURRENT_SCHEMA_VERSION = 15; // 15: FR/GRC default gate lists filled where empty (M3); 14: + c.goals, c.exit, c.graduation, config.goalGates (13: curriculum identity)
+const CURRENT_SCHEMA_VERSION = 16; // 16: queue items carry status/fields/externalId/sentAt/error; optional gong/gainsight records; optional stakeholder email (C-1); 15: FR/GRC default gate lists filled where empty (M3); 14: + c.goals, c.exit, c.graduation, config.goalGates (13: curriculum identity)
 
 /* The single gate for clock times. Accepts "H:MM" and "HH:MM" on a 24h clock and
    returns a zero-padded "HH:MM"; everything else returns null and the field is
@@ -4923,6 +4972,17 @@ function migrateData(data){
       });
     }
     v = 15;
+  }
+  if(v === 15){
+    /* v15 -> v16 (C-1). Queue items are rewritten through normalizeQueueItem (old prose-only items become
+       status 'queued', fields {}, externalId/sentAt/error null). gong and gainsight are optional and absent by
+       default, so nothing is added to activities or customers. Stakeholders gain no email (the field is
+       optional); an existing email is only trimmed. Idempotent. */
+    if(Array.isArray(data.gainsightQueue)) data.gainsightQueue = data.gainsightQueue.map(normalizeQueueItem).filter(Boolean);
+    (data.customers || []).forEach(c => {
+      if(isRecordObject(c) && Array.isArray(c.stakeholders)) c.stakeholders = c.stakeholders.map(normalizeStakeholder).filter(Boolean).slice(0, MAX_STAKEHOLDERS);
+    });
+    v = 16;
   }
   data.schemaVersion = v;
   // Sanity: contradictory risk thresholds (watch >= alert) make the watch tier
@@ -10112,7 +10172,9 @@ function getGainsightQueue(){
 function queueGainsightItem(kind, customer, payloadText, opts){
   if(!Array.isArray(DATA.gainsightQueue)) DATA.gainsightQueue = [];
   DATA.gainsightQueue.push({id: uid(), date: todayISO(), customerId: customer.id,
-    customerName: customer.name, kind, payload: payloadText, status: 'queued'});
+    customerName: customer.name, kind, payload: payloadText, status: 'queued',
+    fields: opts && isRecordObject(opts.fields) ? cloneData(opts.fields) : {},
+    externalId: null, sentAt: null, error: null});
   if(opts && opts.defer) return true;   // the caller saves once, so one user action leaves one undo snapshot
   return saveData();
 }
@@ -12765,6 +12827,7 @@ function renderCoordinationTab(c){
       <div class="todo-item">
         <div class="todo-left">
           <div style="font-weight:600;">${escapeHtml(p.name)} <span class="badge badge-module" style="text-transform:none; letter-spacing:0;">${escapeHtml(roleLabel(STAKEHOLDER_ROLES, p.role, 'Other'))}</span></div>
+          ${p.email ? `<div class="todo-meta">${escapeHtml(p.email)}</div>` : ''}
           ${p.note ? `<div class="todo-meta">${escapeHtml(p.note)}</div>` : ''}
         </div>
         <button class="btn btn-sm" data-coord-remove="stakeholder|${escapeAttr(p.id)}">Remove</button>
@@ -12773,6 +12836,7 @@ function renderCoordinationTab(c){
     <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px;">
       <input type="text" id="coord-person-name" placeholder="Name" maxlength="80" style="flex:1; min-width:130px;">
       ${sel(STAKEHOLDER_ROLES, 'person-role', 'champion')}
+      <input type="email" id="coord-person-email" placeholder="Email (optional)" maxlength="200" style="flex:1; min-width:130px;">
       <input type="text" id="coord-person-note" placeholder="Note (optional)" maxlength="200" style="flex:1; min-width:130px;">
       <button class="btn btn-sm" data-coord-add="stakeholder">Add</button>
     </div>`}
@@ -15117,7 +15181,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     if(!c) return;
     const kind = btn.dataset.coordAdd, field = coordCollection(c, kind);
     const raw = kind === 'stakeholder'
-      ? {name: ($('#coord-person-name')||{}).value, role: coordField('person-role'), note: ($('#coord-person-note')||{}).value}
+      ? {name: ($('#coord-person-name')||{}).value, role: coordField('person-role'), email: ($('#coord-person-email')||{}).value, note: ($('#coord-person-note')||{}).value}
       : kind === 'blocker'
       ? {text: ($('#coord-blocker-text')||{}).value, owner: coordField('blocker-owner'), since: ($('#coord-blocker-since')||{}).value}
       : {text: ($('#coord-commitment-text')||{}).value, direction: coordField('commitment-direction'), due: ($('#coord-commitment-due')||{}).value};
@@ -17625,6 +17689,11 @@ function repairAuxiliaryCollections(data){
     if(c.goals !== undefined) c.goals = normalizeGoals(c.goals);
     if(c.exit !== undefined) c.exit = normalizeExit(c.exit);
     if(c.graduation !== undefined) c.graduation = normalizeGraduation(c.graduation);
+    // schema 16: the Gainsight pull record, when present; never created here.
+    if(c.gainsight !== undefined){
+      const gs = normalizeGainsightPull(c.gainsight);
+      if(gs) c.gainsight = gs; else delete c.gainsight;
+    }
     [['stakeholders', normalizeStakeholder, MAX_STAKEHOLDERS],
      ['blockers', normalizeBlocker, MAX_BLOCKERS],
      ['commitments', normalizeCommitment, MAX_COMMITMENTS],
@@ -17741,15 +17810,15 @@ function repairAuxiliaryCollections(data){
           if(!isRealISODate(e.summaryAt)) delete e.summaryAt;
         }
       }
+      // schema 16: the Gong link, when present; never created here, never touches e.summary.
+      if(e.gong !== undefined){
+        const gl = normalizeGongLink(e.gong);
+        if(gl) e.gong = gl; else delete e.gong;
+      }
     });
   }
   if(data.gainsightQueue !== undefined){
-    data.gainsightQueue = (Array.isArray(data.gainsightQueue) ? data.gainsightQueue : []).filter(q =>
-      isRecordObject(q) && typeof q.payload === 'string' && typeof q.customerName === 'string' && isRealISODate(q.date)
-    ).map(q => ({id: typeof q.id === 'string' && q.id ? q.id : uid(), date: q.date,
-      customerId: typeof q.customerId === 'string' ? q.customerId : '',
-      customerName: q.customerName, kind: typeof q.kind === 'string' ? q.kind : 'item',
-      payload: q.payload, status: 'queued'}));
+    data.gainsightQueue = (Array.isArray(data.gainsightQueue) ? data.gainsightQueue : []).map(normalizeQueueItem).filter(Boolean);
   }
 }
 

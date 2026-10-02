@@ -7534,7 +7534,7 @@ function _runSelfChecksInner(){
       const snap = x => JSON.stringify([x.customers.map(c => [c.goals, c.exit, c.graduation]), x.config.goalGates]);
       const before = snap(p);
       const again = prepareBookData(cloneData(p), 'SelfCheck');
-      ok = live && p.schemaVersion === 15 && shapeOk && ggOk && snap(again) === before;
+      ok = live && p.schemaVersion === CURRENT_SCHEMA_VERSION && CURRENT_SCHEMA_VERSION >= 15 && shapeOk && ggOk && snap(again) === before;
       detail = JSON.stringify({live, schema: p.schemaVersion, shapeOk, ggKeys: keys.length, ggOk, idem: snap(again) === before});
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.config = prevCfg;
@@ -7543,10 +7543,122 @@ function _runSelfChecksInner(){
   (function(){                                   // c1f
     let ok = false, detail = '';
     try{
-      ok = CURRENT_SCHEMA_VERSION === 15 && isRecordObject(defaultData().config.goalGates);
+      ok = CURRENT_SCHEMA_VERSION >= 15 && isRecordObject(defaultData().config.goalGates);
       detail = 'schema ' + CURRENT_SCHEMA_VERSION;
     }catch(err){ detail = err.message; }
-    check('grad-plan c1f: schema is 15 and defaultData carries config.goalGates', ok, detail);
+    check('grad-plan c1f: schema is at least 15 (the 14->15 step) and defaultData carries config.goalGates', ok, detail);
+  })();
+  // ---- C-1 (trim-and-integration): schema 15 -> 16 ----
+  (function(){                                   // c1a (trim) normalizeGongLink
+    let ok = false, detail = '';
+    try{
+      const g = normalizeGongLink({callId:'G1', url:'javascript:x', startedAt:'2026-09-01T10:00:00Z', durationSec:60,
+        summary:'x'.repeat(10000), matchedBy:'magic',
+        participants:[{name:'A', email:42, affiliation:'external'}, {name:'B', email:'b@x.invalid', affiliation:'internal'}]});
+      const good = normalizeGongLink({callId:'G2', url:'https://app.gong.io/call?id=2', matchedBy:'email'});
+      ok = !!g && g.callId === 'G1' && g.url === '' && g.summary.length === 4000 && g.matchedBy === 'manual'
+        && Array.isArray(g.participants) && g.participants.every(p => typeof p.email === 'string')
+        && g.participants[1].email === 'b@x.invalid'
+        && normalizeGongLink({}) === null && normalizeGongLink({callId:''}) === null && normalizeGongLink(null) === null
+        && !!good && good.url === 'https://app.gong.io/call?id=2' && good.matchedBy === 'email';
+      detail = JSON.stringify(g && {url:g.url, sum:g.summary.length, m:g.matchedBy});
+    }catch(err){ detail = err.message; }
+    check('c1a (trim): normalizeGongLink clamps hostile input (javascript: url, 10k summary, bad matchedBy, non-string email) and returns null for {}', ok, detail);
+  })();
+  (function(){                                   // c1b (trim) K6
+    let ok = false, detail = '';
+    try{
+      const book = cloneData(DATA);
+      const c0 = book.customers[0];
+      book.gainsightQueue = [{id:'q-k6', date:todayISO(), customerId:c0.id, customerName:c0.name, kind:'note', payload:'p',
+        status:'sent', externalId:'E1', sentAt:'2026-09-30T12:00:00.000Z', error:null, fields:{gates:[]}}];
+      const p = prepareImportedData(JSON.parse(serializeBook(book)));
+      const q = p.gainsightQueue[0];
+      ok = !!q && q.status === 'sent' && q.externalId === 'E1' && q.sentAt === '2026-09-30T12:00:00.000Z'
+        && q.error === null && Array.isArray(q.fields.gates) && q.fields.gates.length === 0;
+      detail = JSON.stringify(q);
+    }catch(err){ detail = err.message; }
+    check('c1b (trim, K6): a sent queue item with externalId, sentAt, error and fields survives serializeBook -> prepareImportedData intact', ok, detail);
+  })();
+  (function(){                                   // c1c (trim)
+    let ok = false, detail = '';
+    try{
+      const book = cloneData(DATA);
+      const c0 = book.customers[0];
+      const base = {date:todayISO(), customerId:c0.id, customerName:c0.name, kind:'note', payload:'p'};
+      book.gainsightQueue = [Object.assign({id:'q-old'}, base), Object.assign({id:'q-bogus', status:'bogus'}, base),
+        Object.assign({id:'q-fail', status:'failed', error:'e'.repeat(900)}, base)];
+      const q = prepareImportedData(JSON.parse(serializeBook(book))).gainsightQueue;
+      ok = q.length === 3 && q[0].status === 'queued' && JSON.stringify(q[0].fields) === '{}' && q[0].externalId === null
+        && q[0].sentAt === null && q[0].error === null && q[1].status === 'queued'
+        && q[2].status === 'failed' && q[2].error.length === 500;
+      detail = JSON.stringify(q.map(x => [x.status, x.externalId, x.error && x.error.length]));
+    }catch(err){ detail = err.message; }
+    check('c1c (trim): an old prose-only queue item imports as queued with fields {}; status bogus -> queued; failed keeps a 500-clamped error', ok, detail);
+  })();
+  (function(){                                   // c1d (trim)
+    let ok = false, detail = '';
+    try{
+      const book = cloneData(DATA);
+      const c0 = book.customers[0];
+      c0.gainsight = {pulledAt:'2026-09-30T10:00:00.000Z', values:{tier:'T1', arr:5}};
+      const c1 = book.customers[1];
+      c1.gainsight = {pulledAt:'2026-09-30T10:00:00.000Z', values:'junk'};
+      const a0 = (book.activities[c0.id] || (book.activities[c0.id] = []));
+      a0.push({id:'a-gong', date:todayISO(), type:'Call', summary:'s', sessionNumber:null, checklist:[], flagged:false,
+        gong:{callId:'G9', url:'https://x.invalid/c', matchedBy:'name', summary:'gs', participants:[]}});
+      const p = prepareImportedData(JSON.parse(serializeBook(book)));
+      const pc0 = p.customers.find(c => c.id === c0.id), pc1 = p.customers.find(c => c.id === c1.id);
+      const ga = (p.activities[c0.id] || []).find(a => a.id === 'a-gong');
+      const arrPull = normalizeGainsightPull({pulledAt:'2026-09-30T10:00:00.000Z', values:[1,2]});
+      ok = !!pc0.gainsight && pc0.gainsight.values.tier === 'T1' && pc0.gainsight.values.arr === 5
+        && (!pc1.gainsight || (isRecordObject(pc1.gainsight.values) && Object.keys(pc1.gainsight.values).length === 0))
+        && !!ga && !!ga.gong && ga.gong.callId === 'G9' && ga.summary === 's'
+        && !!arrPull && !Array.isArray(arrPull.values) && normalizeGainsightPull('x') === null;
+      detail = JSON.stringify({g0: pc0.gainsight, g1: pc1.gainsight, gong: ga && ga.gong && ga.gong.callId});
+    }catch(err){ detail = err.message; }
+    check('c1d (trim): customer.gainsight and activity.gong survive export/import and are normalised; non-record values dropped; gong never rewrites activity.summary', ok, detail);
+  })();
+  (function(){                                   // c1e (trim)
+    let ok = false, detail = '';
+    try{
+      const book = cloneData(DATA);
+      book.schemaVersion = 15;
+      const c0 = book.customers[0];
+      book.gainsightQueue = [{id:'q-old', date:todayISO(), customerId:c0.id, customerName:c0.name, kind:'note', payload:'p'}];
+      const p = prepareBookData(book, 'SelfCheck');
+      const snap = x => JSON.stringify([x.gainsightQueue, x.customers.map(c => [c.gainsight, c.stakeholders])]);
+      const before = snap(p);
+      const again = prepareBookData(cloneData(p), 'SelfCheck');
+      const noGong = Object.keys(p.activities).every(k => p.activities[k].every(a => a.gong === undefined));
+      const noGs = p.customers.every(c => c.gainsight === undefined);
+      ok = CURRENT_SCHEMA_VERSION === 16 && p.schemaVersion === 16 && snap(again) === before && noGong && noGs
+        && p.gainsightQueue[0].status === 'queued';
+      detail = JSON.stringify({cur: CURRENT_SCHEMA_VERSION, schema: p.schemaVersion, idem: snap(again) === before, noGong, noGs});
+    }catch(err){ detail = err.message; }
+    check('c1e (trim): CURRENT_SCHEMA_VERSION is 16; a v15 book lands on 16, adds no gong/gainsight, and a second pass is JSON-identical', ok, detail);
+  })();
+  (function(){                                   // c1f (trim) stakeholder email
+    let ok = false, detail = '';
+    try{
+      const a = normalizeStakeholder({name:'Pat', role:'champion', email:'  Pat@Example.invalid '});
+      const b = normalizeStakeholder({name:'Quinn', email:'   '});
+      const c = normalizeStakeholder({name:'Rae', email:{x:1}});
+      const book = cloneData(DATA);
+      book.schemaVersion = 15;
+      const c0 = book.customers[0];
+      c0.stakeholders = [{id:'s1', name:'Old', role:'other', note:''}, {id:'s2', name:'New', role:'champion', note:'', email:'new@x.invalid'}];
+      const p = prepareBookData(JSON.parse(serializeBook(book)), 'SelfCheck');
+      const ps = p.customers.find(c => c.id === c0.id).stakeholders;
+      const seed = prepareImportedData(JSON.parse(serializeBook(cloneData(DATA))));
+      const demo = seed.customers.reduce((n, c) => n + (c.stakeholders || []).filter(s => s.email === 'sam.demo@fake-customer.invalid').length, 0);
+      const hasDemo = DATA.customers.some(c => (c.stakeholders || []).some(s => s.id === 'sh-demo-1'));
+      ok = a.email === 'Pat@Example.invalid' && b.email === undefined && c.email === undefined
+        && ps[0].email === undefined && ps[1].email === 'new@x.invalid'
+        && (!hasDemo || demo === 1);
+      detail = JSON.stringify({a: a.email, b: b.email, c: c.email, old: ps[0].email, nw: ps[1].email, demo, hasDemo});
+    }catch(err){ detail = err.message; }
+    check('c1f (trim): stakeholder email is kept trimmed (blank/non-string omitted), survives export/import and the 15->16 step, existing stakeholders gain none; demo-seed email survives load', ok, detail);
   })();
   (function(){                                   // c1h (ruling M3: v14 -> v15 fills empty FR/GRC lists only)
     const prevC = DATA.customers, prevCfg = DATA.config;
@@ -7579,7 +7691,7 @@ function _runSelfChecksInner(){
       const goalOk = p.customers[0].goals.length === 1 && p.customers[0].goals[0].gates.length === 0;
       const again = prepareBookData(cloneData(p), 'SelfCheck');
       const idem = JSON.stringify(again.config.goalGates) === JSON.stringify(p.config.goalGates);
-      ok = p.schemaVersion === 15 && frOk && grcOk && othersOk && goalOk && idem;
+      ok = p.schemaVersion === CURRENT_SCHEMA_VERSION && CURRENT_SCHEMA_VERSION >= 15 && frOk && grcOk && othersOk && goalOk && idem;
       detail = JSON.stringify({schema: p.schemaVersion, frOk, grcOk, othersOk, goalOk, idem});
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.config = prevCfg;

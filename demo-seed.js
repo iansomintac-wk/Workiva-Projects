@@ -85,8 +85,8 @@
   });
 
   // One stakeholder with an email, so a Gong call that carries only this attendee email can be
-  // matched (connector fixtures: connector/fixtures/calls.json). The email is also in `note`
-  // because normalizeStakeholder() does not yet keep an `email` field.
+  // matched (connector fixtures: connector/fixtures/calls.json). Since schema 16 the tracker keeps
+  // `email` on a stakeholder (normalizeStakeholder); the copy in `note` is now redundant but harmless.
   customers[11].stakeholders = [{id:'sh-demo-1', name:'Sam Demo', role:'champion',
     email:'sam.demo@fake-customer.invalid', note:'Email: sam.demo@fake-customer.invalid'}];
 

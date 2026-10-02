@@ -119,9 +119,16 @@ count alone.
   Gainsight   Goal created, changed and verdict events queue "Success Plan
               objective" items in the local Gainsight queue. Nothing is sent.
 
-Opening an older book migrates it to schema 15 in place (no goals, no exits, no
-invented verdicts). Export JSON first: schema 15 is not readable by an older
+Opening an older book migrates it to schema 16 in place (no goals, no exits, no
+invented verdicts). Export JSON first: schema 16 is not readable by an older
 build.
+
+Schema 16 (connector groundwork): a queued Gainsight item now carries status
+(queued / sent / failed), fields, externalId, sentAt and error, and an old
+prose-only item opens as queued; an activity may carry a Gong call link (gong)
+and an account a Gainsight pull (gainsight) once something writes them, and
+neither is added to existing records; a stakeholder may carry an optional email
+(Coordination tab). Nothing sends yet.
 
 Default gates for Financial Reporting and GRC (ruling M3, schema 15): Financial
 Reporting ships 5/5/3/3 gates and GRC 5/5/3/0 (publish / set up next cycle /
@@ -133,7 +140,7 @@ never touched. GRC disclosure submission stays empty.
 
 Running the graduation checks headlessly (needs Chrome or Edge):
 
-  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 428
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 434
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
@@ -168,8 +175,8 @@ Verifying a change
 Both halves carry self-check suites: the tracker's is injected by tools/selfcheck.mjs from
 tools/selfchecks.js (it is not in the shipped file); the guide's is in the page. After any edit:
 
-  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 428
-            must be 428/428 (the suite lives in tools/selfchecks.js and is not shipped)
+  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 434
+            must be 434/434 (the suite lives in tools/selfchecks.js and is not shipped)
   guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
             must be 18/18 (window.runGuideSelfChecks() also works in the console)
 
