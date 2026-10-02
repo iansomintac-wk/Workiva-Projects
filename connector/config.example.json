@@ -1,0 +1,6 @@
+{
+  "port": 8787,
+  "gong": { "adapter": "fake" },
+  "gainsight": { "adapter": "fake" },
+  "ai": { "adapter": "fake" }
+}

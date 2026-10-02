@@ -120,6 +120,15 @@ Connector contract v1 (task B1) — contract, schemas and fake fixtures; suite u
       with an email. The tracker is not changed and does not read them yet.
     - 15 contract tests (node --test), run apart from the tracker suite.
 
+Connector server (task B2) — server, token, CORS, bind and fake adapters; tracker suite unchanged (428).
+
+    - node connector/server.mjs: GET /v1/health, /v1/calls, /v1/accounts and POST /v1/push on
+      127.0.0.1 only; bearer token (generated once into git-ignored connector/token.txt); CORS for
+      origin null, localhost and 127.0.0.1 only; 1 MB body limit; every response validated before sending.
+    - Fake Gong, Gainsight and AI adapters. A fake push only appends to connector/fake-gainsight-log.jsonl
+      (git-ignored); an item with fields.forceFail true comes back failed. POST /v1/ai arrives in B3.
+    - 14 server tests; the contract suite is now 29.
+
 Curriculum piece 1 — stable ids for sessions and deliverables (merged to
 master 2026-09-30, with the review fixes and follow-ups M1r, M2r).
 

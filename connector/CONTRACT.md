@@ -92,6 +92,23 @@ Request (`schemas/ai-request.json`): `{"task", "prompt", "maxTokens"}`. Response
 `thread_answer`, `brief_my_day`. Provider keys live only in the connector's git-ignored config, never
 in the browser. (The AI route is built in task B3.)
 
+## Running it
+
+`node connector/server.mjs` loads `connector/config.json` (else `config.example.json`), loads or creates
+`connector/token.txt` (a 32-byte hex token, written once, git-ignored; delete the file to rotate), listens
+on `127.0.0.1:<config.port, default 8787>` and prints `connector listening http://127.0.0.1:<port>` and
+`token <hex>`. Paste the token into the tracker once. `config.host`, if set to anything but 127.0.0.1, is
+ignored with a printed warning. Environment overrides (used by the tests): `CONNECTOR_CONFIG`,
+`CONNECTOR_TOKEN_FILE`, `CONNECTOR_LOG`. The fake Gainsight push appends each item to
+`connector/fake-gainsight-log.jsonl` (git-ignored) and returns `FAKE-<id>`; an item whose
+`fields.forceFail` is `true` returns `status:"failed"`, `error:"fake failure (forceFail)"`.
+
+Behaviour details: auth is checked before routing, so any path without a valid token gets 401; CORS
+headers are echoed only for an allowed origin and appear on every response (401 included) so the page can
+read it; `since` that is not an ISO 8601 date-time is 400; a non-JSON or schema-invalid push body is 400
+with the validator's messages; every response is validated against its schema before sending and a
+failure is a 500; an adapter that throws is a 502. `POST /v1/ai` returns 404 until B3.
+
 ## Offline rule
 
 If the connector is unset or unreachable, the tracker behaves exactly as it does today plus one quiet

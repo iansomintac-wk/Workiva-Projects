@@ -152,6 +152,10 @@ AI (schemas in connector/schemas/). Only FAKE fixtures exist (connector/fixtures
 GS-DEMO-001..017 in demo-seed.js); no real adapter is built and nothing is sent anywhere. Contract
 tests: node --test --test-reporter=tap "connector/test/*.test.mjs"
 
+Run it (task B2): node connector/server.mjs starts it on 127.0.0.1:8787 (127.0.0.1 only), creates
+connector/token.txt on first start and prints the token; paste the token into the tracker once. Delete
+the file to rotate. connector/config.json and token.txt are git-ignored. All adapters are FAKE.
+
 Verifying a change
 ------------------
 Both halves carry self-check suites: the tracker's is injected by tools/selfcheck.mjs from

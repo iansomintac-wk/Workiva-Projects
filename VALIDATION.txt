@@ -1560,6 +1560,13 @@ CONNECTOR CONTRACT v1 — TASK B1 (tracker suite 428 -> 428, unchanged)
     normalizeStakeholder() drops an `email` field, so the seed repeats the email in the stakeholder note.
   Evidence: docs/superpowers/evidence/trim-and-integration/B1.md.
 
+CONNECTOR SERVER — TASK B2 (tracker suite 428 -> 428, unchanged; tracker not edited)
+  - connector/server.mjs, fake adapters, config.example.json. 14 server tests written first, seen red (module
+    not found), then green; contract suite 15 -> 29, # fail 0. Mutation check: auth bypass made t2 and t4 fail.
+  - Smoke: curl with the token on 127.0.0.1:8787 gave the fake health body; tokenless gave 401; server stopped,
+    token.txt deleted, git status clean of token and log.
+  Evidence: docs/superpowers/evidence/trim-and-integration/B2.md.
+
 FR/GRC DEFAULT GATES — RULING M3, SCHEMA 14 -> 15 (suite 436 -> 437)
   Ian: "Can't you do that for me and set it as a default value that can be changed by OSMs after?" The approved
   lists in docs/superpowers/drafts/2026-10-01-fr-grc-gates-DRAFT.md are now the shipped defaults (FR 5/5/3/3, GRC

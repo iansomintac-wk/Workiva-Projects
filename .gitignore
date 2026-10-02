@@ -55,3 +55,8 @@ docs/research/internal/
 # tools/inspect.mjs capture output — instrumentation artefacts (text/png/json
 # dumps of rendered views), not project files.
 .artifacts/
+
+# Connector local secrets and push log (never commit)
+connector/config.json
+connector/token.txt
+connector/fake-gainsight-log.jsonl
