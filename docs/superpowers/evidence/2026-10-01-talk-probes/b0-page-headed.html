@@ -1,0 +1,7 @@
+<!doctype html><body><pre id=o>pending</pre><script>
+var port = location.hash.slice(1);
+function report(s) { o.textContent = s; new Image().src = 'http://127.0.0.1:' + port + '/report?r=' + encodeURIComponent(s); }
+fetch('http://127.0.0.1:' + port + '/v1/health', { headers: { Authorization: 'Bearer t' } })
+  .then(r => r.json()).then(j => report('RESULT ok ' + JSON.stringify(j)))
+  .catch(e => report('RESULT fail ' + e));
+</script></body>
