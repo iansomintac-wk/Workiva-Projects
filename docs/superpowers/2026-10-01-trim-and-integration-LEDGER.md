@@ -29,7 +29,7 @@ Paid runs approved: none ($0). The only external call allowed is C-9's single AI
 | B3 | AI adapters (fake, claude, openai, gemini), stub fetch only | done | 5e06c85, fix 75f4c52 | contract tests `# fail 0` | Contract tests 37→40 pass / 0 fail (lead, after fix). Checkers PASS ×2 | Checker finding fixed: optional boolean truncated added to ai-response (tracker shows length-cap notices in ≥8 places; would be lost via connector); test-net-guard blocks any non-127.0.0.1 fetch in tests. Models mirrored from tracker: claude-sonnet-5, gpt-5.4-mini, gemini-2.5-flash |
 | B4 | Admin-ask one-pager + fake-data demo — **stop for Ian (R9)** | done — STOP for Ian (R9) | d09b8ed | `node tools/connector-demo.mjs` exit 0 | node tools/connector-demo.mjs exit 0 (6 calls, 17 accounts, 2 sent / 1 forceFail, fake AI; temp files removed); contract 41/41 (lead). Checker PASS | Demo test t15 added to contract suite (40→41). One-pager 944 words (~2 pages); 8 items marked 'to confirm with admin'; 'no documented way to limit Gong key to one user' phrasing not in research (hedged) |
 | C-1 | Schema 15 → 16 | done | 232ab75 | suite `--expect 438` (estimate); `migration-dryrun --from 15` exit 0 | 434/434 (+c1a..c1f); scenarios 6/6; dry-run --from 15 and --from 14 exit 0 (lead). Checker PASS | Lead addition: optional stakeholder email (normalizeStakeholder, form, import, migration, c1f). 3 'schema === 15' assertions → CURRENT_SCHEMA_VERSION / >=15 (strict pin in c1e). guide-manifest schema 12→16 (was stale) |
-| C-2 | Connector client, Settings block, offline rule, AI routing | pending | — | suite `--expect 442` (estimate) | pending | — |
+| C-2 | Connector client, Settings block, offline rule, AI routing | done | a0ef70d | suite `--expect 442` (estimate) | 443/443 (+c2a..c2i); scenarios 6/6; async probe c2ProbeResults 9/9 (lead). Checker PASS | Sync suite can't await: truncated passthrough proved by c2-async-probe.js (real callAiAPI, stubbed fetch). Tracker working tree now LF here (blob unchanged in kind; diff +170/−8). Check button saves before Cancel; malformed URL silently dropped — both low, final review |
 | C-3 | Gong pull "Check for calls" + G06 fix | pending | — | suite `--expect 447` (estimate) | pending | — |
 | C-4 | Gainsight pull "Refresh from Gainsight" | pending | — | suite `--expect 450` (estimate) | pending | — |
 | C-5 | Push "Send to Gainsight" | pending | — | suite `--expect 453` (estimate) | pending | — |
@@ -51,7 +51,7 @@ Paid runs approved: none ($0). The only external call allowed is C-9's single AI
 | K7 | An Email activity never gets a sessionNumber (log form or Gong match) | pending | C-3, C-7 |
 | K8 | Connector stopped: full suite passes, Today renders, no console errors | pending | C-7 |
 | K9 | C-7 scenario passes; health line shows FAKE DATA | pending | C-7 |
-| K10 | No third-party key in tracker localStorage after C-9; before C-9 only `obm-ai-settings-v1` | pending | C-2 (before), C-9 (after) |
+| K10 | No third-party key in tracker localStorage after C-9; before C-9 only `obm-ai-settings-v1` | Before C-9 (C-2, builder grep of setItem keys, checker confirmed): only third-party key is obm-ai-settings-v1; obm-connector-settings-v1 holds the connector's own token, sent only to http://127.0.0.1|localhost (normalizeConnectorUrl). After-C-9 half: pending (C-9 skipped) | C-2 (before), C-9 (after) |
 
 ## Look calls for Ian (batched)
 
