@@ -2960,6 +2960,27 @@ const ACTIVITY_TYPES = {
   'Implementation Note': [],
   'Other': ['Log activity note in Gainsight']
 };
+/* C-3 (K7, G06): which activity types may carry a curriculum session number. An Email, a partner
+   sync and a build note are touches, not sessions, so they never get one: not from the log form,
+   not from a Gong match. Every other type may (demo sessions are logged as "Other"). */
+const NON_SESSION_ACTIVITY_TYPES = ['Email', 'Partner Sync', 'Implementation Note'];
+function isSessionCapableType(type){ return NON_SESSION_ACTIVITY_TYPES.indexOf(type) === -1; }
+function sessionNumberForSave(type, raw){
+  if(!isSessionCapableType(type)) return null;
+  return raw ? parseInt(raw, 10) : null;
+}
+// G06: choosing a non-session type clears and locks the Session # select; switching back unlocks
+// it still empty (no preselect). `root` is the document in the app, a detached container in checks.
+function bindActTypeSessionLock(root){
+  const typeEl = root.querySelector('#act-type');
+  if(!typeEl) return;
+  typeEl.addEventListener('change', ()=>{
+    const sessEl = root.querySelector('#act-session');
+    if(!sessEl) return;
+    sessEl.value = '';
+    sessEl.disabled = !isSessionCapableType(typeEl.value);
+  });
+}
 
 /* ============ v67: COORDINATION LAYER ============
    Three things an onboarding job runs on that this tracker had no record of:
@@ -8133,6 +8154,8 @@ function pendingGainsightItems(){
 /* ============ STATE ============ */
 let ui = {
   connector: {state: 'unset', fake: false, adapters: {}, checkedAt: null}, // C-2: unset | checking | online | offline | unauthorized — session-only
+  lastCallPullAt: null, // C-3: ISO time the OSM last added calls from Gong — session-only (no schema field); null = look back 30 days
+  callPullBusy: false,
   view: 'today', // today | accounts | copilot — top-level tabs
   accountsView: 'list', // list | table | kanban | gantt — sub-view within Accounts (session-only, resets on reload like all ui state)
   search: '',
@@ -8858,6 +8881,7 @@ function renderHeader(){
           return `<button class="btn" id="btn-undo" title="Restores the book to its state before that change. One level — pressing it again puts the change back.">${_lastActionWasUndo ? 'Redo' : 'Undo'} <span style="color:var(--text-faint); font-weight:400;">${age}</span></button>`;
         })()}
         <button class="btn" id="btn-quick-log" title="Log a touchpoint without opening the account — press L anywhere outside a text field">Quick log <span style="color:var(--text-faint); font-weight:400; font-family:var(--font-mono);">L</span></button>
+        ${connectorConfigured() ? `<button class="btn" id="btn-check-calls" title="Pull recorded calls from Gong through the connector and review them before anything is added">Check for calls</button>` : ''}
         <button class="btn" id="btn-settings">Settings</button>
         <input type="file" id="import-file-input" accept="application/json" style="display:none;">
         <input type="file" id="restore-archive-input" accept="application/json" style="display:none;">
@@ -14516,6 +14540,7 @@ function attachEvents(){
   const $$ = sel => document.querySelectorAll(sel);
 
   $('#btn-settings') && $('#btn-settings').addEventListener('click', openSettingsModal);
+  $('#btn-check-calls') && $('#btn-check-calls').addEventListener('click', checkForCalls);   // C-3
   $('#import-file-input') && $('#import-file-input').addEventListener('change', handleImportFile);
   $('#restore-archive-input') && $('#restore-archive-input').addEventListener('change', handleRestoreArchiveFile);
   $('#import-excel-input') && $('#import-excel-input').addEventListener('change', handleExcelFile);
@@ -16005,6 +16030,7 @@ The draft is discarded. The risk itself stays open.`)) return;
         if(area) area.value = t.text;
       });
     });
+    bindActTypeSessionLock(document);   // C-3 (G06)
     $('#btn-save-activity') && $('#btn-save-activity').addEventListener('click', ()=>{
       const type = $('#act-type').value;
       const date = $('#act-date').value || todayISO();
@@ -16013,7 +16039,7 @@ The draft is discarded. The risk itself stays open.`)) return;
       if(date > todayISO()){ showToast('That date is in the future — log touchpoints after they happen.'); return; }
       const summary = $('#act-summary').value.trim();
       const sessionRaw = $('#act-session') ? $('#act-session').value : '';
-      const sessionNumber = sessionRaw ? parseInt(sessionRaw,10) : null;
+      const sessionNumber = sessionNumberForSave(type, sessionRaw);   // C-3 (K7): null for non-session types
       const flagged = $('#act-flag') ? $('#act-flag').checked : false;
       const isFirstValue = $('#act-first-value') ? $('#act-first-value').checked : false;
       if(!summary){ showToast('Add a summary before logging'); return; }
@@ -18701,6 +18727,184 @@ function openValueImportModal(headers, dataRows, fileName){
     });
   }
 
+  document.body.appendChild(backdrop);
+  backdrop.addEventListener('click', e => { if(e.target === backdrop) close(); });
+  backdrop.addEventListener('keydown', e => { if(e.key === 'Escape'){ e.stopPropagation(); close(); } });
+  render();
+}
+
+/* ============ C-3: GONG PULL ("Check for calls") ============
+   Pull recorded calls from the connector, match each to an account, show all of it, and write only
+   what the OSM ticks. Matching is a proposal, never a guess: a rule that finds two accounts is
+   skipped. Nothing here writes to Gong; the call is linked to the activity (activity.gong) and the
+   OSM's own summary is the title, never the Gong summary. K7: an Email never gets a session number. */
+const NO_CALL_MATCH = {customerId: null, matchedBy: null};
+function matchCallToAccount(call, customers){
+  const ref = (call && call.accountRef) || {};
+  const list = Array.isArray(customers) ? customers : [];
+  const only = hits => hits.length === 1 ? hits[0].id : null;   // exactly one account wins; two or more is ambiguous
+  const gid = typeof ref.gainsightId === 'string' ? ref.gainsightId.trim() : '';
+  if(gid){
+    const id = only(list.filter(c => c.gainsightId === gid));
+    if(id) return {customerId: id, matchedBy: 'gainsightId'};
+  }
+  const nm = normalizeCustomerNameKey(ref.name);
+  if(nm){
+    const id = only(list.filter(c => normalizeCustomerNameKey(c.name) === nm));
+    if(id) return {customerId: id, matchedBy: 'name'};
+  }
+  const emails = new Set((Array.isArray(call && call.participants) ? call.participants : [])
+    .map(p => String((p && p.email) || '').trim().toLowerCase()).filter(Boolean));
+  if(emails.size){
+    const id = only(list.filter(c => getStakeholders(c).some(s => emails.has(String((s && s.email) || '').trim().toLowerCase()))));
+    if(id) return {customerId: id, matchedBy: 'email'};
+  }
+  return Object.assign({}, NO_CALL_MATCH);
+}
+function openSessionNumbersFor(customer, activities){
+  const logged = loggedSessionNumbers(customer.id, activities);
+  const out = [];
+  for(let n = 1; n <= (Number.isInteger(customer.totalSessions) ? customer.totalSessions : 0); n++){ if(!logged.has(n)) out.push(n); }
+  return out;
+}
+function callRowType(call){ return call && call.kind === 'email' ? 'Email' : 'Call'; }
+function buildCallPreview(calls, customers, activities){
+  const linkedIds = new Set();
+  Object.keys(activities || {}).forEach(cid => (activities[cid] || []).forEach(a => {
+    if(a && a.gong && a.gong.callId) linkedIds.add(a.gong.callId);
+  }));
+  const out = {matched: [], unmatched: [], linked: []};
+  (calls || []).forEach(call => {
+    if(!call || typeof call.callId !== 'string') return;
+    const m = matchCallToAccount(call, customers);
+    const c = m.customerId ? customers.find(x => x.id === m.customerId) : null;
+    const type = callRowType(call);
+    const row = {call, customerId: m.customerId, matchedBy: m.matchedBy, type,
+      sessionOptions: c && isSessionCapableType(type) ? openSessionNumbersFor(c, activities) : []};
+    if(linkedIds.has(call.callId)) out.linked.push(row);
+    else if(c) out.matched.push(row);
+    else out.unmatched.push(call);
+  });
+  return out;
+}
+// confirmedRows: [{call, customerId, type, sessionNumber|null, matchedBy?}]. One undo snapshot, one save.
+function applyCallImport(confirmedRows){
+  const today = todayISO();
+  const existing = new Set();
+  Object.keys(DATA.activities || {}).forEach(cid => (DATA.activities[cid] || []).forEach(a => { if(a && a.gong && a.gong.callId) existing.add(a.gong.callId); }));
+  const toAdd = [];
+  (confirmedRows || []).forEach(r => {
+    const call = r && r.call;
+    if(!call || typeof call.callId !== 'string' || existing.has(call.callId)) return;
+    if(!DATA.customers.some(c => c.id === r.customerId)) return;
+    const date = typeof call.startedAt === 'string' ? call.startedAt.slice(0, 10) : '';
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) return;   // future dates refused, like the log form
+    const type = ACTIVITY_TYPES[r.type] ? r.type : 'Call';
+    const act = {id: uid(), date, type, summary: String(call.title || '').trim() || 'Gong call',
+      checklist: (ACTIVITY_TYPES[type] || []).map(label => ({label, done: false})),
+      sessionNumber: isSessionCapableType(type) && Number.isInteger(r.sessionNumber) && r.sessionNumber > 0 ? r.sessionNumber : null,
+      flagged: false,
+      gong: normalizeGongLink(Object.assign({}, call, {matchedBy: r.matchedBy || 'manual'}))};
+    const tr = typeof call.transcript === 'string' ? call.transcript : '';
+    if(tr.trim()){
+      const cut = tr.length > DEBRIEF_TRANSCRIPT_CHAR_CAP;
+      act.transcript = {text: cut ? tr.slice(0, DEBRIEF_TRANSCRIPT_CHAR_CAP) : tr, truncated: cut};
+    }
+    existing.add(call.callId);
+    toAdd.push({customerId: r.customerId, act});
+  });
+  if(!toAdd.length) return {created: 0};
+  markUndoable('Gong calls');
+  toAdd.forEach(x => {
+    if(!DATA.activities[x.customerId]) DATA.activities[x.customerId] = [];
+    DATA.activities[x.customerId].push(x.act);
+  });
+  saveData();
+  return {created: toAdd.length};
+}
+function callSinceISO(){
+  return ui.lastCallPullAt || new Date(Date.now() - 30 * 86400000).toISOString();
+}
+async function checkForCalls(){
+  if(ui.callPullBusy) return;
+  ui.callPullBusy = true;
+  let resp;
+  try{ resp = await connectorRequest('/v1/calls?since=' + encodeURIComponent(callSinceISO())); }
+  catch(e){
+    showToast(e && e.code === 'OFFLINE' ? 'Connector offline — no calls were checked and nothing changed.'
+      : e && e.code === 'UNAUTHORIZED' ? 'The connector rejected the token — check it in Settings.'
+      : 'Could not check for calls right now. Nothing changed.');
+    return;
+  }
+  finally{ ui.callPullBusy = false; }
+  const calls = (resp && Array.isArray(resp.calls) ? resp.calls : []).filter(isRecordObject);
+  const preview = buildCallPreview(calls, DATA.customers, DATA.activities);
+  if(!preview.matched.length && !preview.unmatched.length){
+    showToast(preview.linked.length ? 'No new calls — everything is already in the tracker.' : 'No calls found since ' + fmtDate(callSinceISO().slice(0, 10)) + '.');
+    return;
+  }
+  openCallPreviewModal(preview);
+}
+function openCallPreviewModal(preview){
+  if(document.querySelector('.modal-backdrop')) return;
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const close = () => backdrop.remove();
+  const rows = preview.matched.map((r, i) => ({key: 'm' + i, call: r.call, customerId: r.customerId, matchedBy: r.matchedBy, type: r.type, session: '', on: false}))
+    .concat(preview.unmatched.map((call, i) => ({key: 'u' + i, call, customerId: null, matchedBy: 'manual', type: callRowType(call), session: '', on: false})));
+  const custOf = r => r.customerId ? DATA.customers.find(c => c.id === r.customerId) : null;
+  const sessOf = r => { const c = custOf(r); return c && isSessionCapableType(r.type) ? openSessionNumbersFor(c, DATA.activities) : []; };
+  const callLine = call => `${escapeHtml(call.title || 'Untitled call')} <span style="color:var(--text-faint);">· ${escapeHtml(fmtDate(String(call.startedAt || '').slice(0, 10)))}</span>`;
+  const rowHtml = r => {
+    const opts = sessOf(r);
+    return `<tr>
+      <td><input type="checkbox" data-cp-on="${r.key}" aria-label="Add this call"${r.on ? ' checked' : ''}${r.customerId ? '' : ' disabled'}></td>
+      <td>${callLine(r.call)}</td>
+      <td>${r.matchedBy && r.matchedBy !== 'manual' ? `${escapeHtml((custOf(r) || {}).name || '')} <span style="color:var(--text-faint);">· by ${escapeHtml(r.matchedBy === 'gainsightId' ? 'Gainsight id' : r.matchedBy)}</span>`
+        : `<select data-cp-acct="${r.key}" aria-label="Account"><option value="">Pick an account…</option>${DATA.customers.map(c => `<option value="${escapeAttr(c.id)}"${c.id === r.customerId ? ' selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}</select>`}</td>
+      <td><select data-cp-type="${r.key}" aria-label="Type">${Object.keys(ACTIVITY_TYPES).map(t => `<option value="${escapeAttr(t)}"${t === r.type ? ' selected' : ''}>${escapeHtml(t)}</option>`).join('')}</select></td>
+      <td><select data-cp-sess="${r.key}" aria-label="Session"${isSessionCapableType(r.type) && r.customerId ? '' : ' disabled'}><option value="">${isSessionCapableType(r.type) ? 'Not part of session plan' : 'No session'}</option>${opts.map(n => `<option value="${n}"${String(n) === String(r.session) ? ' selected' : ''}>Session ${n}</option>`).join('')}</select></td>
+    </tr>`;
+  };
+  function render(){
+    const confirmed = rows.filter(r => r.on && r.customerId);
+    const matchedRows = rows.filter(r => r.key.charAt(0) === 'm'), unmatchedRows = rows.filter(r => r.key.charAt(0) === 'u');
+    const table = list => `<div class="bf-wrap"><table class="dense-table"><thead><tr><th>Add</th><th>Call</th><th>Account</th><th>Type</th><th>Session</th></tr></thead><tbody>${list.map(rowHtml).join('')}</tbody></table></div>`;
+    backdrop.innerHTML = `
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cp-title" style="width:min(1000px,100%); max-width:none;">
+        <h3 id="cp-title" style="margin-top:0;">Calls since ${escapeHtml(fmtDate(callSinceISO().slice(0, 10)))}</h3>
+        <p style="color:var(--text-faint); font-size:var(--text-xs); margin:0 0 var(--space-2);">
+          <strong>Nothing is added until you tick a call and click Add.</strong> Each becomes an activity linked to its Gong call; your own summary stays yours. Emails are logged as touches and never take a session number.</p>
+        ${matchedRows.length ? `<div class="section-title">Matched to an account (${matchedRows.length})</div>${table(matchedRows)}` : ''}
+        ${unmatchedRows.length ? `<div class="section-title">No account found (${unmatchedRows.length})</div>
+          <p style="color:var(--text-faint); font-size:var(--text-xs); margin:0 0 var(--space-1);">Pick the account yourself to add one of these, or leave it out.</p>${table(unmatchedRows)}` : ''}
+        ${preview.linked.length ? `<div class="section-title">Already in the tracker (${preview.linked.length})</div>
+          <p style="color:var(--text-faint); font-size:var(--text-xs); margin:0;">${preview.linked.map(r => callLine(r.call)).join(' &middot; ')}</p>` : ''}
+        <div class="modal-actions">
+          <button class="btn" id="cp-cancel">Cancel</button>
+          <button class="btn btn-primary" id="cp-add"${confirmed.length ? '' : ' disabled'}>Add ${confirmed.length} confirmed</button>
+        </div>
+      </div>`;
+    const rowOf = el => rows.find(r => r.key === el.dataset.cpOn || r.key === el.dataset.cpAcct || r.key === el.dataset.cpType || r.key === el.dataset.cpSess);
+    backdrop.querySelectorAll('[data-cp-on]').forEach(el => el.addEventListener('change', ()=>{ rowOf(el).on = el.checked; render(); }));
+    backdrop.querySelectorAll('[data-cp-acct]').forEach(el => el.addEventListener('change', ()=>{
+      const r = rowOf(el); r.customerId = el.value || null; r.session = ''; if(!r.customerId) r.on = false; render();
+    }));
+    backdrop.querySelectorAll('[data-cp-type]').forEach(el => el.addEventListener('change', ()=>{
+      const r = rowOf(el); r.type = el.value; r.session = ''; render();   // a non-session type clears the session pick (K7)
+    }));
+    backdrop.querySelectorAll('[data-cp-sess]').forEach(el => el.addEventListener('change', ()=>{ rowOf(el).session = el.value; }));
+    backdrop.querySelector('#cp-cancel').addEventListener('click', close);
+    const add = backdrop.querySelector('#cp-add');
+    if(add) add.addEventListener('click', ()=>{
+      const res = applyCallImport(confirmed.map(r => ({call: r.call, customerId: r.customerId, type: r.type,
+        sessionNumber: r.session ? parseInt(r.session, 10) : null, matchedBy: r.matchedBy})));
+      ui.lastCallPullAt = new Date().toISOString();
+      close();
+      window.render();
+      showToast(res.created ? `Added ${res.created} call${res.created === 1 ? '' : 's'} as activities. Undo is available.` : 'Nothing was added.');
+    });
+  }
   document.body.appendChild(backdrop);
   backdrop.addEventListener('click', e => { if(e.target === backdrop) close(); });
   backdrop.addEventListener('keydown', e => { if(e.key === 'Escape'){ e.stopPropagation(); close(); } });

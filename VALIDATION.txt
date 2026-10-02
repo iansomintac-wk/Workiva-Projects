@@ -31,13 +31,13 @@ blob is LF and its working tree is CRLF here (19,297 bytes longer than the
 blob), so the two hash differently. The guide is the same: LF blob, CRLF
 working tree (859 CR lines), so its two hashes differ.
 
-  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task C-2 (connector client); the C-1 figure b9c15187... is superseded.
-    The blob is LF. In this worktree the working tree was LF too when measured (the C-2 edits rewrote it LF), so the two hashes
+  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task C-3 (Gong pull); the C-2 figure dfa3ec02... is superseded.
+    The blob is LF. In this worktree the working tree was LF too when measured (the C-2 and C-3 edits rewrote it LF), so the two hashes
     are identical here; where core.autocrlf yields CRLF they will differ.)
-    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,185,458 bytes)
-    dfa3ec02bebfc45cce1f2e392dee7332205a16f04b338bf5b68421e263d0a903
-    WORKING TREE (LF in this checkout at measurement, `sha256sum <file>`, 1,185,458 bytes)
-    dfa3ec02bebfc45cce1f2e392dee7332205a16f04b338bf5b68421e263d0a903
+    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,199,175 bytes)
+    96be11a36a7b25f9433a6cd93638b0c129541284bda1660ccd89f46129375c63
+    WORKING TREE (LF in this checkout at measurement, `sha256sum <file>`, 1,199,175 bytes)
+    96be11a36a7b25f9433a6cd93638b0c129541284bda1660ccd89f46129375c63
   osm-runway-onboarding-1.0.html   (changed at A5: two time-saved cards replaced/removed; the 598bbb86... figure is stale)
     GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 183,964 bytes)
     d3e4c8723caca88abb1947264049704d1e23cfb466553854561ce86ffdd9a392
@@ -50,7 +50,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   443/443 passed, 0 failed
+  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   448/448 passed, 0 failed
   window.runGuideSelfChecks()                                              18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -156,12 +156,12 @@ check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
 four remaining failures are exactly the pre-existing, verified-non-defect
 four above, which need a populated book on their own terms and are not
 this defect. The tracker suite as a whole therefore still needs seeding to
-run clean, so — at the CURRENT suite count, 443 (369 when this paragraph was
+run clean, so — at the CURRENT suite count, 448 (369 when this paragraph was
 written, after v74.5 was added; the count moves with every graduation-plan task) —
 the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 443
+       --seed demo-seed.js --expect 448
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -1648,3 +1648,26 @@ TRIM C-2 - CONNECTOR CLIENT (suite 434 -> 443)
   - GREEN: `runSelfChecks: 443/443 passed, 0 failed`; `runGraduationScenarios: 6/6 passed, 0 failed`; guide 18/18;
     connector contract tests `# pass 41`, `# fail 0`. SHA-256 block re-measured above. guide-manifest.json count 443.
   Evidence: docs/superpowers/evidence/trim-and-integration/C-2.md.
+
+TRIM C-3 - GONG PULL, "CHECK FOR CALLS", AND THE G06 FIX (suite 443 -> 448)
+  - What: NON_SESSION_ACTIVITY_TYPES (Email, Partner Sync, Implementation Note; P7) and isSessionCapableType; G06 fix in the
+    log form (bindActTypeSessionLock clears and disables Session # on a non-session type, sessionNumberForSave forces null);
+    matchCallToAccount (Gainsight id, exact name, stakeholder email; a rule that finds two accounts is skipped),
+    buildCallPreview, applyCallImport (one undo snapshot, one save; future dates, unknown accounts and already-linked
+    calls refused), the header button (shown only when a connector is configured) and the three-group preview modal
+    (confirm boxes start unticked; unmatched rows take a manual account pick). The last-pull time is ui.lastCallPullAt
+    (session only; DATA.config has no such field and there is no schema change).
+  - Checks first, five seen failing (443/448 passed, 5 failed, "is not defined"), then the code: c3a matcher order and
+    ambiguity, c3b preview groups on the six fixture-shaped calls and linked/session-option rules, c3c K7 Gong path,
+    c3d K7 form path (G06), c3e no write for an empty, future-dated or unknown-account import. No check removed or weakened.
+  - Async path end to end (stub connector fetch, real modal clicks):
+    node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js,docs/superpowers/evidence/trim-and-integration/c3-async-probe.js --fn c3ProbeResults --expect 12
+    -> 12/12 (no button unconfigured, offline = quiet toast and no modal, request shape, groups 3 + 1, boxes unticked,
+    Email row has no session, Call->Email clears the pick, Add 2 writes the two ticked calls, second pull shows them as
+    already in the tracker, no console errors).
+  - Mutation proofs (copies of the tracker run with --suite tools/selfchecks.js): the type `change` listener renamed so it
+    never fires -> 447/448, c3d red; `isSessionCapableType(type) &&` dropped from applyCallImport's sessionNumber -> 447/448,
+    c3c red. Restored: 448/448.
+  - GREEN: `runSelfChecks: 448/448 passed, 0 failed`; `runGraduationScenarios: 6/6 passed, 0 failed`; guide 18/18; connector
+    contract tests `# pass 41`, `# fail 0`. SHA-256 block re-measured above. guide-manifest.json count 448.
+  Evidence: docs/superpowers/evidence/trim-and-integration/C-3.md.

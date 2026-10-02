@@ -8658,6 +8658,157 @@ function _runSelfChecksInner(){
     check('connector c2i: with no connector configured nothing is fetched, status is unset, and the header and Settings carry the connector status and Check button (K8)', ok, detail);
   })();
 
+  /* C-3: Gong pull ("Check for calls") and the G06 fix. K7: an Email activity never carries a sessionNumber. */
+  const c3Calls = () => [
+    {callId: 'c-demo-001', startedAt: '2026-09-08T14:00:00Z', title: 'Aldridge Energy: session check-in', url: 'https://fake.gong.invalid/call/c-demo-001',
+      participants: [{name: 'Riley Demo', email: 'riley.demo@fake-osm.invalid', affiliation: 'internal'}, {name: 'Dana', email: 'dana.aldridge-energy@fake-customer.invalid', affiliation: 'customer'}],
+      accountRef: {gainsightId: 'GS-DEMO-001', name: 'Aldridge Energy'}, summary: 'FAKE summary one', transcript: 'FAKE transcript one'},
+    {callId: 'c-demo-002', startedAt: '2026-09-10T16:30:00Z', title: 'Corvus Logistics: pre-UAT sync',
+      participants: [{name: 'Riley Demo', email: 'riley.demo@fake-osm.invalid', affiliation: 'internal'}],
+      accountRef: {gainsightId: 'GS-DEMO-003', name: 'Corvus Logistics'}, summary: 'FAKE summary two', transcript: 'FAKE transcript two'},
+    {callId: 'c-demo-003', startedAt: '2026-09-12T15:00:00Z', title: 'Fernbrook Retail: policy review',
+      participants: [{name: 'Dana', email: 'dana.fernbrook-retail@fake-customer.invalid', affiliation: 'customer'}],
+      accountRef: {gainsightId: null, name: 'Fernbrook Retail'}, summary: 'FAKE summary three', transcript: 'FAKE transcript three'},
+    {callId: 'c-demo-004', startedAt: '2026-09-15T13:00:00Z', title: 'Quick sync with Sam',
+      participants: [{name: 'Riley Demo', email: 'riley.demo@fake-osm.invalid', affiliation: 'internal'}, {name: 'Sam Demo', email: 'sam.demo@fake-customer.invalid', affiliation: 'customer'}],
+      accountRef: {gainsightId: null, name: null}, summary: 'FAKE summary four', transcript: 'FAKE transcript four'},
+    {callId: 'c-demo-005', startedAt: '2026-09-17T10:00:00Z', title: 'Intro call with unknown prospect',
+      participants: [{name: 'Pat Nobody', email: 'pat.nobody@unknown-company.invalid', affiliation: 'unknown'}],
+      accountRef: {gainsightId: null, name: null}, summary: 'FAKE summary five', transcript: 'FAKE transcript five'},
+    {callId: 'c-demo-006', kind: 'email', startedAt: '2026-09-18T09:00:00Z', title: 'Email: follow-up on checklist',
+      participants: [{name: 'Dana', email: 'dana.brightwater-foods@fake-customer.invalid', affiliation: 'customer'}],
+      accountRef: {gainsightId: 'GS-DEMO-002', name: 'Brightwater Foods'}, summary: 'FAKE gong summary six', transcript: 'x'.repeat(130000)}
+  ];
+  const c3Customers = () => [
+    {id: 'k1', name: 'Aldridge Energy', gainsightId: 'GS-DEMO-001', totalSessions: 6, stakeholders: []},
+    {id: 'k2', name: 'Brightwater Foods', gainsightId: 'GS-DEMO-002', totalSessions: 6, stakeholders: []},
+    {id: 'k3', name: 'Corvus Logistics', gainsightId: 'GS-DEMO-003', totalSessions: 6, stakeholders: []},
+    {id: 'k4', name: 'Fernbrook Retail', gainsightId: 'GS-DEMO-004', totalSessions: 6, stakeholders: []},
+    {id: 'k5', name: 'Sam Co', totalSessions: 6, stakeholders: [{id: 's1', name: 'Sam Demo', email: 'sam.demo@fake-customer.invalid'}]}
+  ];
+  (function(){                                   // c3a
+    let ok = false, detail = '';
+    try{
+      const cs = [
+        {id: 'a', name: 'Alpha', gainsightId: 'G-A', stakeholders: []},
+        {id: 'b', name: 'Beta', gainsightId: 'G-B', stakeholders: []},
+        {id: 't1', name: 'Twin Co', stakeholders: [{email: 'x@one.invalid'}]},
+        {id: 't2', name: ' twin co ', stakeholders: [{email: 'y@two.invalid'}, {email: 'shared@both.invalid'}]},
+        {id: 't3', name: 'Other', stakeholders: [{email: 'shared@both.invalid'}]},
+        {id: 'd1', name: 'Dup1', gainsightId: 'G-DUP', stakeholders: []},
+        {id: 'd2', name: 'Dup2', gainsightId: 'G-DUP', stakeholders: []}];
+      const call = (gid, name, emails) => ({callId: 'z', accountRef: {gainsightId: gid, name}, participants: (emails || []).map(e => ({email: e}))});
+      const m = (g, n, e) => matchCallToAccount(call(g, n, e), cs);
+      const idBeatsName = JSON.stringify(m('G-A', 'Beta')) === '{"customerId":"a","matchedBy":"gainsightId"}';
+      const nameOnly = JSON.stringify(m(null, '  ALPHA ')) === '{"customerId":"a","matchedBy":"name"}';
+      const emailOnly = JSON.stringify(m(null, null, ['Y@TWO.invalid'])) === '{"customerId":"t2","matchedBy":"email"}';
+      const ambigNameToEmail = JSON.stringify(m(null, 'Twin Co', ['x@one.invalid'])) === '{"customerId":"t1","matchedBy":"email"}';
+      const ambigNameNoEmail = JSON.stringify(m(null, 'Twin Co', [])) === '{"customerId":null,"matchedBy":null}';
+      const ambigEmail = JSON.stringify(m(null, null, ['shared@both.invalid'])) === '{"customerId":null,"matchedBy":null}';
+      const dupIdFallsToName = JSON.stringify(m('G-DUP', 'Dup2')) === '{"customerId":"d2","matchedBy":"name"}';
+      const none = JSON.stringify(m(null, null, ['nobody@nowhere.invalid'])) === '{"customerId":null,"matchedBy":null}';
+      const noRef = JSON.stringify(matchCallToAccount({callId: 'z'}, cs)) === '{"customerId":null,"matchedBy":null}';
+      ok = idBeatsName && nameOnly && emailOnly && ambigNameToEmail && ambigNameNoEmail && ambigEmail && dupIdFallsToName && none && noRef;
+      detail = JSON.stringify({idBeatsName, nameOnly, emailOnly, ambigNameToEmail, ambigNameNoEmail, ambigEmail, dupIdFallsToName, none, noRef});
+    }catch(err){ detail = err.message; }
+    check('gong c3a: matchCallToAccount tries id, then exact name, then stakeholder email; a rule that finds two accounts is skipped, never guessed; nothing matches -> null', ok, detail);
+  })();
+  (function(){                                   // c3b
+    let ok = false, detail = '';
+    try{
+      const cs = c3Customers(), calls = c3Calls();
+      const p = buildCallPreview(calls, cs, {});
+      const by = p.matched.map(r => r.matchedBy).sort().join(',');
+      const shape = p.matched.length === 5 && by === 'email,gainsightId,gainsightId,gainsightId,name'
+        && p.unmatched.length === 1 && p.unmatched[0].callId === 'c-demo-005' && p.linked.length === 0;
+      const row1 = p.matched.find(r => r.call.callId === 'c-demo-001');
+      const opts = row1 && row1.type === 'Call' && JSON.stringify(row1.sessionOptions) === '[1,2,3,4,5,6]';
+      const p2 = buildCallPreview(calls, cs, {k1: [{id: 'x', type: 'Call', sessionNumber: 2, gong: {callId: 'c-demo-001'}}]});
+      const moved = p2.linked.length === 1 && p2.linked[0].call.callId === 'c-demo-001' && p2.matched.length === 4 && p2.unmatched.length === 1;
+      const consumed = JSON.stringify(buildCallPreview(calls, cs, {k1: [{id: 'x', type: 'Call', sessionNumber: 2}]}).matched.find(r => r.call.callId === 'c-demo-001').sessionOptions) === '[1,3,4,5,6]';
+      ok = shape && opts && moved && consumed;
+      detail = JSON.stringify({by, m: p.matched.length, u: p.unmatched.length, l: p.linked.length, opts, moved, consumed});
+    }catch(err){ detail = err.message; }
+    check('gong c3b: buildCallPreview on the six fixture-shaped calls gives 5 matched (3 id, 1 name, 1 email), 1 unmatched, 0 linked; a callId already on an activity moves to linked; logged sessions leave sessionOptions', ok, detail);
+  })();
+  (function(){                                   // c3c
+    let ok = false, detail = '';
+    const savedCustomers = DATA.customers, savedActs = DATA.activities;
+    try{
+      const cs = c3Customers();
+      DATA.customers = savedCustomers.concat(cs);
+      cs.forEach(c => { DATA.activities[c.id] = []; });
+      const p = buildCallPreview(c3Calls(), cs, DATA.activities);
+      const em = p.matched.find(r => r.call.callId === 'c-demo-006');
+      const typed = em && em.type === 'Email' && em.sessionOptions.length === 0;
+      const callRow = p.matched.find(r => r.call.callId === 'c-demo-001');
+      const res = applyCallImport([
+        {call: em.call, customerId: em.customerId, type: em.type, sessionNumber: 3, matchedBy: em.matchedBy},
+        {call: callRow.call, customerId: callRow.customerId, type: 'Call', sessionNumber: 3, matchedBy: callRow.matchedBy}]);
+      const email = (DATA.activities.k2 || [])[0], call = (DATA.activities.k1 || [])[0];
+      const emailOk = email && email.type === 'Email' && email.sessionNumber === null && email.gong && email.gong.callId === 'c-demo-006'
+        && email.transcript && email.transcript.text.length === DEBRIEF_TRANSCRIPT_CHAR_CAP && email.transcript.truncated === true
+        && email.summary === 'Email: follow-up on checklist' && email.summary !== 'FAKE gong summary six' && email.gong.summary === 'FAKE gong summary six'
+        && email.date === '2026-09-18' && email.checklist.length === ACTIVITY_TYPES.Email.length;
+      const callOk = call && call.type === 'Call' && call.sessionNumber === 3 && call.gong.matchedBy === 'gainsightId';
+      ok = typed && res.created === 2 && !!emailOk && !!callOk;
+      detail = JSON.stringify({typed, created: res.created, emailOk: !!emailOk, callOk: !!callOk, sn: email && email.sessionNumber});
+    }catch(err){ detail = err.message; }
+    finally{
+      DATA.customers = savedCustomers;
+      ['k1', 'k2', 'k3', 'k4', 'k5'].forEach(id => { delete DATA.activities[id]; });
+      DATA.activities = savedActs;
+    }
+    check('gong c3c: K7 Gong path: the email touch previews as Email with no session options, and applying it with sessionNumber 3 stores null; transcript clamped at 120,000; summary is the title, not the Gong summary; a Call keeps its session', ok, detail);
+  })();
+  (function(){                                   // c3d
+    let ok = false, detail = '';
+    try{
+      const c = DATA.customers.find(x => !inImplementation(x) && x.totalSessions > 0);
+      const host = document.createElement('div');
+      host.innerHTML = renderLogActivityTab(c);
+      bindActTypeSessionLock(host);
+      const type = host.querySelector('#act-type'), sess = host.querySelector('#act-session');
+      const pre = sess.value;                      // the form still preselects the next session for a Call
+      type.value = 'Email'; type.dispatchEvent(new Event('change', {bubbles: true}));
+      const emailLocked = sess.value === '' && sess.disabled === true;
+      type.value = 'Call'; type.dispatchEvent(new Event('change', {bubbles: true}));
+      const callOpen = sess.value === '' && sess.disabled === false;
+      const forced = sessionNumberForSave('Email', '3') === null && sessionNumberForSave('Partner Sync', '2') === null
+        && sessionNumberForSave('Call', '3') === 3 && sessionNumberForSave('Call', '') === null;
+      const wired = String(attachEvents).indexOf('bindActTypeSessionLock(') !== -1 && String(attachEvents).indexOf('sessionNumberForSave(') !== -1
+        && !!c;
+      const types = NON_SESSION_ACTIVITY_TYPES.join(',') === 'Email,Partner Sync,Implementation Note'
+        && isSessionCapableType('Call') && isSessionCapableType('Other') && !isSessionCapableType('Email');
+      ok = emailLocked && callOpen && forced && wired && types;
+      detail = JSON.stringify({pre, emailLocked, callOpen, forced, wired, types});
+    }catch(err){ detail = err.message; }
+    check('gong c3d: K7 form path (G06): choosing Email clears and disables Session #, switching to Call re-enables it still empty; the save path forces null for non-session types', ok, detail);
+  })();
+  (function(){                                   // c3e
+    let ok = false, detail = '';
+    const realSave = saveData, realLabel = _undoLabel;
+    const savedActs = DATA.activities, savedCustomers = DATA.customers;
+    let saves = 0;
+    try{
+      saveData = function(){ saves++; return true; };
+      const empty = applyCallImport([]);
+      const cs = c3Customers();
+      DATA.customers = savedCustomers.concat(cs);
+      DATA.activities.k1 = [];
+      const future = c3Calls()[0];
+      future.startedAt = new Date(Date.now() + 5 * 86400000).toISOString();
+      const refused = applyCallImport([{call: future, customerId: 'k1', type: 'Call', sessionNumber: null, matchedBy: 'gainsightId'}]);
+      const wrongAcct = applyCallImport([{call: c3Calls()[0], customerId: 'nope', type: 'Call', sessionNumber: null, matchedBy: 'manual'}]);
+      ok = empty.created === 0 && refused.created === 0 && wrongAcct.created === 0 && saves === 0 && DATA.activities.k1.length === 0 && _undoLabel === realLabel;
+      detail = JSON.stringify({saves, empty, refused, wrongAcct});
+    }catch(err){ detail = err.message; }
+    finally{
+      saveData = realSave;
+      DATA.customers = savedCustomers; delete DATA.activities.k1; DATA.activities = savedActs;
+    }
+    check('gong c3e: applyCallImport writes nothing (no save, no undo label) for an empty list, a future-dated call or an unknown account', ok, detail);
+  })();
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,

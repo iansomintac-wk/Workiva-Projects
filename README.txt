@@ -140,7 +140,7 @@ never touched. GRC disclosure submission stays empty.
 
 Running the graduation checks headlessly (needs Chrome or Edge):
 
-  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 443
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 448
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
@@ -162,6 +162,16 @@ tests: node --test --test-reporter=tap "connector/test/*.test.mjs"
 Run it (task B2): node connector/server.mjs starts it on 127.0.0.1:8787 (127.0.0.1 only), creates
 connector/token.txt on first start and prints the token; paste the token into the tracker once. Delete
 the file to rotate. connector/config.json and token.txt are git-ignored. Gong and Gainsight adapters are FAKE.
+
+"Check for calls" (task C-3): with a connector set up, the header has a Check for calls button. It asks the
+connector for calls since the last time you added some (30 days back on first use; kept for the session only) and
+opens a review: calls matched to an account (by Gainsight id, then exact account name, then a stakeholder email; a
+match that fits two accounts is skipped, never guessed), calls with no account (pick one yourself), and calls already
+in the tracker. Every confirm box starts unticked; "Add N confirmed" writes one activity per ticked call (your title
+as the summary, the transcript stored, a link to the Gong call). An email-kind call is logged as an Email and, like
+any Email, Partner Sync or Implementation Note, never takes a session number, in this review or in the log form (the
+log form now clears and locks Session # when you pick such a type). With no connector the button is not shown; with a
+connector that is not running it says so in a message and changes nothing.
 AI (task B3): POST /v1/ai; ai.adapter is fake (default), claude, openai or gemini, with the key only in the
 git-ignored connector/config.json or env CONNECTOR_AI_KEY. The real AI adapters are tested against a stubbed
 fetch only; no real call has been made.
@@ -182,8 +192,8 @@ Verifying a change
 Both halves carry self-check suites: the tracker's is injected by tools/selfcheck.mjs from
 tools/selfchecks.js (it is not in the shipped file); the guide's is in the page. After any edit:
 
-  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 443
-            must be 443/443 (the suite lives in tools/selfchecks.js and is not shipped)
+  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 448
+            must be 448/448 (the suite lives in tools/selfchecks.js and is not shipped)
   guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
             must be 18/18 (window.runGuideSelfChecks() also works in the console)
 

@@ -265,3 +265,15 @@ Connector client (task C-2).
       not running the tracker falls back to a browser AI key when there is one. A length-cut AI reply still shows the
       same notice. Without a connector the tracker works exactly as before.
     - 443 self-checks (was 434).
+
+Check for calls (task C-3).
+
+    - With a connector set up, the header has Check for calls. It lists recorded Gong calls since you last added some,
+      matched to your accounts by Gainsight id, then exact account name, then a stakeholder's email (an ambiguous match
+      is left for you to pick). Nothing is added until you tick a call and click Add; each becomes an activity linked to
+      its Gong call, with your title as the summary. Without a connector the button is not shown; with one that is not
+      running you get a plain "Connector offline" message and nothing changes.
+    - Fixed (G06): choosing Email, Partner Sync or Implementation Note in the log form now clears and locks Session #,
+      and the save forces no session for those types. Before, the form pre-selected the next session for an Email. The
+      same rule holds for calls added from Gong: an email-kind call is an Email and never takes a session number.
+    - 448 self-checks (was 443).
