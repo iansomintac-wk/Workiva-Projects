@@ -31,13 +31,13 @@ blob is LF and its working tree is CRLF here (19,297 bytes longer than the
 blob), so the two hash differently. The guide is the same: LF blob, CRLF
 working tree (859 CR lines), so its two hashes differ.
 
-  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at fix task R1 (final-review fixes); the C-6 figure fb952bb3... is superseded.
+  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at fix task R2 (final-review fixes I-3, M-1, M-3); the C-6 figure fb952bb3... is superseded.
     The blob is LF. In this worktree the working tree was LF too when measured (the C-2 to C-6 edits rewrote it LF), so the two hashes
     are identical here; where core.autocrlf yields CRLF they will differ.)
-    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,230,113 bytes)
-    6ecdecef44ded1c1004bce37a8c53363140dfcb06bd405573998e9de5ef80a6b
-    WORKING TREE (LF in this checkout at measurement, `sha256sum <file>`, 1,230,113 bytes)
-    6ecdecef44ded1c1004bce37a8c53363140dfcb06bd405573998e9de5ef80a6b
+    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,230,893 bytes)
+    faaebb24e47cc5e83eef16697651f4e714e44c87def33eed23b30a5a2c97a971
+    WORKING TREE (LF in this checkout at measurement, `sha256sum <file>`, 1,230,893 bytes)
+    faaebb24e47cc5e83eef16697651f4e714e44c87def33eed23b30a5a2c97a971
   osm-runway-onboarding-1.0.html   (changed at A5: two time-saved cards replaced/removed; the 598bbb86... figure is stale)
     GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 183,964 bytes)
     d3e4c8723caca88abb1947264049704d1e23cfb466553854561ce86ffdd9a392
@@ -1777,3 +1777,21 @@ TRIM R1 - FINAL-REVIEW FIXES I-1, I-4, M-4, M-5 (suite 459 -> 462)
   - GREEN: tracker 462/462 on demo-seed.js and on demo-seed.js + used-book-seed.js; runGraduationScenarios 6/6; c5 probe 12/12;
     contract 41/41; migration dry-run from 15 clean (idempotent, 0 console errors). The connector-e2e was not re-run here.
   - Evidence: docs/superpowers/evidence/trim-and-integration/R1.md.
+
+TRIM R2 - FINAL-REVIEW FIXES I-3, M-1, M-3 (suite 462 -> 465)
+  - tools/selfchecks.js, osm-book-of-business-tracker-1.0.html. No schema bump.
+  - I-3: callLocalDate(startedAt) = localDateISO(new Date(startedAt)) replaces the UTC slice in applyCallImport and the preview
+    line. New check "gong r2-i3" (calls at today 23:30 and 00:30 local must both store as todayISO()). Red (machine zone
+    America/Los_Angeles): created 1 of 2, preview showed the wrong day. Mutation (UTC slice back) -> 464/465, r2-i3 red.
+  - M-1: the Add handler no longer sets ui.lastCallPullAt, so the pull always looks back 30 days; callId dedupe keeps added calls
+    out of the next preview. The field stays declared but is never set. New check "gong r2-m1" (click Add through the modal,
+    callSinceISO still 30 days back). Red: gap 0 days. Mutation (advance restored) -> 464/465, r2-m1 red.
+  - M-3: renderCustomerGainsightTab counts queue items with status !== 'sent'; stale "no transport" comment rewritten. New check
+    "gainsight r2-m3" (two sent items: no badge; one sent plus one queued: "1 queued"). Red: badge shown for sent items.
+    Mutation (filter removed) -> 464/465, r2-m3 red.
+  - TZ: the suite was measured in the machine zone, America/Los_Angeles (the check prints its zone). A TZ=Asia/Tokyo environment
+    variable is NOT honoured by Windows Chrome here (still reported America/Los_Angeles), so only the Los Angeles run exists.
+  - GREEN: tracker 465/465 on demo-seed.js and on demo-seed.js + used-book-seed.js; runGraduationScenarios 6/6; C-3 probe 12/12,
+    C-4 probe 11/11, C-5 probe 12/12. Headless runs report one console error on load (undefined .sentiment) that also occurs on
+    the R1 commit, so it predates this task.
+  - Evidence: docs/superpowers/evidence/trim-and-integration/R2.md.

@@ -8837,6 +8837,93 @@ function _runSelfChecksInner(){
     }
     check('gong c3e: applyCallImport writes nothing (no save, no undo label) for an empty list, a future-dated call or an unknown account', ok, detail);
   })();
+  (function(){                                   // R2 I-3: local calendar date, not the UTC slice
+    let ok = false, detail = '';
+    const realSave = saveData;
+    const savedActs = DATA.activities, savedCustomers = DATA.customers;
+    try{
+      saveData = function(){ return true; };
+      const cs = c3Customers();
+      DATA.customers = savedCustomers.concat(cs);
+      DATA.activities = {k1: []};
+      const now = new Date();
+      const lateLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 30, 0);   // today 23:30 local: UTC date is tomorrow west of UTC
+      const earlyLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 30, 0);   // today 00:30 local: UTC date is yesterday east of UTC
+      const mk = (id, d) => Object.assign({}, c3Calls()[0], {callId: id, startedAt: d.toISOString()});
+      const today = todayISO();
+      const res = applyCallImport([
+        {call: mk('r2-late', lateLocal), customerId: 'k1', type: 'Call', sessionNumber: null, matchedBy: 'gainsightId'},
+        {call: mk('r2-early', earlyLocal), customerId: 'k1', type: 'Call', sessionNumber: null, matchedBy: 'gainsightId'}]);
+      const dates = (DATA.activities.k1 || []).map(a => a.date).join(',');
+      // the preview line must show the same local day
+      const backdropBefore = document.querySelectorAll('.modal-backdrop').length;
+      openCallPreviewModal({matched: [{call: mk('r2-pv', lateLocal), customerId: 'k1', matchedBy: 'gainsightId', type: 'Call', sessionOptions: []}], unmatched: [], linked: []});
+      const bd = document.querySelector('.modal-backdrop');
+      const shown = !!bd && bd.innerHTML.indexOf(escapeHtml(fmtDate(today))) !== -1;
+      if(bd && backdropBefore === 0) bd.remove();
+      ok = res.created === 2 && dates === today + ',' + today && shown;
+      detail = JSON.stringify({created: res.created, dates, today, shown, tz: Intl.DateTimeFormat().resolvedOptions().timeZone});
+    }catch(err){ detail = err.message; }
+    finally{
+      saveData = realSave;
+      DATA.customers = savedCustomers; DATA.activities = savedActs;
+    }
+    check('gong r2-i3: applyCallImport and the preview date a call by the LOCAL calendar day (today 23:30 and 00:30 local both stored as today and not refused as future)', ok, detail);
+  })();
+  (function(){                                   // R2 M-1: Add must not advance the since window
+    let ok = false, detail = '';
+    const realSave = saveData, savedActs = DATA.activities, savedCustomers = DATA.customers, savedLast = ui.lastCallPullAt;
+    try{
+      saveData = function(){ return true; };
+      const cs = c3Customers();
+      DATA.customers = savedCustomers.concat(cs);
+      DATA.activities = {k1: []};
+      ui.lastCallPullAt = null;
+      const call = Object.assign({}, c3Calls()[0], {callId: 'r2-m1', startedAt: new Date(Date.now() - 86400000).toISOString()});
+      const sinceBefore = callSinceISO();
+      openCallPreviewModal({matched: [{call, customerId: 'k1', matchedBy: 'gainsightId', type: 'Call', sessionOptions: []}], unmatched: [], linked: []});
+      const bd = document.querySelector('.modal-backdrop');
+      const box = bd.querySelector('[data-cp-on]');
+      box.checked = true; box.dispatchEvent(new Event('change', {bubbles: true}));
+      bd.querySelector('#cp-add').click();
+      const sinceAfter = callSinceISO();
+      const gapMs = Date.now() - new Date(sinceAfter).getTime();
+      const added = (DATA.activities.k1 || []).length === 1;
+      ok = added && Math.abs(gapMs - 30 * 86400000) < 60000 && sinceAfter.slice(0, 10) === sinceBefore.slice(0, 10);
+      detail = JSON.stringify({added, gapDays: Math.round(gapMs / 8640000) / 10, sinceBefore, sinceAfter});
+    }catch(err){ detail = err.message; }
+    finally{
+      saveData = realSave; ui.lastCallPullAt = savedLast;
+      DATA.customers = savedCustomers; DATA.activities = savedActs;
+      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    }
+    check('gong r2-m1: after Add the next "since" is still the 30-day window (a late-processed or unticked call is not hidden)', ok, detail);
+  })();
+  (function(){                                   // R2 M-3: the account Gainsight tab counts only unsent queue items as queued
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevQ = DATA.gainsightQueue;
+    try{
+      const cc = {id:'__r2m3__', name:'R2M3', module:DATA.config.modules[0], stage:DATA.config.stages[1].key,
+        implementationDate: isoAddDays(todayISO(), -60), totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
+      backfillCustomerRecord(cc);
+      DATA.customers = [cc]; DATA.activities = {__r2m3__: []};
+      const qi = status => ({id: uid(), date: todayISO(), customerId: '__r2m3__', customerName: 'R2M3', kind: 'item', payload: 'p', status, fields: {}, externalId: null, sentAt: null, error: null});
+      const render = q => { DATA.gainsightQueue = q; _renderMemoResets.forEach(r => r()); return renderCustomerGainsightTab(cc); };
+      const onlySent = render([qi('sent'), qi('sent')]);
+      const mixed = render([qi('sent'), qi('queued')]);
+      const none = render([]);
+      const noBadge = onlySent.indexOf(' queued</span>') === -1 && none.indexOf(' queued</span>') === -1;
+      const oneQueued = mixed.indexOf('>1 queued</span>') !== -1;
+      ok = noBadge && oneQueued && onlySent.indexOf('data-gainsight-batch') !== -1;
+      detail = JSON.stringify({noBadge, oneQueued});
+    }catch(err){ detail = err.message; }
+    finally{
+      DATA.customers = prevC; DATA.activities = prevA;
+      if(prevQ === undefined) delete DATA.gainsightQueue; else DATA.gainsightQueue = prevQ;   // do not leave the key behind (v74.4/74.5)
+      _renderMemoResets.forEach(r => r());
+    }
+    check('gainsight r2-m3: the account tab shows "N queued" for unsent items only (sent items are not counted)', ok, detail);
+  })();
   /* C-4: Gainsight pull ("Refresh from Gainsight"). A pull shows five fields and offers gate ticks; it writes only
      what the OSM ticks, and never stage, goals, verdicts, notes or scores. */
   const c4Customer = (o) => Object.assign({id: 'g1', name: 'Gamma Co', gainsightId: 'GS-X-1', stage: 'ttfv1', tier: 'Mid-market', arr: 100000,

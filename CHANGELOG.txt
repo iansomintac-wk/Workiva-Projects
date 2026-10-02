@@ -326,3 +326,12 @@ Final-review fixes (task R1). Tracker only.
       send fail.
     - A Gainsight refresh keeps at most 50 contacts per account and cuts long text.
     - 462 self-checks (was 459).
+
+Final-review fixes (task R2). Tracker only.
+
+    - A Gong call is dated by your local calendar day, not the UTC day. An evening call in a US time zone is no longer refused
+      as future-dated or logged a day late, and the preview shows the same day.
+    - Adding calls no longer moves the "since" time forward, so a call Gong finishes processing later, or one you left
+      unticked, still shows up on the next check. Calls already added stay out of the list.
+    - The account Gainsight tab counts only unsent items as queued.
+    - 465 self-checks (was 462).

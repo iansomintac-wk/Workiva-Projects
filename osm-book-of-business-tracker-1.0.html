@@ -8297,7 +8297,7 @@ function pendingGainsightItems(){
 /* ============ STATE ============ */
 let ui = {
   connector: {state: 'unset', fake: false, adapters: {}, checkedAt: null}, // C-2: unset | checking | online | offline | unauthorized — session-only
-  lastCallPullAt: null, // C-3: ISO time the OSM last added calls from Gong — session-only (no schema field); null = look back 30 days
+  lastCallPullAt: null, // C-3: reserved, never set since R2 (M-1): the Gong pull always looks back 30 days; callId dedupe keeps added calls out
   callPullBusy: false,
   view: 'today', // today | accounts | copilot — top-level tabs
   accountsView: 'list', // list | table | kanban | gantt — sub-view within Accounts (session-only, resets on reload like all ui state)
@@ -12518,10 +12518,11 @@ function renderCustomerGainsightTab(c){
      different jobs. Overview is the in-flow surface — clear one item while you
      are already thinking about the account. This is the batch surface: review
      everything before a Gainsight catch-up, then take it all in one action.
-     The "no push" line is not a disclaimer to bury — there is no transport behind
-     the queue, and a button that implied otherwise would be the exact theatre
-     this file avoids elsewhere. */
-  const queued = getGainsightQueue().filter(q => q.customerId === c.id).length;
+     The "no push" line is not a disclaimer to bury. Since C-5 a transport exists
+     (the connector), but only when one is configured and the OSM presses Send on
+     the Risk tab; a button that implied an automatic push would be the exact
+     theatre this file avoids elsewhere. Sent items are history, not "queued". */
+  const queued = getGainsightQueue().filter(q => q.customerId === c.id && q.status !== 'sent').length;
   return `
     <p style="color:var(--text-faint); font-size:var(--text-xs); margin:0 0 10px;">Everything outstanding for this account, for review before a Gainsight session. Clearing single items in-flow is quicker from the Account Brief on Overview.</p>
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
@@ -19049,6 +19050,12 @@ function buildCallPreview(calls, customers, activities){
   });
   return out;
 }
+// R2 I-3: a Gong startedAt is a UTC instant; the activity date is the local calendar day it fell on (same
+// rule as todayISO()). '' when it is not a parseable string, so the callers' date-shape check refuses it.
+function callLocalDate(startedAt){
+  if(typeof startedAt !== 'string') return '';
+  return localDateISO(new Date(startedAt)) || '';
+}
 // confirmedRows: [{call, customerId, type, sessionNumber|null, matchedBy?}]. One undo snapshot, one save.
 function applyCallImport(confirmedRows){
   const today = todayISO();
@@ -19059,7 +19066,7 @@ function applyCallImport(confirmedRows){
     const call = r && r.call;
     if(!call || typeof call.callId !== 'string' || existing.has(call.callId)) return;
     if(!DATA.customers.some(c => c.id === r.customerId)) return;
-    const date = typeof call.startedAt === 'string' ? call.startedAt.slice(0, 10) : '';
+    const date = callLocalDate(call.startedAt);   // R2 I-3: the OSM's local calendar day, not the UTC slice
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) return;   // future dates refused, like the log form
     const type = ACTIVITY_TYPES[r.type] ? r.type : 'Call';
     const act = {id: uid(), date, type, summary: String(call.title || '').trim() || 'Gong call',
@@ -19116,7 +19123,7 @@ function openCallPreviewModal(preview){
     .concat(preview.unmatched.map((call, i) => ({key: 'u' + i, call, customerId: null, matchedBy: 'manual', type: callRowType(call), session: '', on: false})));
   const custOf = r => r.customerId ? DATA.customers.find(c => c.id === r.customerId) : null;
   const sessOf = r => { const c = custOf(r); return c && isSessionCapableType(r.type) ? openSessionNumbersFor(c, DATA.activities) : []; };
-  const callLine = call => `${escapeHtml(call.title || 'Untitled call')} <span style="color:var(--text-faint);">· ${escapeHtml(fmtDate(String(call.startedAt || '').slice(0, 10)))}</span>`;
+  const callLine = call => `${escapeHtml(call.title || 'Untitled call')} <span style="color:var(--text-faint);">· ${escapeHtml(fmtDate(callLocalDate(call.startedAt)))}</span>`;
   const rowHtml = r => {
     const opts = sessOf(r);
     return `<tr>
@@ -19161,7 +19168,9 @@ function openCallPreviewModal(preview){
     if(add) add.addEventListener('click', ()=>{
       const res = applyCallImport(confirmed.map(r => ({call: r.call, customerId: r.customerId, type: r.type,
         sessionNumber: r.session ? parseInt(r.session, 10) : null, matchedBy: r.matchedBy})));
-      ui.lastCallPullAt = new Date().toISOString();
+      /* R2 M-1: do NOT advance `since` here. It filters on startedAt, so a call Gong finishes processing after this
+         pull, or one left unticked, would fall before the new window and stay hidden. Dedupe by callId already
+         keeps added calls out of the next preview, so the fixed 30-day window is safe. */
       close();
       window.render();
       showToast(res.created ? `Added ${res.created} call${res.created === 1 ? '' : 's'} as activities. Undo is available.` : 'Nothing was added.');
