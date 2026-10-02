@@ -213,6 +213,12 @@ port, calls health, accounts, calls, push and ai with the token, prints a short 
 deletes its temp config, token and log; exit 0. The access request for admins is a draft at
 docs/superpowers/drafts/connector-admin-ask.md (not sent).
 
+End-to-end check (task C-7): node tools/connector-e2e.mjs starts the connector with fake adapters, opens the tracker
+in headless Chrome (a fresh temp profile, no --allow-file-access-from-files, so the page sends Origin: null like a real
+browser) and walks the whole flow with the real buttons: health shows FAKE DATA, Check for calls, Refresh from
+Gainsight, Send to Gainsight with one forced failure, Brief my day, then stops the connector and runs the full suite.
+Prints "connector-e2e: 7/7 passed, 0 failed" and exits 0. Everything stays on 127.0.0.1; temp files are removed.
+
 Connect the tracker (task C-2): start the connector (node connector/server.mjs), open Settings, find
 "Connector (optional)", enter the address it prints (http://127.0.0.1:8787) and paste its token, then press Check.
 The header then shows Connector: FAKE DATA while any adapter is fake. With a connector set up, every AI feature

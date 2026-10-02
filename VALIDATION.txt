@@ -1738,3 +1738,18 @@ TRIM C-6 - AI DECISION SUPPORT, "BRIEF MY DAY" (ruling R4; suite 455 -> 459)
     unchanged: no claim it makes became false); connector contract tests `# pass 41`, `# fail 0`. SHA-256 block re-measured
     above. guide-manifest.json count 459.
   Evidence: docs/superpowers/evidence/trim-and-integration/C-6.md.
+
+TRIM C-7 - END-TO-END SCENARIO AGAINST THE FAKE CONNECTOR (K7, K8, K9; tracker bytes unchanged, no new SHA)
+  - tools/connector-e2e.mjs: connector child (fake adapters, temp config/token/log, free port) + headless Chrome on the tracker
+    WITHOUT --allow-file-access-from-files (fresh temp profile, CDP): the page sends Origin "null", as a real browser does, and
+    the connector's CORS is untouched. Real button clicks over real HTTP; no key, 127.0.0.1 only.
+  - e1 FAKE DATA health line (K9); e2 Check for calls preview 5 matched / 1 no-account; e3 Call added with its session and
+    gong.matchedBy, Email touch added with a session forced into its row lands with sessionNumber null (K7); e4 Refresh from
+    Gainsight: one ticked field changes, nothing else; e5 Send with one forceFail item: sent (FAKE- id) and failed (error, Retry),
+    2 log lines; e6 Brief my day: 16 briefs; e7 connector stopped: Connector offline, Today renders, suite 459/459 on the
+    reseeded book, no console errors since the kill (K8).
+  - Result: `connector-e2e: 7/7 passed, 0 failed`, exit 0 (three runs). Suite 459/459, contract tests untouched.
+  - Fixed during the build: the runner's cleanup hung when the connector had already exited (signalCode check), leaving temp
+    dirs; the suite runs on the reseeded book because it assumes the seed (a book already holding Gong links fails c1e and
+    c3c: state, not a defect).
+  Evidence: docs/superpowers/evidence/trim-and-integration/C-7.md.

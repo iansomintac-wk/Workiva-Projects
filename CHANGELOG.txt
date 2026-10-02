@@ -309,3 +309,9 @@ Brief my day (task C-6, ruling R4).
     - Copilot is the book read: its own Needs Attention count is gone and its AI read asks for patterns across
       accounts and what moved this week instead of per-account next actions.
     - 459 self-checks (was 455).
+
+End-to-end check (task C-7). Dev tooling only; the tracker file is unchanged.
+
+    - node tools/connector-e2e.mjs: the real page in headless Chrome against the connector with fake adapters, seven
+      steps (FAKE DATA health line, Check for calls, Refresh from Gainsight, Send to Gainsight with a forced failure,
+      Brief my day, connector stopped). 7/7.
