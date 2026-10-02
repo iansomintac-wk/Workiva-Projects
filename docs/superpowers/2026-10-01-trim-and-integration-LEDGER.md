@@ -18,7 +18,7 @@ Paid runs approved: none ($0). The only external call allowed is C-9's single AI
 | # | Task | State | Commit | Check command | Measured result (lead re-run) | Deviation from spec (reason) |
 |---|---|---|---|---|---|---|
 | A1 | Move the suite to `tools/selfchecks.js` | done | 1a49b3f | suite `--expect 437`; guide 18/18; scenarios 6/6 | 437/437; guide 18/18; scenarios 6/6 (lead, 2026-10-01). Checker PASS | P1 --suite flag; extra README/guide-manifest doc lines (doc-only) |
-| A2 | Dead code (T1) + stop writing `recommendationLog` (T3) | pending | — | suite `--expect 435` (estimate); `node tools/refcount.mjs …` all 0 | pending | — |
+| A2 | Dead code (T1) + stop writing `recommendationLog` (T3) | done | 64170ca | suite `--expect 435` (estimate); `node tools/refcount.mjs …` all 0 | 432/432 (+1 trim a2a, −6 named in A2.md); scenarios 6/6; guide 18/18 (lead). refcount 0 ×13. Checker PASS | 432 not 435: 3 'edit' checks were pure dead-code introspection, removed and named. ui.aiPortfolioBrief kept (still read; plan's delete condition unmet) — follow-up for final review. demo-seed drops graduationDurability() field |
 | A3 | Key scaffolds (T2) + one-time key cleanup | pending | — | suite `--expect 435` (estimate); K3 grep | pending | — |
 | A4 | One gate list (T5), `gradDateMissing` / `gradDateDrifted` | pending | — | suite `--expect 438` (estimate); scenarios 6/6 | pending | — |
 | A5 | Retire time-saved (C6) | pending | — | suite `--expect 433` (estimate); guide 18/18; refcount 0 | pending | — |
@@ -61,3 +61,4 @@ None yet. C-8 files the decoration captures (Copilot and Risk, with and without 
 
 - 2026-10-01: baseline 437/437 measured by the lead at `b1a8452`. Plan written (top model): 20 tasks (A 6, B 5, C 9), plan-level choices P1-P9, projected final 456/456 with A6 pending (455 if A6 lands). Awaiting Ian's plan approval.
 - 2026-10-01: Ian, verbatim: "approved, P1-P9 as written; skip A6 and C-9". Plan and P1-P9 approved; A6 and C-9 recorded pending (no key; pre-1.0 exports not re-saved). Projected final 456/456.
+- 2026-10-01: A2 checker nits A/B (VALIDATION SHA block: one hash under both blob and CRLF headings; stale 'both LF' sentence) handed to the A3 builder.
