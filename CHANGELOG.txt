@@ -139,6 +139,14 @@ Connector AI adapters (task B3) — POST /v1/ai and four adapters; tracker suite
     - Fix: /v1/ai now returns an optional boolean `truncated` (provider cap signal) so the tracker keeps its length-cap notice;
       tests refuse any non-127.0.0.1 fetch (connector/lib/test-net-guard.mjs). Contract suite 40.
 
+Connector demo and admin ask (task B4) — fake-data demo and a draft access request; tracker suite unchanged (428).
+
+    - node tools/connector-demo.mjs: starts the connector (fake adapters, temp config/token/log, free port on
+      127.0.0.1), calls all five routes plus one tokenless request (401), prints a six-line summary, stops it,
+      deletes the temp files, exits 0. No external network.
+    - docs/superpowers/drafts/connector-admin-ask.md: the Gong, Gainsight and IT access request (draft, not sent).
+    - 1 demo test (connector/test/demo.test.mjs); the contract suite is now 41.
+
 Curriculum piece 1 — stable ids for sessions and deliverables (merged to
 master 2026-09-30, with the review fixes and follow-ups M1r, M2r).
 

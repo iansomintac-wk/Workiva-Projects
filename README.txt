@@ -158,6 +158,10 @@ the file to rotate. connector/config.json and token.txt are git-ignored. Gong an
 AI (task B3): POST /v1/ai; ai.adapter is fake (default), claude, openai or gemini, with the key only in the
 git-ignored connector/config.json or env CONNECTOR_AI_KEY. The real AI adapters are tested against a stubbed
 fetch only; no real call has been made.
+Demo (task B4): node tools/connector-demo.mjs runs the connector with fake adapters on a free 127.0.0.1
+port, calls health, accounts, calls, push and ai with the token, prints a short transcript, stops it and
+deletes its temp config, token and log; exit 0. The access request for admins is a draft at
+docs/superpowers/drafts/connector-admin-ask.md (not sent).
 
 Verifying a change
 ------------------

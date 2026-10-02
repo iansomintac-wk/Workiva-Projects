@@ -1574,6 +1574,14 @@ CONNECTOR AI ADAPTERS — TASK B3 (tracker suite 428 -> 428, unchanged; tracker 
   FIX: optional `truncated` on the AI response (3 new tests + a 127.0.0.1-only fetch guard in the test files); contract 37 -> 40, # fail 0.
   Evidence: docs/superpowers/evidence/trim-and-integration/B3.md.
 
+CONNECTOR DEMO AND ADMIN ASK — TASK B4 (tracker suite 428 -> 428, unchanged; tracker not edited)
+  - tools/connector-demo.mjs and docs/superpowers/drafts/connector-admin-ask.md. Demo test t15 written first, seen red
+    (module not found, # pass 0 # fail 1), then green; contract suite 40 -> 41, # fail 0. Mutation check: the demo's
+    temp-dir removal deleted, t15 went red on "temp dir (config, token, log) removed"; restored.
+  - Every Gong/Gainsight scope and endpoint in the ask doc was grepped in the research report; unconfirmed items are
+    marked "to confirm with admin".
+  Evidence: docs/superpowers/evidence/trim-and-integration/B4.md.
+
 FR/GRC DEFAULT GATES — RULING M3, SCHEMA 14 -> 15 (suite 436 -> 437)
   Ian: "Can't you do that for me and set it as a default value that can be changed by OSMs after?" The approved
   lists in docs/superpowers/drafts/2026-10-01-fr-grc-gates-DRAFT.md are now the shipped defaults (FR 5/5/3/3, GRC
