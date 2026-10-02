@@ -1792,6 +1792,19 @@ TRIM R2 - FINAL-REVIEW FIXES I-3, M-1, M-3 (suite 462 -> 465)
   - TZ: the suite was measured in the machine zone, America/Los_Angeles (the check prints its zone). A TZ=Asia/Tokyo environment
     variable is NOT honoured by Windows Chrome here (still reported America/Los_Angeles), so only the Los Angeles run exists.
   - GREEN: tracker 465/465 on demo-seed.js and on demo-seed.js + used-book-seed.js; runGraduationScenarios 6/6; C-3 probe 12/12,
-    C-4 probe 11/11, C-5 probe 12/12. Headless runs report one console error on load (undefined .sentiment) that also occurs on
-    the R1 commit, so it predates this task.
+    C-4 probe 11/11, C-5 probe 12/12. CORRECTION (R2-debug): the "console error on load (undefined .sentiment)" this line
+    called pre-existing was caused by R2's own r2-m1 check; see TRIM R2-DEBUG below. It did not occur at R1 (94709d6).
   - Evidence: docs/superpowers/evidence/trim-and-integration/R2.md.
+
+TRIM R2-DEBUG - r2-m1 CONSOLE ERROR (suite stays 465; product code unchanged, tracker SHA/size above unchanged)
+  - Symptom: every headless run at 92d93ea exited 1 on "1 console error(s) on load: Cannot read properties of undefined (reading
+    'sentiment')" although 465/465 passed. Stack: GATE_DEFS[0].isMissing <- pendingGainsightItems <- todayActionList <-
+    todayActionRowMap, i.e. a real render() over a customer with no compliance block.
+  - Root cause: the r2-m1 check (added in R2) loads bare c3Customers() fixtures (no compliance) into DATA.customers and clicks
+    #cp-add; the Add handler calls window.render(), which throws on those fixtures. The click handler's exception is not caught by
+    the check's try, so it surfaces as a page error. Not date- or time-dependent: R1 (94709d6) and 733a195 run clean here today
+    (462/462 and 459/459, no console error); the R2 builder's claim that R1 also showed it was wrong.
+  - Fix: r2-m1 stubs window.render for the click and restores it in finally. Product code untouched. The harness's console-error
+    gate is unchanged and is the failing check. Mutation: stub removed -> exit 1 with the same console error, 465/465 passed.
+  - GREEN: tracker 465/465 exit 0 on demo-seed.js and on demo-seed.js + used-book-seed.js; scenarios 6/6; connector-e2e 7/7;
+    c3 probe 12/12; c5 probe 12/12. Evidence: docs/superpowers/evidence/trim-and-integration/R2-debug.md.

@@ -8872,7 +8872,7 @@ function _runSelfChecksInner(){
   })();
   (function(){                                   // R2 M-1: Add must not advance the since window
     let ok = false, detail = '';
-    const realSave = saveData, savedActs = DATA.activities, savedCustomers = DATA.customers, savedLast = ui.lastCallPullAt;
+    const realSave = saveData, savedActs = DATA.activities, savedCustomers = DATA.customers, savedLast = ui.lastCallPullAt, realRender = window.render;   // the Add handler calls window.render(); these bare c3Customers() have no compliance block, so a real render would throw in pendingGainsightItems
     try{
       saveData = function(){ return true; };
       const cs = c3Customers();
@@ -8885,6 +8885,7 @@ function _runSelfChecksInner(){
       const bd = document.querySelector('.modal-backdrop');
       const box = bd.querySelector('[data-cp-on]');
       box.checked = true; box.dispatchEvent(new Event('change', {bubbles: true}));
+      window.render = function(){};
       bd.querySelector('#cp-add').click();
       const sinceAfter = callSinceISO();
       const gapMs = Date.now() - new Date(sinceAfter).getTime();
@@ -8893,7 +8894,7 @@ function _runSelfChecksInner(){
       detail = JSON.stringify({added, gapDays: Math.round(gapMs / 8640000) / 10, sinceBefore, sinceAfter});
     }catch(err){ detail = err.message; }
     finally{
-      saveData = realSave; ui.lastCallPullAt = savedLast;
+      saveData = realSave; ui.lastCallPullAt = savedLast; window.render = realRender;
       DATA.customers = savedCustomers; DATA.activities = savedActs;
       document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
     }

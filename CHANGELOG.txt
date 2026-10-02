@@ -335,3 +335,6 @@ Final-review fixes (task R2). Tracker only.
       unticked, still shows up on the next check. Calls already added stay out of the list.
     - The account Gainsight tab counts only unsent items as queued.
     - 465 self-checks (was 462).
+
+Task R2 debug. Self-check harness only; the tracker is unchanged. The new Add-calls check no longer triggers a page error
+on load (it clicked Add over fixtures a real render cannot draw), so headless runs exit 0 again. Still 465 self-checks.
