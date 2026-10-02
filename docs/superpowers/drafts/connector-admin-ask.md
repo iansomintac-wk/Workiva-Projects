@@ -1,6 +1,6 @@
 # Access request: Gong, Gainsight and an AI key for the OSM tracker connector
 
-DRAFT, 2026-10-01. Nothing here has been sent to anyone. Ian reviews it first.
+DRAFT, 2026-10-01, updated 2026-10-02. Nothing here has been sent to anyone. Ian reviews it first.
 
 I keep my book of business in a single-file tracker that runs in my browser. A small Node program, the
 connector, would run on my laptop between the tracker and three services: Gong (read calls), Gainsight
@@ -23,7 +23,8 @@ with admin** means the research saw it only in search snippets or third-party pa
   to one user. The connector would filter by participant on my laptop. Whether Gong offers a narrower
   option is **to confirm with admin.**
 - Rate limit: 3 calls a second and 10,000 a day, shared by the whole company (confirmed). The tracker
-  is designed to ask for calls only when I click "Check for calls". That part is not built yet.
+  asks for calls only when I click "Check for calls", never on a timer or on page load, and looks back
+  30 days at most.
 
 ## 2. Gainsight CS (needs a Super Admin)
 
@@ -66,8 +67,13 @@ with admin** means the research saw it only in search snippets or third-party pa
 ## What the tracker will not do
 
 - Hold a third-party key, once the AI key has moved to the connector.
-- Send anything to Gainsight or the AI without showing me a preview and waiting for my click. This is
-  the design for the next stage; it is not built yet.
+- Write to Gainsight without my click. Every update waits in a queue I can see, and I can remove any
+  item from it. Nothing is sent until I click "Send to Gainsight". An item already sent is never sent
+  twice, and a failed item stays in the queue with its error shown.
+- Overwrite my notes from Gainsight. "Refresh from Gainsight" shows what differs, and only the rows I
+  tick are updated.
+- Call the AI on its own. The AI runs only when I click a button such as "Brief my day". That brief
+  sends my open accounts' names and the tracker's notes on them, and the Today bar says so each time.
 
 ## What exists today
 
@@ -75,6 +81,9 @@ with admin** means the research saw it only in search snippets or third-party pa
   with fake Gong and Gainsight adapters that serve made-up data for the 17 demo accounts.
 - AI adapters for Claude, ChatGPT (OpenAI) and Gemini, tested only against stubs. No real AI call has
   been made.
+- The tracker side is built and tested against the fake connector: "Check for calls", "Refresh from
+  Gainsight", "Send to Gainsight" and "Brief my day". If the connector is stopped, the tracker keeps
+  working as it does today.
 - No real Gong or Gainsight adapter. Those get built only once credentials exist. An adapter that cannot
   run against the real service would pass its tests without proving anything.
 
