@@ -3,7 +3,7 @@
 // Exit code 1 if cors is not ok or nocors is not fail (the control must be able to fail).
 // Normal-profile legs are intentionally not automated here (they would touch the user's real profile).
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, rmSync } from 'node:fs';
 const D = import.meta.dirname.split('\\').join('/');
 const T = (process.env.TEMP || D).split('\\').join('/');
 const browsers = [
@@ -18,7 +18,8 @@ for (const [name, exe] of browsers) {
     const s = spawn(process.execPath, [`${D}/b0-stub.mjs`, mode, String(port)]);
     s.stdout.on('data', d => logs.push(...String(d).split('\n').map(x => x.trim()).filter(Boolean)));
     await new Promise(r => setTimeout(r, 500));
-    const b = spawn(exe, [`--user-data-dir=${T}/b0h-${name}-${mode}`, '--no-first-run', '--no-default-browser-check',
+    const profile = `${T}/b0h-${name}-${mode}`;   // a throwaway profile: removed below, so no b0h-* is left in %TEMP%
+    const b = spawn(exe, [`--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check',
       `file:///${D}/b0-page-headed.html#${port}`], { stdio: 'ignore' });
     let report = null;
     for (let i = 0; i < 80 && !report; i++) {
@@ -28,6 +29,8 @@ for (const [name, exe] of browsers) {
     }
     spawnSync('taskkill', ['/T', '/F', '/PID', String(b.pid)], { stdio: 'ignore' }); // only the process we spawned
     s.kill();
+    await new Promise(r => setTimeout(r, 1000));   // let the browser release its profile files
+    try { rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 500 }); } catch (e) { console.log(`could not remove ${profile}: ${e.message}`); }
     const want = mode === 'cors' ? 'RESULT ok' : 'RESULT fail';
     const pass = !!report && report.startsWith(want);
     if (!pass) bad++;

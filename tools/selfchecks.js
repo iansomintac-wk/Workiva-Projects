@@ -7596,6 +7596,22 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     check('c1c (trim): an old prose-only queue item imports as queued with fields {}; status bogus -> queued; failed keeps a 500-clamped error', ok, detail);
   })();
+  (function(){                                   // c1d2 (R4, C-3 follow-up)
+    let ok = false, detail = '';
+    try{
+      const book = cloneData(DATA);
+      const c0 = book.customers[0];
+      const a0 = (book.activities[c0.id] || (book.activities[c0.id] = []));
+      const mk = (id, type, n) => ({id, date:todayISO(), type, summary:id, sessionNumber:n, checklist:[], flagged:false});
+      a0.push(mk('r4-email', 'Email', 3), mk('r4-sync', 'Partner Sync', 2), mk('r4-note', 'Implementation Note', 4), mk('r4-call', 'Call', 3));
+      const p = prepareImportedData(JSON.parse(serializeBook(book)));
+      const g = id => (p.activities[c0.id] || []).find(a => a.id === id);
+      ok = !!g('r4-email') && g('r4-email').sessionNumber === null && g('r4-sync').sessionNumber === null
+        && g('r4-note').sessionNumber === null && g('r4-call').sessionNumber === 3;
+      detail = JSON.stringify({email: g('r4-email') && g('r4-email').sessionNumber, sync: g('r4-sync') && g('r4-sync').sessionNumber, note: g('r4-note') && g('r4-note').sessionNumber, call: g('r4-call') && g('r4-call').sessionNumber});
+    }catch(err){ detail = err.message; }
+    check('c1d2 (R4): an imported Email / Partner Sync / Implementation Note activity loses its sessionNumber (same isSessionCapableType rule as the form), a Call keeps it', ok, detail);
+  })();
   (function(){                                   // c1d (trim)
     let ok = false, detail = '';
     try{
@@ -7770,6 +7786,19 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     DATA.customers = prevC;
     check('grad-plan c2b: createGoal fills an empty outcome-plan text from the primary goal and never overwrites one', ok, detail);
+  })();
+  (function(){                                   // c2d (R4, C-2 follow-up)
+    let ok = false, detail = '';
+    try{
+      const bare = connectorUrlWarning('localhost:8787'), secure = connectorUrlWarning('https://127.0.0.1:8787'), remote = connectorUrlWarning('http://example.com:8787');
+      const good = connectorUrlWarning(' http://127.0.0.1:8787/ ') === '' && connectorUrlWarning('') === '' && connectorUrlWarning('   ') === '' && connectorUrlWarning(null) === '';
+      const says = [bare, secure, remote].every(m => /127\.0\.0\.1/.test(m) && /http:\/\//.test(m));
+      const src = String(openSettingsModal);
+      const wired = src.indexOf('connectorUrlWarning(') !== -1;   // wiring guard; the message itself is measured above
+      ok = good && says && wired;
+      detail = JSON.stringify({good, says, wired, bare});
+    }catch(err){ detail = err.message; }
+    check('connector c2d: a typed connector address that is not http://127.0.0.1:<port> (or localhost) gets a warning naming the correct form; blank and valid addresses do not, and Settings Save uses it instead of dropping the address silently', ok, detail);
   })();
   (function(){                                   // c2c
     const prevC = DATA.customers;
@@ -8792,7 +8821,7 @@ function _runSelfChecksInner(){
   (function(){                                   // c3d
     let ok = false, detail = '';
     try{
-      const c = DATA.customers.find(x => !inImplementation(x) && x.totalSessions > 0);
+      const c = gp4Cust('__gc3d__', 6);   // own fixture (M-6); gp4Cust is not in implementation and has sessions
       const host = document.createElement('div');
       host.innerHTML = renderLogActivityTab(c);
       bindActTypeSessionLock(host);
@@ -8976,6 +9005,66 @@ function _runSelfChecksInner(){
     finally{ saveData = realSave; DATA.customers = savedCustomers; }
     check('gainsight c4b: applyGainsightPull with every row ticked leaves stage, goals, domain scores, notes and verdicts identical, never writes the CSM owner, stamps c.gainsight, makes one undo and one save; ticking nothing writes nothing', ok, detail);
   })();
+  (function(){                                   // c4d (R4, C-4 follow-up)
+    /* Bad values from a connector (the contract invites other implementations): the diff must not throw, must not
+       offer a write for a value it cannot use, and a ticked pull of such an account must leave the record as it was. */
+    let ok = false, detail = '';
+    const realSave = saveData, savedCustomers = DATA.customers;
+    try{
+      saveData = function(){ return true; };
+      const c = c4Customer();
+      DATA.customers = savedCustomers.concat([c]);
+      const bads = [
+        c4Account({tier: 5, arr: -1, renewalDate: 'not-a-date', csmOwner: {}, contacts: 'junk', gates: 'x'}),
+        c4Account({tier: '   ', arr: 'abc', renewalDate: '2027-02-30', csmOwner: 7, contacts: [null, 7, {name: ''}, {email: 'e@x.invalid'}], gates: null}),
+        c4Account({tier: ['Enterprise'], arr: NaN, renewalDate: 12345, contacts: {length: 3}, gates: {readinessAssessment: 'true', csatContact: 1}}),
+        c4Account({gainsightId: 'GS-OTHER', arr: 1e30, tier: 'T'.repeat(100000)})
+      ];
+      const junkEntries = [null, 'x', 7, [], {name: 'No Id Co'}, {gainsightId: 42, name: {}}];
+      let threw = '';
+      let d;
+      try{ d = buildGainsightDiff(bads.concat(junkEntries), [c, {id: 'z'}]); }catch(e){ threw = e.message; }
+      const rows = d ? d.slice(0, 3).map(e => e.rows.filter(r => r.differs).map(r => r.field).join(',')) : [];
+      const noOffers = !!d && d.slice(0, 3).every(e => e.gateOffers.length === 0);
+      const cc = c4Customer({gainsightId: 'GS-OTHER'});
+      const big = buildGainsightDiff([bads[3]], [cc])[0];
+      const clamped = big.rows[0].gainsight.length === 40 && big.rows[1].gainsight === null;   // tier clamped to 40 chars; an ARR beyond ARR_MAX is not a value
+      const html = gainsightValueHtml('tier', '<img src=x onerror=1>');
+      const escaped = html.indexOf('<img') === -1;
+      const before = JSON.stringify({t: c.tier, a: c.arr, r: c.renewalDate, s: c.stakeholders});
+      let applyThrew = '';
+      try{ applyGainsightPull(bads.slice(0, 3).map(a => ({customerId: 'g1', account: a, fields: GAINSIGHT_DIFF_FIELDS.slice(), gates: ['sentiment']}))); }catch(e){ applyThrew = e.message; }
+      const after = JSON.stringify({t: c.tier, a: c.arr, r: c.renewalDate, s: c.stakeholders});
+      ok = !threw && !applyThrew && rows.every(r => r === 'csmOwner' || r === '') && noOffers && clamped && escaped && before === after;
+      detail = JSON.stringify({threw, applyThrew, rows, noOffers, clamped, escaped, unchanged: before === after});
+    }catch(err){ detail = err.message; }
+    finally{ saveData = realSave; DATA.customers = savedCustomers; }
+    check('gainsight c4d: buildGainsightDiff and a ticked pull survive bad connector values (non-string tier, negative / NaN / huge ARR, impossible dates, junk contacts and gates, non-record entries) without throwing, offering a write or changing the account; tier is clamped to 40 characters', ok, detail);
+  })();
+  (function(){                                   // c4e (R4, C-4 follow-up)
+    /* Undo of a pull, on an in-memory store (the real saveData is blocked while the suite runs): the snapshot is the
+       book as it stood BEFORE the pull, and performUndo puts the account back exactly, contacts and Gainsight stamp included. */
+    const realSave = saveData, realDATA = DATA, realSnap = _undoSnapshot, realLabel = _undoLabel, realLast = _lastActionWasUndo;
+    let ok = false, detail = '';
+    try{
+      const c = c4Customer();
+      DATA.customers = DATA.customers.concat([c]);
+      let store = JSON.stringify(DATA);
+      saveData = function(){ _undoSnapshot = {json: store, at: Date.now(), label: _undoLabel}; store = JSON.stringify(DATA); _undoLabel = null; return true; };
+      const e = buildGainsightDiff([c4Account()], [c])[0];
+      const res = applyGainsightPull([{customerId: 'g1', account: c4Account(), fields: e.rows.filter(r => r.writable && r.differs).map(r => r.field), gates: []}]);
+      const pulled = c.tier === 'Enterprise' && c.arr === 250000 && c.stakeholders.length === 2 && !!c.gainsight;
+      const labelled = !!_undoSnapshot && _undoSnapshot.label === 'Gainsight pull';
+      const undone = performUndo();
+      const back = DATA.customers.find(x => x.id === 'g1');
+      const restored = !!back && back.tier === 'Mid-market' && back.arr === 100000 && back.renewalDate === '2027-01-01'
+        && back.stakeholders.length === 1 && back.gainsight === undefined;
+      ok = res.updated === 1 && pulled && labelled && undone === true && restored;
+      detail = JSON.stringify({updated: res.updated, pulled, labelled, undone, restored, tier: back && back.tier, n: back && back.stakeholders && back.stakeholders.length});
+    }catch(err){ detail = err.message; }
+    finally{ saveData = realSave; const g = DATA; DATA = realDATA; _undoSnapshot = realSnap; _undoLabel = realLabel; _lastActionWasUndo = realLast; g.customers = g.customers.filter(x => x.id !== 'g1'); DATA.customers = DATA.customers.filter(x => x.id !== 'g1'); }
+    check('gainsight c4e: one performUndo after a pull puts tier, ARR, renewal date, stakeholders and the Gainsight stamp back to the pre-pull account', ok, detail);
+  })();
   (function(){                                   // c4c
     let ok = false, detail = '';
     try{
@@ -9115,16 +9204,16 @@ function _runSelfChecksInner(){
   (function(){                                   // c6a
     let ok = false, detail = '';
     try{
-      const live = DATA.customers.filter(c => c.stage !== 'graduated');
-      const g1 = live[0].id, g2 = live[1].id;
+      const book = [gp4Cust('__ab1__'), gp4Cust('__ab2__')];   // own fixtures (M-6): the check never depends on the live book's shape
+      const g1 = book[0].id, g2 = book[1].id;
       const fake = '```json\n' + JSON.stringify({accounts: [
         {id: g1, nextAction: 'Call the sponsor', reason: 'no touch in 20 days', flags: [
           {kind: 'drift', text: 'pace slipping', reason: 'two sessions behind plan'},
           {kind: 'risk', text: 'champion left', reason: ''}]},
         {id: g2, nextAction: 'Send the recap', reason: '', flags: []},
         {id: 'not-in-this-book', nextAction: 'x', reason: 'y', flags: []}]}) + '\n```';
-      const r = parseDayBrief(fake, DATA.customers);
-      const bad = parseDayBrief('Sure! Here is your day: call everyone.', DATA.customers);
+      const r = parseDayBrief(fake, book);
+      const bad = parseDayBrief('Sure! Here is your day: call everyone.', book);
       const keys = Object.keys(r.byId);
       ok = keys.length === 1 && keys[0] === g1 && r.byId[g1].nextAction === 'Call the sponsor' && r.byId[g1].reason === 'no touch in 20 days'
         && r.byId[g1].flags.length === 1 && r.byId[g1].flags[0].reason === 'two sessions behind plan' && r.dropped === 3
@@ -9192,8 +9281,9 @@ function _runSelfChecksInner(){
   })();
   (function(){                                   // c6c
     let ok = false, detail = '';
-    const saved = ui.dayBrief;
+    const saved = ui.dayBrief, prevC = DATA.customers;
     try{
+      DATA.customers = [gp4Cust('__ab1__'), gp4Cust('__ab2__'), Object.assign(gp4Cust('__ab3__'), {stage: 'graduated'})];   // own fixtures (M-6)
       _renderMemoResets.forEach(reset => reset());   // a fresh ranking, not one memoized by an earlier check
       const before = todayActionList().map(r => r.customerId).join(',');
       ui.dayBrief = {at: new Date().toISOString(), byId: {}};
@@ -9208,18 +9298,30 @@ function _runSelfChecksInner(){
       const lines = (p.match(/\[id:[^\]]+\]/g) || []).length;
       const everyOpen = open.every(c => p.indexOf('[id:' + c.id + ']') !== -1) && grads.every(c => p.indexOf('[id:' + c.id + ']') === -1);
       const asksReasons = /reason/i.test(p) && /"accounts"/.test(p);
-      const quiet = renderDayBriefFor(open[0]) === '' && (aiAvailable() || renderDayBriefBar() === '');
-      ok = before === during && during === after && lines === open.length && everyOpen && asksReasons && quiet;
+      /* R4 (C-6 weak clause): both states are pinned by forcing aiAvailable. No AI: the bar is empty. AI available: the
+         bar is the idle button card only, with no status line, no brief, no error. */
+      const realAvail = aiAvailable;
+      let barOff, barOn;
+      try{ aiAvailable = () => false; barOff = renderDayBriefBar(); aiAvailable = () => true; barOn = renderDayBriefBar(); }
+      finally{ aiAvailable = realAvail; }
+      const quiet = renderDayBriefFor(open[0]) === '' && barOff === ''
+        && barOn.indexOf('data-day-brief-bar') !== -1 && barOn.indexOf('btn-brief-my-day') !== -1 && !/Briefed at|Reading your book|cp-ai-note|why:/.test(barOn);
+      ok = open.length === 2 && before === during && during === after && lines === open.length && everyOpen && asksReasons && quiet;
       detail = JSON.stringify({before, during, after, lines, open: open.length, everyOpen, asksReasons, quiet});
     }catch(e){ detail = 'threw: ' + e.message; }
-    finally{ ui.dayBrief = saved; _renderMemoResets.forEach(reset => reset()); }
+    finally{ DATA.customers = prevC; ui.dayBrief = saved; _renderMemoResets.forEach(reset => reset()); }
     check('ai-brief c6c: with no brief Today ranks exactly as before (SIGNAL_DEFS rows unchanged) and nothing AI renders; buildDayBriefPrompt has one [id:] line per open account and asks for a reason on everything', ok, detail);
   })();
   (function(){                                   // c6d
     let ok = false, detail = '';
-    const saved = ui.dayBrief;
+    const saved = ui.dayBrief, prevC = DATA.customers, realSave = saveData, realQueue = queueSave;
+    let writes = 0;
     try{
-      const c = DATA.customers.filter(x => x.stage !== 'graduated')[0];
+      const c = gp4Cust('__ab1__');   // own fixture (M-6)
+      DATA.customers = [c];
+      saveData = function(){ writes++; return true; };
+      queueSave = function(){ writes++; };
+      const bookBefore = JSON.stringify(DATA);
       ui.dayBrief = {at: new Date().toISOString(), truncated: true, byId: {[c.id]: {nextAction: '<img src=x onerror=alert(1)>', reason: 'quiet <b>20</b> days',
         flags: [{kind: 'risk', text: 'sponsor left', reason: 'named in the last note'}]}}};
       const html = renderDayBriefFor(c);
@@ -9229,13 +9331,33 @@ function _runSelfChecksInner(){
       const placed = String(renderOverviewTab).indexOf('renderDayBriefFor(') !== -1 && String(renderBeatPanel).indexOf('renderDayBriefFor(') !== -1;
       const src = String(briefMyDay);
       const routed = src.indexOf("task: 'brief_my_day'") !== -1 && src.indexOf('callAiAPI(') !== -1;
-      const advisory = !/saveData|queueSave|DATA\.[a-zA-Z]+\s*=[^=]/.test(src);
+      /* R4 (C-6 weak clause): the source scan stays, and the behaviour is measured too: rendering the brief wrote
+         nothing (no save, no queued save) and left the book byte-identical. */
+      const advisory = !/saveData|queueSave|DATA\.[a-zA-Z]+\s*=[^=]/.test(src) && writes === 0 && JSON.stringify(DATA) === bookBefore;
       const onDemand = ['renderToday', 'renderOverviewTab', 'renderBeatPanel', 'render', 'init'].every(n => typeof window[n] !== 'function' || String(window[n]).indexOf('briefMyDay(') === -1);
       ok = escaped && reasons && capped && placed && routed && advisory && onDemand;
       detail = JSON.stringify({escaped, reasons, capped, placed, routed, advisory, onDemand});
     }catch(e){ detail = 'threw: ' + e.message; }
-    finally{ ui.dayBrief = saved; }
+    finally{ saveData = realSave; queueSave = realQueue; DATA.customers = prevC; ui.dayBrief = saved; }
     check('ai-brief c6d: a brief renders escaped with "why:" and each flag\'s reason, shows the length-cap notice when truncated, sits on Today and the Overview, goes out as brief_my_day, never writes the book and never runs from a render', ok, detail);
+  })();
+  (function(){                                   // toast r4
+    /* R4: a warning that carries a decision (the push-timeout text, the Settings address warning) must stay up long
+       enough to read; short toasts keep their 3200 ms. Measured through the real timer showToast arms. */
+    let ok = false, detail = '';
+    const realSet = window.setTimeout, el = document.getElementById('toast'), prevText = el && el.textContent, prevShow = !!el && el.classList.contains('show');
+    const armed = [];
+    try{
+      window.setTimeout = function(fn, ms){ armed.push(ms); return realSet.call(window, fn, 0); };
+      const short = 'Copied.', longMsg = 'The connector did not answer in time. The items may have been sent — check Gainsight before sending again. They are still queued here, and nothing was retried.';
+      showToast(short); showToast(longMsg);
+      const huge = 'x'.repeat(5000);
+      showToast(huge);
+      ok = armed.length === 3 && armed[0] === 3200 && armed[1] >= 6000 && armed[1] <= 12000 && armed[2] === 12000;
+      detail = JSON.stringify({armed, longLen: longMsg.length});
+    }catch(err){ detail = err.message; }
+    finally{ window.setTimeout = realSet; clearTimeout(showToast._t); if(el){ el.textContent = prevText; el.classList.toggle('show', prevShow); } }
+    check('toast r4: a short toast lasts 3200 ms, a long warning (the push-timeout text) lasts at least 6 s, and no toast outlives 12 s', ok, detail);
   })();
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',

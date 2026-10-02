@@ -252,6 +252,20 @@ test('t13 adapter failure -> 502 {error}', async () => {
   } finally { await s.close(); }
 });
 
+test('t13b push adapter failure -> 502 with a generic message: the adapter text (which may carry credentials) is not echoed (R4)', async () => {
+  const ad = loadAdapters({});
+  ad.gainsight = { ...ad.gainsight, push: async () => { throw new Error('401 from tenant https://x.gainsight.com Bearer secret-abc-123'); } };
+  const s = await start({ adapters: ad });
+  try {
+    const r = await fetch(`${s.base}/v1/push`, { method: 'POST', headers: json, body: JSON.stringify({ items: [{ id: 'z1', kind: 'At-Risk CTA', customerRef: { name: 'Acme' }, fields: { ctaName: 'x' } }] }) });
+    const text = await r.text();
+    assert.equal(r.status, 502, text);
+    assert.ok(!text.includes('secret-abc-123') && !text.includes('gainsight.com'), 'adapter text leaked: ' + text);
+    assert.match(JSON.parse(text).error, /push/i);
+    assert.deepEqual(validate(schema('error'), JSON.parse(text)), []);
+  } finally { await s.close(); }
+});
+
 test('t14 loadAdapters: unknown adapter name throws', () => {
   assert.throws(() => loadAdapters({ gong: { adapter: 'gong-rest' } }), /adapter not built: gong-rest/);
   assert.throws(() => loadAdapters({ gainsight: { adapter: 'x' } }), /adapter not built: x/);

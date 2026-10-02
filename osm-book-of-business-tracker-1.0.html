@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   OSM Book of Business Tracker — 1.0
-  Single-file HTML/JS app. localStorage persistence. No build step, no server.
+  Single-file HTML/JS app. localStorage persistence. No build step, no server required (an optional local connector can be run).
 
   RULES FOR EDITING THIS FILE (human or AI):
   0. MOTION BUDGET. Added after a redesign review counted ELEVEN scroll
@@ -1751,6 +1751,13 @@ function normalizeConnectorUrl(u){
   const m = /^http:\/\/(127\.0\.0\.1|localhost):(\d{1,5})\/*$/.exec(String(u == null ? '' : u).trim());
   return m ? 'http://' + m[1] + ':' + m[2] : '';
 }
+/* R4 (C-2): a typed address that normalizeConnectorUrl refuses used to be dropped without a word, leaving the
+   connector "unset". Returns the message to show, or '' when the field is blank or the address is acceptable. */
+function connectorUrlWarning(raw){
+  const t = String(raw == null ? '' : raw).trim();
+  if(!t || normalizeConnectorUrl(t)) return '';
+  return 'The connector address "' + t.slice(0, 60) + '" was not understood, so no address was kept. It must look like http://127.0.0.1:8787 (this computer only, with http:// and the port).';
+}
 function getConnectorSettings(){
   try{
     const parsed = JSON.parse(localStorage.getItem(CONNECTOR_SETTINGS_KEY) || '{}') || {};
@@ -2061,7 +2068,7 @@ function aiCustomerSnapshot(c){
 }
 
 // Returns {text, truncated}. opts.maxTokens sizes the response budget per feature —
-// the portfolio brief and session debrief need more room than a short call-prep note,
+// the Copilot read and session debrief need more room than a short call-prep note,
 // and every caller surfaces `truncated` instead of silently showing a cut-off answer.
 // An AbortController (AI_TIMEOUT_MS) stops a hung request from leaving "Thinking…" up forever.
 // R3 I-5: 75 s, above the connector's own 60 s provider timeout, so a slow provider is reported by the
@@ -2219,7 +2226,7 @@ let _aiReqSeq = 0;
    model sees the whole book at once — four separate calls would each reason from
    a slice and contradict each other on the same account.
 
-   PSEUDONYMIZED, like the portfolio brief and unlike Call Prep: the whole book
+   PSEUDONYMIZED, like the Copilot read and unlike Call Prep: the whole book
    goes into this prompt, so it carries ids and computed facts only, never names
    and never note text. The legend is built locally afterwards.
 
@@ -2535,7 +2542,7 @@ function renderDayBriefFor(c, compact){
    plan, activity history, pending Gainsight admin, deterministic advisor
    signals) goes into one prompt, and the model is asked for a synopsis plus
    OSM-lens next actions and escalation routing. Like the Session Debrief —
-   and UNLIKE the portfolio brief, which stays pseudonymized — this sends the
+   and UNLIKE the Copilot read, which stays pseudonymized — this sends the
    real account content (name, notes) to the configured provider, and the UI
    says so plainly every time. Every fact in the context pack is computed
    LOCALLY by the same functions the UI renders from; the model narrates and
@@ -2684,7 +2691,7 @@ async function generateCustomerAiBrief(customerId){
     const ctx = buildCallPrepContext(c);
     const res = await callAiAPI(buildCallPrepPrompt(c, ctx), {task: 'call_prep', maxTokens: 3000});
     if(ui.aiCustomerBriefs[customerId] && ui.aiCustomerBriefs[customerId].req !== myReq) return;
-    // Honest coverage line, same idea as the portfolio brief's: say what slice
+    // Honest coverage line, same idea as the Copilot read's: say what slice
     // of the history the synopsis was built from when it isn't everything.
     const coverageNote = ctx.activitiesTotal > ctx.activitiesShown
       ? `Built from the ${ctx.activitiesShown} most recent of ${ctx.activitiesTotal} logged activities.\n\n`
@@ -5683,12 +5690,18 @@ function copyToClipboard(text, okMsg){
   showToast('Clipboard is unavailable in this browser — open the item and copy manually.');
   return false;
 }
+/* R4: 3200 ms for a normal toast. A long one carries a decision (the push-timeout warning, the Settings address
+   warning), so it gets 60 ms for every character past 100, up to 12 s. */
+function toastDurationMs(msg){
+  const n = String(msg == null ? '' : msg).length;
+  return n <= 100 ? 3200 : Math.min(12000, 3200 + (n - 100) * 60);
+}
 function showToast(msg){
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(showToast._t);
-  showToast._t = setTimeout(()=>t.classList.remove('show'), 3200);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), toastDurationMs(msg));
 }
 
 /* ============ HELPERS ============ */
@@ -17502,7 +17515,7 @@ function openSettingsModal(){
     const token = backdrop.querySelector('#connector-token').value;
     const statusEl = backdrop.querySelector('#connector-status');
     if(!normalizeConnectorUrl(url)){
-      statusEl.textContent = 'Enter an address like http://127.0.0.1:8787 (this computer only).';
+      statusEl.textContent = connectorUrlWarning(url) || 'Enter an address like http://127.0.0.1:8787 (this computer only).';
       return;
     }
     if(!saveConnectorSettings({url, token})) return;
@@ -17558,10 +17571,12 @@ function openSettingsModal(){
       model: backdrop.querySelector('#ai-model').value,
       answerInstruction: (backdrop.querySelector('#ai-answer-instruction') || {}).value || ''
     })) return;
-    if(!saveConnectorSettings({url: backdrop.querySelector('#connector-url').value, token: backdrop.querySelector('#connector-token').value})) return;
+    const typedUrl = backdrop.querySelector('#connector-url').value;
+    if(!saveConnectorSettings({url: typedUrl, token: backdrop.querySelector('#connector-token').value})) return;
     backdrop.remove();
     checkConnectorHealth().then(render); // once per save, never on a timer; never throws
-    showToast('Settings saved');
+    const urlWarn = connectorUrlWarning(typedUrl);
+    showToast(urlWarn ? 'Settings saved, but ' + urlWarn.charAt(0).toLowerCase() + urlWarn.slice(1) : 'Settings saved');
     render();
   });
 }
@@ -18093,6 +18108,8 @@ function normalizeActivityCollections(data){
         a.sessionNumber = null;
         if(report) report.clampedSessionNumbers++;
       }
+      // R4 (C-3): an Email / Partner Sync / Implementation Note is never a planned session — the same rule the form and applyCallImport use.
+      if(a.sessionNumber !== null && !isSessionCapableType(a.type)) a.sessionNumber = null;
       a.flagged = a.flagged === true;
       if(!Array.isArray(a.checklist)) a.checklist = [];
       a.checklist = a.checklist.filter(item => isRecordObject(item) && typeof item.label === 'string' && typeof item.done === 'boolean');

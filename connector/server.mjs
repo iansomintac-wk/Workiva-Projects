@@ -66,7 +66,13 @@ export function createConnector({ config = {}, adapters, token, logPath } = {}) 
       }
       const errs = validate(schema('push-request'), body);
       if (errs.length) return send(400, { error: errs.join('; ') });
-      return ok('push-response', { results: await ad.gainsight.push(body.items, { logPath }) });
+      let results;
+      try { results = await ad.gainsight.push(body.items, { logPath }); } catch (e) {
+        // A real Gainsight adapter's error text can carry tenant URLs or credentials: log it here, tell the browser only the generic fact.
+        console.error(`push failed: ${String(e && e.message || e)}`);
+        return send(502, { error: 'The push to Gainsight failed inside the connector. Nothing was confirmed; check the connector console.' });
+      }
+      return ok('push-response', { results });
     }
     if (m === 'POST' && p === '/v1/ai') {
       let body;
