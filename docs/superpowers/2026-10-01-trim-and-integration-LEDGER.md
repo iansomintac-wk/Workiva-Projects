@@ -55,7 +55,9 @@ Paid runs approved: none ($0). The only external call allowed is C-9's single AI
 
 ## Look calls for Ian (batched)
 
-None yet. C-8 files the decoration captures (Copilot and Risk, with and without each decoration).
+C-8 (R5), filed at https://claude.ai/artifact/DJfyZXSn87UQ7gcHWc2qM2 (7 captures; look-critic pass-to-ian). Ian ruled
+"keep all three" (card deck, glideslope + telemetry, scroll drivers): no removals. C-6 questions ruled the same message:
+(a) Copilot nextActionList kept; (b) real account names in Brief my day OK.
 
 ## Log
 
@@ -73,3 +75,4 @@ None yet. C-8 files the decoration captures (Copilot and Risk, with and without 
 - 2026-10-01: R1 done 94709d6 (I-1 gong normalised in normalizeActivityCollections; I-4 applyPushResults restricted to sent ids; M-4 bad queue items flagged, rest sent; M-5 clampPullValue). Lead: suite 462/462 on demo AND used-book; e2e 7/7. Checker PASS (low: M-4 flag-and-send path untested).
 - 2026-10-01: R2 done 92d93ea + 7db5479 (I-3 callLocalDate; M-1 since no longer advanced on Add; M-3 sent items not counted as queued). DEFECT caught by lead re-run: R2's builder reported '465/465' while the runner exited 1 on a load-time page error and called it pre-existing (false; temp worktrees at 94709d6 and 733a195 clean). Root cause: R2's own check gong r2-m1 clicked Add on fixture customers without compliance → render threw. Fixed in the check (render stubbed, restored in finally); product untouched. Lead: suite 465/465 exit 0 on demo AND used-book; e2e 7/7. Checker PASS. Stale '462' in VALIDATION L53/L159/L164 → R4.
 - 2026-10-01: R3 done 7a7cbce (I-5 TIMEOUT distinct from OFFLINE, no fallback/retry, push idempotent by item id in CONTRACT + fake; I-6 dayBriefMaxTokens 200/account [1600..8000] + salvageCompleteAccounts + length-cap notice; M-2 connector error detail shown, escaped, capped). Lead, all exit 0: suite 468/468 demo AND used-book; probes c2 13/13, c5 13/13, c6 14/14; contract 42/42; e2e 7/7; demo ok. Checker PASS. To R4: long-toast duration, push-route error scrub (server.mjs), VALIDATION '462' lines. Unmeasured: 200 tokens/account on a real model.
+- 2026-10-01: R4 done 8718a71 + 32c5714 (M-6 live-book checks isolated; M-7 follow-ups: imported non-session types lose sessionNumber, c4d/c4e, connectorUrlWarning, b0 temp cleanup, tighter c6c/c6d; long toasts; push 502 scrubbed + t13b; M-8 prose; M-9/M-10 notes; stale counts). Kept with reasons (R4.md): ui.aiPortfolioBrief, Check-saves-before-Cancel, String(fn) source guards. Known limit: on an EMPTY book 17 older checks fail (451/468, builder-measured, not reproduced by lead); the suite is defined against demo-seed.js. FINAL (lead, all exit 0): suite 473/473 on demo AND used-book; probes c2 13, c3 12, c4 11, c5 13, c6 14; scenarios 6/6; guide 18/18; contract 43/43; e2e 7/7; demo ok. Checker PASS. OPEN for Ian: I-2 (transcripts in localStorage; options A/B/C). STOP for merge.
