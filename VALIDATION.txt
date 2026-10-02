@@ -31,13 +31,13 @@ blob is LF and its working tree is CRLF here (19,297 bytes longer than the
 blob), so the two hash differently. The guide is the same: LF blob, CRLF
 working tree (859 CR lines), so its two hashes differ.
 
-  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task C-3 (Gong pull); the C-2 figure dfa3ec02... is superseded.
-    The blob is LF. In this worktree the working tree was LF too when measured (the C-2 and C-3 edits rewrote it LF), so the two hashes
+  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task C-4 (Gainsight pull); the C-3 figure 96be11a3... is superseded.
+    The blob is LF. In this worktree the working tree was LF too when measured (the C-2 to C-4 edits rewrote it LF), so the two hashes
     are identical here; where core.autocrlf yields CRLF they will differ.)
-    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,199,175 bytes)
-    96be11a36a7b25f9433a6cd93638b0c129541284bda1660ccd89f46129375c63
-    WORKING TREE (LF in this checkout at measurement, `sha256sum <file>`, 1,199,175 bytes)
-    96be11a36a7b25f9433a6cd93638b0c129541284bda1660ccd89f46129375c63
+    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,212,722 bytes)
+    29ba58194847ff3c2a2ece99482c0b4fc60e2e4797b805d51fbbac98fe73a779
+    WORKING TREE (LF in this checkout at measurement, `sha256sum <file>`, 1,212,722 bytes)
+    29ba58194847ff3c2a2ece99482c0b4fc60e2e4797b805d51fbbac98fe73a779
   osm-runway-onboarding-1.0.html   (changed at A5: two time-saved cards replaced/removed; the 598bbb86... figure is stale)
     GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 183,964 bytes)
     d3e4c8723caca88abb1947264049704d1e23cfb466553854561ce86ffdd9a392
@@ -50,7 +50,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   448/448 passed, 0 failed
+  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   452/452 passed, 0 failed
   window.runGuideSelfChecks()                                              18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -156,12 +156,12 @@ check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
 four remaining failures are exactly the pre-existing, verified-non-defect
 four above, which need a populated book on their own terms and are not
 this defect. The tracker suite as a whole therefore still needs seeding to
-run clean, so — at the CURRENT suite count, 448 (369 when this paragraph was
+run clean, so — at the CURRENT suite count, 452 (369 when this paragraph was
 written, after v74.5 was added; the count moves with every graduation-plan task) —
 the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 448
+       --seed demo-seed.js --expect 452
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -1671,3 +1671,22 @@ TRIM C-3 - GONG PULL, "CHECK FOR CALLS", AND THE G06 FIX (suite 443 -> 448)
   - GREEN: `runSelfChecks: 448/448 passed, 0 failed`; `runGraduationScenarios: 6/6 passed, 0 failed`; guide 18/18; connector
     contract tests `# pass 41`, `# fail 0`. SHA-256 block re-measured above. guide-manifest.json count 448.
   Evidence: docs/superpowers/evidence/trim-and-integration/C-3.md.
+
+TRIM C-4 - GAINSIGHT PULL, "REFRESH FROM GAINSIGHT" (suite 448 -> 452)
+  - What: GAINSIGHT_DIFF_FIELDS / GAINSIGHT_FIELD_MAP (tier, arr, renewalDate write the customer's own field; contacts add
+    stakeholders only; csmOwner -> null, read-only), buildGainsightDiff (match by gainsightId only; unlinked listed; a null
+    Gainsight value never differs; gate offers from GATE_DEFS contractKey + isMissing), applyGainsightPull (writes only ticked
+    rows, ticked gates through toggleComplianceGate, stamps c.gainsight, one undo, one save, nothing ticked = nothing written),
+    gainsightValueHtml (all connector strings escaped), the header button and the preview modal. No schema change.
+  - Checks first, four seen failing (448/452 passed, 4 failed, "buildGainsightDiff is not defined"), then the code: c4a diff
+    rows and not-linked, c4b nothing but ticked rows written (stage, goals, domainScores, notes, verdict identical; CSM owner
+    never written), c4c gate offer only when Gainsight done and tracker open, c4d unticked untouched, contacts additive,
+    gate via the one write, escaping, button wired. No check removed or weakened.
+  - Async path end to end (stub connector fetch, real modal clicks):
+    node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js,docs/superpowers/evidence/trim-and-integration/c4-async-probe.js --fn c4ProbeResults --expect 11
+    -> 11/11.
+  - Mutation proof: `c.stage = 'graduated'` added inside applyGainsightPull's per-field loop -> 451/452, c4b red
+    (untouched:false). Restored: 452/452.
+  - GREEN: `runSelfChecks: 452/452 passed, 0 failed`; `runGraduationScenarios: 6/6 passed, 0 failed`; guide 18/18; connector
+    contract tests `# pass 41`, `# fail 0`. SHA-256 block re-measured above. guide-manifest.json count 452.
+  Evidence: docs/superpowers/evidence/trim-and-integration/C-4.md.

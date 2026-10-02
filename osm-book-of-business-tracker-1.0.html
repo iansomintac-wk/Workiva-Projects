@@ -8881,7 +8881,8 @@ function renderHeader(){
           return `<button class="btn" id="btn-undo" title="Restores the book to its state before that change. One level — pressing it again puts the change back.">${_lastActionWasUndo ? 'Redo' : 'Undo'} <span style="color:var(--text-faint); font-weight:400;">${age}</span></button>`;
         })()}
         <button class="btn" id="btn-quick-log" title="Log a touchpoint without opening the account — press L anywhere outside a text field">Quick log <span style="color:var(--text-faint); font-weight:400; font-family:var(--font-mono);">L</span></button>
-        ${connectorConfigured() ? `<button class="btn" id="btn-check-calls" title="Pull recorded calls from Gong through the connector and review them before anything is added">Check for calls</button>` : ''}
+        ${connectorConfigured() ? `<button class="btn" id="btn-check-calls" title="Pull recorded calls from Gong through the connector and review them before anything is added">Check for calls</button>
+        <button class="btn" id="btn-refresh-gainsight" title="Pull account details from Gainsight through the connector and review them before anything is changed">Refresh from Gainsight</button>` : ''}
         <button class="btn" id="btn-settings">Settings</button>
         <input type="file" id="import-file-input" accept="application/json" style="display:none;">
         <input type="file" id="restore-archive-input" accept="application/json" style="display:none;">
@@ -14541,6 +14542,7 @@ function attachEvents(){
 
   $('#btn-settings') && $('#btn-settings').addEventListener('click', openSettingsModal);
   $('#btn-check-calls') && $('#btn-check-calls').addEventListener('click', checkForCalls);   // C-3
+  $('#btn-refresh-gainsight') && $('#btn-refresh-gainsight').addEventListener('click', refreshFromGainsight);   // C-4
   $('#import-file-input') && $('#import-file-input').addEventListener('change', handleImportFile);
   $('#restore-archive-input') && $('#restore-archive-input').addEventListener('change', handleRestoreArchiveFile);
   $('#import-excel-input') && $('#import-excel-input').addEventListener('change', handleExcelFile);
@@ -18903,6 +18905,184 @@ function openCallPreviewModal(preview){
       close();
       window.render();
       showToast(res.created ? `Added ${res.created} call${res.created === 1 ? '' : 's'} as activities. Undo is available.` : 'Nothing was added.');
+    });
+  }
+  document.body.appendChild(backdrop);
+  backdrop.addEventListener('click', e => { if(e.target === backdrop) close(); });
+  backdrop.addEventListener('keydown', e => { if(e.key === 'Escape'){ e.stopPropagation(); close(); } });
+  render();
+}
+
+/* ============ C-4: GAINSIGHT PULL ("Refresh from Gainsight") ============
+   Shows "Gainsight says X, tracker has Y" for tier, ARR, renewal date, CSM owner and contacts, and offers to
+   tick a gate Gainsight shows done. It WRITES only what the OSM ticks, and never stage, goals, verdicts, notes or
+   scores. Matched by gainsightId only. A null Gainsight value never differs (a blank is not an instruction to
+   erase the OSM's value). Field map: tier/arr/renewalDate write the customer's own field; contacts only ADD new
+   stakeholders (never edit or remove one); csmOwner has no tracker field, so it is shown and kept in c.gainsight
+   but never written. The value-CSV import (applyValueImport) is a separate path and is untouched. */
+const GAINSIGHT_DIFF_FIELDS = ['tier', 'arr', 'renewalDate', 'csmOwner', 'contacts'];   // the five a pull shows (GAINSIGHT_PULL_FIELDS also stores healthScore and gates)
+const GAINSIGHT_FIELD_LABELS = {tier: 'Tier', arr: 'ARR', renewalDate: 'Renewal date', csmOwner: 'CSM owner', contacts: 'Contacts'};
+const GAINSIGHT_FIELD_MAP = {tier: 'tier', arr: 'arr', renewalDate: 'renewalDate', csmOwner: null, contacts: 'stakeholders'};   // null = no tracker counterpart: read-only
+function gainsightContactRole(role){
+  const r = String(role || '').toLowerCase();
+  return r.indexOf('champion') !== -1 ? 'champion' : (r.indexOf('exec') !== -1 || r.indexOf('sponsor') !== -1) ? 'sponsor'
+    : r.indexOf('admin') !== -1 ? 'admin' : r.indexOf('partner') !== -1 ? 'partner' : r.indexOf('csm') !== -1 ? 'csm' : 'other';
+}
+// Contacts Gainsight has that no stakeholder matches (email, case-insensitive; by name when no email on either side).
+function gainsightNewContacts(c, account){
+  const have = getStakeholders(c);
+  const emails = new Set(have.map(s => String((s && s.email) || '').trim().toLowerCase()).filter(Boolean));
+  const names = new Set(have.map(s => normalizeCustomerNameKey(s && s.name)));
+  return (Array.isArray(account && account.contacts) ? account.contacts : []).filter(isRecordObject).filter(k => {
+    const em = String(k.email || '').trim().toLowerCase(), nm = normalizeCustomerNameKey(k.name);
+    if(!nm) return false;
+    return em ? !emails.has(em) : !names.has(nm);
+  });
+}
+function gainsightFieldValue(field, c, account){
+  if(field === 'tier'){ const t = typeof account.tier === 'string' ? account.tier.replace(/\s+/g, ' ').trim().slice(0, 40) : ''; return {gs: t || null, tr: c.tier || null, differs: !!t && t !== c.tier}; }
+  if(field === 'arr'){ const n = account.arr; const okN = typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= ARR_MAX; return {gs: okN ? n : null, tr: Number.isFinite(c.arr) ? c.arr : null, differs: okN && n !== c.arr}; }
+  if(field === 'renewalDate'){ const d = isRealISODate(account.renewalDate) ? account.renewalDate : null; return {gs: d, tr: getRenewalDate(c), differs: !!d && d !== getRenewalDate(c)}; }
+  if(field === 'csmOwner'){ const o = typeof account.csmOwner === 'string' ? account.csmOwner.trim().slice(0, 120) : ''; return {gs: o || null, tr: null, differs: !!o}; }
+  const gsC = (Array.isArray(account.contacts) ? account.contacts : []).filter(isRecordObject);
+  return {gs: gsC, tr: getStakeholders(c), differs: gainsightNewContacts(c, account).length > 0};
+}
+// accounts: the connector's /v1/accounts list. One entry per account; linked:false (and no rows) when no tracker customer carries its gainsightId.
+function buildGainsightDiff(accounts, customers){
+  const list = Array.isArray(customers) ? customers : [];
+  return (Array.isArray(accounts) ? accounts : []).filter(isRecordObject).map(account => {
+    const gid = typeof account.gainsightId === 'string' ? account.gainsightId.trim() : '';
+    const hits = gid ? list.filter(c => c.gainsightId === gid) : [];
+    const name = typeof account.name === 'string' ? account.name : '';
+    if(hits.length !== 1) return {customerId: null, name, linked: false, rows: [], gateOffers: [], account};
+    const c = hits[0];
+    const rows = GAINSIGHT_DIFF_FIELDS.map(field => {
+      const v = gainsightFieldValue(field, c, account);
+      return {field, label: GAINSIGHT_FIELD_LABELS[field], gainsight: v.gs, tracker: v.tr, differs: !!v.differs, writable: GAINSIGHT_FIELD_MAP[field] !== null};
+    });
+    const gates = isRecordObject(account.gates) ? account.gates : {};
+    const gateOffers = GATE_DEFS.filter(g => g.contractKey && g.complianceKey && gates[g.contractKey] === true && g.isMissing(c))
+      .map(g => ({gateKey: g.key, label: g.label}));
+    return {customerId: c.id, name: c.name, linked: true, rows, gateOffers, account};
+  });
+}
+// confirmed: [{customerId, account, fields:[field], gates:[gateKey]}]. One undo snapshot, one save; nothing ticked = nothing written.
+function applyGainsightPull(confirmed){
+  const plan = [];
+  (confirmed || []).forEach(r => {
+    const c = r && DATA.customers.find(x => x.id === r.customerId);
+    if(!c || !isRecordObject(r.account)) return;
+    const fields = (Array.isArray(r.fields) ? r.fields : []).filter(f => GAINSIGHT_DIFF_FIELDS.indexOf(f) !== -1 && GAINSIGHT_FIELD_MAP[f] !== null);
+    const gates = (Array.isArray(r.gates) ? r.gates : []).filter(k => GATE_DEFS.some(g => g.key === k && g.contractKey && g.complianceKey));
+    if(fields.length || gates.length) plan.push({c, account: r.account, fields, gates});
+  });
+  if(!plan.length) return {updated: 0};
+  markUndoable('Gainsight pull');
+  const pulledAt = new Date().toISOString();
+  plan.forEach(p => {
+    const {c, account} = p;
+    p.fields.forEach(f => {
+      const v = gainsightFieldValue(f, c, account);
+      if(!v.differs) return;
+      if(f === 'tier') setOptionalField(c, 'tier', v.gs);
+      else if(f === 'arr') c.arr = v.gs;
+      else if(f === 'renewalDate') c.renewalDate = v.gs;
+      else if(f === 'contacts'){
+        const room = Math.max(0, MAX_STAKEHOLDERS - getStakeholders(c).length);
+        const add = gainsightNewContacts(c, account).slice(0, room)
+          .map(k => normalizeStakeholder({name: k.name, email: k.email, role: gainsightContactRole(k.role)})).filter(Boolean);
+        if(add.length){ if(!Array.isArray(c.stakeholders)) c.stakeholders = []; add.forEach(s => c.stakeholders.push(s)); }
+      }
+    });
+    p.gates.forEach(key => {
+      const g = GATE_DEFS.find(x => x.key === key);
+      const gates = isRecordObject(account.gates) ? account.gates : {};
+      if(gates[g.contractKey] === true && g.isMissing(c)) toggleComplianceGate(c, g.complianceKey);   // the one gate write (v90)
+    });
+    const values = {};
+    GAINSIGHT_PULL_FIELDS.forEach(k => { if(account[k] !== undefined) values[k] = account[k]; });
+    const rec = normalizeGainsightPull({pulledAt, values});
+    if(rec) c.gainsight = rec;
+  });
+  saveData();
+  return {updated: plan.length};
+}
+// The one place a connector value becomes HTML in the pull preview: everything escaped.
+function gainsightValueHtml(field, v){
+  if(v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length)) return '<span style="color:var(--text-faint);">none</span>';
+  if(field === 'arr') return escapeHtml(fmtArr(v));
+  if(field === 'renewalDate') return escapeHtml(fmtDate(v));
+  if(field === 'contacts') return v.map(k => escapeHtml(String(k && k.name || '')) + (k && k.role ? ` <span style="color:var(--text-faint);">(${escapeHtml(String(k.role))})</span>` : '')).join(', ');
+  return escapeHtml(String(v));
+}
+async function refreshFromGainsight(){
+  if(ui.gainsightPullBusy) return;
+  ui.gainsightPullBusy = true;
+  let resp;
+  try{ resp = await connectorRequest('/v1/accounts'); }
+  catch(e){
+    showToast(e && e.code === 'OFFLINE' ? 'Connector offline — nothing was refreshed and nothing changed.'
+      : e && e.code === 'UNAUTHORIZED' ? 'The connector rejected the token — check it in Settings.'
+      : 'Could not refresh from Gainsight right now. Nothing changed.');
+    return;
+  }
+  finally{ ui.gainsightPullBusy = false; }
+  const accounts = (resp && Array.isArray(resp.accounts) ? resp.accounts : []).filter(isRecordObject);
+  const diff = buildGainsightDiff(accounts, DATA.customers);
+  if(!diff.length){ showToast('Gainsight returned no accounts.'); return; }
+  openGainsightPullModal(diff);
+}
+function openGainsightPullModal(diff){
+  if(document.querySelector('.modal-backdrop')) return;
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const close = () => backdrop.remove();
+  const changed = diff.filter(e => e.linked && (e.rows.some(r => r.differs) || e.gateOffers.length));
+  const current = diff.filter(e => e.linked && !changed.includes(e));
+  const unlinked = diff.filter(e => !e.linked);
+  const on = new Set();   // tick keys: customerId|field and customerId|gate:key. Default: nothing ticked.
+  function render(){
+    const chosen = changed.map(e => ({customerId: e.customerId, account: e.account,
+      fields: e.rows.filter(r => r.writable && r.differs && on.has(e.customerId + '|' + r.field)).map(r => r.field),
+      gates: e.gateOffers.filter(g => on.has(e.customerId + '|gate:' + g.gateKey)).map(g => g.gateKey)}))
+      .filter(x => x.fields.length || x.gates.length);
+    const nTicks = chosen.reduce((n, x) => n + x.fields.length + x.gates.length, 0);
+    const tick = (key, label) => `<input type="checkbox" data-gp-on="${escapeAttr(key)}" aria-label="${escapeAttr(label)}"${on.has(key) ? ' checked' : ''}>`;
+    const acctTable = e => `<div class="bf-wrap"><table class="dense-table"><thead><tr><th>Use</th><th>${escapeHtml(e.name)}</th><th>Gainsight says</th><th>Tracker has</th></tr></thead><tbody>
+      ${e.rows.filter(r => r.differs).map(r => `<tr>
+        <td>${r.writable ? tick(e.customerId + '|' + r.field, 'Use Gainsight ' + r.label) : ''}</td>
+        <td>${escapeHtml(r.label)}</td><td>${gainsightValueHtml(r.field, r.gainsight)}</td>
+        <td>${r.field === 'csmOwner' ? '<span style="color:var(--text-faint);">Shown only — the tracker has no CSM owner field</span>'
+          : r.field === 'contacts' ? `${gainsightValueHtml('contacts', r.tracker)} <span style="color:var(--text-faint);">· ticking adds the new contacts, never edits or removes one</span>`
+          : gainsightValueHtml(r.field, r.tracker)}</td></tr>`).join('')}
+      ${e.gateOffers.map(g => `<tr>
+        <td>${tick(e.customerId + '|gate:' + g.gateKey, 'Mark ' + g.label + ' done')}</td>
+        <td>${escapeHtml(g.label)}</td><td>Done</td><td>Still open · ticking marks it done today</td></tr>`).join('')}
+      </tbody></table></div>`;
+    backdrop.innerHTML = `
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="gp-title" style="width:min(1000px,100%); max-width:none;">
+        <h3 id="gp-title" style="margin-top:0;">Refresh from Gainsight</h3>
+        <p style="color:var(--text-faint); font-size:var(--text-xs); margin:0 0 var(--space-2);">
+          <strong>Nothing changes until you tick a row and click Update.</strong> Only the rows you tick are written. Stage, goals, verdicts, notes and scores are never touched, and a blank in Gainsight never erases your value.</p>
+        ${changed.length ? `<div class="section-title">Differences (${changed.length} account${changed.length === 1 ? '' : 's'})</div>${changed.map(acctTable).join('')}` : '<p>Every linked account already matches Gainsight.</p>'}
+        ${current.length ? `<div class="section-title">Already matching (${current.length})</div>
+          <p style="color:var(--text-faint); font-size:var(--text-xs); margin:0;">${current.map(e => escapeHtml(e.name)).join(' &middot; ')}</p>` : ''}
+        ${unlinked.length ? `<div class="section-title">Not linked (${unlinked.length})</div>
+          <p style="color:var(--text-faint); font-size:var(--text-xs); margin:0 0 var(--space-1);">No tracker account carries this Gainsight id, so nothing is pulled for them.</p>
+          <p style="color:var(--text-faint); font-size:var(--text-xs); margin:0;">${unlinked.map(e => escapeHtml(e.name || 'Unnamed') + (e.account.gainsightId ? ' <span style="font-family:var(--font-mono);">' + escapeHtml(String(e.account.gainsightId)) + '</span>' : '')).join(' &middot; ')}</p>` : ''}
+        <div class="modal-actions">
+          <button class="btn" id="gp-cancel">Cancel</button>
+          <button class="btn btn-primary" id="gp-apply"${nTicks ? '' : ' disabled'}>Update ${nTicks} ticked</button>
+        </div>
+      </div>`;
+    backdrop.querySelectorAll('[data-gp-on]').forEach(el => el.addEventListener('change', ()=>{ if(el.checked) on.add(el.dataset.gpOn); else on.delete(el.dataset.gpOn); render(); }));
+    backdrop.querySelector('#gp-cancel').addEventListener('click', close);
+    const apply = backdrop.querySelector('#gp-apply');
+    if(apply) apply.addEventListener('click', ()=>{
+      const res = applyGainsightPull(chosen);
+      close();
+      window.render();
+      showToast(res.updated ? `Updated ${res.updated} account${res.updated === 1 ? '' : 's'} from Gainsight. Undo is available.` : 'Nothing was updated.');
     });
   }
   document.body.appendChild(backdrop);

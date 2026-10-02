@@ -277,3 +277,13 @@ Check for calls (task C-3).
       and the save forces no session for those types. Before, the form pre-selected the next session for an Email. The
       same rule holds for calls added from Gong: an email-kind call is an Email and never takes a session number.
     - 448 self-checks (was 443).
+
+Refresh from Gainsight (task C-4).
+
+    - With a connector set up, the header has Refresh from Gainsight. It compares the Gainsight accounts that carry a
+      Gainsight id you already have with the tracker, showing "Gainsight says X, tracker has Y" for tier, ARR, renewal
+      date, CSM owner and contacts, and offering to mark a gate done when Gainsight shows it done. Nothing changes until
+      you tick a row and click Update. Ticked tier, ARR and renewal date overwrite that field, ticked contacts only add
+      new people, the CSM owner is shown only, and stage, goals, verdicts, notes and scores are never written. Without
+      a connector the button is not shown; with one that is not running you get a plain "Connector offline" message.
+    - 452 self-checks (was 448).

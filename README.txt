@@ -140,7 +140,7 @@ never touched. GRC disclosure submission stays empty.
 
 Running the graduation checks headlessly (needs Chrome or Edge):
 
-  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 448
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 452
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
@@ -172,6 +172,17 @@ as the summary, the transcript stored, a link to the Gong call). An email-kind c
 any Email, Partner Sync or Implementation Note, never takes a session number, in this review or in the log form (the
 log form now clears and locks Session # when you pick such a type). With no connector the button is not shown; with a
 connector that is not running it says so in a message and changes nothing.
+
+"Refresh from Gainsight" (task C-4): next to Check for calls, the header has Refresh from Gainsight (also only with a
+connector set up). It reads the Gainsight accounts through the connector and opens a review of the accounts that
+carry a Gainsight id the tracker knows (no id, no match, nothing pulled; those accounts are listed as not linked). For
+each difference it shows "Gainsight says X" beside "tracker has Y" for tier, ARR, renewal date, CSM owner and contacts,
+and offers to mark a gate done when Gainsight shows it done and the tracker's gate is still open. Every box starts
+unticked and "Update N ticked" writes only the ticked rows: tier, ARR and renewal date overwrite that field; ticked
+contacts only add people the account does not have (never edit or remove one); a ticked gate is marked done today. The
+CSM owner is shown only (the tracker has no such field). A blank in Gainsight never erases your value. Stage, goals,
+verdicts, notes and scores are never written. The Gainsight values from the last update are kept on the account. The
+spreadsheet value import in Settings is unchanged.
 AI (task B3): POST /v1/ai; ai.adapter is fake (default), claude, openai or gemini, with the key only in the
 git-ignored connector/config.json or env CONNECTOR_AI_KEY. The real AI adapters are tested against a stubbed
 fetch only; no real call has been made.
@@ -192,8 +203,8 @@ Verifying a change
 Both halves carry self-check suites: the tracker's is injected by tools/selfcheck.mjs from
 tools/selfchecks.js (it is not in the shipped file); the guide's is in the page. After any edit:
 
-  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 448
-            must be 448/448 (the suite lives in tools/selfchecks.js and is not shipped)
+  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 452
+            must be 452/452 (the suite lives in tools/selfchecks.js and is not shipped)
   guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
             must be 18/18 (window.runGuideSelfChecks() also works in the console)
 

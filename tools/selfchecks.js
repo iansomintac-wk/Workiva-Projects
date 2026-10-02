@@ -8809,6 +8809,94 @@ function _runSelfChecksInner(){
     }
     check('gong c3e: applyCallImport writes nothing (no save, no undo label) for an empty list, a future-dated call or an unknown account', ok, detail);
   })();
+  /* C-4: Gainsight pull ("Refresh from Gainsight"). A pull shows five fields and offers gate ticks; it writes only
+     what the OSM ticks, and never stage, goals, verdicts, notes or scores. */
+  const c4Customer = (o) => Object.assign({id: 'g1', name: 'Gamma Co', gainsightId: 'GS-X-1', stage: 'ttfv1', tier: 'Mid-market', arr: 100000,
+    renewalDate: '2027-01-01', stakeholders: [{id: 's1', name: 'Dana One', role: 'champion', note: '', email: 'dana@x.invalid'}],
+    compliance: {sentiment: {done: true}, outcomePlan: {done: false}, associatedPeopleCSAT: {done: false, contactName: ''}},
+    goals: {items: [{id: 'goal1', text: 'keep'}]}, domainScores: {a: 3}, notes: 'my own note', exit: {verdict: 'hold'}}, o || {});
+  const c4Account = (o) => Object.assign({gainsightId: 'GS-X-1', name: 'Gamma Co', tier: 'Enterprise', arr: 250000, renewalDate: '2027-06-30',
+    csmOwner: 'Riley Demo', contacts: [{name: 'Dana One', email: 'DANA@x.invalid', role: 'Champion'}, {name: 'Lee New', email: 'lee@x.invalid', role: 'Exec sponsor'}],
+    healthScore: 82, gates: {readinessAssessment: true, csatContact: true, successPlan: false}, openCtas: []}, o || {});
+  (function(){                                   // c4a
+    let ok = false, detail = '';
+    try{
+      const cs = [c4Customer(), c4Customer({id: 'g2', name: 'Delta Co', gainsightId: undefined})];
+      const same = c4Account({tier: 'Mid-market', arr: 100000, renewalDate: '2027-01-01', csmOwner: null, contacts: [{name: 'Dana One', email: 'dana@x.invalid', role: 'Champion'}]});
+      const d = buildGainsightDiff([c4Account(), c4Account({gainsightId: null, name: 'Delta Co'}), c4Account({gainsightId: 'GS-NOPE', name: 'Ghost'}), same], cs);
+      const e = d[0];
+      const differs = e.rows.filter(r => r.differs).map(r => r.field).sort().join(',');
+      const shape = e.linked === true && e.customerId === 'g1' && e.rows.map(r => r.field).join(',') === 'tier,arr,renewalDate,csmOwner,contacts';
+      const vals = e.rows[0].gainsight === 'Enterprise' && e.rows[0].tracker === 'Mid-market' && e.rows[1].gainsight === 250000 && e.rows[1].tracker === 100000;
+      const unlinked = d[1].linked === false && d[1].customerId === null && d[1].rows.length === 0 && d[2].linked === false && d[1].name === 'Delta Co';
+      const quiet = d[3].rows.filter(r => r.differs).length === 0;
+      const ro = e.rows.find(r => r.field === 'csmOwner').writable === false && e.rows.find(r => r.field === 'tier').writable === true;
+      ok = differs === 'arr,contacts,csmOwner,renewalDate,tier' && shape && vals && unlinked && quiet && ro;
+      detail = JSON.stringify({differs, shape, vals, unlinked, quiet, ro});
+    }catch(err){ detail = err.message; }
+    check('gainsight c4a: buildGainsightDiff flags differs on exactly the changed fields, matches by gainsightId only (no id -> not linked), a null Gainsight value never differs, and csmOwner is read-only', ok, detail);
+  })();
+  (function(){                                   // c4b
+    let ok = false, detail = '';
+    const realSave = saveData, realLabel = _undoLabel, savedCustomers = DATA.customers;
+    let saves = 0;
+    try{
+      saveData = function(){ saves++; return true; };
+      const c = c4Customer();
+      DATA.customers = savedCustomers.concat([c]);
+      const keep = () => JSON.stringify({stage: c.stage, goals: c.goals, domainScores: c.domainScores, notes: c.notes, exit: c.exit, name: c.name});
+      const before = keep();
+      const e = buildGainsightDiff([c4Account()], [c])[0];
+      const allFields = e.rows.filter(r => r.writable && r.differs).map(r => r.field);
+      const res = applyGainsightPull([{customerId: 'g1', account: c4Account(), fields: allFields.concat(['csmOwner', 'stage', 'goals']), gates: e.gateOffers.map(g => g.gateKey).concat(['sentiment'])}]);
+      const untouched = keep() === before;
+      const wrote = c.tier === 'Enterprise' && c.arr === 250000 && c.renewalDate === '2027-06-30' && c.csmOwner === undefined;
+      const stamped = !!c.gainsight && /^\d{4}-\d{2}-\d{2}T/.test(c.gainsight.pulledAt) && c.gainsight.values.tier === 'Enterprise' && c.gainsight.values.csmOwner === 'Riley Demo';
+      const one = res.updated === 1 && saves === 1 && _undoLabel !== realLabel;
+      const none = applyGainsightPull([{customerId: 'g1', account: c4Account(), fields: [], gates: []}, {customerId: 'nope', account: c4Account(), fields: ['tier'], gates: []}]);
+      ok = untouched && wrote && stamped && one && none.updated === 0 && saves === 1;
+      detail = JSON.stringify({untouched, wrote, stamped, one, none, saves});
+    }catch(err){ detail = err.message; }
+    finally{ saveData = realSave; DATA.customers = savedCustomers; }
+    check('gainsight c4b: applyGainsightPull with every row ticked leaves stage, goals, domain scores, notes and verdicts identical, never writes the CSM owner, stamps c.gainsight, makes one undo and one save; ticking nothing writes nothing', ok, detail);
+  })();
+  (function(){                                   // c4c
+    let ok = false, detail = '';
+    try{
+      const open = c4Customer();
+      const done = c4Customer({compliance: {sentiment: {done: true}, outcomePlan: {done: false}, associatedPeopleCSAT: {done: true, contactName: 'x'}}});
+      const acct = c4Account({gates: {readinessAssessment: true, csatContact: true, successPlan: false}});
+      const o = buildGainsightDiff([acct], [open])[0].gateOffers;
+      const d = buildGainsightDiff([acct], [done])[0].gateOffers;
+      const notDone = buildGainsightDiff([c4Account({gates: {readinessAssessment: false, csatContact: false, successPlan: false}})], [open])[0].gateOffers;
+      const one = o.length === 1 && o[0].gateKey === 'csat' && o[0].label === 'CSAT contact';
+      ok = one && d.length === 0 && notDone.length === 0;
+      detail = JSON.stringify({o, d, notDone});
+    }catch(err){ detail = err.message; }
+    check('gainsight c4c: a gate is offered only when Gainsight shows it done and the tracker gate is still open (CSAT open + csatContact true -> one offer; already done or not done in Gainsight -> none)', ok, detail);
+  })();
+  (function(){                                   // c4d
+    let ok = false, detail = '';
+    const realSave = saveData, savedCustomers = DATA.customers;
+    try{
+      saveData = function(){ return true; };
+      const c = c4Customer();
+      DATA.customers = savedCustomers.concat([c]);
+      applyGainsightPull([{customerId: 'g1', account: c4Account(), fields: ['contacts'], gates: ['csat']}]);
+      const sh = c.stakeholders;
+      const added = sh.length === 2 && sh[0].name === 'Dana One' && sh[1].name === 'Lee New' && sh[1].role === 'sponsor' && sh[1].email === 'lee@x.invalid';
+      const rest = c.tier === 'Mid-market' && c.arr === 100000 && c.renewalDate === '2027-01-01';       // unticked rows untouched
+      const gate = c.compliance.associatedPeopleCSAT.done === true && c.compliance.outcomePlan.done === false;
+      const hostile = {name: '<img src=x onerror=alert(1)>', email: 'a@b.invalid', role: 'Champion'};
+      const html = gainsightValueHtml('contacts', [hostile]) + gainsightValueHtml('tier', '<b>x</b>');
+      const escaped = html.indexOf('<img') === -1 && html.indexOf('<b>') === -1 && html.indexOf('&lt;') !== -1;
+      const wired = String(attachEvents).indexOf('refreshFromGainsight') !== -1;
+      ok = added && rest && gate && escaped && wired;
+      detail = JSON.stringify({added, rest, gate, escaped, wired});
+    }catch(err){ detail = err.message; }
+    finally{ saveData = realSave; DATA.customers = savedCustomers; }
+    check('gainsight c4d: unticked rows stay untouched; ticked contacts only add new stakeholders (never edit or remove) and a ticked gate goes through the one gate write; connector strings are escaped in the preview; the button is wired', ok, detail);
+  })();
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
