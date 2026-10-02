@@ -22,7 +22,7 @@ Paid runs approved: none ($0). The only external call allowed is C-9's single AI
 | A3 | Key scaffolds (T2) + one-time key cleanup | pending | — | suite `--expect 435` (estimate); K3 grep | pending | — |
 | A4 | One gate list (T5), `gradDateMissing` / `gradDateDrifted` | pending | — | suite `--expect 438` (estimate); scenarios 6/6 | pending | — |
 | A5 | Retire time-saved (C6) | pending | — | suite `--expect 433` (estimate); guide 18/18; refcount 0 | pending | — |
-| A6 | Pre-1.0 migrations (T4) — **gated** on Ian re-saving the 3 pre-1.0 exports or saying they don't matter | pending (gated) | — | suite `--expect 432` (estimate); `migration-dryrun --from 11` and `--from 14` exit 0 | pending | If no answer by the end of A5: skipped, recorded pending |
+| A6 | Pre-1.0 migrations (T4) — **gated** on Ian re-saving the 3 pre-1.0 exports or saying they don't matter | skipped (pending, Ian: "skip A6") | — | suite `--expect 432` (estimate); `migration-dryrun --from 11` and `--from 14` exit 0 | pending | If no answer by the end of A5: skipped, recorded pending |
 | B0 | Headed reachability spike (Chrome, Edge, fresh + normal profile) — **stop if blocked** | pending | — | `b0-run.mjs` and `b0-run-headed.mjs`: cors ok, nocors fail | pending | — |
 | B1 | Contract v1, schemas, fixtures; demo seed gains gainsightIds | pending | — | contract tests `# fail 0`; suite unchanged | pending | — |
 | B2 | Server, token, CORS, bind, fake Gong/Gainsight | pending | — | contract tests `# fail 0` | pending | — |
@@ -36,7 +36,7 @@ Paid runs approved: none ($0). The only external call allowed is C-9's single AI
 | C-6 | AI decision support (R4) | pending | — | suite `--expect 456` (estimate) | pending | — |
 | C-7 | End-to-end scenario against the fake connector | pending | — | `node tools/connector-e2e.mjs` → 7/7 | pending | — |
 | C-8 | Decoration look call (R5) — **gated** on Ian's batched look calls | pending (gated) | — | capture runner 8/8; removals only as Ian rules | pending | — |
-| C-9 | Retire browser AI — **gated** on Ian's sanctioned key (R1) | pending (gated) | — | suite (measured); e2e 7/7; refcount 0 | pending | Without a key: skipped, recorded pending; browser AI stays as fallback |
+| C-9 | Retire browser AI — **gated** on Ian's sanctioned key (R1) | skipped (pending, Ian: "skip ... C-9") | — | suite (measured); e2e 7/7; refcount 0 | pending | Without a key: skipped, recorded pending; browser AI stays as fallback |
 
 ## Acceptance checks (measured values, not "passes")
 
@@ -60,3 +60,4 @@ None yet. C-8 files the decoration captures (Copilot and Risk, with and without 
 ## Log
 
 - 2026-10-01: baseline 437/437 measured by the lead at `b1a8452`. Plan written (top model): 20 tasks (A 6, B 5, C 9), plan-level choices P1-P9, projected final 456/456 with A6 pending (455 if A6 lands). Awaiting Ian's plan approval.
+- 2026-10-01: Ian, verbatim: "approved, P1-P9 as written; skip A6 and C-9". Plan and P1-P9 approved; A6 and C-9 recorded pending (no key; pre-1.0 exports not re-saved). Projected final 456/456.
