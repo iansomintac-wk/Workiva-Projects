@@ -8897,6 +8897,77 @@ function _runSelfChecksInner(){
     finally{ saveData = realSave; DATA.customers = savedCustomers; }
     check('gainsight c4d: unticked rows stay untouched; ticked contacts only add new stakeholders (never edit or remove) and a ticked gate goes through the one gate write; connector strings are escaped in the preview; the button is wired', ok, detail);
   })();
+  /* C-5: push ("Send to Gainsight"). Fields per kind (plan P5), a request that never carries a sent item, results applied by id
+     (sent needs an externalId), and the day-close count read from the queue itself. */
+  const c5Item = (id, o) => Object.assign({id, date: todayISO(), customerId: 'g1', customerName: 'Gamma Co', kind: 'Pending items batch', payload: 'text', status: 'queued',
+    fields: {gates: []}, externalId: null, sentAt: null, error: null}, o || {});
+  (function(){                                   // c5a
+    let ok = false, detail = '';
+    try{
+      const c = c4Customer({compliance: {sentiment: {done: false}, outcomePlan: {done: true}, associatedPeopleCSAT: {done: false, contactName: ''}}});
+      const f = gainsightFieldsFor('Pending items batch', c);
+      const g = f.gates || [];
+      const want = GATE_DEFS.filter(d => d.key === 'sentiment' || d.key === 'csat');
+      const gatesOk = g.length === 2 && want.every((d, i) => g[i].gateKey === d.key && g[i].contractKey === d.contractKey && g[i].gainsightAction === d.gainsightAction)
+        && g[0].contractKey === 'readinessAssessment' && g[1].contractKey === 'csatContact';
+      const goal = {text: 'Cut close time', type: 'outcome', targetCycle: '2027-Q1', verdict: null, changeReason: ''};
+      const o = gainsightFieldsFor('Success Plan objective', c, {event: 'verdict', goal});
+      const goalOk = o.event === 'verdict' && o.objective === 'Cut close time' && o.targetCycle === '2027-Q1' && o.verdict === null && o.changeReason === '' && 'goalType' in o;
+      const cta = gainsightFieldsFor('At-Risk CTA', c, {item: {kind: 'Off Track', sev: 3, c, detail: 'Behind', category: {key: 'k', label: 'Adoption'}}});
+      const ctaOk = cta.ctaName === 'At-Risk CTA — Gamma Co' && cta.reason === 'Adoption' && cta.severity === 'high';
+      const oc = gainsightFieldsFor('Success Outcome Plan', c);
+      const ocOk = Array.isArray(oc.outcomes) && oc.outcomes.length === 1 && /^Outcome /.test(oc.outcomes[0]);
+      const unknown = Object.keys(gainsightFieldsFor('Nope', c)).length === 0;
+      const req = buildPushRequest([c5Item('A'), c5Item('B', {status: 'sent', externalId: 'X'}), c5Item('C', {status: 'failed', error: 'boom'})]);
+      const reqOk = req.items.map(i => i.id).join() === 'A,C' && req.items[0].kind === 'Pending items batch' && req.items[0].customerRef.name === 'Gamma Co' && 'gainsightId' in req.items[0].customerRef && isRecordObject(req.items[0].fields);
+      ok = gatesOk && goalOk && ctaOk && ocOk && unknown && reqOk;
+      detail = JSON.stringify({gatesOk, goalOk, ctaOk, ocOk, unknown, reqOk, g});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    check('gainsight c5a: gainsightFieldsFor lists exactly the open gates with contractKey and gainsightAction (and the other three kinds per P5); buildPushRequest carries queued and failed items and never a sent one', ok, detail);
+  })();
+  (function(){                                   // c5b
+    let ok = false, detail = '';
+    const had = Object.prototype.hasOwnProperty.call(DATA, 'gainsightQueue'), saved = DATA.gainsightQueue;
+    try{
+      DATA.gainsightQueue = [c5Item('A'), c5Item('B'), c5Item('C'), c5Item('D', {status: 'sent', externalId: 'KEEP', sentAt: '2026-01-01T00:00:00.000Z'})];
+      const r = applyPushResults([{id: 'A', status: 'sent', externalId: 'X-1', error: null}, {id: 'B', status: 'failed', externalId: null, error: 'boom'},
+        {id: 'ZZ', status: 'sent', externalId: 'Q'}, {id: 'C', status: 'sent', externalId: null}, {id: 'D', status: 'failed', error: 'late'}]);
+      const q = DATA.gainsightQueue, A = q[0], B = q[1], C = q[2], D = q[3];
+      const stateOk = A.status === 'sent' && A.externalId === 'X-1' && !!A.sentAt && A.error === null
+        && B.status === 'failed' && B.error === 'boom' && B.externalId === null && B.sentAt === null
+        && C.status === 'queued' && C.externalId === null          // "sent" with no externalId is never believed
+        && D.status === 'sent' && D.externalId === 'KEEP' && D.sentAt === '2026-01-01T00:00:00.000Z'   // a sent item is never overwritten
+        && q.length === 4;
+      const countOk = r.sent === 1 && r.failed === 1;
+      const htmlA = renderGainsightQueueRow(A, 0), htmlB = renderGainsightQueueRow(B, 1), htmlC = renderGainsightQueueRow(C, 2);
+      const renderOk = htmlA.indexOf('✓ sent') !== -1 && htmlA.indexOf('X-1') !== -1 && htmlA.indexOf('data-queue-retry') === -1
+        && htmlB.indexOf('data-queue-retry="B"') !== -1 && htmlB.indexOf('boom') !== -1 && /Retry/.test(htmlB)
+        && htmlC.indexOf('data-queue-retry') === -1 && htmlC.indexOf('boom') === -1;
+      B.error = '<img src=x onerror=1>';
+      const esc = renderGainsightQueueRow(B, 1).indexOf('<img') === -1;
+      const req2 = buildPushRequest(q).items.map(i => i.id).join();
+      ok = stateOk && countOk && renderOk && esc && req2 === 'B,C';
+      detail = JSON.stringify({stateOk, countOk, renderOk, esc, req2, r});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    finally{ if(had) DATA.gainsightQueue = saved; else delete DATA.gainsightQueue; }
+    check('gainsight c5b: applyPushResults sets sent+externalId+sentAt / failed+error by id, ignores unknown ids, never marks sent without an externalId and never touches an already-sent item; a failed row shows its error and Retry, a sent row shows ✓ sent and its id', ok, detail);
+  })();
+  (function(){                                   // c5c
+    let ok = false, detail = '';
+    try{
+      const day = n => new Date(Date.now() - n * 86400000).toISOString();
+      const q = [c5Item('a', {status: 'sent', externalId: 'X', sentAt: day(0)}), c5Item('b', {status: 'sent', externalId: 'Y', sentAt: new Date().toISOString()}),
+        c5Item('c', {status: 'sent', externalId: 'Z', sentAt: day(2)}), c5Item('d', {status: 'failed', error: 'boom'}), c5Item('e', {status: 'sent', externalId: null, sentAt: null})];
+      const n = gainsightSentToday(q);
+      const dc = (function(){
+        const had = Object.prototype.hasOwnProperty.call(DATA, 'gainsightQueue'), saved = DATA.gainsightQueue;
+        try{ DATA.gainsightQueue = q; return renderDayClose({}); }finally{ if(had) DATA.gainsightQueue = saved; else delete DATA.gainsightQueue; }
+      })();
+      ok = n === 2 && gainsightSentToday([]) === 0 && /Sent to Gainsight today[^0-9]*2/.test(dc.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '));
+      detail = 'n=' + n;
+    }catch(e){ detail = 'threw: ' + e.message; }
+    check('gainsight c5c: the day-close count is the queue items sent today (2 of: 2 today, 1 two days ago, 1 failed, 1 sent without a stamp), read from status and sentAt, not from impact counters', ok, detail);
+  })();
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,

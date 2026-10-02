@@ -12,14 +12,14 @@
   "guideCoverage": "The guide covers the tracker through 1.0 with one known gap: its First Value narrative still teaches the pre-Phase-B earliest-linked-evidence model and does not yet cover the deliverable-checkbox evidence capture, the customer-demonstrated/we-observed attribution control, or First Value's derived path — updating it is outstanding. See VALIDATION.txt, WHAT WAS NOT VERIFIED. Everything it does cover is taught with its limits, not only its benefit: the Gainsight sync queue has no transport, impact minutes are an editable assumption, signal calibration needs four resolutions, the Progress Report is a snapshot, and automatic backup costs one click per session rather than being unattended.",
   "openItems": [
     "The Handoff field set is PROVISIONAL - a product open question, not a documentation gap.",
-    "The Gainsight sync queue stages items but has no transport.",
+    "The Gainsight sync queue sends only through a configured connector (Send to Gainsight); with none it is a staging list.",
     "Automatic backup requires one user gesture per browser session."
   ],
-  "trackerSelfChecks": "tools/selfcheck.mjs injects the suite from tools/selfchecks.js (not shipped) - 452 checks. Must be 452/452 after any edit: node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 452. See VALIDATION.txt.",
+  "trackerSelfChecks": "tools/selfcheck.mjs injects the suite from tools/selfchecks.js (not shipped) - 455 checks. Must be 455/455 after any edit: node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 455. See VALIDATION.txt.",
   "guideSelfChecks": "window.runGuideSelfChecks() - 18 checks. Must be 18/18 after any edit.",
   "requiredChecks": [
     "both files open with no runtime exceptions, including from file://",
-    "tracker self-checks pass from the bundle location (452/452, seeded)",
+    "tracker self-checks pass from the bundle location (455/455, seeded)",
     "guide self-checks pass (18/18)",
     "tracker filename matches trackerFile and every data-tracker-link href in the guide",
     "no version numbers in user-visible prose beyond the 1.0 release label",

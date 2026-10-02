@@ -287,3 +287,14 @@ Refresh from Gainsight (task C-4).
       new people, the CSM owner is shown only, and stage, goals, verdicts, notes and scores are never written. Without
       a connector the button is not shown; with one that is not running you get a plain "Connector offline" message.
     - 452 self-checks (was 448).
+
+Send to Gainsight (task C-5).
+
+    - With a connector set up, the Gainsight queue has a Send to Gainsight button. It sends only unsent items and marks
+      each by the connector's answer: sent shows the Gainsight id, failed shows the error and a Retry button. A sent
+      item is never sent twice and nothing is marked sent without an id from the connector. With no connector, or one
+      that is not running, nothing is sent and the copy-and-paste text and JSON export still work.
+    - Queued items carry structured fields for their kind. The day close counts "Sent to Gainsight today" from the
+      queue and keeps failed items in "what you queued".
+    - The queue's "no transport" wording now says so only when no connector is configured.
+    - 455 self-checks (was 452).

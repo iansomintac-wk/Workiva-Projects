@@ -4669,7 +4669,8 @@ function goalGainsightPayload(event, goal){
 // Saves unless opts.defer: an action that queues several events defers them all and saves once.
 function commitGoalEvent(c, event, goal, opts){
   if(!c || !goal || !['created','changed','verdict'].includes(event)) return false;
-  return queueGainsightItem(GOAL_GAINSIGHT_KIND, c, goalGainsightPayload(event, goal), opts);
+  return queueGainsightItem(GOAL_GAINSIGHT_KIND, c, goalGainsightPayload(event, goal),
+    Object.assign({}, opts, {fields: gainsightFieldsFor(GOAL_GAINSIGHT_KIND, c, {event, goal})}));
 }
 // What the graduation confirm's OK runs: one action, one saveData, so Undo restores the pre-graduation book.
 function confirmGraduation(c, d){
@@ -9078,7 +9079,7 @@ function renderRiskWorkspace(k){
         <button class="btn btn-sm" data-risk-maintained="${i}" title="You updated the Gainsight record — resets the ${RISK_MAINTENANCE_DAYS}-day staleness clock">Logged in Gainsight</button>
         <button class="btn btn-sm" data-risk-reopen="${escapeAttr(k.c.id)}">Not a risk after all</button>
       </div>
-      <p class="rk-why">No Gainsight transport exists yet, so Copy is the honest affordance — paste it into the CTA.</p>
+      <p class="rk-why">Copy is always available — paste it into the CTA. With a connector configured, queue it and use Send to Gainsight instead.</p>
     </div>`;
 }
 
@@ -9391,21 +9392,35 @@ function renderRiskTab(){
 /* Lifted out of renderRiskTab so the empty state can carry it too — the queue
    still exists on a book with no open risks, and hiding it there would have made
    queued items unreachable. */
-function renderGainsightQueueBlock(queue){
+/* C-5: one queue row. A sent item shows its Gainsight id and nothing to do; a failed one shows why and a Retry; a queued one is as it was. */
+function renderGainsightQueueRow(q, i){
+  const canRetry = q.status === 'failed';   // a failed item can only exist after a connector push; offline, Retry just says so
+  const state = q.status === 'sent' ? `<span class="badge badge-ontrack">✓ sent · ${escapeHtml(q.externalId || '')}</span>`
+    : q.status === 'failed' ? `<span class="badge badge-risk">failed</span> <span class="rk-meta">${escapeHtml(q.error || 'The connector could not send this item.')}</span>`
+    : `<span class="rk-meta">${escapeHtml(q.status)}</span>`;
   return `
-    <h2 class="rk-group-head" style="margin-top:var(--space-4);">Gainsight queue <span class="count">${queue.length}</span></h2>
-    <p class="rk-group-note">Queued items persist in the book and export as JSON. No credentials are stored and there is no transport — nothing is ever sent silently.</p>
-    <div class="rk-queue">
-      ${queue.length ? queue.map((q, i) => `
         <div class="rk-queue-row">
           <span class="rk-queue-name"><strong>${escapeHtml(q.customerName)}</strong> · ${escapeHtml(q.kind)}
-            <span class="rk-meta">${fmtDate(q.date)} · ${escapeHtml(q.status)}</span></span>
+            <span class="rk-meta">${fmtDate(q.date)}</span> ${state}</span>
           <span class="rk-queue-acts">
+            ${canRetry ? `<button class="btn btn-sm" data-queue-retry="${escapeAttr(q.id)}">Retry</button>` : ''}
             <button class="btn btn-sm" data-queue-view="${i}">View</button>
             <button class="btn btn-sm" data-queue-remove="${i}">Remove</button>
           </span>
-        </div>`).join('') : `<p class="rk-group-note" style="margin:0;">Nothing queued. Confirm a risk and use <em>Add to the close</em>.</p>`}
+        </div>`;
+}
+function renderGainsightQueueBlock(queue){
+  const unsent = queue.filter(q => q.status !== 'sent').length;
+  const online = connectorConfigured();
+  return `
+    <h2 class="rk-group-head" style="margin-top:var(--space-4);">Gainsight queue <span class="count">${queue.length}</span></h2>
+    <p class="rk-group-note">Queued items persist in the book and export as JSON. ${online
+      ? 'A connector is configured: <em>Send to Gainsight</em> sends only what you queued, and only when you press it. An item marked sent shows the id Gainsight returned.'
+      : 'No connector is configured, so there is no transport — paste the text or export the JSON. Nothing is ever sent silently.'}</p>
+    <div class="rk-queue">
+      ${queue.length ? queue.map((q, i) => renderGainsightQueueRow(q, i)).join('') : `<p class="rk-group-note" style="margin:0;">Nothing queued. Confirm a risk and use <em>Add to the close</em>.</p>`}
       <div class="rk-actions">
+        ${online ? `<button class="btn btn-primary btn-sm" id="btn-send-gainsight" ${unsent ? '' : 'disabled'}>Send to Gainsight${unsent ? ` (${unsent})` : ''}</button>` : ''}
         <button class="btn btn-sm" id="btn-export-gainsight-queue" ${queue.length ? '' : 'disabled'}>Export queue (JSON)</button>
       </div>
     </div>`;
@@ -9857,9 +9872,9 @@ function renderGantt(){
      admin, in one place. Pause semantics respected: flags pierce, keyword/
      pace signals stay gated (v40 rulings).
    - Gainsight queue: SCAFFOLDING for push/pull. The queue is real and
-     persists in the book; the transport deliberately does not exist, and the
-     UI says "not connected" rather than pretending. Export the queue as
-     JSON to hand to middleware (or paste manually) meanwhile. */
+     persists in the book. With no connector configured there is no transport and the
+     UI says so; export the queue as JSON or paste manually. With one configured
+     (C-5), "Send to Gainsight" pushes the unsent items and marks each by its result. */
 /* Retired (A5, R6): the time-saved meter, report and CSV are gone. Books saved
    before this still carry DATA.impact, DATA.impactLog and config.impactMinutes;
    they are inert (nothing reads them) and repairAuxiliaryCollections cleans them
@@ -10336,6 +10351,79 @@ function queueGainsightItem(kind, customer, payloadText, opts){
     externalId: null, sentAt: null, error: null});
   if(opts && opts.defer) return true;   // the caller saves once, so one user action leaves one undo snapshot
   return saveData();
+}
+/* C-5 (plan P5): the structured fields a queue item carries to the connector. `kind` is the queue kind string, verbatim.
+   Pure: reads the customer and ctx, writes nothing. The pasteable `payload` text stays the offline fallback. */
+const SEVERITY_BY_SEV = {1: 'low', 2: 'medium', 3: 'high'};
+function gainsightFieldsFor(kind, customer, ctx){
+  const x = ctx || {};
+  if(kind === 'Pending items batch'){
+    return {gates: inImplementation(customer) ? [] : GATE_DEFS.filter(g => g.isMissing(customer))
+      .map(g => ({gateKey: g.key, contractKey: g.contractKey, gainsightAction: g.gainsightAction}))};
+  }
+  if(kind === GOAL_GAINSIGHT_KIND){
+    const g = x.goal || {};
+    return {event: x.event || 'changed', objective: g.text || '', goalType: g.type || null, targetCycle: g.targetCycle || '',
+      verdict: g.verdict || null, changeReason: g.changeReason || ''};
+  }
+  if(kind === 'At-Risk CTA'){
+    const it = x.item || {};
+    return {ctaName: 'At-Risk CTA — ' + customer.name, reason: (it.category && it.category.label) || it.detail || '',
+      severity: SEVERITY_BY_SEV[it.sev] || 'medium'};
+  }
+  if(kind === 'Success Outcome Plan'){
+    return {outcomes: [String(x.outline || draftOutcomeTemplate(customer)).split('\n')[0]]};
+  }
+  return {};
+}
+/* C-5: the POST /v1/push body. An item already sent is never in it, so a second click cannot send it twice. */
+function buildPushRequest(items){
+  return {items: (Array.isArray(items) ? items : []).filter(q => q && q.status !== 'sent').map(q => ({
+    id: q.id, kind: q.kind,
+    customerRef: {gainsightId: ((DATA.customers.find(c => c.id === q.customerId) || {}).gainsightId || '').trim() || null, name: q.customerName},
+    fields: isRecordObject(q.fields) ? q.fields : {}}))};
+}
+/* C-5: one result per item, matched by id. Nothing becomes sent without an externalId from the connector, and an item that is
+   already sent is never rewritten. Unknown ids are ignored. Does not save; the caller saves once. */
+function applyPushResults(results){
+  const out = {sent: 0, failed: 0};
+  const queue = getGainsightQueue();
+  (Array.isArray(results) ? results : []).forEach(r => {
+    const q = isRecordObject(r) ? queue.find(x => x.id === r.id) : null;
+    if(!q || q.status === 'sent') return;
+    if(r.status === 'sent' && typeof r.externalId === 'string' && r.externalId){
+      q.status = 'sent'; q.externalId = r.externalId.slice(0, 200); q.sentAt = new Date().toISOString(); q.error = null; out.sent++;
+    }else if(r.status === 'failed'){
+      q.status = 'failed'; q.error = (typeof r.error === 'string' && r.error ? r.error : 'The connector could not send this item.').slice(0, 500); out.failed++;
+    }
+  });
+  return out;
+}
+function gainsightSentToday(queue){
+  const today = todayISO();
+  return (Array.isArray(queue) ? queue : []).filter(q => q && q.status === 'sent' && q.sentAt && localDateISO(new Date(q.sentAt)) === today).length;
+}
+async function sendGainsightQueue(ids){
+  if(ui.gainsightPushBusy) return null;
+  const want = Array.isArray(ids) ? ids : null;
+  const items = getGainsightQueue().filter(q => q.status !== 'sent' && (!want || want.includes(q.id)));
+  if(!items.length){ showToast('Nothing to send — everything queued has already been sent.'); return null; }
+  ui.gainsightPushBusy = true;
+  let resp;
+  try{ resp = await connectorRequest('/v1/push', {method: 'POST', body: buildPushRequest(items)}); }
+  catch(e){
+    showToast(e && e.code === 'OFFLINE' ? 'Connector offline — nothing was sent. Use Copy all & queue to paste into Gainsight instead.'
+      : e && e.code === 'UNAUTHORIZED' ? 'The connector rejected the token — check it in Settings. Nothing was sent.'
+      : 'Could not send to Gainsight right now. Nothing was marked sent.');
+    return null;
+  }
+  finally{ ui.gainsightPushBusy = false; }
+  const res = applyPushResults(resp && resp.results);
+  if(res.sent || res.failed) saveData();
+  const unanswered = items.length - res.sent - res.failed;
+  showToast(`Sent ${res.sent} to Gainsight` + (res.failed ? `, ${res.failed} failed — see the queue to retry` : '') + (unanswered > 0 ? `, ${unanswered} not confirmed (still queued)` : '') + '.');
+  render();
+  return res;
 }
 /* v98: one download path. Four call sites had hand-rolled the same blob/anchor/
    revoke dance; the report made it five, which is where a helper stops being
@@ -11978,7 +12066,8 @@ function renderBeatPrep(beat){
    The final movement. Everything the day queued, grouped and pushed in one go,
    so nothing in a beat has to break stride to reach Gainsight. */
 function renderDayClose(day){
-  const q = getGainsightQueue().filter(it => it.status === 'queued');
+  const q = getGainsightQueue().filter(it => it.status !== 'sent');   // C-5: a failed item is still outstanding
+  const sentToday = gainsightSentToday(getGainsightQueue());
   const byKind = q.reduce((m,it)=>{ (m[it.kind] = m[it.kind] || []).push(it); return m; }, {});
   const kinds = Object.keys(byKind).sort();
   const weekAhead = DATA.customers
@@ -11995,12 +12084,15 @@ function renderDayClose(day){
               <div class="close-names">${byKind[k].map(it => escapeHtml(it.customerName || it.customerId)).join(' · ')}</div>
             </div>`).join('')}
         </div>
-        <p class="bp-basis">Queued items live in the book and export as JSON. There is no Gainsight transport yet, so nothing here is sent automatically — review them, then paste or hand the export to middleware.</p>
+        <p class="bp-basis">Queued items live in the book and export as JSON. ${connectorConfigured()
+          ? 'Nothing here is sent until you press Send to Gainsight on the queue — review them first, or paste or hand the export to middleware.'
+          : 'No connector is configured, so nothing here is sent automatically — review them, then paste or hand the export to middleware.'}</p>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;">
           <button class="btn btn-primary btn-sm" data-goto-gainsight>Review all ${q.length}</button>
           <button class="btn btn-sm" data-download-gainsight>Export CSV</button>
         </div>`
         : `<p class="dm-note">Nothing queued yet. Actions you take in a beat collect here instead of interrupting the day.</p>`}
+      <p class="bp-basis" data-sent-today>Sent to Gainsight today: <strong>${sentToday}</strong></p>
 
       <div class="close-wrap">
         ${dayIsClosed()
@@ -12273,7 +12365,7 @@ function renderCustomerGainsightTab(c){
       <button class="btn btn-sm" data-open-gainsight-copy="${c.id}">Copy full account summary</button>
       ${queued ? `<span class="badge badge-watch" title="Items already staged in the export queue for this account — see the Risk tab to export or attempt a sync.">${queued} queued</span>` : ''}
     </div>
-    <p style="color:var(--accent-watch-text); font-size:var(--text-xs); margin:0 0 12px;">Nothing is sent to Gainsight. "Copy all &amp; queue" puts the items on your clipboard to paste, and stages them in the local export queue that a future backend would consume — the push transport does not exist yet.</p>
+    <p style="color:var(--accent-watch-text); font-size:var(--text-xs); margin:0 0 12px;">"Copy all &amp; queue" puts the items on your clipboard to paste and stages them in the local queue. Nothing is sent to Gainsight until a connector is configured and you press Send to Gainsight on the Risk tab queue.</p>
     <div>
       ${items.map(it => renderGainsightItemRow(it, {showCustomer:false})).join('')}
     </div>
@@ -13522,7 +13614,7 @@ function renderOverviewTab(c, risk){
       <div style="border-top:1px solid var(--border-soft); margin:12px 0 0; padding-top:10px;">
         <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
           <span style="font-size:var(--text-sm); font-weight:700; color:var(--text);">What you need to do ${pending.length ? `<span class="count">${pending.length}</span>` : ''}</span>
-          ${pending.length ? `<button class="btn btn-sm" data-gainsight-batch="${c.id}" title="Copies every item below as paste-ready text AND adds them to the Gainsight queue for a future push. Nothing is sent to Gainsight — no transport exists yet.">Copy all &amp; queue</button>` : ''}
+          ${pending.length ? `<button class="btn btn-sm" data-gainsight-batch="${c.id}" title="Copies every item below as paste-ready text AND adds them to the Gainsight queue. Nothing is sent to Gainsight until you press Send to Gainsight on the Risk tab queue (needs a connector).">Copy all &amp; queue</button>` : ''}
         </div>
         ${inImplementation(c)
           ? `<p style="margin:0; color:var(--text-faint); font-size:var(--text-sm);">Gainsight onboarding admin begins at Go-Live — nothing is owed on this account yet.</p>`
@@ -14429,7 +14521,7 @@ function bindBeatPane(root){
   q('[data-fp-outcome-queue]').forEach(btn => btn.addEventListener('click', ()=>{
     const c = fpCustomer(btn.dataset.fpOutcomeQueue);
     if(!c) return;
-    queueGainsightItem('Success Outcome Plan', c, draftOutcomeTemplate(c));
+    queueGainsightItem('Success Outcome Plan', c, draftOutcomeTemplate(c), {fields: gainsightFieldsFor('Success Outcome Plan', c)});
     showToast('Added to the close — push it with everything else at the end of the day.');
     render();
   }));
@@ -14486,7 +14578,7 @@ function bindBeatPane(root){
     const it = riskByKey(btn.dataset.fpQueue);
     if(!it) return;
     markRiskActioned(it, false);
-    queueGainsightItem('At-Risk CTA', it.c, buildRiskCtaText(it));
+    queueGainsightItem('At-Risk CTA', it.c, buildRiskCtaText(it), {fields: gainsightFieldsFor('At-Risk CTA', it.c, {item: it})});
     showToast('Queued for the close — push it from the end of the day or the Risk tab.');
     render();
   }));
@@ -14591,9 +14683,9 @@ function attachEvents(){
   $$('[data-queue-cta]').forEach(btn => btn.addEventListener('click', ()=>{
     const item = _riskHubCache[parseInt(btn.dataset.queueCta, 10)];
     if(!item) return;
-    if(queueGainsightItem('At-Risk CTA', item.c, buildRiskCtaText(item))){
+    if(queueGainsightItem('At-Risk CTA', item.c, buildRiskCtaText(item), {fields: gainsightFieldsFor('At-Risk CTA', item.c, {item})})){
       markRiskActioned(item, false); // v60
-      showToast('Queued for Gainsight — exports as JSON until the push transport is connected');
+      showToast(connectorConfigured() ? 'Queued for Gainsight — use Send to Gainsight on the queue to push it' : 'Queued for Gainsight — exports as JSON until a connector is set up');
     }
     render();
   }));
@@ -14631,6 +14723,8 @@ The draft is discarded. The risk itself stays open.`)) return;
     showToast('Removed from the queue.');
     saveData(); render();
   }));
+  $('#btn-send-gainsight') && $('#btn-send-gainsight').addEventListener('click', ()=> sendGainsightQueue());   // C-5
+  $$('[data-queue-retry]').forEach(btn => btn.addEventListener('click', ()=> sendGainsightQueue([btn.dataset.queueRetry])));
   $('#btn-export-gainsight-queue') && $('#btn-export-gainsight-queue').addEventListener('click', ()=>{
     downloadGainsightQueue();
     showToast('Queue exported — hand the JSON to your middleware or work it manually');
@@ -15505,7 +15599,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     const items = pendingGainsightItems().filter(it => it.customerId === cust.id);
     if(!items.length){ showToast('Nothing outstanding for this account.'); return; }
     const text = buildGainsightBatchText(cust, items);
-    queueGainsightItem('Pending items batch', cust, text); // saves; the Risk tab exports the queue
+    queueGainsightItem('Pending items batch', cust, text, {fields: gainsightFieldsFor('Pending items batch', cust)}); // saves; the Risk tab exports the queue
     copyToClipboard(text, `${items.length} item${items.length===1?'':'s'} copied and queued — paste into Gainsight (nothing was sent)`);
     render();
   }));

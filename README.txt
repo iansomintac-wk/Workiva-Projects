@@ -140,7 +140,7 @@ never touched. GRC disclosure submission stays empty.
 
 Running the graduation checks headlessly (needs Chrome or Edge):
 
-  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 452
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 455
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
@@ -183,6 +183,16 @@ contacts only add people the account does not have (never edit or remove one); a
 CSM owner is shown only (the tracker has no such field). A blank in Gainsight never erases your value. Stage, goals,
 verdicts, notes and scores are never written. The Gainsight values from the last update are kept on the account. The
 spreadsheet value import in Settings is unchanged.
+"Send to Gainsight" (task C-5): with a connector set up, the Gainsight queue on the Risk tab has a Send to Gainsight
+button. It sends only the items that are not yet sent, in one request, and marks each item by the connector's answer:
+sent shows "sent" and the id Gainsight returned; failed shows the error and a Retry button (Retry sends just that
+item). Some can succeed while others fail. An item is never marked sent without an id from the connector, a sent item
+is never sent again, and a failed or offline push leaves the item in the queue. Every queued item now also carries
+structured fields for its kind (the gates for a Pending items batch, the objective for a Success Plan objective, the CTA
+name, reason and severity for an At-Risk CTA, the outcome for a Success Outcome Plan). Without a connector nothing
+changes: the button is not shown and Copy all & queue, the paste text and Export queue (JSON) work as before. The day
+close shows "Sent to Gainsight today", counted from items marked sent today. Items already queued before this change
+carry no fields and are sent with empty ones.
 AI (task B3): POST /v1/ai; ai.adapter is fake (default), claude, openai or gemini, with the key only in the
 git-ignored connector/config.json or env CONNECTOR_AI_KEY. The real AI adapters are tested against a stubbed
 fetch only; no real call has been made.
@@ -203,8 +213,8 @@ Verifying a change
 Both halves carry self-check suites: the tracker's is injected by tools/selfcheck.mjs from
 tools/selfchecks.js (it is not in the shipped file); the guide's is in the page. After any edit:
 
-  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 452
-            must be 452/452 (the suite lives in tools/selfchecks.js and is not shipped)
+  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 455
+            must be 455/455 (the suite lives in tools/selfchecks.js and is not shipped)
   guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
             must be 18/18 (window.runGuideSelfChecks() also works in the console)
 
