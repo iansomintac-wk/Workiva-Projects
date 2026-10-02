@@ -31,13 +31,13 @@ blob is LF and its working tree is CRLF here (19,297 bytes longer than the
 blob), so the two hash differently. The guide is the same: LF blob, CRLF
 working tree (859 CR lines), so its two hashes differ.
 
-  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task C-5 (push); the C-4 figure 29ba5819... is superseded.
-    The blob is LF. In this worktree the working tree was LF too when measured (the C-2 to C-5 edits rewrote it LF), so the two hashes
+  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task C-6 (Brief my day); the C-5 figure 96a503c0... is superseded.
+    The blob is LF. In this worktree the working tree was LF too when measured (the C-2 to C-6 edits rewrote it LF), so the two hashes
     are identical here; where core.autocrlf yields CRLF they will differ.)
-    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,219,378 bytes)
-    96a503c06277fa005340be36ee709b7494127b6693f1e1c388f2ffec45695846
-    WORKING TREE (LF in this checkout at measurement, `sha256sum <file>`, 1,219,378 bytes)
-    96a503c06277fa005340be36ee709b7494127b6693f1e1c388f2ffec45695846
+    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,228,361 bytes)
+    fb952bb3c6e44f0b14cc5d038afe2fe83af957c2c293e0011070aa61fa1514bc
+    WORKING TREE (LF in this checkout at measurement, `sha256sum <file>`, 1,228,361 bytes)
+    fb952bb3c6e44f0b14cc5d038afe2fe83af957c2c293e0011070aa61fa1514bc
   osm-runway-onboarding-1.0.html   (changed at A5: two time-saved cards replaced/removed; the 598bbb86... figure is stale)
     GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 183,964 bytes)
     d3e4c8723caca88abb1947264049704d1e23cfb466553854561ce86ffdd9a392
@@ -50,7 +50,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   455/455 passed, 0 failed
+  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   459/459 passed, 0 failed
   window.runGuideSelfChecks()                                              18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -156,12 +156,12 @@ check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
 four remaining failures are exactly the pre-existing, verified-non-defect
 four above, which need a populated book on their own terms and are not
 this defect. The tracker suite as a whole therefore still needs seeding to
-run clean, so — at the CURRENT suite count, 455 (369 when this paragraph was
+run clean, so — at the CURRENT suite count, 459 (369 when this paragraph was
 written, after v74.5 was added; the count moves with every graduation-plan task) —
 the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 455
+       --seed demo-seed.js --expect 459
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -1711,3 +1711,30 @@ TRIM C-5 - PUSH, "SEND TO GAINSIGHT" (suite 452 -> 455)
     unchanged: it makes no claim about queue transport); connector contract tests `# pass 41`, `# fail 0`; C-4 probe still 11/11.
     SHA-256 block re-measured above. guide-manifest.json count 455 and its open item reworded.
   Evidence: docs/superpowers/evidence/trim-and-integration/C-5.md.
+
+TRIM C-6 - AI DECISION SUPPORT, "BRIEF MY DAY" (ruling R4; suite 455 -> 459)
+  - R4, Ian's words: "Today per-account, Copilot = book read (Recommended)".
+  - What: buildDayBriefPrompt(customers) (one [id:<id>] <name> - <SIGNAL_DEFS action (reasons)> line per open account,
+    JSON-only answer, a reason on every action and flag); parseDayBrief(text, customers) (strips a code fence; drops an id not
+    in the book, an action without a reason, a flag without a reason or with a kind other than drift/risk; bad JSON ->
+    {byId:{}, dropped:0, error:'unreadable'}; never throws); async briefMyDay() -> callAiAPI(prompt, {task:'brief_my_day',
+    maxTokens:3200}); ui.dayBrief (session only, no schema change); renderDayBriefBar (Today: button only when a key or a
+    connector exists, real-name disclosure, status, the length-cap notice) and renderDayBriefFor(c, compact) on the track,
+    below-the-day rows, the beat panel and renderOverviewTab. Copilot: needsAttentionList() call and its "N need attention"
+    line removed from renderCopilot; CP_AI_SECTIONS WEEK lens asks what moved this week, NEXT lens asks for patterns across
+    accounts (keys and delimiter words unchanged).
+  - Checks first, four seen failing (455/459 passed, 4 failed: "parseDayBrief is not defined", c6b noCopy:false,
+    "buildDayBriefPrompt is not defined", "renderDayBriefFor is not defined"), then the code. Checks added: 4 (ai-brief c6a,
+    c6b, c6c, c6d; the plan listed three, c6d covers escaping, the length cap, placement and on-demand/advisory). Removed or
+    weakened: none. c6c resets the Today memo before its baseline (a stale memo from an earlier check made the first read differ).
+  - Async path (stub connector fetch answering like the fake, real button click):
+    node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js,docs/superpowers/evidence/trim-and-integration/c6-async-probe.js --fn c6ProbeResults --expect 11
+    -> 11/11 (incl. DATA byte-identical after a brief, no request on render, escaped model text, no console errors).
+  - Fake-connector smoke (plan step 6, real fetch to node connector/server.mjs with fake AI): 16 of 16 open accounts briefed.
+    Run with a temporary copy of tools/selfcheck.mjs without --allow-file-access-from-files: with that flag Chrome sends
+    Origin "file://", which the connector (null origin and localhost only) correctly refuses; a normal browser sends "null".
+  - Mutation proof: parseDayBrief made to keep reasonless actions -> 458/459, c6a red (keys best0,best1, dropped 2). Restored: 459/459.
+  - GREEN: `runSelfChecks: 459/459 passed, 0 failed`; `runGraduationScenarios: 6/6 passed, 0 failed`; guide 18/18 (guide text
+    unchanged: no claim it makes became false); connector contract tests `# pass 41`, `# fail 0`. SHA-256 block re-measured
+    above. guide-manifest.json count 459.
+  Evidence: docs/superpowers/evidence/trim-and-integration/C-6.md.

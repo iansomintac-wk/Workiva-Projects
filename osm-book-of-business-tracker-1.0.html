@@ -2210,10 +2210,10 @@ let _aiReqSeq = 0;
    If the key is missing, expired, or the provider is down, the tab still works —
    which is the entire reason the reveal is free. */
 const CP_AI_SECTIONS = [
-  {key:'week',  head:'WEEK',  lens:'the next few days — who you are in front of, what you owe them, what could go wrong before you speak'},
+  {key:'week',  head:'WEEK',  lens:'what moved in the book this week and the next few days — which way the book is heading, and what could go wrong before your calls'},
   {key:'month', head:'MONTH', lens:'the thirty-day horizon — graduation dates, SLA pressure, and which commitments are at risk'},
   {key:'impl',  head:'BUILDS', lens:'partner-led implementations — where a build looks stuck, and which ones warrant a check-in rather than an escalation'},
-  {key:'next',  head:'NEXT',  lens:'per-account next actions, drawn from what is actually logged — name the account id and the single act you would take'}
+  {key:'next',  head:'NEXT',  lens:'patterns across accounts — what several accounts share (the same stall, the same gap, the same kind of risk) and the one move that covers them together; one-account next actions belong to Today, not here'}
 ];
 function parseAiSections(text){
   const out = {};
@@ -2341,6 +2341,138 @@ function renderChapterAi(key){
   return `<div class="cp-ai-note"><span class="advisor-badge ai">AI</span>
     ${named.split(/\n{2,}/).map(pp => `<p>${escapeHtml(pp).replace(/\n/g, '<br>')}</p>`).join('')}
     ${st.truncated && isLast ? `<p class="dk-hint">The response hit its length cap and this section may be cut short — regenerate if it ends mid-thought.</p>` : ''}</div>`;
+}
+
+/* ---- C-6: "Brief my day" (ruling R4, Ian's words: "Today per-account, Copilot = book read
+   (Recommended)") ----
+   One next action and any drift or risk flags per open account, each with its reason, shown on
+   Today and in the account's Overview. Copilot keeps the book-wide read. The deterministic
+   SIGNAL_DEFS rows are untouched and need no connector or key; this only adds a line beside them.
+   Advisory: the brief lives in ui.dayBrief (session only, never in DATA) and nothing here writes
+   the book. It runs only when the OSM presses the button, never on load or on a timer.
+   Like Call Prep, and unlike the Copilot read, it sends real account names, so the Today bar says
+   so every time. */
+function dayBriefSignalLines(c){
+  if(inImplementation(c)){
+    const r = getRecommendedAction(c);   // partner-lens; returns before any suppression bookkeeping
+    return [r.action + (r.reasons.length ? ' (' + r.reasons.join('; ') + ')' : '')];
+  }
+  const out = [];
+  for(const def of SIGNAL_DEFS){
+    if(isSignalSuppressed(c, def.key)) continue;
+    let sig = null;
+    try{ sig = def.detect(c); }catch(e){ sig = null; }
+    if(!sig) continue;
+    if(def.action){
+      const a = def.action(c, sig);
+      out.push(a.action + (a.reasons && a.reasons.length ? ' (' + a.reasons.join('; ') + ')' : ''));
+    } else if(def.step){
+      out.push(def.step(c, sig));
+    }
+  }
+  return out;
+}
+function buildDayBriefPrompt(customers){
+  const open = (customers || []).filter(c => c && c.stage !== 'graduated');
+  const lines = open.map(c => {
+    const sigs = dayBriefSignalLines(c);
+    return `[id:${c.id}] ${c.name} — ${sigs.length ? sigs.join(' | ') : 'no tracker signal firing'}`;
+  });
+  return `You are helping an Onboarding Success Manager at Workiva plan today. Below is one line per open account: its id, its name, and the signals the tracker itself computed, each with the tracker's own reason in brackets.
+
+ACCOUNTS:
+${lines.join('\n')}
+
+For every account above, give one next action for today and any drift or risk flags. Every action and every flag must carry a reason drawn from that account's line; anything without a reason is discarded. Do not invent facts that are not in the lines above. Copy each id exactly as written after "id:".
+
+Answer with JSON only, no prose and no code fence, in exactly this shape:
+{"accounts":[{"id":"<id>","nextAction":"<one act for today>","reason":"<why>","flags":[{"kind":"drift or risk","text":"<the flag>","reason":"<why>"}]}]}`;
+}
+function parseDayBrief(text, customers){
+  let src = String(text || '').trim();
+  const fence = src.match(/^```[a-zA-Z]*\s*([\s\S]*?)\s*```$/);
+  if(fence) src = fence[1].trim();
+  let obj = null;
+  try{ obj = JSON.parse(src); }catch(e){ obj = null; }
+  if(!obj || !Array.isArray(obj.accounts)) return {byId:{}, dropped:0, error:'unreadable'};
+  const known = new Set((customers || []).filter(Boolean).map(c => String(c.id)));
+  const str = v => typeof v === 'string' ? v.trim() : '';
+  const byId = {};
+  let dropped = 0;
+  obj.accounts.forEach(a => {
+    const id = a && a.id !== undefined && a.id !== null ? String(a.id) : '';
+    const nextAction = str(a && a.nextAction), reason = str(a && a.reason);
+    if(!id || !known.has(id) || !nextAction || !reason){ dropped++; return; }
+    const flags = [];
+    (Array.isArray(a.flags) ? a.flags : []).forEach(f => {
+      const ft = str(f && f.text), fr = str(f && f.reason);
+      if(!ft || !fr || !(f.kind === 'drift' || f.kind === 'risk')){ dropped++; return; }
+      flags.push({kind: f.kind, text: ft, reason: fr});
+    });
+    byId[id] = {nextAction, reason, flags};
+  });
+  return {byId, dropped};
+}
+function aiAvailable(){
+  return connectorConfigured() || !!getAiSettings().apiKey;
+}
+async function briefMyDay(){
+  const myReq = ++_aiReqSeq;
+  ui.dayBrief = {loading:true, req:myReq, at:null, byId:{}};
+  render();
+  try{
+    const res = await callAiAPI(buildDayBriefPrompt(DATA.customers), {task: 'brief_my_day', maxTokens: 3200});
+    if(!ui.dayBrief || ui.dayBrief.req !== myReq) return;
+    const parsed = parseDayBrief(res.text, DATA.customers);
+    ui.dayBrief = {loading:false, req:myReq, at: new Date().toISOString(), byId: parsed.byId, dropped: parsed.dropped,
+      truncated: !!res.truncated,
+      error: parsed.error ? 'The answer could not be read as a day brief, so nothing is shown. Press Brief my day to try again.' : ''};
+  }catch(e){
+    if(ui.dayBrief && ui.dayBrief.req !== myReq) return;
+    ui.dayBrief = {loading:false, req:myReq, at:null, byId:{}, error: e.message || 'Something went wrong'};
+  }
+  render();
+}
+/* The Today bar: the button, what leaves the browser, and the brief's status. Renders nothing
+   when no AI is available and no brief exists, so Today looks exactly as it did. */
+function renderDayBriefBar(){
+  const st = ui.dayBrief;
+  const can = aiAvailable();
+  if(!can && !st) return '';
+  const n = st && st.byId ? Object.keys(st.byId).length : 0;
+  let status = '';
+  if(st && st.loading) status = `<p class="bp-basis" role="status">Reading your book…</p>`;
+  else if(st && st.error) status = `<div class="cp-ai-note bad">${escapeHtml(/No API key/i.test(st.error) ? 'No API key configured — add one in Settings, or set up the connector.' : st.error)}</div>`;
+  else if(st && st.at) status = `
+    <p class="bp-basis" role="status">Briefed at ${escapeHtml(new Date(st.at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}))}: ${n} account${n===1?'':'s'} with a next action, shown on each account below and in its Overview${st.dropped ? `. ${st.dropped} item${st.dropped===1?' was':'s were'} left out for having no reason or naming an account not in this book` : ''}. Advisory — nothing changes until you act.</p>
+    ${st.truncated ? `<p class="dk-hint">The response hit its length cap and may be cut short — regenerate if accounts are missing.</p>` : ''}`;
+  return `
+    <div class="section-card" style="margin-bottom:16px;" data-day-brief-bar>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+        <span style="font-size:var(--text-sm); font-weight:700; color:var(--text);">Brief my day <span class="advisor-badge ai">AI</span></span>
+        ${can ? `<button class="btn btn-sm" id="btn-brief-my-day" ${st && st.loading ? 'disabled' : ''}>${st && st.loading ? 'Briefing…' : (st && st.at ? 'Brief again' : 'Brief my day')}</button>` : ''}
+      </div>
+      <p style="color:var(--text-dim); font-size:var(--text-xs); margin:6px 0 0;">One next action and any drift or risk flags per open account, each with its reason, read from the signals the tracker already computes. The ranked day below does not change.</p>
+      <p style="color:var(--accent-watch-text); font-size:var(--text-xs); margin:4px 0 0;">Sends each open account's real name and the tracker's signal reasons (which can quote your notes) to ${connectorConfigured() ? 'the connector\'s AI provider' : 'your configured provider'} — not a pseudonymized summary.</p>
+      ${status}
+    </div>`;
+}
+/* One account's brief. compact = one line for the track and the rows below the day; full for
+   the beat panel and the Overview. Everything the model wrote is escaped. */
+function renderDayBriefFor(c, compact){
+  const st = ui.dayBrief;
+  const b = c && st && st.byId && st.byId[c.id];
+  if(!b) return '';
+  const flags = b.flags || [];
+  if(compact) return `<div class="bp-basis" data-day-brief="${escapeAttr(c.id)}"><span class="advisor-badge ai">AI</span> ${escapeHtml(b.nextAction)} — why: ${escapeHtml(b.reason)}${flags.length ? ` · ${flags.length} flag${flags.length===1?'':'s'}` : ''}</div>`;
+  return `
+    <div class="cp-ai-note" data-day-brief="${escapeAttr(c.id)}"><span class="advisor-badge ai">AI</span>
+      <p><strong>${escapeHtml(b.nextAction)}</strong></p>
+      <p>why: ${escapeHtml(b.reason)}</p>
+      ${flags.map(f => `<p><span class="badge ${f.kind === 'risk' ? 'badge-risk' : 'badge-watch'}">${escapeHtml(f.kind)}</span> ${escapeHtml(f.text)} — why: ${escapeHtml(f.reason)}</p>`).join('')}
+      ${st.truncated ? `<p class="dk-hint">The response hit its length cap and this brief may be cut short — regenerate if it ends mid-thought.</p>` : ''}
+      <p class="dk-hint">Advisory, from Brief my day. Nothing changes until you act.</p>
+    </div>`;
 }
 
 /* ---- v51: holistic AI Call Prep ----
@@ -8181,6 +8313,7 @@ let ui = {
   copilotOpen: false,
   aiChapters: null,
   aiCustomerBriefs: {},   // {customerId: {loading, text, error}} — transient, never persisted to DATA
+  dayBrief: null,         // C-6: {at, byId:{[id]:{nextAction, reason, flags}}, dropped, truncated, loading, error} — session only, never persisted (no schema change)
   riskSummaryAi: {},      // v65: {riskLogKey: {loading, error}} — transient; the SUMMARY itself persists on the risk-memory entry
   sessionDebriefs: {},    // {activityId: {loading, text, error}} — transient, never persisted to DATA
   debriefInputs: {},      // v50/v51: {activityId: {questions:''}} — outstanding-question drafts, transient, never persisted to DATA (transcripts live ON the activity record since v51)
@@ -10795,7 +10928,8 @@ function renderCopilot(){
   const bottlenecks = getCurriculumBottlenecks();
   const clusters = getDomainImbalanceClusters();
   const ttfv = portfolioTTFVStat();
-  const attention = needsAttentionList();
+  /* C-6 (R4): Copilot is the book read. Its own copy of needsAttentionList is gone — the
+     per-account list lives on Today, and the weekly diff above already says who joined it. */
   const activeKey = CP_WINDOWS[ui.copilotFocusKey] ? ui.copilotFocusKey : 'week';
 
   /* v90: a labelled deck. The label survives from the chip rows it replaces,
@@ -10836,7 +10970,7 @@ function renderCopilot(){
       ${deck('Came off', digest.resolved, null)}
       ${digest.backFromPause.length ? `<div class="cp-names"><span class="cp-names-label">Back from pause</span>${digest.backFromPause.slice(0,8).map(n=>`<span class="cp-chip-more">${escapeHtml(n)}</span>`).join('')}</div>` : ''}`
       : `<p class="cp-lede">No baseline yet. The tracker takes its first weekly snapshot today, so from next week this reads as a diff — who joined Needs Attention, who came off, who came back from pause. Nothing is invented in the meantime.</p>`}
-    <p class="cp-note">${attention.length} account${attention.length===1?'':'s'} need attention right now${ttfv ? ` · median time to first value across the book is ${ttfv.median} days` : ''}.</p>`);
+    ${ttfv ? `<p class="cp-note">Median time to first value across the book is ${ttfv.median} days.</p>` : ''}`);
 
   const monthCalls = callsToPrepare(30).filter(x => x.inDays > 7);
   const monthBlock = chapter('month', 'Thirty days out', 'The month ahead', `
@@ -11952,6 +12086,8 @@ function renderBeatPanel(beat, dispatchChips){
 
     ${renderBeatStanding(c)}
 
+    ${renderDayBriefFor(c)}
+
     ${beat.call ? renderBeatPrep(beat) : ''}
 
     ${row ? `
@@ -12203,6 +12339,7 @@ function renderDay(day, dispatchChips){
             <dd class="ds-do">${escapeHtml(b.headline || (b.call && b.call.next ? b.call.next.template.title : 'Prep this call'))}</dd>
             ${out.text ? `<dt>Outstanding</dt><dd>${escapeHtml(out.text)}</dd>` : ''}
           </dl>
+          ${renderDayBriefFor(c, true)}
           <div class="ds-why ds-faint">${b.severity === 4 ? '<span class="ds-flag">top severity</span> · ' : ''}about ${b.effortMin} minutes${b.kind === 'call' && b.call && !b.call.prepped ? ' · no prep notes yet' : ''}${b.gapNote ? ` · ${escapeHtml(b.gapNote)}` : ''}</div>
           ${first ? `<div class="day-note">${escapeHtml(ch.note)}</div>` : ''}
         </div>`;
@@ -12302,6 +12439,7 @@ function renderToday(){
             <div class="todo-cust"><button data-open-cust="${row.customerId}" data-open-tab="${escapeAttr(row.panelTab)}">${escapeHtml(row.customerName)}</button></div>
             <div class="todo-meta">${row.health}% health · ${row.daysSinceTouch===null?'no activity yet':row.daysSinceTouch+' days since last touchpoint'} · ~${row.effortMin} min</div>
             <div style="font-weight:600; margin-top:2px;">${escapeHtml(row.headline)}</div>
+            ${renderDayBriefFor(DATA.customers.find(x => x.id === row.customerId), true)}
           </div>
           <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
             ${diff.newIds.has(row.customerId) ? `<span class="badge badge-new">NEW</span>` : ''}
@@ -12326,6 +12464,7 @@ function renderToday(){
   return `
     <div>
       ${renderDayStanding(day)}
+      ${renderDayBriefBar()}
       ${readiness}
       ${renderDay(day, dispatchChips)}
       ${restBlock}
@@ -13638,6 +13777,7 @@ function renderOverviewTab(c, risk){
           <p style="margin:8px 0 4px; font-size:var(--text-xs); color:var(--text-faint);">Then:</p>
           <ul style="margin:0; padding-left:16px; color:var(--text-dim); font-size:var(--text-sm);">${nextSteps.slice(1).map(s=>`<li>${escapeHtml(s)}</li>`).join('')}</ul>
         ` : ''}
+        ${renderDayBriefFor(c)}
       </div>
 
       <details style="margin-top:12px;">
@@ -15042,6 +15182,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     ui.dayEntered = false; // let the new layout land on the beat you were on
     render();
   }));
+  $('#btn-brief-my-day') && $('#btn-brief-my-day').addEventListener('click', briefMyDay);   // C-6
   const openRead = $('#btn-open-read');
   if(openRead) openRead.addEventListener('click', ()=>{ ui.copilotOpen = true; render(); });
   $$('[data-ai-dismiss]').forEach(b => b.addEventListener('click', ()=>{

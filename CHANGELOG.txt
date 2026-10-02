@@ -298,3 +298,14 @@ Send to Gainsight (task C-5).
       queue and keeps failed items in "what you queued".
     - The queue's "no transport" wording now says so only when no connector is configured.
     - 455 self-checks (was 452).
+
+Brief my day (task C-6, ruling R4).
+
+    - With an AI key or a connector set up, Today has a Brief my day button. It asks the AI for one next action and
+      any drift or risk flags per open account, each with its reason, from the signals the tracker already computes.
+      Anything without a reason is dropped. The answer shows on Today, in the beat panel and in the account's
+      Overview, marked AI and advisory; nothing is written to the book and nothing runs until you press the button.
+      The ranked day is unchanged. With no key and no connector the button is not shown.
+    - Copilot is the book read: its own Needs Attention count is gone and its AI read asks for patterns across
+      accounts and what moved this week instead of per-account next actions.
+    - 459 self-checks (was 455).

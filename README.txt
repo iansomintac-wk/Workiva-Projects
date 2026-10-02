@@ -37,8 +37,10 @@ Keeps an OSM's book of business in one place and turns it into a day's work.
               per-account runway strip, health and risk scoring, domain
               assessment, session logging, and a graduation model.
   Risk        Open risks with executive summaries and inline next steps.
-  Copilot     An AI layer over the book: four-lens account reads, call prep,
-              routing, and suggested next actions. Requires an API key.
+  Copilot     The read on the whole book: what moved this week, what lands
+              this month, patterns across accounts, plus an optional AI read
+              of the same. Per-account AI next actions live on Today (Brief my
+              day). AI needs a key or the connector.
   Handoff     Sales intake and the CSM knowledge-transfer packet.
               The field set here is PROVISIONAL — a product open question.
   Settings    Thresholds, Gainsight CSV import, export/import, and automatic
@@ -140,7 +142,7 @@ never touched. GRC disclosure submission stays empty.
 
 Running the graduation checks headlessly (needs Chrome or Edge):
 
-  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 455
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 459
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
@@ -193,6 +195,16 @@ name, reason and severity for an At-Risk CTA, the outcome for a Success Outcome 
 changes: the button is not shown and Copy all & queue, the paste text and Export queue (JSON) work as before. The day
 close shows "Sent to Gainsight today", counted from items marked sent today. Items already queued before this change
 carry no fields and are sent with empty ones.
+"Brief my day" (task C-6, ruling R4 "Today per-account, Copilot = book read"): with an AI key or a connector set up,
+Today has a Brief my day button. One request (task brief_my_day) sends one line per open account, its real name and
+the tracker's own signal reasons, and asks for one next action plus any drift or risk flags, each with a reason. An
+action or flag without a reason, or for an account not in the book, is dropped and counted. The result shows on each
+account's line on Today, in its beat panel and in its Overview, marked AI; it is advisory and kept for the session only
+(nothing is written to the book). The ranked day is unchanged and needs no AI. A truncated answer shows the usual
+length-cap note. With no key and no connector the bar is not shown. Copilot no longer keeps its own copy of the Needs
+Attention list, and its AI read now asks for patterns across accounts and what moved this week, not per-account to-dos.
+One-off async proof: node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed
+demo-seed.js,docs/superpowers/evidence/trim-and-integration/c6-async-probe.js --fn c6ProbeResults --expect 11.
 AI (task B3): POST /v1/ai; ai.adapter is fake (default), claude, openai or gemini, with the key only in the
 git-ignored connector/config.json or env CONNECTOR_AI_KEY. The real AI adapters are tested against a stubbed
 fetch only; no real call has been made.
@@ -213,8 +225,8 @@ Verifying a change
 Both halves carry self-check suites: the tracker's is injected by tools/selfcheck.mjs from
 tools/selfchecks.js (it is not in the shipped file); the guide's is in the page. After any edit:
 
-  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 455
-            must be 455/455 (the suite lives in tools/selfchecks.js and is not shipped)
+  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 459
+            must be 459/459 (the suite lives in tools/selfchecks.js and is not shipped)
   guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
             must be 18/18 (window.runGuideSelfChecks() also works in the console)
 

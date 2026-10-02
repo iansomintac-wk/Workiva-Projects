@@ -8968,6 +8968,93 @@ function _runSelfChecksInner(){
     }catch(e){ detail = 'threw: ' + e.message; }
     check('gainsight c5c: the day-close count is the queue items sent today (2 of: 2 today, 1 two days ago, 1 failed, 1 sent without a stamp), read from status and sentAt, not from impact counters', ok, detail);
   })();
+  /* C-6 (R4): "Today per-account, Copilot = book read". Pure helpers and source guards only;
+     the async briefMyDay path is proven by docs/superpowers/evidence/trim-and-integration/c6-async-probe.js. */
+  (function(){                                   // c6a
+    let ok = false, detail = '';
+    try{
+      const live = DATA.customers.filter(c => c.stage !== 'graduated');
+      const g1 = live[0].id, g2 = live[1].id;
+      const fake = '```json\n' + JSON.stringify({accounts: [
+        {id: g1, nextAction: 'Call the sponsor', reason: 'no touch in 20 days', flags: [
+          {kind: 'drift', text: 'pace slipping', reason: 'two sessions behind plan'},
+          {kind: 'risk', text: 'champion left', reason: ''}]},
+        {id: g2, nextAction: 'Send the recap', reason: '', flags: []},
+        {id: 'not-in-this-book', nextAction: 'x', reason: 'y', flags: []}]}) + '\n```';
+      const r = parseDayBrief(fake, DATA.customers);
+      const bad = parseDayBrief('Sure! Here is your day: call everyone.', DATA.customers);
+      const keys = Object.keys(r.byId);
+      ok = keys.length === 1 && keys[0] === g1 && r.byId[g1].nextAction === 'Call the sponsor' && r.byId[g1].reason === 'no touch in 20 days'
+        && r.byId[g1].flags.length === 1 && r.byId[g1].flags[0].reason === 'two sessions behind plan' && r.dropped === 3
+        && bad.error === 'unreadable' && Object.keys(bad.byId).length === 0 && bad.dropped === 0;
+      detail = JSON.stringify({keys, dropped: r.dropped, flags: r.byId[g1] && r.byId[g1].flags.length, bad});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    check('ai-brief c6a: parseDayBrief keeps only accounts in the book whose action has a reason, and only flags with a reason (dropped=3); non-JSON is "unreadable", never a throw', ok, detail);
+  })();
+  (function(){                                   // c6b
+    let ok = false, detail = '';
+    const po = ui.copilotOpen, prevLog = JSON.parse(JSON.stringify(DATA.riskLog || {}));
+    try{
+      const noCopy = String(renderCopilot).indexOf('needsAttentionList(') === -1;
+      ui.copilotOpen = true;
+      const html = renderCopilot();
+      const bookRead = html.indexOf('id="cp-book"') !== -1;
+      const nextLens = (CP_AI_SECTIONS.find(s => s.key === 'next') || {}).lens || '';
+      const lenses = CP_AI_SECTIONS.map(s => s.lens).join(' ');
+      const bookPrompt = !/per-account/i.test(lenses) && /across accounts/i.test(nextLens) && /moved/i.test(lenses);
+      ok = noCopy && bookRead && bookPrompt;
+      detail = JSON.stringify({noCopy, bookRead, bookPrompt});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    finally{ ui.copilotOpen = po; DATA.riskLog = prevLog; }
+    check('ai-brief c6b: Copilot no longer keeps its own needsAttentionList copy, still renders the book read (#cp-book), and its AI read asks for patterns across accounts and what moved, not per-account to-dos', ok, detail);
+  })();
+  (function(){                                   // c6c
+    let ok = false, detail = '';
+    const saved = ui.dayBrief;
+    try{
+      _renderMemoResets.forEach(reset => reset());   // a fresh ranking, not one memoized by an earlier check
+      const before = todayActionList().map(r => r.customerId).join(',');
+      ui.dayBrief = {at: new Date().toISOString(), byId: {}};
+      _renderMemoResets.forEach(reset => reset());
+      const during = todayActionList().map(r => r.customerId).join(',');
+      ui.dayBrief = null;
+      _renderMemoResets.forEach(reset => reset());
+      const after = todayActionList().map(r => r.customerId).join(',');
+      const open = DATA.customers.filter(c => c.stage !== 'graduated');
+      const grads = DATA.customers.filter(c => c.stage === 'graduated');
+      const p = buildDayBriefPrompt(DATA.customers);
+      const lines = (p.match(/\[id:[^\]]+\]/g) || []).length;
+      const everyOpen = open.every(c => p.indexOf('[id:' + c.id + ']') !== -1) && grads.every(c => p.indexOf('[id:' + c.id + ']') === -1);
+      const asksReasons = /reason/i.test(p) && /"accounts"/.test(p);
+      const quiet = renderDayBriefFor(open[0]) === '' && (aiAvailable() || renderDayBriefBar() === '');
+      ok = before === during && during === after && lines === open.length && everyOpen && asksReasons && quiet;
+      detail = JSON.stringify({before, during, after, lines, open: open.length, everyOpen, asksReasons, quiet});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    finally{ ui.dayBrief = saved; _renderMemoResets.forEach(reset => reset()); }
+    check('ai-brief c6c: with no brief Today ranks exactly as before (SIGNAL_DEFS rows unchanged) and nothing AI renders; buildDayBriefPrompt has one [id:] line per open account and asks for a reason on everything', ok, detail);
+  })();
+  (function(){                                   // c6d
+    let ok = false, detail = '';
+    const saved = ui.dayBrief;
+    try{
+      const c = DATA.customers.filter(x => x.stage !== 'graduated')[0];
+      ui.dayBrief = {at: new Date().toISOString(), truncated: true, byId: {[c.id]: {nextAction: '<img src=x onerror=alert(1)>', reason: 'quiet <b>20</b> days',
+        flags: [{kind: 'risk', text: 'sponsor left', reason: 'named in the last note'}]}}};
+      const html = renderDayBriefFor(c);
+      const escaped = html.indexOf('<img') === -1 && html.indexOf('&lt;img') !== -1 && html.indexOf('quiet &lt;b&gt;20&lt;/b&gt; days') !== -1;
+      const reasons = /why:/.test(html) && html.indexOf('sponsor left') !== -1 && html.indexOf('named in the last note') !== -1;
+      const capped = html.indexOf('length cap') !== -1;
+      const placed = String(renderOverviewTab).indexOf('renderDayBriefFor(') !== -1 && String(renderBeatPanel).indexOf('renderDayBriefFor(') !== -1;
+      const src = String(briefMyDay);
+      const routed = src.indexOf("task: 'brief_my_day'") !== -1 && src.indexOf('callAiAPI(') !== -1;
+      const advisory = !/saveData|queueSave|DATA\.[a-zA-Z]+\s*=[^=]/.test(src);
+      const onDemand = ['renderToday', 'renderOverviewTab', 'renderBeatPanel', 'render', 'init'].every(n => typeof window[n] !== 'function' || String(window[n]).indexOf('briefMyDay(') === -1);
+      ok = escaped && reasons && capped && placed && routed && advisory && onDemand;
+      detail = JSON.stringify({escaped, reasons, capped, placed, routed, advisory, onDemand});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    finally{ ui.dayBrief = saved; }
+    check('ai-brief c6d: a brief renders escaped with "why:" and each flag\'s reason, shows the length-cap notice when truncated, sits on Today and the Overview, goes out as brief_my_day, never writes the book and never runs from a render', ok, detail);
+  })();
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
