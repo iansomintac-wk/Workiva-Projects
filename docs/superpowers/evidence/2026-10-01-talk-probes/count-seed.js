@@ -1,0 +1,2 @@
+window.probeFn = function(){ let calls=0, total=0; Object.values(DATA.activities).forEach(a=>a.forEach(x=>{total++; if(x.type==='Call') calls++;}));
+ return [{name:'c', ok:true, detail: JSON.stringify({accts:DATA.customers.length, withGainsightId: DATA.customers.filter(c=>c.gainsightId).length, total, calls, queue:(DATA.gainsightQueue||[]).length, impactLog:(DATA.impactLog||[]).length, impactKeys:Object.keys((DATA.impact||{}).events||{})})}]; };
