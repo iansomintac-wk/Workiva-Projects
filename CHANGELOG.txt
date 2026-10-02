@@ -136,6 +136,8 @@ Connector AI adapters (task B3) — POST /v1/ai and four adapters; tracker suite
       git-ignored config.json or CONNECTOR_AI_KEY only; never read from a request, never in an error.
     - Any other ai.adapter refuses to start. Real adapters are tested against a stubbed fetch only.
     - 8 AI tests; the contract suite is now 37.
+    - Fix: /v1/ai now returns an optional boolean `truncated` (provider cap signal) so the tracker keeps its length-cap notice;
+      tests refuse any non-127.0.0.1 fetch (connector/lib/test-net-guard.mjs). Contract suite 40.
 
 Curriculum piece 1 — stable ids for sessions and deliverables (merged to
 master 2026-09-30, with the review fixes and follow-ups M1r, M2r).

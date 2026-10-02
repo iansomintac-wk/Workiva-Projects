@@ -15,7 +15,10 @@ export function create({ model, apiKey } = {}, fetchImpl = globalThis.fetch) {
         headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
         body: { model: m, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] },
       });
-      return (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
+      return {
+        text: (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim(),
+        truncated: data.stop_reason === 'max_tokens',
+      };
     },
   };
 }

@@ -12,6 +12,9 @@ import { loadAdapters } from '../adapters/index.mjs';
 import { create as claude } from '../adapters/ai-claude.mjs';
 import { create as openai } from '../adapters/ai-openai.mjs';
 import { create as gemini } from '../adapters/ai-gemini.mjs';
+import { installNetGuard, guardedFetch, blocked } from '../lib/test-net-guard.mjs';
+
+installNetGuard();
 
 const here = dirname(fileURLToPath(import.meta.url));
 const schema = (n) => JSON.parse(readFileSync(join(here, '..', 'schemas', `${n}.json`), 'utf8'));
@@ -63,7 +66,7 @@ test('t12a claude adapter request shape and parsing (stub fetch)', async () => {
   const a = claude({ apiKey: KEY, model: '' }, fetchImpl);
   assert.equal(a.name, 'claude');
   const out = await a.complete({ task: 'debrief', prompt: 'P', maxTokens: 321 });
-  assert.equal(out, 'hi \nthere');
+  assert.deepEqual(out, { text: 'hi \nthere', truncated: false });
   assert.equal(calls.length, 1);
   assert.equal(new URL(calls[0].url).host, 'api.anthropic.com');
   assert.equal(calls[0].init.method, 'POST');
@@ -81,7 +84,7 @@ test('t12b openai adapter request shape and parsing (stub fetch)', async () => {
   const { fetchImpl, calls } = stub(200, { choices: [{ message: { content: ' answer ' }, finish_reason: 'stop' }] });
   const a = openai({ apiKey: KEY, model: 'gpt-custom' }, fetchImpl);
   assert.equal(a.name, 'openai');
-  assert.equal(await a.complete({ task: 'debrief', prompt: 'P', maxTokens: 77 }), 'answer');
+  assert.deepEqual(await a.complete({ task: 'debrief', prompt: 'P', maxTokens: 77 }), { text: 'answer', truncated: false });
   assert.equal(new URL(calls[0].url).host, 'api.openai.com');
   assert.equal(new URL(calls[0].url).pathname, '/v1/chat/completions');
   assert.equal(calls[0].init.headers.Authorization, `Bearer ${KEY}`);
@@ -96,7 +99,7 @@ test('t12c gemini adapter request shape and parsing (stub fetch); key in header,
   const { fetchImpl, calls } = stub(200, { candidates: [{ content: { parts: [{ text: 'a' }, { text: 'b' }] }, finishReason: 'STOP' }] });
   const a = gemini({ apiKey: KEY }, fetchImpl);
   assert.equal(a.name, 'gemini');
-  assert.equal(await a.complete({ task: 'debrief', prompt: 'P', maxTokens: 55 }), 'a\nb');
+  assert.deepEqual(await a.complete({ task: 'debrief', prompt: 'P', maxTokens: 55 }), { text: 'a\nb', truncated: false });
   const u = new URL(calls[0].url);
   assert.equal(u.host, 'generativelanguage.googleapis.com');
   assert.equal(u.pathname, '/v1beta/models/gemini-2.5-flash:generateContent');
@@ -148,7 +151,7 @@ test('t14 loadAdapters: only fake, claude, openai, gemini; anything else throws;
   const { fetchImpl, calls } = stub(200, { content: [{ type: 'text', text: 'ok' }] });
   const viaConfig = loadAdapters({ ai: { adapter: 'claude', apiKey: KEY } }, { fetchImpl, env: {} });
   assert.equal(viaConfig.ai.name, 'claude');
-  assert.equal(await viaConfig.ai.complete({ task: 'debrief', prompt: 'P', maxTokens: 5 }), 'ok');
+  assert.equal((await viaConfig.ai.complete({ task: 'debrief', prompt: 'P', maxTokens: 5 })).text, 'ok');
   const viaEnv = loadAdapters({ ai: { adapter: 'claude' } }, { fetchImpl, env: { CONNECTOR_AI_KEY: KEY } });
   await viaEnv.ai.complete({ task: 'debrief', prompt: 'P', maxTokens: 5 });
   assert.equal(calls[1].init.headers['x-api-key'], KEY);
@@ -163,4 +166,44 @@ test('t15 an api key in the request body is ignored, never forwarded', async () 
     assert.equal(calls[0].init.headers['x-api-key'], KEY);
     assert.ok(!calls[0].init.body.includes('attacker-key-not-real'));
   } finally { await s.close(); }
+});
+
+test('t16 truncated: true on each provider cap signal, false otherwise; fake false', async () => {
+  const ask = (a) => a.complete({ task: 'debrief', prompt: 'P', maxTokens: 5 });
+  const cases = [
+    [claude, { content: [{ type: 'text', text: 'x' }], stop_reason: 'max_tokens' }, { content: [{ type: 'text', text: 'x' }], stop_reason: 'end_turn' }],
+    [openai, { choices: [{ message: { content: 'x' }, finish_reason: 'length' }] }, { choices: [{ message: { content: 'x' }, finish_reason: 'stop' }] }],
+    [gemini, { candidates: [{ content: { parts: [{ text: 'x' }] }, finishReason: 'MAX_TOKENS' }] }, { candidates: [{ content: { parts: [{ text: 'x' }] }, finishReason: 'STOP' }] }],
+  ];
+  for (const [make, cut, whole] of cases) {
+    assert.deepEqual(await ask(make({ apiKey: KEY }, stub(200, cut).fetchImpl)), { text: 'x', truncated: true });
+    assert.deepEqual(await ask(make({ apiKey: KEY }, stub(200, whole).fetchImpl)), { text: 'x', truncated: false });
+  }
+  assert.equal((await ask(loadAdapters({}).ai)).truncated, false);
+});
+
+test('t17 server passes truncated through; schema accepts with and without it, rejects a non-boolean', async () => {
+  const cut = claude({ apiKey: KEY }, stub(200, { content: [{ type: 'text', text: 'cut off' }], stop_reason: 'max_tokens' }).fetchImpl);
+  const s = await start({ ...loadAdapters({}), ai: cut });
+  try {
+    const b = await (await post(s.base, { task: 'debrief', prompt: 'P', maxTokens: 5 })).json();
+    assert.deepEqual(b, { text: 'cut off', truncated: true });
+  } finally { await s.close(); }
+  const s2 = await start(loadAdapters({}));
+  try {
+    const b = await (await post(s2.base, { task: 'debrief', prompt: 'P', maxTokens: 5 })).json();
+    assert.equal(b.truncated, false);
+  } finally { await s2.close(); }
+  assert.deepEqual(validate(schema('ai-response'), { text: 'a' }), []);
+  assert.deepEqual(validate(schema('ai-response'), { text: 'a', truncated: true }), []);
+  assert.notDeepEqual(validate(schema('ai-response'), { text: 'a', truncated: 'yes' }), []);
+});
+
+test('t18 net guard: non-loopback fetch throws and is recorded; 127.0.0.1 is allowed', async () => {
+  assert.equal(globalThis.fetch, guardedFetch);
+  await assert.rejects(fetch('https://api.anthropic.com/v1/messages'), /NETWORK GUARD/);
+  assert.equal(blocked.length, 1);
+  blocked.length = 0; // the expected block; the after-hook asserts nothing else was blocked
+  const s = await start(loadAdapters({}));
+  try { assert.equal((await post(s.base, { task: 'debrief', prompt: 'P', maxTokens: 5 })).status, 200); } finally { await s.close(); }
 });

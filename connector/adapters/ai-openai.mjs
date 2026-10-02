@@ -15,7 +15,7 @@ export function create({ model, apiKey } = {}, fetchImpl = globalThis.fetch) {
         body: { model: m, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens },
       });
       const choice = (data.choices || [])[0];
-      return ((choice && choice.message && choice.message.content) || '').trim();
+      return { text: ((choice && choice.message && choice.message.content) || '').trim(), truncated: !!(choice && choice.finish_reason === 'length') };
     },
   };
 }

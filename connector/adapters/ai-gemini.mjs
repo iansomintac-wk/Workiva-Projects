@@ -16,7 +16,7 @@ export function create({ model, apiKey } = {}, fetchImpl = globalThis.fetch) {
       });
       const cand = (data.candidates || [])[0];
       const parts = (cand && cand.content && cand.content.parts) || [];
-      return parts.map((p) => p.text || '').join('\n').trim();
+      return { text: parts.map((p) => p.text || '').join('\n').trim(), truncated: !!(cand && cand.finishReason === 'MAX_TOKENS') };
     },
   };
 }

@@ -77,7 +77,8 @@ export function createConnector({ config = {}, adapters, token, logPath } = {}) 
       const errs = validate(schema('ai-request'), body);
       if (errs.length) return send(400, { error: errs.join('; ') });
       // Only task, prompt and maxTokens reach the adapter; the key is never taken from the request.
-      return ok('ai-response', { text: await ad.ai.complete({ task: body.task, prompt: body.prompt, maxTokens: body.maxTokens }) });
+      const r = await ad.ai.complete({ task: body.task, prompt: body.prompt, maxTokens: body.maxTokens });
+      return ok('ai-response', { text: r.text, truncated: r.truncated === true });
     }
     return send(404, { error: 'not found' });
   }

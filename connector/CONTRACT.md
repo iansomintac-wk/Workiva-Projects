@@ -87,7 +87,7 @@ one result per item, `externalId` and `error` `null` when not applicable.
 
 ### `POST /v1/ai`
 
-Request (`schemas/ai-request.json`): `{"task", "prompt", "maxTokens"}`. Response (`schemas/ai-response.json`): `{"text"}`.
+Request (`schemas/ai-request.json`): `{"task", "prompt", "maxTokens"}`. Response (`schemas/ai-response.json`): `{"text", "truncated"?}`. `truncated` is an optional boolean (additive, v1): `true` when the provider stopped at the length cap (Claude `stop_reason` `max_tokens`, OpenAI `finish_reason` `length`, Gemini `finishReason` `MAX_TOKENS`); the server always sends it, and the fake sends `false`. The tracker shows its length-cap notice from it.
 `task` is one of `copilot_read`, `call_prep`, `debrief`, `debrief_scores`, `call_review`, `risk_summary`,
 `thread_answer`, `brief_my_day`. Provider keys live only in the connector's git-ignored config, never
 in the browser. The route is built (task B3). A request that fails the schema is 400; an adapter error is

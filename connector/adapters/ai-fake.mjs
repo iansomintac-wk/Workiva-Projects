@@ -5,15 +5,15 @@ export function create() {
     async complete({ task, prompt }) {
       if (task === 'brief_my_day') {
         const ids = [...String(prompt).matchAll(/\[id:([^\]\s]+)\]/g)].map((m) => m[1]);
-        return JSON.stringify({
+        return { truncated: false, text: JSON.stringify({
           accounts: ids.map((id) => ({
             id, nextAction: 'FAKE next action',
             flags: [{ kind: 'drift', text: 'FAKE drift flag', reason: 'FAKE reason' }],
             reason: 'FAKE reason',
           })),
-        });
+        }) };
       }
-      return `FAKE AI (${task}): ${String(prompt).slice(0, 80)}`;
+      return { text: `FAKE AI (${task}): ${String(prompt).slice(0, 80)}`, truncated: false };
     },
   };
 }

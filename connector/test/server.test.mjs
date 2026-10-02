@@ -8,6 +8,9 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { validate } from '../lib/validate.mjs';
 import { createConnector } from '../server.mjs';
+import { installNetGuard } from '../lib/test-net-guard.mjs';
+
+installNetGuard();
 import { loadAdapters } from '../adapters/index.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));

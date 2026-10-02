@@ -1571,6 +1571,7 @@ CONNECTOR AI ADAPTERS — TASK B3 (tracker suite 428 -> 428, unchanged; tracker 
   - POST /v1/ai, ai-fake/claude/openai/gemini adapters. 8 tests written first, seen red (module not found),
     then green; contract suite 29 -> 37, # fail 0. Mutation check: scrub() made a no-op, t13 (key echoed by the
     provider) went red; restored. No real network call: adapters take an injected fetch, tests inject a stub.
+  FIX: optional `truncated` on the AI response (3 new tests + a 127.0.0.1-only fetch guard in the test files); contract 37 -> 40, # fail 0.
   Evidence: docs/superpowers/evidence/trim-and-integration/B3.md.
 
 FR/GRC DEFAULT GATES — RULING M3, SCHEMA 14 -> 15 (suite 436 -> 437)
