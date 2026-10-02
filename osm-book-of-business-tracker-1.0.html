@@ -2173,47 +2173,6 @@ async function callOpenAIAPI(promptText, settings, maxTokens, signal){
 // in flight, only the newest request may write its result — a slow first response can
 // no longer overwrite a fresh second one (or vice versa).
 let _aiReqSeq = 0;
-async function generatePortfolioAiBrief(){
-  const myReq = ++_aiReqSeq;
-  ui.aiPortfolioBrief = {loading:true, text:'', error:'', req:myReq, legend:null};
-  render();
-  try {
-    const needsAttention = DATA.customers.filter(c => computeRisk(c) !== 'ontrack');
-    const flagged = needsAttention.slice().sort((a,b)=> healthScore(a) - healthScore(b));
-    const briefed = flagged.slice(0, 15);
-    const snapshots = briefed.map(aiCustomerSnapshot);
-    if(snapshots.length === 0){
-      if(ui.aiPortfolioBrief.req !== myReq) return;
-      ui.aiPortfolioBrief = {loading:false, text:'No accounts currently need attention — nothing to brief.', error:'', req:myReq, legend:null};
-      render();
-      return;
-    }
-    // Tell the model — and the user — exactly what slice this covers. Without this, a
-    // 22-account problem gets confidently described as a 15-account portfolio.
-    const coverage = flagged.length > briefed.length
-      ? `the ${briefed.length} lowest-health accounts of ${flagged.length} total currently needing attention (${flagged.length - briefed.length} more are flagged but not included below)`
-      : `all ${briefed.length} accounts currently needing attention (Watch or Off Track)`;
-    const prompt = `You are helping an Onboarding Success Manager at Workiva prepare for a portfolio review.
-
-Below is a JSON array of pseudonymized customer accounts — ${coverage}. Account names have been replaced with anonymous IDs — refer to accounts only by their given "id".
-
-${JSON.stringify(snapshots, null, 2)}
-
-Write a short, direct portfolio brief (150-250 words). Group accounts by shared root cause where the data supports it (e.g. stalled sessions vs. missing Gainsight compliance gates vs. behind graduation target). End with the 2-3 highest-leverage actions to take this week. Do not invent details that aren't present in the data.`;
-    const res = await callAiAPI(prompt, {maxTokens: 1500});
-    if(ui.aiPortfolioBrief.req !== myReq) return;
-    const coverageNote = flagged.length > briefed.length ? `Covering the ${briefed.length} lowest-health of ${flagged.length} flagged accounts.\n\n` : '';
-    ui.aiPortfolioBrief = {loading:false, text: coverageNote + res.text + (res.truncated ? '\n\n[Response hit the length cap and may be cut off — regenerate if it ends mid-thought.]' : ''), error:'', req:myReq,
-      // Pseudonym -> real name mapping, rendered locally next to the brief. Built here,
-      // never sent anywhere — the prompt above only ever contains the pseudonyms.
-      legend: briefed.map(c => ({id: pseudonymFor(c), name: c.name}))};
-  } catch(e){
-    if(ui.aiPortfolioBrief && ui.aiPortfolioBrief.req !== myReq) return;
-    ui.aiPortfolioBrief = {loading:false, text:'', error: e.message || 'Something went wrong', req:myReq, legend:null};
-  }
-  render();
-}
-
 /* ============ v94: THE READ, IN FOUR LENSES ============
    One call, four sections, because the point of a portfolio read is that the
    model sees the whole book at once — four separate calls would each reason from
@@ -3358,18 +3317,6 @@ function answerGradReview(c, verdict, note){
   g.note = String(note || '').replace(/\s+/g, ' ').trim().slice(0, 500);
   return true;
 }
-/* The portfolio read. Returns null rather than 0% when nothing has been reviewed
-   yet — "0% of your graduations held" is a lie told by an empty denominator, and
-   this file has spent eighty versions not telling that kind of lie. */
-function graduationDurability(){
-  const answered = DATA.customers.filter(c => { const g = getGradReview(c); return g && g.doneOn && g.verdict; });
-  if(!answered.length) return null;
-  const held = answered.filter(c => c.gradReview.verdict === 'held').length;
-  const pending = DATA.customers.filter(gradReviewDue).length;
-  return {answered: answered.length, held, pending,
-    pct: Math.round(held / answered.length * 100)};
-}
-
 /* ============ v70: OPEN THREADS ============
    Questions raised in a meeting were TRANSIENT — typed into the debrief box,
    held in ui.debriefInputs, gone on reload. The v51 note says transcripts ride
@@ -3407,7 +3354,6 @@ function setOpenThreadsFromText(a, text){
   if(next.length) a.openThreads = next; else delete a.openThreads;
   return true;
 }
-function openThreadsToText(a){ return getOpenThreads(a).map(t => t.q).join(String.fromCharCode(10)); }
 // The verified answers come back keyed by 1-based question number, in the order
 // the questions were sent — which is the order they are stored.
 function applyThreadAnswers(a, answers){
@@ -6452,9 +6398,6 @@ function buildSessionIcs(c, dateISO, next){
     'END:VEVENT','END:VCALENDAR'
   ].map(icsFoldLine).join(ICS_CRLF);
 }
-/* Reverse the fold. Only the checks need this, but it is the honest way to assert
-   that folding is LOSSLESS rather than merely that short lines came out. */
-function icsUnfold(text){ return String(text).split(ICS_CRLF + ' ').join(''); }
 function downloadSessionIcs(c){
   const next = getNextSessionInfo(c);
   const dateISO = nextSessionDateFor(c);
@@ -6845,16 +6788,6 @@ function reattributeDeliverableEvidence(customer, sessionNumber, index, by){
     .find(x => x.sourceSession === sessionNumber && x.sourceIndex === index);
   if(!crit || !crit.evidence) return null;
   return setOutcomeEvidence(customer, crit, Object.assign({}, crit.evidence, {by}));
-}
-
-function removeOutcomeCriterion(customer, criterion){
-  if(!customer || !criterion) return null;
-  const stored = materializeOutcomeCriterion(customer, criterion);
-  if(customer.outcomeCriteria.removed.indexOf(stored.id) === -1){
-    customer.outcomeCriteria.removed.push(stored.id);
-  }
-  clearOutcomeEvidence(customer, stored.id);
-  return stored.id;
 }
 
 /* PURE. Stores nothing — there is no cached verdict anywhere, because a stored
@@ -7771,10 +7704,9 @@ function buildGainsightCopyText(c){
 // Deliberately no confidence percentage attached, since nothing here is a calibrated
 // statistic and a fabricated-looking number would claim more rigor than actually exists.
 /* ---- Recommendation action loop (v41) ----
-   Suppression state is deliberately SEPARATE from the capped recommendationLog:
-   the log is pure history (newest first, max 20), suppressions are live state
-   {key: {until, source}}. If suppressions lived inside the log, entry #21 would
-   silently lift an active suppression — the cap must never change behavior. */
+   Suppressions are live state {key: {until, source}} on c.signalSuppressions.
+   (The capped c.recommendationLog history that once sat beside them is no longer
+   written; old records keep the field, inert.) */
 function isSignalSuppressed(c, key){
   const sup = c.signalSuppressions && c.signalSuppressions[key];
   return !!(sup && sup.until && sup.until >= todayISO());
@@ -7800,20 +7732,12 @@ function reconcileSuppressions(c){
     queueSave(); // runs during render walks — defer the write
   }
 }
-function logRecommendationEntry(c, entry){
-  if(!c.recommendationLog) c.recommendationLog = [];
-  c.recommendationLog.unshift(entry); // newest first
-  if(c.recommendationLog.length > 20) c.recommendationLog.length = 20;
-}
-// Shared tail of Done/Dismiss: log, suppress, and repoint the persistence
+// Shared tail of Done/Dismiss: suppress, and repoint the persistence
 // tracker at whatever headline takes over — so trackRecommendationPersistence
 // never files this explicit action's transition as resolved_naturally too.
+// (T1: the recommendation log that used to be written here is gone; c.recommendationLog
+// stays inert on old records. `reason` is kept in the signature for the callers.)
 function resolveRecommendation(c, rec, resolution, reason, suppressDays){
-  const shownSince = (c.lastShownRecommendation && c.lastShownRecommendation.key === rec.key)
-    ? c.lastShownRecommendation.since : todayISO();
-  const entry = {key: rec.key, action: rec.action, shownSince, resolvedOn: todayISO(), resolution};
-  if(reason) entry.reason = reason;
-  logRecommendationEntry(c, entry);
   if(!c.signalSuppressions) c.signalSuppressions = {};
   c.signalSuppressions[rec.key] = {until: isoAddDays(todayISO(), suppressDays), source: resolution};
   const next = getRecommendedAction(c);
@@ -7861,19 +7785,8 @@ function trackRecommendationPersistence(c, rec){
   // reset the counter. Pre-v32 records stored no key, so the first render after
   // upgrading resets each counter once; from then on it's stable.
   if(!c.lastShownRecommendation || c.lastShownRecommendation.key !== rec.key){
-    // v41: the prior signal headline changed WITHOUT an explicit Done/Dismiss
-    // (those handlers repoint lastShownRecommendation themselves, so their
-    // transition never reaches this branch) — close it as resolved_naturally.
-    // Signal keys only: next_session/steady fallbacks aren't actionable signals.
-    if(c.lastShownRecommendation && SIGNAL_KEY_SET.has(c.lastShownRecommendation.key)){
-      logRecommendationEntry(c, {
-        key: c.lastShownRecommendation.key,
-        action: c.lastShownRecommendation.action,
-        shownSince: c.lastShownRecommendation.since,
-        resolvedOn: todayISO(),
-        resolution: 'resolved_naturally'
-      });
-    }
+    // The headline changed: restart the clock. (T1: this branch used to also log the
+    // old headline as resolved_naturally into c.recommendationLog; that log is gone.)
     c.lastShownRecommendation = {key: rec.key, action: rec.action, since: todayISO()};
     queueSave(); // this runs during render — defer the write, don't block HTML building
   } else if(c.lastShownRecommendation.action !== rec.action){
@@ -7901,91 +7814,7 @@ function getCustomerNextSteps(c){
   return steps.slice(0, 3).map(s => s.text);
 }
 
-/* ============ v66: SIGNAL CALIBRATION ============
-   recommendationLog has been written since v41 — every recommendation, when it
-   first appeared, and how it ended: 'done', 'dismissed' (with your reason), or
-   'resolved_naturally'. Nothing ever read it back. This is the tracker's only
-   record of whether its own advice was any good.
-
-   It REPORTS, it does not re-rank. Silently down-weighting a signal you dismiss
-   often would mean the tracker quietly stops telling you about a class of risk —
-   and the reason you dismiss something is frequently "not this week", not "never
-   relevant". Editing rule 6 also says preserve scoring unless objectively wrong,
-   and a dismissal rate is evidence for a human decision, not proof of a defect.
-   So: show the pattern, name the candidate, let the OSM act.
-
-   Small samples lie loudly. Below CALIBRATION_MIN_SAMPLES a signal reports its
-   counts but gets no rate and no suggestion. */
-const CALIBRATION_MIN_SAMPLES = 4;
-function getSignalCalibration(){
-  const rows = {};
-  DATA.customers.forEach(c => {
-    (c.recommendationLog || []).forEach(e => {
-      if(!e || !SIGNAL_KEY_SET.has(e.key)) return; // fallbacks aren't advice
-      const r = rows[e.key] || (rows[e.key] = {key:e.key, done:0, dismissed:0, natural:0, total:0, reasons:{}, heldDays:[]});
-      r.total++;
-      if(e.resolution === 'done') r.done++;
-      else if(e.resolution === 'dismissed'){
-        r.dismissed++;
-        if(e.reason) r.reasons[e.reason] = (r.reasons[e.reason] || 0) + 1;
-      } else r.natural++;
-      if(isRealISODate(e.shownSince) && isRealISODate(e.resolvedOn)){
-        const held = daysSince(e.shownSince) - daysSince(e.resolvedOn);
-        if(Number.isFinite(held) && held >= 0) r.heldDays.push(held);
-      }
-    });
-  });
-  return Object.values(rows).map(r => {
-    const enough = r.total >= CALIBRATION_MIN_SAMPLES;
-    const actedOn = r.done + r.dismissed; // 'resolved_naturally' is not a verdict
-    return Object.assign(r, {
-      enough,
-      dismissRate: (enough && actedOn) ? Math.round(r.dismissed / actedOn * 100) : null,
-      medianHeldDays: r.heldDays.length
-        ? r.heldDays.slice().sort((a,b)=>a-b)[Math.floor(r.heldDays.length/2)] : null,
-      topReason: Object.keys(r.reasons).sort((a,b)=> r.reasons[b] - r.reasons[a])[0] || null
-    });
-  }).sort((a,b)=> (b.dismissRate === null ? -1 : b.dismissRate) - (a.dismissRate === null ? -1 : a.dismissRate) || b.total - a.total);
-}
-/* v73: PARKED, NOT DELETED. This renderer has no call site — the "Is the advice
-   any good?" panel came off Copilot because it asks an engine-tuning question an
-   OSM has no use for between calls. The DATA still accrues (getSignalCalibration
-   reads recommendationLog on every verdict), which is the half that matters: the
-   answer is available to whoever tunes thresholds without costing a working
-   surface. Kept rather than deleted so bringing it back is a one-line change, and
-   a self-check asserts it stays unrendered so it cannot drift back by accident. */
-function renderSignalCalibration(){
-  const rows = getSignalCalibration();
-  const total = rows.reduce((n,r)=> n + r.total, 0);
-  if(!total){
-    return `<div class="copilot-brief"><div class="section-title" style="margin-top:0;">Signal calibration <span class="advisor-badge local">LOCAL</span></div>
-      <p style="color:var(--text-faint); font-size:var(--text-sm); margin:0;">Nothing recorded yet. Every time you press Done or Dismiss on a recommendation, the tracker notes which signal it was and how it ended. Once a signal has ${CALIBRATION_MIN_SAMPLES} outcomes, this shows whether its advice is landing.</p></div>`;
-  }
-  const noisy = rows.filter(r => r.enough && r.dismissRate !== null && r.dismissRate >= 70);
-  return `
-    <div class="copilot-brief">
-      <div class="section-title" style="margin-top:0;">Signal calibration <span class="advisor-badge local">LOCAL</span></div>
-      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:0 0 10px;">How the tracker's own advice has landed, from ${total} recorded outcome${total===1?'':'s'}. Rates appear once a signal has ${CALIBRATION_MIN_SAMPLES}+ outcomes. Dismiss rate counts only recommendations you explicitly closed — ones that resolved on their own are not a verdict either way. <strong>This reports; it does not change ranking.</strong> A signal you dismiss often may be genuinely noisy, or may just be one you handle outside the tracker.</p>
-      ${noisy.length ? `<p style="font-size:var(--text-sm); color:var(--text); margin:0 0 10px;">${icon('warn')} Worth a look: ${noisy.map(r=>`<strong>${escapeHtml(r.key)}</strong> (${r.dismissRate}% dismissed${r.topReason ? `, usually "${escapeHtml(r.topReason)}"` : ''})</strong>`).join(', ')}. If a signal is consistently not useful, Settings can suppress it per-account, or it may be worth changing how it is detected.</p>` : ''}
-      <div style="display:flex; flex-direction:column; gap:4px;">
-        ${rows.map(r => `
-          <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:5px 0; border-bottom:1px solid var(--border-soft); font-size:var(--text-sm); flex-wrap:wrap;">
-            <span style="font-family:var(--font-mono); font-size:var(--text-xs);">${escapeHtml(r.key)}</span>
-            <span style="color:var(--text-dim); font-size:var(--text-xs);">
-              ${r.done} done · ${r.dismissed} dismissed · ${r.natural} resolved on its own
-              ${r.medianHeldDays !== null ? ` · typically open ${r.medianHeldDays}d` : ''}
-              ${r.dismissRate !== null
-                ? ` · <strong style="color:${r.dismissRate >= 70 ? 'var(--status-watch-text)' : 'var(--text)'};">${r.dismissRate}% dismissed</strong>`
-                : ` · <span style="color:var(--text-faint);">${r.total}/${CALIBRATION_MIN_SAMPLES} outcomes — too few to rate</span>`}
-            </span>
-          </div>`).join('')}
-      </div>
-    </div>`;
-}
-
-// Portfolio-wide counts of the same signals, used to replace the old static
-// bullet list on the Copilot tab with ones that actually reflect the book.
-// Portfolio-wide counts of the same registry signals — bullet order follows registry
+// Portfolio-wide counts of the registry signals — bullet order follows registry
 // priority order, so the portfolio reads top-down in the same rank as account headlines.
 /* v73: keeps the ACCOUNTS, not just the count. "8 accounts have gone quiet past
    the at-risk threshold" was true and unusable — the reader had to switch tabs and
@@ -9009,93 +8838,14 @@ function renderTabs(){
    The tab's job beyond aggregation is memory: nothing on this list gets
    forgotten quietly — unactioned items and stale Gainsight maintenance
    surface at the top, with day counts. */
-function renderRiskRow(it, i){
-  const a = riskAttention(it);
-  const attChip = a.state === 'unactioned'
-    ? `<span class="badge badge-risk" title="No CTA drafted/queued and not marked maintained since the tracker first saw this risk.">Unactioned ${a.days}d</span>`
-    : a.state === 'maintenance_due'
-      ? `<span class="badge badge-watch" title="Last actioned ${a.days} days ago and the risk still exists — the Gainsight record is likely stale.">Update due · ${a.days}d since action</span>`
-      : a.state === 'new'
-        ? `<span class="badge badge-module">New${a.days ? ' · ' + a.days + 'd' : ''}</span>`
-        : `<span class="badge badge-ontrack" title="Actioned ${a.days} day${a.days===1?'':'s'} ago.">Actioned ${a.days === 0 ? 'today' : a.days + 'd ago'}</span>`;
-  return `
-    <div class="mini-card">
-      <div class="mini-card-title" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-        <span><button class="link-btn" data-open-cust="${it.c.id}" style="font-weight:700;">${escapeHtml(it.c.name)}</button>
-          <span class="badge ${it.sev === 3 ? 'badge-risk' : it.sev === 2 ? 'badge-watch' : 'badge-module'}">${escapeHtml(it.kind)}</span>
-          <span class="badge badge-module" style="text-transform:none; letter-spacing:0;" title="Suggested Gainsight risk reason (keyword match${it.category && it.category.phrase ? `: “${escapeAttr(it.category.phrase)}”` : ''}) — confirm when filing the CTA">${escapeHtml(it.category ? it.category.label : 'Other')}</span>
-          ${attChip}</span>
-        <span style="display:flex; gap:6px; flex-shrink:0;">
-          <button class="btn btn-sm" data-risk-cta="${i}">Copy CTA draft</button>
-          <button class="btn btn-sm" data-queue-cta="${i}" title="Adds this CTA to the Gainsight sync queue below">Queue</button>
-          <button class="btn btn-sm" data-risk-maintain="${i}" title="Mark that you updated/created the Gainsight record for this risk yourself — resets the maintenance clock.">Mark maintained</button>
-        </span>
-      </div>
-      <div class="mini-card-sub">${escapeHtml(it.detail)}</div>
-      <div style="font-size:var(--text-xs); color:var(--text-faint); font-family:var(--font-mono); margin-top:3px;">First seen ${fmtDate(it.tracking && it.tracking.firstSeen)} · ${it.tracking && it.tracking.lastActioned ? 'last actioned ' + fmtDate(it.tracking.lastActioned) : 'never actioned here'}</div>
-      ${renderRiskOwnership(it, i)}
-      ${renderRiskNextSteps(it)}
-      ${renderRiskSummaryBox(it, i)}
-    </div>`;
-}
-
 /* v67: a risk with no owner and no date is a worry, not a plan. The CTA draft
    deliberately leaves owner and target blank because those are Gainsight-side
    decisions — correct for the CTA, but it meant nothing LOCAL could answer "is
    this being driven, and is it late". These are the tracker's own working
-   fields; the CTA still hands the real decision to Gainsight.
-   Trend is genuine history, not a guess: buildRiskHubList() appends to sevLog
-   only when the severity actually changes, so "worsening" means it was observed
-   lower before. */
+   fields; the CTA still hands the real decision to Gainsight. */
 const RISK_OWNERS = ['Me (OSM)'].concat(OSM_ESCALATION_PATHS.map(p => p.role));
-function riskTrend(it){
-  const log = (it.tracking && Array.isArray(it.tracking.sevLog)) ? it.tracking.sevLog : [];
-  if(log.length < 2) return null;
-  const first = log[0].sev, last = log[log.length - 1].sev;
-  if(last > first) return {dir:'worse', from:first, to:last, since:log[0].date};
-  if(last < first) return {dir:'better', from:first, to:last, since:log[0].date};
-  return null;
-}
-function renderRiskOwnership(it, i){
-  const t = it.tracking || {};
-  const trend = riskTrend(it);
-  const overdue = isRealISODate(t.dueOn) && t.dueOn < todayISO();
-  return `
-    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px; font-size:var(--text-xs);">
-      <label style="color:var(--text-faint);">Driven by</label>
-      <select data-risk-owner="${i}" style="width:auto;">
-        <option value="">— unassigned —</option>
-        ${RISK_OWNERS.map(r => `<option value="${escapeAttr(r)}"${t.owner === r ? ' selected' : ''}>${escapeHtml(r)}</option>`).join('')}
-      </select>
-      <label style="color:var(--text-faint);">Resolve by</label>
-      <input type="date" data-risk-due="${i}" value="${escapeAttr(t.dueOn || '')}" style="width:auto;">
-      ${overdue ? `<span class="badge badge-risk" title="Your own local target date has passed. Gainsight still owns the official CTA date.">Past your target · ${daysSince(t.dueOn)}d</span>` : ''}
-      ${trend ? `<span class="badge ${trend.dir === 'worse' ? 'badge-risk' : 'badge-ontrack'}" title="Severity moved from ${trend.from} to ${trend.to} since ${fmtDate(trend.since)} — observed, not predicted.">${trend.dir === 'worse' ? 'Worsening' : 'Easing'} ${trend.from}→${trend.to}</span>` : ''}
-      ${!t.owner ? `<span style="color:var(--text-faint);">Unassigned risks are the ones that drift.</span>` : ''}
-    </div>`;
-}
-
-/* v65: next steps, LOCAL. These were already computed — getRecommendedAction()
-   drives the headline and getCustomerNextSteps() the rest, and buildRiskCtaText()
-   has been embedding both in the CTA draft since v58. They simply were never
-   shown in the row, so the OSM had to open the account to find out what to do
-   about a risk the tab had just told them about. No AI: these are derived from
-   the signal registry, they cite their reasons, they cost nothing, and they work
-   with no API key. */
-function renderRiskNextSteps(it){
-  const c = it.c;
-  const rec = getRecommendedAction(c);
-  const rest = getCustomerNextSteps(c).filter(s => s !== rec.action).slice(0, 2);
-  if(!rec.action) return '';
-  return `
-    <div style="margin-top:8px; padding:8px 10px; background:var(--bg-card-hover); border-radius:6px;">
-      <div style="font-size:var(--text-xs); color:var(--text-faint); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:.04em;">Recommended next step</div>
-      <div style="font-size:var(--text-sm); color:var(--text); font-weight:600; margin-top:2px;">${escapeHtml(rec.action)}</div>
-      ${rec.reasons.length ? `<div style="font-size:var(--text-xs); color:var(--text-dim); margin-top:2px;">${escapeHtml(rec.reasons[0])}</div>` : ''}
-      ${rest.length ? `<ul style="margin:4px 0 0; padding-left:16px; font-size:var(--text-xs); color:var(--text-dim);">${rest.map(s=>`<li>${escapeHtml(s)}</li>`).join('')}</ul>` : ''}
-    </div>`;
-}
-
+/* v65: the per-row summary box (the "Recommended next step" and owner rows that
+   once sat above it were dead code and are gone). */
 function renderRiskSummaryBox(it, i){
   const stored = getRiskSummary(it);
   const ai = (ui.riskSummaryAi && ui.riskSummaryAi[it.logKey]) || {};
@@ -10411,19 +10161,6 @@ function buildRiskCases(list){
     (({returned:0, unreviewed:1, confirmed:2, dismissed:3})[a.state] - ({returned:0, unreviewed:1, confirmed:2, dismissed:3})[b.state]) ||
     (b.asserted - a.asserted) || (b.sev - a.sev) || (b.daysOpen - a.daysOpen) ||
     a.c.name.localeCompare(b.c.name));
-}
-
-/* The hub, split the way the tab reads it. Anything returned goes back in the
-   review queue, because it needs a fresh decision, not a fresh reminder. */
-function partitionRisks(list){
-  const out = {review: [], confirmed: [], dismissed: []};
-  list.forEach(it => {
-    const st = riskVerdictState(it);
-    if(st === 'confirmed') out.confirmed.push(it);
-    else if(st === 'dismissed') out.dismissed.push(it);
-    else out.review.push(it); // unreviewed and returned both need a person
-  });
-  return out;
 }
 
 function markRiskActioned(it, maintained){
@@ -15029,9 +14766,9 @@ The draft is discarded. The risk itself stays open.`)) return;
   $('#btn-add-customer') && $('#btn-add-customer').addEventListener('click', openAddCustomerModal);
 
   /* v94: the same control, a bigger job. It now produces the four-lens read that
-     lands inside the chapters, and opens them on the way. The old
-     generatePortfolioAiBrief() still exists and is still what fills the summary
-     block under the band; this is the one the button reaches. */
+     lands inside the chapters, and opens them on the way. (The old
+     generatePortfolioAiBrief() is deleted; nothing fills the summary block under
+     the band any more, and ui.aiPortfolioBrief is only ever null.) */
   $('#btn-generate-ai-portfolio-brief') && $('#btn-generate-ai-portfolio-brief').addEventListener('click', generateCopilotRead);
   $$('[data-generate-ai-customer-brief]').forEach(btn => btn.addEventListener('click', ()=>{
     generateCustomerAiBrief(btn.dataset.generateAiCustomerBrief);

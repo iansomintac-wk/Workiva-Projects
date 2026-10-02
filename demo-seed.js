@@ -116,7 +116,7 @@
   customers[9].playbooks = [{id:'pb-live', key:'grad_ready', startedOn: D(T,-4),
     done:{evidence: D(T,-3)}, closedOn:null, outcome:null}];
 
-  // 8. a graduated account with an answered check-back, so durability has a value
+  // 8. a graduated account with an answered check-back (the grad-review state the check-back checks read)
   const grad = {
     id:'best-grad', name:'Summit Grain Co', module: mod, stage:'graduated',
     implementationDate: D(T,-260), totalSessions:8, components:['sec'], cadence:'biweekly',
@@ -177,7 +177,6 @@
     nextActions: nextActionList().length,
     routed: nextActionList().filter(x=>x.route).map(x=>x.c.name+' -> '+x.route.role),
     transitions: nextActionList().filter(x=>x.transition).map(x=>x.c.name+' ('+x.transition.kind+')'),
-    adminGaps: adminGapCount(),
-    durability: graduationDurability()
+    adminGaps: adminGapCount()
   };
 })()

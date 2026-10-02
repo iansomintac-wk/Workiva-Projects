@@ -5,6 +5,10 @@
    file (rule 5 in the header block) — it converts "each change must not break features"
    from an aspiration into something checkable in one call. Checks data invariants the
    app assumes elsewhere, plus structural invariants of the registries. */
+/* Reverse the .ics fold. Only the checks need this (it moved here from the tracker in
+   A2), but it is the honest way to assert that folding is LOSSLESS rather than merely
+   that short lines came out. */
+function icsUnfold(text){ return String(text).split(ICS_CRLF + ' ').join(''); }
 function runSelfChecks(){
   _suiteRunning = true;
   try{ return _runSelfChecksInner(); } finally { _suiteRunning = false; }
@@ -172,8 +176,20 @@ function _runSelfChecksInner(){
   check('no paused account in session triage', pausedInTriage.length === 0, pausedInTriage.map(x=>x.c.name).join(', '));
 
   // v41 recommendation-loop invariants
-  const badRecLog = DATA.customers.filter(c => c.recommendationLog && c.recommendationLog.length > 20);
-  check('recommendation log capped at 20', badRecLog.length === 0, badRecLog.map(c=>c.name).join(', '));
+  (function(){                                                  // a2a
+    let ok = false, detail = '';
+    const prevC = DATA.customers;
+    try{
+      const c = cloneData(DATA.customers.find(x => x.stage !== 'graduated') || DATA.customers[0]);
+      delete c.recommendationLog;
+      DATA.customers = [c];
+      getRecommendedAction(c);                // the old live writer path
+      ok = c.recommendationLog === undefined && typeof logRecommendationEntry === 'undefined';
+      detail = JSON.stringify({log: c.recommendationLog, writer: typeof logRecommendationEntry});
+    }catch(err){ detail = err.message; }
+    finally{ DATA.customers = prevC; }
+    check('trim a2a: recommendations no longer write c.recommendationLog', ok, detail);
+  })();
   const badSupp = DATA.customers.filter(c => c.signalSuppressions &&
     Object.values(c.signalSuppressions).some(sup => !sup || !ISO_DATE_RE.test(sup.until || '') || !sup.source));
   check('every suppression has a valid expiry and source', badSupp.length === 0, badSupp.map(c=>c.name).join(', '));
@@ -2734,16 +2750,12 @@ function _runSelfChecksInner(){
       const criterionKept = c.outcomeCriteria.items.some(x => x.id === id);
       setOutcomeEvidence(c, outcomeCriteriaFor(c).find(x => x.id === id), {on: todayISO(), by:'osm'});
       const sameIdentity = c.outcomeCriteria.items.length === 1 && !!c.outcomeEvidence[id];
-      // Removal of a still-provisional criterion must materialize it.
-      const second = outcomeCriteriaFor(c).find(x => x.provisional === true);
-      const removedId = removeOutcomeCriterion(c, second);
-      const removedOpaque = /^oc_/.test(removedId) && c.outcomeCriteria.removed.indexOf(removedId) !== -1;
-      const excluded = !outcomeCriteriaFor(c).some(x => x.id === removedId);
-      ok = gone && criterionKept && sameIdentity && removedOpaque && excluded;
-      detail = JSON.stringify({gone, criterionKept, sameIdentity, removedId, removedOpaque, excluded});
+      // (removeOutcomeCriterion, which used to be asserted here, was dead and is deleted.)
+      ok = gone && criterionKept && sameIdentity;
+      detail = JSON.stringify({gone, criterionKept, sameIdentity});
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA;
-    check('phaseA un-ticking keeps identity, and removal stores only opaque ids', ok, detail);
+    check('phaseA un-ticking keeps identity', ok, detail);
   })();
   (function(){
     /* Two DIFFERENT custom criteria must get two identities. They share
@@ -4453,9 +4465,7 @@ function _runSelfChecksInner(){
       // The account deteriorates: same signal, higher severity.
       const worse = Object.assign({}, it, {sev: 3});
       const returned = riskVerdictState(worse) === 'returned' && riskReturnReason(worse).indexOf('2') !== -1;
-      // A returned risk is back in the review queue, not sitting in dismissed.
-      const parts = partitionRisks([worse]);
-      const requeued = parts.review.length === 1 && parts.dismissed.length === 0;
+      // (partitionRisks, which used to assert the review-queue placement here, was dead and is deleted.)
       /* The severity rule alone is not enough: Off Track is ALWAYS sev 3, so a
          sev-rise re-arm would never fire for the pacing risks that persist
          longest, and dismissing one would blind the hub to it forever. */
@@ -4466,8 +4476,8 @@ function _runSelfChecksInner(){
         && riskReturnReason(stale).indexOf('second look') !== -1;
       clearRiskVerdict(it);
       const cleared = riskVerdictState(it) === 'unreviewed';
-      ok = fresh && confirmed && dismissed && reasonTrimmed && returned && requeued && expired && cleared;
-      detail = JSON.stringify({fresh, confirmed, dismissed, reasonTrimmed, returned, requeued, expired, cleared});
+      ok = fresh && confirmed && dismissed && reasonTrimmed && returned && expired && cleared;
+      detail = JSON.stringify({fresh, confirmed, dismissed, reasonTrimmed, returned, expired, cleared});
     }catch(err){ detail = err.message; }
     DATA.riskLog = prevLog;
     check('v73 a dismissed risk returns when the account deteriorates past the dismissal', ok, detail);
@@ -4716,16 +4726,6 @@ function _runSelfChecksInner(){
         && String(getMonthAhead).indexOf('isGradDateWithinTolerance') !== -1;
     })(),
     'getMonthAhead must derive from the existing projection and SLA helpers');
-  check('v73 signal calibration still records, and still does not render',
-    /* The user's call was to hide the panel, not to stop collecting. Both halves
-       are asserted: the data function must still be reachable and reading the
-       recommendation log, and no render path may call the panel. */
-    typeof getSignalCalibration === 'function' &&
-    String(getSignalCalibration).indexOf('recommendationLog') !== -1 &&
-    String(renderCopilot).indexOf('renderSignalCalibration') === -1 &&
-    String(renderRiskTab).indexOf('renderSignalCalibration') === -1 &&
-    String(renderToday).indexOf('renderSignalCalibration') === -1,
-    'calibration must keep accruing while staying off every rendered surface');
   (function(){
     /* v73.1: a logged note is EVIDENCE, not a reason. A real flagged note is a
        1,858-character meeting recap, and Today printed it whole — in the beat AND
@@ -5131,9 +5131,6 @@ function _runSelfChecksInner(){
       const src = String(setRiskSummary);
       return src.indexOf('getRiskLog()') !== -1 && src.indexOf('log[logKey].summary') !== -1;
     })());
-  check('v65 risk next steps are local, not an AI call',
-    String(renderRiskNextSteps).indexOf('getRecommendedAction') !== -1 &&
-    String(renderRiskNextSteps).indexOf('callAiAPI') === -1);
   /* ============ v66: FLOW CHECKS ============
      Everything above asserts INVARIANTS — shapes, ranges, registry consistency.
      None of it exercised a user journey end to end, which is the regression
@@ -5232,36 +5229,6 @@ function _runSelfChecksInner(){
     const failed = steps.filter(s => !s[1]).map(s => s[0]);
     check('v66 end-to-end flows: silence, logging, Gainsight ticking, flagging, pause, effort',
       failed.length === 0, `${steps.length - failed.length}/${steps.length} steps passed. Failed: ${failed.join('; ')}`);
-  })();
-  (function(){
-    // Calibration must not invent confidence from a handful of outcomes, and
-    // must ignore the next_session/steady fallbacks, which are not advice.
-    const prevC = DATA.customers;
-    let ok = false, detail = '';
-    try{
-      const c = {id:'__cal__', name:'CalCo', recommendationLog:[
-        {key:'stalled', resolution:'done', shownSince: isoAddDays(todayISO(), -5), resolvedOn: todayISO()},
-        {key:'stalled', resolution:'dismissed', reason:'Not a priority', shownSince: isoAddDays(todayISO(), -9), resolvedOn: todayISO()},
-        {key:'stalled', resolution:'dismissed', reason:'Not a priority', shownSince: isoAddDays(todayISO(), -3), resolvedOn: todayISO()},
-        {key:'stalled', resolution:'dismissed', reason:'Not a priority', shownSince: isoAddDays(todayISO(), -1), resolvedOn: todayISO()},
-        {key:'late_gate', resolution:'done', shownSince: isoAddDays(todayISO(), -2), resolvedOn: todayISO()},
-        {key:'next_session', resolution:'done'},          // fallback: must be ignored
-        {key:'not_a_real_signal', resolution:'done'}      // junk: must be ignored
-      ]};
-      DATA.customers = [c];
-      const rows = getSignalCalibration();
-      const stalled = rows.find(r => r.key === 'stalled');
-      const lateGate = rows.find(r => r.key === 'late_gate');
-      ok = rows.length === 2                                   // fallback + junk excluded
-        && stalled.total === 4 && stalled.dismissRate === 75    // 3 of 4 explicit closes
-        && stalled.topReason === 'Not a priority'
-        && stalled.medianHeldDays !== null
-        && lateGate.dismissRate === null && lateGate.enough === false; // too few to rate
-      detail = JSON.stringify({keys: rows.map(r=>r.key), stalledRate: stalled && stalled.dismissRate,
-        lateGateRated: lateGate && lateGate.dismissRate});
-    }catch(err){ detail = err.message; }
-    DATA.customers = prevC;
-    check('v66 calibration rates only well-sampled real signals', ok, detail);
   })();
   check('v66 calibration reports but never re-ranks',
     // If this ever fails, the tracker has started hiding signals based on your
@@ -5393,11 +5360,6 @@ function _runSelfChecksInner(){
   check('v67 quick log builds the same checklist scaffolding as the full form',
     String(openQuickLogModal).indexOf('ACTIVITY_TYPES[type] || []') !== -1 &&
     String(openQuickLogModal).indexOf('trackImpact') !== -1);
-  check('v67 risk trend needs two real observations, never a guess',
-    riskTrend({tracking:{sevLog:[{date:todayISO(), sev:2}]}}) === null &&
-    riskTrend({tracking:{}}) === null &&
-    (riskTrend({tracking:{sevLog:[{date:isoAddDays(todayISO(),-9), sev:1},{date:todayISO(), sev:3}]}}) || {}).dir === 'worse' &&
-    (riskTrend({tracking:{sevLog:[{date:isoAddDays(todayISO(),-9), sev:3},{date:todayISO(), sev:1}]}}) || {}).dir === 'better');
   (function(){
     /* v68 handoff. The load-bearing promise of a PLACEHOLDER format is that
        changing it later cannot destroy what someone typed — so that is what
@@ -5764,7 +5726,7 @@ function _runSelfChecksInner(){
     /* v74.2: the .ics export was DEAD. attachEvents() bound a click handler for
        [data-ics] and downloadSessionIcs() worked, but no surface rendered the
        button, so the invite could not be reached at all. That is the fourth time
-       this shape has appeared in this file — renderSignalCalibration(),
+       this shape has appeared in this file — renderSignalCalibration() (since deleted),
        getBatchingOpportunities(), data-thread-resolve, and now this — a working
        function nothing calls, which reads as a feature in the source and does not
        exist for the user.
@@ -6505,12 +6467,11 @@ function _runSelfChecksInner(){
   (function(){
     const realC = DATA.customers;
     let scheduled = null, dueBefore = null, dueAfter = null, answered = null,
-        reGraduate = null, durability = null, noDenominator = null, inTriage = null;
+        reGraduate = null, durability = null, inTriage = null;
     try{
       const c = {id:'__gr__', name:'GR Co', stage:'ttfv1', implementationDate: isoAddDays(todayISO(), -200),
         totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[]};
       DATA.customers = [c];
-      noDenominator = graduationDurability();      // nothing answered yet
 
       changeStage(c, 'graduated');
       scheduled = !!getGradReview(c);
@@ -6524,7 +6485,7 @@ function _runSelfChecksInner(){
         .filter(x => x.source === 'grad_review_due').length;
 
       answered = answerGradReview(c, 'held', '  Still running   monthly close  in Wdesk. ');
-      durability = graduationDurability();
+      durability = {verdict: c.gradReview.verdict, note: c.gradReview.note, doneOn: c.gradReview.doneOn};
 
       // Re-graduating must not erase the answer.
       changeStage(c, 'ttfv1');
@@ -6541,17 +6502,12 @@ function _runSelfChecksInner(){
       inTriage === 1, String(inTriage));
 
     check('v88 answering the check-back records a clean verdict and note',
-      answered === true && durability && durability.answered === 1 && durability.held === 1
-      && durability.pct === 100,
+      answered === true && durability && durability.verdict === 'held'
+      && durability.note === 'Still running monthly close in Wdesk.' && durability.doneOn === todayISO(),
       JSON.stringify(durability));
 
     check('v88 re-graduating an account never erases an answer already given',
       reGraduate === true);
-
-    /* The empty-denominator rule. "0% of your graduations held" with nothing
-       reviewed is the same class of lie as a band plotting an empty axis. */
-    check('v88 durability reports nothing rather than 0% when nothing has been reviewed',
-      noDenominator === null, JSON.stringify(noDenominator));
 
     /* The window is a real Settings field, validated on the same path as every
        other threshold — a config key with no UI is a dead key, and gradReviewDays()

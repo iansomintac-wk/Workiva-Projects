@@ -33,7 +33,7 @@ OSM Runway — release notes
     - Single-level undo, Quick log, deep-linking into the right account tab,
       a Coordination tab, a Handoff tab (PROVISIONAL field set), and a
       Progress Report export.
-    - 437 self-checks, run by tools/selfcheck.mjs (suite in tools/selfchecks.js).
+    - 432 self-checks, run by tools/selfcheck.mjs (suite in tools/selfchecks.js).
 
   THE GUIDE. A companion onboarding and competency guide covering the tracker
   end to end, with a guided and a quick path, a practice mode, a challenge, and
@@ -47,7 +47,6 @@ OSM Runway — release notes
       an oversight.
     - The Gainsight sync queue has no transport.
     - Impact minutes are an editable assumption, not a measurement.
-    - Signal calibration needs four resolutions before it means anything.
     - The Progress Report is a snapshot, not a live view.
     - Automatic backup costs one click per session, not zero.
 
@@ -59,6 +58,21 @@ Trim A1 — the self-check suite moved out of the shipped file.
       about 547,000 bytes smaller in the working tree (see VALIDATION.txt, A1).
       window.runSelfChecks() is no longer defined in the shipped tracker. No check
       added or removed; 437/437 before and after.
+
+Trim A2 — dead code out (suite 437 -> 432).
+
+    - Deleted twelve functions nothing called: generatePortfolioAiBrief, renderRiskRow,
+      renderRiskOwnership, renderRiskNextSteps, riskTrend, renderSignalCalibration,
+      getSignalCalibration, partitionRisks, removeOutcomeCriterion, graduationDurability,
+      openThreadsToText, icsUnfold (moved into tools/selfchecks.js, its only caller).
+    - The tracker no longer writes c.recommendationLog (Done/Dismiss still suppress a
+      signal and the headline still tracks how long it has been shown). The field stays on
+      existing records, inert, no migration. Signal calibration read that log, so it is
+      gone with it; the release-notes "calibration needs four resolutions" open item is
+      removed.
+    - tools/refcount.mjs added (counts a symbol's uses with comments stripped).
+    - demo-seed.js no longer reports graduationDurability() in its summary.
+    - Suite: +1 added (trim a2a), -6 removed, one renamed; see VALIDATION.txt (TRIM A2).
 
 Curriculum piece 1 — stable ids for sessions and deliverables (merged to
 master 2026-09-30, with the review fixes and follow-ups M1r, M2r).
