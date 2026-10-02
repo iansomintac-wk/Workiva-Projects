@@ -148,6 +148,16 @@ If the connector is unset or unreachable, the tracker behaves exactly as it does
 `fields` keys, new `task` values only with a version note here. A breaking change means `"2"`.
 v1 additions beyond the original design: the optional call `kind` field.
 
+## Before a real Gong adapter
+
+Blocker (final review I-2, ruled by Ian 2026-10-02: leave as built, block the first real adapter):
+the tracker stores each imported call's full transcript (up to 120,000 characters) in the book in
+browser localStorage (~5-10 MB). At ~10 calls a week the reviewer estimated storage fills in about
+2-3 months and saves then fail; this is an estimate — real transcript sizes were not measured
+(fake data only). Before a real Gong adapter ships: measure real transcript sizes, then choose
+between storing link + summary only (fetch the transcript on demand) or capping transcripts with
+a storage-near-full warning.
+
 ## Validator subset
 
 `connector/lib/validate.mjs` is a zero-dependency JSON Schema subset validator. It supports `type`
