@@ -18,8 +18,18 @@ end in `.invalid`; call URLs are `https://fake.gong.invalid/call/<id>`; ids are 
 - Every request except `OPTIONS` carries `Authorization: Bearer <token>`. Otherwise: 401 `{"error":"unauthorized"}`.
 - CORS: the connector answers for origin `null` (a `file://` page) and for `http://localhost:*` and
   `http://127.0.0.1:*`. `OPTIONS` preflights need no token.
+- Origin `null` is broader than `file://`: every sandboxed iframe on any website also sends `Origin: null`. So the
+  CORS rule is not the guard. **The bearer token is the only guard**, and the token must never be optional,
+  empty, or skipped for any route, in this connector or in any re-implementation of this contract.
+- The token lives in the tracker's browser storage (`obm-connector-settings-v1`) on the `file://` origin. Chrome gives
+  every local HTML file the same origin, so any other local `.html` file opened in that browser can read the token
+  (the browser AI key, `obm-ai-settings-v1`, is exposed the same way). It only opens a connector on 127.0.0.1 on this
+  computer; treat it as a local credential, rotate it by deleting `token.txt`, and do not open untrusted HTML files in
+  the browser profile that holds the tracker.
 - Errors are always `{"error": "<message>"}` (`schemas/error.json`) with status 400 (bad request),
   401 (no or wrong token), 404 (unknown route), 413 (body over 1 MB) or 502 (an adapter failed).
+  A failed `/v1/push` answers 502 with a fixed generic message, not the adapter's text (a real Gainsight adapter's error can
+  carry tenant URLs or credentials); the detail goes to the connector's own console.
 - Requests are JSON; responses are JSON.
 
 ## Calls

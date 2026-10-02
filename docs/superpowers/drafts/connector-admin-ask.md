@@ -48,6 +48,11 @@ with admin** means the research saw it only in search snippets or third-party pa
   it, and it ignores any other bind address in its config. Every request must carry a random
   64-character token that the connector creates on first start and keeps in a local file. It is plain
   Node with no third-party packages.
+- Local exposure to be aware of: the tracker keeps the connector token (and the browser AI key, if one is
+  saved) in the browser's `file://` local storage. Chrome lets every local HTML file read it, and a sandboxed
+  iframe on any website sends `Origin: null`, which the connector accepts, so the token is the only guard.
+  The token opens only a connector on 127.0.0.1 of this laptop, and it is rotated by deleting its file.
+  The plan to move the AI key into the connector removes the browser-key half of this exposure.
 - Where data goes: from Gong and Gainsight to the connector, then to the tracker, which stores it in the
   browser's local storage. The only other destination is the AI provider below. Keys stay on my laptop,
   in the connector's config file (excluded from version control) or an environment variable.

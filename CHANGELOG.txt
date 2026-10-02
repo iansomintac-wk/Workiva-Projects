@@ -34,7 +34,8 @@ OSM Runway — release notes
     - Single-level undo, Quick log, deep-linking into the right account tab,
       a Coordination tab, a Handoff tab (PROVISIONAL field set), and a
       Progress Report export.
-    - 428 self-checks, run by tools/selfcheck.mjs (suite in tools/selfchecks.js).
+    - 428 self-checks, run by tools/selfcheck.mjs (the suite was inline in the tracker
+      at this point; it moved to tools/selfchecks.js at A1).
 
   THE GUIDE. A companion onboarding and competency guide covering the tracker
   end to end, with a guided and a quick path, a practice mode, a challenge, and
@@ -349,3 +350,14 @@ Final-review fixes (task R3). Tracker and connector.
       still cut off, shows the accounts that arrived whole with the length-cap note instead of nothing.
     - An error from the connector now shows its message (for example "Invalid API key. Check the key in the connector config.").
     - 468 self-checks (was 465).
+
+Final-review fixes (task R4). Tracker, connector and docs.
+
+    - A long warning (the push-timeout text, the connector-address warning) now stays on screen long enough to read; short toasts are unchanged.
+    - A connector address typed in Settings that is not http://127.0.0.1:<port> is now reported instead of silently dropped.
+    - An imported Email, Partner Sync or Implementation Note activity no longer keeps a session number.
+    - The connector no longer passes a failed push's internal error text back to the browser.
+    - The self-checks no longer depend on the live book having two open accounts; new checks cover bad Gainsight values and undo of a pull.
+    - CONTRACT.md and the README now say that the bearer token is the only guard (a sandboxed web page also sends Origin: null) and that it sits in
+      file:// storage readable by any local HTML file.
+    - 473 self-checks (was 468); 43 connector tests (was 42).

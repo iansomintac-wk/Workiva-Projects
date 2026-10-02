@@ -31,13 +31,12 @@ blob is LF and its working tree is CRLF here (19,297 bytes longer than the
 blob), so the two hash differently. The guide is the same: LF blob, CRLF
 working tree (859 CR lines), so its two hashes differ.
 
-  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at fix task R3 (final-review fixes I-5, I-6, M-2); the R2 figure faaebb24... is superseded.
-    The blob is LF. In this worktree the working tree was LF too when measured (the C-2 to C-6 edits rewrote it LF), so the two hashes
-    are identical here; where core.autocrlf yields CRLF they will differ.)
-    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,234,209 bytes)
-    9f4618721be41d2c0113f3faf8d58f4639f5e4145b148ca415b0c5a5aff8f2f2
-    WORKING TREE (LF in this checkout at measurement, `sha256sum <file>`, 1,234,209 bytes)
-    9f4618721be41d2c0113f3faf8d58f4639f5e4145b148ca415b0c5a5aff8f2f2
+  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at fix task R4 (final-review fixes M-6 to M-10 and the R3 checker items); the R3 figure 9f461871... is superseded.
+    The blob is LF. In this worktree the working tree is CRLF (core.autocrlf=true; 19,906 CR bytes, one per line), so the two hashes differ here.)
+    GIT BLOB (LF, `git cat-file -p HEAD:<file> > f; sha256sum f`, commit 8718a71, 1,235,589 bytes)
+    785b9c2ed478f0bc79094d1cd81ddfede6cd1f4feb3f74637d8f1523953cb34d
+    WORKING TREE (CRLF in this checkout at measurement, `sha256sum <file>`, 1,255,495 bytes)
+    2266d32416775228e6fdaadf0a2c60077da54f04d6a64fd9044eef59dd0fa3c3
   osm-runway-onboarding-1.0.html   (changed at A5: two time-saved cards replaced/removed; the 598bbb86... figure is stale)
     GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 183,964 bytes)
     d3e4c8723caca88abb1947264049704d1e23cfb466553854561ce86ffdd9a392
@@ -50,7 +49,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   468/468 passed, 0 failed
+  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   473/473 passed, 0 failed
   window.runGuideSelfChecks()                                              18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -156,12 +155,12 @@ check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
 four remaining failures are exactly the pre-existing, verified-non-defect
 four above, which need a populated book on their own terms and are not
 this defect. The tracker suite as a whole therefore still needs seeding to
-run clean, so — at the CURRENT suite count, 462 (369 when this paragraph was
+run clean, so — at the CURRENT suite count, 473 (369 when this paragraph was
 written, after v74.5 was added; the count moves with every graduation-plan task) —
 the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 462
+       --seed demo-seed.js --expect 473
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -1835,3 +1834,40 @@ TRIM R3 - FINAL-REVIEW FIXES I-5, I-6, M-2 (suite 465 -> 468)
   - GREEN: tracker 468/468 exit 0 on demo-seed.js and on demo-seed.js + used-book-seed.js; scenarios 6/6; c2 probe 13/13, c5 13/13,
     c6 14/14; connector tests 42/42; connector-e2e 7/7; connector-demo exit 0. Every run exit 0, no console error on load.
   - Evidence: docs/superpowers/evidence/trim-and-integration/R3.md.
+
+TRIM R4 - FINAL-REVIEW FIXES M-6 TO M-10 AND THE R3 CHECKER ITEMS (suite 468 -> 473, contract 42 -> 43)
+  - Commit 8718a71 (code), then a docs commit. Files: osm-book-of-business-tracker-1.0.html, tools/selfchecks.js, connector/server.mjs,
+    connector/test/server.test.mjs, docs/superpowers/evidence/2026-10-01-talk-probes/b0-run-headed.mjs; docs: README, VALIDATION, CHANGELOG,
+    guide-manifest.json, connector/CONTRACT.md, drafts/connector-admin-ask.md. No schema bump.
+  - M-6: "ai-brief c6a", "ai-brief c6c", "ai-brief c6d" and "gong c3d" now build their own fixture accounts (gp4Cust) and restore in
+    finally. Measured: on a fresh empty profile (no seed) the suite is 451/468 (17 other checks need a populated book), and none of
+    these four is among the failures; before this fix they threw there. Those 17 live-book checks were not in the review's list and are not changed here.
+  - C-6 weak clauses: c6c now forces aiAvailable both ways and requires the idle bar to be the button card only (mutation: "Briefed at why:" added
+    to the bar -> c6c red); c6d now also measures writes (saveData/queueSave stubbed, book JSON byte-identical; mutation: queueSave() added to
+    renderDayBriefFor -> c6d red).
+  - C-3: normalizeActivityCollections clears sessionNumber when !isSessionCapableType(type). New check "c1d2" (red 468/469 first, with the Email
+    kept at 3, then green).
+  - C-4: new checks "gainsight c4d" (bad connector values: non-string/NaN/negative/huge ARR, impossible dates, junk contacts and gates, non-record
+    entries; no throw, no write offered, account unchanged, tier clamped to 40) and "gainsight c4e" (performUndo after a pull restores tier, ARR,
+    renewal date, stakeholders, stamp). Mutations: markUndoable removed -> c4b and c4e red (469/471); ARR validity test removed -> c4d red (470/471).
+    Both passed on first run against existing behaviour (they add coverage, not a fix); c4d's first draft was wrong in my own fixture, not the product.
+  - C-2: connectorUrlWarning(raw) names the right form (http://127.0.0.1:<port>) when a typed address is refused; the Settings Check shows it and Save
+    toasts it ("Settings saved, but the connector address ... was not understood") instead of dropping it silently. New check "connector c2d"
+    (red first). The Save wiring is a source guard only; the message is measured. "Check saves before Cancel" is unchanged (see Kept).
+  - Long toasts: showToast keeps 3200 ms up to 100 characters, then adds 60 ms per extra character, cap 12 s (the 159-character push-timeout
+    warning stays 6.7 s). New check "toast r4" measures the timer showToast arms (red first: all three 3200).
+  - Push route: connector/server.mjs catches an adapter throw on /v1/push, logs it to the connector console and answers 502 with a fixed generic
+    message. New contract test t13b (red first: the adapter text, including a token-like string, came back in the body). CONTRACT.md says so.
+  - b0-run-headed.mjs removes its %TEMP%/b0h-* profiles after each leg (rmSync with retries). Measured: after the run no b0h-* remains.
+  - Docs: M-8 prose (tracker header and README "no server required, optional connector"; README AI paragraph names Anthropic, OpenAI, Gemini and the
+    connector; CHANGELOG 1.0 line no longer says the 428 suite lived in tools/selfchecks.js at 1.0; four "portfolio brief" comments now say Copilot read),
+    M-9 (CONTRACT.md: Origin null also comes from sandboxed iframes; the bearer token is the only guard and must never be optional),
+    M-10 (CONTRACT.md, README and the admin-ask draft: the token, like the browser AI key, sits in file:// localStorage that any local HTML file can read),
+    counts 468 -> 473 in README (3), guide-manifest.json (3) and the CURRENT-count paragraph above (was still 462).
+  - Kept, with reasons: ui.aiPortfolioBrief (an existing check renders its disclosure block; removing it means rewriting that check, and the review
+    said next pass); "Check saves before Cancel" (needs a draft/commit split in Settings, a design change, not a fix); String(fn).indexOf wiring
+    guards (the review said prefer behavioural checks when next touched; none of the four edited here relied on it for what they claim); ledger
+    "Look calls: None yet" (the lead owns the ledger; not edited).
+  - GREEN, all exit 0: tracker 473/473 on demo-seed.js and on demo-seed.js + used-book-seed.js; scenarios 6/6; guide 18/18; probes c2 13/13, c3 12/12,
+    c4 11/11, c5 13/13, c6 14/14; contract 43/43; connector-e2e 7/7; connector-demo; b0-run-headed (4 legs as expected). No console error on load.
+  - Evidence: docs/superpowers/evidence/trim-and-integration/R4.md.

@@ -2,7 +2,8 @@ OSM Runway 1.0 — Book of Business Tracker + Onboarding Guide
 ============================================================
 
 A working prototype. Two single-file HTML apps that run from your own machine
-with no build step, no server, and no account.
+with no build step, no account, and no server required (an optional local
+connector can be run; see connector/CONTRACT.md).
 
   osm-book-of-business-tracker-1.0.html   the tracker
   osm-runway-onboarding-1.0.html          the onboarding guide
@@ -21,8 +22,10 @@ Running it
 3. Use "Open tracker" to launch the tracker in a new tab.
 
 Both files also open directly from file:// with no internet connection. The AI
-Copilot features are the exception: they call the Anthropic API and need a key
-entered in Settings plus a network connection. Everything else works offline.
+Copilot features are the exception: they send a prompt to an AI provider
+(Anthropic, OpenAI or Gemini) either from the browser with a key entered in
+Settings or through the optional local connector, and need a network
+connection. Everything else works offline.
 
 
 What the tracker does
@@ -142,7 +145,7 @@ never touched. GRC disclosure submission stays empty.
 
 Running the graduation checks headlessly (needs Chrome or Edge):
 
-  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 468
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 473
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
@@ -227,14 +230,17 @@ The header then shows Connector: FAKE DATA while any adapter is fake. With a con
 goes through it; if it is not running the tracker falls back to a browser AI key if you saved one, and otherwise
 works as before. The connector token is stored in this browser under obm-connector-settings-v1; it is not a
 third-party key. The only third-party key the tracker can hold is the AI key in obm-ai-settings-v1.
+Both sit in file:// localStorage, which Chrome lets every local HTML file on this computer read, so open only
+HTML files you trust in the browser profile that holds the tracker. The connector rejects any request without
+the token (a sandboxed web page also sends Origin: null, so the token, not CORS, is the guard).
 
 Verifying a change
 ------------------
 Both halves carry self-check suites: the tracker's is injected by tools/selfcheck.mjs from
 tools/selfchecks.js (it is not in the shipped file); the guide's is in the page. After any edit:
 
-  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 468
-            must be 468/468 (the suite lives in tools/selfchecks.js and is not shipped)
+  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 473
+            must be 473/473 (the suite lives in tools/selfchecks.js and is not shipped)
   guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
             must be 18/18 (window.runGuideSelfChecks() also works in the console)
 

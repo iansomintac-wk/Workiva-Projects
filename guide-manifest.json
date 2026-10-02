@@ -15,11 +15,11 @@
     "The Gainsight sync queue sends only through a configured connector (Send to Gainsight); with none it is a staging list.",
     "Automatic backup requires one user gesture per browser session."
   ],
-  "trackerSelfChecks": "tools/selfcheck.mjs injects the suite from tools/selfchecks.js (not shipped) - 468 checks. Must be 468/468 after any edit: node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 468. See VALIDATION.txt.",
+  "trackerSelfChecks": "tools/selfcheck.mjs injects the suite from tools/selfchecks.js (not shipped) - 473 checks. Must be 473/473 after any edit: node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 473. See VALIDATION.txt.",
   "guideSelfChecks": "window.runGuideSelfChecks() - 18 checks. Must be 18/18 after any edit.",
   "requiredChecks": [
     "both files open with no runtime exceptions, including from file://",
-    "tracker self-checks pass from the bundle location (468/468, seeded)",
+    "tracker self-checks pass from the bundle location (473/473, seeded)",
     "guide self-checks pass (18/18)",
     "tracker filename matches trackerFile and every data-tracker-link href in the guide",
     "no version numbers in user-visible prose beyond the 1.0 release label",
