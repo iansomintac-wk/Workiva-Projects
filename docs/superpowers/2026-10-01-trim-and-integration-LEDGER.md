@@ -17,7 +17,7 @@ Paid runs approved: none ($0). The only external call allowed is C-9's single AI
 
 | # | Task | State | Commit | Check command | Measured result (lead re-run) | Deviation from spec (reason) |
 |---|---|---|---|---|---|---|
-| A1 | Move the suite to `tools/selfchecks.js` | pending | — | suite `--expect 437`; guide 18/18; scenarios 6/6 | pending | — |
+| A1 | Move the suite to `tools/selfchecks.js` | done | 1a49b3f | suite `--expect 437`; guide 18/18; scenarios 6/6 | 437/437; guide 18/18; scenarios 6/6 (lead, 2026-10-01). Checker PASS | P1 --suite flag; extra README/guide-manifest doc lines (doc-only) |
 | A2 | Dead code (T1) + stop writing `recommendationLog` (T3) | pending | — | suite `--expect 435` (estimate); `node tools/refcount.mjs …` all 0 | pending | — |
 | A3 | Key scaffolds (T2) + one-time key cleanup | pending | — | suite `--expect 435` (estimate); K3 grep | pending | — |
 | A4 | One gate list (T5), `gradDateMissing` / `gradDateDrifted` | pending | — | suite `--expect 438` (estimate); scenarios 6/6 | pending | — |
@@ -42,7 +42,7 @@ Paid runs approved: none ($0). The only external call allowed is C-9's single AI
 
 | Id | Expected | Measured | Where |
 |---|---|---|---|
-| K1 | After A1, 437/437; shipped file shrinks ≥ 530,000 bytes (blob from 1,759,470; working tree from 1,787,753) | pending | A1 |
+| K1 | After A1, 437/437; shipped file shrinks ≥ 530,000 bytes (blob from 1,759,470; working tree from 1,787,753) | **437/437**; blob 1,759,470→1,221,271 (−538,199); working tree 1,787,753→1,241,007 (−546,746). Lead-measured | A1 |
 | K2 | After A2-A5, every removed check named; 0 non-comment refs per removed symbol (`tools/refcount.mjs`) | pending | A2, A3, A5 (A6 if built) |
 | K3 | After A3, the two retired key strings appear only in the one-time cleanup | pending | A3 |
 | K4 | After A4, each gate's label identical on Today, the account card and the Gainsight section; both grad-date predicates have own checks | pending | A4 |
