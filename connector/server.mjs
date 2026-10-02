@@ -68,6 +68,17 @@ export function createConnector({ config = {}, adapters, token, logPath } = {}) 
       if (errs.length) return send(400, { error: errs.join('; ') });
       return ok('push-response', { results: await ad.gainsight.push(body.items, { logPath }) });
     }
+    if (m === 'POST' && p === '/v1/ai') {
+      let body;
+      try { body = JSON.parse(await readBody(req)); } catch (e) {
+        if (e.status) throw e;
+        return send(400, { error: 'invalid JSON' });
+      }
+      const errs = validate(schema('ai-request'), body);
+      if (errs.length) return send(400, { error: errs.join('; ') });
+      // Only task, prompt and maxTokens reach the adapter; the key is never taken from the request.
+      return ok('ai-response', { text: await ad.ai.complete({ task: body.task, prompt: body.prompt, maxTokens: body.maxTokens }) });
+    }
     return send(404, { error: 'not found' });
   }
 

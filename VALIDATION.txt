@@ -1567,6 +1567,12 @@ CONNECTOR SERVER — TASK B2 (tracker suite 428 -> 428, unchanged; tracker not e
     token.txt deleted, git status clean of token and log.
   Evidence: docs/superpowers/evidence/trim-and-integration/B2.md.
 
+CONNECTOR AI ADAPTERS — TASK B3 (tracker suite 428 -> 428, unchanged; tracker not edited)
+  - POST /v1/ai, ai-fake/claude/openai/gemini adapters. 8 tests written first, seen red (module not found),
+    then green; contract suite 29 -> 37, # fail 0. Mutation check: scrub() made a no-op, t13 (key echoed by the
+    provider) went red; restored. No real network call: adapters take an injected fetch, tests inject a stub.
+  Evidence: docs/superpowers/evidence/trim-and-integration/B3.md.
+
 FR/GRC DEFAULT GATES — RULING M3, SCHEMA 14 -> 15 (suite 436 -> 437)
   Ian: "Can't you do that for me and set it as a default value that can be changed by OSMs after?" The approved
   lists in docs/superpowers/drafts/2026-10-01-fr-grc-gates-DRAFT.md are now the shipped defaults (FR 5/5/3/3, GRC

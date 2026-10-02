@@ -154,7 +154,10 @@ tests: node --test --test-reporter=tap "connector/test/*.test.mjs"
 
 Run it (task B2): node connector/server.mjs starts it on 127.0.0.1:8787 (127.0.0.1 only), creates
 connector/token.txt on first start and prints the token; paste the token into the tracker once. Delete
-the file to rotate. connector/config.json and token.txt are git-ignored. All adapters are FAKE.
+the file to rotate. connector/config.json and token.txt are git-ignored. Gong and Gainsight adapters are FAKE.
+AI (task B3): POST /v1/ai; ai.adapter is fake (default), claude, openai or gemini, with the key only in the
+git-ignored connector/config.json or env CONNECTOR_AI_KEY. The real AI adapters are tested against a stubbed
+fetch only; no real call has been made.
 
 Verifying a change
 ------------------

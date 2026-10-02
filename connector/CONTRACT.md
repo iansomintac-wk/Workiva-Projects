@@ -90,7 +90,20 @@ one result per item, `externalId` and `error` `null` when not applicable.
 Request (`schemas/ai-request.json`): `{"task", "prompt", "maxTokens"}`. Response (`schemas/ai-response.json`): `{"text"}`.
 `task` is one of `copilot_read`, `call_prep`, `debrief`, `debrief_scores`, `call_review`, `risk_summary`,
 `thread_answer`, `brief_my_day`. Provider keys live only in the connector's git-ignored config, never
-in the browser. (The AI route is built in task B3.)
+in the browser. The route is built (task B3). A request that fails the schema is 400; an adapter error is
+502 `{error}` carrying the provider's message with the key scrubbed out. Any `apiKey` field in a request body
+is ignored.
+
+Adapters (`ai.adapter` in config): `fake` (default), `claude`, `openai`, `gemini`. Nothing else exists (R1:
+only a sanctioned provider); any other name makes the connector refuse to start (`adapter not built: <name>`).
+Config: `"ai": {"adapter": "fake", "model": "", "apiKey": ""}`. The key lives only in the git-ignored
+`connector/config.json` (or env `CONNECTOR_AI_KEY`); `config.example.json` ships with no key and `fake`.
+An empty `model` takes the tracker's defaults: `claude-sonnet-5`, `gpt-5.4-mini`, `gemini-2.5-flash`.
+Endpoints are the tracker's own: Anthropic Messages (`x-api-key`), OpenAI Chat Completions (bearer),
+Gemini `generateContent` (`x-goog-api-key` header, never in the URL). The browser-only Anthropic header is
+dropped. `fake` returns `FAKE AI (<task>): <first 80 chars of prompt>`, except `brief_my_day`, which returns
+JSON with one fake account per `[id:<id>]` in the prompt. The real adapters are tested only against a stubbed
+fetch; no real call has been made.
 
 ## Running it
 
@@ -107,8 +120,7 @@ Behaviour details: auth is checked before routing, so any path without a valid t
 headers are echoed only for an allowed origin and appear on every response (401 included) so the page can
 read it; `since` that is not an ISO 8601 date-time is 400; a non-JSON or schema-invalid push body is 400
 with the validator's messages; every response is validated against its schema before sending and a
-failure is a 500; an adapter that throws is a 502. `POST /v1/ai` returns 404 until B3.
-
+failure is a 500; an adapter that throws is a 502.
 ## Offline rule
 
 If the connector is unset or unreachable, the tracker behaves exactly as it does today plus one quiet

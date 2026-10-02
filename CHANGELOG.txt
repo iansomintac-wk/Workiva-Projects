@@ -129,6 +129,14 @@ Connector server (task B2) — server, token, CORS, bind and fake adapters; trac
       (git-ignored); an item with fields.forceFail true comes back failed. POST /v1/ai arrives in B3.
     - 14 server tests; the contract suite is now 29.
 
+Connector AI adapters (task B3) — POST /v1/ai and four adapters; tracker suite unchanged (428).
+
+    - ai.adapter fake (default; canned text, brief_my_day returns JSON per [id:x]), claude, openai, gemini,
+      ported from the tracker's call*API (same endpoints, headers, bodies, default models). Key from the
+      git-ignored config.json or CONNECTOR_AI_KEY only; never read from a request, never in an error.
+    - Any other ai.adapter refuses to start. Real adapters are tested against a stubbed fetch only.
+    - 8 AI tests; the contract suite is now 37.
+
 Curriculum piece 1 — stable ids for sessions and deliverables (merged to
 master 2026-09-30, with the review fixes and follow-ups M1r, M2r).
 
