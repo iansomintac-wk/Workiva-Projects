@@ -9133,6 +9133,46 @@ function _runSelfChecksInner(){
     }catch(e){ detail = 'threw: ' + e.message; }
     check('ai-brief c6a: parseDayBrief keeps only accounts in the book whose action has a reason, and only flags with a reason (dropped=3); non-JSON is "unreadable", never a throw', ok, detail);
   })();
+  (function(){                                   // c6a2 (R3 I-6)
+    let ok = false, detail = '';
+    try{
+      const live = DATA.customers.filter(c => c.stage !== 'graduated');
+      const ids = [live[0].id, live[1].id, live[2].id];
+      const full = JSON.stringify({accounts: ids.map(id => ({id, nextAction: 'Call "{x}" sponsor', reason: 'r {brace} in a string', flags: [{kind: 'drift', text: 't', reason: 'fr'}]}))});
+      const cut = full.slice(0, full.lastIndexOf('{"id"') + 40);          // the third account is cut off mid-object
+      const r = parseDayBrief(cut, DATA.customers);
+      const none = parseDayBrief('{"accounts":[{"id":"' + ids[0] + '","nextAct', DATA.customers);
+      const whole = parseDayBrief(full, DATA.customers);
+      ok = !r.error && r.partial === true && Object.keys(r.byId).length === 2 && !!r.byId[ids[0]] && !!r.byId[ids[1]] && !r.byId[ids[2]]
+        && r.byId[ids[0]].nextAction === 'Call "{x}" sponsor' && r.byId[ids[0]].flags.length === 1
+        && none.error === 'unreadable' && Object.keys(none.byId).length === 0
+        && !whole.partial && Object.keys(whole.byId).length === 3;
+      detail = JSON.stringify({got: Object.keys(r.byId).length, partial: r.partial, none: none.error, whole: Object.keys(whole.byId).length});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    check('ai-brief c6a2: parseDayBrief keeps the complete accounts of a cut-off answer (partial:true), reads braces inside strings correctly, and a cut with no complete account is still "unreadable"', ok, detail);
+  })();
+  (function(){                                   // c6a3 (R3 I-6)
+    let ok = false, detail = '';
+    try{
+      const a = dayBriefMaxTokens(0), b = dayBriefMaxTokens(25), c = dayBriefMaxTokens(40), d = dayBriefMaxTokens(100000);
+      ok = a >= 1600 && b >= 5000 && c >= 8000 && c <= 8000 && d === c && b < c && /dayBriefMaxTokens\(/.test(String(briefMyDay));
+      detail = JSON.stringify({a, b, c, d});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    check('ai-brief c6a3: dayBriefMaxTokens sizes the budget to the open-account count (200 each; floor 1600, ceiling 8000: 25 accounts >= 5000, 40 accounts = 8000) and briefMyDay uses it', ok, detail);
+  })();
+  (function(){                                   // c2e (R3 M-2, I-5)
+    let ok = false, detail = '';
+    try{
+      const withMsg = connectorErrorFor(502, 'Invalid API key. Check the key in the connector config.');
+      const bare = connectorErrorFor(502);
+      const long = connectorErrorFor(502, 'x'.repeat(2000));
+      ok = withMsg.code === 'HTTP' && withMsg.message.indexOf('502') !== -1 && withMsg.message.indexOf('Invalid API key. Check the key in the connector config.') !== -1
+        && bare.message === 'The connector answered HTTP 502.' && connectorErrorFor(401, 'x').code === 'UNAUTHORIZED'
+        && long.message.length < 400 && connectorErrorFor(502, {a: 1}).message === bare.message;
+      detail = withMsg.message;
+    }catch(e){ detail = 'threw: ' + e.message; }
+    check('connector c2e: connectorErrorFor(status, body message) appends the connector\'s scrubbed message (capped, string only); without one it reads as before', ok, detail);
+  })();
   (function(){                                   // c6b
     let ok = false, detail = '';
     const po = ui.copilotOpen, prevLog = JSON.parse(JSON.stringify(DATA.riskLog || {}));

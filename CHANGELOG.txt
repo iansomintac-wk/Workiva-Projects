@@ -338,3 +338,14 @@ Final-review fixes (task R2). Tracker only.
 
 Task R2 debug. Self-check harness only; the tracker is unchanged. The new Add-calls check no longer triggers a page error
 on load (it clicked Add over fixtures a real render cannot draw), so headless runs exit 0 again. Still 465 self-checks.
+
+Final-review fixes (task R3). Tracker and connector.
+
+    - A connector that is slow to answer is no longer reported as offline. A push that times out says the items may have been
+      sent, so check Gainsight before sending again; it leaves them queued and does not retry. A slow AI request is no longer
+      re-sent on the browser key. The AI wait is now 75 seconds, above the connector's own 60.
+    - The connector treats a repeated push item id as the same item (same id back, no second record). CONTRACT.md says so.
+    - Brief my day sizes its answer budget to the number of open accounts (200 each, 1,600 to 8,000) and, if the answer is
+      still cut off, shows the accounts that arrived whole with the length-cap note instead of nothing.
+    - An error from the connector now shows its message (for example "Invalid API key. Check the key in the connector config.").
+    - 468 self-checks (was 465).

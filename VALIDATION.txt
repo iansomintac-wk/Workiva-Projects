@@ -31,13 +31,13 @@ blob is LF and its working tree is CRLF here (19,297 bytes longer than the
 blob), so the two hash differently. The guide is the same: LF blob, CRLF
 working tree (859 CR lines), so its two hashes differ.
 
-  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at fix task R2 (final-review fixes I-3, M-1, M-3); the C-6 figure fb952bb3... is superseded.
+  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at fix task R3 (final-review fixes I-5, I-6, M-2); the R2 figure faaebb24... is superseded.
     The blob is LF. In this worktree the working tree was LF too when measured (the C-2 to C-6 edits rewrote it LF), so the two hashes
     are identical here; where core.autocrlf yields CRLF they will differ.)
-    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,230,893 bytes)
-    faaebb24e47cc5e83eef16697651f4e714e44c87def33eed23b30a5a2c97a971
-    WORKING TREE (LF in this checkout at measurement, `sha256sum <file>`, 1,230,893 bytes)
-    faaebb24e47cc5e83eef16697651f4e714e44c87def33eed23b30a5a2c97a971
+    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,234,209 bytes)
+    9f4618721be41d2c0113f3faf8d58f4639f5e4145b148ca415b0c5a5aff8f2f2
+    WORKING TREE (LF in this checkout at measurement, `sha256sum <file>`, 1,234,209 bytes)
+    9f4618721be41d2c0113f3faf8d58f4639f5e4145b148ca415b0c5a5aff8f2f2
   osm-runway-onboarding-1.0.html   (changed at A5: two time-saved cards replaced/removed; the 598bbb86... figure is stale)
     GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 183,964 bytes)
     d3e4c8723caca88abb1947264049704d1e23cfb466553854561ce86ffdd9a392
@@ -50,7 +50,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   462/462 passed, 0 failed
+  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   468/468 passed, 0 failed
   window.runGuideSelfChecks()                                              18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -1808,3 +1808,30 @@ TRIM R2-DEBUG - r2-m1 CONSOLE ERROR (suite stays 465; product code unchanged, tr
     gate is unchanged and is the failing check. Mutation: stub removed -> exit 1 with the same console error, 465/465 passed.
   - GREEN: tracker 465/465 exit 0 on demo-seed.js and on demo-seed.js + used-book-seed.js; scenarios 6/6; connector-e2e 7/7;
     c3 probe 12/12; c5 probe 12/12. Evidence: docs/superpowers/evidence/trim-and-integration/R2-debug.md.
+
+TRIM R3 - FINAL-REVIEW FIXES I-5, I-6, M-2 (suite 465 -> 468)
+  - osm-book-of-business-tracker-1.0.html, tools/selfchecks.js, connector/adapters/gainsight-fake.mjs, connector/CONTRACT.md,
+    connector/test/server.test.mjs. No schema bump. Tracker SHA-256 block above re-measured (LF blob = LF working tree).
+  - I-5: connectorRequest maps a timeout (own timer flag or AbortError) to code TIMEOUT instead of OFFLINE. callAiAPI falls back to
+    the browser key only on OFFLINE, so a timeout is shown, not re-sent. A push that times out toasts "may have been sent - check
+    Gainsight before sending again", leaves the queue untouched, retries nothing. AI_TIMEOUT_MS 60 s -> 75 s (connector's is 60 s).
+    CONTRACT.md: /v1/push is idempotent by items[].id; the fake adapter remembers sent ids (a repeat returns the same externalId,
+    is not logged again; a failed id is not remembered). New: connector test t7b (red before the adapter change: 41 pass, 1 fail;
+    then 42/42); c2 probe +4 (TIMEOUT not OFFLINE, AI timeout makes one connector request and zero browser-key requests, 502 body
+    shown, non-JSON 502 body unchanged), c5 probe +1 (push timeout toast, one request, queue byte-identical). Mutation
+    (code TIMEOUT -> OFFLINE): c2 11/13, c5 12/13 red.
+  - I-6: dayBriefMaxTokens(open) = min(8000, max(1600, 200 x open)); parseDayBrief keeps the complete account objects of a cut-off
+    answer (salvageCompleteAccounts, braces counted outside strings) and returns partial:true; when nothing complete arrived and the
+    answer was truncated, the error says the length cap was hit. New checks "ai-brief c6a2" and "ai-brief c6a3"; c6 probe +3
+    (request budget, cut-off answer keeps the whole accounts and shows the length-cap note, nothing-complete case). Mutations:
+    fixed 3200 -> c6a3 red (467/468); salvage removed -> c6a2 red (467/468) and c6 probe 13/14. The 200 tokens per account is an
+    estimate, not measured on a real model. NOTE: the demo book has 16 open accounts, where 200 x 16 = 3200, so the c6 probe's
+    budget check cannot tell the old constant from the new formula on this book; c6a3 (pure helper) does.
+  - M-2: connectorErrorFor(status, detail) appends the connector's {error} text (string only, capped at 300); connectorRequest reads it
+    from the response body (a non-JSON body reads as before). Shown through textContent/escapeHtml. New check "connector c2e";
+    mutation (detail not passed) -> c2 probe 12/13 red.
+  - Process: first red runs were measured before the fixes (suite 465/468, c5 12/13, c6 3/4 via ReferenceError, connector 41/42). The
+    harness reads probe results without waiting for real timers, so the c2 timeout test fires its timer as a microtask.
+  - GREEN: tracker 468/468 exit 0 on demo-seed.js and on demo-seed.js + used-book-seed.js; scenarios 6/6; c2 probe 13/13, c5 13/13,
+    c6 14/14; connector tests 42/42; connector-e2e 7/7; connector-demo exit 0. Every run exit 0, no console error on load.
+  - Evidence: docs/superpowers/evidence/trim-and-integration/R3.md.

@@ -142,7 +142,7 @@ never touched. GRC disclosure submission stays empty.
 
 Running the graduation checks headlessly (needs Chrome or Edge):
 
-  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 465
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 468
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
@@ -189,7 +189,9 @@ spreadsheet value import in Settings is unchanged.
 button. It sends only the items that are not yet sent, in one request, and marks each item by the connector's answer:
 sent shows "sent" and the id Gainsight returned; failed shows the error and a Retry button (Retry sends just that
 item). Some can succeed while others fail. An item is never marked sent without an id from the connector, a sent item
-is never sent again, and a failed or offline push leaves the item in the queue. Every queued item now also carries
+is never sent again, and a failed or offline push leaves the item in the queue. If the connector does not answer within
+15 seconds, the tracker says the items may have been sent (check Gainsight before sending again), leaves them queued and
+does not retry; the connector treats a repeated item id as the same item, so a second Send does not create a duplicate. Every queued item now also carries
 structured fields for its kind (the gates for a Pending items batch, the objective for a Success Plan objective, the CTA
 name, reason and severity for an At-Risk CTA, the outcome for a Success Outcome Plan). Without a connector nothing
 changes: the button is not shown and Copy all & queue, the paste text and Export queue (JSON) work as before. The day
@@ -231,8 +233,8 @@ Verifying a change
 Both halves carry self-check suites: the tracker's is injected by tools/selfcheck.mjs from
 tools/selfchecks.js (it is not in the shipped file); the guide's is in the page. After any edit:
 
-  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 465
-            must be 465/465 (the suite lives in tools/selfchecks.js and is not shipped)
+  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 468
+            must be 468/468 (the suite lives in tools/selfchecks.js and is not shipped)
   guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
             must be 18/18 (window.runGuideSelfChecks() also works in the console)
 

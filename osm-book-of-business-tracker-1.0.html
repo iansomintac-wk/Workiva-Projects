@@ -1784,8 +1784,11 @@ function buildConnectorRequest(path, opts, settings){
   }
   return {url: settings.url + path, init};
 }
-function connectorErrorFor(status){
-  const err = new Error(status === 401 ? 'The connector rejected the token.' : 'The connector answered HTTP ' + status + '.');
+/* R3 M-2: `detail` is the connector's {error} text (already scrubbed of keys by the connector).
+   A string only, capped; it is shown through textContent or escapeHtml, never as markup. */
+function connectorErrorFor(status, detail){
+  const extra = typeof detail === 'string' && detail.trim() ? ' ' + detail.trim().slice(0, 300) : '';
+  const err = new Error((status === 401 ? 'The connector rejected the token.' : 'The connector answered HTTP ' + status + '.') + extra);
   err.code = status === 401 ? 'UNAUTHORIZED' : 'HTTP';
   return err;
 }
@@ -1799,18 +1802,30 @@ async function connectorRequest(path, opts){
   const o = opts || {};
   const req = buildConnectorRequest(path, o, settings);
   const controller = new AbortController();
-  const timer = setTimeout(()=>controller.abort(), o.timeoutMs || 15000);
+  let timedOut = false;
+  const timer = setTimeout(()=>{ timedOut = true; controller.abort(); }, o.timeoutMs || 15000);
   let resp;
   try{
     resp = await _connectorFetch(req.url, Object.assign({signal: controller.signal}, req.init));
   }catch(e){
+    /* R3 I-5: a timeout is not "offline". The connector may be running and may have done the work, so
+       it is its own state: callers must not fall back to another route or re-send on it. */
+    if(timedOut || (e && e.name === 'AbortError')){
+      const err = new Error('The connector did not answer in time. It is running, but the outcome of that request is unknown.');
+      err.code = 'TIMEOUT';
+      throw err;
+    }
     const err = new Error('The connector is not reachable. Start it with node connector/server.mjs.');
     err.code = 'OFFLINE';
     throw err;
   }finally{
     clearTimeout(timer);
   }
-  if(!resp.ok) throw connectorErrorFor(resp.status);
+  if(!resp.ok){
+    let detail = '';
+    try{ const eb = await resp.json(); detail = eb && typeof eb.error === 'string' ? eb.error : ''; }catch(e){ detail = ''; }
+    throw connectorErrorFor(resp.status, detail);
+  }
   try{ return await resp.json(); }
   catch(e){ const err = new Error('The connector sent a reply the tracker cannot read.'); err.code = 'HTTP'; throw err; }
 }
@@ -2048,8 +2063,10 @@ function aiCustomerSnapshot(c){
 // Returns {text, truncated}. opts.maxTokens sizes the response budget per feature —
 // the portfolio brief and session debrief need more room than a short call-prep note,
 // and every caller surfaces `truncated` instead of silently showing a cut-off answer.
-// A 60s AbortController stops a hung request from leaving "Thinking…" up forever.
-const AI_TIMEOUT_MS = 60000;
+// An AbortController (AI_TIMEOUT_MS) stops a hung request from leaving "Thinking…" up forever.
+// R3 I-5: 75 s, above the connector's own 60 s provider timeout, so a slow provider is reported by the
+// connector (502) instead of the tracker giving up first and treating a live connector as offline.
+const AI_TIMEOUT_MS = 75000;
 async function callAiAPI(promptText, opts){
   const settings = getAiSettings();
   /* C-2: with a connector configured, every AI feature goes through it (POST /v1/ai) and the
@@ -2076,7 +2093,7 @@ async function callAiAPI(promptText, opts){
     if(provider === 'openai') return await callOpenAIAPI(promptText, settings, maxTokens, controller.signal);
     return await callGeminiAPI(promptText, settings, maxTokens, controller.signal);
   }catch(e){
-    if(e.name === 'AbortError') throw new Error('The request timed out after 60 seconds — try again.');
+    if(e.name === 'AbortError') throw new Error('The request timed out after ' + (AI_TIMEOUT_MS / 1000) + ' seconds — try again.');
     throw e;
   }finally{
     clearTimeout(timer);
@@ -2392,9 +2409,14 @@ function parseDayBrief(text, customers){
   let src = String(text || '').trim();
   const fence = src.match(/^```[a-zA-Z]*\s*([\s\S]*?)\s*```$/);
   if(fence) src = fence[1].trim();
-  let obj = null;
+  let obj = null, partial = false;
   try{ obj = JSON.parse(src); }catch(e){ obj = null; }
-  if(!obj || !Array.isArray(obj.accounts)) return {byId:{}, dropped:0, error:'unreadable'};
+  if(!obj || !Array.isArray(obj.accounts)){
+    /* R3 I-6: a cut-off answer is not valid JSON. Keep the account objects that arrived whole. */
+    const whole = salvageCompleteAccounts(src);
+    if(!whole.length) return {byId:{}, dropped:0, error:'unreadable'};
+    obj = {accounts: whole}; partial = true;
+  }
   const known = new Set((customers || []).filter(Boolean).map(c => String(c.id)));
   const str = v => typeof v === 'string' ? v.trim() : '';
   const byId = {};
@@ -2411,7 +2433,36 @@ function parseDayBrief(text, customers){
     });
     byId[id] = {nextAction, reason, flags};
   });
-  return {byId, dropped};
+  return partial ? {byId, dropped, partial: true} : {byId, dropped};
+}
+/* The complete objects of the "accounts" array in text that may stop mid-way. Brace depth is counted
+   outside strings only; an object still open at the end of the text is left out. */
+function salvageCompleteAccounts(src){
+  const out = [];
+  const at = src.search(/"accounts"\s*:\s*\[/);
+  if(at < 0) return out;
+  let i = src.indexOf('[', at) + 1, depth = 0, start = -1, inStr = false, esc = false;
+  for(; i < src.length; i++){
+    const ch = src[i];
+    if(inStr){ if(esc) esc = false; else if(ch === '\\') esc = true; else if(ch === '"') inStr = false; continue; }
+    if(ch === '"'){ inStr = true; continue; }
+    if(ch === '{'){ if(depth === 0) start = i; depth++; }
+    else if(ch === '}'){
+      depth--;
+      if(depth === 0 && start >= 0){
+        try{ out.push(JSON.parse(src.slice(start, i + 1))); }catch(e){ /* skip a malformed object */ }
+        start = -1;
+      }
+      if(depth < 0) break;
+    }else if(ch === ']' && depth === 0) break;
+  }
+  return out;
+}
+/* R3 I-6: about 125 output tokens per account is an estimate (not measured on a real model); 200 each leaves room,
+   floor 1600, ceiling 8000. A cut-off answer is still handled (salvageCompleteAccounts, length-cap notice). */
+function dayBriefMaxTokens(openCount){
+  const n = Math.max(0, Math.floor(Number(openCount) || 0));
+  return Math.min(8000, Math.max(1600, n * 200));
 }
 function aiAvailable(){
   return connectorConfigured() || !!getAiSettings().apiKey;
@@ -2421,12 +2472,15 @@ async function briefMyDay(){
   ui.dayBrief = {loading:true, req:myReq, at:null, byId:{}};
   render();
   try{
-    const res = await callAiAPI(buildDayBriefPrompt(DATA.customers), {task: 'brief_my_day', maxTokens: 3200});
+    const openCount = DATA.customers.filter(c => c && c.stage !== 'graduated').length;
+    const res = await callAiAPI(buildDayBriefPrompt(DATA.customers), {task: 'brief_my_day', maxTokens: dayBriefMaxTokens(openCount)});
     if(!ui.dayBrief || ui.dayBrief.req !== myReq) return;
     const parsed = parseDayBrief(res.text, DATA.customers);
     ui.dayBrief = {loading:false, req:myReq, at: new Date().toISOString(), byId: parsed.byId, dropped: parsed.dropped,
-      truncated: !!res.truncated,
-      error: parsed.error ? 'The answer could not be read as a day brief, so nothing is shown. Press Brief my day to try again.' : ''};
+      truncated: !!res.truncated || !!parsed.partial,
+      error: !parsed.error ? '' : res.truncated
+        ? 'The answer hit its length cap before any account was complete, so nothing is shown. Press Brief my day to try again.'
+        : 'The answer could not be read as a day brief, so nothing is shown. Press Brief my day to try again.'};
   }catch(e){
     if(ui.dayBrief && ui.dayBrief.req !== myReq) return;
     ui.dayBrief = {loading:false, req:myReq, at:null, byId:{}, error: e.message || 'Something went wrong'};
@@ -10570,6 +10624,7 @@ async function sendGainsightQueue(ids){
   try{ resp = await connectorRequest('/v1/push', {method: 'POST', body: buildPushRequest(sendable)}); }
   catch(e){
     showToast(e && e.code === 'OFFLINE' ? 'Connector offline — nothing was sent. Use Copy all & queue to paste into Gainsight instead.'
+      : e && e.code === 'TIMEOUT' ? 'The connector did not answer in time. The items may have been sent — check Gainsight before sending again. They are still queued here, and nothing was retried.'
       : e && e.code === 'UNAUTHORIZED' ? 'The connector rejected the token — check it in Settings. Nothing was sent.'
       : 'Could not send to Gainsight right now. Nothing was marked sent.');
     return null;

@@ -145,6 +145,23 @@ test('t7 push: one sent per item, log gains N lines; forceFail -> failed', async
   } finally { await s.close(); }
 });
 
+test('t7b push is idempotent by item id: a repeated id returns the same externalId and is not sent (logged) twice', async () => {
+  const s = await start();
+  try {
+    const post = async (items) => (await fetch(`${s.base}/v1/push`, { method: 'POST', headers: json, body: JSON.stringify({ items }) })).json();
+    const a = await post([item('q9'), item('q10')]);
+    const b = await post([item('q9'), item('q11')]);
+    assert.deepEqual(validate(schema('push-response'), b), []);
+    assert.equal(b.results[0].status, 'sent');
+    assert.equal(b.results[0].externalId, a.results[0].externalId);
+    assert.equal(readFileSync(s.logPath, 'utf8').trim().split('\n').length, 3, 'q9 q10 q11 logged once each');
+    // a failed item is not remembered: retrying it is a real attempt
+    await post([item('q12', { forceFail: true })]);
+    await post([item('q12', { forceFail: true })]);
+    assert.equal(readFileSync(s.logPath, 'utf8').trim().split('\n').length, 5, 'failed q12 retried and logged again');
+  } finally { await s.close(); }
+});
+
 test('t8 push: schema-invalid and non-JSON bodies -> 400 with messages', async () => {
   const s = await start();
   try {

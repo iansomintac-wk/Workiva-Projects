@@ -1,6 +1,6 @@
 /* C-2 async probe. Run as a seed so the real async path is exercised with a stubbed fetch
    (no network, no key):
-     node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js,docs/superpowers/evidence/trim-and-integration/c2-async-probe.js --fn c2ProbeResults --expect 8
+     node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js,docs/superpowers/evidence/trim-and-integration/c2-async-probe.js --fn c2ProbeResults --expect 13
    Everything it touches (both settings keys, window.fetch, _connectorFetch, ui.connector) is restored. */
 (function(){
   const results = [];
@@ -67,6 +67,30 @@
       await checkConnectorHealth();
       rec('checkConnectorHealth against a fake-adapter connector renders FAKE DATA',
         ui.connector.state === 'online' && renderConnectorStatus().indexOf('FAKE DATA') !== -1, renderConnectorStatus());
+
+      // 6. (R3 I-5) a timeout is its own state: TIMEOUT, not OFFLINE, and never a fallback to the browser key
+      const hang = (url, init) => new Promise((res, rej) => { init.signal.addEventListener('abort', () => rej(new DOMException('aborted', 'AbortError'))); });
+      _connectorFetch = hang;
+      let code6 = '';
+      // the harness reads results without waiting for real timers, so the timeout fires as a microtask here
+      const origST = window.setTimeout;
+      window.setTimeout = f => { Promise.resolve().then(f); return 0; };
+      try{ await connectorRequest('/v1/push', {method: 'POST', body: {items: []}, timeoutMs: 20}); }catch(e){ code6 = e.code; }
+      finally{ window.setTimeout = origST; }
+      rec('a connectorRequest that outlives its timeout rejects with code TIMEOUT, not OFFLINE', code6 === 'TIMEOUT', code6);
+      let cfCalls = 0, code6b = '';
+      browserCalls = 0;
+      _connectorFetch = () => { cfCalls++; return Promise.reject(new DOMException('aborted', 'AbortError')); };
+      try{ await callAiAPI('p', {task: 'x'}); }catch(e){ code6b = e.code; }
+      rec('an AI call that times out at the connector is not re-sent: one connector request, zero browser-key requests, code TIMEOUT',
+        code6b === 'TIMEOUT' && cfCalls === 1 && browserCalls === 0, code6b + ' connector=' + cfCalls + ' browser=' + browserCalls);
+      _connectorFetch = () => Promise.resolve({ok: false, status: 502, json: () => Promise.resolve({error: 'Invalid API key. Check the key in the connector config.'})});
+      let msg6 = '', code6c = '';
+      try{ await connectorRequest('/v1/ai', {method: 'POST', body: {}}); }catch(e){ msg6 = e.message; code6c = e.code; }
+      rec('a 502 with an {error} body shows the connector\'s scrubbed message', code6c === 'HTTP' && /HTTP 502/.test(msg6) && /Invalid API key\. Check the key in the connector config\./.test(msg6), msg6);
+      _connectorFetch = () => Promise.resolve({ok: false, status: 502, json: () => Promise.reject(new Error('not json'))});
+      try{ await connectorRequest('/v1/ai', {method: 'POST', body: {}}); }catch(e){ msg6 = e.message; }
+      rec('a 502 whose body is not JSON still reads "The connector answered HTTP 502."', msg6 === 'The connector answered HTTP 502.', msg6);
     }catch(e){
       rec('probe ran without throwing', false, String(e && e.stack || e));
     }finally{

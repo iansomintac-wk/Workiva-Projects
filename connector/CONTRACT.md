@@ -85,6 +85,12 @@ one result per item, `externalId` and `error` `null` when not applicable.
 {"results": [{"id": "q1", "status": "sent", "externalId": "FAKE-q1", "error": null}]}
 ```
 
+**Idempotent by `items[].id` (R3, I-5).** The tracker times out a push after 15 s and cannot know whether the
+connector sent it, so it tells the user the outcome is unknown and the user may press Send again with the
+same ids. An adapter must therefore treat a repeated item id as the same item: answer `sent` with the same
+`externalId` and do not create a second record in Gainsight. A `failed` id is not remembered; retrying it is a
+real attempt. The fake adapter does this (a repeated id is not logged again).
+
 ### `POST /v1/ai`
 
 Request (`schemas/ai-request.json`): `{"task", "prompt", "maxTokens"}`. Response (`schemas/ai-response.json`): `{"text", "truncated"?}`. `truncated` is an optional boolean (additive, v1): `true` when the provider stopped at the length cap (Claude `stop_reason` `max_tokens`, OpenAI `finish_reason` `length`, Gemini `finishReason` `MAX_TOKENS`); the server always sends it, and the fake sends `false`. The tracker shows its length-cap notice from it.

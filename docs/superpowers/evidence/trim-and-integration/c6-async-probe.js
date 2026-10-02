@@ -1,6 +1,6 @@
 /* C-6 async probe. Runs the real async "Brief my day" flow with a stubbed connector fetch that answers the way the fake
    AI adapter does (one account per [id:] line). No network, no key:
-     node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js,docs/superpowers/evidence/trim-and-integration/c6-async-probe.js --fn c6ProbeResults --expect 11
+     node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js,docs/superpowers/evidence/trim-and-integration/c6-async-probe.js --fn c6ProbeResults --expect 14
    It restores: connector and AI settings, _connectorFetch, ui.dayBrief, ui.view, the stored book. */
 (function(){
   const results = [];
@@ -48,8 +48,8 @@
       const bookBefore = JSON.stringify(DATA);
       document.getElementById('btn-brief-my-day').click(); await wait();
       const sent = calls[0] && calls[0].body;
-      rec('the click POSTs /v1/ai once with task brief_my_day, maxTokens 3200 and one [id:] line per open account',
-        calls.length === 1 && calls[0].url === 'http://127.0.0.1:8787/v1/ai' && sent.task === 'brief_my_day' && sent.maxTokens === 3200
+      rec('the click POSTs /v1/ai once with task brief_my_day, maxTokens dayBriefMaxTokens(open) and one [id:] line per open account',
+        calls.length === 1 && calls[0].url === 'http://127.0.0.1:8787/v1/ai' && sent.task === 'brief_my_day' && sent.maxTokens === dayBriefMaxTokens(open.length)
         && (sent.prompt.match(/\[id:[^\]]+\]/g) || []).length === open.length, JSON.stringify({n: calls.length, task: sent && sent.task}));
       rec('every open account gets a brief: Object.keys(ui.dayBrief.byId).length === open accounts',
         ui.dayBrief && Object.keys(ui.dayBrief.byId).length === open.length && ui.dayBrief.dropped === 0, (ui.dayBrief ? Object.keys(ui.dayBrief.byId).length : 'none') + ' of ' + open.length);
@@ -65,6 +65,23 @@
       _connectorFetch = (url, init) => { const body = JSON.parse(init.body); calls.push({url, body}); return ok200({text: fakeAnswer(body.prompt), truncated: true}); };
       await briefMyDay(); await wait();
       rec('a truncated answer shows the existing length-cap notice', ui.dayBrief.truncated === true && /length cap/.test(app()), '');
+
+      // 4b. (R3 I-6) the budget follows the book, and a cut-off answer still shows the complete accounts
+      {
+        const lastBody = {};
+        _connectorFetch = (url, init) => { const body = JSON.parse(init.body); Object.assign(lastBody, body); return ok200({text: fakeAnswer(body.prompt), truncated: false}); };
+        await briefMyDay(); await wait();
+        rec('maxTokens in the request is dayBriefMaxTokens(open accounts), not a fixed 3200', lastBody.maxTokens === dayBriefMaxTokens(open.length) && lastBody.maxTokens === Math.min(8000, Math.max(1600, 200 * open.length)), 'sent ' + lastBody.maxTokens + ' for ' + open.length + ' open');
+      }
+      const cutText = prompt => { const t = fakeAnswer(prompt); return t.slice(0, t.lastIndexOf('{"id"') + 30); };
+      _connectorFetch = (url, init) => ok200({text: cutText(JSON.parse(init.body).prompt), truncated: true});
+      await briefMyDay(); await wait();
+      rec('a cut-off answer (truncated:true) keeps the accounts that arrived whole, shows the length-cap notice, and no "could not be read" error',
+        open.length < 2 || (Object.keys(ui.dayBrief.byId).length === open.length - 1 && /length cap/.test(app()) && !/could not be read/.test(app())), Object.keys(ui.dayBrief.byId).length + ' of ' + open.length);
+      _connectorFetch = () => ok200({text: '{"accounts":[{"id":"x","nextAc', truncated: true});
+      await briefMyDay(); await wait();
+      rec('a cut-off answer with no complete account says the length cap was hit (not only "could not be read")',
+        /length cap/.test(app()) && Object.keys(ui.dayBrief.byId).length === 0, '');
 
       // 5. hostile model text is escaped in the DOM
       const target = open[0];

@@ -1,6 +1,6 @@
 /* C-5 async probe. Runs the real async "Send to Gainsight" flow with a stubbed connector fetch that behaves like the fake
    (sent + FAKE-<id>, or failed when fields.forceFail is true). No network, no key:
-     node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js,docs/superpowers/evidence/trim-and-integration/c5-async-probe.js --fn c5ProbeResults --expect 12
+     node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js,docs/superpowers/evidence/trim-and-integration/c5-async-probe.js --fn c5ProbeResults --expect 13
    It restores: connector settings, _connectorFetch, DATA.gainsightQueue, the stored book, ui.view. */
 (function(){
   const results = [];
@@ -47,6 +47,15 @@
       await sendGainsightQueue();
       rec('configured but offline: a "Connector offline" toast and the queue is byte-identical',
         /Connector offline/.test(document.getElementById('toast').textContent) && before === JSON.stringify(DATA.gainsightQueue), document.getElementById('toast').textContent);
+
+      // 2b. (R3 I-5) a push that times out: outcome unknown, said so, queue untouched, no second request
+      let timeoutFetches = 0;
+      _connectorFetch = () => { timeoutFetches++; return Promise.reject(new DOMException('aborted', 'AbortError')); };
+      const beforeT = JSON.stringify(DATA.gainsightQueue);
+      await sendGainsightQueue(); await wait();
+      const toastT = document.getElementById('toast').textContent;
+      rec('a push that times out says it may have been sent (not "offline", not "nothing was sent"), sends once, and leaves the queue byte-identical',
+        /may have been sent/i.test(toastT) && !/offline/i.test(toastT) && !/nothing was sent/i.test(toastT) && timeoutFetches === 1 && beforeT === JSON.stringify(DATA.gainsightQueue), toastT + ' fetches=' + timeoutFetches);
 
       // 3. online, partial success: A sent, B failed (forceFail), D never in the request
       _connectorFetch = (url, init) => {
