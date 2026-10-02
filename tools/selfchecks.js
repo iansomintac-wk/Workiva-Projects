@@ -7624,6 +7624,10 @@ function _runSelfChecksInner(){
     try{
       const book = cloneData(DATA);
       book.schemaVersion = 15;
+      /* v15-shaped fixture: last release's book has no gong/gainsight. Strip them from the clone so the
+         assertions below test the migration, not whatever connector data the live book has accumulated. */
+      book.customers.forEach(c => { delete c.gainsight; });
+      Object.keys(book.activities).forEach(k => book.activities[k].forEach(x => { delete x.gong; }));
       const c0 = book.customers[0];
       book.gainsightQueue = [{id:'q-old', date:todayISO(), customerId:c0.id, customerName:c0.name, kind:'note', payload:'p'}];
       const p = prepareBookData(book, 'SelfCheck');
@@ -8737,8 +8741,11 @@ function _runSelfChecksInner(){
     try{
       const cs = c3Customers();
       DATA.customers = savedCustomers.concat(cs);
+      /* Fixture-only activities: applyCallImport dedupes callIds against ALL of DATA.activities, so a live book
+         that already links a fixture call id (real use of the fake connector) would skip the row. Restored in finally. */
+      DATA.activities = {};
       cs.forEach(c => { DATA.activities[c.id] = []; });
-      const p = buildCallPreview(c3Calls(), cs, DATA.activities);
+      const p = buildCallPreview(c3Calls(), cs, {}); // fixture activities only: the live book may already link these call ids
       const em = p.matched.find(r => r.call.callId === 'c-demo-006');
       const typed = em && em.type === 'Email' && em.sessionOptions.length === 0;
       const callRow = p.matched.find(r => r.call.callId === 'c-demo-001');

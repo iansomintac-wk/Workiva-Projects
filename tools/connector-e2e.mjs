@@ -236,24 +236,31 @@ async function main() {
     await ev(`ui.view = 'today'; render(); return true;`);
     await ev(`document.getElementById('btn-brief-my-day').click(); return true;`);
     await waitFor(`ui.dayBrief && !ui.dayBrief.loading`, 15000);
-    const r = await ev(`return {err: ui.dayBrief.error || '', n: Object.keys(ui.dayBrief.byId || {}).length, shown: document.querySelectorAll('[data-day-brief]').length, text: /FAKE next action/.test(document.body.innerText)};`);
-    return { ok: !r.err && r.n > 0 && r.shown > 0 && r.text, detail: JSON.stringify(r) };
+    /* Every briefed account that Today draws must show its brief: shown ids === briefed ids whose name appears on Today.
+       Briefed accounts not on Today are reported with the reason (the brief covers the whole book; Today lists only the
+       accounts that need attention today). */
+    const r = await ev(`const ids = Object.keys(ui.dayBrief.byId || {});
+      const shownIds = [...new Set([...document.querySelectorAll('[data-day-brief]')].map(e => e.getAttribute('data-day-brief')))];
+      const text = document.body.innerText;
+      const nameOf = id => (DATA.customers.find(c => c.id === id) || {}).name || id;
+      const onToday = ids.filter(id => shownIds.includes(id) || text.includes(nameOf(id)));
+      const notOnToday = ids.filter(id => !onToday.includes(id)).map(id => { const c = DATA.customers.find(x => x.id === id) || {}; return nameOf(id) + ' (stage ' + c.stage + ')'; });
+      const missing = onToday.filter(id => !shownIds.includes(id)).map(nameOf);
+      return {err: ui.dayBrief.error || '', n: ids.length, shown: shownIds.length, onToday: onToday.length, missing, notOnToday, text: /FAKE next action/.test(text)};`);
+    return { ok: !r.err && r.n > 0 && r.shown > 0 && r.shown === r.onToday && r.missing.length === 0 && r.text, detail: JSON.stringify(r) };
   });
 
-  await check('e7 connector stopped: health says Connector offline, the full suite passes, Today renders, no console errors since the kill (K8)', async () => {
+  await check('e7 connector stopped: health says Connector offline, the full suite passes on the scenario book, Today renders, no console errors since the kill (K8)', async () => {
     await stopConnector();
     killed = true; errorsBeforeKill = consoleErrors.length;
     const h = await ev(`await checkConnectorHealth(); ui.view = 'today'; render(); return {state: ui.connector.state, shown: /Connector offline/.test(document.body.innerText), today: document.body.innerText.length > 500};`);
-    // The suite assumes the seeded demo book (it checks "no gong link in the book" and the like), so reset to the seed
-    // for it, after proving Today renders on the book the scenario just changed.
     const todayAfterScenario = await ev(`ui.view = 'today'; render(); return document.body.innerText.length > 500 && !!document.querySelector('[data-day-brief-bar]');`);
-    const reseed = await send('Runtime.evaluate', { returnByValue: true, expression: `(() => { try { ${seed}
-; saveData(); return 'ok'; } catch (e) { return 'err:' + e.message; } })()` });
+    // The full suite runs on the book the scenario produced (Gong links, Gainsight stamps, sent/failed queue items): no reseed.
     const s = await ev(`const r = window.runSelfChecks(); const list = Array.isArray(r) ? r : (r && r.results) || []; return {total: list.length, failed: list.filter(x => !x.ok).map(x => x.name + ': ' + String(x.detail || '').slice(0, 120))};`);
     await ev(`ui.view = 'today'; render(); return true;`);
     await sleep(500);
     const since = consoleErrors.length - errorsBeforeKill;
-    return { ok: h.state === 'offline' && h.shown && h.today && todayAfterScenario && reseed.result?.value === 'ok' && s.total >= 459 && s.failed.length === 0 && since === 0,
+    return { ok: h.state === 'offline' && h.shown && h.today && todayAfterScenario && s.total >= 459 && s.failed.length === 0 && since === 0,
       detail: JSON.stringify({ ...h, todayAfterScenario, suiteTotal: s.total, suiteFailed: s.failed.slice(0, 3), consoleErrorsSinceKill: since }) };
   });
 

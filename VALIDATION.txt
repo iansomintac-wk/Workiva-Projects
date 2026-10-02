@@ -1747,9 +1747,14 @@ TRIM C-7 - END-TO-END SCENARIO AGAINST THE FAKE CONNECTOR (K7, K8, K9; tracker b
     gong.matchedBy, Email touch added with a session forced into its row lands with sessionNumber null (K7); e4 Refresh from
     Gainsight: one ticked field changes, nothing else; e5 Send with one forceFail item: sent (FAKE- id) and failed (error, Retry),
     2 log lines; e6 Brief my day: 16 briefs; e7 connector stopped: Connector offline, Today renders, suite 459/459 on the
-    reseeded book, no console errors since the kill (K8).
-  - Result: `connector-e2e: 7/7 passed, 0 failed`, exit 0 (three runs). Suite 459/459, contract tests untouched.
-  - Fixed during the build: the runner's cleanup hung when the connector had already exited (signalCode check), leaving temp
-    dirs; the suite runs on the reseeded book because it assumes the seed (a book already holding Gong links fails c1e and
-    c3c: state, not a defect).
+    book the scenario produced (no reseed), no console errors since the kill (K8).
+  - Result: `connector-e2e: 7/7 passed, 0 failed`, exit 0. Suite 459/459, contract tests untouched.
+  - Fixed during the build: the runner's cleanup hung when the connector had already exited (signalCode check), leaving temp dirs.
+  - Fix after the C-7 check (tools/selfchecks.js, tools/connector-e2e.mjs; count stays 459): two checks read the LIVE book, so a
+    legitimate used book (Gong links, Gainsight stamps) failed them. That was a defect in the checks, not a state to work around:
+    c1e (trim) now strips gong/gainsight from its v15-shaped clone before asserting the migration adds none; c3c (gong) previews
+    against fixture activities only and swaps DATA.activities for the apply step (applyCallImport dedupes callIds against the
+    whole book). Proof: docs/superpowers/evidence/trim-and-integration/used-book-seed.js (demo book plus Gong links and Gainsight
+    stamps on every account, sent/failed/queued queue items) failed c1e and c3c before the fix and passes 459/459 after. e7 now
+    runs the suite on the scenario book with no reseed; e6 asserts every briefed account Today draws shows its brief.
   Evidence: docs/superpowers/evidence/trim-and-integration/C-7.md.
