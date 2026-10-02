@@ -7607,17 +7607,38 @@ function _runSelfChecksInner(){
       const a0 = (book.activities[c0.id] || (book.activities[c0.id] = []));
       a0.push({id:'a-gong', date:todayISO(), type:'Call', summary:'s', sessionNumber:null, checklist:[], flagged:false,
         gong:{callId:'G9', url:'https://x.invalid/c', matchedBy:'name', summary:'gs', participants:[]}});
+      // R1 I-1: malformed gong on activities must be repaired on import (non-string callId dropped, javascript: url blanked, oversize summary clamped)
+      a0.push({id:'a-gong-bad1', date:todayISO(), type:'Call', summary:'s1', sessionNumber:null, checklist:[], flagged:false, gong:{callId:42, url:'https://x.invalid/c'}});
+      a0.push({id:'a-gong-bad2', date:todayISO(), type:'Call', summary:'s2', sessionNumber:null, checklist:[], flagged:false,
+        gong:{callId:'G10', url:'javascript:alert(1)', matchedBy:'bogus', summary:'x'.repeat(5000000), participants:[]}});
       const p = prepareImportedData(JSON.parse(serializeBook(book)));
       const pc0 = p.customers.find(c => c.id === c0.id), pc1 = p.customers.find(c => c.id === c1.id);
       const ga = (p.activities[c0.id] || []).find(a => a.id === 'a-gong');
       const arrPull = normalizeGainsightPull({pulledAt:'2026-09-30T10:00:00.000Z', values:[1,2]});
-      ok = !!pc0.gainsight && pc0.gainsight.values.tier === 'T1' && pc0.gainsight.values.arr === 5
+      const gb1 = (p.activities[c0.id] || []).find(a => a.id === 'a-gong-bad1'), gb2 = (p.activities[c0.id] || []).find(a => a.id === 'a-gong-bad2');
+      const gongRepaired = !!gb1 && gb1.gong === undefined && gb1.summary === 's1'
+        && !!gb2 && !!gb2.gong && gb2.gong.callId === 'G10' && gb2.gong.url === '' && gb2.gong.summary.length === 4000 && gb2.gong.matchedBy === 'manual';
+      ok = gongRepaired && !!pc0.gainsight && pc0.gainsight.values.tier === 'T1' && pc0.gainsight.values.arr === 5
         && (!pc1.gainsight || (isRecordObject(pc1.gainsight.values) && Object.keys(pc1.gainsight.values).length === 0))
         && !!ga && !!ga.gong && ga.gong.callId === 'G9' && ga.summary === 's'
         && !!arrPull && !Array.isArray(arrPull.values) && normalizeGainsightPull('x') === null;
-      detail = JSON.stringify({g0: pc0.gainsight, g1: pc1.gainsight, gong: ga && ga.gong && ga.gong.callId});
+      detail = JSON.stringify({g0: pc0.gainsight, g1: pc1.gainsight, gong: ga && ga.gong && ga.gong.callId, gongRepaired, gb1: gb1 && gb1.gong, gb2: gb2 && gb2.gong && {u: gb2.gong.url, n: gb2.gong.summary.length}});
     }catch(err){ detail = err.message; }
     check('c1d (trim): customer.gainsight and activity.gong survive export/import and are normalised; non-record values dropped; gong never rewrites activity.summary', ok, detail);
+  })();
+  (function(){                                   // c1d-R1 M-5
+    let ok = false, detail = '';
+    try{
+      const contacts = []; for(let i = 0; i < 500; i++) contacts.push({name: 'N' + i, email: 'e'.repeat(5000), title: 't'});
+      const n = normalizeGainsightPull({pulledAt: '2026-09-30T10:00:00.000Z', values: {tier: 'T'.repeat(100000), csmOwner: 'o'.repeat(100000), arr: 5, contacts, healthScore: 'h'.repeat(100000)}});
+      const small = normalizeGainsightPull({pulledAt: '2026-09-30T10:00:00.000Z', values: {tier: 'T1', arr: 5, contacts: [{name: 'A', email: 'a@x.invalid'}]}});
+      ok = !!n && Array.isArray(n.values.contacts) && n.values.contacts.length === 50
+        && n.values.contacts.every(c => isRecordObject(c) && Object.values(c).every(v => typeof v !== 'string' || v.length <= 200))
+        && n.values.tier.length <= 200 && n.values.csmOwner.length <= 200 && n.values.healthScore.length <= 200 && n.values.arr === 5
+        && !!small && small.values.tier === 'T1' && small.values.contacts.length === 1 && small.values.contacts[0].email === 'a@x.invalid';
+      detail = JSON.stringify({len: n && n.values.contacts && n.values.contacts.length, tier: n && n.values.tier && n.values.tier.length, em: n && n.values.contacts && n.values.contacts[0] && n.values.contacts[0].email.length});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    check('c1d-R1 M-5: normalizeGainsightPull caps contacts at 50 and every string at 200 chars, keeping small pulls intact', ok, detail);
   })();
   (function(){                                   // c1e (trim)
     let ok = false, detail = '';
@@ -8932,13 +8953,39 @@ function _runSelfChecksInner(){
     }catch(e){ detail = 'threw: ' + e.message; }
     check('gainsight c5a: gainsightFieldsFor lists exactly the open gates with contractKey and gainsightAction (and the other three kinds per P5); buildPushRequest carries queued and failed items and never a sent one', ok, detail);
   })();
+  (function(){                                   // c5-R1 I-4
+    let ok = false, detail = '';
+    const had = Object.prototype.hasOwnProperty.call(DATA, 'gainsightQueue'), saved = DATA.gainsightQueue;
+    try{
+      DATA.gainsightQueue = [c5Item('A'), c5Item('B'), c5Item('STRAY')];
+      const r = applyPushResults([{id: 'A', status: 'sent', externalId: 'X-1'}, {id: 'STRAY', status: 'sent', externalId: 'FAKE'}, {id: 'B', status: 'failed', error: 'boom'}], new Set(['A', 'B']));
+      const q = DATA.gainsightQueue;
+      ok = r.sent === 1 && r.failed === 1 && q[0].status === 'sent' && q[1].status === 'failed'
+        && q[2].status === 'queued' && q[2].externalId === null && q[2].sentAt === null;
+      detail = JSON.stringify({r, st: q.map(x => [x.id, x.status, x.externalId])});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    finally{ if(had) DATA.gainsightQueue = saved; else delete DATA.gainsightQueue; }
+    check('gainsight c5-R1 I-4: applyPushResults only applies results for the ids in the request that was sent; a stray result id for a queued, unsent item never marks it sent', ok, detail);
+  })();
+  (function(){                                   // c5-R1 M-4
+    let ok = false, detail = '';
+    try{
+      const req = buildPushRequest([c5Item('A'), c5Item('BADKIND', {kind: 'item'}), c5Item('BLANK', {customerName: '   '}), c5Item('EMPTY', {customerName: ''}), c5Item('Z', {kind: 'At-Risk CTA'})]);
+      const ids = req.items.map(i => i.id).join();
+      const kinds = ['Pending items batch', 'Success Plan objective', 'At-Risk CTA', 'Success Outcome Plan'];
+      const allValid = req.items.every(i => kinds.indexOf(i.kind) !== -1 && typeof i.customerRef.name === 'string' && i.customerRef.name.trim().length > 0);
+      ok = ids === 'A,Z' && allValid;
+      detail = JSON.stringify({ids, allValid});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    check('gainsight c5-R1 M-4: buildPushRequest skips an item whose kind is outside the four-value enum or whose customer name is blank, so one bad item cannot 400 the whole push', ok, detail);
+  })();
   (function(){                                   // c5b
     let ok = false, detail = '';
     const had = Object.prototype.hasOwnProperty.call(DATA, 'gainsightQueue'), saved = DATA.gainsightQueue;
     try{
       DATA.gainsightQueue = [c5Item('A'), c5Item('B'), c5Item('C'), c5Item('D', {status: 'sent', externalId: 'KEEP', sentAt: '2026-01-01T00:00:00.000Z'})];
       const r = applyPushResults([{id: 'A', status: 'sent', externalId: 'X-1', error: null}, {id: 'B', status: 'failed', externalId: null, error: 'boom'},
-        {id: 'ZZ', status: 'sent', externalId: 'Q'}, {id: 'C', status: 'sent', externalId: null}, {id: 'D', status: 'failed', error: 'late'}]);
+        {id: 'ZZ', status: 'sent', externalId: 'Q'}, {id: 'C', status: 'sent', externalId: null}, {id: 'D', status: 'failed', error: 'late'}], new Set(['A', 'B', 'C', 'D']));
       const q = DATA.gainsightQueue, A = q[0], B = q[1], C = q[2], D = q[3];
       const stateOk = A.status === 'sent' && A.externalId === 'X-1' && !!A.sentAt && A.error === null
         && B.status === 'failed' && B.error === 'boom' && B.externalId === null && B.sentAt === null

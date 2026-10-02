@@ -31,13 +31,13 @@ blob is LF and its working tree is CRLF here (19,297 bytes longer than the
 blob), so the two hash differently. The guide is the same: LF blob, CRLF
 working tree (859 CR lines), so its two hashes differ.
 
-  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task C-6 (Brief my day); the C-5 figure 96a503c0... is superseded.
+  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at fix task R1 (final-review fixes); the C-6 figure fb952bb3... is superseded.
     The blob is LF. In this worktree the working tree was LF too when measured (the C-2 to C-6 edits rewrote it LF), so the two hashes
     are identical here; where core.autocrlf yields CRLF they will differ.)
-    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,228,361 bytes)
-    fb952bb3c6e44f0b14cc5d038afe2fe83af957c2c293e0011070aa61fa1514bc
-    WORKING TREE (LF in this checkout at measurement, `sha256sum <file>`, 1,228,361 bytes)
-    fb952bb3c6e44f0b14cc5d038afe2fe83af957c2c293e0011070aa61fa1514bc
+    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,230,113 bytes)
+    6ecdecef44ded1c1004bce37a8c53363140dfcb06bd405573998e9de5ef80a6b
+    WORKING TREE (LF in this checkout at measurement, `sha256sum <file>`, 1,230,113 bytes)
+    6ecdecef44ded1c1004bce37a8c53363140dfcb06bd405573998e9de5ef80a6b
   osm-runway-onboarding-1.0.html   (changed at A5: two time-saved cards replaced/removed; the 598bbb86... figure is stale)
     GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 183,964 bytes)
     d3e4c8723caca88abb1947264049704d1e23cfb466553854561ce86ffdd9a392
@@ -50,7 +50,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   459/459 passed, 0 failed
+  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   462/462 passed, 0 failed
   window.runGuideSelfChecks()                                              18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -156,12 +156,12 @@ check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
 four remaining failures are exactly the pre-existing, verified-non-defect
 four above, which need a populated book on their own terms and are not
 this defect. The tracker suite as a whole therefore still needs seeding to
-run clean, so — at the CURRENT suite count, 459 (369 when this paragraph was
+run clean, so — at the CURRENT suite count, 462 (369 when this paragraph was
 written, after v74.5 was added; the count moves with every graduation-plan task) —
 the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 459
+       --seed demo-seed.js --expect 462
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -1758,3 +1758,22 @@ TRIM C-7 - END-TO-END SCENARIO AGAINST THE FAKE CONNECTOR (K7, K8, K9; tracker b
     stamps on every account, sent/failed/queued queue items) failed c1e and c3c before the fix and passes 459/459 after. e7 now
     runs the suite on the scenario book with no reseed; e6 asserts every briefed account Today draws shows its brief.
   Evidence: docs/superpowers/evidence/trim-and-integration/C-7.md.
+
+TRIM R1 - FINAL-REVIEW FIXES I-1, I-4, M-4, M-5 (suite 459 -> 462)
+  - tools/selfchecks.js, osm-book-of-business-tracker-1.0.html. No schema bump: normalising on load is a repair (header rule 4).
+  - I-1: the activity.gong normaliser sat inside the riskLog loop of repairAuxiliaryCollections, so activities were never repaired.
+    Moved into normalizeActivityCollections beside the transcript branch. c1d (trim) strengthened: it now imports a gong with a
+    non-string callId (dropped), and one with a javascript: url, bogus matchedBy and a 5,000,000-char summary (url blanked,
+    matchedBy manual, summary 4,000). Red before the fix, mutation (normaliser removed) -> 461/462, c1d red.
+  - I-4: applyPushResults(results, sentIds) only touches queue items whose id is in the request that was sent; without an id set it
+    changes nothing. New check "gainsight c5-R1 I-4" (stray result id for an unsent queued item stays queued). c5b now passes its ids.
+    Red: STRAY marked sent with FAKE. Mutation (restriction removed) -> 461/462, that check red.
+  - M-4: pushItemProblem(q) names a kind outside the four-value enum or a blank customer name. buildPushRequest skips such items;
+    sendGainsightQueue flags them failed with a reason and sends the rest. New check "gainsight c5-R1 M-4". Red: all five ids in the
+    body. Mutation (filter removed) -> 461/462, that check red.
+  - M-5: clampPullValue (strings 200, arrays and objects 50 entries, depth 4) applied to each pulled value. New check "c1d-R1 M-5"
+    (500 contacts with 5,000-char emails and 100,000-char strings; small pull intact). Red: 500 contacts, 5000-char email.
+    Mutation (clamp removed) -> 461/462, that check red.
+  - GREEN: tracker 462/462 on demo-seed.js and on demo-seed.js + used-book-seed.js; runGraduationScenarios 6/6; c5 probe 12/12;
+    contract 41/41; migration dry-run from 15 clean (idempotent, 0 console errors). The connector-e2e was not re-run here.
+  - Evidence: docs/superpowers/evidence/trim-and-integration/R1.md.

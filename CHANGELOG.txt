@@ -315,3 +315,14 @@ End-to-end check (task C-7). Dev tooling only; the tracker file is unchanged.
     - node tools/connector-e2e.mjs: the real page in headless Chrome against the connector with fake adapters, seven
       steps (FAKE DATA health line, Check for calls, Refresh from Gainsight, Send to Gainsight with a forced failure,
       Brief my day, connector stopped). 7/7.
+
+Final-review fixes (task R1). Tracker only.
+
+    - An imported or hand-edited Gong link on an activity is now checked on load and import like every other field: a bad
+      call id drops the link, an unsafe web address is blanked, an oversize summary is cut. It was being skipped.
+    - Send to Gainsight only accepts results for the items it actually sent, so a wrong id from the connector can no longer
+      mark a queued item as sent.
+    - A queued item with no valid kind or no customer name is marked failed with a reason instead of making the whole
+      send fail.
+    - A Gainsight refresh keeps at most 50 contacts per account and cuts long text.
+    - 462 self-checks (was 459).

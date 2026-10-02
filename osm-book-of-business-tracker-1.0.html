@@ -3496,12 +3496,22 @@ function normalizeGongLink(x){
     summary: typeof x.summary === 'string' ? x.summary.slice(0, 4000) : '',
     matchedBy: GONG_MATCHED_BY.indexOf(x.matchedBy) !== -1 ? x.matchedBy : 'manual'};
 }
+/* R1 M-5: a pulled value is copied into every pulled customer, so it is bounded: strings 200 chars, arrays 50 items, depth 4. */
+function clampPullValue(v, depth){
+  if(typeof v === 'string') return v.slice(0, 200);
+  if(Array.isArray(v)) return depth > 4 ? [] : v.slice(0, 50).map(i => clampPullValue(i, depth + 1));
+  if(isRecordObject(v)){
+    if(depth > 4) return {};
+    const o = {}; Object.keys(v).slice(0, 50).forEach(k => { o[k.slice(0, 60)] = clampPullValue(v[k], depth + 1); }); return o;
+  }
+  return v;
+}
 function normalizeGainsightPull(x){
   if(!isRecordObject(x)) return null;
   const pulledAt = isoStampOrNull(x.pulledAt);
   if(!pulledAt) return null;
   const values = {};
-  if(isRecordObject(x.values)) GAINSIGHT_PULL_FIELDS.forEach(k => { if(x.values[k] !== undefined) values[k] = cloneData(x.values[k]); });
+  if(isRecordObject(x.values)) GAINSIGHT_PULL_FIELDS.forEach(k => { if(x.values[k] !== undefined) values[k] = clampPullValue(cloneData(x.values[k]), 0); });
   return {pulledAt, values};
 }
 function normalizeQueueItem(q){
@@ -10510,19 +10520,28 @@ function gainsightFieldsFor(kind, customer, ctx){
   return {};
 }
 /* C-5: the POST /v1/push body. An item already sent is never in it, so a second click cannot send it twice. */
+const PUSH_KINDS = ['Pending items batch', 'Success Plan objective', 'At-Risk CTA', 'Success Outcome Plan'];
+/* R1 M-4: why an item cannot go in a push body (kind outside the contract enum, blank name), or '' when it can. One such item
+   would otherwise 400 the whole request. */
+function pushItemProblem(q){
+  if(!q || PUSH_KINDS.indexOf(q.kind) === -1) return 'This item has no valid kind, so it cannot be sent.';
+  if(typeof q.customerName !== 'string' || !q.customerName.trim()) return 'This item has no customer name, so it cannot be sent.';
+  return '';
+}
 function buildPushRequest(items){
-  return {items: (Array.isArray(items) ? items : []).filter(q => q && q.status !== 'sent').map(q => ({
+  return {items: (Array.isArray(items) ? items : []).filter(q => q && q.status !== 'sent' && !pushItemProblem(q)).map(q => ({
     id: q.id, kind: q.kind,
     customerRef: {gainsightId: ((DATA.customers.find(c => c.id === q.customerId) || {}).gainsightId || '').trim() || null, name: q.customerName},
     fields: isRecordObject(q.fields) ? q.fields : {}}))};
 }
 /* C-5: one result per item, matched by id. Nothing becomes sent without an externalId from the connector, and an item that is
    already sent is never rewritten. Unknown ids are ignored. Does not save; the caller saves once. */
-function applyPushResults(results){
+function applyPushResults(results, sentIds){
   const out = {sent: 0, failed: 0};
   const queue = getGainsightQueue();
+  if(!(sentIds instanceof Set)) return out;   // R1 I-4: only the ids that were in the request may change; no id set, no change
   (Array.isArray(results) ? results : []).forEach(r => {
-    const q = isRecordObject(r) ? queue.find(x => x.id === r.id) : null;
+    const q = isRecordObject(r) ? (sentIds.has(r.id) ? queue.find(x => x.id === r.id) : null) : null;
     if(!q || q.status === 'sent') return;
     if(r.status === 'sent' && typeof r.externalId === 'string' && r.externalId){
       q.status = 'sent'; q.externalId = r.externalId.slice(0, 200); q.sentAt = new Date().toISOString(); q.error = null; out.sent++;
@@ -10541,9 +10560,14 @@ async function sendGainsightQueue(ids){
   const want = Array.isArray(ids) ? ids : null;
   const items = getGainsightQueue().filter(q => q.status !== 'sent' && (!want || want.includes(q.id)));
   if(!items.length){ showToast('Nothing to send — everything queued has already been sent.'); return null; }
+  let bad = 0;
+  items.forEach(q => { const why = pushItemProblem(q); if(why){ q.status = 'failed'; q.error = why; bad++; } });   // R1 M-4: flag, don't send
+  const sendable = items.filter(q => !pushItemProblem(q));
+  if(bad) saveData();
+  if(!sendable.length){ showToast(`${bad} item${bad === 1 ? '' : 's'} could not be sent — see the queue.`); render(); return {sent: 0, failed: bad}; }
   ui.gainsightPushBusy = true;
   let resp;
-  try{ resp = await connectorRequest('/v1/push', {method: 'POST', body: buildPushRequest(items)}); }
+  try{ resp = await connectorRequest('/v1/push', {method: 'POST', body: buildPushRequest(sendable)}); }
   catch(e){
     showToast(e && e.code === 'OFFLINE' ? 'Connector offline — nothing was sent. Use Copy all & queue to paste into Gainsight instead.'
       : e && e.code === 'UNAUTHORIZED' ? 'The connector rejected the token — check it in Settings. Nothing was sent.'
@@ -10551,9 +10575,10 @@ async function sendGainsightQueue(ids){
     return null;
   }
   finally{ ui.gainsightPushBusy = false; }
-  const res = applyPushResults(resp && resp.results);
+  const res = applyPushResults(resp && resp.results, new Set(sendable.map(q => q.id)));
   if(res.sent || res.failed) saveData();
-  const unanswered = items.length - res.sent - res.failed;
+  const unanswered = sendable.length - res.sent - res.failed;
+  res.failed += bad;
   showToast(`Sent ${res.sent} to Gainsight` + (res.failed ? `, ${res.failed} failed — see the queue to retry` : '') + (unanswered > 0 ? `, ${unanswered} not confirmed (still queued)` : '') + '.');
   render();
   return res;
@@ -18029,6 +18054,11 @@ function normalizeActivityCollections(data){
           delete a.transcript;
         }
       }
+      // schema 16 (R1 I-1): the Gong link, when present; never created here, never touches a.summary.
+      if(a.gong !== undefined){
+        const gl = normalizeGongLink(a.gong);
+        if(gl) a.gong = gl; else delete a.gong;
+      }
       if(typeof a.date === 'string' && isRealISODate(a.date)) continue; // past OR future — both legal
       const rescued = parseExcelDateCell(a.date);
       if(rescued){
@@ -18232,11 +18262,6 @@ function repairAuxiliaryCollections(data){
           e.summarySource = ['local','ai','edited'].includes(e.summarySource) ? e.summarySource : 'local';
           if(!isRealISODate(e.summaryAt)) delete e.summaryAt;
         }
-      }
-      // schema 16: the Gong link, when present; never created here, never touches e.summary.
-      if(e.gong !== undefined){
-        const gl = normalizeGongLink(e.gong);
-        if(gl) e.gong = gl; else delete e.gong;
       }
     });
   }
