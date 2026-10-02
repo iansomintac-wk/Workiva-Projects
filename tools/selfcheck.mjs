@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 // Headless runner for the tracker's in-page self-check suite.
-//   node tools/selfcheck.mjs [file.html] [--seed demo-seed.js[,second-seed.js]] [--fn runSelfChecks] [--expect 318] [--verbose]
+//   node tools/selfcheck.mjs [file.html] [--seed demo-seed.js[,second-seed.js]] [--fn runSelfChecks] [--expect 318] [--suite path|none] [--verbose]
+//   --suite: an external suite injected as an INLINE <script> after the page loads. Default: tools/selfchecks.js
+//   when the target is osm-book-of-business-tracker-1.0.html, otherwise none (the guide keeps its in-page suite).
 // Exit 0 when every check passes and the count matches --expect.
 // NOT part of the distributable bundle — dev tooling, like docs/.
 
 import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { join, resolve, basename, dirname } from 'node:path';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const CHROME_CANDIDATES = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
@@ -31,6 +33,10 @@ const fnName = flag('fn', 'runSelfChecks');
 const expect = flag('expect', null);
 const verbose = args.includes('--verbose');
 const seedPaths = (flag('seed', '') || '').split(',').filter(Boolean);
+const HERE = dirname(fileURLToPath(import.meta.url));
+const SUITE_FOR = { 'osm-book-of-business-tracker-1.0.html': join(HERE, 'selfchecks.js') };
+const suiteFlag = flag('suite', null);
+const suitePath = suiteFlag === 'none' ? null : (suiteFlag ? resolve(suiteFlag) : (SUITE_FOR[basename(target)] || null));
 const width = Number(flag('width', 1440));
 const height = Number(flag('height', 900));
 /* A RANDOM port per invocation. A fixed one lets a Chrome that outlived its
@@ -167,11 +173,15 @@ await send('Emulation.setDeviceMetricsOverride', {
   width, height, deviceScaleFactor: 1, mobile: false,
 });
 
+// For a page with an external suite, wait for the app, not for runSelfChecks.
+const readyExpr = suitePath
+  ? `document.readyState === 'complete' && typeof saveData === 'function'`
+  : `document.readyState === 'complete' && typeof window[${JSON.stringify(seedPaths.length ? 'runSelfChecks' : fnName)}] === 'function'`;
 const readyDeadline = Date.now() + 30000;
 let ready = false;
 while (Date.now() < readyDeadline) {
   const r = await send('Runtime.evaluate', {
-    expression: `document.readyState === 'complete' && typeof window[${JSON.stringify(seedPaths.length ? 'runSelfChecks' : fnName)}] === 'function'`,
+    expression: readyExpr,
     returnByValue: true,
   });
   if (r.result?.value === true) { ready = true; break; }
@@ -181,6 +191,16 @@ if (!ready) {
   console.error(`window.${fnName}() never became available.`);
   if (pageErrors.length) console.error('Page errors:\n  ' + pageErrors.join('\n  '));
   process.exit(2);
+}
+
+if (suitePath) {
+  if (!existsSync(suitePath)) { console.error(`No such suite: ${suitePath}`); process.exit(2); }
+  const src = readFileSync(suitePath, 'utf8');
+  // INLINE, not src=: a check reads the non-src script text of the page.
+  const inj = await send('Runtime.evaluate', { returnByValue: true, expression:
+    `(() => { const s = document.createElement('script'); s.textContent = ${JSON.stringify(src)};
+      document.body.appendChild(s); return typeof window.runSelfChecks === 'function'; })()` });
+  if (inj.result?.value !== true) { console.error('Suite injection did not define window.runSelfChecks.'); process.exit(2); }
 }
 
 for (const seedPath of seedPaths) {

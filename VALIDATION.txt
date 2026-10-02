@@ -29,13 +29,15 @@ the tracker's blob and working tree are both LF and hash identically (0 CR
 bytes, measured). The guide is different: LF blob, CRLF working tree
 (859 CR lines), so its two hashes differ.
 
-  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 after
-    ruling M3, schema 15; the F3 figure 3dab70bb... / 1,751,637 is now stale.
-    The working tree has 0 CR bytes, so it equals the LF blob despite
-    core.autocrlf=true)
-    GIT BLOB (`git cat-file -p HEAD:<file> | sha256sum`, 1,759,470 bytes)
-    WORKING TREE (`sha256sum <file>`, `wc -c`, 1,759,470 bytes, 0 CR bytes)
-    38301a5a9e744163982e8cd6d3a698f0097fc447853dab187c4976956d04ad7c
+  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task
+    A1, after the self-check suite moved to tools/selfchecks.js; the schema 15
+    figure 38301a5a... / 1,759,470 is now stale. The blob is LF; the working
+    tree depends on the checkout: CRLF in the trim-and-integration worktree
+    (19,736 CR-terminated lines, 1,241,007 bytes), LF where core.autocrlf is off.
+    Earlier "0 CR bytes" statements described a different checkout.)
+    GIT BLOB (`git cat-file -p :<file> | sha256sum` from the staged blob, 1,221,271 bytes)
+    WORKING TREE (CRLF, this checkout, `wc -c` 1,241,007 bytes)
+    3cd063ddec0239f81e5a26b3f2e64f894f1aa5ebfe6d2462cdd8c8ebb051a4e0
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -49,8 +51,8 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  window.runSelfChecks()        437/437 passed, 0 failed
-  window.runGuideSelfChecks()    18/18 passed, 0 failed
+  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   437/437 passed, 0 failed
+  window.runGuideSelfChecks()                                              18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
 subscribes to Runtime.exceptionThrown and fails the run if one appears.
@@ -1432,6 +1434,21 @@ GRADUATION PLAN FINAL-REVIEW FIX F2 — CODE-SIDE MINORS 1, 2, 3, 4, 5, 11, 13 (
   - RED: 5 FAIL (f2a-f2e). GREEN: `runSelfChecks: 436/436 passed, 0 failed`; guide 18/18;
     `runGraduationScenarios: 6/6 passed, 0 failed`.
     Evidence: docs/superpowers/evidence/graduation-plan-final-fix-F2.md.
+
+TRIM A1 — SELF-CHECK SUITE MOVED TO tools/selfchecks.js (suite 437 -> 437)
+  - The suite (banner through `window.runSelfChecks = runSelfChecks;`, 547,053 bytes in the CRLF working tree)
+    moved byte for byte out of the shipped tracker. tools/selfcheck.mjs gained `--suite <path|none>`; for the
+    tracker it injects tools/selfchecks.js as an inline <script> (default) and waits for `saveData`, not
+    `runSelfChecks`. The guide gets no injection.
+  - RED first: with the harness changed and tools/selfchecks.js absent, the check command exits 2,
+    `No such suite: …\tools\selfchecks.js`.
+  - GREEN after the move: `runSelfChecks: 437/437 passed, 0 failed`, exit 0, no check needed a change (the
+    document.scripts scan, the two innerHTML.slice checks and the String(runSelfChecks) checks all hold with the
+    inline injection); `runGuideSelfChecks: 18/18`; `runGraduationScenarios: 6/6`; migration-dryrun --from 14 exit 0.
+  - K1 MEASURED: staged blob 1,759,470 -> 1,221,271 bytes (-538,199); working tree (CRLF) 1,787,753 -> 1,241,007
+    (-546,746). SHA-256 block re-measured above.
+  - Not a mutation-proof task (no check added or removed).
+  Evidence: docs/superpowers/evidence/trim-and-integration/A1.md.
 
 FR/GRC DEFAULT GATES — RULING M3, SCHEMA 14 -> 15 (suite 436 -> 437)
   Ian: "Can't you do that for me and set it as a default value that can be changed by OSMs after?" The approved

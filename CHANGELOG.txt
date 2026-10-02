@@ -33,7 +33,7 @@ OSM Runway — release notes
     - Single-level undo, Quick log, deep-linking into the right account tab,
       a Coordination tab, a Handoff tab (PROVISIONAL field set), and a
       Progress Report export.
-    - 437 console-callable self-checks: window.runSelfChecks().
+    - 437 self-checks, run by tools/selfcheck.mjs (suite in tools/selfchecks.js).
 
   THE GUIDE. A companion onboarding and competency guide covering the tracker
   end to end, with a guided and a quick path, a practice mode, a challenge, and
@@ -50,6 +50,15 @@ OSM Runway — release notes
     - Signal calibration needs four resolutions before it means anything.
     - The Progress Report is a snapshot, not a live view.
     - Automatic backup costs one click per session, not zero.
+
+Trim A1 — the self-check suite moved out of the shipped file.
+
+    - The 437 self-checks now live in tools/selfchecks.js, which tools/selfcheck.mjs
+      injects as an inline script after the tracker loads (--suite <path|none>;
+      default for the tracker). The shipped file no longer carries them: it is
+      about 547,000 bytes smaller in the working tree (see VALIDATION.txt, A1).
+      window.runSelfChecks() is no longer defined in the shipped tracker. No check
+      added or removed; 437/437 before and after.
 
 Curriculum piece 1 — stable ids for sessions and deliverables (merged to
 master 2026-09-30, with the review fixes and follow-ups M1r, M2r).

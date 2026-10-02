@@ -147,10 +147,13 @@ node tools/migration-dryrun.mjs osm-book-of-business-tracker-1.0.html --from 13
 
 Verifying a change
 ------------------
-Both halves carry console-callable self-check suites. After any edit:
+Both halves carry self-check suites: the tracker's is injected by tools/selfcheck.mjs from
+tools/selfchecks.js (it is not in the shipped file); the guide's is in the page. After any edit:
 
-  tracker:  window.runSelfChecks()        must be 437/437 (seed demo-seed.js first)
-  guide:    window.runGuideSelfChecks()   must be 18/18
+  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 437
+            must be 437/437 (the suite lives in tools/selfchecks.js and is not shipped)
+  guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
+            must be 18/18 (window.runGuideSelfChecks() also works in the console)
 
 See VALIDATION.txt for the last run and for what it did and did not cover.
 
