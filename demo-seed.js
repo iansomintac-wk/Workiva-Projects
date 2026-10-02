@@ -7,6 +7,10 @@
   const mod = DATA.config.modules[0];
   const domains = DATA.config.domains;
 
+  // Fake Gainsight ids, matching connector/fixtures/accounts.json (order: NAMES, Summit Grain Co, BUILDS).
+  const GS_IDS = ['GS-DEMO-001','GS-DEMO-002','GS-DEMO-003','GS-DEMO-004','GS-DEMO-005','GS-DEMO-006','GS-DEMO-007',
+    'GS-DEMO-008','GS-DEMO-009','GS-DEMO-010','GS-DEMO-011','GS-DEMO-012','GS-DEMO-013','GS-DEMO-014','GS-DEMO-015',
+    'GS-DEMO-016','GS-DEMO-017'];
   const NAMES = [
     ['Aldridge Energy','Carbon',['sec','risk']],
     ['Brightwater Foods','Sustainability',['sec']],
@@ -38,7 +42,7 @@
     const totalSessions = 8;
     const done = [6,7,5,4,8,3,6,5,7,4,6,5][i];
     const c = {
-      id, name, module, stage: done >= 7 ? 'ttfv2' : done >= 4 ? 'ttfv1' : 'kickoff',
+      id, name, gainsightId: GS_IDS[i], module, stage: done >= 7 ? 'ttfv2' : done >= 4 ? 'ttfv1' : 'kickoff',
       implementationDate: D(T, -startedAgo),
       totalSessions,
       components: comps,
@@ -80,6 +84,12 @@
     customers.push(c);
   });
 
+  // One stakeholder with an email, so a Gong call that carries only this attendee email can be
+  // matched (connector fixtures: connector/fixtures/calls.json). The email is also in `note`
+  // because normalizeStakeholder() does not yet keep an `email` field.
+  customers[11].stakeholders = [{id:'sh-demo-1', name:'Sam Demo', role:'champion',
+    email:'sam.demo@fake-customer.invalid', note:'Email: sam.demo@fake-customer.invalid'}];
+
   // --- the accounts that make the AI lens worth reading ---
   // 1. a carbon-methodology question -> Climate Consultant
   setOpenThreadsFromText(activities['best0'][activities['best0'].length-1],
@@ -118,7 +128,7 @@
 
   // 8. a graduated account with an answered check-back (the grad-review state the check-back checks read)
   const grad = {
-    id:'best-grad', name:'Summit Grain Co', module: mod, stage:'graduated',
+    id:'best-grad', name:'Summit Grain Co', gainsightId: GS_IDS[12], module: mod, stage:'graduated',
     implementationDate: D(T,-260), totalSessions:8, components:['sec'], cadence:'biweekly',
     targetGraduationDate: D(T,-50), domainScores:{}, sessionNotes:{},
     stageHistory:[{stage:'kickoff',date:D(T,-260)},{stage:'graduated',date:D(T,-50)}],
@@ -138,7 +148,7 @@
     const [name, phase, startedAgo, phaseAgo] = b;
     const id = 'bld' + i;
     customers.push({
-      id, name, module: mod, stage:'kickoff',
+      id, name, gainsightId: GS_IDS[13 + i], module: mod, stage:'kickoff',
       implementationDate: D(T,-startedAgo), totalSessions:8, domainScores:{}, sessionNotes:{},
       stageHistory:[{stage:'kickoff', date: D(T,-startedAgo)}],
       compliance:{sentiment:{done:false,date:null,answerA:'',answerB:''},

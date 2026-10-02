@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "POST /v1/push response",
+  "type": "object",
+  "required": ["results"],
+  "properties": {
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "externalId", "error"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "enum": ["sent", "failed"] },
+          "externalId": { "type": ["string", "null"] },
+          "error": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

@@ -110,6 +110,16 @@ Trim A5 — time-saved retired (suite 435 -> 428).
       version unchanged. The Settings motion switch moved out of that block unchanged.
     - Suite: +1 added (trim a5a), -8 removed; see VALIDATION.txt (TRIM A5).
 
+Connector contract v1 (task B1) — contract, schemas and fake fixtures; suite unchanged (428).
+
+    - connector/CONTRACT.md plus eight JSON Schemas (health, calls, accounts, push request and
+      response, ai request and response, error), a zero-dependency validator subset, and fake
+      fixtures: 17 accounts and 6 calls (by id, by name, by attendee email, unmatchable, one email).
+    - A call may carry an optional kind ("call" or "email"); an email is never made a session.
+    - demo-seed.js gives the 17 accounts fake gainsightIds GS-DEMO-001..017 and one stakeholder
+      with an email. The tracker is not changed and does not read them yet.
+    - 15 contract tests (node --test), run apart from the tracker suite.
+
 Curriculum piece 1 — stable ids for sessions and deliverables (merged to
 master 2026-09-30, with the review fixes and follow-ups M1r, M2r).
 

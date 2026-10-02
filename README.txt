@@ -145,6 +145,13 @@ node tools/migration-dryrun.mjs osm-book-of-business-tracker-1.0.html --from 13
 (and --from 14, --from 12).
 
 
+Connector (Stage B)
+-------------------
+connector/CONTRACT.md defines the HTTP+JSON contract v1 the tracker will use for Gong, Gainsight and
+AI (schemas in connector/schemas/). Only FAKE fixtures exist (connector/fixtures/, and gainsightIds
+GS-DEMO-001..017 in demo-seed.js); no real adapter is built and nothing is sent anywhere. Contract
+tests: node --test --test-reporter=tap "connector/test/*.test.mjs"
+
 Verifying a change
 ------------------
 Both halves carry self-check suites: the tracker's is injected by tools/selfcheck.mjs from

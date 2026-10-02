@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GET /v1/accounts response",
+  "type": "object",
+  "required": ["accounts"],
+  "properties": {
+    "accounts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["gainsightId", "name", "tier", "arr", "renewalDate", "csmOwner", "contacts", "healthScore", "gates", "openCtas"],
+        "properties": {
+          "gainsightId": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "tier": { "type": ["string", "null"] },
+          "arr": { "type": ["number", "null"], "minimum": 0 },
+          "renewalDate": { "type": ["string", "null"] },
+          "csmOwner": { "type": ["string", "null"] },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "email", "role"],
+              "properties": {
+                "name": { "type": "string" },
+                "email": { "type": ["string", "null"] },
+                "role": { "type": ["string", "null"] }
+              }
+            }
+          },
+          "healthScore": { "type": ["number", "null"] },
+          "gates": {
+            "type": "object",
+            "required": ["readinessAssessment", "csatContact", "successPlan"],
+            "properties": {
+              "readinessAssessment": { "type": "boolean" },
+              "csatContact": { "type": "boolean" },
+              "successPlan": { "type": "boolean" }
+            }
+          },
+          "openCtas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["ctaId", "name"],
+              "properties": {
+                "ctaId": { "type": "string", "minLength": 1 },
+                "name": { "type": "string" },
+                "severity": { "type": ["string", "null"] }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

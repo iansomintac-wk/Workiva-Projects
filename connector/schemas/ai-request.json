@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "POST /v1/ai request",
+  "type": "object",
+  "required": ["task", "prompt", "maxTokens"],
+  "properties": {
+    "task": { "type": "string", "enum": ["copilot_read", "call_prep", "debrief", "debrief_scores", "call_review", "risk_summary", "thread_answer", "brief_my_day"] },
+    "prompt": { "type": "string", "minLength": 1 },
+    "maxTokens": { "type": "integer", "minimum": 1 }
+  }
+}

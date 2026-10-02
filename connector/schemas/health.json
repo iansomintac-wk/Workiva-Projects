@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GET /v1/health response",
+  "type": "object",
+  "required": ["version", "adapters"],
+  "properties": {
+    "version": { "type": "string", "enum": ["1"] },
+    "adapters": {
+      "type": "object",
+      "required": ["gong", "gainsight", "ai"],
+      "properties": {
+        "gong": { "type": "string", "minLength": 1 },
+        "gainsight": { "type": "string", "minLength": 1 },
+        "ai": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "calls": [
+    {
+      "callId": "c-demo-001",
+      "url": "https://fake.gong.invalid/call/c-demo-001",
+      "startedAt": "2026-09-08T14:00:00Z",
+      "durationSec": 1620,
+      "title": "Aldridge Energy: session check-in",
+      "participants": [
+        {
+          "name": "Riley Demo",
+          "email": "riley.demo@fake-osm.invalid",
+          "affiliation": "internal"
+        },
+        {
+          "name": "Dana Fixture 1",
+          "email": "dana.aldridge-energy@fake-customer.invalid",
+          "affiliation": "customer"
+        }
+      ],
+      "accountRef": {
+        "gainsightId": "GS-DEMO-001",
+        "name": "Aldridge Energy"
+      },
+      "summary": "FAKE summary: walked the close checklist; sponsor asked about Scope 3 factors.",
+      "transcript": "FAKE transcript. Riley: How is the checklist going? Dana: Well, we ran it unaided. Riley: Great."
+    },
+    {
+      "callId": "c-demo-002",
+      "url": "https://fake.gong.invalid/call/c-demo-002",
+      "startedAt": "2026-09-10T16:30:00Z",
+      "durationSec": 1740,
+      "title": "Corvus Logistics: pre-UAT sync",
+      "participants": [
+        {
+          "name": "Riley Demo",
+          "email": "riley.demo@fake-osm.invalid",
+          "affiliation": "internal"
+        },
+        {
+          "name": "Dana Fixture 3",
+          "email": "dana.corvus-logistics@fake-customer.invalid",
+          "affiliation": "customer"
+        }
+      ],
+      "accountRef": {
+        "gainsightId": "GS-DEMO-003",
+        "name": "Corvus Logistics"
+      },
+      "summary": "FAKE summary: UAT scope confirmed; one open question on controls mapping.",
+      "transcript": "FAKE transcript. Riley: Any blockers? Dana: Controls mapping is still open. Riley: Noted."
+    },
+    {
+      "callId": "c-demo-003",
+      "url": "https://fake.gong.invalid/call/c-demo-003",
+      "startedAt": "2026-09-12T15:00:00Z",
+      "durationSec": 1860,
+      "title": "Fernbrook Retail: policy review",
+      "participants": [
+        {
+          "name": "Riley Demo",
+          "email": "riley.demo@fake-osm.invalid",
+          "affiliation": "internal"
+        },
+        {
+          "name": "Dana Fixture 6",
+          "email": "dana.fernbrook-retail@fake-customer.invalid",
+          "affiliation": "customer"
+        }
+      ],
+      "accountRef": {
+        "gainsightId": null,
+        "name": "Fernbrook Retail"
+      },
+      "summary": "FAKE summary: policy module walkthrough; customer wants a second pass.",
+      "transcript": "FAKE transcript. Riley: Shall we do another pass? Dana: Yes please, next week."
+    },
+    {
+      "callId": "c-demo-004",
+      "url": "https://fake.gong.invalid/call/c-demo-004",
+      "startedAt": "2026-09-15T13:00:00Z",
+      "durationSec": 1980,
+      "title": "Quick sync with Sam",
+      "participants": [
+        {
+          "name": "Riley Demo",
+          "email": "riley.demo@fake-osm.invalid",
+          "affiliation": "internal"
+        },
+        {
+          "name": "Sam Demo",
+          "email": "sam.demo@fake-customer.invalid",
+          "affiliation": "customer"
+        }
+      ],
+      "accountRef": {
+        "gainsightId": null,
+        "name": null
+      },
+      "summary": "FAKE summary: Sam asked about the roll-forward workaround.",
+      "transcript": "FAKE transcript. Sam: Is the bulk roll-forward coming? Riley: Not on the roadmap yet."
+    },
+    {
+      "callId": "c-demo-005",
+      "url": "https://fake.gong.invalid/call/c-demo-005",
+      "startedAt": "2026-09-17T10:00:00Z",
+      "durationSec": 2100,
+      "title": "Intro call with unknown prospect",
+      "participants": [
+        {
+          "name": "Riley Demo",
+          "email": "riley.demo@fake-osm.invalid",
+          "affiliation": "internal"
+        },
+        {
+          "name": "Pat Nobody",
+          "email": "pat.nobody@unknown-company.invalid",
+          "affiliation": "unknown"
+        }
+      ],
+      "accountRef": {
+        "gainsightId": null,
+        "name": null
+      },
+      "summary": "FAKE summary: exploratory call, no account match expected.",
+      "transcript": "FAKE transcript. Pat: We are just looking around. Riley: Understood."
+    },
+    {
+      "callId": "c-demo-006",
+      "kind": "email",
+      "url": "https://fake.gong.invalid/call/c-demo-006",
+      "startedAt": "2026-09-18T09:00:00Z",
+      "durationSec": 0,
+      "title": "Email: follow-up on checklist",
+      "participants": [
+        {
+          "name": "Riley Demo",
+          "email": "riley.demo@fake-osm.invalid",
+          "affiliation": "internal"
+        },
+        {
+          "name": "Dana Fixture 2",
+          "email": "dana.brightwater-foods@fake-customer.invalid",
+          "affiliation": "customer"
+        }
+      ],
+      "accountRef": {
+        "gainsightId": "GS-DEMO-002",
+        "name": "Brightwater Foods"
+      },
+      "summary": "FAKE summary: email thread confirming next session date.",
+      "transcript": "FAKE email body. Hi Dana, confirming Thursday for session 5. Thanks, Riley."
+    }
+  ]
+}

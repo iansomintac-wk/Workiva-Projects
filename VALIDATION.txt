@@ -1550,6 +1550,16 @@ TRIM A5 — TIME-SAVED RETIRED (suite 435 -> 428; ruling R6)
     working tree 1,212,437 -> 1,191,330.
   Evidence: docs/superpowers/evidence/trim-and-integration/A5.md.
 
+CONNECTOR CONTRACT v1 — TASK B1 (tracker suite 428 -> 428, unchanged)
+  - connector/CONTRACT.md, eight schemas, a zero-dependency validator subset, fake fixtures (17 accounts, 6 calls).
+    demo-seed.js gains gainsightIds GS-DEMO-001..017 and one stakeholder with an email. The tracker is not edited.
+  - Contract tests written first and seen red (module not found, # pass 0 # fail 1); then green: 15 tests,
+    # fail 0. One real failure on the way: the seed built ids by string concatenation so the seed-text regex
+    found none; fixed by a literal id list in the seed.
+  - Tracker with the changed seed: runSelfChecks 428/428; runGraduationScenarios 6/6. The tracker's
+    normalizeStakeholder() drops an `email` field, so the seed repeats the email in the stakeholder note.
+  Evidence: docs/superpowers/evidence/trim-and-integration/B1.md.
+
 FR/GRC DEFAULT GATES — RULING M3, SCHEMA 14 -> 15 (suite 436 -> 437)
   Ian: "Can't you do that for me and set it as a default value that can be changed by OSMs after?" The approved
   lists in docs/superpowers/drafts/2026-10-01-fr-grc-gates-DRAFT.md are now the shipped defaults (FR 5/5/3/3, GRC

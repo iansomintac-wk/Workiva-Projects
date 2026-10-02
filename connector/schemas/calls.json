@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GET /v1/calls response",
+  "type": "object",
+  "required": ["calls"],
+  "properties": {
+    "calls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["callId", "url", "startedAt", "durationSec", "title", "participants", "accountRef", "summary", "transcript"],
+        "properties": {
+          "callId": { "type": "string", "minLength": 1 },
+          "kind": { "type": "string", "enum": ["call", "email"] },
+          "url": { "type": "string", "minLength": 1 },
+          "startedAt": { "type": "string", "format": "date-time" },
+          "durationSec": { "type": "integer", "minimum": 0 },
+          "title": { "type": "string" },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "email", "affiliation"],
+              "properties": {
+                "name": { "type": "string" },
+                "email": { "type": ["string", "null"] },
+                "affiliation": { "type": "string", "enum": ["internal", "customer", "unknown"] }
+              }
+            }
+          },
+          "accountRef": {
+            "type": "object",
+            "properties": {
+              "gainsightId": { "type": ["string", "null"] },
+              "name": { "type": ["string", "null"] }
+            }
+          },
+          "summary": { "type": "string" },
+          "transcript": { "type": "string" }
+        }
+      }
+    }
+  }
+}

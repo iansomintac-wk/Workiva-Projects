@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "POST /v1/push request",
+  "description": "kind is the tracker's queue kind string, verbatim. fields per kind: Pending items batch {gates:[{gateKey,contractKey,gainsightAction}]}; Success Plan objective {event:'created'|'changed'|'verdict',objective,goalType,targetCycle,verdict,changeReason}; At-Risk CTA {ctaName,reason,severity}; Success Outcome Plan {outcomes:[string]}. Unknown keys inside fields are allowed.",
+  "type": "object",
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "customerRef", "fields"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "kind": { "type": "string", "enum": ["Pending items batch", "Success Plan objective", "At-Risk CTA", "Success Outcome Plan"] },
+          "customerRef": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "gainsightId": { "type": ["string", "null"] },
+              "name": { "type": "string", "minLength": 1 }
+            }
+          },
+          "fields": { "type": "object", "additionalProperties": true }
+        }
+      }
+    }
+  }
+}
