@@ -25,19 +25,21 @@ LF blob) had been stale since before piece 1. It said the tracker's two forms
 differ, with an LF blob. Corrected again in the review fixes (D1): the
 tracker blob is LF too (0 CR bytes at master and HEAD; 25,179 was its line
 count at master 85672e6, not a CR count). Superseded by F3 (2026-10-01):
-the tracker's blob and working tree are both LF and hash identically (0 CR
-bytes, measured). The guide is different: LF blob, CRLF working tree
-(859 CR lines), so its two hashes differ.
+the F3 statement that both forms are LF and hash identically is false in this
+checkout. Measured at trim task A3: the tracker's
+blob is LF and its working tree is CRLF here (19,297 bytes longer than the
+blob), so the two hash differently. The guide is the same: LF blob, CRLF
+working tree (859 CR lines), so its two hashes differ.
 
   osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task
-    A2, after the dead-code removal; A1 had moved the suite to tools/selfchecks.js; the schema 15
-    figure 38301a5a... / 1,759,470 is now stale. The blob is LF; the working
-    tree depends on the checkout: CRLF in the trim-and-integration worktree
-    (19,473 CR-terminated lines, 1,223,024 bytes), LF where core.autocrlf is off.
-    Earlier "0 CR bytes" statements described a different checkout.)
-    GIT BLOB (`git cat-file -p :<file> | sha256sum` from the staged blob, 1,203,551 bytes)
-    WORKING TREE (CRLF, this checkout, `wc -c` 1,223,024 bytes)
-    ab3d1fd951b66843133f6db24202262185ed7419c244d8067c27f706a901e646
+    A3, after the key-scaffold removal; the A2 figure ab3d1fd9... is now stale. The blob is LF;
+    the working tree depends on the checkout: CRLF in the trim-and-integration
+    worktree, LF where core.autocrlf is off. Earlier "0 CR bytes" statements
+    described a different checkout.)
+    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,191,426 bytes)
+    0b486bf833ddc170a0ee70eef3761fa4043b5d51de7f39033b461bbd1c18d210
+    WORKING TREE (CRLF, this checkout, `sha256sum <file>`, 1,210,723 bytes)
+    a710e79e8946559f30ff4f86a5c5fba2b0bb54d530aa57f478eac51f267118d5
   osm-runway-onboarding-1.0.html
     GIT BLOB (LF, `git cat-file -p HEAD:<file> | sha256sum`, 185,641 bytes)
     598bbb86f56816104b8b50d902987df0195e4057c90112172fd239de5157a508
@@ -1472,6 +1474,27 @@ TRIM A2 — DEAD CODE OUT, recommendation log retired (suite 437 -> 432)
     --from 14 exit 0. K2 (part): tools/refcount.mjs reports 0 for all 13 symbols (was 1-3). Tracker blob
     1,221,271 -> 1,203,551; SHA-256 block re-measured above.
   Evidence: docs/superpowers/evidence/trim-and-integration/A2.md.
+
+TRIM A3 — KEY SCAFFOLDS OUT (suite 432 -> 432, net 0)
+  - Deleted the Gainsight settings scaffold (GAINSIGHT_SETTINGS_KEY, getGainsightSettings, saveGainsightSettings,
+    the Settings block and its handlers, syncGainsightQueue, GAINSIGHT_SYNC_MESSAGES, button
+    #btn-attempt-gainsight-sync) and the Workiva Knowledge scaffold (WORKIVA_KB_SETTINGS_KEY, get/save,
+    searchWorkivaKnowledge, renderKnowledgeResults, the Settings block and Test search/Clear token handlers).
+    renderGainsightQueueBlock(queue) lost its gs parameter and always says no credentials and no transport.
+    The Gainsight queue itself (DATA.gainsightQueue, export) is untouched.
+  - Added cleanupRetiredSettingsKeys() and RETIRED_SETTINGS_KEYS; the init IIFE calls it once before loadData.
+  - RED first: a3a added alone -> `runSelfChecks: 432/433 passed, 1 failed` (FAIL trim a3a ... cleanupRetiredSettingsKeys
+    is not defined). The plan estimated 435 as the baseline; the measured baseline after A2 was 432.
+  - Suite 432 -> 432: +1 `trim a3a: retired Gainsight/Workiva settings keys are removed once and their code is gone`;
+    -1 `workiva knowledge renderer safe when unconfigured` (it tested only the deleted renderer).
+  - MUTATION PROOF: making cleanupRetiredSettingsKeys skip the Workiva key turned a3a red (431/432,
+    `after:[null,"{\"apiKey\":\"x\"}"]`). Restored; 432/432.
+  - GREEN: `runSelfChecks: 432/432 passed, 0 failed`; `runGraduationScenarios: 6/6`; guide 18/18.
+    K3: grep -c of the two key strings = 1 (the RETIRED_SETTINGS_KEYS line); tools/refcount.mjs 0 for
+    getGainsightSettings, saveGainsightSettings, syncGainsightQueue, searchWorkivaKnowledge, renderKnowledgeResults,
+    GAINSIGHT_SETTINGS_KEY and the other removed names. Tracker blob 1,203,551 -> 1,191,426.
+    SHA-256 block re-measured above (and corrected: blob and working tree each have their own hash).
+  Evidence: docs/superpowers/evidence/trim-and-integration/A3.md.
 
 FR/GRC DEFAULT GATES — RULING M3, SCHEMA 14 -> 15 (suite 436 -> 437)
   Ian: "Can't you do that for me and set it as a default value that can be changed by OSMs after?" The approved

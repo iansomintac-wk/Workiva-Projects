@@ -1745,41 +1745,17 @@ function saveAiSettings(settings){
     return false;
   }
 }
-// v49: Gainsight integration config — stored SEPARATELY from the tracker book
-// (same contract as AI settings: never included in Export JSON, lives only in
-// this browser). This is a SCAFFOLD for future push/pull: the app has no server,
-// and browsers block direct cross-origin Gainsight API calls, so these values are
-// stored for a future backend/middleware to consume — nothing syncs today.
-const GAINSIGHT_SETTINGS_KEY = 'obm-gainsight-settings-v1';
-function getGainsightSettings(){
-  try{
-    const parsed = JSON.parse(localStorage.getItem(GAINSIGHT_SETTINGS_KEY) || '{}');
-    return {
-      enabled: parsed.enabled === true,
-      domain: typeof parsed.domain === 'string' ? parsed.domain : '',
-      apiKey: typeof parsed.apiKey === 'string' ? parsed.apiKey : ''
-    };
-  }catch(e){ return {enabled:false, domain:'', apiKey:''}; }
+/* v49 retired: the Gainsight and Workiva Knowledge settings scaffolds stored keys
+   that nothing ever read. Their localStorage entries are removed once at start-up.
+   RETIRED_SETTINGS_KEYS is the only place these key names remain. */
+const RETIRED_SETTINGS_KEYS = ['obm-gainsight-settings-v1', 'obm-workiva-kb-settings-v1'];
+function cleanupRetiredSettingsKeys(){
+  const removed = [];
+  RETIRED_SETTINGS_KEYS.forEach(k => {
+    try{ localStorage.removeItem(k); removed.push(k); }catch(e){}
+  });
+  return {removed};
 }
-function saveGainsightSettings(settings){
-  try{
-    localStorage.setItem(GAINSIGHT_SETTINGS_KEY, JSON.stringify({
-      enabled: settings.enabled === true,
-      domain: (settings.domain || '').trim(),
-      apiKey: (settings.apiKey || '').trim()
-    }));
-    return true;
-  }catch(e){
-    showToast('Gainsight settings could not be saved — browser storage may be blocked or full.');
-    return false;
-  }
-}
-// v49: Workiva Knowledge integration — SCAFFOLD. Same contract as the Gainsight
-// and AI settings: config stored separately from the book, never in Export JSON.
-// The app is client-side and cannot reach Workiva's knowledge base directly
-// (auth + browser CORS), so this stores the connection for a FUTURE backend
-// proxy. searchWorkivaKnowledge() below is the single integration seam — wire it
-// to that proxy (or an LLM web-search tool) later and every caller lights up.
 /* v72.3: Day preferences. Deliberately NOT in DATA — density and which beat you
    were on are properties of this browser and this person, not of the book. Keeping
    them out means they never ride an export, never widen the schema, and never
@@ -1872,85 +1848,6 @@ function bindMagnets(root, sel, strength){
 }
 
 
-const WORKIVA_KB_SETTINGS_KEY = 'obm-workiva-kb-settings-v1';
-function getWorkivaKbSettings(){
-  try{
-    const parsed = JSON.parse(localStorage.getItem(WORKIVA_KB_SETTINGS_KEY) || '{}');
-    return {
-      enabled: parsed.enabled === true,
-      endpoint: typeof parsed.endpoint === 'string' ? parsed.endpoint : '',
-      apiKey: typeof parsed.apiKey === 'string' ? parsed.apiKey : ''
-    };
-  }catch(e){ return {enabled:false, endpoint:'', apiKey:''}; }
-}
-function saveWorkivaKbSettings(settings){
-  try{
-    localStorage.setItem(WORKIVA_KB_SETTINGS_KEY, JSON.stringify({
-      enabled: settings.enabled === true,
-      endpoint: (settings.endpoint || '').trim(),
-      apiKey: (settings.apiKey || '').trim()
-    }));
-    return true;
-  }catch(e){
-    showToast('Workiva Knowledge settings could not be saved — browser storage may be blocked or full.');
-    return false;
-  }
-}
-/* THE integration seam. Returns a normalized shape so callers never change when
-   the backend is wired: { ok, reason, results:[{title, url, snippet, source}] }.
-   Contract for the future proxy: POST {query, module, sessionNumber} with a
-   Bearer token to the configured endpoint; respond with {results:[...]}. Until a
-   real endpoint is configured this resolves to a not-configured result — it never
-   throws, so callers can render "not set up yet" cleanly. opts: {module, sessionNumber}. */
-async function searchWorkivaKnowledge(query, opts = {}){
-  const s = getWorkivaKbSettings();
-  const q = String(query || '').trim();
-  if(!q) return {ok:false, reason:'empty_query', results:[]};
-  if(!s.enabled || !safeHttpUrl(s.endpoint)) return {ok:false, reason:'not_configured', results:[]};
-  const controller = new AbortController();
-  const timer = setTimeout(()=>controller.abort(), 30000);
-  try{
-    const resp = await fetch(s.endpoint, {
-      method:'POST',
-      headers: Object.assign({'Content-Type':'application/json'}, s.apiKey ? {'Authorization':'Bearer ' + s.apiKey} : {}),
-      body: JSON.stringify({query:q, module:opts.module || null, sessionNumber:opts.sessionNumber || null}),
-      signal: controller.signal
-    });
-    if(!resp.ok) return {ok:false, reason:'http_' + resp.status, results:[]};
-    const data = await resp.json();
-    const results = Array.isArray(data && data.results) ? data.results.map(r => ({
-      title: typeof r.title === 'string' ? r.title : '',
-      url: safeHttpUrl(r.url) || '',
-      snippet: typeof r.snippet === 'string' ? r.snippet : '',
-      source: typeof r.source === 'string' ? r.source : 'Workiva'
-    })) : [];
-    return {ok:true, reason:'ok', results};
-  }catch(e){
-    return {ok:false, reason: e && e.name === 'AbortError' ? 'timeout' : 'network', results:[]};
-  }finally{
-    clearTimeout(timer);
-  }
-}
-// Escaped renderer for knowledge results — model/endpoint output is never trusted.
-function renderKnowledgeResults(res){
-  if(!res || !res.ok){
-    const msg = {
-      not_configured: 'Not connected yet. Add a Workiva Knowledge endpoint in Settings (requires a backend proxy with Workiva access).',
-      empty_query: 'Enter a search term.',
-      timeout: 'The knowledge endpoint timed out.',
-      network: 'Could not reach the knowledge endpoint.'
-    }[res && res.reason] || (res && /^http_/.test(res.reason) ? `The knowledge endpoint returned an error (${escapeHtml(res.reason.replace('http_',''))}).` : 'Search unavailable.');
-    return `<p style="color:var(--text-faint); font-size:var(--text-xs); margin:6px 0 0;">${escapeHtml(msg)}</p>`;
-  }
-  if(!res.results.length) return `<p style="color:var(--text-faint); font-size:var(--text-xs); margin:6px 0 0;">No articles found.</p>`;
-  return `<div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">${res.results.slice(0,8).map(r=>{
-    const safeUrl = safeHttpUrl(r.url); // defense in depth — never trust a passed-in url
-    return `
-    <div style="font-size:var(--text-xs);">
-      ${safeUrl ? `<a href="${escapeAttr(safeUrl)}" target="_blank" rel="noopener">${escapeHtml(r.title||safeUrl)} ↗</a>` : `<strong>${escapeHtml(r.title||'Untitled')}</strong>`}
-      ${r.snippet ? `<div style="color:var(--text-dim); margin-top:2px;">${escapeHtml(r.snippet)}</div>` : ''}
-    </div>`;}).join('')}</div>`;
-}
 function aiProviderFor(model){
   const entry = AI_MODELS.find(m => m.value === model);
   return entry ? entry.provider : 'gemini';
@@ -6238,8 +6135,8 @@ function getFirstValue(c){
    contract as c.firstValue — deliberately NOT backfilled, no schema bump. These
    are the fields a future Gainsight sync would key on: primaryContact feeds the
    CSAT/CSM contact, gainsightId is the record's stable API key, and the two plan
-   URLs are human deep-links (see the Gainsight settings note for the push/pull
-   caveat). safeHttpUrl() is the ONLY way these URLs reach an href — it rejects
+   URLs are human deep-links (there is no push/pull transport; the Gainsight
+   queue is export-only). safeHttpUrl() is the ONLY way these URLs reach an href — it rejects
    anything that isn't http(s), so a stored "javascript:" value can never execute. */
 function safeHttpUrl(str){
   if(typeof str !== 'string') return null;
@@ -9240,13 +9137,12 @@ function renderRiskTab(){
   const hiddenDismissed = ordered.length - visible.length;
   const activeId = visible.some(k => k.c.id === ui.riskFocusId) ? ui.riskFocusId : (visible[0] ? visible[0].c.id : null);
   const queue = getGainsightQueue();
-  const gs = getGainsightSettings();
 
   if(!cases.length){
     return `
       <p class="rk-intro">Every signal the tracker raised, grouped by account. Decide what is real before you work it — nothing asks for an owner, a date or a summary until you have.</p>
       <div class="empty">${emptyIllustration('done')}<h3>No open risks</h3><p>Nothing is flagged, classified, matching a taxonomy phrase, behind target, or carrying implementation risk. Flagging a note on the Activity Log raises one here.</p></div>
-      ${renderGainsightQueueBlock(queue, gs)}`;
+      ${renderGainsightQueueBlock(queue)}`;
   }
 
   return `
@@ -9263,17 +9159,17 @@ function renderRiskTab(){
     </div>
     ${hiddenDismissed ? `<p class="rk-group-note" style="margin-top:var(--space-3);">${hiddenDismissed} case${hiddenDismissed===1?'':'s'} you ruled out ${hiddenDismissed===1?'is':'are'} hidden. Each returns by itself if the account deteriorates past the point you dismissed it, or after ${RISK_DISMISS_EXPIRY_DAYS} days. <button class="link-btn" data-risk-show-dismissed>Show them</button></p>`
       : (ordered.some(k => k.state === 'dismissed') ? `<p class="rk-group-note" style="margin-top:var(--space-3);"><button class="link-btn" data-risk-show-dismissed>Hide the cases you ruled out</button></p>` : '')}
-    ${renderGainsightQueueBlock(queue, gs)}
+    ${renderGainsightQueueBlock(queue)}
   `;
 }
 
 /* Lifted out of renderRiskTab so the empty state can carry it too — the queue
    still exists on a book with no open risks, and hiding it there would have made
    queued items unreachable. */
-function renderGainsightQueueBlock(queue, gs){
+function renderGainsightQueueBlock(queue){
   return `
     <h2 class="rk-group-head" style="margin-top:var(--space-4);">Gainsight queue <span class="count">${queue.length}</span></h2>
-    <p class="rk-group-note">Queued items persist in the book and export as JSON. ${gs.enabled && gs.domain && gs.apiKey ? 'Credentials are stored in Settings, but' : 'No credentials are stored yet, and'} there is still no transport — nothing is ever sent silently.</p>
+    <p class="rk-group-note">Queued items persist in the book and export as JSON. No credentials are stored and there is no transport — nothing is ever sent silently.</p>
     <div class="rk-queue">
       ${queue.length ? queue.map((q, i) => `
         <div class="rk-queue-row">
@@ -9286,7 +9182,6 @@ function renderGainsightQueueBlock(queue, gs){
         </div>`).join('') : `<p class="rk-group-note" style="margin:0;">Nothing queued. Confirm a risk and use <em>Add to the close</em>.</p>`}
       <div class="rk-actions">
         <button class="btn btn-sm" id="btn-export-gainsight-queue" ${queue.length ? '' : 'disabled'}>Export queue (JSON)</button>
-        <button class="btn btn-sm" id="btn-attempt-gainsight-sync" ${queue.length ? '' : 'disabled'} title="Honest status check — reports exactly what's missing; never fakes a sync">Check sync status</button>
       </div>
     </div>`;
 }
@@ -9740,8 +9635,7 @@ function renderGantt(){
      admin, in one place. Pause semantics respected: flags pierce, keyword/
      pace signals stay gated (v40 rulings).
    - Gainsight queue: SCAFFOLDING for push/pull. The queue is real and
-     persists in the book; the transport deliberately does not exist yet —
-     syncGainsightQueue() is the single seam a future backend fills, and the
+     persists in the book; the transport deliberately does not exist, and the
      UI says "not connected" rather than pretending. Export the queue as
      JSON to hand to middleware (or paste manually) meanwhile. */
 const IMPACT_EVENTS = [
@@ -10422,19 +10316,6 @@ function queueGainsightItem(kind, customer, payloadText, opts){
   if(opts && opts.defer) return true;   // the caller saves once, so one user action leaves one undo snapshot
   return saveData();
 }
-// THE seam. A future backend/middleware implements the transport; until then
-// this reports exactly which precondition is missing — it never fakes a sync.
-function syncGainsightQueue(){
-  const gs = getGainsightSettings();
-  if(!gs.enabled) return {ok:false, reason:'not_enabled'};
-  if(!gs.domain || !gs.apiKey) return {ok:false, reason:'not_configured'};
-  return {ok:false, reason:'transport_not_built'};
-}
-const GAINSIGHT_SYNC_MESSAGES = {
-  not_enabled: 'Gainsight integration is switched off — enable it in Settings (the queue keeps collecting either way).',
-  not_configured: 'No Gainsight domain/API key stored — add them in Settings. Browsers also block direct Gainsight calls, so a backend/middleware is required for the actual push.',
-  transport_not_built: 'Credentials are stored, but the push/pull transport is not built yet — this version queues and exports; a future backend consumes the queue. Nothing was sent.'
-};
 /* v98: one download path. Four call sites had hand-rolled the same blob/anchor/
    revoke dance; the report made it five, which is where a helper stops being
    optional. */
@@ -12373,9 +12254,9 @@ function renderCustomerGainsightTab(c){
      different jobs. Overview is the in-flow surface — clear one item while you
      are already thinking about the account. This is the batch surface: review
      everything before a Gainsight catch-up, then take it all in one action.
-     The "no push" line is not a disclaimer to bury — syncGainsightQueue() is a
-     seam with no transport behind it, and a button that implied otherwise would
-     be the exact theatre this file avoids elsewhere. */
+     The "no push" line is not a disclaimer to bury — there is no transport behind
+     the queue, and a button that implied otherwise would be the exact theatre
+     this file avoids elsewhere. */
   const queued = getGainsightQueue().filter(q => q.customerId === c.id).length;
   return `
     <p style="color:var(--text-faint); font-size:var(--text-xs); margin:0 0 10px;">Everything outstanding for this account, for review before a Gainsight session. Clearing single items in-flow is quicker from the Account Brief on Overview.</p>
@@ -14748,10 +14629,6 @@ The draft is discarded. The risk itself stays open.`)) return;
   $('#btn-export-gainsight-queue') && $('#btn-export-gainsight-queue').addEventListener('click', ()=>{
     downloadGainsightQueue();
     showToast('Queue exported — hand the JSON to your middleware or work it manually');
-  });
-  $('#btn-attempt-gainsight-sync') && $('#btn-attempt-gainsight-sync').addEventListener('click', ()=>{
-    const res = syncGainsightQueue();
-    showToast(GAINSIGHT_SYNC_MESSAGES[res.reason] || 'Sync is not available yet.');
   });
   $$('[data-impact-min]').forEach(inp => inp.addEventListener('change', ()=>{
     const v = parseInt(inp.value, 10);
@@ -17340,27 +17217,6 @@ function openSettingsModal(){
       </div>
       <button class="btn btn-sm" id="btn-clear-ai-key" style="margin-top:2px;">Clear stored key</button>
       <p style="color:var(--text-faint); font-size:var(--text-xs); margin:8px 0 0;"><strong style="color:var(--text-dim);">Data handling:</strong> your book lives only in this browser — this app has no server and sends nothing anywhere on its own. AI features transmit data to your configured provider only when you click Generate, using your key, and the response is shown here without being stored beyond what you explicitly accept. Per current provider policies: Anthropic and OpenAI do not use API data to train models by default; Google's Gemini <em>free tier</em> DOES let Google use prompts and responses to improve its products — for customer content you don't want used that way, use a paid Gemini key or an Anthropic/OpenAI key. Providers may retain API traffic briefly for abuse monitoring regardless. (Provider policies can change — verify against their current terms.)</p>
-      <div class="section-title">Gainsight integration (future use)</div>
-      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:-4px 0 8px;">${icon('warn')} <strong>Not yet live.</strong> This app has no server, and browsers block direct calls to the Gainsight API, so a push/pull sync needs a backend/middleware built later. These settings — plus each account's Gainsight/Salesforce ID and plan links — are stored now so that integration has everything it needs and nothing has to be re-entered. Stored only in this browser, kept separate from your tracker data, and never included in Export JSON.</p>
-      <div class="field-row">
-        <div class="field"><label>Gainsight domain / base URL</label><input type="text" id="gs-domain" value="${escapeAttr(getGainsightSettings().domain)}" placeholder="e.g. https://yourco.gainsightcloud.com"></div>
-        <div class="field"><label>Gainsight API key</label><input type="password" id="gs-api-key" value="${escapeAttr(getGainsightSettings().apiKey)}" placeholder="stored for future sync"></div>
-      </div>
-      <label style="display:flex; align-items:center; gap:8px; font-size:var(--text-sm); margin:2px 0 2px;"><input type="checkbox" id="gs-enabled" ${getGainsightSettings().enabled ? 'checked' : ''} style="width:auto;"> Enable Gainsight sync when a backend is available</label>
-      <button class="btn btn-sm" id="btn-clear-gs-key" style="margin-top:6px;">Clear Gainsight key</button>
-      <div class="section-title">Workiva Knowledge search (future use)</div>
-      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:-4px 0 8px;">${icon('warn')} <strong>Not yet live.</strong> This lets the tool search Workiva's knowledge base to build session enablement — but the app is client-side and can't reach Workiva directly (login + browser security). Point this at a small backend proxy that holds Workiva-approved access, and searching turns on everywhere in the app that uses it. Stored only in this browser, never in Export JSON.</p>
-      <div class="field-row">
-        <div class="field"><label>Knowledge search endpoint (proxy URL)</label><input type="text" id="wk-endpoint" value="${escapeAttr(getWorkivaKbSettings().endpoint)}" placeholder="https://your-proxy.example.com/workiva-search"></div>
-        <div class="field"><label>Endpoint token</label><input type="password" id="wk-api-key" value="${escapeAttr(getWorkivaKbSettings().apiKey)}" placeholder="stored for future search"></div>
-      </div>
-      <label style="display:flex; align-items:center; gap:8px; font-size:var(--text-sm); margin:2px 0 2px;"><input type="checkbox" id="wk-enabled" ${getWorkivaKbSettings().enabled ? 'checked' : ''} style="width:auto;"> Enable Workiva Knowledge search once the endpoint is available</label>
-      <div style="display:flex; gap:8px; align-items:center; margin-top:6px; flex-wrap:wrap;">
-        <input type="text" id="wk-test-query" placeholder="Test a search, e.g. CSRD onboarding" style="flex:1; min-width:180px;">
-        <button class="btn btn-sm" id="btn-wk-test">Test search</button>
-        <button class="btn btn-sm" id="btn-clear-wk-key">Clear token</button>
-      </div>
-      <div id="wk-test-results"></div>
       <div class="section-title">Curriculum component weights</div>
       <p style="color:var(--text-faint); font-size:var(--text-xs); margin:-4px 0 8px;">How many sessions each solution needs. Derived from Workiva&rsquo;s published onboarding paths, measured as solution-specific eLearning minutes with shared platform content lifted into core. <strong>They size content; they do not measure your delivery.</strong> Change them as you learn what a session of yours actually holds, and every account&rsquo;s fit recalculates.</p>
       <div class="impact-grid" id="component-weights">
@@ -17440,29 +17296,6 @@ function openSettingsModal(){
     backdrop.querySelector('#ai-model-wrap').innerHTML = renderAiModelField('');
     showToast('API key cleared');
   });
-  backdrop.querySelector('#btn-clear-gs-key').addEventListener('click', ()=>{
-    if(!saveGainsightSettings({enabled: backdrop.querySelector('#gs-enabled').checked, domain: backdrop.querySelector('#gs-domain').value, apiKey: ''})) return;
-    backdrop.querySelector('#gs-api-key').value = '';
-    showToast('Gainsight key cleared');
-  });
-  backdrop.querySelector('#btn-clear-wk-key').addEventListener('click', ()=>{
-    if(!saveWorkivaKbSettings({enabled: backdrop.querySelector('#wk-enabled').checked, endpoint: backdrop.querySelector('#wk-endpoint').value, apiKey: ''})) return;
-    backdrop.querySelector('#wk-api-key').value = '';
-    showToast('Workiva Knowledge token cleared');
-  });
-  backdrop.querySelector('#btn-wk-test').addEventListener('click', async ()=>{
-    // Persist what's typed first so the seam reads the current endpoint/token,
-    // then run the real search — demonstrates exactly where results will appear.
-    saveWorkivaKbSettings({
-      enabled: backdrop.querySelector('#wk-enabled').checked,
-      endpoint: backdrop.querySelector('#wk-endpoint').value,
-      apiKey: backdrop.querySelector('#wk-api-key').value
-    });
-    const out = backdrop.querySelector('#wk-test-results');
-    out.innerHTML = '<p style="color:var(--text-faint); font-size:var(--text-xs); margin:6px 0 0;">Searching…</p>';
-    const res = await searchWorkivaKnowledge(backdrop.querySelector('#wk-test-query').value);
-    out.innerHTML = renderKnowledgeResults(res);
-  });
   backdrop.querySelector('#btn-clear-all').addEventListener('click', ()=>{
     showConfirmModal('This deletes every account and activity. Continue?', ()=>{
       // v48: an explicit, confirmed wipe is the one other action allowed to
@@ -17503,16 +17336,6 @@ function openSettingsModal(){
       apiKey: backdrop.querySelector('#ai-api-key').value.trim(),
       model: backdrop.querySelector('#ai-model').value,
       answerInstruction: (backdrop.querySelector('#ai-answer-instruction') || {}).value || ''
-    })) return;
-    if(!saveGainsightSettings({
-      enabled: backdrop.querySelector('#gs-enabled').checked,
-      domain: backdrop.querySelector('#gs-domain').value,
-      apiKey: backdrop.querySelector('#gs-api-key').value
-    })) return;
-    if(!saveWorkivaKbSettings({
-      enabled: backdrop.querySelector('#wk-enabled').checked,
-      endpoint: backdrop.querySelector('#wk-endpoint').value,
-      apiKey: backdrop.querySelector('#wk-api-key').value
     })) return;
     backdrop.remove();
     showToast('Settings saved');
@@ -19449,6 +19272,7 @@ function initCrossTabGuard(){
 }
 
 (async function init(){
+  cleanupRetiredSettingsKeys(); // A3: drop the retired Gainsight/Workiva settings keys once, before the first render
   await loadData();
   clearExpiredPauses(); // v40: before the health snapshot, so a just-expired pause's risk is recorded un-paused
   snapshotHealthHistory(); // v39: visit-driven weekly snapshot — before first render so trend data includes today

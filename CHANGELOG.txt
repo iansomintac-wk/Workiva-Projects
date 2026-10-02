@@ -74,6 +74,17 @@ Trim A2 — dead code out (suite 437 -> 432).
     - demo-seed.js no longer reports graduationDurability() in its summary.
     - Suite: +1 added (trim a2a), -6 removed, one renamed; see VALIDATION.txt (TRIM A2).
 
+Trim A3 — key scaffolds out (suite 432 -> 432).
+
+    - Removed the Settings blocks "Gainsight integration (future use)" and "Workiva
+      Knowledge search (future use)" with their stored keys, handlers, syncGainsightQueue
+      and the Check sync status button. Nothing ever read those keys. The Gainsight queue
+      and its JSON export are unchanged; its note now says no credentials are stored.
+    - On start-up the tracker removes the two old localStorage keys once
+      (obm-gainsight-settings-v1, obm-workiva-kb-settings-v1).
+    - Suite: +1 added (trim a3a), -1 removed (workiva knowledge renderer safe when
+      unconfigured); see VALIDATION.txt (TRIM A3).
+
 Curriculum piece 1 — stable ids for sessions and deliverables (merged to
 master 2026-09-30, with the review fixes and follow-ups M1r, M2r).
 

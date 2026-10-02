@@ -77,10 +77,6 @@ function _runSelfChecksInner(){
   check('default pace positive', DATA.config.defaultPaceDays > 0, `defaultPaceDays=${DATA.config.defaultPaceDays}`);
   check('coverage thresholds positive', DATA.config.dueSoonDays > 0 && DATA.config.neglectDays > 0,
     `dueSoonDays=${DATA.config.dueSoonDays}, neglectDays=${DATA.config.neglectDays}`);
-  // Workiva Knowledge seam: normalized shape, safe when unconfigured, never throws.
-  check('workiva knowledge renderer safe when unconfigured',
-    typeof renderKnowledgeResults({ok:false, reason:'not_configured', results:[]}) === 'string' &&
-    renderKnowledgeResults({ok:true, reason:'ok', results:[{title:'<b>x</b>', url:'javascript:alert(1)', snippet:'s'}]}).indexOf('javascript:') === -1);
   // Coverage engine: a scheduled-ahead account is never flagged; an unscheduled
   // account with a long-past anchor and a next session is flagged. Exercised on
   // synthetic clones so it never depends on the live book's contents.
@@ -189,6 +185,21 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     finally{ DATA.customers = prevC; }
     check('trim a2a: recommendations no longer write c.recommendationLog', ok, detail);
+  })();
+  (function(){                                                  // a3a
+    const KEYS = ['obm-gainsight-settings-v1', 'obm-workiva-kb-settings-v1'];
+    let ok = false, detail = '';
+    const saved = {};
+    try{
+      KEYS.forEach(k => { saved[k] = localStorage.getItem(k); localStorage.setItem(k, '{"apiKey":"x"}'); });
+      const res = cleanupRetiredSettingsKeys();
+      const after = KEYS.map(k => localStorage.getItem(k));
+      ok = after.every(v => v === null) && res && res.removed.length === 2 &&
+        typeof searchWorkivaKnowledge === 'undefined' && typeof syncGainsightQueue === 'undefined';
+      detail = JSON.stringify({after, removed: res && res.removed, wk: typeof searchWorkivaKnowledge, sync: typeof syncGainsightQueue});
+    }catch(err){ detail = err.message; }
+    finally{ KEYS.forEach(k => { try{ if(saved[k] === null || saved[k] === undefined) localStorage.removeItem(k); else localStorage.setItem(k, saved[k]); }catch(e){} }); }
+    check('trim a3a: retired Gainsight/Workiva settings keys are removed once and their code is gone', ok, detail);
   })();
   const badSupp = DATA.customers.filter(c => c.signalSuppressions &&
     Object.values(c.signalSuppressions).some(sup => !sup || !ISO_DATE_RE.test(sup.until || '') || !sup.source));
