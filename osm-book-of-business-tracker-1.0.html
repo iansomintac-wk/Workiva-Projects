@@ -1739,6 +1739,129 @@ function saveAiSettings(settings){
     return false;
   }
 }
+/* C-2: the connector client. The connector is a small local service (connector/server.mjs)
+   that holds the Gong, Gainsight and AI credentials so this page never does. Everything
+   here is optional: with no connector configured, or one that is not running, the tracker
+   behaves exactly as it did without it — no console errors, nothing blocked (K8).
+   The settings hold the connector's own bearer token, which is not a third-party key (P8). */
+const CONNECTOR_SETTINGS_KEY = 'obm-connector-settings-v1';
+let _connectorFetch = (...a) => fetch(...a); // module-level so the suite can stub it
+// Only a loopback address is ever accepted, so a pasted URL cannot send the token elsewhere.
+function normalizeConnectorUrl(u){
+  const m = /^http:\/\/(127\.0\.0\.1|localhost):(\d{1,5})\/*$/.exec(String(u == null ? '' : u).trim());
+  return m ? 'http://' + m[1] + ':' + m[2] : '';
+}
+function getConnectorSettings(){
+  try{
+    const parsed = JSON.parse(localStorage.getItem(CONNECTOR_SETTINGS_KEY) || '{}') || {};
+    return {url: normalizeConnectorUrl(parsed.url), token: typeof parsed.token === 'string' ? parsed.token.trim() : ''};
+  }catch(e){ return {url:'', token:''}; }
+}
+function saveConnectorSettings(s){
+  try{
+    localStorage.setItem(CONNECTOR_SETTINGS_KEY, JSON.stringify({
+      url: normalizeConnectorUrl(s && s.url),
+      token: String((s && s.token) || '').trim()
+    }));
+    return true;
+  }catch(e){
+    showToast('Connector settings could not be saved — browser storage may be blocked or full.');
+    return false;
+  }
+}
+function connectorConfigured(){
+  const s = getConnectorSettings();
+  return !!(s.url && s.token);
+}
+function buildConnectorRequest(path, opts, settings){
+  const o = opts || {};
+  const method = o.method || 'GET';
+  const headers = {Authorization: 'Bearer ' + settings.token};
+  const init = {method, headers};
+  if(o.body !== undefined && method !== 'GET'){
+    headers['Content-Type'] = 'application/json';
+    init.body = JSON.stringify(o.body);
+  }
+  return {url: settings.url + path, init};
+}
+function connectorErrorFor(status){
+  const err = new Error(status === 401 ? 'The connector rejected the token.' : 'The connector answered HTTP ' + status + '.');
+  err.code = status === 401 ? 'UNAUTHORIZED' : 'HTTP';
+  return err;
+}
+async function connectorRequest(path, opts){
+  const settings = getConnectorSettings();
+  if(!settings.url || !settings.token){
+    const err = new Error('No connector configured.');
+    err.code = 'NOT_CONFIGURED';
+    throw err;
+  }
+  const o = opts || {};
+  const req = buildConnectorRequest(path, o, settings);
+  const controller = new AbortController();
+  const timer = setTimeout(()=>controller.abort(), o.timeoutMs || 15000);
+  let resp;
+  try{
+    resp = await _connectorFetch(req.url, Object.assign({signal: controller.signal}, req.init));
+  }catch(e){
+    const err = new Error('The connector is not reachable. Start it with node connector/server.mjs.');
+    err.code = 'OFFLINE';
+    throw err;
+  }finally{
+    clearTimeout(timer);
+  }
+  if(!resp.ok) throw connectorErrorFor(resp.status);
+  try{ return await resp.json(); }
+  catch(e){ const err = new Error('The connector sent a reply the tracker cannot read.'); err.code = 'HTTP'; throw err; }
+}
+function buildConnectorAiBody(promptText, opts){
+  const o = opts || {};
+  return {task: o.task || 'general', prompt: promptText, maxTokens: o.maxTokens || 800};
+}
+// The connector reply keeps the {text, truncated} shape callAiAPI has always returned.
+function connectorAiResult(resp){
+  if(!resp || typeof resp.text !== 'string'){
+    const err = new Error('The connector sent an AI reply without text.');
+    err.code = 'HTTP';
+    throw err;
+  }
+  return {text: resp.text, truncated: resp.truncated === true};
+}
+function applyConnectorHealth(body, errCode){
+  const c = ui.connector;
+  c.checkedAt = Date.now();
+  if(errCode){
+    c.state = errCode === 'UNAUTHORIZED' ? 'unauthorized' : 'offline';
+    c.fake = false; c.adapters = {};
+    return;
+  }
+  const adapters = (body && body.adapters) || {};
+  c.adapters = adapters;
+  c.fake = Object.keys(adapters).some(k => adapters[k] === 'fake');
+  c.state = 'online';
+}
+// Checked once on load (if configured) and on Settings save or the Check button — never on a timer.
+async function checkConnectorHealth(){
+  if(!connectorConfigured()){
+    ui.connector.state = 'unset'; ui.connector.fake = false; ui.connector.adapters = {};
+    return ui.connector;
+  }
+  ui.connector.state = 'checking';
+  try{
+    applyConnectorHealth(await connectorRequest('/v1/health', {timeoutMs: 4000}));
+  }catch(e){
+    applyConnectorHealth(null, e && e.code === 'UNAUTHORIZED' ? 'UNAUTHORIZED' : 'OFFLINE');
+  }
+  return ui.connector;
+}
+function renderConnectorStatus(){
+  const c = ui.connector;
+  if(c.state === 'unset' || c.state === 'checking') return '';
+  if(c.state === 'offline') return '<span style="color:var(--text-faint);" title="The connector is not running. The tracker works as usual without it.">Connector offline</span>';
+  if(c.state === 'unauthorized') return '<span style="color:var(--status-watch-text); font-weight:700;" title="Paste the token the connector printed when it started, in Settings.">Connector: check the token</span>';
+  if(c.fake) return '<span style="color:var(--status-watch-text); font-weight:700;" title="A connector adapter is returning made-up data. Nothing here is real.">Connector: FAKE DATA</span>';
+  return '<span>Connector: connected</span>';
+}
 /* v49 retired: the Gainsight and Workiva Knowledge settings scaffolds stored keys
    that nothing ever read. Their localStorage entries are removed once at start-up.
    RETIRED_SETTINGS_KEYS is the only place these key names remain. */
@@ -1929,6 +2052,16 @@ function aiCustomerSnapshot(c){
 const AI_TIMEOUT_MS = 60000;
 async function callAiAPI(promptText, opts){
   const settings = getAiSettings();
+  /* C-2: with a connector configured, every AI feature goes through it (POST /v1/ai) and the
+     key stays in the connector. Unreachable connector: fall back to the browser key if there
+     is one, otherwise say so. Any other connector error is shown as it is, not hidden. */
+  if(connectorConfigured()){
+    try{
+      return connectorAiResult(await connectorRequest('/v1/ai', {method: 'POST', body: buildConnectorAiBody(promptText, opts), timeoutMs: AI_TIMEOUT_MS}));
+    }catch(e){
+      if(!(e && e.code === 'OFFLINE' && settings.apiKey)) throw e;
+    }
+  }
   if(!settings.apiKey){
     const err = new Error('No API key configured');
     err.code = 'NO_KEY';
@@ -2145,7 +2278,7 @@ Rules: 60-120 words per section. Write from a customer success, implementation a
     /* v96: was 2000, and the first live run truncated the fourth section every
        time — four sections of 60-120 words plus a model's natural preamble does
        not fit. Raised, and the UI now says so when the cap is still hit. */
-    const res = await callAiAPI(prompt, {maxTokens: 3200});
+    const res = await callAiAPI(prompt, {task: 'copilot_read', maxTokens: 3200});
     if(ui.aiChapters.req !== myReq) return;
     const sections = parseAiSections(res.text);
     ui.aiChapters = {loading:false, sections, error:'', req:myReq,
@@ -2363,7 +2496,7 @@ async function generateCustomerAiBrief(customerId){
     const c = DATA.customers.find(x=>x.id===customerId);
     if(!c) throw new Error('Account not found');
     const ctx = buildCallPrepContext(c);
-    const res = await callAiAPI(buildCallPrepPrompt(c, ctx), {maxTokens: 3000});
+    const res = await callAiAPI(buildCallPrepPrompt(c, ctx), {task: 'call_prep', maxTokens: 3000});
     if(ui.aiCustomerBriefs[customerId] && ui.aiCustomerBriefs[customerId].req !== myReq) return;
     // Honest coverage line, same idea as the portfolio brief's: say what slice
     // of the history the synopsis was built from when it isn't everything.
@@ -2742,10 +2875,10 @@ async function generateSessionDebrief(customerId, activityId){
     // extraction prompts are byte-for-byte their shipped v49 form, and the
     // review call doesn't run at all unless a transcript or questions exist.
     const calls = [
-      callAiAPI(buildSessionDebriefPrompt(c, activity, transcript, transcriptTruncated), {maxTokens: 1500}),
-      callAiAPI(buildScoreExtractionPrompt(c, activity, transcript, transcriptTruncated), {maxTokens: 1000})
+      callAiAPI(buildSessionDebriefPrompt(c, activity, transcript, transcriptTruncated), {task: 'debrief', maxTokens: 1500}),
+      callAiAPI(buildScoreExtractionPrompt(c, activity, transcript, transcriptTruncated), {task: 'debrief_scores', maxTokens: 1000})
     ];
-    if(wantReview) calls.push(callAiAPI(buildCallReviewPrompt(c, activity, transcript, transcriptTruncated, parsedQ.questions, curriculum), {maxTokens: 4000}));
+    if(wantReview) calls.push(callAiAPI(buildCallReviewPrompt(c, activity, transcript, transcriptTruncated, parsedQ.questions, curriculum), {task: 'call_review', maxTokens: 4000}));
     const settled = await Promise.allSettled(calls);
     const proseRes = settled[0], extractRes = settled[1], reviewRes = wantReview ? settled[2] : null;
     if(ui.sessionDebriefs[activityId] && ui.sessionDebriefs[activityId].req !== myReq) return;
@@ -7999,6 +8132,7 @@ function pendingGainsightItems(){
 
 /* ============ STATE ============ */
 let ui = {
+  connector: {state: 'unset', fake: false, adapters: {}, checkedAt: null}, // C-2: unset | checking | online | offline | unauthorized — session-only
   view: 'today', // today | accounts | copilot — top-level tabs
   accountsView: 'list', // list | table | kanban | gantt — sub-view within Accounts (session-only, resets on reload like all ui state)
   search: '',
@@ -8713,7 +8847,7 @@ function renderHeader(){
     <div class="header">
       <div>
         <h1>Book of Business — Runway</h1>
-        <div class="sub">Post-implementation TTFV tracking · ${DATA.customers.length} accounts · ${renderBackupStatus()}</div>
+        <div class="sub">Post-implementation TTFV tracking · ${DATA.customers.length} accounts · ${renderBackupStatus()}${renderConnectorStatus() ? ' · ' + renderConnectorStatus() : ''}</div>
       </div>
       <div class="header-actions">
         ${(function(){
@@ -10123,7 +10257,7 @@ async function generateRiskSummaryAi(logKey, itemIndex){
   ui.riskSummaryAi[logKey] = {loading:true, error:''};
   render();
   try{
-    const res = await callAiAPI(prompt, {maxTokens: 400});
+    const res = await callAiAPI(prompt, {task: 'risk_summary', maxTokens: 400});
     // The cap is enforced HERE, not trusted to the prompt — models routinely
     // overshoot a character limit, and a silently over-length summary would
     // break the one promise this feature makes.
@@ -11674,7 +11808,7 @@ async function generateThreadAnswer(activityId, threadId){
     });
     const thread = act && getOpenThreads(act).find(t => t.id === threadId);
     if(!act || !cust || !thread) throw new Error('That question moved — reopen Today and try again.');
-    const res = await callAiAPI(buildThreadAnswerPrompt(cust, act, thread), {maxTokens: 700});
+    const res = await callAiAPI(buildThreadAnswerPrompt(cust, act, thread), {task: 'thread_answer', maxTokens: 700});
     thread.a = String(res.text || '').replace(/\s+/g, ' ').trim().slice(0, 2000);
     thread.answeredOn = todayISO();
     ui.threadAnswerAi[threadId] = {loading:false, error:''};
@@ -16926,6 +17060,16 @@ function openSettingsModal(){
       <div class="field-row">
         <div class="field"><label>Ask after (days)</label><input type="number" id="grad-review-days" value="${gradReviewDays()}"></div>
       </div>
+      <div class="section-title">Connector (optional)</div>
+      <p style="color:var(--text-faint); font-size:var(--text-xs); margin:-4px 0 8px;">A small program on this computer that fetches calls from Gong and talks to Gainsight and AI for you, so no key lives in this page. Run <code>node connector/server.mjs</code> and paste the token it prints. The tracker works the same without it.</p>
+      <div class="field-row">
+        <div class="field"><label>Connector address</label><input type="text" id="connector-url" placeholder="http://127.0.0.1:8787" value="${escapeAttr(getConnectorSettings().url)}"></div>
+        <div class="field"><label>Connector token</label><input type="password" id="connector-token" placeholder="printed when the connector starts" value="${escapeAttr(getConnectorSettings().token)}"></div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
+        <button class="btn btn-sm" id="btn-connector-check">Check</button>
+        <span id="connector-status" style="font-size:var(--text-xs); color:var(--text-faint);">${renderConnectorStatus() || 'Not checked yet.'}</span>
+      </div>
       <div class="section-title">AI Brief (optional)</div>
       <p style="color:var(--text-faint); font-size:var(--text-xs); margin:-4px 0 8px;">Bring your own API key from whichever provider you have access to — Google Gemini (free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>), Anthropic Claude (<a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>), or OpenAI ChatGPT (<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com/api-keys</a>) — to enable the "Generate" buttons on the Copilot tab and each account's Call Prep. Pick the matching model below; the app sends requests directly to whichever provider that model belongs to. Your key is stored only in this browser's local storage, kept separate from your tracker data, and is never included in Export JSON. Nothing passes through any server of ours. Only pseudonymized, structured account data is sent (no customer names, no free-text notes) — see the source for exactly what's built into each request.</p>
       <div class="field-row">
@@ -17009,6 +17153,20 @@ function openSettingsModal(){
   backdrop.querySelector('#ai-api-key').addEventListener('input', e=>{
     backdrop.querySelector('#ai-model-wrap').innerHTML = renderAiModelField(e.target.value.trim());
   });
+  backdrop.querySelector('#btn-connector-check').addEventListener('click', async ()=>{
+    const url = backdrop.querySelector('#connector-url').value;
+    const token = backdrop.querySelector('#connector-token').value;
+    const statusEl = backdrop.querySelector('#connector-status');
+    if(!normalizeConnectorUrl(url)){
+      statusEl.textContent = 'Enter an address like http://127.0.0.1:8787 (this computer only).';
+      return;
+    }
+    if(!saveConnectorSettings({url, token})) return;
+    statusEl.textContent = 'Checking…';
+    await checkConnectorHealth();
+    statusEl.innerHTML = renderConnectorStatus() || 'Enter the token the connector printed.';
+    render(); // the header carries the same status line
+  });
   backdrop.querySelector('#btn-clear-ai-key').addEventListener('click', ()=>{
     if(!saveAiSettings({apiKey:'', model: backdrop.querySelector('#ai-model').value})) return;
     backdrop.querySelector('#ai-api-key').value = '';
@@ -17056,7 +17214,9 @@ function openSettingsModal(){
       model: backdrop.querySelector('#ai-model').value,
       answerInstruction: (backdrop.querySelector('#ai-answer-instruction') || {}).value || ''
     })) return;
+    if(!saveConnectorSettings({url: backdrop.querySelector('#connector-url').value, token: backdrop.querySelector('#connector-token').value})) return;
     backdrop.remove();
+    checkConnectorHealth().then(render); // once per save, never on a timer; never throws
     showToast('Settings saved');
     render();
   });
@@ -19013,6 +19173,8 @@ function initCrossTabGuard(){
     if(_fsState !== 'ready') maybePromptBackup();
   });
   initCrossTabGuard();
+  // C-2: one health check on load, only when a connector is configured. Offline is quiet.
+  if(connectorConfigured()) checkConnectorHealth().then(render);
 })();
 </script>
 </body>

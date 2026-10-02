@@ -140,7 +140,7 @@ never touched. GRC disclosure submission stays empty.
 
 Running the graduation checks headlessly (needs Chrome or Edge):
 
-  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 434
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 443
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
@@ -170,13 +170,20 @@ port, calls health, accounts, calls, push and ai with the token, prints a short 
 deletes its temp config, token and log; exit 0. The access request for admins is a draft at
 docs/superpowers/drafts/connector-admin-ask.md (not sent).
 
+Connect the tracker (task C-2): start the connector (node connector/server.mjs), open Settings, find
+"Connector (optional)", enter the address it prints (http://127.0.0.1:8787) and paste its token, then press Check.
+The header then shows Connector: FAKE DATA while any adapter is fake. With a connector set up, every AI feature
+goes through it; if it is not running the tracker falls back to a browser AI key if you saved one, and otherwise
+works as before. The connector token is stored in this browser under obm-connector-settings-v1; it is not a
+third-party key. The only third-party key the tracker can hold is the AI key in obm-ai-settings-v1.
+
 Verifying a change
 ------------------
 Both halves carry self-check suites: the tracker's is injected by tools/selfcheck.mjs from
 tools/selfchecks.js (it is not in the shipped file); the guide's is in the page. After any edit:
 
-  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 434
-            must be 434/434 (the suite lives in tools/selfchecks.js and is not shipped)
+  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 443
+            must be 443/443 (the suite lives in tools/selfchecks.js and is not shipped)
   guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
             must be 18/18 (window.runGuideSelfChecks() also works in the console)
 

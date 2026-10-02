@@ -8507,6 +8507,157 @@ function _runSelfChecksInner(){
     check('grad-plan c6e: the load repair pass cleans a hand-edited config.goalGates (non-array lists, non-string entries, long lines, too many gates)', ok, detail);
   })();
 
+  /* C-2: connector client. The suite is synchronous, so the checks drive the pure halves
+     (request builder, response mapper, health applier, status renderer) and the real
+     checkConnectorHealth with a stub fetch that must not be reached while unconfigured.
+     The async path end to end (stub fetch through callAiAPI) is the probe in
+     docs/superpowers/evidence/trim-and-integration/c2-async-probe.js. */
+  (function(){                                   // c2a
+    let ok = false, detail = '';
+    try{
+      const n = normalizeConnectorUrl;
+      const good = n('http://127.0.0.1:8787/') === 'http://127.0.0.1:8787' && n('http://localhost:1') === 'http://localhost:1'
+        && n(' http://localhost:8787// ') === 'http://localhost:8787';
+      const bad = ['https://evil.example', 'http://10.0.0.1:8787', 'file:///x', '', 'http://127.0.0.1', 'http://127.0.0.1:80/x', null, undefined]
+        .every(u => n(u) === '');
+      ok = good && bad; detail = JSON.stringify({good, bad});
+    }catch(err){ detail = err.message; }
+    check('connector c2a: normalizeConnectorUrl accepts only http://127.0.0.1:<port> and http://localhost:<port>, trailing slash removed', ok, detail);
+  })();
+  (function(){                                   // c2b
+    let ok = false, detail = '';
+    const raw = localStorage.getItem('obm-connector-settings-v1');
+    try{
+      localStorage.removeItem(CONNECTOR_SETTINGS_KEY);
+      const empty = JSON.stringify(getConnectorSettings()) === '{"url":"","token":""}' && connectorConfigured() === false;
+      saveConnectorSettings({url: ' http://127.0.0.1:8787/ ', token: ' abc '});
+      const s = getConnectorSettings();
+      const round = s.url === 'http://127.0.0.1:8787' && s.token === 'abc' && connectorConfigured() === true;
+      saveConnectorSettings({url: 'https://evil.example', token: 'abc'});
+      const rejected = getConnectorSettings().url === '' && connectorConfigured() === false;
+      saveConnectorSettings({url: 'http://localhost:9', token: 'abc'});
+      const stored = Object.keys(JSON.parse(localStorage.getItem(CONNECTOR_SETTINGS_KEY))).sort().join(',');
+      ok = empty && round && rejected && stored === 'token,url' && CONNECTOR_SETTINGS_KEY === 'obm-connector-settings-v1'
+        && CONNECTOR_SETTINGS_KEY !== AI_SETTINGS_KEY;
+      detail = JSON.stringify({empty, round, rejected, stored});
+    }catch(err){ detail = err.message; }
+    finally{ if(raw === null) localStorage.removeItem('obm-connector-settings-v1'); else localStorage.setItem('obm-connector-settings-v1', raw); }
+    check('connector c2b: settings round-trip under obm-connector-settings-v1 as {url, token} only, an off-loopback address is dropped (P8, K10)', ok, detail);
+  })();
+  (function(){                                   // c2c
+    let ok = false, detail = '';
+    try{
+      const st = {url: 'http://127.0.0.1:8787', token: 'tok'};
+      const post = buildConnectorRequest('/v1/ai', {method: 'POST', body: {a: 1}}, st);
+      const get = buildConnectorRequest('/v1/health', {}, st);
+      ok = post.url === 'http://127.0.0.1:8787/v1/ai' && post.init.method === 'POST'
+        && post.init.headers.Authorization === 'Bearer tok' && post.init.headers['Content-Type'] === 'application/json'
+        && post.init.body === '{"a":1}'
+        && get.init.method === 'GET' && get.init.body === undefined && get.init.headers.Authorization === 'Bearer tok'
+        && connectorErrorFor(401).code === 'UNAUTHORIZED' && connectorErrorFor(502).code === 'HTTP'
+        && connectorErrorFor(502).message.indexOf('502') !== -1;
+      detail = JSON.stringify({post: post.init, get: get.init});
+    }catch(err){ detail = err.message; }
+    check('connector c2c: buildConnectorRequest sends the bearer token and a JSON body on POST only; 401 maps to UNAUTHORIZED, other statuses to HTTP', ok, detail);
+  })();
+  (function(){                                   // c2d
+    let ok = false, detail = '';
+    try{
+      const body = buildConnectorAiBody('p', {task: 'copilot_read', maxTokens: 5});
+      const dflt = buildConnectorAiBody('p', {});
+      const src = String(callAiAPI);
+      const routed = src.indexOf('connectorConfigured()') !== -1 && src.indexOf("'/v1/ai'") !== -1
+        && src.indexOf('connectorConfigured()') < src.indexOf('NO_KEY');
+      ok = JSON.stringify(body) === '{"task":"copilot_read","prompt":"p","maxTokens":5}'
+        && JSON.stringify(dflt) === '{"task":"general","prompt":"p","maxTokens":800}' && routed;
+      detail = JSON.stringify({body, dflt, routed});
+    }catch(err){ detail = err.message; }
+    check('connector c2d: callAiAPI routes through the connector before the browser-key check, body is {task, prompt, maxTokens}', ok, detail);
+  })();
+  (function(){                                   // c2e
+    let ok = false, detail = '';
+    try{
+      const want = {generateCopilotRead: ['copilot_read'], generateCustomerAiBrief: ['call_prep'],
+        generateSessionDebrief: ['debrief', 'debrief_scores', 'call_review'],
+        generateRiskSummaryAi: ['risk_summary'], generateThreadAnswer: ['thread_answer']};
+      const fns = {generateCopilotRead, generateCustomerAiBrief, generateSessionDebrief, generateRiskSummaryAi, generateThreadAnswer};
+      const miss = [];
+      let sites = 0;
+      Object.keys(want).forEach(f => want[f].forEach(t => { sites++; if(String(fns[f]).indexOf("task: '" + t + "'") === -1) miss.push(f + ':' + t); }));
+      ok = !miss.length && sites === 7; detail = JSON.stringify({sites, miss});
+    }catch(err){ detail = err.message; }
+    check('connector c2e: all 7 callAiAPI call sites pass their P6 task name', ok, detail);
+  })();
+  (function(){                                   // c2f
+    let ok = false, detail = '';
+    try{
+      const t = connectorAiResult({text: 'ok', truncated: true});
+      const f = connectorAiResult({text: 'ok'});
+      let threw = '';
+      try{ connectorAiResult({nope: 1}); }catch(e){ threw = e.code; }
+      ok = t.text === 'ok' && t.truncated === true && f.truncated === false && threw === 'HTTP'
+        && String(callAiAPI).indexOf('connectorAiResult(') !== -1;
+      detail = JSON.stringify({t, f, threw});
+    }catch(err){ detail = err.message; }
+    check('connector c2f: a truncated:true connector reply reaches the caller as {text, truncated:true}; absent means false; a reply without text is an error', ok, detail);
+  })();
+  (function(){                                   // c2g
+    let ok = false, detail = '';
+    const saved = ui.connector;
+    try{
+      applyConnectorHealth(null, 'OFFLINE');
+      const off = ui.connector.state === 'offline' && renderConnectorStatus().indexOf('Connector offline') !== -1
+        && renderConnectorStatus().indexOf('--text-faint') !== -1;
+      applyConnectorHealth(null, 'UNAUTHORIZED');
+      const un = ui.connector.state === 'unauthorized' && renderConnectorStatus().indexOf('token') !== -1;
+      ui.connector = {state: 'unset', fake: false, adapters: {}, checkedAt: null};
+      const unset = renderConnectorStatus() === '';
+      ok = off && un && unset; detail = JSON.stringify({off, un, unset});
+    }catch(err){ detail = err.message; }
+    finally{ ui.connector = saved; }
+    check('connector c2g: offline renders a quiet "Connector offline", unauthorized names the token, unset renders nothing; none throws', ok, detail);
+  })();
+  (function(){                                   // c2h
+    let ok = false, detail = '';
+    const saved = ui.connector;
+    try{
+      applyConnectorHealth({version: '1', adapters: {gong: 'fake', gainsight: 'fake', ai: 'fake'}});
+      const fake = ui.connector.fake === true && renderConnectorStatus().indexOf('FAKE DATA') !== -1;
+      applyConnectorHealth({version: '1', adapters: {gong: 'gong', gainsight: 'gainsight', ai: 'claude'}});
+      const live = ui.connector.fake === false && renderConnectorStatus().indexOf('Connector: connected') !== -1
+        && renderConnectorStatus().indexOf('FAKE') === -1;
+      applyConnectorHealth({version: '1', adapters: {gong: 'gong', gainsight: 'gainsight', ai: 'fake'}});
+      const one = renderConnectorStatus().indexOf('FAKE DATA') !== -1;
+      ok = fake && live && one; detail = JSON.stringify({fake, live, one});
+    }catch(err){ detail = err.message; }
+    finally{ ui.connector = saved; }
+    check('connector c2h: FAKE DATA shows whenever any adapter reports "fake"; all-real shows "Connector: connected"', ok, detail);
+  })();
+  (function(){                                   // c2i
+    let ok = false, detail = '';
+    const raw = localStorage.getItem('obm-connector-settings-v1');
+    let savedFetch;
+    const saved = ui.connector;
+    try{
+      savedFetch = _connectorFetch;
+      localStorage.removeItem(CONNECTOR_SETTINGS_KEY);
+      let calls = 0;
+      _connectorFetch = function(){ calls++; return Promise.reject(new TypeError('Failed to fetch')); };
+      const p = checkConnectorHealth();
+      p.catch(function(){});
+      ok = p instanceof Promise && calls === 0 && ui.connector.state === 'unset' && renderConnectorStatus() === ''
+        && String(renderHeader).indexOf('renderConnectorStatus()') !== -1
+        && String(openSettingsModal).indexOf('btn-connector-check') !== -1;
+      detail = JSON.stringify({calls, state: ui.connector.state});
+    }catch(err){ detail = err.message; }
+    finally{
+      if(savedFetch) _connectorFetch = savedFetch;
+      ui.connector = saved;
+      if(raw === null) localStorage.removeItem('obm-connector-settings-v1'); else localStorage.setItem('obm-connector-settings-v1', raw);
+    }
+    check('connector c2i: with no connector configured nothing is fetched, status is unset, and the header and Settings carry the connector status and Check button (K8)', ok, detail);
+  })();
+
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,

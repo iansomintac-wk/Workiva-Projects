@@ -31,15 +31,13 @@ blob is LF and its working tree is CRLF here (19,297 bytes longer than the
 blob), so the two hash differently. The guide is the same: LF blob, CRLF
 working tree (859 CR lines), so its two hashes differ.
 
-  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task C-1 (schema 16); the A5 figure is superseded. Previously: trim task
-    A5, after time-saved was retired; the A4 figure 2d28fb97... is now stale. The blob is LF;
-    the working tree depends on the checkout: CRLF in the trim-and-integration
-    worktree, LF where core.autocrlf is off. Earlier "0 CR bytes" statements
-    described a different checkout.)
-    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,176,767 bytes)
-    b9c15187ca6b7894f86d35fe442ca403e8c9bf74b6d3398cccc2ba4cfa58301a
-    WORKING TREE (CRLF, this checkout, `sha256sum <file>`, 1,195,786 bytes)
-    d37b34af00ad2fc7af30391cac4551d7558711c50db179e38aa0bd3f4498b2c3
+  osm-book-of-business-tracker-1.0.html   (re-measured 2026-10-01 at trim task C-2 (connector client); the C-1 figure b9c15187... is superseded.
+    The blob is LF. In this worktree the working tree was LF too when measured (the C-2 edits rewrote it LF), so the two hashes
+    are identical here; where core.autocrlf yields CRLF they will differ.)
+    GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 1,185,458 bytes)
+    dfa3ec02bebfc45cce1f2e392dee7332205a16f04b338bf5b68421e263d0a903
+    WORKING TREE (LF in this checkout at measurement, `sha256sum <file>`, 1,185,458 bytes)
+    dfa3ec02bebfc45cce1f2e392dee7332205a16f04b338bf5b68421e263d0a903
   osm-runway-onboarding-1.0.html   (changed at A5: two time-saved cards replaced/removed; the 598bbb86... figure is stale)
     GIT BLOB (LF, `git cat-file -p :<file> | sha256sum` from the staged blob, 183,964 bytes)
     d3e4c8723caca88abb1947264049704d1e23cfb466553854561ce86ffdd9a392
@@ -52,7 +50,7 @@ WHAT WAS VERIFIED
 Both suites were executed against the actual bundle, from file://, by
 tools/selfcheck.mjs — a headless Chrome runner added during this work.
 
-  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   434/434 passed, 0 failed
+  tracker: tools/selfcheck.mjs, suite injected from tools/selfchecks.js   443/443 passed, 0 failed
   window.runGuideSelfChecks()                                              18/18 passed, 0 failed
 
 Neither page produced a console error or uncaught exception on load; the runner
@@ -158,12 +156,12 @@ check). Unseeded: 364/368, 4 failed — v74.4 is GONE from the list; the
 four remaining failures are exactly the pre-existing, verified-non-defect
 four above, which need a populated book on their own terms and are not
 this defect. The tracker suite as a whole therefore still needs seeding to
-run clean, so — at the CURRENT suite count, 434 (369 when this paragraph was
+run clean, so — at the CURRENT suite count, 443 (369 when this paragraph was
 written, after v74.5 was added; the count moves with every graduation-plan task) —
 the documented command keeps doing it:
 
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
-       --seed demo-seed.js --expect 434
+       --seed demo-seed.js --expect 443
   node tools/selfcheck.mjs osm-runway-onboarding-1.0.html \
        --fn runGuideSelfChecks --expect 18
 
@@ -1627,3 +1625,26 @@ SCHEMA 15 -> 16 — TASK C-1 (suite 428 -> 434)
     none, a spaced email trimmed, second pass identical. `--from 14`, `--from 13`, `--from 11` exit 0.
   - guide-manifest.json trackerSchemaVersion read 12 (stale since 13); set to 16 and the suite count to 434.
   Evidence: docs/superpowers/evidence/trim-and-integration/C-1.md.
+
+TRIM C-2 - CONNECTOR CLIENT (suite 434 -> 443)
+  - What: Settings "Connector (optional)" block (address, token, Check, status), header status line beside the backup
+    status, connectorRequest/health/status renderer, callAiAPI routing through POST /v1/ai, opts.task at the 7 call sites
+    (P6). Settings key obm-connector-settings-v1 = {url, token} (P8). Only http://127.0.0.1:<port> and
+    http://localhost:<port> are accepted. Health is checked once on load (if configured), on Check and on Settings save,
+    never on a timer. No schema change.
+  - Checks first, nine seen failing (434/443 passed, 9 failed), then the code: c2a..c2i (connector). c2a url normaliser,
+    c2b settings round trip and the off-loopback address dropped, c2c request builder (bearer, JSON body on POST only,
+    401 -> UNAUTHORIZED), c2d AI body and routing order, c2e all 7 call sites carry their task, c2f truncated:true reaches
+    the caller, c2g offline/unauthorized/unset status text, c2h FAKE DATA when any adapter is fake, c2i unconfigured =
+    nothing fetched and the header/Settings carry the status (K8). No check removed or weakened.
+  - The suite is synchronous, so c2a..c2i drive the pure halves; the async path end to end (stub fetch through
+    callAiAPI) is docs/superpowers/evidence/trim-and-integration/c2-async-probe.js, run as a seed: 9/9 (truncated
+    passthrough, request shape, offline with and without a browser key, 401 not hidden by fallback, health offline and
+    fake, no console errors).
+  - Mutation proof: the fake branch of renderConnectorStatus disabled (`if(false && c.fake)`) -> 442/443, c2h red;
+    restored, 443/443.
+  - K8: suite run with a configured but dead connector (127.0.0.1:9): 443/443; header reads "... Connector offline";
+    no page error or unhandled rejection. K10: the only third-party key is obm-ai-settings-v1.
+  - GREEN: `runSelfChecks: 443/443 passed, 0 failed`; `runGraduationScenarios: 6/6 passed, 0 failed`; guide 18/18;
+    connector contract tests `# pass 41`, `# fail 0`. SHA-256 block re-measured above. guide-manifest.json count 443.
+  Evidence: docs/superpowers/evidence/trim-and-integration/C-2.md.

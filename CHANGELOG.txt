@@ -254,3 +254,14 @@ Schema 16 (task C-1, connector groundwork).
       through export and import. Existing stakeholders gain none.
     - Export JSON before first opening this build on a real book: schema 16 is
       not readable by an older build.
+
+Connector client (task C-2).
+
+    - Settings has a Connector block: the address of the connector (this computer only) and its token, with a Check
+      button. The header shows "Connector offline" quietly when it is not running, "Connector: FAKE DATA" whenever it
+      reports made-up data, and "Connector: connected" otherwise. It is checked when the tracker opens (only if a
+      connector is set up), on Check, and on Save; never on a timer.
+    - With a connector set up, every AI feature goes through it and the key stays in the connector. If the connector is
+      not running the tracker falls back to a browser AI key when there is one. A length-cut AI reply still shows the
+      same notice. Without a connector the tracker works exactly as before.
+    - 443 self-checks (was 434).
