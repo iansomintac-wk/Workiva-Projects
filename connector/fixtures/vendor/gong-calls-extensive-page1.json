@@ -1,0 +1,23 @@
+{
+  "_source": "SHAPE FROM DOCS, NOT FROM A LIVE TENANT. POST /v2/calls/extensive reply, page 1 of 2. Source: https://help.gong.io/apidocs/retrieve-detailed-call-data-by-various-filters-v2callsextensive-2.md (research-vendor-apis.md Q2, CONFIRMED). metaData field names from Q1 https://help.gong.io/apidocs/retrieve-call-data-by-date-range-v2calls-2.md (UNCONFIRMED inside metaData). The type of content.brief is UNCONFIRMED. All values are fake.",
+  "requestId": "FAKE-REQ-1",
+  "records": { "totalRecords": 3, "currentPageSize": 2, "currentPageNumber": 0, "cursor": "CURSOR-FAKE-2" },
+  "calls": [
+    {
+      "metaData": { "id": "7001", "url": "https://fake-tenant.gong.invalid/call?id=7001", "title": "Aldridge Energy: session check-in", "started": "2026-09-20T15:00:00Z", "duration": 1800, "primaryUserId": "FAKE-U1", "scheduled": "2026-09-20T15:00:00Z" },
+      "parties": [
+        { "id": "p1", "emailAddress": "ian.fake@fake-osm.invalid", "name": "Ian Fake", "affiliation": "Internal", "speakerId": "s1", "methods": ["Attendee"] },
+        { "id": "p2", "emailAddress": "pat.fake@fake-customer.invalid", "name": "Pat Fake", "affiliation": "External", "speakerId": "s2", "methods": ["Attendee"] },
+        { "id": "p3", "emailAddress": null, "name": "Dial-in caller", "affiliation": "Unknown", "speakerId": "s3", "methods": ["Attendee"] }
+      ],
+      "content": { "brief": "FAKE brief: reviewed rollout status and agreed next steps." }
+    },
+    {
+      "metaData": { "id": "7002", "url": "https://fake-tenant.gong.invalid/call?id=7002", "title": "Internal sync without Ian", "started": "2026-09-21T10:00:00Z", "duration": 900, "primaryUserId": "FAKE-U2", "scheduled": "2026-09-21T10:00:00Z" },
+      "parties": [
+        { "id": "p4", "emailAddress": "someone.else@fake-osm.invalid", "name": "Someone Else", "affiliation": "Internal", "speakerId": "s4", "methods": ["Attendee"] }
+      ],
+      "content": { "brief": "FAKE brief: not Ian's call." }
+    }
+  ]
+}

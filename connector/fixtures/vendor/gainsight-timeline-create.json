@@ -1,0 +1,5 @@
+{
+  "_source": "SHAPE FROM DOCS, NOT FROM A LIVE TENANT. POST /v1/ant/es/activity success reply. Source: https://support.gainsight.com/Gainsight_NXT/API_and_Developer_Docs/Timeline_API/Timeline_APIs (research-vendor-apis.md Q10, CONFIRMED). All values are fake.",
+  "data": { "failures": {}, "success": { "q-timeline-1": [{ "activityId": "1I00FAKEACT0001" }] } },
+  "result": true
+}

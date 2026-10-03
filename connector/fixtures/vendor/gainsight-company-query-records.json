@@ -1,0 +1,11 @@
+{
+  "_source": "SHAPE FROM DOCS, NOT FROM A LIVE TENANT. POST /v1/data/objects/query/Company reply with rows in data.records[] (the second form; UNCONFIRMED which one the tenant uses). Source: https://support.gainsight.com/gainsight_nxt/API_and_Developer_Docs/Company_and_Relationship_API/Company_API_Documentation (research-vendor-apis.md Q8, CONFIRMED envelope; data[] versus data.records is UNCONFIRMED). Gsid and Name per Q10 lookups. Fields named FAKE_* stand in for tenant-configured fields (UNCONFIRMED until the tenant). All values are fake.",
+  "result": true, "errorCode": null, "errorDesc": null, "requestId": "FAKE-REQ-GS-1", "message": null,
+  "data": {
+    "records": [
+      { "Gsid": "1P02FAKE0001", "Name": "Aldridge Energy", "FAKE_Tier__gc": "Gold", "FAKE_Arr__gc": 120000, "FAKE_Renewal__gc": "2027-03-31", "FAKE_CsmOwner__gc": "Ian Fake", "FAKE_Health__gc": 72, "FAKE_Readiness__gc": true, "FAKE_Csat__gc": false, "FAKE_SuccessPlan__gc": "yes" },
+      { "Gsid": "1P02FAKE0002", "Name": "Brightwater Foods", "FAKE_Tier__gc": null, "FAKE_Arr__gc": -5, "FAKE_Renewal__gc": "", "FAKE_CsmOwner__gc": "Ian Fake", "FAKE_Health__gc": "n/a", "FAKE_Readiness__gc": false, "FAKE_Csat__gc": true, "FAKE_SuccessPlan__gc": true },
+      { "Gsid": "1P02FAKE0003", "Name": "Corvus Logistics", "FAKE_Tier__gc": "Silver", "FAKE_Arr__gc": "45000", "FAKE_Renewal__gc": "2026-12-01", "FAKE_CsmOwner__gc": null, "FAKE_Health__gc": 55, "FAKE_Readiness__gc": null, "FAKE_Csat__gc": null, "FAKE_SuccessPlan__gc": null }
+    ]
+  }
+}

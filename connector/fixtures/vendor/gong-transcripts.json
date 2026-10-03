@@ -1,0 +1,281 @@
+{
+  "_source": "SHAPE FROM DOCS, NOT FROM A LIVE TENANT. POST /v2/calls/transcript reply. Source: https://help.gong.io/apidocs/retrieve-transcripts-of-calls-by-date-or-callids-v2callstranscript-2.md (research-vendor-apis.md Q3, CONFIRMED). Lengths are 10..100 characters by design (T-12). All values are fake.",
+  "requestId": "FAKE-REQ-T",
+  "records": {
+    "totalRecords": 10,
+    "currentPageSize": 10,
+    "currentPageNumber": 0
+  },
+  "callTranscripts": [
+    {
+      "callId": "7101",
+      "transcript": [
+        {
+          "speakerId": "s1",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 0,
+              "end": 1000,
+              "text": "xxxxx"
+            }
+          ]
+        },
+        {
+          "speakerId": "s2",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 1000,
+              "end": 2000,
+              "text": "yyyyy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "callId": "7102",
+      "transcript": [
+        {
+          "speakerId": "s1",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 0,
+              "end": 1000,
+              "text": "xxxxxxxxxx"
+            }
+          ]
+        },
+        {
+          "speakerId": "s2",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 1000,
+              "end": 2000,
+              "text": "yyyyyyyyyy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "callId": "7103",
+      "transcript": [
+        {
+          "speakerId": "s1",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 0,
+              "end": 1000,
+              "text": "xxxxxxxxxxxxxxx"
+            }
+          ]
+        },
+        {
+          "speakerId": "s2",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 1000,
+              "end": 2000,
+              "text": "yyyyyyyyyyyyyyy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "callId": "7104",
+      "transcript": [
+        {
+          "speakerId": "s1",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 0,
+              "end": 1000,
+              "text": "xxxxxxxxxxxxxxxxxxxx"
+            }
+          ]
+        },
+        {
+          "speakerId": "s2",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 1000,
+              "end": 2000,
+              "text": "yyyyyyyyyyyyyyyyyyyy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "callId": "7105",
+      "transcript": [
+        {
+          "speakerId": "s1",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 0,
+              "end": 1000,
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          ]
+        },
+        {
+          "speakerId": "s2",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 1000,
+              "end": 2000,
+              "text": "yyyyyyyyyyyyyyyyyyyyyyyyy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "callId": "7106",
+      "transcript": [
+        {
+          "speakerId": "s1",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 0,
+              "end": 1000,
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          ]
+        },
+        {
+          "speakerId": "s2",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 1000,
+              "end": 2000,
+              "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "callId": "7107",
+      "transcript": [
+        {
+          "speakerId": "s1",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 0,
+              "end": 1000,
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          ]
+        },
+        {
+          "speakerId": "s2",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 1000,
+              "end": 2000,
+              "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "callId": "7108",
+      "transcript": [
+        {
+          "speakerId": "s1",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 0,
+              "end": 1000,
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          ]
+        },
+        {
+          "speakerId": "s2",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 1000,
+              "end": 2000,
+              "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "callId": "7109",
+      "transcript": [
+        {
+          "speakerId": "s1",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 0,
+              "end": 1000,
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          ]
+        },
+        {
+          "speakerId": "s2",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 1000,
+              "end": 2000,
+              "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "callId": "7110",
+      "transcript": [
+        {
+          "speakerId": "s1",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 0,
+              "end": 1000,
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          ]
+        },
+        {
+          "speakerId": "s2",
+          "topic": "FAKE",
+          "sentences": [
+            {
+              "start": 1000,
+              "end": 2000,
+              "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
