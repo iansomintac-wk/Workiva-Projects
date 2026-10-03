@@ -134,12 +134,18 @@ function loadToken(file) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const env = process.env;
-  const cfgFile = env.CONNECTOR_CONFIG || (existsSync(join(here, 'config.json')) ? join(here, 'config.json') : join(here, 'config.example.json'));
-  const config = JSON.parse(readFileSync(cfgFile, 'utf8'));
   const args = process.argv.slice(2);
+  const cli = args.length ? await import('./lib/cli.mjs') : null;
+  const isCli = !!cli && args.some((a) => cli.COMMANDS.includes(a));
+  const explicit = env.CONNECTOR_CONFIG;
+  let cfgFile = explicit || (existsSync(join(here, 'config.json')) ? join(here, 'config.json') : join(here, 'config.example.json'));
+  if (!existsSync(cfgFile)) {
+    if (!isCli) { console.error(`config file not found: ${cfgFile} (CONNECTOR_CONFIG); run --setup to create it`); process.exit(1); }
+    cfgFile = join(here, 'config.example.json'); // a CLI command (--setup) starts from the example; configPath below stays the requested path
+  }
+  const config = JSON.parse(readFileSync(cfgFile, 'utf8'));
   if (args.length) {
-    const cli = await import('./lib/cli.mjs');
-    if (args.some((a) => cli.COMMANDS.includes(a))) {
+    if (isCli) {
       const ask = cli.makeAsk();
       const code = await cli.runCli(args, { config, configPath: env.CONNECTOR_CONFIG || join(here, 'config.json'), stateDir: env.CONNECTOR_STATE_DIR, ask, createConnector });
       ask.close();

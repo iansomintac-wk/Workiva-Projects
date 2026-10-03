@@ -31,6 +31,7 @@ export function defaultCallbackServer({ port, handlerFor, createConnector, timeo
     const finish = (r) => { clearTimeout(timer); setTimeout(() => server && server.close(), 200); resolve(r); };
     const timer = setTimeout(() => finish({ ok: false, reason: 'timeout' }), timeoutMs);
     server = createConnector({ config: {}, adapters: loadAdapters({}), token: crypto.randomBytes(32).toString('hex'), oauthCallback: handlerFor(finish) });
+    server.on('error', (e) => finish({ ok: false, reason: 'listen', code: e.code, error: e.code === 'EADDRINUSE' ? `callback port ${port} in use` : `callback server could not start (${e.code || 'error'})` }));
     server.listen(port, '127.0.0.1');
   });
 }
@@ -76,6 +77,7 @@ export async function runSetup({ configPath, config = {}, ask, out = console.log
       out(`Gainsight redirected back with these query names: ${r.names.join(', ') || '(none)'}. Set gainsight.oauth.callbackCodeParam in ${configPath} to the one that carries the code (CONNECT-GAINSIGHT.md), then run --setup again and skip Gong.`);
       return 1;
     }
+    if (r.reason === 'listen') { out(`FAIL gainsight oauth: ${r.error}; who fixes it: Ian (free the port or set "port" in ${configPath}, then run --setup again)`); return 1; }
     if (!r.ok) { out(`FAIL gainsight sign-in: ${r.reason === 'timeout' ? 'no redirect arrived in 10 minutes' : r.error}; who fixes it: Ian (run --setup again)`); return 1; }
     if (!g.oauth.accessTokenField || !g.oauth.refreshTokenField) {
       out(`Gainsight answered with these field names: ${r.keys.join(', ')}. Set gainsight.oauth.accessTokenField and refreshTokenField in ${configPath} to the two that hold the access and refresh tokens, then run node connector/server.mjs --check.`);

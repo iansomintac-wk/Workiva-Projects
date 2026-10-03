@@ -5,8 +5,12 @@ import { readFileSync, mkdtempSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
+import net from 'node:net';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { createConnector } from '../server.mjs';
 import { installNetGuard } from '../lib/test-net-guard.mjs';
-import { runSetup } from '../lib/setup.mjs';
+import { runSetup, defaultCallbackServer } from '../lib/setup.mjs';
 import { makeAsk } from '../lib/cli.mjs';
 
 installNetGuard();
@@ -102,4 +106,42 @@ test('makeAsk: answers piped in one burst are each delivered to the question tha
 test('setup.mjs does not import server.mjs (import deadlock)', () => {
   const src = readFileSync(new URL('../lib/setup.mjs', import.meta.url), 'utf8');
   assert.ok(!/from\s+['"][^'"]*server\.mjs['"]|import\(\s*['"][^'"]*server\.mjs['"]/.test(src));
+});
+
+const SERVER = fileURLToPath(new URL('../server.mjs', import.meta.url));
+
+test('CONNECTOR_CONFIG pointing at a new file: --setup starts from config.example.json and creates it (exit 0)', () => {
+  const dir = tmp(); const configPath = join(dir, 'new.json');
+  const r = spawnSync(process.execPath, [SERVER, '--setup'], { input: 'n\nn\n', encoding: 'utf8', timeout: 20000,
+    env: { ...process.env, CONNECTOR_CONFIG: configPath, CONNECTOR_STATE_DIR: dir } });
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.ok(existsSync(configPath));
+  assert.ok(!/ENOENT/.test(r.stderr));
+});
+
+test('plain server with a missing CONNECTOR_CONFIG: one error line, exit 1, no stack trace', () => {
+  const dir = tmp();
+  const r = spawnSync(process.execPath, [SERVER], { encoding: 'utf8', timeout: 20000,
+    env: { ...process.env, CONNECTOR_CONFIG: join(dir, 'missing.json'), CONNECTOR_STATE_DIR: dir, CONNECTOR_TOKEN_FILE: join(dir, 't.txt') } });
+  assert.equal(r.status, 1);
+  assert.equal(r.stderr.trim().split('\n').length, 1, r.stderr);
+  assert.match(r.stderr, /config file not found/);
+  assert.ok(!/\n\s+at /.test(r.stderr));
+});
+
+test('setup sign-in port already in use: one FAIL line, non-zero, no secrets', async () => {
+  const blocker = net.createServer();
+  await new Promise((res) => blocker.listen(0, '127.0.0.1', res));
+  const port = blocker.address().port;
+  try {
+    const dir = tmp(); const out = [];
+    const { ask } = scripted(['n', 'y', 'https://fake-sbx.gainsightcloud.invalid', '', 'FAKE-SBX-1', 'sandbox', 'FAKE-CLIENT-ID', 'FAKE-CLIENT-SECRET-zz', 'FAKE_SCOPE']);
+    const code = await runSetup({ configPath: join(dir, 'config.json'), config: { ...EXAMPLE, port }, ask, out: (l) => out.push(l), stateDir: dir, createConnector,
+      startCallbackServer: defaultCallbackServer, runCheckFn: async () => { throw new Error('must not run'); } });
+    assert.notEqual(code, 0);
+    const fails = out.filter((l) => l.startsWith('FAIL'));
+    assert.equal(fails.length, 1);
+    assert.match(fails[0], new RegExp(`^FAIL gainsight oauth: callback port ${port} in use`));
+    assert.ok(!out.join('\n').includes('FAKE-CLIENT-SECRET-zz'));
+  } finally { await new Promise((res) => blocker.close(res)); }
 });
