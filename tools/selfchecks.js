@@ -8687,6 +8687,38 @@ function _runSelfChecksInner(){
     finally{ ui.connector = saved; }
     check('connector c2h: FAKE DATA shows whenever any adapter reports "fake"; all-real shows "Connector: connected"', ok, detail);
   })();
+  (function(){                                   // c2j
+    let ok = false, detail = '';
+    const saved = ui.connector;
+    try{
+      applyConnectorHealth({version: '1', adapters: {gong: 'gong-rest (unproven)', gainsight: 'gainsight-rest (unproven, dry-run)', ai: 'claude'}});
+      const unp = ui.connector.unproven === true && renderConnectorStatus().indexOf('Connector: UNPROVEN') !== -1
+        && renderConnectorStatus().indexOf('--status-watch-text') !== -1;
+      applyConnectorHealth({version: '1', adapters: {gong: 'gong-rest', gainsight: 'gainsight-rest (dry-run)', ai: 'claude'}});
+      const dry = ui.connector.unproven === false && ui.connector.dryRun === true
+        && renderConnectorStatus().indexOf('Connector: DRY RUN') !== -1 && renderConnectorStatus().indexOf('--status-watch-text') !== -1;
+      applyConnectorHealth({version: '1', adapters: {gong: 'gong-rest', gainsight: 'gainsight-rest', ai: 'claude'}});
+      const live = ui.connector.unproven === false && ui.connector.dryRun === false && renderConnectorStatus().indexOf('Connector: connected') !== -1;
+      ok = unp && dry && live; detail = JSON.stringify({unp, dry, live});
+    }catch(err){ detail = err.message; }
+    finally{ ui.connector = saved; }
+    check('connector c2j: an adapter flagged "unproven" shows Connector: UNPROVEN, "dry-run" shows Connector: DRY RUN, no flag shows connected (D2)', ok, detail);
+  })();
+  (function(){                                   // c2k
+    let ok = false, detail = '';
+    const saved = ui.connector;
+    try{
+      applyConnectorHealth({version: '1', adapters: {gong: 'fake', gainsight: 'gainsight-rest (unproven, dry-run)', ai: 'fake'}});
+      const fakeFirst = renderConnectorStatus().indexOf('FAKE DATA') !== -1 && renderConnectorStatus().indexOf('UNPROVEN') === -1;
+      applyConnectorHealth({version: '1', adapters: {gong: 'gong-rest (unproven)', gainsight: 'gainsight-rest (dry-run)', ai: 'claude'}});
+      const unpFirst = renderConnectorStatus().indexOf('UNPROVEN') !== -1 && renderConnectorStatus().indexOf('DRY RUN') === -1;
+      applyConnectorHealth(null, 'OFFLINE');
+      const reset = ui.connector.unproven === false && ui.connector.dryRun === false;
+      ok = fakeFirst && unpFirst && reset; detail = JSON.stringify({fakeFirst, unpFirst, reset});
+    }catch(err){ detail = err.message; }
+    finally{ ui.connector = saved; }
+    check('connector c2k: FAKE DATA outranks UNPROVEN, UNPROVEN outranks DRY RUN, offline clears both flags', ok, detail);
+  })();
   (function(){                                   // c2i
     let ok = false, detail = '';
     const raw = localStorage.getItem('obm-connector-settings-v1');

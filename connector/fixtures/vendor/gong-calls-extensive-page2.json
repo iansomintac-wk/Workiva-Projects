@@ -1,0 +1,15 @@
+{
+  "_source": "SHAPE FROM DOCS, NOT FROM A LIVE TENANT. POST /v2/calls/extensive reply, page 2 of 2 (no cursor = last page). Source: https://help.gong.io/apidocs/retrieve-detailed-call-data-by-various-filters-v2callsextensive-2.md (research-vendor-apis.md Q2, CONFIRMED). All values are fake.",
+  "requestId": "FAKE-REQ-2",
+  "records": { "totalRecords": 3, "currentPageSize": 1, "currentPageNumber": 1 },
+  "calls": [
+    {
+      "metaData": { "id": "7003", "url": "https://fake-tenant.gong.invalid/call?id=7003", "title": "Brightwater Foods: kickoff", "started": "2026-09-25T16:30:00Z", "duration": 2400, "primaryUserId": "FAKE-U1", "scheduled": "2026-09-25T16:30:00Z" },
+      "parties": [
+        { "id": "p5", "emailAddress": "IAN.FAKE@fake-osm.invalid", "name": "Ian Fake", "affiliation": "Internal", "speakerId": "s5", "methods": ["Invitee"] },
+        { "id": "p6", "emailAddress": "sam.fake@fake-customer.invalid", "name": "Sam Fake", "affiliation": "External", "speakerId": "s6", "methods": ["Attendee"] }
+      ],
+      "content": {}
+    }
+  ]
+}

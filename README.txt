@@ -145,7 +145,7 @@ never touched. GRC disclosure submission stays empty.
 
 Running the graduation checks headlessly (needs Chrome or Edge):
 
-  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 473
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 475
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
@@ -239,8 +239,8 @@ Verifying a change
 Both halves carry self-check suites: the tracker's is injected by tools/selfcheck.mjs from
 tools/selfchecks.js (it is not in the shipped file); the guide's is in the page. After any edit:
 
-  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 473
-            must be 473/473 (the suite lives in tools/selfchecks.js and is not shipped)
+  tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 475
+            must be 475/475 (the suite lives in tools/selfchecks.js and is not shipped)
   guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
             must be 18/18 (window.runGuideSelfChecks() also works in the console)
 

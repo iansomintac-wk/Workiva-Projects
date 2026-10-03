@@ -267,7 +267,7 @@ test('t13b push adapter failure -> 502 with a generic message: the adapter text 
 });
 
 test('t14 loadAdapters: unknown adapter name throws', () => {
-  assert.throws(() => loadAdapters({ gong: { adapter: 'gong-rest' } }), /adapter not built: gong-rest/);
+  assert.throws(() => loadAdapters({ gong: { adapter: 'gong-live' } }), /adapter not built: gong-live/);
   assert.throws(() => loadAdapters({ gainsight: { adapter: 'x' } }), /adapter not built: x/);
 });
 

@@ -60,3 +60,9 @@ docs/research/internal/
 connector/config.json
 connector/token.txt
 connector/fake-gainsight-log.jsonl
+connector/proof.json
+connector/gainsight-tokens.json
+connector/sent-record.json
+connector/dry-run.jsonl
+connector/*.tmp
+connector/*.lock

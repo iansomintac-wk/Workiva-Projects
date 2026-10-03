@@ -9,10 +9,11 @@
 // Prints `connector-e2e: N/7 passed, M failed`; exit 0 only for 7/7 with no console errors.
 // NOT part of the distributable bundle — dev tooling, like docs/.
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
+import { removeDir, waitForExit } from './e2e-cleanup.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const keepLogs = process.argv.includes('--keep-logs');
@@ -68,14 +69,16 @@ function killChrome() {
   if (process.platform === 'win32') spawnSync('taskkill', ['/PID', String(chrome.pid), '/T', '/F'], { stdio: 'ignore' });
   else { try { chrome.kill('SIGKILL'); } catch {} }
 }
+// Cleanup problems are reported, never thrown (connect-ready T-1): the exit code is the scenarios' result.
 async function cleanup() {
   killChrome();
   await stopConnector();
-  await sleep(300);
-  if (!keepLogs) {
-    rmSync(tmp, { recursive: true, force: true, maxRetries: 8, retryDelay: 200 });
-  }
-  rmSync(profile, { recursive: true, force: true, maxRetries: 8, retryDelay: 200 });
+  await waitForExit(chrome, 5000);
+  await sleep(500);
+  const problems = [];
+  if (!keepLogs) { const p = removeDir(tmp, 'temp config'); if (p) problems.push(p); }
+  const p = removeDir(profile, 'Chrome temp profile'); if (p) problems.push(p);
+  return problems;
 }
 
 const results = [];
@@ -276,6 +279,7 @@ async function main() {
 let code = 2;
 try { code = await main(); }
 catch (e) { console.error('Harness failure: ' + (e && e.message || e)); }
-await cleanup();
-console.log(`cleanup: temp config/profile ${existsSync(tmp) && !keepLogs ? 'NOT ' : ''}removed${keepLogs ? ` (kept: ${tmp})` : ''}`);
+const problems = await cleanup().catch((e) => [`cleanup threw: ${e && e.message || e}`]);
+for (const p of problems) console.log(`cleanup warning: ${p}`);
+console.log(`cleanup: ${problems.length ? `${problems.length} problem(s), see warnings above` : 'temp config/profile removed'}${keepLogs ? ` (kept: ${tmp})` : ''}`);
 process.exit(code);
