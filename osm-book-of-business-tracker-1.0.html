@@ -1849,23 +1849,32 @@ function connectorAiResult(resp){
   }
   return {text: resp.text, truncated: resp.truncated === true};
 }
+// D2 (connect-ready): a real adapter reports its state as trailing flags, e.g. "gainsight-rest (unproven, dry-run)".
+function connectorAdapterFlags(name){
+  const m = /\(([^()]*)\)\s*$/.exec(String(name || ''));
+  return m ? m[1].split(',').map(s => s.trim()).filter(Boolean) : [];
+}
 function applyConnectorHealth(body, errCode){
   const c = ui.connector;
   c.checkedAt = Date.now();
   if(errCode){
     c.state = errCode === 'UNAUTHORIZED' ? 'unauthorized' : 'offline';
-    c.fake = false; c.adapters = {};
+    c.fake = false; c.unproven = false; c.dryRun = false; c.adapters = {};
     return;
   }
   const adapters = (body && body.adapters) || {};
   c.adapters = adapters;
   c.fake = Object.keys(adapters).some(k => adapters[k] === 'fake');
+  const flags = [].concat(...Object.keys(adapters).map(k => connectorAdapterFlags(adapters[k])));
+  c.unproven = flags.indexOf('unproven') !== -1;
+  c.dryRun = flags.indexOf('dry-run') !== -1;
   c.state = 'online';
 }
 // Checked once on load (if configured) and on Settings save or the Check button — never on a timer.
 async function checkConnectorHealth(){
   if(!connectorConfigured()){
     ui.connector.state = 'unset'; ui.connector.fake = false; ui.connector.adapters = {};
+    ui.connector.unproven = false; ui.connector.dryRun = false;
     return ui.connector;
   }
   ui.connector.state = 'checking';
@@ -1882,6 +1891,8 @@ function renderConnectorStatus(){
   if(c.state === 'offline') return '<span style="color:var(--text-faint);" title="The connector is not running. The tracker works as usual without it.">Connector offline</span>';
   if(c.state === 'unauthorized') return '<span style="color:var(--status-watch-text); font-weight:700;" title="Paste the token the connector printed when it started, in Settings.">Connector: check the token</span>';
   if(c.fake) return '<span style="color:var(--status-watch-text); font-weight:700;" title="A connector adapter is returning made-up data. Nothing here is real.">Connector: FAKE DATA</span>';
+  if(c.unproven) return '<span style="color:var(--status-watch-text); font-weight:700;" title="A real Gong or Gainsight adapter is set up but has not passed a live check (node connector/server.mjs --check). Treat its data as unverified.">Connector: UNPROVEN</span>';
+  if(c.dryRun) return '<span style="color:var(--status-watch-text); font-weight:700;" title="Gainsight is in dry-run: Send writes the requests to connector/dry-run.jsonl and sends nothing; items stay in the queue.">Connector: DRY RUN</span>';
   return '<span>Connector: connected</span>';
 }
 /* v49 retired: the Gainsight and Workiva Knowledge settings scaffolds stored keys
@@ -8363,7 +8374,7 @@ function pendingGainsightItems(){
 
 /* ============ STATE ============ */
 let ui = {
-  connector: {state: 'unset', fake: false, adapters: {}, checkedAt: null}, // C-2: unset | checking | online | offline | unauthorized — session-only
+  connector: {state: 'unset', fake: false, unproven: false, dryRun: false, adapters: {}, checkedAt: null}, // C-2: unset | checking | online | offline | unauthorized — session-only
   lastCallPullAt: null, // C-3: reserved, never set since R2 (M-1): the Gong pull always looks back 30 days; callId dedupe keeps added calls out
   callPullBusy: false,
   view: 'today', // today | accounts | copilot — top-level tabs
