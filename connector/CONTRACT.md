@@ -36,7 +36,7 @@ end in `.invalid`; call URLs are `https://fake.gong.invalid/call/<id>`; ids are 
 
 ### `GET /v1/health`
 
-No request body. Response (`schemas/health.json`); each adapter is `"fake"` or a provider name:
+No request body. Response (`schemas/health.json`); each adapter is `"fake"`, an AI provider name, or a real adapter name with a state suffix: `gong-rest (unproven)`, `gong-rest`, `gainsight-rest (unproven, dry-run)`, `gainsight-rest (unproven)`, `gainsight-rest (dry-run)`, `gainsight-rest`. `unproven` means no live `--check` has passed against the configured tenant (`connector/proof.json`). A real adapter is unproven until `--check`, whatever its tests say. `dry-run` means Gainsight push builds requests and sends nothing:
 
 ```json
 {"version": "1", "adapters": {"gong": "fake", "gainsight": "fake", "ai": "fake"}}
@@ -147,6 +147,14 @@ If the connector is unset or unreachable, the tracker behaves exactly as it does
 `version` is `"1"`. Within v1, changes are additive only: new optional response fields, new
 `fields` keys, new `task` values only with a version note here. A breaking change means `"2"`.
 v1 additions beyond the original design: the optional call `kind` field.
+Adapter state suffixes in `/v1/health` (connect-ready, 2026-10-02): string values only, no shape change.
+
+## Local state files (git-ignored)
+
+- `proof.json`: per adapter, `state`, `provenAt`, `tenant` and the observed `shapes`. Gainsight has separate
+  `read` and `write` proofs plus `unlock`. A proof is void when the configured tenant differs.
+- `CONNECTOR_STATE_DIR` overrides the folder (used by the tests).
+- `gainsight-tokens.json`, `sent-record.json` and `dry-run.jsonl` are described here by the task that writes each one.
 
 ## Before a real Gong adapter
 
