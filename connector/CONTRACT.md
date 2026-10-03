@@ -178,6 +178,22 @@ configured production tenant and whether a sandbox write proof exists, asks for 
 on a match records the unlock in `proof.json`. A mismatch, an empty `appUrl` or an unreadable `proof.json` prints a
 `FAIL unlock:` line, changes nothing and exits 1. Any other argument starts the server as before.
 
+`node connector/server.mjs --check` is read-only. It prints one line per step: `PASS <step>[: detail]`,
+`FAIL <step>: <what to fix>; who fixes it: <who>`, or `SKIP <step>: <why>`, and exits 1 if any step FAILs, else 0. With
+no real adapter configured (the example config) every line is `SKIP` and nothing is recorded. For `gong-rest` it
+checks config, auth and one 24-hour read; for `gainsight-rest`, config, OAuth token, a `Company` read and a probe of
+each mapped `fieldMap` / `gateFieldMap` field and `contactQuery` (unmapped ones are `SKIP`). A passing read records a
+read proof in `proof.json` (tied to the tenant), which is what drops `unproven` from `/v1/health`. Secrets are never
+printed.
+
+`node connector/server.mjs --check --write` adds a write self-test, **sandbox only** (a production tenant prints
+`FAIL gainsight write: --check --write runs only against a sandbox` and writes nothing). It sends through the normal
+push path, so the write gate applies. It creates one record per buildable kind (Pending items batch, Success Outcome
+Plan, At-Risk CTA), each labelled `[SBX] TEST-<date>` and left in the sandbox (D4). `Success Plan objective` is `SKIP`
+(blocker B1). The read-back is `SKIP gainsight write read-back: no read endpoint is confirmed (research Q10, Q12); open
+the sandbox and look for the [SBX] TEST records` (blocker B2): the write proof is recorded from each create reply, not
+from a read. All of this is tested on recorded-shape fixtures and is unproven against a real tenant until run.
+
 ## Write gate (gainsight-rest)
 
 A non-dry-run push (`dryRun: false`; dry-run is the default) is allowed only for a sandbox tenant

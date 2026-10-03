@@ -86,5 +86,7 @@ export function create(cfg = {}, deps = {}) {
   return {
     get name() { return healthName('gong-rest', { proven: isProven(loadProof(deps.stateDir), 'gong', 'read', tenantOf('gong', cfg)) }); },
     listCalls,
+    // --check: the smallest read, one page of the last 24 hours, returned as Gong sent it.
+    async probe() { return (await post(EXTENSIVE_PATH, { filter: windowFor(new Date(now().getTime() - DAY_MS).toISOString()), contentSelector: CONTENT_SELECTOR })) || {}; },
   };
 }

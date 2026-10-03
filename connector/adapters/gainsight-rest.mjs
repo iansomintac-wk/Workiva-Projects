@@ -229,5 +229,11 @@ export function create(cfg = {}, deps = {}) {
     get name() { return healthName('gainsight-rest', { proven: isProven(loadProof(dir), 'gainsight', 'read', tenantOf('gainsight', cfg)), dryRun: cfg.dryRun !== false }); },
     listAccounts,
     push,
+    async authProbe() { await tokens.accessToken(); },
+    // --check: one row with the given fields; throws if the tenant rejects a field.
+    async probeRead(select, object = 'Company') {
+      const resp = await api('POST', QUERY_PATH + encodeURIComponent(object), { select, limit: 1, offset: 0 });
+      return { shape: rowsShape(resp), rows: rowsOf(resp) };
+    },
   };
 }
