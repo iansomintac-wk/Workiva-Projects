@@ -13,12 +13,13 @@ with admin** means the research saw it only in search snippets or third-party pa
 ## 1. Gong (needs a Gong Tech admin)
 
 - Credential: an API access key and secret, or an OAuth app. Only a Tech admin can create either
-  (confirmed). Keys are created under Admin Center > Settings > API, with an optional expiry and an IP
-  allowlist (confirmed).
+  (confirmed). Keys are created under Admin Center > Settings > API, with an optional expiry and an
+  IP allowlist (not re-confirmed on 2026-10-02).
 - Transcripts: scope `api:calls:read:transcript`, for `POST /v2/calls/transcript` (confirmed).
-- Gong's AI call briefs: scope `api:calls:read:extensive`, for `POST /v2/calls/extensive`. **To confirm
-  with admin:** the research saw this only in search snippets.
-- Listing calls (`GET /v2/calls`) and the scope it needs: **to confirm with admin.**
+- Call details and Gong's AI call briefs: scope `api:calls:read:extensive`, for `POST /v2/calls/extensive`
+  (confirmed). Which key or field returns the brief text is **to confirm with admin** (first real reply).
+- Listing calls (`GET /v2/calls`, confirmed; both dates required). How scopes are chosen for an access
+  key: **to confirm with admin.**
 - My calls only: the key covers the whole company, and the research found no documented way to limit it
   to one user. The connector would filter by participant on my laptop. Whether Gong offers a narrower
   option is **to confirm with admin.**
@@ -32,14 +33,18 @@ with admin** means the research saw it only in search snippets or third-party pa
   create one, and an org can have at most 3 (confirmed). The app can do no more than the narrower of its
   own scope and my user permissions (confirmed). The other route is the org's single AccessKey, which
   never expires and is shared by the whole org (confirmed). I am asking for the OAuth app, not the
-  AccessKey.
+  AccessKey. Redirect URI to register on the OAuth app: `http://127.0.0.1:8787/oauth/callback`.
 - Reads: Company (confirmed, `POST /v1/data/objects/query/Company`) and Person (the API is listed; its
   endpoint is **to confirm with admin**).
 - Writes:
   - Timeline activities (confirmed, `POST v1/ant/es/activity`).
-  - Success Plans and their objectives (confirmed, `v2/successPlan` create and update).
-  - CTAs. The CTA API page exists, but the research saw the create and update endpoints only in search
-    snippets: **to confirm with admin.**
+  - Success Plans and their objectives (confirmed, `v2/successPlan` create and update). Adding or updating
+    one objective on an existing Success Plan: endpoint **to confirm with admin.** Until answered, those
+    queue items are not sent.
+  - CTAs (confirmed, `POST /v2/cockpit/cta` create and `PUT /v2/cockpit/cta` update).
+  - Whether an OAuth bearer token is accepted on the CTA API is **to confirm with admin.**
+  - Reading one Timeline activity or CTA back after a write: no endpoint is confirmed, so the sandbox
+    self-test says to look for its `[SBX] TEST` records in the sandbox. **To confirm with admin.**
 - A sandbox tenant, if we have one (**to confirm with admin**). Every write would run against the
   sandbox before production.
 
@@ -84,8 +89,11 @@ with admin** means the research saw it only in search snippets or third-party pa
 - The tracker side is built and tested against the fake connector: "Check for calls", "Refresh from
   Gainsight", "Send to Gainsight" and "Brief my day". If the connector is stopped, the tracker keeps
   working as it does today.
-- No real Gong or Gainsight adapter. Those get built only once credentials exist. An adapter that cannot
-  run against the real service would pass its tests without proving anything.
+- Real Gong (`gong-rest`) and Gainsight (`gainsight-rest`) adapters are built from the vendors' public docs
+  and tested on recorded-shape fixtures. Each is unproven until `--check` passes against our tenant, and the
+  tracker shows 'Connector: UNPROVEN' until then. Gainsight writes are dry-run by default and gated to the
+  sandbox first (or an explicit production unlock with a 1-item first send). Setup is
+  `node connector/server.mjs --setup`; see `connector/CONNECT-GONG.md` and `connector/CONNECT-GAINSIGHT.md`.
 
 ## The alternative: IT runs it
 
