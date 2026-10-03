@@ -86,6 +86,23 @@ export function create(cfg = {}, deps = {}) {
   return {
     get name() { return healthName('gong-rest', { proven: isProven(loadProof(deps.stateDir), 'gong', 'read', tenantOf('gong', cfg)) }); },
     listCalls,
+    // --measure-transcripts: characters per call for my calls in the window. Stores nothing, returns no text.
+    // CONFIRMED (Q3): no length field; length = sum of sentences[].text lengths over every monologue.
+    async transcriptLengths({ since } = {}) {
+      const ids = (await listCalls({ since })).map((c) => c.callId);
+      if (!ids.length) return { calls: 0, lengths: [] };
+      const lengths = new Map(ids.map((id) => [id, 0]));
+      await eachPage(TRANSCRIPT_PATH, { ...windowFor(since), callIds: ids }, {}, (page) => {
+        for (const t of page.callTranscripts || []) {
+          const id = String(t.callId);
+          if (!lengths.has(id)) continue;
+          let n = lengths.get(id);
+          for (const mono of t.transcript || []) for (const s of mono.sentences || []) n += String(s.text || '').length;
+          lengths.set(id, n);
+        }
+      });
+      return { calls: ids.length, lengths: [...lengths.values()] };
+    },
     // --check: the smallest read, one page of the last 24 hours, returned as Gong sent it.
     async probe() { return (await post(EXTENSIVE_PATH, { filter: windowFor(new Date(now().getTime() - DAY_MS).toISOString()), contentSelector: CONTENT_SELECTOR })) || {}; },
   };

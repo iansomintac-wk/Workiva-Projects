@@ -194,6 +194,10 @@ Plan, At-Risk CTA), each labelled `[SBX] TEST-<date>` and left in the sandbox (D
 the sandbox and look for the [SBX] TEST records` (blocker B2): the write proof is recorded from each create reply, not
 from a read. All of this is tested on recorded-shape fixtures and is unproven against a real tenant until run.
 
+`node connector/server.mjs --measure-transcripts [--book-bytes <n>] [--quota-bytes <n>]` is read-only and prints
+labelled transcript-size figures (see "Transcripts (I-2)"). With a `gong` adapter other than `gong-rest` it prints one
+`FAIL measure:` line and exits 1.
+
 `node connector/server.mjs --setup` asks one question at a time; Gong and Gainsight can each be skipped (answer `n`).
 Secret answers (Gong access key secret, OAuth client secret) are not echoed and never printed. It writes
 `CONNECTOR_CONFIG` (default `connector/config.json`, git-ignored; never point it at `config.example.json`); if that path does not exist yet, `--setup` starts from `config.example.json` and creates it (the plain server instead prints one `config file not found` line and exits 1). For
@@ -243,7 +247,11 @@ Adapter state suffixes in `/v1/health` (connect-ready, 2026-10-02): string value
 
 Ruled by Ian 2026-10-02 (I-2, kept by CR4): `gong-rest` sends `transcript: ""` for every call until Ian chooses between
 storing link + summary only and capping transcripts. The fake adapter still serves fixture transcripts. Real
-transcript sizes are not measured yet.
+transcript sizes are not measured yet. `node connector/server.mjs
+--measure-transcripts [--book-bytes <n>] [--quota-bytes <n>]` (read-only, stores nothing, prints no transcript text)
+prints Ian's call count for the last 30 days, the median, mean, p90 and max transcript characters, calls per week, and
+the months until the book fills. Each figure is labelled measured, derived or assumption. Tested on recorded-shape
+fixtures; unproven until `--check` has passed.
 
 ## Validator subset
 

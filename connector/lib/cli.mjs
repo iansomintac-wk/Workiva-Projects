@@ -3,7 +3,7 @@ import readline from 'node:readline';
 import { Writable } from 'node:stream';
 import { runUnlock } from './unlock.mjs';
 
-export const COMMANDS = ['--unlock-production', '--check', '--setup'];
+export const COMMANDS = ['--unlock-production', '--check', '--setup', '--measure-transcripts'];
 
 // ask(question, {secret}) -> answer. A secret answer is never echoed: in a terminal readline echoes into `sink`, which drops it.
 export function makeAsk(input = process.stdin, output = process.stdout) {
@@ -35,6 +35,11 @@ export async function runCli(argv, { config = {}, configPath, stateDir, ask, out
   if (argv.includes('--check')) {
     const { runCheck } = await import('./check.mjs');
     return runCheck({ config, stateDir, out, deps, write: argv.includes('--write') });
+  }
+  if (argv.includes('--measure-transcripts')) {
+    const num = (flag) => { const i = argv.indexOf(flag); return i >= 0 && argv[i + 1] !== undefined ? Number(argv[i + 1]) : undefined; };
+    const { runMeasure } = await import('./measure.mjs');
+    return runMeasure({ config, stateDir, deps, out, bookBytes: num('--book-bytes') ?? null, quotaBytes: num('--quota-bytes') ?? 5000000 });
   }
   out(`unknown command: ${argv.join(' ')}`);
   return 2;
