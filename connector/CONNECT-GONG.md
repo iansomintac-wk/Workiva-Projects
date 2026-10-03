@@ -35,7 +35,11 @@ The connector reads calls and nothing else. It never writes to Gong.
 | `gong config` | `gong.baseUrl`, `accessKey`, `accessKeySecret` or `myEmail` is missing | Ian: run `--setup` |
 | `gong auth` | Gong answered 401: the key or secret is wrong, or the key was deleted or expired | Gong admin: issue a new key |
 | `gong scope` | Gong answered 403: the key cannot read call details | Gong admin: add `api:calls:read:extensive` |
-| `gong read` | any other failure (wrong base URL, network, a reply the adapter cannot read) | Ian: check `gong.baseUrl` and the network |
+| `gong read` | any other failure (wrong base URL, network, or a reply that is not a Gong call list, such as an HTML page) | Ian: check `gong.baseUrl` and the network |
+
+A quiet day is not a failure: Gong documents a 404 "No calls found for the specified period" for an empty window
+(https://help.gong.io/apidocs/retrieve-detailed-call-data-by-various-filters-v2callsextensive-2.md, read 2026-10-03).
+`--check` shows `PASS gong read: 0 call(s)` for that reply and records the proof. Unproven until run on your tenant.
 
 3. Transcript sizes (optional, read-only, stores nothing): `node connector/server.mjs --measure-transcripts
    --book-bytes <n>`. `<n>` is the size of your tracker's saved book in bytes, which you read from the

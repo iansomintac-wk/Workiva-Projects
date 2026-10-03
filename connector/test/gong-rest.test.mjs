@@ -88,3 +88,21 @@ test('gong-rest: not configured refuses without calling fetch and names the miss
   await assert.rejects(adapter(s.fn, { accessKeySecret: '', myEmail: '' }).listCalls(), /missing gong\.accessKeySecret, gong\.myEmail.*--setup/);
   assert.equal(s.seen.length, 0);
 });
+
+// T-14 fix A (F1): Gong documents 404 "No calls found for the specified period" with {requestId, errors[]} on extensive.
+const NO_CALLS = { requestId: 'FAKE-REQ-1', errors: ['No calls found for the specified period'] };
+test('gong-rest F1: a documented no-calls 404 on extensive is an empty list, not an error', async () => {
+  const s = stub(() => json(404, NO_CALLS));
+  assert.deepEqual(await adapter(s.fn).listCalls(), []);
+  assert.equal(s.seen.length, 1);
+});
+test('gong-rest F1: any other 404 still fails (wrong base URL, non-JSON, other message)', async () => {
+  for (const reply of [() => new Response('<html>Not Found</html>', { status: 404 }), () => json(404, {}), () => json(404, { errors: ['no such route'] }), () => json(404, { requestId: 'x', errors: 'No calls found' })]) {
+    await assert.rejects(() => adapter(stub(reply).fn).listCalls(), (e) => e.status === 404);
+  }
+});
+test('gong-rest F1: probe flags the no-calls 404 as noCalls with an empty list', async () => {
+  const p = await adapter(stub(() => json(404, NO_CALLS)).fn).probe();
+  assert.equal(p.noCalls, true);
+  assert.deepEqual(p.calls, []);
+});

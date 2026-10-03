@@ -181,7 +181,11 @@ on a match records the unlock in `proof.json`. A mismatch, an empty `appUrl` or 
 `node connector/server.mjs --check` is read-only. It prints one line per step: `PASS <step>[: detail]`,
 `FAIL <step>: <what to fix>; who fixes it: <who>`, or `SKIP <step>: <why>`, and exits 1 if any step FAILs, else 0. With
 no real adapter configured (the example config) every line is `SKIP` and nothing is recorded. For `gong-rest` it
-checks config, auth and one 24-hour read; for `gainsight-rest`, config, OAuth token, a `Company` read and a probe of
+checks config, auth and one 24-hour read. Gong answers an empty window with a 404 "No calls found for the specified
+period" (CONFIRMED on its docs page, 2026-10-03); that exact reply (404, JSON body, `errors` naming it) is treated as an
+empty page everywhere (tracker pull, `--check`, `--measure-transcripts`), and `--check` then passes with `0 call(s)` and
+records the proof with `shapes.noCalls404`. Any other 404 still FAILs. A 2xx reply that is not a call list (`calls` not an
+array: HTML, `{}`) is `FAIL gong read: the reply is not a Gong call list` and records no proof. For `gainsight-rest`, config, OAuth token, a `Company` read and a probe of
 each mapped `fieldMap` / `gateFieldMap` field and `contactQuery` (unmapped ones are `SKIP`). A passing read records a
 read proof in `proof.json` (tied to the tenant), which is what drops `unproven` from `/v1/health`. Secrets are never
 printed.

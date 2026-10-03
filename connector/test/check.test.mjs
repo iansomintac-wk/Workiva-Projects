@@ -106,3 +106,27 @@ test('check --write on a sandbox creates one [SBX] TEST record per buildable kin
   assert.equal(w.environment, 'sandbox');
   assert.equal(w.tenant.appUrl, API);
 });
+
+// T-14 fix A (F1, F2)
+test('check F1: Gong 404 "No calls found" passes auth and read (0 calls) and records the proof with noCalls404', async () => {
+  const r = await run({ gong: GONG }, async () => json(404, { requestId: 'FAKE-REQ-1', errors: ['No calls found for the specified period'] }));
+  assert.equal(r.code, 0, r.lines.join('\n'));
+  assert.ok(r.lines.some((l) => l.startsWith('PASS gong auth')));
+  assert.ok(r.lines.some((l) => l.startsWith('PASS gong read: 0 call(s)')), r.lines.join('\n'));
+  assert.equal(loadProof(r.stateDir).gong.read.shapes.noCalls404, true);
+});
+test('check F1: any other Gong 404 is FAIL gong read, no proof', async () => {
+  const r = await run({ gong: GONG }, async () => json(404, { errors: ['no such route'] }));
+  assert.equal(r.code, 1);
+  assert.ok(r.lines.some((l) => l.startsWith('FAIL gong read')));
+  assert.equal(existsSync(join(r.stateDir, 'proof.json')), false);
+});
+test('check F2: a 200 that is not Gong-shaped (HTML, {}, a non-list) is FAIL gong read and records no proof', async () => {
+  for (const reply of [() => new Response('<html>portal</html>', { status: 200, headers: { 'Content-Type': 'text/html' } }), () => json(200, {}), () => json(200, { calls: 'x' })]) {
+    const r = await run({ gong: GONG }, async () => reply());
+    assert.equal(r.code, 1, r.lines.join('\n'));
+    assert.ok(r.lines.some((l) => l.startsWith('FAIL gong read: the reply is not a Gong call list')), r.lines.join('\n'));
+    assert.ok(r.lines.some((l) => l.includes('who fixes it: Ian')));
+    assert.equal(existsSync(join(r.stateDir, 'proof.json')), false);
+  }
+});

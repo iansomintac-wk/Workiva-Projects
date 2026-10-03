@@ -57,3 +57,13 @@ test('measure: asks for transcripts of exactly my calls in the window, stores no
   assert.deepEqual(readdirSync(r.stateDir), []);
   assert.equal(r.lines.at(-1), 'derived: months until the book fills: not computed (pass --book-bytes <n>)');
 });
+
+// T-14 fix A (F1)
+test('measure F1: a no-calls 404 prints "no calls in the window" and exits 0', async () => {
+  const lines = [];
+  const fn = async () => json(404, { requestId: 'FAKE-REQ-1', errors: ['No calls found for the specified period'] });
+  const code = await runMeasure({ config: { gong: GONG }, stateDir: mkdtempSync(join(tmpdir(), 'measure-')), now: () => NOW, out: (l) => lines.push(l),
+    deps: { fetchImpl: fn, sleep: async () => {}, now: () => NOW } });
+  assert.equal(code, 0, lines.join('\n'));
+  assert.ok(lines.some((l) => l.includes('nothing to project')), lines.join('\n'));
+});

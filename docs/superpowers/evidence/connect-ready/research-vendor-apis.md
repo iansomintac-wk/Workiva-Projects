@@ -38,6 +38,11 @@ CONFIRMED = read on the vendor's own page via fetch. UNCONFIRMED = search snippe
    - Scope: `api:calls:read:extensive` (plus `api:calls:read:media-url` only for media URLs).
    - Extensive can both list and enrich (metaData + parties + brief), which saves rate limit against GET /v2/calls.
    - The key name and type of the brief text inside `content` are not in the summary: read one real response.
+   - Q2b, 2026-10-03, CONFIRMED (fetched again for T-14 fix A, same URL): the page lists 404 "No calls found for the
+     specified period" with the `ErrorResponse` schema `{requestId, errors: [string]}` (also 400, 401, 429 with
+     `Retry-After`, 500). So an empty window is a 404, not a 200 with `calls: []`. The adapter treats only a 404 with a
+     JSON body whose `errors` array says "no calls found" as an empty page. Whether the live tenant sends exactly that
+     text is still unproven until `--check` runs against it.
 
 3. POST /v2/calls/transcript. CONFIRMED.
    Source: https://help.gong.io/apidocs/retrieve-transcripts-of-calls-by-date-or-callids-v2callstranscript-2.md

@@ -17,6 +17,15 @@ const DEFAULT_SINCE_DAYS = 30; // spec §3.3
 const DAY_MS = 86400000;
 const REQUIRED = ['baseUrl', 'accessKey', 'accessKeySecret', 'myEmail'];
 
+// CONFIRMED 2026-10-03 on https://help.gong.io/apidocs/retrieve-detailed-call-data-by-various-filters-v2callsextensive-2.md
+// (research Q2b): 404 "No calls found for the specified period", body {requestId, errors: [string]}. An empty window is
+// this 404, so it means "no calls". Recognised narrowly: status 404, JSON object, errors an array with that text.
+// Any other 404 (wrong base URL, HTML, other message) is still an error.
+export function isNoCalls404(e) {
+  const errs = e && e.status === 404 && e.body && typeof e.body === 'object' ? e.body.errors : null;
+  return Array.isArray(errs) && errs.some((m) => /no calls found/i.test(String(m)));
+}
+
 export function mapCall(c, me) {
   const parties = Array.isArray(c && c.parties) ? c.parties : [];
   if (!parties.some((p) => String(p.emailAddress || '').trim().toLowerCase() === me)) return null; // not Ian's call
@@ -54,8 +63,14 @@ export function create(cfg = {}, deps = {}) {
     if (missing.length) throw new Error(`gong-rest is not configured (missing gong.${missing.join(', gong.')}); run node connector/server.mjs --setup`);
     await pace();
     // CONFIRMED (Q4): Authorization: Basic base64(accessKey:accessKeySecret).
-    return requestJson({ fetchImpl: deps.fetchImpl || globalThis.fetch, method: 'POST', url: base + path,
-      headers: { Authorization: `Basic ${basic}`, 'Content-Type': 'application/json' }, body, secrets, host: 'Gong' });
+    try {
+      return await requestJson({ fetchImpl: deps.fetchImpl || globalThis.fetch, method: 'POST', url: base + path,
+        headers: { Authorization: `Basic ${basic}`, 'Content-Type': 'application/json' }, body, secrets, host: 'Gong' });
+    } catch (e) {
+      // An empty window is not an error (F1), but only the documented reply counts: extensive path, 404, JSON body.
+      if (path === EXTENSIVE_PATH && isNoCalls404(e)) return { calls: [], noCalls: true };
+      throw e;
+    }
   }
   async function eachPage(path, filter, extra, onPage) {
     let cursor;
@@ -104,6 +119,6 @@ export function create(cfg = {}, deps = {}) {
       return { calls: ids.length, lengths: [...lengths.values()] };
     },
     // --check: the smallest read, one page of the last 24 hours, returned as Gong sent it.
-    async probe() { return (await post(EXTENSIVE_PATH, { filter: windowFor(new Date(now().getTime() - DAY_MS).toISOString()), contentSelector: CONTENT_SELECTOR })) || {}; },
+    async probe() { return (await post(EXTENSIVE_PATH, { filter: windowFor(new Date(now().getTime() - DAY_MS).toISOString()), contentSelector: CONTENT_SELECTOR })); },
   };
 }

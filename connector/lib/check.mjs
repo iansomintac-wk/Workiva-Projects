@@ -30,10 +30,16 @@ async function checkGong(cfg, gong, o, stateDir, now) {
     if (e.status === 403) return o.fail('gong scope', 'the key cannot read call details (needs api:calls:read:extensive)', 'Gong admin');
     return o.fail('gong read', e.message, 'Ian (check gong.baseUrl and the network)');
   }
+  // F2: only a Gong-shaped reply proves anything: a call list, or Gong's documented "no calls" 404 (F1).
+  if (!page || typeof page !== 'object' || !Array.isArray(page.calls)) {
+    const keys = page && typeof page === 'object' ? Object.keys(page).join(', ') || 'none' : typeof page;
+    return o.fail('gong read', `the reply is not a Gong call list (top-level keys: ${keys})`, 'Ian (check gong.baseUrl)');
+  }
   o.pass('gong auth');
-  const c = (page.calls || [])[0] || {};
-  o.pass('gong read', `${(page.calls || []).length} call(s) in the last 24 hours`);
+  const c = page.calls[0] || {};
+  o.pass('gong read', `${page.calls.length} call(s) in the last 24 hours`);
   recordProof(stateDir, 'gong', 'read', { tenant: tenantOf('gong', cfg), now: now(), shapes: {
+    ...(page.noCalls ? { noCalls404: true } : {}),
     pageKeys: Object.keys(page), callKeys: Object.keys(c), metaDataKeys: Object.keys(c.metaData || {}),
     contentKeys: Object.keys(c.content || {}), briefType: typeof (c.content || {}).brief } });
   o.pass('gong proof recorded', 'health now reports gong-rest');
