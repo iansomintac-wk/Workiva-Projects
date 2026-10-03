@@ -22,7 +22,7 @@ adapter works with Gong or Gainsight.
 | When | Stop | State |
 |---|---|---|
 | 2026-10-02 | Plan approval (plan `3682d02`), with B1 and B2 for Ian | Ian, 2026-10-03: "approved, B1 a, B2 a — go" |
-| 2026-10-03 | Merge (T-1..T-14 done, A-1..A-9 measured) | waiting for Ian |
+| 2026-10-03 | Merge (T-1..T-14 done, A-1..A-9 measured) | Ian, 2026-10-03: "merge". Merged --no-ff as c6b7f2b; on master: connector 140/140, selfcheck 475/475, e2e 7/7 exit 0, demo exit 0 (lead) |
 
 ## Tasks
 
