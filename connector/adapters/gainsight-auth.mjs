@@ -1,7 +1,8 @@
 // Gainsight OAuth authorization code (connect-ready §3.3). Tested on a stubbed fetch only; unproven until `--check`.
 // Refresh tokens are single-use and rotate on every refresh, so the new one is written to disk BEFORE the new
-// access token is used, and only one refresh runs at a time. Node built-ins only.
-import { writeFileSync } from 'node:fs';
+// access token is used, and only one refresh runs at a time: in one process through `inflight`, across processes (the
+// running connector plus a --check in another terminal) through an exclusive lock file. Node built-ins only.
+import { writeFileSync, openSync, closeSync, statSync, unlinkSync } from 'node:fs';
 import { requestJson, pick } from '../lib/vendor-http.mjs';
 import { readJson, writeJsonAtomic } from '../lib/state.mjs';
 
@@ -10,6 +11,13 @@ export const AUTHORIZE_PATH = '/v1/authorize';                 // query clientId
 export const TOKEN_PATH = '/v1/users/oauth/access/token';      // body {clientId, clientSecret, grantType, redirectUri, code}: CONFIRMED (Q7)
 const ACCESS_TTL_MS = 3600 * 1000;                             // access token life 3600 s: CONFIRMED (Q7)
 const REFRESH_EARLY_MS = 120 * 1000;
+// Cross-process refresh lock (T-14 F4): `<tokensPath>.lock`, created with 'wx' so only one process holds it.
+// A holder keeps it for one token call, which vendor-http aborts after 30 s, plus one small atomic write. A lock
+// older than 60 s (twice that timeout) can only be left by a holder that died, so it is taken over. A waiter waits
+// 65 s (the stale age plus 5 s), so it outlasts any live holder and also reaches a crashed one's lock going stale.
+export const LOCK_STALE_MS = 60 * 1000;
+export const LOCK_WAIT_MS = 65 * 1000;
+const LOCK_POLL_MS = 200;
 // The token reply's field names and the callback's code parameter are NOT in the research: they are config
 // (gainsight.oauth.accessTokenField / refreshTokenField / callbackCodeParam), never guessed.
 
@@ -44,17 +52,43 @@ export async function exchangeCode({ cfg, code, redirectUri, fetchImpl, tokensPa
   return raw;
 }
 
-export function createTokenSource({ cfg, fetchImpl, tokensPath, writeFile = writeFileSync, now = () => new Date() }) {
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Takes `<tokensPath>.lock` or throws after waitMs. Returns the release function.
+async function takeLock(lockPath, { waitMs, staleMs, pollMs }) {
+  const until = Date.now() + waitMs;
+  for (;;) {
+    try { closeSync(openSync(lockPath, 'wx')); return () => { try { unlinkSync(lockPath); } catch { /* already gone */ } }; }
+    catch (e) { if (e.code !== 'EEXIST') throw new Error(`Could not create the Gainsight refresh lock ${lockPath} (${e.code || e.message})`); }
+    let age = null;
+    try { age = Date.now() - statSync(lockPath).mtimeMs; } catch { continue; } // released between the two calls: retry now
+    if (age > staleMs) { try { unlinkSync(lockPath); } catch { /* another waiter took it over first */ } continue; }
+    if (Date.now() >= until) {
+      throw new Error(`Another connector process is refreshing the Gainsight token: ${lockPath} was held for more than ${Math.round(waitMs / 1000)} s. Retry in a minute; if no other connector or --check is running, delete ${lockPath}.`);
+    }
+    await delay(pollMs);
+  }
+}
+
+export function createTokenSource({ cfg, fetchImpl, tokensPath, writeFile = writeFileSync, now = () => new Date(),
+  lockWaitMs = LOCK_WAIT_MS, lockStaleMs = LOCK_STALE_MS, lockPollMs = LOCK_POLL_MS }) {
   let inflight = null;
+  const expired = (s) => now().getTime() - Date.parse(s.obtainedAt) > ACCESS_TTL_MS - REFRESH_EARLY_MS;
   async function refresh(stored) {
-    const o = cfg.oauth || {};
-    const rt = pick(stored.raw, o.refreshTokenField);
-    if (!rt) throw new Error(`The saved Gainsight token reply has no "${o.refreshTokenField}"; run node connector/server.mjs --setup again`);
-    // UNCONFIRMED (search snippet, research Q7): refresh body {grantType:"refresh_token", refreshToken}.
-    const raw = await tokenCall({ cfg, fetchImpl, secrets: [String(rt)], body: { clientId: o.clientId, clientSecret: o.clientSecret, grantType: 'refresh_token', refreshToken: rt } });
-    const next = { raw, obtainedAt: now().toISOString() };
-    persist(tokensPath, next, writeFile); // before the new access token is used (CONFIRMED rotation, Q7)
-    return next;
+    const release = await takeLock(`${tokensPath}.lock`, { waitMs: lockWaitMs, staleMs: lockStaleMs, pollMs: lockPollMs });
+    try {
+      // Another process may have rotated the token while this one waited: its refresh token is the one on disk now.
+      const onDisk = readJson(tokensPath, null);
+      if (onDisk && onDisk.raw && (onDisk.obtainedAt !== stored.obtainedAt || !expired(onDisk))) return onDisk;
+      const o = cfg.oauth || {};
+      const rt = pick((onDisk && onDisk.raw ? onDisk : stored).raw, o.refreshTokenField);
+      if (!rt) throw new Error(`The saved Gainsight token reply has no "${o.refreshTokenField}"; run node connector/server.mjs --setup again`);
+      // UNCONFIRMED (search snippet, research Q7): refresh body {grantType:"refresh_token", refreshToken}.
+      const raw = await tokenCall({ cfg, fetchImpl, secrets: [String(rt)], body: { clientId: o.clientId, clientSecret: o.clientSecret, grantType: 'refresh_token', refreshToken: rt } });
+      const next = { raw, obtainedAt: now().toISOString() };
+      persist(tokensPath, next, writeFile); // before the new access token is used (CONFIRMED rotation, Q7)
+      return next;
+    } finally { release(); }
   }
   return {
     async accessToken() {
@@ -65,7 +99,7 @@ export function createTokenSource({ cfg, fetchImpl, tokensPath, writeFile = writ
         throw new Error(`Set gainsight.oauth.accessTokenField and refreshTokenField in config.json. The saved Gainsight token reply has these field names: ${Object.keys(stored.raw).join(', ')}`);
       }
       let cur = stored;
-      if (now().getTime() - Date.parse(stored.obtainedAt) > ACCESS_TTL_MS - REFRESH_EARLY_MS) {
+      if (expired(stored)) {
         // No await before this line, so concurrent callers share one refresh.
         inflight = inflight || refresh(stored).finally(() => { inflight = null; });
         cur = await inflight;

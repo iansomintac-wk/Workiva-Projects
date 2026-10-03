@@ -115,8 +115,10 @@ one result per item, `externalId` and `error` `null` when not applicable.
   item answers `failed` with `dry run: not sent; see connector/dry-run.jsonl`.
 - Saved send record: `sent-record.json` keeps item id to `{externalId, kind, tenant, at}`. A repeated id for the same
   tenant answers `sent` with no call, and a `failed` id is not stored. A duplicate-ExternalId rejection
-  (`GS_TL_10_0107`) counts as already sent. A Timeline reply that lists the item in `data.failures`, or has no
-  `activityId` for it in `data.success`, answers `failed` and is not stored. Crash window: the record is written after
+  (`GS_TL_10_0107`) counts as already sent, whether it comes as an HTTP error or as an HTTP 200 whose
+  `data.failures` entry for the item holds exactly that code (where the code sits is UNCONFIRMED). Any other Timeline
+  reply that lists the item in `data.failures`, or has no `activityId` for it in `data.success`, answers `failed`
+  and is not stored. Crash window: the record is written after
   the vendor reply, so a crash between the two leaves no record. A Timeline repeat is then recovered by the duplicate
   error code; a CTA repeat may double-send (referenceId duplicate behaviour is UNCONFIRMED, research Q14 and gap 5).
   A CTA sent with no readable id (`gainsight.cta.idPath` unset) is recorded with `externalId: null`.
@@ -241,7 +243,10 @@ Adapter state suffixes in `/v1/health` (connect-ready, 2026-10-02): string value
   `read` and `write` proofs plus `unlock`. A proof is void when the configured tenant differs.
 - `CONNECTOR_STATE_DIR` overrides the folder (used by the tests).
 - `gainsight-tokens.json`: `{raw, obtainedAt}`. Refresh tokens are single-use. The new one is written before the new
-  access token is used, and a failed write stops the request.
+  access token is used, and a failed write stops the request. A refresh holds `gainsight-tokens.json.lock`
+  (exclusive create) so two processes never spend the same refresh token; after taking it the file is re-read and a
+  token another process already rotated is used without a refresh. A waiter gives up after 65 s with an error naming
+  the lock; a lock older than 60 s (twice the 30 s call timeout) is a dead holder's and is taken over.
 - `sent-record.json`: `{ "<itemId>": {externalId, kind, tenant, at} }`, written atomically after each real send. A repeated
   id for the same tenant answers `sent` with no call; a `failed` id is not stored.
 - `dry-run.jsonl`: one JSON line per item that dry-run would have sent (`at`, `itemId`, `kind`, `method`, `url`, `headers`

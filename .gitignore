@@ -65,3 +65,4 @@ connector/gainsight-tokens.json
 connector/sent-record.json
 connector/dry-run.jsonl
 connector/*.tmp
+connector/*.lock

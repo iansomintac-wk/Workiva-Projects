@@ -52,6 +52,11 @@ export const CTA_PATH = '/v2/cockpit/cta';
 // CONFIRMED (research-write-safety.md, Timeline page): a repeated ExternalId is rejected with GS_TL_10_0107.
 // Where the code sits in the reply is UNCONFIRMED, so the whole reply body is searched.
 const DUPLICATE_EXTERNAL_ID = 'GS_TL_10_0107';
+// T-14 F3: true when some string value inside a data.failures entry is exactly the duplicate code. That a duplicate
+// can arrive as an HTTP 200 with data.failures[id] is UNCONFIRMED (research Q10 shows only the success shape), so the
+// match is kept to the exact code string; any other failure entry stays failed and unrecorded (T-8).
+const hasExactCode = (v) => (typeof v === 'string' ? v === DUPLICATE_EXTERNAL_ID
+  : Array.isArray(v) ? v.some(hasExactCode) : v && typeof v === 'object' ? Object.values(v).some(hasExactCode) : false);
 export const DRY_RUN_ERROR = 'dry run: not sent; see connector/dry-run.jsonl';
 export const SUCCESS_PLAN_BLOCKED = 'not sent: Success Plan objectives are not built yet (adding an objective to an existing Success Plan is unconfirmed in Gainsight\'s docs); update it by hand in Gainsight';
 export const TIMELINE_KINDS = new Set(['Pending items batch', 'Success Outcome Plan']); // D1
@@ -95,6 +100,7 @@ export function buildRequest(it, cfg, now) {
       idFrom: (resp) => {
         const d = (resp && resp.data) || {};
         const bad = d.failures && d.failures[it.id];
+        if (bad && hasExactCode(bad)) return it.id; // already in Gainsight under this ExternalId: sent (T-14 F3)
         if (bad) throw new Error(`Gainsight rejected the item: ${JSON.stringify(bad).slice(0, 500)}`);
         const s = d.success && d.success[it.id];
         if (!(s && s[0] && s[0].activityId)) throw new Error('Gainsight reply has no activityId for this item (not in data.success)');

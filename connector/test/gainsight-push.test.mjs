@@ -113,6 +113,26 @@ test('push: HTTP 200 with the item in data.failures is failed (vendor text, scru
   assert.equal(s.seen.length, 2); // retried for real
 });
 
+test('push: HTTP 200 with the item in data.failures carrying exactly GS_TL_10_0107 is sent, recorded, and a repeat makes no call (T-14 F3)', async () => {
+  const s = stub(() => json(200, { result: true, data: { success: {}, failures: { 'q-timeline-1': [{ errorCode: 'GS_TL_10_0107', errorDesc: 'duplicate' }] } } }));
+  const { a, stateDir } = adapter(s);
+  const [r] = await a.push([TL]);
+  assert.deepEqual(r, { id: 'q-timeline-1', status: 'sent', externalId: 'q-timeline-1', error: null });
+  assert.equal(JSON.parse(readFileSync(join(stateDir, 'sent-record.json'), 'utf8'))['q-timeline-1'].externalId, 'q-timeline-1');
+  await a.push([TL]);
+  assert.equal(s.seen.length, 1);
+});
+
+test('push: HTTP 200 data.failures with a code that only contains GS_TL_10_0107, or names it in text, stays failed and NOT recorded (T-14 F3)', async () => {
+  for (const entry of [{ errorCode: 'GS_TL_10_01070' }, { errorCode: 'GS_TL_10_0001', errorDesc: 'see GS_TL_10_0107' }]) {
+    const s = stub(() => json(200, { result: true, data: { success: {}, failures: { 'q-timeline-1': [entry] } } }));
+    const { a, stateDir } = adapter(s);
+    const [r] = await a.push([TL]);
+    assert.equal(r.status, 'failed', JSON.stringify(entry));
+    assert.equal(existsSync(join(stateDir, 'sent-record.json')), false);
+  }
+});
+
 test('push: HTTP 200 whose data.success lacks the item id is failed and NOT recorded', async () => {
   const s = stub(() => json(200, { result: true, data: { success: { 'some-other-id': [{ activityId: 'X' }] }, failures: {} } }));
   const { a, stateDir } = adapter(s);

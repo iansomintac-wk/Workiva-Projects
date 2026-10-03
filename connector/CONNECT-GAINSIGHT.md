@@ -74,11 +74,17 @@ Sources are the vendor's own pages as read in `docs/superpowers/evidence/connect
 
 - OAuth authorize is `<application-url>/v1/authorize` and the code exchange is `POST /v1/users/oauth/access/token`. CONFIRMED: https://support.gainsight.com/gainsight_nxt/01Onboarding_and_Implementation/Onboarding_for_Gainsight_NXT/Login_and_Permissions/OAuth_for_Gainsight_APIs
 - Access token lasts 3600 s; the refresh token lasts 365 days, is single-use and rotates on every refresh. CONFIRMED: https://support.gainsight.com/gainsight_nxt/01Onboarding_and_Implementation/Onboarding_for_Gainsight_NXT/Login_and_Permissions/OAuth_for_Gainsight_APIs
+  Because of that, a refresh takes `connector/gainsight-tokens.json.lock` first, so the running connector and a
+  `--check` in another terminal never both spend one refresh token. If a run stops with "Another connector process is
+  refreshing the Gainsight token", retry in a minute; delete the lock file only if no other connector or `--check` is
+  running (a lock older than 60 s is taken over on its own).
 - The refresh request body (`grantType`, `refreshToken`): to confirm with admin.
 - Company query is `POST /v1/data/objects/query/Company`, at most 5,000 records per call. CONFIRMED: https://support.gainsight.com/gainsight_nxt/API_and_Developer_Docs/Company_and_Relationship_API/Company_API_Documentation
 - Whether the query reply is `data` or `data.records`: to confirm with admin.
 - Timeline activity create is `POST v1/ant/es/activity`, with `ExternalId` as the idempotency key. CONFIRMED: https://support.gainsight.com/Gainsight_NXT/API_and_Developer_Docs/Timeline_API/Timeline_APIs
 - A repeated `ExternalId` in a later request is rejected with `GS_TL_10_0107`. CONFIRMED: https://support.gainsight.com/Gainsight_NXT/API_and_Developer_Docs/Timeline_API/Timeline_APIs
+  Whether that code comes as an HTTP error or inside a 200's `data.failures`: to confirm with admin. The connector
+  treats either as already sent, matching the exact code only.
 - CTA create is `POST /v2/cockpit/cta` and update is `PUT /v2/cockpit/cta`. CONFIRMED: https://support.gainsight.com/gainsight_nxt/API_and_Developer_Docs/Cockpit_API/Call_To_Action_(CTA)_API_Documentation
 - Success Plan create with objectives is `POST v2/successPlan?withObjectives=true`. CONFIRMED: https://support.gainsight.com/gainsight_nxt/Success_Plans/Success_Plan_API_Documentation/Success_Plan_APIs
 - Adding or updating one objective on an existing Success Plan (B1): endpoint to confirm with admin.

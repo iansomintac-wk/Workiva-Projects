@@ -1,7 +1,7 @@
 // connect-ready T-6: Gainsight OAuth on a stubbed fetch. Single-use refresh tokens are persisted before use. Node built-ins only.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, existsSync, utimesSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { installNetGuard } from '../lib/test-net-guard.mjs';
@@ -98,6 +98,50 @@ test('oauth: two requests at once share ONE refresh (the refresh token is single
   const src = createTokenSource({ cfg: CFG, fetchImpl: async () => { refreshes++; return json(200, { FAKE_at: 'FAKE-ACCESS-2', FAKE_rt: 'FAKE-REFRESH-2' }); }, tokensPath: path, now: () => T0 });
   assert.deepEqual(await Promise.all([src.accessToken(), src.accessToken()]), ['FAKE-ACCESS-2', 'FAKE-ACCESS-2']);
   assert.equal(refreshes, 1);
+});
+
+// T-14 F4: the refresh lock spans processes. Two token sources on one tokensPath stand in for two processes.
+const EXPIRED = () => tokensFile({ raw: { FAKE_at: 'FAKE-ACCESS-1', FAKE_rt: 'FAKE-REFRESH-1' }, obtainedAt: old(2 * 3600e3) });
+const slowRefresh = (count) => async () => { count.n++; await new Promise((r) => setTimeout(r, 50)); return json(200, { FAKE_at: 'FAKE-ACCESS-2', FAKE_rt: 'FAKE-REFRESH-2' }); };
+
+test('oauth lock: two token sources (two processes) on one tokens file make exactly ONE refresh call; no lock is left', async () => {
+  const path = EXPIRED();
+  const count = { n: 0 };
+  const a = createTokenSource({ cfg: CFG, fetchImpl: slowRefresh(count), tokensPath: path, now: () => T0, lockPollMs: 10 });
+  const b = createTokenSource({ cfg: CFG, fetchImpl: slowRefresh(count), tokensPath: path, now: () => T0, lockPollMs: 10 });
+  assert.deepEqual(await Promise.all([a.accessToken(), b.accessToken()]), ['FAKE-ACCESS-2', 'FAKE-ACCESS-2']);
+  assert.equal(count.n, 1);
+  assert.equal(existsSync(`${path}.lock`), false);
+});
+
+test('oauth lock: a lock held past the wait fails with a clear message, makes no token call and leaves the other holder\'s lock', async () => {
+  const path = EXPIRED();
+  writeFileSync(`${path}.lock`, 'other');
+  const count = { n: 0 };
+  const src = createTokenSource({ cfg: CFG, fetchImpl: slowRefresh(count), tokensPath: path, now: () => T0, lockWaitMs: 150, lockPollMs: 10 });
+  await assert.rejects(src.accessToken(), (e) => e.message.includes(`${path}.lock`) && /another connector process/i.test(e.message));
+  assert.equal(count.n, 0);
+  assert.equal(existsSync(`${path}.lock`), true);
+  unlinkSync(`${path}.lock`); // the test's own fixture, not left in the temp dir
+});
+
+test('oauth lock: a stale lock (older than 60 s, a crashed holder) is taken over: one refresh, lock removed', async () => {
+  const path = EXPIRED();
+  writeFileSync(`${path}.lock`, 'crashed');
+  const past = new Date(Date.now() - 61e3);
+  utimesSync(`${path}.lock`, past, past);
+  const count = { n: 0 };
+  const src = createTokenSource({ cfg: CFG, fetchImpl: slowRefresh(count), tokensPath: path, now: () => T0, lockWaitMs: 150, lockPollMs: 10 });
+  assert.equal(await src.accessToken(), 'FAKE-ACCESS-2');
+  assert.equal(count.n, 1);
+  assert.equal(existsSync(`${path}.lock`), false);
+});
+
+test('oauth lock: a failed refresh still releases the lock', async () => {
+  const path = EXPIRED();
+  const src = createTokenSource({ cfg: CFG, fetchImpl: async () => json(400, { error: 'no' }), tokensPath: path, now: () => T0 });
+  await assert.rejects(src.accessToken());
+  assert.equal(existsSync(`${path}.lock`), false);
 });
 
 test('oauth: unset token field names list the saved reply KEYS, never values; token errors are scrubbed', async () => {
