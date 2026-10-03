@@ -26,8 +26,8 @@ async function checkGong(cfg, gong, o, stateDir, now) {
   o.pass('gong config');
   let page;
   try { page = await gong.probe(); } catch (e) {
-    if (e.status === 401) return o.fail('gong auth', 'Gong rejected the access key or secret; issue a new key (Admin center > Settings > Ecosystem > API)', 'Gong admin');
-    if (e.status === 403) return o.fail('gong scope', 'the key cannot read call details (needs api:calls:read:extensive)', 'Gong admin');
+    if (e.status === 401) return o.fail('gong auth', 'Gong rejected the access key or secret; issue a new key (on the Gong API page)', 'Gong admin');
+    if (e.status === 403) return o.fail('gong scope', 'the key cannot read call details (may need api:calls:read:extensive, to confirm)', 'Gong admin');
     return o.fail('gong read', e.message, 'Ian (check gong.baseUrl and the network)');
   }
   // F2: only a Gong-shaped reply proves anything: a call list, or Gong's documented "no calls" 404 (F1).

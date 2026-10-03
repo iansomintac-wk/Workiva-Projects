@@ -42,7 +42,9 @@ You need to be a Gainsight Super Admin. This is the longer of the two asks; abou
    - "answered with these field names": set `gainsight.oauth.accessTokenField` and `refreshTokenField` to the two
      that hold the tokens, then run `--check`.
    Also fill the empty `fieldMap`, `gateFieldMap`, `contactQuery`, `timeline.typeName` and `cta` keys in
-   `config.json` with the names from the admin (see `connector/config.example.json`).
+   `config.json` with the names from the admin (see `connector/config.example.json`), and set
+   `gainsight.authorEmail` to a Gainsight user's email (used for the Timeline Author and the CTA owner;
+   `--setup` does not ask for it, and every Timeline and CTA send needs it).
 2. Run `node connector/server.mjs --check` (read-only). A pass records a read proof in `proof.json`.
 
 | FAIL line | Meaning | Who fixes it |

@@ -47,6 +47,31 @@ test('docs: Gainsight runbook carries the B1 admin question and the B2 read-back
   assert.ok(t.includes('[SBX] TEST'));
 });
 
+// T-14 fix C (F5): the Basic-key scope and the key-page menu path are not confirmed (research-vendor-apis.md:61-67).
+test('docs F5: the Gong runbook never gives the Basic-key scope or the Ecosystem menu path without "to confirm"; check.mjs does not state them as fact', () => {
+  const t = read(RUNBOOKS[0]);
+  const step1 = t.split('\n').slice(t.split('\n').findIndex((l) => /^1\. Create an API access key/.test(l))).slice(0, 4).join(' ');
+  assert.match(step1, /Ecosystem[^.]*to confirm|to confirm[^.]*Ecosystem/, 'step 1 path');
+  assert.match(step1, /api:calls:read:extensive[^.]*to confirm|to confirm[^.]*api:calls:read:extensive/, 'step 1 scope');
+  for (const l of t.split('\n')) {
+    if (/## Vendor facts/.test(l)) break;
+    if (/api:calls:read:extensive|Ecosystem/.test(l) && !/^1\.|^\s+`api:calls|^\s+to confirm/.test(l)) assert.ok(/to confirm/.test(l), `unmarked: ${l}`);
+  }
+  const c = read(join(root, 'lib', 'check.mjs'));
+  for (const l of c.split('\n').filter((x) => /api:calls:read:extensive|Ecosystem/.test(x))) assert.ok(/to confirm/.test(l), `check.mjs states as fact: ${l}`);
+});
+
+// T-14 fix C (F6): every key the Gainsight write paths need() must be named in the runbook.
+test('docs F6: CONNECT-GAINSIGHT.md names authorEmail and every need() key of the write paths', () => {
+  const t = read(RUNBOOKS[1]);
+  const src = read(join(root, 'adapters', 'gainsight-rest.mjs'));
+  const keys = new Set();
+  for (const m of src.matchAll(/need\(cfg, \[([^\]]*)\]/g)) for (const k of m[1].matchAll(/'([^']+)'/g)) keys.add(k[1]);
+  assert.ok(keys.has('authorEmail'));
+  // The runbook names a dotted key by its top-level block (`cta`) or whole (`timeline.typeName`).
+  for (const k of keys) assert.ok(t.includes(k) || t.includes('`' + k.split('.')[0] + '`'), `CONNECT-GAINSIGHT.md does not name ${k}`);
+});
+
 test('docs: no doc claims an adapter works with Gong or Gainsight; CONTRACT says unproven until --check and has no stale I-2 heading', () => {
   const files = [...RUNBOOKS, ASK, join(root, 'CONTRACT.md')];
   for (const f of files) assert.ok(!/works with (Gong|Gainsight)|(Gong|Gainsight)[- ]rest works|is working with (Gong|Gainsight)/i.test(read(f)), f);

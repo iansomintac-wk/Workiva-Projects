@@ -9,8 +9,11 @@ until Ian chooses what to store (see `connector/CONTRACT.md`, "Transcripts (I-2)
 
 You need to be a Gong Tech admin. About 10 minutes.
 
-1. Create an API access key: Admin center > Settings > Ecosystem > API. Give it the scope
-   `api:calls:read:extensive`. Add `api:calls:read:transcript` only if Ian will run `--measure-transcripts`.
+1. Create an API access key. Gong's docs point to https://app.gong.io/company/api-authentication as the page with the
+   base URL and key (CONFIRMED as the base-URL page; that keys are created there: to confirm with admin). The OAuth
+   app lives at Admin center > Settings > Ecosystem > API (CONFIRMED for OAuth; whether the key page is there too: to confirm with admin).
+   If the key page offers scopes, include `api:calls:read:extensive` (scope model for Basic keys: to confirm with admin).
+   Add `api:calls:read:transcript` only if Ian will run `--measure-transcripts` (same: to confirm with admin).
 2. Read these four things out to Ian, in person or on a call. Do not send the secret by email or chat:
    - the API base URL for our company (it is different for each customer),
    - the access key,
@@ -34,7 +37,7 @@ The connector reads calls and nothing else. It never writes to Gong.
 |---|---|---|
 | `gong config` | `gong.baseUrl`, `accessKey`, `accessKeySecret` or `myEmail` is missing | Ian: run `--setup` |
 | `gong auth` | Gong answered 401: the key or secret is wrong, or the key was deleted or expired | Gong admin: issue a new key |
-| `gong scope` | Gong answered 403: the key cannot read call details | Gong admin: add `api:calls:read:extensive` |
+| `gong scope` | Gong answered 403: the key cannot read call details | Gong admin: check the key's scopes (may need `api:calls:read:extensive`, to confirm with admin) |
 | `gong read` | any other failure (wrong base URL, network, or a reply that is not a Gong call list, such as an HTML page) | Ian: check `gong.baseUrl` and the network |
 
 A quiet day is not a failure: Gong documents a 404 "No calls found for the specified period" for an empty window
