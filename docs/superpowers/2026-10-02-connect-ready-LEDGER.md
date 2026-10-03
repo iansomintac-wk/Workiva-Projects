@@ -28,7 +28,7 @@ adapter works with Gong or Gainsight.
 | # | Task | Model | State | Commit | Check command | Measured result (lead re-run) | Deviation from spec (reason) |
 |---|---|---|---|---|---|---|---|
 | T-1 | e2e cleanup reported, not thrown | Sonnet | done | 29fa2ad | `node tools/connector-e2e.mjs` exit 0, two runs in a row | connector 46/46 (+3 e2e-cleanup); e2e 4 runs in a row: exit 0 ×4, 7/7 ×4, no cleanup warnings, no new leftover profiles (lead, 2026-10-03). Checker PASS | rmSync import dropped (unused). Low: harness wiring (removeDir → exit code) proven only by the e2e exit, no unit test |
-| T-2 | Proof store, health suffixes, registry, config.example, .gitignore | Sonnet | pending | — | per plan | — | — |
+| T-2 | Proof store, health suffixes, registry, config.example, .gitignore | Sonnet | done | 667c6e2 | `node --test connector/test/*.test.mjs`; demo | connector 52/52 (+6 proof.test); demo exit 0; no forbidden files tracked (lead, 2026-10-03). Checker PASS | server.test t14 unknown-adapter name gong-rest → gong-live (gong-rest now registered; assertion unchanged) |
 | T-3 | Tracker status line D2 (UNPROVEN / DRY RUN) | Sonnet | pending | — | selfcheck `--expect 475` (plan estimate: +c2j, c2k) | — | Plan gap 1: parses trailing flags, not the `(unproven)` substring |
 | T-4 | Recorded-shape vendor fixtures | Haiku | pending | — | per plan | — | — |
 | T-5 | `gong-rest` listCalls | Sonnet | pending | — | per plan | — | Plan gaps 4, 7: accountRef always null; CONTRACT.md Gong section moves here from T-13 |
