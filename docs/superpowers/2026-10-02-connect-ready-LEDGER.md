@@ -22,6 +22,7 @@ adapter works with Gong or Gainsight.
 | When | Stop | State |
 |---|---|---|
 | 2026-10-02 | Plan approval (plan `3682d02`), with B1 and B2 for Ian | Ian, 2026-10-03: "approved, B1 a, B2 a — go" |
+| 2026-10-03 | Merge (T-1..T-14 done, A-1..A-9 measured) | waiting for Ian |
 
 ## Tasks
 
@@ -40,7 +41,7 @@ adapter works with Gong or Gainsight.
 | T-11 | `--setup` | Sonnet | done | 6a6982e, fix 2f137b9 | `node --test connector/test/*.test.mjs`; `--setup` smoke on piped stdin (default path and CONNECTOR_CONFIG); `--unlock-production` on EOF | connector 115 → 118/118 (+7 setup, +3 fix); default-path `--setup` exit 0, wrote git-ignored config.json (lead deleted it), --check 2 SKIP; override path: exit 1 ENOENT before fix, exit 0 + file created after; missing-config plain server: one line, exit 1; demo exit 0 (lead, 2026-10-03). Checkers PASS ×2 | Builder fixed the plan's `makeAsk` (lost piped lines, hung exit 13) with a line queue; EOF answers '' — checker confirmed '' can never write an unlock (closes T-9 EOF note). Lead's smoke found the CONNECTOR_CONFIG crash; fix also adds a FAIL line for callback port in use. Low (T-14): no test for config.json mode 0o600; no test that config.example.json is untouched; empty secret answers accepted (the following --check fails on them) |
 | T-12 | `--measure-transcripts` | Sonnet | done | 348ecac | `node --test connector/test/*.test.mjs`; demo; `--measure-transcripts` with no config | connector 121/121 (+3 measure; fixture 7101-7110 → median 55, p90 90, max 100); demo exit 0; no-config: one FAIL line → `--setup`, exit 1, nothing written (lead, 2026-10-03). Checker PASS | Plan count table (107) stale; measured 121. For T-14 (low): months-to-fill prints Infinity/negative/NaN on zero growth, book > quota or a bad flag; all callIds in one request (no cap in research); no tests for 403 / wrong adapter / zero calls |
 | T-13 | Runbooks, CONTRACT.md, admin ask | Sonnet | done | 6f67683 | `node --test connector/test/*.test.mjs`; spec grep for "built only once credentials exist" / "works with Gong|Gainsight" | connector 125/125 (+4 docs); selfcheck 475/475; demo exit 0; e2e 7/7 exit 0; grep: hits only inside docs.test.mjs's own assertions (lead, 2026-10-03). Checker PASS (12 CONFIRMED facts spot-checked against research; every runbook command/FAIL line exists in code) | New connector/CONNECT-GONG.md, CONNECT-GAINSIGHT.md; admin ask gains B1 question + B2 note. No stale live counts found (current: connector 125, self-checks 475). CONTRACT.md Gong section already rewritten in T-5. For T-14 (low): CONNECT-GONG.md asks for scope `api:calls:read:extensive` on a Basic key though Basic-key scopes are unconfirmed; "Admin center > Settings > Ecosystem > API" path is from the OAuth-app page, not confirmed for keys |
-| T-14 | Final whole-branch review | top | pending | — | — | — | — |
+| T-14 | Final whole-branch review | top (fixes: Sonnet A, top B, Sonnet C) | done | review 6839eb1; fixes 95e11c7 (A: F1, F2), 47de4a4 (B: F3, F4), de5b9aa (C: F5, F6) | `node --test connector/test/*.test.mjs` | Review: 0 blocker, 6 should-fix, 16 low, 1 refuted (`evidence/connect-ready/T14-review.md`). All 6 should-fix fixed; connector 125 → 132 → 138 → 140/140 (lead re-runs; recount 140 by three methods); each fix batch Checker PASS | F1 vendor fact (Gong extensive 404 "No calls found for the specified period") CONFIRMED from Gong's docs page 2026-10-03, recorded as research Q2b; unproven on a live tenant. F4 lock: stale after 60 s, waiter gives up at 65 s. Listed, not fixed (low): F7-F11, F13-F23 in the review, plus T-14 checker lows: stale-lock takeover race (crashed holder + two waiters), lock release on persist error untested, mixed-code duplicate entry counts as sent; F24 (lead): `connector/lib/measure.mjs:24` 403 text states the transcript scope as fact (same pattern as F5). F12 refuted |
 
 Plan estimate for connector tests after T-13: 110 (from 43). This is an estimate; each task row records the measured count.
 
@@ -48,17 +49,31 @@ Plan estimate for connector tests after T-13: 110 (from 43). This is an estimate
 
 | # | Measured value | Measured by / when |
 |---|---|---|
-| A-1 | — | — |
-| A-2 | — | — |
-| A-3 | — | — |
-| A-4 | — | — |
-| A-5 | — | — |
-| A-6 | — | — |
-| A-7 | — | — |
-| A-8 | — | — |
-| A-9 | — | — |
+| A-1 | Connector tests 140/140, exit 0 (plan's count table ended at 110; T-14 fixes added tests) | lead, 2026-10-03 at de5b9aa |
+| A-2 | Self-checks 475/475, exit 0 | lead, 2026-10-03 at de5b9aa |
+| A-3 | e2e 7/7, exit 0, two runs in a row; no new leftover Chrome profiles (measurement subagent: 4 before, 4 after) | lead + measurement subagent, 2026-10-03 |
+| A-4 | Demo exit 0 (6 calls, 17 accounts, 2 sent / 1 forceFail, fake AI) | lead (exit code) + measurement subagent (summary), 2026-10-03 |
+| A-5 | All 12 new test files call `installNetGuard()`; only the pre-existing demo.test.mjs and fixtures.test.mjs lack it (grep -L). Guard's blocked-is-empty asserts ran inside A-1 | lead grep + measurement subagent, 2026-10-03 |
+| A-6 | Secret grep: 38 hits after the plan's filter, all key names, prose or header-building code, none a literal credential (subagent judgement); no state file, lock or key tracked (lead `git ls-files` scan: 0) | measurement subagent + lead, 2026-10-03 |
+| A-7 | vendor-fixtures.test.mjs 3/3 (all 6 fixtures carry the SHAPE FROM DOCS header) | measurement subagent, 2026-10-03 |
+| A-8 | `--check` with no config: 2 lines, both SKIP, exit 0, 0 state files written | lead, 2026-10-03 at de5b9aa |
+| A-9 | e2e `e1` passed in both runs; 475/475 self-checks include c2h (not printed by name) | measurement subagent, 2026-10-03 |
+
+Full table with commands: `evidence/connect-ready/acceptance.md`.
 
 ## Log
 
 - 2026-10-02: baseline re-measured (above). Plan written by a top-model subagent, committed `3682d02`, 3,254 lines,
   14 tasks. Lead checked the commit, the task headings and the blockers section. Stopped for plan approval.
+- 2026-10-03: Ian approved; B1 (a), B2 (a). T-1..T-13 built one at a time (build subagent → checker → lead re-run).
+  Failures and fixes: T-4 Haiku attempt invented fixtures (reverted, redone on Sonnet); T-8 Timeline failures-as-sent
+  (fixed, red→green proven by lead on the old adapter); T-11 CONNECTOR_CONFIG crash found by the lead's smoke (fixed).
+  No fix failed twice. Paid runs: none. External calls: two read-only docs fetches by subagents (Gong apidocs, T-14
+  review and fix A); nothing sent to any vendor.
+- 2026-10-03: T-14 review, three fix batches, A-1..A-9 measured. Stop for Ian's merge call.
+
+## Stop: merge (2026-10-03)
+
+Branch `worktree-connect-ready`, HEAD after this ledger commit. Adapters are tested on recorded-shape fixtures and
+unproven until `--check`. Admin's next step: send the updated admin ask
+(`docs/superpowers/drafts/connector-admin-ask.md`); on connection day run `node connector/server.mjs --setup`.
