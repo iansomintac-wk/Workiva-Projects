@@ -115,7 +115,11 @@ one result per item, `externalId` and `error` `null` when not applicable.
   item answers `failed` with `dry run: not sent; see connector/dry-run.jsonl`.
 - Saved send record: `sent-record.json` keeps item id to `{externalId, kind, tenant, at}`. A repeated id for the same
   tenant answers `sent` with no call, and a `failed` id is not stored. A duplicate-ExternalId rejection
-  (`GS_TL_10_0107`) counts as already sent.
+  (`GS_TL_10_0107`) counts as already sent. A Timeline reply that lists the item in `data.failures`, or has no
+  `activityId` for it in `data.success`, answers `failed` and is not stored. Crash window: the record is written after
+  the vendor reply, so a crash between the two leaves no record. A Timeline repeat is then recovered by the duplicate
+  error code; a CTA repeat may double-send (referenceId duplicate behaviour is UNCONFIRMED, research Q14 and gap 5).
+  A CTA sent with no readable id (`gainsight.cta.idPath` unset) is recorded with `externalId: null`.
 
 **Idempotent by `items[].id` (R3, I-5).** The tracker times out a push after 15 s and cannot know whether the
 connector sent it, so it tells the user the outcome is unknown and the user may press Send again with the

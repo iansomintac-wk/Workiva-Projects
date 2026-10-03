@@ -100,6 +100,39 @@ test('push: a duplicate-ExternalId rejection (GS_TL_10_0107) means already in Ga
   assert.ok(JSON.parse(readFileSync(join(stateDir, 'sent-record.json'), 'utf8'))['q-timeline-1']);
 });
 
+test('push: HTTP 200 with the item in data.failures is failed (vendor text, scrubbed) and NOT recorded', async () => {
+  const s = stub(() => json(200, { result: true, data: { success: {}, failures: { 'q-timeline-1': [{ errorDesc: 'bad type FAKE-ACCESS-yy' }] } } }));
+  const { a, stateDir } = adapter(s);
+  const [r] = await a.push([TL]);
+  assert.equal(r.status, 'failed');
+  assert.equal(r.externalId, null);
+  assert.match(r.error, /bad type/);
+  assert.ok(!r.error.includes('FAKE-ACCESS-yy'));
+  assert.equal(existsSync(join(stateDir, 'sent-record.json')), false);
+  await a.push([TL]);
+  assert.equal(s.seen.length, 2); // retried for real
+});
+
+test('push: HTTP 200 whose data.success lacks the item id is failed and NOT recorded', async () => {
+  const s = stub(() => json(200, { result: true, data: { success: { 'some-other-id': [{ activityId: 'X' }] }, failures: {} } }));
+  const { a, stateDir } = adapter(s);
+  const [r] = await a.push([TL]);
+  assert.equal(r.status, 'failed');
+  assert.match(r.error, /no activityId/);
+  assert.equal(existsSync(join(stateDir, 'sent-record.json')), false);
+});
+
+test('push: a CTA reply with no readable id (cta.idPath unset) is sent with externalId null, recorded, and a repeat makes no call (plan: sent without id is OK)', async () => {
+  const s = stub(() => json(200, { result: true }));
+  const { a, stateDir } = adapter(s);
+  const [r] = await a.push([CTA]);
+  assert.deepEqual(r, { id: 'q-cta-1', status: 'sent', externalId: null, error: null });
+  assert.equal(JSON.parse(readFileSync(join(stateDir, 'sent-record.json'), 'utf8'))['q-cta-1'].externalId, null);
+  const [again] = await adapter(s, CFG, stateDir).a.push([CTA]);
+  assert.deepEqual(again, { id: 'q-cta-1', status: 'sent', externalId: null, error: null });
+  assert.equal(s.seen.length, 1);
+});
+
 test('push: At-Risk CTA is POST /v2/cockpit/cta with referenceId, Name, type, OwnerEmail and the configured company field', async () => {
   const s = stub(() => json(200, { result: true }));
   const { a } = adapter(s);

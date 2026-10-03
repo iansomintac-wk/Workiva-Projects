@@ -2,7 +2,7 @@
 // passes against the configured tenant. Node built-ins only; fetch is injected (deps.fetchImpl) or the global one.
 import { join } from 'node:path';
 import { appendFileSync } from 'node:fs';
-import { requestJson, pacer, pick, VendorError } from '../lib/vendor-http.mjs';
+import { requestJson, pacer, pick, scrubAll, VendorError } from '../lib/vendor-http.mjs';
 import { loadProof, isProven, tenantOf, sameTenant, healthName, resolveStateDir, readJson, writeJsonAtomic, FILES } from '../lib/state.mjs';
 import { createTokenSource } from './gainsight-auth.mjs';
 
@@ -90,7 +90,15 @@ export function buildRequest(it, cfg, now) {
         },
       },
       // CONFIRMED (Q10): {"data":{"success":{"<externalId>":[{"activityId":"<GSID>"}]}}}
-      idFrom: (resp) => { const s = resp && resp.data && resp.data.success && resp.data.success[it.id]; return s && s[0] && s[0].activityId ? String(s[0].activityId) : it.id; },
+      // An HTTP 200 can still carry the item in data.failures, or omit it from data.success: both are failed, never sent.
+      idFrom: (resp) => {
+        const d = (resp && resp.data) || {};
+        const bad = d.failures && d.failures[it.id];
+        if (bad) throw new Error(`Gainsight rejected the item: ${JSON.stringify(bad).slice(0, 500)}`);
+        const s = d.success && d.success[it.id];
+        if (!(s && s[0] && s[0].activityId)) throw new Error('Gainsight reply has no activityId for this item (not in data.success)');
+        return String(s[0].activityId);
+      },
     };
   }
   if (it.kind === 'At-Risk CTA') {
@@ -103,6 +111,7 @@ export function buildRequest(it, cfg, now) {
       body: { requests: [{ record: { referenceId: it.id, Name: `${prefix}${f.ctaName || `At-risk: ${ref.name}`}`.slice(0, 255), type: cfg.cta.type,
         OwnerEmail: cfg.authorEmail, [cfg.cta.companyIdField]: ref.gainsightId } }] },
       // UNCONFIRMED (gap 2): where the Gsid sits in the reply; cta.idPath names it once --check --write has seen one.
+      // A null id is deliberate (plan T-9 reports 'sent (id not read)'): the item is still recorded, so a repeat makes no call.
       idFrom: (resp) => { const v = cfg.cta.idPath ? pick(resp, cfg.cta.idPath) : null; return v == null ? null : String(v); },
     };
   }
@@ -121,9 +130,10 @@ export function create(cfg = {}, deps = {}) {
   const apiBase = String(cfg.apiBaseUrl || cfg.appUrl || '').replace(/\/+$/, '');
   const tokens = deps.tokenSource || createTokenSource({ cfg, fetchImpl: deps.fetchImpl, tokensPath: join(dir, FILES.tokens), now: deps.now });
 
+  let lastAccess = null; // only so a failure text built outside api() can be scrubbed
   async function api(method, path, body) {
     if (!apiBase) throw new Error('gainsight-rest is not configured (missing gainsight.apiBaseUrl); run node connector/server.mjs --setup');
-    const access = await tokens.accessToken(); // a rotated refresh token is already on disk here (T-6)
+    const access = lastAccess = await tokens.accessToken(); // a rotated refresh token is already on disk here (T-6)
     await pace();
     // CONFIRMED header form (Q7). Whether every endpoint accepts a bearer token is UNCONFIRMED (Q7 note); --check finds out.
     return requestJson({ fetchImpl: deps.fetchImpl || globalThis.fetch, method, url: apiBase + path,
@@ -173,7 +183,7 @@ export function create(cfg = {}, deps = {}) {
     try { externalId = req.idFrom(await api(req.method, req.path, req.body)); }
     catch (e) {
       if (req.kind === 'timeline' && JSON.stringify((e && e.body) || '').includes(DUPLICATE_EXTERNAL_ID)) externalId = it.id;
-      else return fail(it, e.message);
+      else return fail(it, scrubAll(e.message, [lastAccess, cfg.oauth && cfg.oauth.clientSecret]));
     }
     record[it.id] = { externalId, kind: it.kind, tenant, at: now().toISOString() };
     try { writeJsonAtomic(join(dir, FILES.sent), record); }
