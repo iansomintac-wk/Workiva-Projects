@@ -136,6 +136,16 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const env = process.env;
   const cfgFile = env.CONNECTOR_CONFIG || (existsSync(join(here, 'config.json')) ? join(here, 'config.json') : join(here, 'config.example.json'));
   const config = JSON.parse(readFileSync(cfgFile, 'utf8'));
+  const args = process.argv.slice(2);
+  if (args.length) {
+    const cli = await import('./lib/cli.mjs');
+    if (args.some((a) => cli.COMMANDS.includes(a))) {
+      const ask = cli.makeAsk();
+      const code = await cli.runCli(args, { config, configPath: env.CONNECTOR_CONFIG || join(here, 'config.json'), stateDir: env.CONNECTOR_STATE_DIR, ask });
+      ask.close();
+      process.exit(code);
+    }
+  }
   if (config.host && config.host !== '127.0.0.1') {
     console.warn(`warning: config.host "${config.host}" ignored; the connector binds 127.0.0.1 only`);
   }

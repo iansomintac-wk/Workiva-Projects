@@ -172,6 +172,23 @@ headers are echoed only for an allowed origin and appear on every response (401 
 read it; `since` that is not an ISO 8601 date-time is 400; a non-JSON or schema-invalid push body is 400
 with the validator's messages; every response is validated against its schema before sending and a
 failure is a 500; an adapter that throws is a 502.
+
+`node connector/server.mjs --unlock-production` (gainsight-rest, `environment: "production"` only) prints the
+configured production tenant and whether a sandbox write proof exists, asks for the tenant URL to be typed back, and
+on a match records the unlock in `proof.json`. A mismatch, an empty `appUrl` or an unreadable `proof.json` prints a
+`FAIL unlock:` line, changes nothing and exits 1. Any other argument starts the server as before.
+
+## Write gate (gainsight-rest)
+
+A non-dry-run push (`dryRun: false`; dry-run is the default) is allowed only for a sandbox tenant
+(`environment: "sandbox"`), or for production after `--unlock-production`. The unlock needs the tenant URL typed back
+in both §3.4 paths (with a sandbox write proof, or with no sandbox), is recorded against that tenant
+(`gainsight.unlock = {tenant, at, basis: "sandbox-proof" | "no-sandbox", sandboxProofAt, firstSendDone}`), and is void
+when the configured tenant changes. The first production push after unlock sends 1 item; the rest answer `failed`
+with `first live send is 1 item; check it in Gainsight, then Send again`. The limit lifts once that item is `sent`
+(a failed first item keeps it). Every other case answers `failed` with the missing step: no `environment` set names
+`--setup`; production with no matching unlock names `--check --write` and `--unlock-production`; a `proof.json` that
+cannot be read blocks production writes. Nothing is sent in any of these cases.
 ## Offline rule
 
 If the connector is unset or unreachable, the tracker behaves exactly as it does today plus one quiet

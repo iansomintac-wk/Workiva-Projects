@@ -5,6 +5,7 @@ import { appendFileSync } from 'node:fs';
 import { requestJson, pacer, pick, scrubAll, VendorError } from '../lib/vendor-http.mjs';
 import { loadProof, isProven, tenantOf, sameTenant, healthName, resolveStateDir, readJson, writeJsonAtomic, FILES } from '../lib/state.mjs';
 import { createTokenSource } from './gainsight-auth.mjs';
+import { gateFromState, markFirstSendDone, FIRST_SEND_ERROR } from '../lib/write-gate.mjs';
 
 // CONFIRMED https://support.gainsight.com/gainsight_nxt/API_and_Developer_Docs/Company_and_Relationship_API/Company_API_Documentation (research Q8)
 export const QUERY_PATH = '/v1/data/objects/query/';
@@ -130,6 +131,7 @@ export function create(cfg = {}, deps = {}) {
   const apiBase = String(cfg.apiBaseUrl || cfg.appUrl || '').replace(/\/+$/, '');
   const tokens = deps.tokenSource || createTokenSource({ cfg, fetchImpl: deps.fetchImpl, tokensPath: join(dir, FILES.tokens), now: deps.now });
 
+  let firstInFlight = false; // a first live send is under way (write gate, T-9)
   let lastAccess = null; // only so a failure text built outside api() can be scrubbed
   async function api(method, path, body) {
     if (!apiBase) throw new Error('gainsight-rest is not configured (missing gainsight.apiBaseUrl); run node connector/server.mjs --setup');
@@ -194,14 +196,31 @@ export function create(cfg = {}, deps = {}) {
     const record = readJson(join(dir, FILES.sent), {});
     const dry = cfg.dryRun !== false; // CR2: dry-run is the default
     const results = [];
+    let gate = null; let firstUsed = false;
     for (const it of items) {
       const prior = record[it.id];
       if (prior && sameTenant(prior.tenant, tenant)) { results.push(sentOk(it, prior.externalId)); continue; } // CR3
       let req;
       try { req = buildRequest(it, cfg, now()); } catch (e) { results.push(fail(it, e.message)); continue; }
       if (dry) { appendDryRun(it, req); results.push(fail(it, DRY_RUN_ERROR)); continue; }
-      // T-9: write gate
-      results.push(await sendOne(it, req, record));
+      // Write gate (§3.4, T-9): read once per push, fail-closed. Only a sandbox tenant or an unlocked production tenant sends.
+      if (!gate) gate = gateFromState({ cfg, stateDir: dir });
+      if (!gate.allow) { results.push(fail(it, gate.error)); continue; }
+      // First live send after unlock: 1 item, also across pushes racing on this adapter.
+      if (gate.firstSendOnly && (firstUsed || firstInFlight)) { results.push(fail(it, FIRST_SEND_ERROR)); continue; }
+      if (gate.firstSendOnly) { firstUsed = true; firstInFlight = true; }
+      let r;
+      try { r = await sendOne(it, req, record); }
+      finally {
+        if (gate.firstSendOnly) {
+          if (r && r.status === 'sent') {
+            try { markFirstSendDone(dir, now()); }
+            catch (e) { console.error(`gainsight-rest: the first live item was sent but proof.json could not be updated (${e.code || e.message}); the 1-item limit stays`); }
+          }
+          firstInFlight = false;
+        }
+      }
+      results.push(r);
     }
     return results;
   }
