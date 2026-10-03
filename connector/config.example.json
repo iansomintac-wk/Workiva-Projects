@@ -1,6 +1,7 @@
 {
   "port": 8787,
   "gong": { "adapter": "fake", "baseUrl": "", "accessKey": "", "accessKeySecret": "", "myEmail": "" },
-  "gainsight": { "adapter": "fake", "environment": "", "appUrl": "", "apiBaseUrl": "", "tenantId": "", "dryRun": true },
+  "gainsight": { "adapter": "fake", "environment": "", "appUrl": "", "apiBaseUrl": "", "tenantId": "", "dryRun": true,
+    "oauth": { "clientId": "", "clientSecret": "", "scopes": "", "callbackCodeParam": "", "accessTokenField": "", "refreshTokenField": "" } },
   "ai": { "adapter": "fake", "model": "", "apiKey": "" }
 }

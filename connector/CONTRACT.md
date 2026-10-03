@@ -16,6 +16,7 @@ end in `.invalid`; call URLs are `https://fake.gong.invalid/call/<id>`; ids are 
 
 - Base URL `http://127.0.0.1:<port>` (default port 8787). The connector binds to 127.0.0.1 only.
 - Every request except `OPTIONS` carries `Authorization: Bearer <token>`. Otherwise: 401 `{"error":"unauthorized"}`.
+  The one exception is `GET /oauth/callback` while `--setup` is running (see below); it answers once, then 410.
 - CORS: the connector answers for origin `null` (a `file://` page) and for `http://localhost:*` and
   `http://127.0.0.1:*`. `OPTIONS` preflights need no token.
 - Origin `null` is broader than `file://`: every sandboxed iframe on any website also sends `Origin: null`. So the
@@ -124,6 +125,15 @@ dropped. `fake` returns `FAKE AI (<task>): <first 80 chars of prompt>`, except `
 JSON with one fake account per `[id:<id>]` in the prompt. The real adapters are tested only against a stubbed
 fetch; no real call has been made.
 
+### `GET /oauth/callback` (setup only)
+
+It exists only while `--setup` waits for Gainsight's redirect. It takes no bearer token, exchanges the code once,
+saves the raw token reply to `gainsight-tokens.json`, and then answers 410. Outside setup the path is 401 like any
+other. Redirect URI to register: `http://127.0.0.1:<port>/oauth/callback`. The query name that carries the code, and
+the token reply's access and refresh field names, are not in the vendor research, so they are config
+(`gainsight.oauth.callbackCodeParam`, `accessTokenField`, `refreshTokenField`, empty by default). While one is unset,
+the connector reports only the key names it received, never their values.
+
 ## Running it
 
 `node connector/server.mjs` loads `connector/config.json` (else `config.example.json`), loads or creates
@@ -157,7 +167,9 @@ Adapter state suffixes in `/v1/health` (connect-ready, 2026-10-02): string value
 - `proof.json`: per adapter, `state`, `provenAt`, `tenant` and the observed `shapes`. Gainsight has separate
   `read` and `write` proofs plus `unlock`. A proof is void when the configured tenant differs.
 - `CONNECTOR_STATE_DIR` overrides the folder (used by the tests).
-- `gainsight-tokens.json`, `sent-record.json` and `dry-run.jsonl` are described here by the task that writes each one.
+- `gainsight-tokens.json`: `{raw, obtainedAt}`. Refresh tokens are single-use. The new one is written before the new
+  access token is used, and a failed write stops the request.
+- `sent-record.json` and `dry-run.jsonl` are described here by the task that writes each one.
 
 ## Transcripts (I-2)
 

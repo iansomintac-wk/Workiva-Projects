@@ -33,7 +33,7 @@ function readBody(req) {
   });
 }
 
-export function createConnector({ config = {}, adapters, token, logPath } = {}) {
+export function createConnector({ config = {}, adapters, token, logPath, oauthCallback } = {}) {
   const ad = adapters || loadAdapters(config);
 
   async function route(req, url, send) {
@@ -106,6 +106,12 @@ export function createConnector({ config = {}, adapters, token, logPath } = {}) 
     };
     try {
       if (req.method === 'OPTIONS') return send(204);
+      // Setup only (connect-ready §3.3): Gainsight's OAuth redirect lands here without our token. Absent outside --setup.
+      if (oauthCallback && req.method === 'GET' && (req.url || '').split('?')[0] === '/oauth/callback') {
+        const r = await oauthCallback(new URL(req.url, 'http://127.0.0.1').searchParams);
+        res.writeHead(r.status, { 'Content-Type': 'text/plain; charset=utf-8' });
+        return res.end(r.text);
+      }
       const m = /^Bearer (.+)$/.exec(req.headers.authorization || '');
       if (!m || !safeEqual(m[1], token)) { req.resume(); return send(401, { error: 'unauthorized' }); }
       return await route(req, new URL(req.url, 'http://127.0.0.1'), send);
