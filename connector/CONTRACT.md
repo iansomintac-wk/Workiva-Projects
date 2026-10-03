@@ -104,6 +104,19 @@ one result per item, `externalId` and `error` `null` when not applicable.
 {"results": [{"id": "q1", "status": "sent", "externalId": "FAKE-q1", "error": null}]}
 ```
 
+`gainsight-rest` push (tested on recorded-shape fixtures, unproven until `--check`):
+- Kinds: `Pending items batch` and `Success Outcome Plan` become a Timeline activity (D1,
+  `POST /v1/ant/es/activity`) with `ExternalId` = item id. `At-Risk CTA` becomes `POST /v2/cockpit/cta`.
+  `Success Plan objective` is not sent (blocker B1, ruled (a)): it answers `failed` with "not sent: Success Plan
+  objectives are not built yet (adding an objective to an existing Success Plan is unconfirmed in Gainsight's docs);
+  update it by hand in Gainsight" and stays queued. The optional `fields.subjectPrefix` is prepended to the Timeline
+  Subject and the CTA Name. Config: `gainsight.authorEmail`, `gainsight.timeline.typeName`, `gainsight.cta.{type, companyIdField, idPath}`.
+- Dry-run is on by default (`gainsight.dryRun`): requests go to `dry-run.jsonl` with credentials redacted, and each
+  item answers `failed` with `dry run: not sent; see connector/dry-run.jsonl`.
+- Saved send record: `sent-record.json` keeps item id to `{externalId, kind, tenant, at}`. A repeated id for the same
+  tenant answers `sent` with no call, and a `failed` id is not stored. A duplicate-ExternalId rejection
+  (`GS_TL_10_0107`) counts as already sent.
+
 **Idempotent by `items[].id` (R3, I-5).** The tracker times out a push after 15 s and cannot know whether the
 connector sent it, so it tells the user the outcome is unknown and the user may press Send again with the
 same ids. An adapter must therefore treat a repeated item id as the same item: answer `sent` with the same
@@ -174,7 +187,10 @@ Adapter state suffixes in `/v1/health` (connect-ready, 2026-10-02): string value
 - `CONNECTOR_STATE_DIR` overrides the folder (used by the tests).
 - `gainsight-tokens.json`: `{raw, obtainedAt}`. Refresh tokens are single-use. The new one is written before the new
   access token is used, and a failed write stops the request.
-- `sent-record.json` and `dry-run.jsonl` are described here by the task that writes each one.
+- `sent-record.json`: `{ "<itemId>": {externalId, kind, tenant, at} }`, written atomically after each real send. A repeated
+  id for the same tenant answers `sent` with no call; a `failed` id is not stored.
+- `dry-run.jsonl`: one JSON line per item that dry-run would have sent (`at`, `itemId`, `kind`, `method`, `url`, `headers`
+  with `Authorization` as `Bearer [redacted]`, `body`). Appended; never holds a credential.
 
 ## Transcripts (I-2)
 

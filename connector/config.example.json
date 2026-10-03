@@ -1,7 +1,9 @@
 {
   "port": 8787,
   "gong": { "adapter": "fake", "baseUrl": "", "accessKey": "", "accessKeySecret": "", "myEmail": "" },
-  "gainsight": { "adapter": "fake", "environment": "", "appUrl": "", "apiBaseUrl": "", "tenantId": "", "dryRun": true,
+  "gainsight": { "adapter": "fake", "environment": "", "appUrl": "", "apiBaseUrl": "", "tenantId": "", "dryRun": true, "authorEmail": "",
+    "timeline": { "typeName": "" },
+    "cta": { "type": "", "companyIdField": "", "idPath": "" },
     "oauth": { "clientId": "", "clientSecret": "", "scopes": "", "callbackCodeParam": "", "accessTokenField": "", "refreshTokenField": "" },
     "fieldMap": { "tier": "", "arr": "", "renewalDate": "", "csmOwner": "", "healthScore": "" },
     "gateFieldMap": { "readinessAssessment": "", "csatContact": "", "successPlan": "" },
