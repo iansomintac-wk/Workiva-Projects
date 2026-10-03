@@ -141,7 +141,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const cli = await import('./lib/cli.mjs');
     if (args.some((a) => cli.COMMANDS.includes(a))) {
       const ask = cli.makeAsk();
-      const code = await cli.runCli(args, { config, configPath: env.CONNECTOR_CONFIG || join(here, 'config.json'), stateDir: env.CONNECTOR_STATE_DIR, ask });
+      const code = await cli.runCli(args, { config, configPath: env.CONNECTOR_CONFIG || join(here, 'config.json'), stateDir: env.CONNECTOR_STATE_DIR, ask, createConnector });
       ask.close();
       process.exit(code);
     }

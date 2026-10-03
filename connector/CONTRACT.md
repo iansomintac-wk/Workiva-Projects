@@ -194,6 +194,16 @@ Plan, At-Risk CTA), each labelled `[SBX] TEST-<date>` and left in the sandbox (D
 the sandbox and look for the [SBX] TEST records` (blocker B2): the write proof is recorded from each create reply, not
 from a read. All of this is tested on recorded-shape fixtures and is unproven against a real tenant until run.
 
+`node connector/server.mjs --setup` asks one question at a time; Gong and Gainsight can each be skipped (answer `n`).
+Secret answers (Gong access key secret, OAuth client secret) are not echoed and never printed. It writes
+`CONNECTOR_CONFIG` (default `connector/config.json`, git-ignored; never point it at `config.example.json`). For
+Gainsight it prints the authorize URL, then listens once on `127.0.0.1:<port>/oauth/callback` (up to 10 minutes) and
+exchanges the code, saving the token reply to `gainsight-tokens.json`. Then it runs `--check`. If
+`gainsight.oauth.callbackCodeParam` is unset it prints only the query names Gainsight sent back and stops; if
+`accessTokenField` / `refreshTokenField` are unset it prints only the key names of the token reply, never values, and
+stops (the admin or Ian sets the names in config; nothing is guessed). Tested with scripted answers and a stubbed fetch;
+unproven against a real tenant until `--check` passes.
+
 ## Write gate (gainsight-rest)
 
 A non-dry-run push (`dryRun: false`; dry-run is the default) is allowed only for a sandbox tenant
