@@ -1,0 +1,9 @@
+// SHAPE FROM DOCS, NOT FROM A LIVE TENANT
+// Source: https://support.gainsight.com/gainsight_nxt/01Onboarding_and_Implementation/Onboarding_for_Gainsight_NXT/Login_and_Permissions/OAuth_for_Gainsight_APIs
+{
+  "access_token": "access_token_fake_123456789",
+  "refresh_token": "refresh_token_fake_987654321",
+  "expires_in": 3600,
+  "token_type": "Bearer",
+  "scope": "Read Write"
+}

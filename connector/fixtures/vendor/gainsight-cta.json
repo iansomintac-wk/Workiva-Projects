@@ -1,0 +1,21 @@
+// SHAPE FROM DOCS, NOT FROM A LIVE TENANT
+// Source: https://support.gainsight.com/Gainsight_NXT/API_and_Developer_Docs/CTA_API/CTA_APIs
+{
+  "result": true,
+  "data": {
+    "records": [
+      {
+        "referenceId": "CTA-001",
+        "Gsid": "GSCTA-001",
+        "Name": "Review contract terms",
+        "status": "Open",
+        "priority": "High",
+        "dueDate": "2026-10-15",
+        "owner": "alice@company.invalid",
+        "targetCompanyId": "GS-DEMO-001",
+        "description": "Review and approve contract terms with legal",
+        "reasonCode": "At Risk"
+      }
+    ]
+  }
+}

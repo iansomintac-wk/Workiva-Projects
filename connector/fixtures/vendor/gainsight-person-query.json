@@ -1,0 +1,23 @@
+// SHAPE FROM DOCS, NOT FROM A LIVE TENANT
+// Source: https://support.gainsight.com/Gainsight_NXT/API_and_Developer_Docs/Person_API/Person_API_Documentation
+{
+  "result": true,
+  "errorCode": null,
+  "errorDesc": null,
+  "requestId": "req-gainsight-002",
+  "data": {
+    "Gsid": "GS-PERSON-001",
+    "Active": true,
+    "Person_ID": "P-001",
+    "Company_ID": "GS-DEMO-001",
+    "IsPrimaryCompany": true,
+    "Role": "Decision Maker",
+    "Title": "Chief Technology Officer",
+    "Manager": "alex@aldridge.invalid",
+    "SfdcAccountId": "SFDC-ACC-001",
+    "SfdcContactId": "SFDC-CONT-001",
+    "Email": "cto@aldridge.invalid",
+    "Name": "Christopher Thomas"
+  },
+  "message": "Success"
+}

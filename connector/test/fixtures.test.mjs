@@ -1,7 +1,7 @@
 // Contract v1 tests: schemas, validator, fixtures. Node built-ins only.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { validate } from '../lib/validate.mjs';
@@ -146,4 +146,15 @@ test('demo-seed.js carries the seeded stakeholder email', () => {
 test('fixtures contain only .invalid email addresses', () => {
   const all = readFileSync(join(root, 'fixtures/calls.json'), 'utf8') + readFileSync(join(root, 'fixtures/accounts.json'), 'utf8');
   for (const m of all.match(/[\w.+-]+@[\w.-]+/g) || []) assert.match(m, /\.invalid$/, m);
+});
+
+test('vendor fixture files have source URL header', () => {
+  const vendorDir = join(root, 'fixtures', 'vendor');
+  const files = readdirSync(vendorDir);
+  assert.ok(files.length > 0, 'vendor fixtures directory has files');
+  for (const file of files) {
+    const content = readFileSync(join(vendorDir, file), 'utf8');
+    assert.match(content, /SHAPE FROM DOCS, NOT FROM A LIVE TENANT/, `${file} has required header`);
+    assert.match(content, /https?:\/\//, `${file} has source URL`);
+  }
 });
