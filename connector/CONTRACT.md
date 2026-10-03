@@ -66,6 +66,9 @@ No request body. Response (`schemas/health.json`); each adapter is `"fake"`, an 
 - `affiliation` is `internal`, `customer` or `unknown`.
 - `accountRef` always exists; `gainsightId` and `name` may each be `null`. The tracker matches by
   `gainsightId`, then exact `name`, then by participant email against stakeholders.
+- `gong-rest` (tested on recorded-shape fixtures, unproven until `--check`) lists Ian's
+  calls through `POST /v2/calls/extensive`. It filters to calls where `gong.myEmail` is a participant (Gong's
+  user filter matches the host only) and sends `accountRef` `{gainsightId:null, name:null}`.
 
 ### `GET /v1/accounts`
 
@@ -156,15 +159,11 @@ Adapter state suffixes in `/v1/health` (connect-ready, 2026-10-02): string value
 - `CONNECTOR_STATE_DIR` overrides the folder (used by the tests).
 - `gainsight-tokens.json`, `sent-record.json` and `dry-run.jsonl` are described here by the task that writes each one.
 
-## Before a real Gong adapter
+## Transcripts (I-2)
 
-Blocker (final review I-2, ruled by Ian 2026-10-02: leave as built, block the first real adapter):
-the tracker stores each imported call's full transcript (up to 120,000 characters) in the book in
-browser localStorage (~5-10 MB). At ~10 calls a week the reviewer estimated storage fills in about
-2-3 months and saves then fail; this is an estimate — real transcript sizes were not measured
-(fake data only). Before a real Gong adapter ships: measure real transcript sizes, then choose
-between storing link + summary only (fetch the transcript on demand) or capping transcripts with
-a storage-near-full warning.
+Ruled by Ian 2026-10-02 (I-2, kept by CR4): `gong-rest` sends `transcript: ""` for every call until Ian chooses between
+storing link + summary only and capping transcripts. The fake adapter still serves fixture transcripts. Real
+transcript sizes are not measured yet.
 
 ## Validator subset
 
