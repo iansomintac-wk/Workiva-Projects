@@ -21,7 +21,7 @@ adapter works with Gong or Gainsight.
 
 | When | Stop | State |
 |---|---|---|
-| 2026-10-02 | Plan approval (plan `3682d02`), with B1 and B2 for Ian | waiting for Ian |
+| 2026-10-02 | Plan approval (plan `3682d02`), with B1 and B2 for Ian | Ian, 2026-10-03: "approved, B1 a, B2 a — go" |
 
 ## Tasks
 
@@ -34,9 +34,9 @@ adapter works with Gong or Gainsight.
 | T-5 | `gong-rest` listCalls | Sonnet | pending | — | per plan | — | Plan gaps 4, 7: accountRef always null; CONTRACT.md Gong section moves here from T-13 |
 | T-6 | Gainsight OAuth, callback, rotation persisted before use | top | pending | — | per plan | — | Plan gap 6: token reply field names are config |
 | T-7 | `gainsight-rest` reads | Sonnet | pending | — | per plan | — | Plan gaps 2, 3: gates from gateFieldMap (false unless exactly true); openCtas [] |
-| T-8 | `gainsight-rest` push, send record, dry-run | Sonnet | pending | — | per plan | — | B1 default unless Ian rules |
+| T-8 | `gainsight-rest` push, send record, dry-run | Sonnet | pending | — | per plan | — | B1 (a) ruled by Ian: objective items answer failed, stay queued |
 | T-9 | Write gate and `--unlock-production` | top | pending | — | per plan | — | Plan gap 5: unlock record tied to tenant; tenant typed back in both paths |
-| T-10 | `--check`, `--check --write` | Sonnet | pending | — | per plan | — | B2 default unless Ian rules |
+| T-10 | `--check`, `--check --write` | Sonnet | pending | — | per plan | — | B2 (a) ruled by Ian: read-back prints SKIP, proof from create replies |
 | T-11 | `--setup` | Sonnet | pending | — | per plan | — | — |
 | T-12 | `--measure-transcripts` | Sonnet | pending | — | per plan | — | — |
 | T-13 | Runbooks, CONTRACT.md, admin ask | Sonnet | pending | — | per plan | — | — |
