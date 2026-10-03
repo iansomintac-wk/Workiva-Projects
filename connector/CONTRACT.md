@@ -79,6 +79,11 @@ Response (`schemas/accounts.json`): `{"accounts": [...]}`, each account:
 `healthScore`, `gates:{readinessAssessment, csatContact, successPlan}` (booleans), `openCtas:[{ctaId, name, severity?}]`.
 Fields other than ids and names may be `null`.
 
+`gainsight-rest` (tested on recorded-shape fixtures, unproven until `--check`) reads Company through
+`POST /v1/data/objects/query/Company`. Field names come from `gainsight.fieldMap`; an unmapped field is `null`. A gate
+is `true` only when its `gainsight.gateFieldMap` field is exactly `true`. `contacts` come from `gainsight.contactQuery`
+(empty when unset). `openCtas` is `[]`.
+
 ### `POST /v1/push`
 
 Request (`schemas/push-request.json`): `{"items": [{"id", "kind", "customerRef":{"gainsightId","name"}, "fields":{...}}]}`.

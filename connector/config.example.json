@@ -2,6 +2,9 @@
   "port": 8787,
   "gong": { "adapter": "fake", "baseUrl": "", "accessKey": "", "accessKeySecret": "", "myEmail": "" },
   "gainsight": { "adapter": "fake", "environment": "", "appUrl": "", "apiBaseUrl": "", "tenantId": "", "dryRun": true,
-    "oauth": { "clientId": "", "clientSecret": "", "scopes": "", "callbackCodeParam": "", "accessTokenField": "", "refreshTokenField": "" } },
+    "oauth": { "clientId": "", "clientSecret": "", "scopes": "", "callbackCodeParam": "", "accessTokenField": "", "refreshTokenField": "" },
+    "fieldMap": { "tier": "", "arr": "", "renewalDate": "", "csmOwner": "", "healthScore": "" },
+    "gateFieldMap": { "readinessAssessment": "", "csatContact": "", "successPlan": "" },
+    "contactQuery": { "object": "", "companyField": "", "nameField": "", "emailField": "", "roleField": "" } },
   "ai": { "adapter": "fake", "model": "", "apiKey": "" }
 }
