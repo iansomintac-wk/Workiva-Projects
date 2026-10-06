@@ -15,14 +15,15 @@ const isEmail = (v) => /^[^@\s]+@[^@\s]+$/.test(v);
 const yes = (v) => /^y(es)?$/i.test(String(v).trim());
 const trimUrl = (u) => String(u).trim().replace(/\/+$/, '');
 
-async function askValid(ask, out, q, ok, hint) {
+async function askValid(ask, out, q, ok, hint, opts = {}) {
   for (let i = 0; i < 3; i++) {
-    const v = String(await ask(q)).trim();
+    const v = String(await ask(q, opts)).trim();
     if (ok(v)) return v;
     out(`  Not valid: ${hint}`);
   }
   throw new Error(`setup stopped: no valid answer to "${q.trim()}" after 3 tries`);
 }
+const filled = (v) => v.length > 0; // T-14 F16: an empty key or secret would only fail one step later, in --check
 
 // One-shot sign-in listener on 127.0.0.1 only. The callback handler is one-shot; this closes the server after it answers.
 export function defaultCallbackServer({ port, handlerFor, createConnector, timeoutMs = 10 * 60 * 1000 }) {
@@ -42,8 +43,8 @@ export async function runSetup({ configPath, config = {}, ask, out = console.log
     out('Gong: the values come from the Gong Tech admin (see connector/CONNECT-GONG.md).');
     const g = (next.gong = { ...(next.gong || {}), adapter: 'gong-rest' });
     g.baseUrl = trimUrl(await askValid(ask, out, 'Gong API base URL (starts https://): ', isHttpsBase, 'an https:// address with no path'));
-    g.accessKey = String(await ask('Gong access key: ')).trim();
-    g.accessKeySecret = String(await ask('Gong access key secret (not shown): ', { secret: true })).trim();
+    g.accessKey = await askValid(ask, out, 'Gong access key: ', filled, 'the access key cannot be empty');
+    g.accessKeySecret = await askValid(ask, out, 'Gong access key secret (not shown): ', filled, 'the secret cannot be empty', { secret: true });
     g.myEmail = await askValid(ask, out, 'Your Gong email: ', isEmail, 'an email address');
   }
   let gainsight = false;
@@ -58,8 +59,8 @@ export async function runSetup({ configPath, config = {}, ask, out = console.log
     g.tenantId = String(await ask('Gainsight tenant id (from the admin): ')).trim();
     g.environment = await askValid(ask, out, 'Is this tenant a sandbox or production? (sandbox/production): ', (v) => v === 'sandbox' || v === 'production', 'type sandbox or production');
     g.oauth = { callbackCodeParam: '', accessTokenField: '', refreshTokenField: '', ...(g.oauth || {}) };
-    g.oauth.clientId = String(await ask('OAuth client id: ')).trim();
-    g.oauth.clientSecret = String(await ask('OAuth client secret (not shown): ', { secret: true })).trim();
+    g.oauth.clientId = await askValid(ask, out, 'OAuth client id: ', filled, 'the client id cannot be empty');
+    g.oauth.clientSecret = await askValid(ask, out, 'OAuth client secret (not shown): ', filled, 'the client secret cannot be empty', { secret: true });
     g.oauth.scopes = String(await ask('OAuth scopes, exactly as the admin gave them: ')).trim();
   }
   writeJsonAtomic(configPath, next);

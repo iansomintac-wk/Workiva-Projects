@@ -130,3 +130,27 @@ test('check F2: a 200 that is not Gong-shaped (HTML, {}, a non-list) is FAIL gon
     assert.equal(existsSync(join(r.stateDir, 'proof.json')), false);
   }
 });
+
+// Follow-ups F-6 (T-14 F15)
+test('check F15: Gainsight secrets (client secret, access token) never reach --check output, on a pass or on a vendor error', async () => {
+  const cfg = { ...GS, oauth: { clientId: 'FAKE-CLIENT-ID', clientSecret: 'FAKE-CLIENT-SECRET-zz' } };
+  const ok = await run({ gainsight: cfg }, gsTenant([]));
+  const bad = await run({ gainsight: cfg }, async () => json(400, { errorDesc: 'echo FAKE-ACCESS-yy FAKE-CLIENT-SECRET-zz' }));
+  assert.equal(ok.code, 0, ok.lines.join('\n'));
+  assert.equal(bad.code, 1);
+  assert.ok(bad.lines.some((l) => l.startsWith('FAIL gainsight read:')), bad.lines.join('\n'));
+  for (const l of [...ok.lines, ...bad.lines]) assert.ok(!/FAKE-ACCESS-yy|FAKE-CLIENT-SECRET-zz/.test(l), l);
+});
+
+test('check F15: --check --write with one kind failing records no write proof and exits 1', async () => {
+  const base = gsTenant([]);
+  const fetchImpl = async (url, init) => (url.endsWith('/v2/cockpit/cta') ? json(400, { result: false, errorDesc: 'FAKE cta rejected' }) : base(url, init));
+  const r = await run({ gainsight: GS }, fetchImpl, { write: true });
+  assert.equal(r.code, 1);
+  assert.ok(r.lines.some((l) => l.startsWith('PASS gainsight write Pending items batch')), r.lines.join('\n'));
+  assert.ok(r.lines.some((l) => l.startsWith('FAIL gainsight write At-Risk CTA')), r.lines.join('\n'));
+  assert.ok(!r.lines.some((l) => l.startsWith('PASS gainsight write proof recorded')));
+  const p = loadProof(r.stateDir).gainsight;
+  assert.ok(p.read);
+  assert.equal(p.write, undefined);
+});

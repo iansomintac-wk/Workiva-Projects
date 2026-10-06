@@ -208,7 +208,7 @@ labelled transcript-size figures (see "Transcripts (I-2)"). With a `gong` adapte
 `FAIL measure:` line and exits 1.
 
 `node connector/server.mjs --setup` asks one question at a time; Gong and Gainsight can each be skipped (answer `n`).
-Secret answers (Gong access key secret, OAuth client secret) are not echoed and never printed. It writes
+Secret answers (Gong access key secret, OAuth client secret) are not echoed and never printed. An empty Gong access key, key secret, OAuth client id or client secret is asked again, up to 3 tries. It writes
 `CONNECTOR_CONFIG` (default `connector/config.json`, git-ignored; never point it at `config.example.json`); if that path does not exist yet, `--setup` starts from `config.example.json` and creates it (the plain server instead prints one `config file not found` line and exits 1). For
 Gainsight it prints the authorize URL, then listens once on `127.0.0.1:<port>/oauth/callback` (up to 10 minutes) and
 exchanges the code (if the port is taken it prints one `FAIL gainsight oauth: callback port <n> in use` line and exits 1), saving the token reply to `gainsight-tokens.json`. Then it runs `--check`. If
