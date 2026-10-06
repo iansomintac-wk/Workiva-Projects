@@ -33,3 +33,15 @@ test('vendor-http F9: the kept body is scrubbed, keeps its shape, and is not an 
     return true;
   });
 });
+
+test('vendor-http R-1: a secret that straddles the 500-char detail cut leaves no fragment (scrub before truncate)', async () => {
+  const S = 'FAKE-SECRET-STRADDLE-123456';
+  const body = { error: 'a'.repeat(485) + S }; // {"error":" is 10 chars, so the secret starts at char 495 of the detail; a cut at 500 would keep 5 of its chars
+  assert.equal(JSON.stringify(body).indexOf(S), 495);
+  await assert.rejects(requestJson({ fetchImpl: async () => json(400, body), method: 'POST', url: 'https://fake.invalid/x', body: {}, secrets: [S], host: 'Fake' }), (e) => {
+    assert.ok(e instanceof VendorError);
+    for (let n = 6; n <= S.length; n++) assert.ok(!e.message.includes(S.slice(0, n)), `prefix of length ${n} leaked`);
+    assert.ok(!e.message.includes('FAKE-'), e.message.slice(-60));
+    return true;
+  });
+});

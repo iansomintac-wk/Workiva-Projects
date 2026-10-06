@@ -32,7 +32,8 @@ export async function requestJson({ fetchImpl, method = 'GET', url, headers = {}
   let json = null;
   try { json = text ? JSON.parse(text) : null; } catch { json = null; }
   if (!resp.ok) {
-    const detail = json ? JSON.stringify(json).slice(0, 500) : (resp.statusText || '');
+    // Scrub the whole detail first, then truncate, so a secret straddling the cut cannot leave a fragment.
+    const detail = scrubAll(json ? JSON.stringify(json) : (resp.statusText || ''), secrets).slice(0, 500);
     throw new VendorError(scrubAll(`${host} HTTP ${resp.status}: ${detail}`, secrets), {
       status: resp.status, bodyKeys: json && typeof json === 'object' ? Object.keys(json) : [], body: json == null ? null : scrubBody(json, secrets),
     });
