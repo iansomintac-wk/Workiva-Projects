@@ -27,7 +27,7 @@ Matches the previous lead's figures (2026-10-03, `c6b7f2b`).
 
 | # | Task | Findings | Model | State | Commit | Check command | Measured result (lead re-run) | Deviation |
 |---|---|---|---|---|---|---|---|---|
-| F-1 | Lock: stale takeover race, release on failed write | lock lows, F23 | top | planned | | `node --test connector/test/*.test.mjs` → 144 | | |
+| F-1 | Lock: stale takeover race, release on failed write | lock lows, F23 | top | done | da60012 | `node --test connector/test/*.test.mjs` → 144 | connector 144/144 (+4 gainsight-auth: lock race crashed holder + two waiters, stale takeover file, failed write releases lock, F23 non-date obtainedAt), exit 0 (lead, 2026-10-05). Checker PASS: 3 of 4 new tests red on da60012~1; release test pins existing behaviour (plan intended). Builder saw one demo.test "did not start in 10 s" flake; checker 2 runs + lead 1 run did not reproduce | Extra comment clause in gainsight-auth.mjs (plan gave no text). Low, left: breakStale keeps one check-then-unlink (live holder overrunning 60 s releasing during a takeover could drop a third waiter's fresh lock; comment names only the crash case); stale takeover-file removal is itself unguarded (reachable only after a crash mid-takeover) |
 | F-2 | | F8, F9 | Sonnet | planned | | → 146 | | |
 | F-3 | | F7 | Sonnet | planned | | → 147 | | |
 | F-4 | Push | F13, F14, F22, mixed-code duplicate | Sonnet | planned | | → 152 | | |
