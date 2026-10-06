@@ -184,8 +184,10 @@ failure is a 500; an adapter that throws is a 502.
 configured production tenant and whether a sandbox write proof exists, asks for the tenant URL to be typed back, and
 on a match records the unlock in `proof.json`. A mismatch, an empty `appUrl` or an unreadable `proof.json` prints a
 `FAIL unlock:` line, changes nothing and exits 1. With no argument the server starts. If arguments are given and none of them is one of these commands, the server prints
-`unknown argument:` and a usage line and exits 2 (nothing starts). If at least one known command is given, the command runs
-and any other argument is ignored (for example `--check --wirte` runs the read-only check and ignores `--wirte`).
+`unknown argument:` and a usage line and exits 2 (nothing starts). If at least one known command is given, a command runs:
+unrecognised arguments are ignored (for example `--check --wirte` runs the read-only check and ignores `--wirte`), the known
+sub-flags are honoured (`--write` with `--check`; `--book-bytes` and `--quota-bytes` with `--measure-transcripts`), and if
+several commands are given only the first in this order runs: `--setup`, `--unlock-production`, `--check`, `--measure-transcripts`.
 
 `node connector/server.mjs --check` is read-only. It prints one line per step: `PASS <step>[: detail]`,
 `FAIL <step>: <what to fix>; who fixes it: <who>`, or `SKIP <step>: <why>`, and exits 1 if any step FAILs, else 0. With
