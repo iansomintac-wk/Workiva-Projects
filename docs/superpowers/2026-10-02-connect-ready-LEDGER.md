@@ -77,3 +77,9 @@ Full table with commands: `evidence/connect-ready/acceptance.md`.
 Branch `worktree-connect-ready`, HEAD after this ledger commit. Adapters are tested on recorded-shape fixtures and
 unproven until `--check`. Admin's next step: send the updated admin ask
 (`docs/superpowers/drafts/connector-admin-ask.md`); on connection day run `node connector/server.mjs --setup`.
+
+## Next (2026-10-05)
+
+Ian chose "Connect-ready follow-ups" as the next task. Run prompt: `sessions/connect-ready-followups-run.md`; subagent
+rules: `sessions/connect-ready-followups-subagent-rules.md`. Scope: review F7-F11, F13-F18, F20-F23, F24 and the T-14
+checker lows; F19 and F12 out.
