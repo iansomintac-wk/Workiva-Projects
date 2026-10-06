@@ -246,7 +246,9 @@ Adapter state suffixes in `/v1/health` (connect-ready, 2026-10-02): string value
   access token is used, and a failed write stops the request. A refresh holds `gainsight-tokens.json.lock`
   (exclusive create) so two processes never spend the same refresh token; after taking it the file is re-read and a
   token another process already rotated is used without a refresh. A waiter gives up after 65 s with an error naming
-  the lock; a lock older than 60 s (twice the 30 s call timeout) is a dead holder's and is taken over.
+  the lock; a lock older than 60 s (twice the 30 s call timeout) is a dead holder's and is taken over. Only one waiter
+  at a time may remove a stale lock: it first creates `gainsight-tokens.json.takeover.lock` and checks the age again,
+  so a fresh lock is never removed. An `obtainedAt` that is not a date counts as expired.
 - `sent-record.json`: `{ "<itemId>": {externalId, kind, tenant, at} }`, written atomically after each real send. A repeated
   id for the same tenant answers `sent` with no call; a `failed` id is not stored.
 - `dry-run.jsonl`: one JSON line per item that dry-run would have sent (`at`, `itemId`, `kind`, `method`, `url`, `headers`

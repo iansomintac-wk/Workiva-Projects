@@ -1,7 +1,7 @@
 // connect-ready T-6: Gainsight OAuth on a stubbed fetch. Single-use refresh tokens are persisted before use. Node built-ins only.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readFileSync, existsSync, utimesSync, unlinkSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, existsSync, utimesSync, unlinkSync, openSync, closeSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { installNetGuard } from '../lib/test-net-guard.mjs';
@@ -142,6 +142,56 @@ test('oauth lock: a failed refresh still releases the lock', async () => {
   const src = createTokenSource({ cfg: CFG, fetchImpl: async () => json(400, { error: 'no' }), tokensPath: path, now: () => T0 });
   await assert.rejects(src.accessToken());
   assert.equal(existsSync(`${path}.lock`), false);
+});
+
+// Follow-ups F-1: lock takeover race, release on a failed write, NaN obtainedAt.
+test('oauth lock race: a waiter that saw the crashed holder\'s stale lock never removes the fresh lock another waiter took over', async () => {
+  const path = EXPIRED(); const lock = `${path}.lock`;
+  writeFileSync(lock, 'crashed');
+  const past = new Date(Date.now() - 61e3); utimesSync(lock, past, past);
+  let first = true;
+  // Waiter A (another process) removes the stale lock and takes a fresh one between waiter B's stat and B's next step.
+  const lockFs = { openSync, closeSync, unlinkSync, statSync: (p) => {
+    const st = statSync(p);
+    if (p === lock && first) { first = false; unlinkSync(lock); writeFileSync(lock, 'waiter-A'); }
+    return st;
+  } };
+  const count = { n: 0 };
+  const b = createTokenSource({ cfg: CFG, fetchImpl: slowRefresh(count), tokensPath: path, now: () => T0, lockWaitMs: 150, lockPollMs: 10, lockFs });
+  await assert.rejects(b.accessToken(), /another connector process/i);
+  assert.equal(count.n, 0);
+  assert.equal(readFileSync(lock, 'utf8'), 'waiter-A');
+  assert.equal(existsSync(`${path}.takeover.lock`), false);
+  unlinkSync(lock); // the test's own fixture
+});
+
+test('oauth lock: a takeover file left by a process that died mid-takeover goes stale too, so the dead lock is still taken over', async () => {
+  const path = EXPIRED(); const lock = `${path}.lock`; const tk = `${path}.takeover.lock`;
+  const past = new Date(Date.now() - 61e3);
+  writeFileSync(lock, 'crashed'); utimesSync(lock, past, past);
+  writeFileSync(tk, 'crashed-taker'); utimesSync(tk, past, past);
+  const count = { n: 0 };
+  const src = createTokenSource({ cfg: CFG, fetchImpl: slowRefresh(count), tokensPath: path, now: () => T0, lockWaitMs: 500, lockPollMs: 10 });
+  assert.equal(await src.accessToken(), 'FAKE-ACCESS-2');
+  assert.equal(count.n, 1);
+  assert.equal(existsSync(lock), false);
+  assert.equal(existsSync(tk), false);
+});
+
+test('oauth lock: a failed token-file write still releases the lock', async () => {
+  const path = EXPIRED();
+  const src = createTokenSource({ cfg: CFG, fetchImpl: async () => json(200, { FAKE_at: 'FAKE-ACCESS-2', FAKE_rt: 'FAKE-REFRESH-2' }), tokensPath: path,
+    writeFile: () => { throw Object.assign(new Error('denied'), { code: 'EACCES' }); }, now: () => T0 });
+  await assert.rejects(src.accessToken(), /spent/);
+  assert.equal(existsSync(`${path}.lock`), false);
+});
+
+test('oauth F23: an obtainedAt that is not a date counts as expired: one refresh, the new token is used', async () => {
+  const path = tokensFile({ raw: { FAKE_at: 'FAKE-ACCESS-1', FAKE_rt: 'FAKE-REFRESH-1' }, obtainedAt: 'not-a-date' });
+  let refreshes = 0;
+  const src = createTokenSource({ cfg: CFG, fetchImpl: async () => { refreshes++; return json(200, { FAKE_at: 'FAKE-ACCESS-2', FAKE_rt: 'FAKE-REFRESH-2' }); }, tokensPath: path, now: () => T0 });
+  assert.equal(await src.accessToken(), 'FAKE-ACCESS-2');
+  assert.equal(refreshes, 1);
 });
 
 test('oauth: unset token field names list the saved reply KEYS, never values; token errors are scrubbed', async () => {

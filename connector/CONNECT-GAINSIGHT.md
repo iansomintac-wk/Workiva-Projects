@@ -79,7 +79,8 @@ Sources are the vendor's own pages as read in `docs/superpowers/evidence/connect
   Because of that, a refresh takes `connector/gainsight-tokens.json.lock` first, so the running connector and a
   `--check` in another terminal never both spend one refresh token. If a run stops with "Another connector process is
   refreshing the Gainsight token", retry in a minute; delete the lock file only if no other connector or `--check` is
-  running (a lock older than 60 s is taken over on its own).
+  running (a lock older than 60 s is taken over on its own; `gainsight-tokens.json.takeover.lock` may appear for a
+  moment while that happens. Both files are git-ignored (`connector/*.lock`)).
 - The refresh request body (`grantType`, `refreshToken`): to confirm with admin.
 - Company query is `POST /v1/data/objects/query/Company`, at most 5,000 records per call. CONFIRMED: https://support.gainsight.com/gainsight_nxt/API_and_Developer_Docs/Company_and_Relationship_API/Company_API_Documentation
 - Whether the query reply is `data` or `data.records`: to confirm with admin.

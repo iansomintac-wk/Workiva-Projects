@@ -13,11 +13,13 @@ const ACCESS_TTL_MS = 3600 * 1000;                             // access token l
 const REFRESH_EARLY_MS = 120 * 1000;
 // Cross-process refresh lock (T-14 F4): `<tokensPath>.lock`, created with 'wx' so only one process holds it.
 // A holder keeps it for one token call, which vendor-http aborts after 30 s, plus one small atomic write. A lock
-// older than 60 s (twice that timeout) can only be left by a holder that died, so it is taken over. A waiter waits
+// older than 60 s (twice that timeout) can only be left by a holder that died, so it is taken over (guarded by
+// `<tokensPath>.takeover.lock`, see breakStale). A waiter waits
 // 65 s (the stale age plus 5 s), so it outlasts any live holder and also reaches a crashed one's lock going stale.
 export const LOCK_STALE_MS = 60 * 1000;
 export const LOCK_WAIT_MS = 65 * 1000;
 const LOCK_POLL_MS = 200;
+const LOCK_FS = { openSync, closeSync, statSync, unlinkSync };
 // The token reply's field names and the callback's code parameter are NOT in the research: they are config
 // (gainsight.oauth.accessTokenField / refreshTokenField / callbackCodeParam), never guessed.
 
@@ -54,15 +56,39 @@ export async function exchangeCode({ cfg, code, redirectUri, fetchImpl, tokensPa
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
+const ageOf = (fs, p) => { try { return Date.now() - fs.statSync(p).mtimeMs; } catch { return null; } };
+function tryCreate(fs, p) {
+  try { fs.closeSync(fs.openSync(p, 'wx')); return true; }
+  catch (e) { if (e.code === 'EEXIST') return false; throw new Error(`Could not create the Gainsight refresh lock ${p} (${e.code || e.message})`); }
+}
+// Judging a lock stale and removing it are two steps. Two waiters could both judge a dead holder's lock stale; the first
+// removes it and takes a fresh lock, then the second removes that FRESH lock, and both spend one single-use refresh
+// token. So only the holder of `<name>.takeover.lock` may remove a stale lock, and it checks the age again after taking
+// it. The takeover file is held for two sync calls; one older than staleMs was left by a process that died inside
+// them, and is removed. That removal is the one remaining check-then-remove, reachable only after a crash inside a
+// takeover while two other waiters are waiting.
+function breakStale(fs, lockPath, staleMs) {
+  const tk = lockPath.replace(/\.lock$/, '.takeover.lock');
+  if (!tryCreate(fs, tk)) {
+    const a = ageOf(fs, tk);
+    if (a !== null && a > staleMs) { try { fs.unlinkSync(tk); } catch { /* already gone */ } }
+    return;
+  }
+  try {
+    const age = ageOf(fs, lockPath);
+    if (age !== null && age > staleMs) { try { fs.unlinkSync(lockPath); } catch { /* already gone */ } }
+  } finally { try { fs.unlinkSync(tk); } catch { /* already gone */ } }
+}
+
 // Takes `<tokensPath>.lock` or throws after waitMs. Returns the release function.
-async function takeLock(lockPath, { waitMs, staleMs, pollMs }) {
+export async function takeLock(lockPath, { waitMs, staleMs, pollMs, fs = LOCK_FS }) {
   const until = Date.now() + waitMs;
+  const release = () => { try { fs.unlinkSync(lockPath); } catch { /* already gone */ } };
   for (;;) {
-    try { closeSync(openSync(lockPath, 'wx')); return () => { try { unlinkSync(lockPath); } catch { /* already gone */ } }; }
-    catch (e) { if (e.code !== 'EEXIST') throw new Error(`Could not create the Gainsight refresh lock ${lockPath} (${e.code || e.message})`); }
-    let age = null;
-    try { age = Date.now() - statSync(lockPath).mtimeMs; } catch { continue; } // released between the two calls: retry now
-    if (age > staleMs) { try { unlinkSync(lockPath); } catch { /* another waiter took it over first */ } continue; }
+    if (tryCreate(fs, lockPath)) return release;
+    const age = ageOf(fs, lockPath);
+    if (age === null) continue; // released between the two calls: retry now
+    if (age > staleMs) { breakStale(fs, lockPath, staleMs); if (tryCreate(fs, lockPath)) return release; }
     if (Date.now() >= until) {
       throw new Error(`Another connector process is refreshing the Gainsight token: ${lockPath} was held for more than ${Math.round(waitMs / 1000)} s. Retry in a minute; if no other connector or --check is running, delete ${lockPath}.`);
     }
@@ -71,11 +97,12 @@ async function takeLock(lockPath, { waitMs, staleMs, pollMs }) {
 }
 
 export function createTokenSource({ cfg, fetchImpl, tokensPath, writeFile = writeFileSync, now = () => new Date(),
-  lockWaitMs = LOCK_WAIT_MS, lockStaleMs = LOCK_STALE_MS, lockPollMs = LOCK_POLL_MS }) {
+  lockWaitMs = LOCK_WAIT_MS, lockStaleMs = LOCK_STALE_MS, lockPollMs = LOCK_POLL_MS, lockFs = LOCK_FS }) {
   let inflight = null;
-  const expired = (s) => now().getTime() - Date.parse(s.obtainedAt) > ACCESS_TTL_MS - REFRESH_EARLY_MS;
+  // T-14 F23: an obtainedAt that is not a date (hand-edited or truncated file) counts as expired, never as fresh forever.
+  const expired = (s) => { const t = Date.parse(s.obtainedAt); return Number.isNaN(t) || now().getTime() - t > ACCESS_TTL_MS - REFRESH_EARLY_MS; };
   async function refresh(stored) {
-    const release = await takeLock(`${tokensPath}.lock`, { waitMs: lockWaitMs, staleMs: lockStaleMs, pollMs: lockPollMs });
+    const release = await takeLock(`${tokensPath}.lock`, { waitMs: lockWaitMs, staleMs: lockStaleMs, pollMs: lockPollMs, fs: lockFs });
     try {
       // Another process may have rotated the token while this one waited: its refresh token is the one on disk now.
       const onDisk = readJson(tokensPath, null);
