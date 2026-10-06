@@ -3,7 +3,7 @@
 import { join } from 'node:path';
 import { appendFileSync } from 'node:fs';
 import { requestJson, pacer, pick, scrubAll, VendorError } from '../lib/vendor-http.mjs';
-import { loadProof, isProven, tenantOf, sameTenant, healthName, resolveStateDir, readJson, writeJsonAtomic, FILES } from '../lib/state.mjs';
+import { loadProofSafe, isProven, tenantOf, sameTenant, healthName, resolveStateDir, readJson, writeJsonAtomic, FILES } from '../lib/state.mjs';
 import { createTokenSource } from './gainsight-auth.mjs';
 import { gateFromState, markFirstSendDone, FIRST_SEND_ERROR } from '../lib/write-gate.mjs';
 
@@ -232,7 +232,7 @@ export function create(cfg = {}, deps = {}) {
   }
 
   return {
-    get name() { return healthName('gainsight-rest', { proven: isProven(loadProof(dir), 'gainsight', 'read', tenantOf('gainsight', cfg)), dryRun: cfg.dryRun !== false }); },
+    get name() { return healthName('gainsight-rest', { proven: isProven(loadProofSafe(dir), 'gainsight', 'read', tenantOf('gainsight', cfg)), dryRun: cfg.dryRun !== false }); },
     listAccounts,
     push,
     async authProbe() { await tokens.accessToken(); },

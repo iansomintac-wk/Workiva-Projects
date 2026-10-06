@@ -240,7 +240,9 @@ Adapter state suffixes in `/v1/health` (connect-ready, 2026-10-02): string value
 ## Local state files (git-ignored)
 
 - `proof.json`: per adapter, `state`, `provenAt`, `tenant` and the observed `shapes`. Gainsight has separate
-  `read` and `write` proofs plus `unlock`. A proof is void when the configured tenant differs.
+  `read` and `write` proofs plus `unlock`. A proof is void when the configured tenant differs. A `proof.json` that
+  cannot be read counts as no proof in `/v1/health` (the adapter shows `unproven`); production writes stay blocked
+  until it is fixed or deleted.
 - `CONNECTOR_STATE_DIR` overrides the folder (used by the tests).
 - `gainsight-tokens.json`: `{raw, obtainedAt}`. Refresh tokens are single-use. The new one is written before the new
   access token is used, and a failed write stops the request. A refresh holds `gainsight-tokens.json.lock`

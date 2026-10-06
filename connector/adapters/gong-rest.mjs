@@ -1,7 +1,7 @@
 // Real Gong adapter (connect-ready §3.3). Tested on recorded-shape fixtures only; unproven until `--check` passes
 // against the configured tenant. Node built-ins only; fetch is injected (deps.fetchImpl) or the global one.
 import { requestJson, pacer } from '../lib/vendor-http.mjs';
-import { loadProof, isProven, tenantOf, healthName } from '../lib/state.mjs';
+import { loadProofSafe, isProven, tenantOf, healthName } from '../lib/state.mjs';
 
 // CONFIRMED https://help.gong.io/apidocs/retrieve-detailed-call-data-by-various-filters-v2callsextensive-2.md (research Q2)
 export const EXTENSIVE_PATH = '/v2/calls/extensive';
@@ -99,7 +99,7 @@ export function create(cfg = {}, deps = {}) {
   }
 
   return {
-    get name() { return healthName('gong-rest', { proven: isProven(loadProof(deps.stateDir), 'gong', 'read', tenantOf('gong', cfg)) }); },
+    get name() { return healthName('gong-rest', { proven: isProven(loadProofSafe(deps.stateDir), 'gong', 'read', tenantOf('gong', cfg)) }); },
     listCalls,
     // --measure-transcripts: characters per call for my calls in the window. Stores nothing, returns no text.
     // CONFIRMED (Q3): no length field; length = sum of sentences[].text lengths over every monologue.
