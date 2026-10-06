@@ -22,7 +22,7 @@ Matches the previous lead's figures (2026-10-03, `c6b7f2b`).
 | When | Stop | State |
 |---|---|---|
 | 2026-10-05 | Plan approval (plan `04b4241`), questions: F10 build F-8?; F21 leave unfixed?; mixed-code duplicate stays "sent"? | Ian, 2026-10-05: "Approve F-1..F-7"; F10 "Build F-8, off by default"; F21 "Leave unfixed"; duplicate "Keep as sent" |
-| 2026-10-05 | Merge (F-1..F-8 and R-1 done, final review clean, end checks measured) | waiting for Ian |
+| 2026-10-05 | Merge (F-1..F-8 and R-1 done, final review clean, end checks measured) | Ian, 2026-10-06: "Merge --no-ff". Merged as 0314b82; on master: connector 168/168, selfcheck 475/475, e2e 7/7 exit 0, demo exit 0 (lead) |
 
 ## Tasks
 
