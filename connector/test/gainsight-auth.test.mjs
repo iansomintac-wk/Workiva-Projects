@@ -1,7 +1,7 @@
 // connect-ready T-6: Gainsight OAuth on a stubbed fetch. Single-use refresh tokens are persisted before use. Node built-ins only.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readFileSync, existsSync, utimesSync, unlinkSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, existsSync, utimesSync, unlinkSync, openSync, closeSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { installNetGuard } from '../lib/test-net-guard.mjs';
@@ -144,6 +144,56 @@ test('oauth lock: a failed refresh still releases the lock', async () => {
   assert.equal(existsSync(`${path}.lock`), false);
 });
 
+// Follow-ups F-1: lock takeover race, release on a failed write, NaN obtainedAt.
+test('oauth lock race: a waiter that saw the crashed holder\'s stale lock never removes the fresh lock another waiter took over', async () => {
+  const path = EXPIRED(); const lock = `${path}.lock`;
+  writeFileSync(lock, 'crashed');
+  const past = new Date(Date.now() - 61e3); utimesSync(lock, past, past);
+  let first = true;
+  // Waiter A (another process) removes the stale lock and takes a fresh one between waiter B's stat and B's next step.
+  const lockFs = { openSync, closeSync, unlinkSync, statSync: (p) => {
+    const st = statSync(p);
+    if (p === lock && first) { first = false; unlinkSync(lock); writeFileSync(lock, 'waiter-A'); }
+    return st;
+  } };
+  const count = { n: 0 };
+  const b = createTokenSource({ cfg: CFG, fetchImpl: slowRefresh(count), tokensPath: path, now: () => T0, lockWaitMs: 150, lockPollMs: 10, lockFs });
+  await assert.rejects(b.accessToken(), /another connector process/i);
+  assert.equal(count.n, 0);
+  assert.equal(readFileSync(lock, 'utf8'), 'waiter-A');
+  assert.equal(existsSync(`${path}.takeover.lock`), false);
+  unlinkSync(lock); // the test's own fixture
+});
+
+test('oauth lock: a takeover file left by a process that died mid-takeover goes stale too, so the dead lock is still taken over', async () => {
+  const path = EXPIRED(); const lock = `${path}.lock`; const tk = `${path}.takeover.lock`;
+  const past = new Date(Date.now() - 61e3);
+  writeFileSync(lock, 'crashed'); utimesSync(lock, past, past);
+  writeFileSync(tk, 'crashed-taker'); utimesSync(tk, past, past);
+  const count = { n: 0 };
+  const src = createTokenSource({ cfg: CFG, fetchImpl: slowRefresh(count), tokensPath: path, now: () => T0, lockWaitMs: 500, lockPollMs: 10 });
+  assert.equal(await src.accessToken(), 'FAKE-ACCESS-2');
+  assert.equal(count.n, 1);
+  assert.equal(existsSync(lock), false);
+  assert.equal(existsSync(tk), false);
+});
+
+test('oauth lock: a failed token-file write still releases the lock', async () => {
+  const path = EXPIRED();
+  const src = createTokenSource({ cfg: CFG, fetchImpl: async () => json(200, { FAKE_at: 'FAKE-ACCESS-2', FAKE_rt: 'FAKE-REFRESH-2' }), tokensPath: path,
+    writeFile: () => { throw Object.assign(new Error('denied'), { code: 'EACCES' }); }, now: () => T0 });
+  await assert.rejects(src.accessToken(), /spent/);
+  assert.equal(existsSync(`${path}.lock`), false);
+});
+
+test('oauth F23: an obtainedAt that is not a date counts as expired: one refresh, the new token is used', async () => {
+  const path = tokensFile({ raw: { FAKE_at: 'FAKE-ACCESS-1', FAKE_rt: 'FAKE-REFRESH-1' }, obtainedAt: 'not-a-date' });
+  let refreshes = 0;
+  const src = createTokenSource({ cfg: CFG, fetchImpl: async () => { refreshes++; return json(200, { FAKE_at: 'FAKE-ACCESS-2', FAKE_rt: 'FAKE-REFRESH-2' }); }, tokensPath: path, now: () => T0 });
+  assert.equal(await src.accessToken(), 'FAKE-ACCESS-2');
+  assert.equal(refreshes, 1);
+});
+
 test('oauth: unset token field names list the saved reply KEYS, never values; token errors are scrubbed', async () => {
   const path = tokensFile({ raw: { FAKE_at: 'FAKE-ACCESS-1', FAKE_rt: 'FAKE-REFRESH-1' }, obtainedAt: T0.toISOString() });
   const unset = createTokenSource({ cfg: { ...CFG, oauth: { ...CFG.oauth, accessTokenField: '', refreshTokenField: '' } }, fetchImpl: async () => {}, tokensPath: path, now: () => T0 });
@@ -151,4 +201,44 @@ test('oauth: unset token field names list the saved reply KEYS, never values; to
   const p2 = tokensFile({ raw: { FAKE_at: 'FAKE-ACCESS-1', FAKE_rt: 'FAKE-REFRESH-1' }, obtainedAt: old(2 * 3600e3) });
   const bad = createTokenSource({ cfg: CFG, fetchImpl: async () => json(400, { error: 'bad FAKE-CLIENT-SECRET-zz FAKE-REFRESH-1' }), tokensPath: p2, now: () => T0 });
   await assert.rejects(bad.accessToken(), (e) => !e.message.includes('FAKE-CLIENT-SECRET-zz') && !e.message.includes('FAKE-REFRESH-1'));
+});
+
+// Follow-ups F-5 (T-14 F11)
+test('oauth F11: the callback reply is text/plain with X-Content-Type-Options: nosniff', async () => {
+  const server = createConnector({ config: {}, adapters: loadAdapters({}), token: TOKEN, oauthCallback: async () => ({ status: 200, text: 'names: <b>x</b>' }) });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  try {
+    const r = await fetch(`http://127.0.0.1:${server.address().port}/oauth/callback?code=x`);
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get('x-content-type-options'), 'nosniff');
+    assert.match(r.headers.get('content-type'), /^text\/plain/);
+  } finally { server.closeAllConnections?.(); await new Promise((r) => server.close(r)); }
+});
+
+// Follow-ups F-8 (T-14 F10): optional state, off by default (Gainsight echoing state is UNCONFIRMED).
+test('oauth F10: with oauth.stateParam empty the authorize URL has no state; when set it carries the given value', () => {
+  const off = new URL(authorizeUrl(CFG, redirectUriFor(8787), { state: 'FAKE-STATE-1' }));
+  assert.deepEqual([...off.searchParams.keys()], ['clientId', 'redirectUri', 'scopes']);
+  const on = new URL(authorizeUrl({ ...CFG, oauth: { ...CFG.oauth, stateParam: 'state' } }, redirectUriFor(8787), { state: 'FAKE-STATE-1' }));
+  assert.equal(on.searchParams.get('state'), 'FAKE-STATE-1');
+});
+
+test('oauth F10: with stateParam set, a wrong or missing state is 400, makes no token call, and the real redirect still works', async () => {
+  let calls = 0;
+  const cfg = { ...CFG, oauth: { ...CFG.oauth, stateParam: 'state' } };
+  const h = makeCallbackHandler({ cfg, redirectUri: redirectUriFor(8787), expectedState: 'FAKE-STATE-1', tokensPath: tokensFile(), now: () => T0,
+    fetchImpl: async () => { calls++; return json(200, { FAKE_at: 'FAKE-ACCESS-1', FAKE_rt: 'FAKE-REFRESH-1' }); } });
+  assert.equal((await h(new URLSearchParams('code=FAKE-CODE-1&state=WRONG'))).status, 400);
+  assert.equal((await h(new URLSearchParams('code=FAKE-CODE-1'))).status, 400);
+  assert.equal(calls, 0);
+  assert.equal((await h(new URLSearchParams('code=FAKE-CODE-1&state=FAKE-STATE-1'))).status, 200);
+  assert.equal(calls, 1);
+});
+
+test('oauth F10: with stateParam empty (the default) the callback ignores state exactly as before', async () => {
+  let calls = 0;
+  const h = makeCallbackHandler({ cfg: CFG, redirectUri: redirectUriFor(8787), expectedState: 'FAKE-STATE-1', tokensPath: tokensFile(), now: () => T0,
+    fetchImpl: async () => { calls++; return json(200, { FAKE_at: 'FAKE-ACCESS-1', FAKE_rt: 'FAKE-REFRESH-1' }); } });
+  assert.equal((await h(new URLSearchParams('code=FAKE-CODE-1&state=anything'))).status, 200);
+  assert.equal(calls, 1);
 });

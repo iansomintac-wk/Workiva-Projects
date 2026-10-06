@@ -116,9 +116,11 @@ one result per item, `externalId` and `error` `null` when not applicable.
 - Saved send record: `sent-record.json` keeps item id to `{externalId, kind, tenant, at}`. A repeated id for the same
   tenant answers `sent` with no call, and a `failed` id is not stored. A duplicate-ExternalId rejection
   (`GS_TL_10_0107`) counts as already sent, whether it comes as an HTTP error or as an HTTP 200 whose
-  `data.failures` entry for the item holds exactly that code (where the code sits is UNCONFIRMED). Any other Timeline
-  reply that lists the item in `data.failures`, or has no `activityId` for it in `data.success`, answers `failed`
-  and is not stored. Crash window: the record is written after
+  `data.failures` entry for the item holds exactly that code as one of its values (where the code sits is
+  UNCONFIRMED). It counts as sent even when that entry carries it alongside other codes: the record already exists
+  in Gainsight, so a resend could never succeed. In both cases `externalId` is our item id, not a Gainsight
+  `activityId`: the duplicate reply does not carry one. Any other Timeline reply that lists the item in
+  `data.failures`, or has no `activityId` for it in `data.success`, answers `failed` and is not stored. Crash window: the record is written after
   the vendor reply, so a crash between the two leaves no record. A Timeline repeat is then recovered by the duplicate
   error code; a CTA repeat may double-send (referenceId duplicate behaviour is UNCONFIRMED, research Q14 and gap 5).
   A CTA sent with no readable id (`gainsight.cta.idPath` unset) is recorded with `externalId: null`.
@@ -156,7 +158,10 @@ saves the raw token reply to `gainsight-tokens.json`, and then answers 410. Outs
 other. Redirect URI to register: `http://127.0.0.1:<port>/oauth/callback`. The query name that carries the code, and
 the token reply's access and refresh field names, are not in the vendor research, so they are config
 (`gainsight.oauth.callbackCodeParam`, `accessTokenField`, `refreshTokenField`, empty by default). While one is unset,
-the connector reports only the key names it received, never their values.
+the connector reports only the key names it received, never their values. `gainsight.oauth.stateParam` is optional and
+empty by default (nothing is sent or checked); it is UNCONFIRMED that Gainsight echoes a state parameter. When set,
+`--setup` sends a random value under that name and the callback answers 400, without spending itself, to a redirect that
+lacks it.
 
 ## Running it
 
@@ -178,7 +183,11 @@ failure is a 500; an adapter that throws is a 502.
 `node connector/server.mjs --unlock-production` (gainsight-rest, `environment: "production"` only) prints the
 configured production tenant and whether a sandbox write proof exists, asks for the tenant URL to be typed back, and
 on a match records the unlock in `proof.json`. A mismatch, an empty `appUrl` or an unreadable `proof.json` prints a
-`FAIL unlock:` line, changes nothing and exits 1. Any other argument starts the server as before.
+`FAIL unlock:` line, changes nothing and exits 1. With no argument the server starts. If arguments are given and none of them is one of these commands, the server prints
+`unknown argument:` and a usage line and exits 2 (nothing starts). If at least one known command is given, a command runs:
+unrecognised arguments are ignored (for example `--check --wirte` runs the read-only check and ignores `--wirte`), the known
+sub-flags are honoured (`--write` with `--check`; `--book-bytes` and `--quota-bytes` with `--measure-transcripts`), and if
+several commands are given only the first in this order runs: `--setup`, `--unlock-production`, `--check`, `--measure-transcripts`.
 
 `node connector/server.mjs --check` is read-only. It prints one line per step: `PASS <step>[: detail]`,
 `FAIL <step>: <what to fix>; who fixes it: <who>`, or `SKIP <step>: <why>`, and exits 1 if any step FAILs, else 0. With
@@ -205,7 +214,7 @@ labelled transcript-size figures (see "Transcripts (I-2)"). With a `gong` adapte
 `FAIL measure:` line and exits 1.
 
 `node connector/server.mjs --setup` asks one question at a time; Gong and Gainsight can each be skipped (answer `n`).
-Secret answers (Gong access key secret, OAuth client secret) are not echoed and never printed. It writes
+Secret answers (Gong access key secret, OAuth client secret) are not echoed and never printed. An empty Gong access key, key secret, OAuth client id or client secret is asked again, up to 3 tries. It writes
 `CONNECTOR_CONFIG` (default `connector/config.json`, git-ignored; never point it at `config.example.json`); if that path does not exist yet, `--setup` starts from `config.example.json` and creates it (the plain server instead prints one `config file not found` line and exits 1). For
 Gainsight it prints the authorize URL, then listens once on `127.0.0.1:<port>/oauth/callback` (up to 10 minutes) and
 exchanges the code (if the port is taken it prints one `FAIL gainsight oauth: callback port <n> in use` line and exits 1), saving the token reply to `gainsight-tokens.json`. Then it runs `--check`. If
@@ -240,13 +249,17 @@ Adapter state suffixes in `/v1/health` (connect-ready, 2026-10-02): string value
 ## Local state files (git-ignored)
 
 - `proof.json`: per adapter, `state`, `provenAt`, `tenant` and the observed `shapes`. Gainsight has separate
-  `read` and `write` proofs plus `unlock`. A proof is void when the configured tenant differs.
+  `read` and `write` proofs plus `unlock`. A proof is void when the configured tenant differs. A `proof.json` that
+  cannot be read counts as no proof in `/v1/health` (the adapter shows `unproven`); production writes stay blocked
+  until it is fixed or deleted.
 - `CONNECTOR_STATE_DIR` overrides the folder (used by the tests).
 - `gainsight-tokens.json`: `{raw, obtainedAt}`. Refresh tokens are single-use. The new one is written before the new
   access token is used, and a failed write stops the request. A refresh holds `gainsight-tokens.json.lock`
   (exclusive create) so two processes never spend the same refresh token; after taking it the file is re-read and a
   token another process already rotated is used without a refresh. A waiter gives up after 65 s with an error naming
-  the lock; a lock older than 60 s (twice the 30 s call timeout) is a dead holder's and is taken over.
+  the lock; a lock older than 60 s (twice the 30 s call timeout) is a dead holder's and is taken over. Only one waiter
+  at a time may remove a stale lock: it first creates `gainsight-tokens.json.takeover.lock` and checks the age again,
+  so a fresh lock is never removed. An `obtainedAt` that is not a date counts as expired.
 - `sent-record.json`: `{ "<itemId>": {externalId, kind, tenant, at} }`, written atomically after each real send. A repeated
   id for the same tenant answers `sent` with no call; a `failed` id is not stored.
 - `dry-run.jsonl`: one JSON line per item that dry-run would have sent (`at`, `itemId`, `kind`, `method`, `url`, `headers`
@@ -259,7 +272,10 @@ storing link + summary only and capping transcripts. The fake adapter still serv
 transcript sizes are not measured yet. `node connector/server.mjs
 --measure-transcripts [--book-bytes <n>] [--quota-bytes <n>]` (read-only, stores nothing, prints no transcript text)
 prints Ian's call count for the last 30 days, the median, mean, p90 and max transcript characters, calls per week, and
-the months until the book fills. Each figure is labelled measured, derived or assumption. Tested on recorded-shape
+the months until the book fills. Calls Gong returns no transcript for are counted on their own line and left out of the
+figures. A `--book-bytes` or `--quota-bytes` that is not a number of bytes, 0 or more, is one `FAIL measure:` line
+(exit 1, nothing called); when every transcript is empty, or the book is already at or over the quota, the months line
+says `not computed` with the reason. Each figure is labelled measured, derived or assumption. Tested on recorded-shape
 fixtures; unproven until `--check` has passed.
 
 ## Validator subset

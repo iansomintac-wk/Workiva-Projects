@@ -1,7 +1,7 @@
 // Real Gong adapter (connect-ready §3.3). Tested on recorded-shape fixtures only; unproven until `--check` passes
 // against the configured tenant. Node built-ins only; fetch is injected (deps.fetchImpl) or the global one.
 import { requestJson, pacer } from '../lib/vendor-http.mjs';
-import { loadProof, isProven, tenantOf, healthName } from '../lib/state.mjs';
+import { loadProofSafe, isProven, tenantOf, healthName } from '../lib/state.mjs';
 
 // CONFIRMED https://help.gong.io/apidocs/retrieve-detailed-call-data-by-various-filters-v2callsextensive-2.md (research Q2)
 export const EXTENSIVE_PATH = '/v2/calls/extensive';
@@ -99,24 +99,27 @@ export function create(cfg = {}, deps = {}) {
   }
 
   return {
-    get name() { return healthName('gong-rest', { proven: isProven(loadProof(deps.stateDir), 'gong', 'read', tenantOf('gong', cfg)) }); },
+    get name() { return healthName('gong-rest', { proven: isProven(loadProofSafe(deps.stateDir), 'gong', 'read', tenantOf('gong', cfg)) }); },
     listCalls,
     // --measure-transcripts: characters per call for my calls in the window. Stores nothing, returns no text.
     // CONFIRMED (Q3): no length field; length = sum of sentences[].text lengths over every monologue.
     async transcriptLengths({ since } = {}) {
       const ids = (await listCalls({ since })).map((c) => c.callId);
-      if (!ids.length) return { calls: 0, lengths: [] };
-      const lengths = new Map(ids.map((id) => [id, 0]));
+      if (!ids.length) return { calls: 0, lengths: [], noTranscript: 0 };
+      const wanted = new Set(ids);
+      // T-14 F18: only calls Gong returned a transcript for are measured. An id Gong did not return (not transcribed,
+      // or left out) is counted apart, never as 0 characters, so it does not pull the median down.
+      const lengths = new Map();
       await eachPage(TRANSCRIPT_PATH, { ...windowFor(since), callIds: ids }, {}, (page) => {
         for (const t of page.callTranscripts || []) {
           const id = String(t.callId);
-          if (!lengths.has(id)) continue;
-          let n = lengths.get(id);
+          if (!wanted.has(id)) continue;
+          let n = lengths.get(id) || 0;
           for (const mono of t.transcript || []) for (const s of mono.sentences || []) n += String(s.text || '').length;
           lengths.set(id, n);
         }
       });
-      return { calls: ids.length, lengths: [...lengths.values()] };
+      return { calls: ids.length, lengths: [...lengths.values()], noTranscript: ids.length - lengths.size };
     },
     // --check: the smallest read, one page of the last 24 hours, returned as Gong sent it.
     async probe() { return (await post(EXTENSIVE_PATH, { filter: windowFor(new Date(now().getTime() - DAY_MS).toISOString()), contentSelector: CONTENT_SELECTOR })); },

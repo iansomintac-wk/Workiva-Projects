@@ -30,6 +30,11 @@ export function tenantOf(slot, cfg = {}) {
 export const sameTenant = (a, b) => !!a && !!b && JSON.stringify(a) === JSON.stringify(b);
 
 export function loadProof(dir) { return readJson(join(resolveStateDir(dir), FILES.proof), {}); }
+// /v1/health must not throw (T-14 F7): an unreadable proof.json reads as "no proof", so the adapter shows unproven.
+// The write gate does NOT use this: it blocks on an unreadable file with its own message (write-gate.mjs).
+export function loadProofSafe(dir) {
+  try { const p = loadProof(dir); return p && typeof p === 'object' && !Array.isArray(p) ? p : {}; } catch { return {}; }
+}
 export function saveProof(dir, proof) { writeJsonAtomic(join(resolveStateDir(dir), FILES.proof), proof); }
 
 // proof.json: {gong:{read}, gainsight:{read, write, unlock}}. A missing entry means "unproven".

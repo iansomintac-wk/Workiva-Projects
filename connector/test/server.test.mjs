@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { validate } from '../lib/validate.mjs';
@@ -269,6 +269,18 @@ test('t13b push adapter failure -> 502 with a generic message: the adapter text 
 test('t14 loadAdapters: unknown adapter name throws', () => {
   assert.throws(() => loadAdapters({ gong: { adapter: 'gong-live' } }), /adapter not built: gong-live/);
   assert.throws(() => loadAdapters({ gainsight: { adapter: 'x' } }), /adapter not built: x/);
+});
+
+// Follow-ups F-5 (T-14 F20)
+test('t15 an argument that is not a command prints usage and exits 2; the server does not start', () => {
+  const tokenFile = join(tmp, 'f20-token.txt');
+  const r = spawnSync(process.execPath, [join(root, 'server.mjs'), '--chek'], { encoding: 'utf8', timeout: 20000,
+    env: { ...process.env, CONNECTOR_CONFIG: join(root, 'config.example.json'), CONNECTOR_STATE_DIR: tmp, CONNECTOR_TOKEN_FILE: tokenFile } });
+  assert.equal(r.status, 2, r.stdout + r.stderr);
+  assert.match(r.stderr, /unknown argument: --chek/);
+  assert.match(r.stderr, /usage: node connector\/server\.mjs/);
+  assert.ok(!/listening/.test(r.stdout), r.stdout);
+  assert.equal(existsSync(tokenFile), false);
 });
 
 test.after(() => { rmSync(tmp, { recursive: true, force: true }); });

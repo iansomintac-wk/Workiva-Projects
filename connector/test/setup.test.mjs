@@ -112,11 +112,13 @@ const SERVER = fileURLToPath(new URL('../server.mjs', import.meta.url));
 
 test('CONNECTOR_CONFIG pointing at a new file: --setup starts from config.example.json and creates it (exit 0)', () => {
   const dir = tmp(); const configPath = join(dir, 'new.json');
+  const example = fileURLToPath(new URL('../config.example.json', import.meta.url)); const before = readFileSync(example, 'utf8');
   const r = spawnSync(process.execPath, [SERVER, '--setup'], { input: 'n\nn\n', encoding: 'utf8', timeout: 20000,
     env: { ...process.env, CONNECTOR_CONFIG: configPath, CONNECTOR_STATE_DIR: dir } });
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.ok(existsSync(configPath));
   assert.ok(!/ENOENT/.test(r.stderr));
+  assert.equal(readFileSync(example, 'utf8'), before); // F16: the example is a template, never written
 });
 
 test('plain server with a missing CONNECTOR_CONFIG: one error line, exit 1, no stack trace', () => {
@@ -144,4 +146,24 @@ test('setup sign-in port already in use: one FAIL line, non-zero, no secrets', a
     assert.match(fails[0], new RegExp(`^FAIL gainsight oauth: callback port ${port} in use`));
     assert.ok(!out.join('\n').includes('FAKE-CLIENT-SECRET-zz'));
   } finally { await new Promise((res) => blocker.close(res)); }
+});
+
+// Follow-ups F-6 (T-14 F16)
+test('setup F16: an empty Gong key or secret, or Gainsight client id or secret, is asked again; nothing empty is written', async () => {
+  const dir = tmp(); const configPath = join(dir, 'config.json'); const out = [];
+  const g = scripted(['y', 'https://fake-tenant.gong.invalid', '', 'FAKE-KEY-123', '', 'FAKE-SECRET-456', 'ian.fake@fake-osm.invalid', 'n']);
+  assert.equal(await runSetup({ configPath, config: EXAMPLE, ask: g.ask, out: (l) => out.push(l), stateDir: dir, runCheckFn: async () => 0 }), 0);
+  const cfg = JSON.parse(readFileSync(configPath, 'utf8'));
+  assert.equal(cfg.gong.accessKey, 'FAKE-KEY-123');
+  assert.equal(cfg.gong.accessKeySecret, 'FAKE-SECRET-456');
+  assert.equal(g.prompts.filter((p) => /^Gong access key: /.test(p)).length, 2);
+  assert.equal(g.prompts.filter((p) => /^Gong access key secret/.test(p)).length, 2);
+  const s = scripted(['n', 'y', 'https://fake-sbx.gainsightcloud.invalid', '', 'FAKE-SBX-1', 'sandbox', '', 'FAKE-CLIENT-ID', '', 'FAKE-CLIENT-SECRET-zz', 'FAKE_SCOPE']);
+  const code = await runSetup({ configPath, config: EXAMPLE, ask: s.ask, out: (l) => out.push(l), stateDir: dir,
+    startCallbackServer: async () => ({ ok: false, reason: 'codeParamUnset', names: [] }), runCheckFn: async () => { throw new Error('must not run'); } });
+  assert.equal(code, 1);
+  const gs = JSON.parse(readFileSync(configPath, 'utf8')).gainsight;
+  assert.equal(gs.oauth.clientId, 'FAKE-CLIENT-ID');
+  assert.equal(gs.oauth.clientSecret, 'FAKE-CLIENT-SECRET-zz');
+  assert.ok(!out.join('\n').match(/FAKE-SECRET-456|FAKE-CLIENT-SECRET-zz/));
 });

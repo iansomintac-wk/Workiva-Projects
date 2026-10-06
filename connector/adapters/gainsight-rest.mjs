@@ -3,7 +3,7 @@
 import { join } from 'node:path';
 import { appendFileSync } from 'node:fs';
 import { requestJson, pacer, pick, scrubAll, VendorError } from '../lib/vendor-http.mjs';
-import { loadProof, isProven, tenantOf, sameTenant, healthName, resolveStateDir, readJson, writeJsonAtomic, FILES } from '../lib/state.mjs';
+import { loadProofSafe, isProven, tenantOf, sameTenant, healthName, resolveStateDir, readJson, writeJsonAtomic, FILES } from '../lib/state.mjs';
 import { createTokenSource } from './gainsight-auth.mjs';
 import { gateFromState, markFirstSendDone, FIRST_SEND_ERROR } from '../lib/write-gate.mjs';
 
@@ -55,6 +55,7 @@ const DUPLICATE_EXTERNAL_ID = 'GS_TL_10_0107';
 // T-14 F3: true when some string value inside a data.failures entry is exactly the duplicate code. That a duplicate
 // can arrive as an HTTP 200 with data.failures[id] is UNCONFIRMED (research Q10 shows only the success shape), so the
 // match is kept to the exact code string; any other failure entry stays failed and unrecorded (T-8).
+// An entry holding the code alongside other codes is still sent: the ExternalId exists, so a resend cannot succeed (CONTRACT.md).
 const hasExactCode = (v) => (typeof v === 'string' ? v === DUPLICATE_EXTERNAL_ID
   : Array.isArray(v) ? v.some(hasExactCode) : v && typeof v === 'object' ? Object.values(v).some(hasExactCode) : false);
 export const DRY_RUN_ERROR = 'dry run: not sent; see connector/dry-run.jsonl';
@@ -232,7 +233,7 @@ export function create(cfg = {}, deps = {}) {
   }
 
   return {
-    get name() { return healthName('gainsight-rest', { proven: isProven(loadProof(dir), 'gainsight', 'read', tenantOf('gainsight', cfg)), dryRun: cfg.dryRun !== false }); },
+    get name() { return healthName('gainsight-rest', { proven: isProven(loadProofSafe(dir), 'gainsight', 'read', tenantOf('gainsight', cfg)), dryRun: cfg.dryRun !== false }); },
     listAccounts,
     push,
     async authProbe() { await tokens.accessToken(); },

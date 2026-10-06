@@ -41,6 +41,9 @@ You need to be a Gainsight Super Admin. This is the longer of the two asks; abou
      code, then run `--setup` again.
    - "answered with these field names": set `gainsight.oauth.accessTokenField` and `refreshTokenField` to the two
      that hold the tokens, then run `--check`.
+   `gainsight.oauth.stateParam`: leave empty unless the admin confirms Gainsight returns a `state`-style parameter on
+   the redirect (UNCONFIRMED until a real `--setup` against a tenant shows the echo); when set, `--setup` sends a random
+   value under that name and the callback refuses a redirect without it.
    Also fill the empty `fieldMap`, `gateFieldMap`, `contactQuery`, `timeline.typeName` and `cta` keys in
    `config.json` with the names from the admin (see `connector/config.example.json`), and set
    `gainsight.authorEmail` to a Gainsight user's email (used for the Timeline Author and the CTA owner;
@@ -79,7 +82,8 @@ Sources are the vendor's own pages as read in `docs/superpowers/evidence/connect
   Because of that, a refresh takes `connector/gainsight-tokens.json.lock` first, so the running connector and a
   `--check` in another terminal never both spend one refresh token. If a run stops with "Another connector process is
   refreshing the Gainsight token", retry in a minute; delete the lock file only if no other connector or `--check` is
-  running (a lock older than 60 s is taken over on its own).
+  running (a lock older than 60 s is taken over on its own; `gainsight-tokens.json.takeover.lock` may appear for a
+  moment while that happens. Both files are git-ignored (`connector/*.lock`)).
 - The refresh request body (`grantType`, `refreshToken`): to confirm with admin.
 - Company query is `POST /v1/data/objects/query/Company`, at most 5,000 records per call. CONFIRMED: https://support.gainsight.com/gainsight_nxt/API_and_Developer_Docs/Company_and_Relationship_API/Company_API_Documentation
 - Whether the query reply is `data` or `data.records`: to confirm with admin.

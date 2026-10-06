@@ -176,3 +176,28 @@ test('push: Success Plan objective is not sent (blocker B1); the whole response 
   assert.equal(s.seen.length, 1); // only the Timeline item
   assert.deepEqual(validate(pushSchema, { results: res }), []);
 });
+
+// Follow-ups F-4 (T-14 F14 and the mixed-code checker low)
+test('push F14: one item failing in the middle of three: the other two are sent and recorded, the failed one is not', async () => {
+  const items = ['q-tl-a', 'q-tl-b', 'q-tl-c'].map((id) => ({ ...TL, id }));
+  const seen = [];
+  const fn = async (url, init) => {
+    const id = JSON.parse(init.body).records[0].ExternalId; seen.push(id);
+    if (id === 'q-tl-b') return json(500, { errorDesc: 'FAKE boom' });
+    return json(200, { result: true, data: { failures: {}, success: { [id]: [{ activityId: `ACT-${id}` }] } } });
+  };
+  const stateDir = mkdtempSync(join(tmpdir(), 'gs-push-'));
+  const a = create(CFG, { fetchImpl: fn, tokenSource: { accessToken: async () => 'FAKE-ACCESS-yy' }, sleep: async () => {}, now: () => NOW, stateDir });
+  const res = await a.push(items);
+  assert.deepEqual(res.map((r) => [r.id, r.status, r.externalId]), [['q-tl-a', 'sent', 'ACT-q-tl-a'], ['q-tl-b', 'failed', null], ['q-tl-c', 'sent', 'ACT-q-tl-c']]);
+  assert.deepEqual(seen, ['q-tl-a', 'q-tl-b', 'q-tl-c']);
+  assert.deepEqual(Object.keys(JSON.parse(readFileSync(join(stateDir, 'sent-record.json'), 'utf8'))).sort(), ['q-tl-a', 'q-tl-c']);
+});
+
+test('push: a data.failures entry with GS_TL_10_0107 alongside other codes counts as sent with our item id (documented in CONTRACT.md)', async () => {
+  const s = stub(() => json(200, { result: true, data: { success: {}, failures: { 'q-timeline-1': [{ errorCode: 'GS_TL_10_0107' }, { errorCode: 'GS_TL_10_0001', errorDesc: 'other' }] } } }));
+  const { a, stateDir } = adapter(s);
+  const [r] = await a.push([TL]);
+  assert.deepEqual(r, { id: 'q-timeline-1', status: 'sent', externalId: 'q-timeline-1', error: null });
+  assert.ok(JSON.parse(readFileSync(join(stateDir, 'sent-record.json'), 'utf8'))['q-timeline-1']);
+});
