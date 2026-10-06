@@ -4,7 +4,7 @@
   "gainsight": { "adapter": "fake", "environment": "", "appUrl": "", "apiBaseUrl": "", "tenantId": "", "dryRun": true, "authorEmail": "",
     "timeline": { "typeName": "" },
     "cta": { "type": "", "companyIdField": "", "idPath": "" },
-    "oauth": { "clientId": "", "clientSecret": "", "scopes": "", "callbackCodeParam": "", "accessTokenField": "", "refreshTokenField": "" },
+    "oauth": { "clientId": "", "clientSecret": "", "scopes": "", "callbackCodeParam": "", "accessTokenField": "", "refreshTokenField": "", "stateParam": "" },
     "fieldMap": { "tier": "", "arr": "", "renewalDate": "", "csmOwner": "", "healthScore": "" },
     "gateFieldMap": { "readinessAssessment": "", "csatContact": "", "successPlan": "" },
     "contactQuery": { "object": "", "companyField": "", "nameField": "", "emailField": "", "roleField": "" } },

@@ -158,7 +158,10 @@ saves the raw token reply to `gainsight-tokens.json`, and then answers 410. Outs
 other. Redirect URI to register: `http://127.0.0.1:<port>/oauth/callback`. The query name that carries the code, and
 the token reply's access and refresh field names, are not in the vendor research, so they are config
 (`gainsight.oauth.callbackCodeParam`, `accessTokenField`, `refreshTokenField`, empty by default). While one is unset,
-the connector reports only the key names it received, never their values.
+the connector reports only the key names it received, never their values. `gainsight.oauth.stateParam` is optional and
+empty by default (nothing is sent or checked); it is UNCONFIRMED that Gainsight echoes a state parameter. When set,
+`--setup` sends a random value under that name and the callback answers 400, without spending itself, to a redirect that
+lacks it.
 
 ## Running it
 

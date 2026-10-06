@@ -214,3 +214,31 @@ test('oauth F11: the callback reply is text/plain with X-Content-Type-Options: n
     assert.match(r.headers.get('content-type'), /^text\/plain/);
   } finally { server.closeAllConnections?.(); await new Promise((r) => server.close(r)); }
 });
+
+// Follow-ups F-8 (T-14 F10): optional state, off by default (Gainsight echoing state is UNCONFIRMED).
+test('oauth F10: with oauth.stateParam empty the authorize URL has no state; when set it carries the given value', () => {
+  const off = new URL(authorizeUrl(CFG, redirectUriFor(8787), { state: 'FAKE-STATE-1' }));
+  assert.deepEqual([...off.searchParams.keys()], ['clientId', 'redirectUri', 'scopes']);
+  const on = new URL(authorizeUrl({ ...CFG, oauth: { ...CFG.oauth, stateParam: 'state' } }, redirectUriFor(8787), { state: 'FAKE-STATE-1' }));
+  assert.equal(on.searchParams.get('state'), 'FAKE-STATE-1');
+});
+
+test('oauth F10: with stateParam set, a wrong or missing state is 400, makes no token call, and the real redirect still works', async () => {
+  let calls = 0;
+  const cfg = { ...CFG, oauth: { ...CFG.oauth, stateParam: 'state' } };
+  const h = makeCallbackHandler({ cfg, redirectUri: redirectUriFor(8787), expectedState: 'FAKE-STATE-1', tokensPath: tokensFile(), now: () => T0,
+    fetchImpl: async () => { calls++; return json(200, { FAKE_at: 'FAKE-ACCESS-1', FAKE_rt: 'FAKE-REFRESH-1' }); } });
+  assert.equal((await h(new URLSearchParams('code=FAKE-CODE-1&state=WRONG'))).status, 400);
+  assert.equal((await h(new URLSearchParams('code=FAKE-CODE-1'))).status, 400);
+  assert.equal(calls, 0);
+  assert.equal((await h(new URLSearchParams('code=FAKE-CODE-1&state=FAKE-STATE-1'))).status, 200);
+  assert.equal(calls, 1);
+});
+
+test('oauth F10: with stateParam empty (the default) the callback ignores state exactly as before', async () => {
+  let calls = 0;
+  const h = makeCallbackHandler({ cfg: CFG, redirectUri: redirectUriFor(8787), expectedState: 'FAKE-STATE-1', tokensPath: tokensFile(), now: () => T0,
+    fetchImpl: async () => { calls++; return json(200, { FAKE_at: 'FAKE-ACCESS-1', FAKE_rt: 'FAKE-REFRESH-1' }); } });
+  assert.equal((await h(new URLSearchParams('code=FAKE-CODE-1&state=anything'))).status, 200);
+  assert.equal(calls, 1);
+});

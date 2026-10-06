@@ -26,12 +26,15 @@ const LOCK_FS = { openSync, closeSync, statSync, unlinkSync };
 const trimUrl = (u) => String(u || '').replace(/\/+$/, '');
 export const redirectUriFor = (port) => `http://127.0.0.1:${port}/oauth/callback`;
 
-export function authorizeUrl(cfg, redirectUri) {
+export function authorizeUrl(cfg, redirectUri, { state } = {}) {
   const o = cfg.oauth || {};
   const u = new URL(trimUrl(cfg.appUrl) + AUTHORIZE_PATH);
   u.searchParams.set('clientId', o.clientId || '');
   u.searchParams.set('redirectUri', redirectUri);
   u.searchParams.set('scopes', o.scopes || '');
+  // T-14 F10: UNCONFIRMED that Gainsight echoes a state parameter (research Q7 lists clientId, redirectUri, scopes),
+  // so its name is config and empty by default; empty means none is sent or checked.
+  if (o.stateParam && state) u.searchParams.set(o.stateParam, state);
   return u.href;
 }
 
@@ -138,7 +141,7 @@ export function createTokenSource({ cfg, fetchImpl, tokensPath, writeFile = writ
   };
 }
 
-export function makeCallbackHandler({ cfg, redirectUri, fetchImpl, tokensPath, now = () => new Date(), onDone = () => {} }) {
+export function makeCallbackHandler({ cfg, redirectUri, fetchImpl, tokensPath, now = () => new Date(), onDone = () => {}, expectedState = null }) {
   let used = false;
   return async (params) => {
     if (used) return { status: 410, text: 'This sign-in was already received. Return to the terminal.' };
@@ -151,6 +154,9 @@ export function makeCallbackHandler({ cfg, redirectUri, fetchImpl, tokensPath, n
     }
     const code = params.get(name);
     if (!code) return { status: 400, text: `No "${name}" in the redirect. Return to the terminal.` };
+    const sp = cfg.oauth && cfg.oauth.stateParam;
+    // Checked before `used = true`, so a forged redirect does not spend the one-shot callback.
+    if (sp && expectedState && params.get(sp) !== expectedState) return { status: 400, text: 'The sign-in state did not match this setup. Return to the terminal.' };
     used = true;
     try {
       const raw = await exchangeCode({ cfg, code, redirectUri, fetchImpl, tokensPath, now });

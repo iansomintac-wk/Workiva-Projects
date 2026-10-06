@@ -70,10 +70,11 @@ export async function runSetup({ configPath, config = {}, ask, out = console.log
     const port = next.port ?? 8787;
     const redirectUri = redirectUriFor(port);
     out(`Open this address in your browser and sign in to Gainsight (redirect URI registered by the admin: ${redirectUri}):`);
-    out(authorizeUrl(g, redirectUri));
+    const state = crypto.randomBytes(16).toString('hex');
+    out(authorizeUrl(g, redirectUri, { state }));
     out('Waiting for the sign-in (10 minutes)...');
     const r = await startCallbackServer({ port, createConnector, handlerFor: (onDone) => makeCallbackHandler({ cfg: g, redirectUri, fetchImpl: deps.fetchImpl,
-      tokensPath: join(resolveStateDir(stateDir), FILES.tokens), onDone }) });
+      tokensPath: join(resolveStateDir(stateDir), FILES.tokens), onDone, expectedState: state }) });
     if (r.reason === 'codeParamUnset') {
       out(`Gainsight redirected back with these query names: ${r.names.join(', ') || '(none)'}. Set gainsight.oauth.callbackCodeParam in ${configPath} to the one that carries the code (CONNECT-GAINSIGHT.md), then run --setup again and skip Gong.`);
       return 1;

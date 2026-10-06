@@ -41,6 +41,9 @@ You need to be a Gainsight Super Admin. This is the longer of the two asks; abou
      code, then run `--setup` again.
    - "answered with these field names": set `gainsight.oauth.accessTokenField` and `refreshTokenField` to the two
      that hold the tokens, then run `--check`.
+   `gainsight.oauth.stateParam`: leave empty unless the admin confirms Gainsight returns a `state`-style parameter on
+   the redirect (UNCONFIRMED until a real `--setup` against a tenant shows the echo); when set, `--setup` sends a random
+   value under that name and the callback refuses a redirect without it.
    Also fill the empty `fieldMap`, `gateFieldMap`, `contactQuery`, `timeline.typeName` and `cta` keys in
    `config.json` with the names from the admin (see `connector/config.example.json`), and set
    `gainsight.authorEmail` to a Gainsight user's email (used for the Timeline Author and the CTA owner;
