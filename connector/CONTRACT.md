@@ -180,7 +180,8 @@ failure is a 500; an adapter that throws is a 502.
 `node connector/server.mjs --unlock-production` (gainsight-rest, `environment: "production"` only) prints the
 configured production tenant and whether a sandbox write proof exists, asks for the tenant URL to be typed back, and
 on a match records the unlock in `proof.json`. A mismatch, an empty `appUrl` or an unreadable `proof.json` prints a
-`FAIL unlock:` line, changes nothing and exits 1. Any other argument starts the server as before.
+`FAIL unlock:` line, changes nothing and exits 1. With no argument the server starts; any argument that is not one of these commands prints
+`unknown argument:` and a usage line and exits 2 (nothing starts).
 
 `node connector/server.mjs --check` is read-only. It prints one line per step: `PASS <step>[: detail]`,
 `FAIL <step>: <what to fix>; who fixes it: <who>`, or `SKIP <step>: <why>`, and exits 1 if any step FAILs, else 0. With

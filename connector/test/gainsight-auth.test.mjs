@@ -202,3 +202,15 @@ test('oauth: unset token field names list the saved reply KEYS, never values; to
   const bad = createTokenSource({ cfg: CFG, fetchImpl: async () => json(400, { error: 'bad FAKE-CLIENT-SECRET-zz FAKE-REFRESH-1' }), tokensPath: p2, now: () => T0 });
   await assert.rejects(bad.accessToken(), (e) => !e.message.includes('FAKE-CLIENT-SECRET-zz') && !e.message.includes('FAKE-REFRESH-1'));
 });
+
+// Follow-ups F-5 (T-14 F11)
+test('oauth F11: the callback reply is text/plain with X-Content-Type-Options: nosniff', async () => {
+  const server = createConnector({ config: {}, adapters: loadAdapters({}), token: TOKEN, oauthCallback: async () => ({ status: 200, text: 'names: <b>x</b>' }) });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  try {
+    const r = await fetch(`http://127.0.0.1:${server.address().port}/oauth/callback?code=x`);
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get('x-content-type-options'), 'nosniff');
+    assert.match(r.headers.get('content-type'), /^text\/plain/);
+  } finally { server.closeAllConnections?.(); await new Promise((r) => server.close(r)); }
+});

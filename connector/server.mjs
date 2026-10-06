@@ -109,7 +109,7 @@ export function createConnector({ config = {}, adapters, token, logPath, oauthCa
       // Setup only (connect-ready §3.3): Gainsight's OAuth redirect lands here without our token. Absent outside --setup.
       if (oauthCallback && req.method === 'GET' && (req.url || '').split('?')[0] === '/oauth/callback') {
         const r = await oauthCallback(new URL(req.url, 'http://127.0.0.1').searchParams);
-        res.writeHead(r.status, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.writeHead(r.status, { 'Content-Type': 'text/plain; charset=utf-8', 'X-Content-Type-Options': 'nosniff' }); // T-14 F11
         return res.end(r.text);
       }
       const m = /^Bearer (.+)$/.exec(req.headers.authorization || '');
@@ -137,6 +137,12 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const args = process.argv.slice(2);
   const cli = args.length ? await import('./lib/cli.mjs') : null;
   const isCli = !!cli && args.some((a) => cli.COMMANDS.includes(a));
+  // T-14 F20: a mistyped command (`--chek`) must not start the server silently.
+  if (args.length && !isCli) {
+    console.error(`unknown argument: ${args.join(' ')}`);
+    console.error(`usage: node connector/server.mjs [${cli.COMMANDS.join(' | ')}]  (--check takes --write; --measure-transcripts takes --book-bytes <n> --quota-bytes <n>); no argument starts the server`);
+    process.exit(2);
+  }
   const explicit = env.CONNECTOR_CONFIG;
   let cfgFile = explicit || (existsSync(join(here, 'config.json')) ? join(here, 'config.json') : join(here, 'config.example.json'));
   if (!existsSync(cfgFile)) {
