@@ -21,7 +21,7 @@ Matches the previous lead's figures (2026-10-03, `c6b7f2b`).
 
 | When | Stop | State |
 |---|---|---|
-| 2026-10-05 | Plan approval (plan `04b4241`), questions: F10 build F-8?; F21 leave unfixed?; mixed-code duplicate stays "sent"? | waiting for Ian |
+| 2026-10-05 | Plan approval (plan `04b4241`), questions: F10 build F-8?; F21 leave unfixed?; mixed-code duplicate stays "sent"? | Ian, 2026-10-05: "Approve F-1..F-7"; F10 "Build F-8, off by default"; F21 "Leave unfixed"; duplicate "Keep as sent" |
 
 ## Tasks
 
@@ -34,7 +34,7 @@ Matches the previous lead's figures (2026-10-03, `c6b7f2b`).
 | F-5 | | F11, F20 | Sonnet | planned | | → 154 | | |
 | F-6 | | F15, F16 | Sonnet | planned | | → 157 | | |
 | F-7 | | F17, F18, F24 | Sonnet | planned | | → 164 | | |
-| F-8 | OAuth `state`, optional, off by default | F10 | Sonnet | needs Ian | | → 167 | | |
+| F-8 | OAuth `state`, optional, off by default | F10 | Sonnet | planned | | → 167 | | |
 
 Recommended not to fix (plan): F21 (health strings fixed by spec §3.2/CR6; tracker D2 knows only `unproven`/`dry-run`);
 F16's `0o600` test (Node ignores POSIX modes on Windows); F17 callId batching (no documented maximum).
