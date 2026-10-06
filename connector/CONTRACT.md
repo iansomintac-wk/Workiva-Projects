@@ -116,9 +116,11 @@ one result per item, `externalId` and `error` `null` when not applicable.
 - Saved send record: `sent-record.json` keeps item id to `{externalId, kind, tenant, at}`. A repeated id for the same
   tenant answers `sent` with no call, and a `failed` id is not stored. A duplicate-ExternalId rejection
   (`GS_TL_10_0107`) counts as already sent, whether it comes as an HTTP error or as an HTTP 200 whose
-  `data.failures` entry for the item holds exactly that code (where the code sits is UNCONFIRMED). Any other Timeline
-  reply that lists the item in `data.failures`, or has no `activityId` for it in `data.success`, answers `failed`
-  and is not stored. Crash window: the record is written after
+  `data.failures` entry for the item holds exactly that code as one of its values (where the code sits is
+  UNCONFIRMED). It counts as sent even when that entry carries it alongside other codes: the record already exists
+  in Gainsight, so a resend could never succeed. In both cases `externalId` is our item id, not a Gainsight
+  `activityId`: the duplicate reply does not carry one. Any other Timeline reply that lists the item in
+  `data.failures`, or has no `activityId` for it in `data.success`, answers `failed` and is not stored. Crash window: the record is written after
   the vendor reply, so a crash between the two leaves no record. A Timeline repeat is then recovered by the duplicate
   error code; a CTA repeat may double-send (referenceId duplicate behaviour is UNCONFIRMED, research Q14 and gap 5).
   A CTA sent with no readable id (`gainsight.cta.idPath` unset) is recorded with `externalId: null`.

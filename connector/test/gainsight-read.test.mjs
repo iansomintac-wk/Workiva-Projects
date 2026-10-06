@@ -96,3 +96,18 @@ test('gainsight reads: Bearer from the token source; a reply with neither form n
   await assert.rejects(adapter(async () => json(200, { result: true, rows: [] })).listAccounts(), /neither data\[\] nor data\.records\[\].*result, rows/);
   await assert.rejects(adapter(async () => json(401, { message: 'FAKE-ACCESS-yy rejected' })).listAccounts(), (e) => e.status === 401 && !e.message.includes('FAKE-ACCESS-yy'));
 });
+
+// Follow-ups F-4 (T-14 F13)
+test('gainsight reads F13: a gate field holding 1 or "true" is not true (fail-safe: the gate is not offered)', async () => {
+  const row = (gsid, v) => ({ Gsid: gsid, Name: `FAKE Co ${gsid}`, FAKE_Readiness__gc: v, FAKE_Csat__gc: true, FAKE_SuccessPlan__gc: false });
+  const accounts = await adapter(async () => json(200, { result: true, data: [row('1P02FAKE0009', 1), row('1P02FAKE0010', 'true')] })).listAccounts();
+  assert.deepEqual(accounts.map((a) => a.gates.readinessAssessment), [false, false]);
+  assert.deepEqual(accounts.map((a) => a.gates.csatContact), [true, true]);
+});
+
+test('gainsight reads F13: with neither apiBaseUrl nor appUrl, listAccounts throws "not configured" and calls nothing', async () => {
+  let calls = 0;
+  const a = adapter(async () => { calls++; return json(200, {}); }, { ...CFG, apiBaseUrl: '', appUrl: '' });
+  await assert.rejects(a.listAccounts(), /gainsight-rest is not configured \(missing gainsight\.apiBaseUrl\)/);
+  assert.equal(calls, 0);
+});

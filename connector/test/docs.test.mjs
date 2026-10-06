@@ -79,3 +79,10 @@ test('docs: no doc claims an adapter works with Gong or Gainsight; CONTRACT says
   assert.ok(c.includes('unproven until `--check`'));
   assert.ok(!/^## Before a real Gong adapter/m.test(c));
 });
+
+// Follow-ups F-4 (T-14 F22 and the mixed-code checker low)
+test('docs F22: CONTRACT.md says a duplicate\'s externalId is our item id, and that the duplicate code among other codes still counts as sent', () => {
+  const c = read(join(root, 'CONTRACT.md'));
+  assert.match(c, /`externalId` is our item id/);
+  assert.match(c, /alongside other codes/);
+});
