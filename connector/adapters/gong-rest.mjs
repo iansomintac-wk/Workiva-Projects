@@ -105,18 +105,21 @@ export function create(cfg = {}, deps = {}) {
     // CONFIRMED (Q3): no length field; length = sum of sentences[].text lengths over every monologue.
     async transcriptLengths({ since } = {}) {
       const ids = (await listCalls({ since })).map((c) => c.callId);
-      if (!ids.length) return { calls: 0, lengths: [] };
-      const lengths = new Map(ids.map((id) => [id, 0]));
+      if (!ids.length) return { calls: 0, lengths: [], noTranscript: 0 };
+      const wanted = new Set(ids);
+      // T-14 F18: only calls Gong returned a transcript for are measured. An id Gong did not return (not transcribed,
+      // or left out) is counted apart, never as 0 characters, so it does not pull the median down.
+      const lengths = new Map();
       await eachPage(TRANSCRIPT_PATH, { ...windowFor(since), callIds: ids }, {}, (page) => {
         for (const t of page.callTranscripts || []) {
           const id = String(t.callId);
-          if (!lengths.has(id)) continue;
-          let n = lengths.get(id);
+          if (!wanted.has(id)) continue;
+          let n = lengths.get(id) || 0;
           for (const mono of t.transcript || []) for (const s of mono.sentences || []) n += String(s.text || '').length;
           lengths.set(id, n);
         }
       });
-      return { calls: ids.length, lengths: [...lengths.values()] };
+      return { calls: ids.length, lengths: [...lengths.values()], noTranscript: ids.length - lengths.size };
     },
     // --check: the smallest read, one page of the last 24 hours, returned as Gong sent it.
     async probe() { return (await post(EXTENSIVE_PATH, { filter: windowFor(new Date(now().getTime() - DAY_MS).toISOString()), contentSelector: CONTENT_SELECTOR })); },

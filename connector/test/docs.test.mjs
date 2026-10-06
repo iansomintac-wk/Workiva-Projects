@@ -86,3 +86,13 @@ test('docs F22: CONTRACT.md says a duplicate\'s externalId is our item id, and t
   assert.match(c, /`externalId` is our item id/);
   assert.match(c, /alongside other codes/);
 });
+
+// Follow-ups F-7 (F24): how a Basic key gets the transcript scope is not confirmed (same pattern as F5).
+test('docs F24: the transcript scope is never stated as fact for the key (measure.mjs, CONNECT-GONG.md steps)', () => {
+  const m = read(join(root, 'lib', 'measure.mjs'));
+  for (const l of m.split('\n').filter((x) => /api:calls:read:transcript/.test(x))) assert.ok(/to confirm/.test(l), `measure.mjs states as fact: ${l}`);
+  for (const l of read(RUNBOOKS[0]).split('\n')) {
+    if (/## Vendor facts/.test(l)) break;
+    if (/transcript scope|api:calls:read:transcript/.test(l)) assert.ok(/to confirm/.test(l), `unmarked: ${l}`);
+  }
+});

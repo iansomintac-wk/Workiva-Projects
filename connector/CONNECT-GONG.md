@@ -46,7 +46,7 @@ A quiet day is not a failure: Gong documents a 404 "No calls found for the speci
 
 3. Transcript sizes (optional, read-only, stores nothing): `node connector/server.mjs --measure-transcripts
    --book-bytes <n>`. `<n>` is the size of your tracker's saved book in bytes, which you read from the
-   tracker or from its exported backup file (if you use the file size, it is a proxy; say so). Needs the transcript scope on the key. Each printed figure is labelled
+   tracker or from its exported backup file (if you use the file size, it is a proxy; say so). May need the transcript scope on the key (how a key gets scopes: to confirm). Each printed figure is labelled
    measured, derived or assumption. Without `--book-bytes` it skips the months-until-full line.
 
 ## Vendor facts

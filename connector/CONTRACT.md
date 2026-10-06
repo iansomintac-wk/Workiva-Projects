@@ -266,7 +266,10 @@ storing link + summary only and capping transcripts. The fake adapter still serv
 transcript sizes are not measured yet. `node connector/server.mjs
 --measure-transcripts [--book-bytes <n>] [--quota-bytes <n>]` (read-only, stores nothing, prints no transcript text)
 prints Ian's call count for the last 30 days, the median, mean, p90 and max transcript characters, calls per week, and
-the months until the book fills. Each figure is labelled measured, derived or assumption. Tested on recorded-shape
+the months until the book fills. Calls Gong returns no transcript for are counted on their own line and left out of the
+figures. A `--book-bytes` or `--quota-bytes` that is not a number of bytes, 0 or more, is one `FAIL measure:` line
+(exit 1, nothing called); when every transcript is empty, or the book is already at or over the quota, the months line
+says `not computed` with the reason. Each figure is labelled measured, derived or assumption. Tested on recorded-shape
 fixtures; unproven until `--check` has passed.
 
 ## Validator subset
