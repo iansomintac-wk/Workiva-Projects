@@ -41,7 +41,7 @@ would likely be lower).
 | Rules only | 83.4% | 90% | 0 KB |
 | Word/char n-gram model only | 75.9% | 42% | 2.6 MB |
 | Rules + n-gram hybrid | 86.9% | 75% | 2.6 MB |
-| **Rules + rule-feature model (shipped)** | **87.2%** | 80% | **18 KB** |
+| **Rules + rule-feature model (shipped)** | **87.5%** | 82% | **18 KB** |
 
 Rewrite simulation over 2,070 runs (training prompts, with and without a sample file): generated
 strong versions re-grade as strong 99.8% of the time; toggling any letter always changes the
