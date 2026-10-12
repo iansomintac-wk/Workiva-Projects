@@ -1,0 +1,70 @@
+/* ==========================================================================
+   Workiva — Semantic color aliases
+   Built on top of tokens/fig-tokens.css (raw Figma Variables — do not edit
+   that file by hand). These aliases are what components/specimens consume.
+   ========================================================================== */
+
+:root {
+  /* ---- Primary palette (brand) ---- */
+  --color-steel: var(--primary-steel);           /* rgb(51,51,51)  — ink / primary text */
+  --color-paper: var(--primary-paper);            /* rgb(255,255,255) */
+  --color-warm-light: var(--primary-warm-light);  /* rgb(252,244,232) — cream surface */
+  --color-zesty-neue: var(--primary-zesty-neue);  /* rgb(102,204,102) — brand green */
+  --color-link-blue: var(--primary-link-blue);    /* rgb(0,116,232) */
+  --color-presentation: var(--primary-presentation); /* rgb(251,173,23) — brand yellow/orange */
+  --color-purple-mountain: var(--primary-purple-mountain); /* rgb(140,76,189) */
+
+  /* ---- Secondary palette (extended, used sparingly for accents/data viz) ---- */
+  --color-mr-toad: var(--secondary-mr-toad);           /* rgb(63,159,63) deep green */
+  --color-ectoplasm: var(--secondary-ectoplasm);       /* rgb(133,221,133) light green */
+  --color-morning-dew: var(--secondary-morning-dew);   /* rgb(192,243,167) pale green */
+  --color-forest: var(--secondary-forest);             /* rgb(16,72,16) */
+  --color-poseidon: var(--secondary-poseidon);         /* rgb(0,88,175) deep blue */
+  --color-robins-egg: var(--secondary-robin-s-egg);    /* rgb(124,190,255) */
+  --color-foggy: var(--secondary-foggy);               /* rgb(197,226,255) pale blue */
+  --color-post-box: var(--secondary-post-box);         /* rgb(0,51,102) navy */
+  --color-cheetah: var(--secondary-cheetah);           /* rgb(248,145,25) deep orange */
+  --color-cool-ranch: var(--secondary-cool-ranch);     /* rgb(248,189,79) */
+  --color-plastic-cheese: var(--secondary-plastic-cheese); /* rgb(249,203,118) pale yellow */
+  --color-squashy: var(--secondary-squashy);           /* rgb(215,108,31) burnt orange */
+  --color-five-alarm-chili: var(--secondary-five-alarm-chili); /* rgb(222,40,0) */
+  --color-purple-people-eater: var(--secondary-purple-people-eater); /* rgb(102,51,153) */
+  --color-witch-cape: var(--secondary-witch-cape);     /* rgb(153,102,204) */
+  --color-lavendery: var(--secondary-lavendery);       /* rgb(213,177,235) */
+  --color-california-raisins: var(--secondary-california-raisins); /* rgb(62,19,103) */
+
+  /* ---- Tertiary tints (soft backgrounds) ---- */
+  --color-tertiary-sand: var(--tertiary-sand);
+  --color-tertiary-sky: var(--tertiary-sky);
+  --color-tertiary-mist: var(--tertiary-mist);
+  --color-tertiary-sea-foam: var(--tertiary-sea-foam);
+  --color-tertiary-swiss: var(--tertiary-swiss);
+  --color-tertiary-just-peachy: var(--secondary-just-peachy);
+  --color-tertiary-salmon: var(--secondary-salmon);
+  --color-tertiary-brick: var(--tertiary-brick);
+  --color-tertiary-spirulina: var(--tertiary-spirulina);
+
+  /* ---- Neutrals ---- */
+  --color-void: var(--neutrals-void);           /* rgb(14,14,14) near-black */
+  --color-dark-matter: var(--neutrals-dark-matter); /* rgb(35,35,35) */
+  --color-storm-cloud: var(--neutrals-storm-cloud); /* rgb(102,102,102) */
+  --color-stainless: var(--neutrals-stainless);     /* rgb(178,178,178) */
+  --color-ethereal: var(--neutrals-ethereal);       /* rgb(216,216,216) */
+  --color-silver-diva: var(--neutrals-silver-diva); /* rgb(235,235,235) */
+  --color-white: rgb(255,255,255);
+
+  /* ---- Semantic aliases ---- */
+  --surface-page: var(--color-warm-light);
+  --surface-card: var(--color-paper);
+  --surface-inverse: var(--color-steel);
+  --text-primary: var(--color-steel);
+  --text-inverse: var(--color-paper);
+  --text-muted: var(--color-storm-cloud);
+  --border-subtle: var(--color-ethereal);
+  --border-default: var(--color-stainless);
+  --link-color: var(--color-link-blue);
+  --link-hover: var(--color-poseidon);
+  --focus-ring: var(--color-link-blue);
+  --brand-accent: var(--color-zesty-neue);
+  --brand-warm: var(--color-presentation);
+}
