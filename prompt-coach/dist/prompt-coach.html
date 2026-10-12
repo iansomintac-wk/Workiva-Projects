@@ -1,0 +1,1431 @@
+<title>Workiva AI Prompt Coach</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800;900&display=swap">
+<style>
+/* Layout: one column of three tools (live grade + fixes, weak/better/strong ladder, SCOPE builder),
+   in the Workiva AI explainer's language: heavy lowercase heads over a steel rule, steel prompt panels, cream page. */
+:root {
+  --bg: #FCF4E8; --surface: #FFFFFF; --ink: #333333; --muted: #666666; --faint: #B2B2B2; --line: #D8D8D8; --soft: #EBEBEB;
+  --panel: #333333; --panel-ink: #FCF4E8; --panel-label: #D5B1EB; --mist: #F1E8F7; --sand: #FDEFD3;
+  --blue: #0074E8; --blue-deep: #0058AF; --purple: #8C4CBD; --green: #3F9F3F; --orange: #D76C1F; --red: #DE2800;
+  --tint-S: rgba(0,116,232,.16); --tint-C: rgba(140,76,189,.18); --tint-O: rgba(63,159,63,.18); --tint-P: rgba(248,145,25,.22); --tint-E: rgba(222,40,0,.14);
+  --weak-bg: #FBE3DC; --better-bg: #FDEBCB; --strong-bg: #DDF5D0; --on-accent: #FFFFFF;
+  --font: "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #1E1D1B; --surface: #2A2826; --ink: #F3EDE3; --muted: #B5AFA6; --faint: #7A756E; --line: #45413C; --soft: #36332F;
+  --panel: #121212; --panel-ink: #F3EDE3; --mist: #352B3D; --sand: #3B3222;
+  --blue: #7CBEFF; --blue-deep: #A9D4FF; --purple: #C08EE6; --green: #85DD85; --orange: #F8BD4F; --red: #FF7A5C;
+  --tint-S: rgba(124,190,255,.22); --tint-C: rgba(192,142,230,.24); --tint-O: rgba(133,221,133,.2); --tint-P: rgba(248,189,79,.22); --tint-E: rgba(255,122,92,.22);
+  --weak-bg: #4A2A22; --better-bg: #4A3A1E; --strong-bg: #263F24; --on-accent: #121212; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #1E1D1B; --surface: #2A2826; --ink: #F3EDE3; --muted: #B5AFA6; --faint: #7A756E; --line: #45413C; --soft: #36332F;
+  --panel: #121212; --panel-ink: #F3EDE3; --mist: #352B3D; --sand: #3B3222;
+  --blue: #7CBEFF; --blue-deep: #A9D4FF; --purple: #C08EE6; --green: #85DD85; --orange: #F8BD4F; --red: #FF7A5C;
+  --tint-S: rgba(124,190,255,.22); --tint-C: rgba(192,142,230,.24); --tint-O: rgba(133,221,133,.2); --tint-P: rgba(248,189,79,.22); --tint-E: rgba(255,122,92,.22);
+  --weak-bg: #4A2A22; --better-bg: #4A3A1E; --strong-bg: #263F24; --on-accent: #121212; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5; }
+button, input, textarea, select { font-family: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 32px; }
+@media (max-width: 640px) { .wrap { padding-inline: 16px; } }
+.label { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; }
+
+.top { padding-block: 18px; border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.brand b { color: var(--ink); font-weight: 900; letter-spacing: 0; text-transform: none; font-size: 20px; margin-right: 10px; }
+.privacy { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--strong-bg); border-radius: 99px; padding: 6px 14px; }
+.privacy::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+
+.intro { padding-block: 48px 8px; }
+.intro h1 { margin: 0; font-size: clamp(44px, 8vw, 96px); font-weight: 900; line-height: .98; letter-spacing: -.005em; text-transform: lowercase; text-wrap: balance; }
+.intro h1 span { color: var(--green); }
+.intro p { max-width: 660px; font-size: 18px; margin: 22px 0 0; text-wrap: pretty; }
+
+section.block { padding-block: 44px; }
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; border-bottom: 2px solid var(--ink); padding-bottom: 16px; margin-bottom: 26px; }
+.head h2 { margin: 0; font-size: clamp(30px, 4.4vw, 52px); font-weight: 900; line-height: 1; letter-spacing: -.005em; text-transform: lowercase; text-wrap: balance; }
+
+/* compose */
+.compose { display: grid; grid-template-columns: 1.45fr 1fr; gap: 20px; align-items: start; }
+.compose > .card { padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.editor { position: relative; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.editor .mirror, .editor textarea { margin: 0; padding: 14px 16px; font-family: var(--mono); font-size: 15px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; letter-spacing: 0; }
+.editor .mirror { position: absolute; inset: 0; color: transparent; pointer-events: none; overflow: hidden; }
+.editor .mirror mark { color: transparent; border-radius: 3px; }
+.editor .mirror mark.S { background: var(--tint-S); } .editor .mirror mark.C { background: var(--tint-C); } .editor .mirror mark.O { background: var(--tint-O); }
+.editor .mirror mark.P { background: var(--tint-P); } .editor .mirror mark.E { background: var(--tint-E); }
+.editor textarea { position: relative; display: block; width: 100%; min-height: 170px; resize: vertical; border: none; background: transparent; caret-color: var(--ink); }
+.editor textarea:focus { outline: none; }
+.editor:focus-within { outline: 2px solid var(--blue); outline-offset: 1px; }
+.meter { display: grid; grid-template-columns: auto 1fr; gap: 12px 16px; align-items: center; }
+.badge { font-size: 22px; font-weight: 900; text-transform: lowercase; border-radius: 99px; padding: 6px 18px; line-height: 1.1; text-align: center; min-width: 108px; }
+.badge.weak { background: var(--weak-bg); color: var(--red); } .badge.better { background: var(--better-bg); color: var(--orange); } .badge.strong { background: var(--strong-bg); color: var(--green); }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; border-radius: 99px; padding: 4px 12px 4px 4px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
+.chip i { font-style: normal; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 13px; }
+.chip .st { font-size: 11px; font-weight: 800; letter-spacing: .04em; }
+.chip.off { color: var(--muted); border-style: dashed; }
+.chip.off i { background: var(--faint) !important; }
+.chip[aria-expanded="true"] { border-color: var(--ink); }
+.headline { margin: 0; font-size: 15px; font-weight: 700; grid-column: 1 / -1; text-wrap: pretty; }
+.fix { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 10px; background: var(--bg); }
+.fix h4 { margin: 0; font-size: 15px; font-weight: 800; }
+.fix p { margin: 0; font-size: 14px; color: var(--muted); }
+.fix code { font-family: var(--mono); font-size: 13.5px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: block; white-space: pre-wrap; color: var(--ink); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 8px; border: none; background: var(--blue); color: var(--on-accent); font-size: 14px; font-weight: 700; cursor: pointer; }
+.btn:hover { background: var(--blue-deep); }
+.ghost { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; font-weight: 700; cursor: pointer; }
+.ghost:hover { border-color: var(--ink); }
+.selects { display: flex; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); align-items: center; }
+select { font-size: 13px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 8px; }
+.notes { display: grid; gap: 8px; }
+.note { font-size: 14px; border-radius: 12px; padding: 10px 14px; background: var(--sand); text-wrap: pretty; }
+.note.warn { background: var(--weak-bg); }
+.note.tip { background: var(--mist); }
+.note b { font-weight: 800; }
+
+.drop { border: 2px dashed var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; cursor: pointer; min-height: 120px; }
+.drop:hover, .drop.over { border-color: var(--purple); background: var(--mist); }
+.drop strong { font-size: 15px; } .drop span { font-size: 13px; color: var(--muted); }
+.files { display: flex; flex-direction: column; gap: 8px; }
+.file { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); font-size: 13.5px; }
+.file .ext { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; border-radius: 6px; padding: 3px 7px; background: var(--soft); margin-top: 1px; }
+.file .name { min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
+.file .meta { display: block; font-weight: 500; color: var(--muted); font-size: 12.5px; }
+.file .meta.err { color: var(--red); }
+.x { border: none; background: transparent; cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 6px; color: var(--muted); border-radius: 6px; }
+.x:hover { color: var(--ink); background: var(--soft); }
+.examples { display: grid; gap: 8px; }
+.ex { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 12px; cursor: pointer; font-size: 13.5px; }
+.ex:hover { border-color: var(--ink); }
+.ex b { display: block; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+
+/* ladder */
+.stages { display: flex; gap: 10px; margin: 0 0 20px; flex-wrap: wrap; }
+.stage { padding: 10px 24px; border-radius: 99px; border: 2px solid var(--faint); background: transparent; font-size: 15px; font-weight: 800; cursor: pointer; }
+.stage[aria-selected="true"] { background: var(--purple); border-color: var(--purple); color: var(--on-accent); }
+.stage small { display: block; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; opacity: .85; }
+.pair { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }
+.panel { position: relative; overflow: hidden; background: var(--panel); color: var(--panel-ink); border-radius: 20px; padding: 30px 32px; min-width: 0; }
+.panel::before { content: ""; position: absolute; inset: 0; opacity: .12; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.6 0.6 0.6 0 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.panel > * { position: relative; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.panel-head .label { color: var(--panel-label); }
+.prompt-text { margin: 0; font-family: var(--mono); font-size: 15.5px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+.prompt-text .added { background: rgba(255,255,255,.09); border-radius: 4px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.prompt-text .ph { color: #F8BD4F; }
+.copy { border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.06); color: var(--panel-ink); border-radius: 99px; padding: 6px 14px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.copy:hover { background: rgba(255,255,255,.14); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 16px; font-size: 12px; font-weight: 700; color: var(--panel-label); }
+.legend .sw { display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+.verdict { padding: 26px 28px; min-width: 0; }
+.verdict p { margin: 10px 0 0; font-size: 16px; line-height: 1.6; text-wrap: pretty; }
+.practices { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; }
+.practice { background: var(--mist); border-radius: 16px; padding: 18px; }
+.practice b { display: block; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--purple); margin-bottom: 6px; }
+.practice span { font-size: 14.5px; font-weight: 600; line-height: 1.45; }
+
+/* scope */
+.scope-intro { margin: -6px 0 24px; max-width: 700px; font-size: 15px; color: var(--muted); text-wrap: pretty; }
+.scope { display: grid; grid-template-columns: 410px 1fr; gap: 20px; align-items: start; }
+.letters { display: flex; flex-direction: column; gap: 10px; }
+.letter { text-align: left; display: grid; grid-template-columns: 44px 1fr auto; gap: 10px 14px; align-items: center; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--line); background: transparent; cursor: pointer; }
+.letter[aria-pressed="true"] { background: var(--surface); }
+.letter .sq { width: 44px; height: 44px; border-radius: 10px; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; }
+.letter strong { display: block; font-size: 16px; font-weight: 800; }
+.letter .q { font-size: 13px; color: var(--muted); }
+.letter .state { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-align: right; }
+.letter .state small { display: block; font-size: 10.5px; color: var(--muted); letter-spacing: .04em; }
+.letter .why { grid-column: 2 / 4; font-size: 13.5px; line-height: 1.5; border-top: 1px solid var(--line); padding-top: 9px; text-wrap: pretty; }
+.letter[aria-pressed="false"] .why { color: var(--muted); }
+.sticky { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.built .seg { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
+.hint { padding: 14px 20px; font-size: 14px; color: var(--muted); border-radius: 14px; }
+
+/* how we grade */
+details.how { margin-top: 8px; }
+details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; padding: 14px 0; }
+.how-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.how-grid .card { padding: 18px 20px; font-size: 14.5px; }
+.how-grid h4 { margin: 0 0 6px; font-size: 15px; }
+.how-grid p, .how-grid ul { margin: 0; color: var(--muted); }
+.how-grid ul { padding-left: 18px; }
+.how-grid a { color: var(--blue); }
+.foot { padding-block: 36px 52px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.foot p { margin: 0; max-width: 780px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 980px) { .compose, .pair, .scope { grid-template-columns: 1fr; } .practices { grid-template-columns: 1fr 1fr; } .sticky { position: static; } }
+@media (max-width: 560px) { .practices { grid-template-columns: 1fr; } .panel { padding: 22px 20px; } .letter .why { grid-column: 1 / -1; } .meter { grid-template-columns: 1fr; } .badge { justify-self: start; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><b>workiva ai</b>prompt coach</div>
+    <div class="privacy">Runs in your browser. Your prompt and files are never uploaded.</div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap intro">
+    <h1>weak → better → <span>strong</span></h1>
+    <p>Type the prompt you'd give Workiva AI and add the files it should read. You'll see how strong it is as you type, which words earned each SCOPE element, and a stronger version built from your own words and files.</p>
+  </div>
+
+  <section class="block" aria-labelledby="h-grade">
+    <div class="wrap">
+      <div class="head"><h2 id="h-grade">grade your prompt</h2><span class="label">updates as you type</span></div>
+      <div class="compose">
+        <div class="card">
+          <label class="label" for="prompt">your prompt</label>
+          <div class="editor"><div class="mirror" id="mirror" aria-hidden="true"></div><textarea id="prompt" spellcheck="true">Analyze our emissions data.</textarea></div>
+          <div class="meter">
+            <div class="badge weak" id="badge" aria-live="polite">weak</div>
+            <div class="chips" id="chips" role="group" aria-label="SCOPE elements. Select a missing one to see how to add it."></div>
+            <p class="headline" id="headline"></p>
+          </div>
+          <div class="fix" id="fix" hidden></div>
+          <div class="selects">
+            <label for="domain">Area</label>
+            <select id="domain"><option value="">Detect for me</option><option value="FR">Financial reporting</option><option value="GRC">GRC and audit</option><option value="SUS">Sustainability</option><option value="GEN">General</option></select>
+            <label for="intent">Task</label>
+            <select id="intent"><option value="">Detect for me</option></select>
+            <span id="detected"></span>
+          </div>
+          <div class="notes" id="notes"></div>
+        </div>
+        <div class="card">
+          <span class="label" id="files-label">supporting files (optional)</span>
+          <div class="drop" id="drop" tabindex="0" role="button" aria-describedby="files-label">
+            <strong>Drop files or click to add</strong>
+            <span>Word, Excel, PowerPoint, PDF, CSV or text. Read here in your browser; nothing is uploaded.</span>
+          </div>
+          <input type="file" id="fileInput" multiple hidden accept=".docx,.xlsx,.xlsm,.xls,.csv,.pptx,.pdf,.txt,.md">
+          <div class="files" id="files"></div>
+          <span class="label">try an example</span>
+          <div class="examples" id="examples"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="h-ladder">
+    <div class="wrap">
+      <div class="head"><h2 id="h-ladder">prompting: weak → strong</h2><span class="label">see the difference</span></div>
+      <div class="stages" role="tablist" id="stageTabs" aria-label="Prompt versions"></div>
+      <div class="pair">
+        <div class="panel" role="tabpanel" id="stagePanel">
+          <div class="panel-head"><span class="label" id="stageLabel">the prompt</span><button class="copy" type="button" id="copyStage">copy</button></div>
+          <p class="prompt-text" id="stagePrompt"></p>
+          <div class="legend" id="stageLegend"></div>
+        </div>
+        <div class="card verdict">
+          <span class="label" id="verdictLabel">why it fails</span>
+          <p id="verdictText"></p>
+        </div>
+      </div>
+      <div class="practices">
+        <div class="practice"><b>be specific</b><span>State the task, topic, audience, and desired length or style.</span></div>
+        <div class="practice"><b>give context</b><span>Reference the file, select the cells, or explain the scenario. A role prefix helps.</span></div>
+        <div class="practice"><b>one question</b><span>Ask a single, focused question. Follow up rather than stacking asks.</span></div>
+        <div class="practice"><b>iterate</b><span>If the answer is off, adjust and try again. Use the response to guide the next prompt.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="h-scope">
+    <div class="wrap">
+      <div class="head"><h2 id="h-scope">build it with scope</h2><span class="label">toggle the letters</span></div>
+      <p class="scope-intro">The strong version, split into its five SCOPE elements. A simple mnemonic, not an official Workiva framework. Switch a letter off to see what the prompt loses without it.</p>
+      <div class="scope">
+        <div class="letters" id="letters"></div>
+        <div class="sticky">
+          <div class="panel">
+            <div class="panel-head"><span class="label">the assembled prompt</span><span class="row"><span class="label" id="scopeScore" style="color: var(--faint)">5 / 5 elements</span><button class="copy" type="button" id="copyBuilt">copy</button></span></div>
+            <p class="prompt-text built" id="built"></p>
+          </div>
+          <div class="card hint" id="hint"></div>
+        </div>
+      </div>
+
+      <details class="how">
+        <summary>How the coach grades</summary>
+        <div class="how-grid">
+          <div class="card"><h4>The rule</h4><p><b>Weak</b>: the AI would have to guess what to read or what you want back. <b>Better</b>: it names a source and one job. <b>Strong</b>: all five SCOPE elements, and one job at a time.</p></div>
+          <div class="card"><h4>How it works</h4><p>About 150 language patterns spot each element, and a small scoring model trained on 1,000+ labeled reporting, GRC and sustainability prompts weighs them. It all runs on this page; there is no AI service behind it.</p></div>
+          <div class="card"><h4>How accurate it is</h4><p id="accuracy">On 320 held-out prompts it matched expert grading about 86% of the time. It is a coach, not a judge: if it misses something you wrote, rephrase it more plainly or override the task type.</p></div>
+          <div class="card"><h4>Where the criteria come from</h4><ul>
+            <li><a href="https://support.workiva.com/hc/en-us/articles/19173586555412-Tips-for-getting-useful-responses-from-Workiva-AI" target="_blank" rel="noopener">Workiva: tips for useful responses</a></li>
+            <li><a href="https://support.workiva.com/hc/en-us/articles/28927643953172-Reference-specific-files-in-chat-with-Workiva-AI" target="_blank" rel="noopener">Workiva: reference files in chat</a></li>
+            <li><a href="https://learn.microsoft.com/en-in/training/modules/write-effective-prompts-do-more-prompting/2-write-effective-prompt" target="_blank" rel="noopener">Microsoft: goal, context, source, expectations</a></li>
+            <li><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/be-clear-and-direct" target="_blank" rel="noopener">Anthropic: be clear and direct</a></li>
+          </ul></div>
+        </div>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap"><p>Everything on this page runs in your browser. Your prompt and files are not uploaded or sent to any AI service; file readers load from a public CDN only when you add that file type. Rewrites are templates filled from your words and files: check them against your source before you use them, and follow your organization's AI policy.</p></div>
+</footer>
+
+<script>window.SCOPE_WEIGHTS = {"mode":"rulefeat","w":{"S":{"b":-1.0733,"v":{"4256":-0.252,"4767":0.14,"7816":0.096,"10411":0.161,"15851":0.916,"18248":0.832,"18446":-1.245,"20266":3.475,"20669":-0.261,"21475":-5.708,"22334":0.034,"23373":-1.655,"25243":0.36,"26505":3.632,"26920":-0.163,"28343":-0.197,"29288":0.01,"30418":0.097,"30866":0.098,"33841":0.008,"33882":-0.033,"34062":1.037,"34174":-2.722,"35018":-0.459,"37805":0.275,"38094":-1.773,"40115":1.589,"40232":-0.912,"40717":-0.377,"44334":0.685,"44737":0.217,"45470":0.133,"45642":0.337,"45741":-1.245,"46299":0.284,"46760":0.009,"47549":0.868,"47987":0.133,"48242":-0.476,"48255":0.619,"48332":0.02,"48392":0.48,"48900":-0.733,"49067":0.224,"51987":1.076,"51990":0.589,"56180":-0.14,"56857":0.019,"57498":0.078,"59838":0.077,"60461":0.007,"61126":0.013,"62121":0.34,"63566":-1.699,"64196":-0.104,"64584":0.082,"65405":0.028,"70045":0.955,"74713":0.034,"74786":11.232,"74959":0.431,"75658":-2.416,"79203":0.67,"79403":0.41,"79526":0.013,"81580":0.474,"82170":1.197,"84743":0.094,"85640":0.336,"86319":0.009,"87122":0.006,"87227":0.182,"88459":0.299,"90041":-0.354,"90438":-0.157,"91841":-0.65,"94633":0.087,"96294":0.437,"97394":0.635,"99671":0.117,"99673":1.867,"99688":0.236,"99714":0.151,"101290":0.265,"101457":-1.79,"101566":-1.943,"102615":0.143,"102690":-2.469,"104857":-0.566,"105749":0.597,"106272":0.031,"107874":0.063,"108709":0.032,"110374":-0.378,"110691":0.076,"112419":0.013,"112608":0.058,"113029":0.021,"113801":0.043,"114122":0.527,"114698":-1.012,"115403":0.004,"119779":0.127,"120355":0.14,"120435":0.899,"121023":0.88,"121507":-0.003,"121772":0.114,"126285":0.22,"127066":0.052,"128169":0.29,"130355":0.234,"133279":0.393,"135938":0.621,"138017":1.332,"139254":-0.149,"139582":-0.009,"141732":-0.33,"144093":0.065,"145392":-1.217,"145410":-0.298,"146777":-0.195,"148511":0.09,"148785":-0.143,"149220":1.222,"150079":-0.242,"152560":0.576,"154086":0.004,"156693":0.009,"157719":-0.053,"158401":0.014,"160199":0.346,"161577":0.034,"161986":0.308,"162003":-0.373,"162016":0.163,"163438":0.026,"165198":0.106,"166454":0.681,"168778":0.084,"170137":6.447,"170463":0.003,"170804":-1.178,"172398":-1.083,"172581":0.086,"173051":0.927,"173396":-0.133,"176913":0.309,"177129":0.119,"181824":0.126,"184094":0.143,"185039":0.713,"185238":0.15,"185981":-0.119,"188486":0.158,"190911":-0.103,"192498":-0.204,"193128":-0.289,"194674":1.362,"195843":0.875,"197509":0.404,"199244":0.708,"199367":-0.912,"200054":-0.027,"200059":-0.213,"200756":0.198,"201167":0.112,"201982":0.044,"202988":-0.042,"208021":-0.063,"208317":0.525,"209277":0.028,"211314":0.673,"211578":0.392,"211633":0.073,"212485":0.216,"212992":0.363,"214276":0.192,"216701":0.139,"216729":-0.034,"221372":-0.469,"222340":0.708,"222759":-0.329,"226831":0.013,"227106":1.431,"228056":0.516,"230097":0.009,"230166":0.716,"231272":-0.002,"232458":-0.115,"241001":0.126,"241422":-0.195,"243147":0.503,"243448":0.657,"246532":0.24,"246545":-0.116,"248494":0.016,"249548":-0.351,"249635":-0.024,"250112":0.056,"251405":0.112,"253111":0.006,"253479":-0.418,"253716":0.06,"255090":0.143,"256091":4.487,"256637":0.702,"256761":0.303,"257550":-0.556,"257570":0.482,"258381":0.497,"259883":0.011}},"C":{"b":-1.732,"v":{"4256":0.128,"4767":-1.139,"7816":-2.345,"10066":-0.27,"10411":-0.126,"15851":1.814,"18248":0.174,"18446":4.755,"20266":5.457,"20669":-0.703,"21475":-5.907,"22334":-0.228,"23373":0.388,"25243":1.522,"26505":2.597,"26920":0.758,"28343":-2.611,"29288":0.07,"30418":0.294,"30866":0.05,"33841":-0.243,"33882":1.004,"34062":1.679,"34174":-0.476,"35018":0.382,"37805":-1.576,"38094":0.988,"40115":-0.411,"40232":-3.298,"40717":-0.921,"44334":-0.387,"44737":-2.531,"45470":2.201,"45642":-0.442,"45741":-0.063,"46299":0.009,"46760":-0.004,"47549":0.873,"47987":0.962,"48242":1.897,"48255":0.056,"48332":0.165,"48392":0.516,"48900":1.403,"49067":0.864,"51987":-0.811,"51990":0.5,"56180":0.698,"56857":-0.342,"57498":-0.183,"59838":1.169,"60461":0.114,"61126":-0.339,"62121":-0.033,"63566":0.076,"64196":-0.462,"64584":-1.175,"65405":-0.036,"70045":3.343,"74713":-0.571,"74786":-0.296,"74959":2.486,"75658":-2.811,"79203":2.05,"79403":-0.259,"79526":0.102,"81580":-1.671,"82170":-1.098,"84743":0.834,"85640":1.172,"86319":0.522,"87122":-0.316,"87227":-2.042,"88459":0.446,"90041":0.637,"90438":0.029,"91841":-0.301,"94633":0.966,"96294":-0.115,"97394":0.347,"99671":0.024,"99673":-0.45,"99688":-0.697,"99714":-1.133,"101290":0.527,"101457":2.623,"101566":-0.271,"102615":1.315,"102690":-0.641,"104857":1.917,"105749":0.616,"106272":-0.534,"107874":-0.003,"108709":-0.327,"110374":0.06,"110691":0.007,"112419":0.042,"112608":0.417,"113029":0.477,"113801":4.143,"114122":2.188,"114698":0.565,"115403":-0.57,"119779":0.019,"120355":-0.347,"120435":0.293,"121023":1.738,"121507":-0.398,"121772":-0.062,"126285":-0.925,"127066":0.668,"128169":-0.166,"130355":-0.398,"133279":0.816,"135938":2.548,"138017":1.85,"139254":-0.065,"139582":0.41,"141732":0.175,"144093":-0.167,"145392":1.669,"145410":0.201,"146777":0.928,"148511":-0.306,"148785":0.14,"149220":0.754,"150079":-1.631,"152560":0.031,"153870":0.335,"154086":-0.465,"156693":0.551,"157719":-0.064,"158401":0.78,"160199":-0.056,"161577":0.107,"161986":0.463,"162003":-0.412,"162016":0.975,"163438":0.413,"165198":1.319,"166454":-1.677,"168778":1.292,"170137":-0.195,"170463":0.112,"170804":0.122,"172398":2.357,"172581":-0.928,"173051":0.932,"173396":-0.072,"176913":-0.139,"177129":1.284,"181824":1.019,"184094":-0.348,"185039":-2.153,"185238":-0.14,"185981":0.504,"188486":0.771,"190911":-0.244,"192498":0.12,"193128":-1.417,"194674":1.696,"195843":1.062,"197509":-2.135,"199244":0.013,"199367":-3.298,"200054":-0.299,"200059":0.088,"200756":-0.34,"201167":0.055,"201982":0.048,"202988":0.359,"208021":-0.26,"208317":0.41,"209277":-0.244,"211314":-1.416,"211578":0.194,"211633":1.291,"212485":-0.175,"212992":-1.13,"214276":0.822,"216701":-0.282,"216729":-0.02,"220984":1.602,"221372":1.733,"222340":0.507,"222759":-0.326,"226831":0.143,"227106":-2.146,"228056":1.309,"230097":-0.408,"230166":-2.626,"231272":-0.086,"232458":-1.533,"241001":-1.069,"241422":0.444,"243147":0.593,"243448":-0.173,"246532":1.629,"246545":-0.036,"248494":0.066,"249548":1.345,"249635":1.735,"250112":-0.378,"251405":-0.049,"253111":0.283,"253479":1.073,"253716":1.217,"255090":9.05,"256091":1.965,"256637":3.659,"256761":-0.702,"257550":-2.11,"257570":0.195,"258381":0.284,"259883":-0.204}},"O":{"b":-2.5888,"v":{"4256":0.247,"4767":0.256,"7816":-2.119,"10066":-0.431,"10411":0.123,"15851":0.581,"18248":0.826,"18446":-3.867,"20266":5.943,"20669":3.034,"21475":-2.408,"22334":-0.533,"23373":-9.336,"25243":0.247,"26505":-0.009,"26920":0.131,"28343":-0.646,"29288":0.026,"30418":0.654,"30866":-0.83,"33841":0.121,"33882":-1.494,"34062":0.838,"34174":-1.316,"35018":-1.058,"37805":-0.947,"38094":0.636,"40115":1.675,"40232":-2.925,"40717":1.111,"44334":-1.463,"44737":1.226,"45470":2.214,"45642":0.578,"45741":2.179,"46299":-2.323,"46760":1.148,"47549":1.873,"47987":1.455,"48242":-0.041,"48255":0.186,"48332":-1.436,"48392":1.641,"48900":-0.301,"49067":0.943,"51987":0.169,"51990":0.884,"56180":0.264,"56857":0.031,"57498":0.174,"59838":0.1,"60461":0.077,"61126":0.105,"62121":1.14,"63566":2.827,"64196":0.35,"64584":0.636,"65405":0.233,"70045":1.465,"74713":0.049,"74786":3.968,"74959":3.448,"75658":2.572,"79203":-0.118,"79403":0.023,"79526":0.106,"81580":1.817,"82170":-1.512,"84743":0.151,"85640":-2.067,"86319":0.059,"87122":0.097,"87227":-0.153,"88459":2.907,"90041":1.449,"90438":0.145,"91841":-0.016,"94633":0.966,"96294":0.441,"97394":0.255,"99671":0.257,"99673":2.389,"99688":0.555,"99714":0.284,"101290":0.357,"101457":-1.092,"101566":-2.068,"102615":0.158,"102690":-5.356,"104857":-5.514,"105749":0.905,"106272":-2.859,"107874":-0.841,"108709":0.132,"110374":0.129,"110691":0.12,"112419":0.063,"112608":0.403,"113029":0.108,"113801":0.084,"114122":0.64,"114698":3.599,"115403":2.214,"119779":0.15,"120355":0.418,"120435":2.052,"121023":0.671,"121507":0.634,"121772":0.684,"126285":-1.004,"127066":0.326,"128169":0.735,"130355":1.37,"133279":0.476,"135938":-0.489,"138017":2.209,"139254":-0.622,"139582":1.04,"141732":0.268,"144093":0.236,"145392":1.336,"145410":-2.583,"146777":0.722,"148511":0.116,"148785":0.508,"149220":1.264,"150079":0.263,"152560":3.325,"153870":0.023,"154086":0.035,"156693":0.057,"157719":0.502,"158401":0.044,"160199":1.464,"161577":0.418,"161986":0.604,"162003":0.577,"162016":-0.403,"163438":0.177,"165198":3.008,"166454":-0.379,"168778":0.591,"170137":-2.284,"170463":0.045,"170804":-0.446,"172398":1.748,"172581":0.051,"173051":0.254,"173396":2.076,"176913":0.689,"177129":0.314,"181824":0.651,"184094":0.431,"185039":1.188,"185238":-3.68,"185981":-0.059,"188486":-1.131,"190911":0.302,"192498":-0.648,"193128":-2.106,"194674":2.074,"195843":-0.286,"197509":1.375,"199244":1.497,"199367":-2.925,"200054":0.819,"200059":-0.465,"200756":-1.134,"201167":0.097,"201982":0.053,"202988":-0.197,"208021":-1.954,"208317":0.264,"209277":0.114,"211314":1.121,"211578":0.349,"211633":0.304,"212485":0.187,"212992":0.564,"214276":0.421,"216701":0.232,"216729":0.724,"220984":-2.792,"221372":0.54,"222340":1.103,"222759":-1.931,"226831":0.237,"227106":1.946,"228056":-0.615,"230097":0.048,"230166":1.238,"231272":-0.384,"232458":-0.513,"241001":0.688,"241422":0.42,"243147":1.16,"243448":1.245,"246532":-1.87,"246545":2.12,"248494":0.059,"249548":2.575,"249635":0.018,"250112":0.063,"251405":-2.186,"253111":0.111,"253479":0.688,"253716":1.042,"255090":0.481,"256091":-1.658,"256637":1.497,"256761":0.367,"257550":-4.974,"257570":0.676,"258381":-0.199,"259883":0.135}},"P":{"b":-1.3621,"v":{"4256":-0.233,"4767":0.168,"7816":0.273,"10066":0.193,"10411":0.071,"15851":0.088,"18248":0.439,"18446":1.567,"20266":7.438,"20669":-3.298,"21475":-4.305,"22334":-1.03,"23373":-2.982,"25243":-0.044,"26505":-2.174,"26920":0.184,"28343":0.49,"29288":0.037,"30418":0.74,"30866":0.039,"33841":0.302,"33882":0.492,"34062":-0.073,"34174":-0.137,"35018":0.067,"37805":-1.99,"38094":-0.469,"40115":2.883,"40232":-4.316,"40717":0.283,"44334":-0.032,"44737":0.103,"45470":1.567,"45642":0.392,"45741":0.451,"46299":0.027,"46760":0.04,"47549":-1.347,"47987":2.226,"48242":4.01,"48255":0.194,"48332":0.046,"48392":-0.467,"48900":2.585,"49067":-1.139,"51987":-0.062,"51990":-0.187,"56180":-3.317,"56857":-0.881,"57498":-0.036,"59838":0.077,"60461":-0.672,"61126":0.284,"62121":-0.451,"63566":0.809,"64196":0.195,"64584":-0.497,"65405":-0.114,"70045":1.578,"74713":0.041,"74786":0.957,"74959":1.365,"75658":-3.566,"79203":2.539,"79403":-2.359,"79526":0.078,"81580":0.945,"82170":-1.861,"84743":0.48,"85640":0.556,"86319":0.169,"87122":0.362,"87227":-0.287,"88459":7.77,"90041":1.17,"90438":0.038,"91841":0.824,"94633":-0.9,"96294":0.291,"97394":1.253,"99671":-0.406,"99673":3.22,"99688":-0.638,"99714":-0.065,"101290":0.715,"101457":-0.504,"101566":-0.306,"102615":0.29,"102690":1.732,"104857":0.757,"105749":-0.262,"106272":-0.492,"107874":0.012,"108709":0.191,"110374":0.511,"110691":0.044,"112419":0.064,"112608":0.175,"113029":0.056,"113801":1.061,"114122":-0.824,"114698":-2.234,"115403":2.16,"119779":-0.573,"120355":-0.055,"120435":1.13,"121023":-0.584,"121507":0.556,"121772":0.614,"126285":0.036,"127066":0.726,"128169":0.353,"130355":2.173,"133279":-0.111,"135938":-0.933,"138017":0.768,"139254":-0.609,"139582":1.442,"141732":1.387,"144093":0.296,"145392":-0.347,"145410":-0.228,"146777":3.623,"148511":-0.307,"148785":0.916,"149220":1.547,"152560":-0.536,"153870":0.126,"154086":0.415,"156693":0.051,"157719":-1.235,"158401":0.293,"160199":0.997,"161577":-0.152,"161986":-0.587,"162003":2.114,"162016":0.443,"163438":-0.305,"165198":-1.191,"166454":-3.345,"168778":-0.249,"170137":-1.236,"170463":0.07,"170804":0.439,"172398":1.81,"172581":0.047,"173051":0.806,"173396":-0.035,"176913":-1.838,"177129":0.394,"181824":0.788,"184094":0.348,"185039":1.619,"185238":-0.79,"185981":1.489,"188486":0.015,"190911":-0.739,"192498":0.058,"193128":-1.59,"194674":0.88,"195843":-0.217,"197509":1.237,"199244":-0.115,"199367":-4.316,"200054":-0.415,"200059":0.335,"200756":1.818,"201167":0.356,"201982":0.059,"202988":0.604,"208021":0.615,"208317":-1.198,"209277":0.113,"211314":-1.272,"211578":0.295,"211633":0.234,"212485":-0.29,"212992":0.26,"214276":0.2,"216701":-0.231,"216729":-0.053,"220984":-7.087,"221372":-0.581,"222340":-0.697,"222759":-0.179,"226831":0.447,"227106":-0.424,"228056":0.49,"230097":0.106,"230166":1.506,"231272":-1.373,"232458":0.796,"241001":-0.337,"241422":0.091,"243147":-1.003,"243448":1.428,"246532":1.966,"246545":-0.044,"248494":0.034,"249548":0.635,"249635":0.714,"250112":0.085,"251405":-0.05,"253111":0.362,"253479":1.26,"253716":0.818,"255090":0.326,"256091":-0.371,"256637":1.023,"256761":0.005,"257550":1.45,"257570":0.69,"258381":-2.336,"259883":-0.135}},"E":{"b":-2.4045,"v":{"4256":-0.062,"4767":0.577,"7816":0.491,"10066":0.241,"10411":-0.223,"15851":3.046,"18248":0.36,"18446":0.394,"20266":7.992,"20669":-3.724,"21475":-5.75,"22334":0.178,"23373":-1.521,"25243":-0.277,"26505":2.759,"26920":0.049,"28343":0.161,"29288":0.011,"30418":-0.051,"30866":-0.102,"33841":0.108,"33882":0.592,"34062":0.306,"34174":0.014,"35018":0.132,"37805":-0.714,"38094":-0.044,"40115":-0.25,"40232":-3.141,"40717":-0.353,"44334":0.162,"44737":-1.4,"45470":0.968,"45642":0.037,"45741":0.923,"46299":-0.231,"46760":-0.004,"47549":0.188,"47987":-0.221,"48242":0.507,"48255":0.038,"48392":0.092,"48900":0.049,"49067":0.322,"51987":-1.307,"51990":0.697,"56180":-0.745,"56857":0.019,"57498":0.195,"59838":-0.129,"60461":0.111,"61126":0.051,"62121":0.049,"63566":1.131,"64196":-0.055,"64584":-0.987,"65405":-0.122,"70045":-0.412,"74713":0.005,"74786":1.081,"74959":9.871,"75658":-3.448,"79203":0.351,"79403":-0.169,"79526":0.027,"81580":-0.75,"82170":-0.454,"84743":0.445,"85640":-0.523,"86319":0.03,"87122":-0.245,"87227":1.88,"88459":1.229,"90041":0.586,"90438":-0.138,"91841":0.557,"94633":-0.655,"96294":0.657,"97394":0.773,"99671":0.221,"99673":1.104,"99688":-1.499,"99714":0.081,"101290":0.335,"101457":0.23,"101566":-0.838,"102615":0.362,"102690":2.079,"104857":0.023,"105749":0.676,"106272":0.006,"107874":0.059,"108709":-0.213,"110374":0.071,"110691":0.008,"112419":0.231,"112608":0.583,"113029":0.007,"113801":-0.593,"114122":0.284,"114698":-0.066,"115403":0.042,"119779":-0.126,"120355":-0.54,"120435":-0.516,"121023":0.33,"121507":-0.194,"121772":-0.137,"126285":0.148,"127066":0.335,"128169":-0.463,"130355":1.156,"133279":0.469,"135938":-0.383,"138017":4.177,"139254":-0.102,"139582":0.046,"141732":0.122,"144093":0.066,"145392":0.377,"145410":-1.156,"146777":1.809,"148511":0.018,"148785":-0.378,"149220":13.355,"150079":-0.244,"152560":-0.309,"153870":0.054,"154086":0.007,"156693":0.036,"157719":-0.45,"158401":0.141,"160199":1.028,"161577":0.028,"161986":-0.214,"162003":-0.029,"162016":-0.125,"163438":-0.276,"165198":-1.015,"166454":1.049,"168778":0.45,"170137":0.496,"170463":0.48,"170804":-0.016,"172398":0.053,"172581":0.631,"173051":0.507,"173396":-0.065,"176913":0.207,"177129":0.219,"181824":0.179,"184094":0.653,"185039":0.999,"185238":-0.034,"185981":-0.418,"188486":0.354,"190911":-0.029,"192498":0.114,"193128":0.2,"194674":0.993,"195843":-0.937,"197509":-0.274,"199244":0.553,"199367":-3.141,"200054":1.58,"200059":0.185,"200756":0.115,"201167":-0.189,"201982":0.029,"202988":0.252,"208021":-0.199,"208317":0.15,"209277":0.079,"211314":0.908,"211578":-0.177,"211633":0.169,"212485":0.074,"212992":-0.691,"214276":0.447,"216701":-0.301,"216729":-0.015,"220984":2.329,"221372":1.012,"222340":0.497,"222759":0.854,"226831":0.099,"227106":-1.039,"228056":-0.039,"230097":0.019,"230166":1.21,"231272":-0.276,"232458":0.545,"241001":-0.545,"241422":-0.423,"243147":0.579,"243448":0.448,"246532":-0.498,"246545":-0.035,"248494":0.026,"249548":0.036,"249635":-0.329,"250112":-0.181,"251405":0.01,"253111":-0.129,"253479":1.376,"253716":0.177,"255090":0.217,"256091":0.834,"256637":2.41,"256761":0.301,"257550":-0.921,"257570":0.22,"258381":0.662,"259883":0.687}}},"thr":{"S":0.5,"C":0.5,"O":0.5,"P":0.5,"E":0.5}};
+;
+/* SCOPE rule detectors. Pure functions, no dependencies; runs in Node and the browser.
+   detect(prompt, {files}) -> { text, el: {S,C,O,P,E: {on, score, hits[]}}, stacked, vague[], words } */
+(function (root) {
+  const CONTRACTIONS = [
+    [/\bdon'?t\b/g, 'do not'], [/\bdoesn'?t\b/g, 'does not'], [/\bdidn'?t\b/g, 'did not'],
+    [/\bcan'?t\b/g, 'cannot'], [/\bwon'?t\b/g, 'will not'], [/\bisn'?t\b/g, 'is not'],
+    [/\baren'?t\b/g, 'are not'], [/\bshouldn'?t\b/g, 'should not'], [/\bwouldn'?t\b/g, 'would not'],
+    [/\byou'?re\b/g, 'you are'], [/\bwe'?re\b/g, 'we are'], [/\bi'?m\b/g, 'i am'],
+    [/\bi'?ll\b/g, 'i will'], [/\bwe'?ll\b/g, 'we will'], [/\bit'?s\b/g, 'it is'],
+    [/\bthat'?s\b/g, 'that is'], [/\bwhat'?s\b/g, 'what is'], [/\bi'?ve\b/g, 'i have'],
+    [/\bwe'?ve\b/g, 'we have'], [/\blet'?s\b/g, 'let us'], [/\bdont\b/g, 'do not'], [/\bcant\b/g, 'cannot']
+  ];
+  // Common misspellings seen in quick typing.
+  const TYPOS = {
+    teh: 'the', adn: 'and', tabel: 'table', tbale: 'table', selcted: 'selected', seleted: 'selected',
+    slected: 'selected', attahced: 'attached', atached: 'attached', attched: 'attached', summarise: 'summarize',
+    summerize: 'summarize', summary: 'summary', anaylze: 'analyze', analyse: 'analyze',
+    analize: 'analyze', varience: 'variance', variences: 'variances', comparre: 'compare', identfy: 'identify',
+    indentify: 'identify', explian: 'explain', expalin: 'explain', speculte: 'speculate', speculat: 'speculate',
+    spreadhseet: 'spreadsheet', spreasheet: 'spreadsheet', spredsheet: 'spreadsheet', docuemnt: 'document',
+    documnet: 'document', reprot: 'report', rpeort: 'report', controsl: 'controls', contorls: 'controls',
+    emmissions: 'emissions', statment: 'statement', statments: 'statements', sumarize: 'summarize', pls: 'please', plz: 'please', emisions: 'emissions', emissons: 'emissions', paragrpah: 'paragraph',
+    pargraph: 'paragraph', bulelts: 'bullets', bulets: 'bullets', cloumns: 'columns', colums: 'columns',
+    quater: 'quarter', qaurter: 'quarter', assurnace: 'assurance', disclosrue: 'disclosure', disclousre: 'disclosure',
+    hypothsis: 'hypothesis', hypotheses: 'hypotheses', questoins: 'questions', quesitons: 'questions',
+    draf: 'draft', rewirte: 'rewrite', reivew: 'review', reveiw: 'review', evidance: 'evidence', evidnce: 'evidence',
+    executve: 'executive', exectuive: 'executive', commitee: 'committee', comittee: 'committee', audiance: 'audience',
+    footnot: 'footnote', higlighted: 'highlighted', hilighted: 'highlighted', higlight: 'highlight', thier: 'their'
+  };
+
+  function normToken(w) {
+    let t = w.toLowerCase().replace(/[\u2018\u2019\u02bc`]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/[\u2013\u2014]/g, ' - ');
+    t = t.replace(/\b[a-z]+\b/g, (x) => TYPOS[x] || x);
+    for (const [re, rep] of CONTRACTIONS) t = t.replace(new RegExp(re.source, 'g'), rep);
+    return t;
+  }
+  // Returns the normalized text plus, for every normalized character, the [start,end) of the
+  // original token it came from, so detector hits can be highlighted in what the user typed.
+  function normalizeWithMap(raw) {
+    const src = String(raw || '');
+    let text = ' ', map = [null];
+    const re = /\S+/g; let m;
+    while ((m = re.exec(src))) {
+      const nt = normToken(m[0]);
+      const span = [m.index, m.index + m[0].length];
+      for (let i = 0; i < nt.length; i++) map.push(span);
+      text += nt + ' '; map.push(null);
+    }
+    return { text, map };
+  }
+  function normalize(raw) { return normalizeWithMap(raw).text; }
+  function toOriginal(map, start, end) {
+    let a = null, b = null;
+    for (let i = start; i < end && i < map.length; i++) if (map[i]) { if (a === null) a = map[i][0]; b = map[i][1]; }
+    return a === null ? null : [a, b];
+  }
+
+  const NOUN_SRC = '(?:data(?:set)?|table|tables|cells?|rows?|columns?|range|ranges|text|paragraphs?|sections?|files?|docs?|documents?|reports?|sheets?|spreadsheets?|workbook|worksheets?|deck|slides?|presentation|tabs?|query|queries|pdf|memo|policy|policies|matrix|rcm|narratives?|drafts?|disclosures?|figures|numbers|values|schedule|schedules|footnotes?|notes?|exhibits?|entries|lines?|items?|controls?|findings|evidence|results|output|chart|graph|list|content|language|wording|summary|filing|statement|statements|ledger|tb|trial balance|register|log|workpapers?|template|appendix|transcript|minutes|email|contract|agreement|invoice|samples?|population|inventory|factbook|questionnaire|survey|responses|letter|comment letter|10-k|10-q|8-k|md&a|esg report|sustainability report|annual report)';
+  const SRC_LOCATOR = '(?:selected|highlighted|attached|uploaded|pasted|linked|open|opened|current|enclosed|following|above|below|provided|shared)';
+
+  // Each rule: [regex, weight, tag]. Weights are summed; an element is "on" at >= 1.
+  const RULES = {
+    S: [
+      [/(?:^|\s)@[\w(]/, 1.3, 'at-mention'],
+      [/\b(?:the|this|my|our|these|those|that|your)\s+(?:\w+\s+)?(?:selected|highlighted|attached|uploaded|pasted|enclosed|linked|shared)\b|\b(?:selected|highlighted|attached|uploaded|enclosed)\s+(?!to\b|by\b|for\b|with\b)[\w$&'-]{2,}/, 1.2, 'locator-any'],
+      [/\(\s*(?:attached|enclosed|see attached|selected|uploaded)\s*\)/, 1.2, 'paren-attached'],
+      [/\b(?:the|on the|in the|from the|using the|off the|within the|across the|on|in|from|using)\s+['"]?[\w&'()\/.-]+(?:\s+[\w&'()\/.-]+){0,5}?['"]?\s+(?:tab|tabs|sheet|worksheet|workbook|query|dashboard)\b/, 1.2, 'named-tab'],
+      [/'[^']{2,60}'\s+(?:tab|sheet|worksheet|column|section|slide|file|query|table|report|deck|document|workbook)\b|\b(?:tab|sheet|worksheet|column|section|slide|query|table|report|file|workbook)\s+'[^']{2,60}'/, 1.2, 'single-quoted-part'],
+      [/\bopen\s+(?:\w+\s+){0,3}(?:release|statement|calendar|checklist|file|deck|doc|document|report|spreadsheet|workbook|draft|policy|memo|matrix|rcm|workpaper|10-k|10-q|filing)\b/, 1.1, 'open-doc'],
+      [new RegExp('\\b' + SRC_LOCATOR + '\\s+(?:[\\w&$-]+\\s+){0,4}' + NOUN_SRC + '\\b'), 1.2, 'locator'],
+      [new RegExp('\\b' + NOUN_SRC + '\\s+(?:i|we|you)\\s+(?:have\\s+|just\\s+|have just\\s+)?(?:selected|highlighted|attached|uploaded|pasted|shared|opened|linked|included|dropped|sent|added)\\b'), 1.2, 'i-selected'],
+      [/\b(?:i|we) (?:have |just |have just )?(?:selected|highlighted|attached|uploaded|pasted|opened|dropped in|added|linked)\b/, 1.0, 'i-selected-verb'],
+      [new RegExp('\\b(?:this|these|that|those)\\s+(?:[\\w&$-]+\\s+){0,3}' + NOUN_SRC + '\\b'), 1.0, 'demonstrative'],
+      [/\b(?:what|everything) (?:i have|i've got|is|we have) (?:got )?(?:open|selected|highlighted|in front of me|on screen)\b/, 1.2, 'whats-open'],
+      [/\bin front of (?:me|you)\b|\bon (?:my|the) screen\b/, 0.8, 'on-screen'],
+      [/\b[\w()&-]+(?:[ _-][\w()&-]+){0,5}\.(?:xlsx|xlsm|xls|csv|docx|doc|pdf|pptx|ppt|txt)\b/, 1.3, 'filename'],
+      [/\b(?:tab|sheet|worksheet|column|section|slide|page|note|exhibit|appendix|row|cell|item|schedule|table|part)\s+(?:called|named|labeled|labelled|titled)\b/, 1.2, 'named-part'],
+      [/"[^"]{2,60}"\s+(?:tab|sheet|worksheet|column|section|slide|file|query|table|report|deck|document)\b/, 1.2, 'quoted-part'],
+      [/\b(?:tab|sheet|worksheet|column|section|slide|query|table|report|file)\s+"[^"]{2,60}"/, 1.2, 'quoted-part2'],
+      [/\b(?:note|footnote|slide|page|section|item|exhibit|appendix|schedule|row|rows|column|columns|cell|cells|tab|part)\s+(?:[a-z]?\d+[a-z]?(?:\.\d+)*|[ivx]+|[a-z]{1,3}\d+(?::[a-z]{1,3}\d+)?)\b/, 1.0, 'numbered-part'],
+      [/\b(?:knowledge base|knowledgebase|esrs\s*\/\s*issb intelligence|issb intelligence|esrs intelligence|support intelligence|framework kb|the kb)\b/, 1.2, 'kb'],
+      [/\b(?:wdata|the query|saved query|connected data|the dataset)\b/, 0.7, 'wdata'],
+      [/\b(?:using|use|based on|from|in|off|within|against|per)\s+(?:only\s+)?(?:the\s+)?(?:my|our)\s+(?:attached|selected|open|current|uploaded)\b/, 1.0, 'using-my-attached'],
+      [/\b(?:pasted|attached|included|provided|shown|listed|copied) (?:above|below|here|in this (?:chat|message|thread))\b/, 1.1, 'pasted-here'],
+      [/\b(?:the|this) (?:doc|document|report|file|spreadsheet|workbook|deck|sheet|draft|memo|policy|matrix|table) (?:i am|i'm|we are|we're) (?:in|working (?:in|on)|editing|viewing)\b/, 1.2, 'working-in'],
+      [/\b(?:work|working|go|going) (?:off|from) (?:of )?(?:the|this|my)\b/, 0.6, 'work-off'],
+      [/\b(?:here is|here are|here's|below is|below are|following is)\b/, 0.6, 'here-is']
+    ],
+    C: [
+      [/\b(?:for|to|give|with|brief|briefing|email|emailing|memo|update|message|tell|show|send|present|presenting|walk|explain (?:\w+ )?to)\s+(?:the |our |my |a |an |this |its )?(?:audit committee(?: chair| members?)?|board(?: of directors)?|(?:external |internal |new |outside )?auditors?|external audit|legal(?: team)?|(?:retail |institutional )?investors|lenders?|bank|(?:our )?sales team|execs|executives|leadership|controller|treasurer|(?:my |our )?manager|cae|cfo|ceo|cro|cco|ciso|cio|vp of \w+|vp|control owners?|process owners?|steering committee|disclosure committee|ir(?: team)?|investor relations|xbrl team|filing agent|new hires?|new (?:staff|close staff|staff accountants?|analysts?|team members?|preparers?)|first-?time (?:\w+ )?preparers|outside counsel|counsel|regulators?|sec staff|the sec|customers|clients?|employees|staff|finance team|hr|it team|it|fp&a|tax team|partners?|reviewers?|examiners?|rating agencies|shareholders)\b/, 1.1, 'audience2'],
+      [/\b(?:the |our |my )?(?:audit committee(?: chair| members?)?|board(?: of directors)?|(?:external |internal |new |outside )?auditors?|external audit|legal(?: team)?|(?:retail |institutional )?investors|lenders?|bank|(?:our )?sales team|execs|executives|leadership|controller|treasurer|(?:my |our )?manager|cae|cfo|ceo|cro|cco|ciso|cio|vp of \w+|vp|control owners?|process owners?|steering committee|disclosure committee|ir(?: team)?|investor relations|xbrl team|filing agent|new hires?|new (?:staff|close staff|staff accountants?|analysts?|team members?|preparers?)|first-?time (?:\w+ )?preparers|outside counsel|counsel|regulators?|sec staff|the sec|customers|clients?|employees|staff|finance team|hr|it team|it|fp&a|tax team|partners?|reviewers?|examiners?|rating agencies|shareholders)\s+(?:will|wants?|needs?|asked|ask|keeps? asking|keep|are going to|is going to|is reading|are reading|reads?|reviews?|reviewing|requested|requests?|expects?|flagged|signs?|sign-off|sign off|is picky|are picky|have asked|has asked|meeting|call|pre-?read|deck|pack|book|review|prep)\b/, 1.0, 'audience-acts'],
+      [/\bi am (?:prepping|preparing|briefing|drafting|closing|assigning|writing|working|presenting|getting ready|heading|meeting|reviewing|responding|onboarding|building|putting together|trying|new|the|a|an|our|on|in charge|responsible|leading|running|covering|filling in)\b/, 1.0, 'i-am'],
+      [/\b(?:we|our team|our company|the company|i|our (?:\w+ ){0,2}(?:admin|auditor|auditors|team|cfo|controller|lead|manager|vp))\s+(?:file|filed|are filing|will file|changed|moved|had|have had|are heading|are going|are a|are an|just|recently|switched|acquired|merged|lost|hired|failed|flagged|resigned|keep|are new|are small|are a smaller|are still|are behind|are short|are stretched|are being|were|have been|got)\b/, 0.9, 'background2'],
+      [/\b(?:before|ahead of|for) (?:the |our |tomorrow's |next week's |this week's |friday's |monday's |thursday's |the upcoming )?(?:[\w&-]+ ){0,3}(?:goes out|is due|meeting|call|deadline|review|pre-?read|filing|close|committee|walkthrough|audit|visit|presentation|session)\b/, 0.8, 'event'],
+      [/\bso (?:that )?(?:a |an |the |our |my )?(?:new|non-technical|non-?accountant|junior|first-time|non-finance|lay|business|general)?\s*(?:\w+ ){0,2}(?:can|could|will|would) (?:follow|understand|get it|use|read|act|decide|sign|reperform|rebuild|assign)\b|\bso (?:\w+ ){1,3}get it\b|\b(?:to|for) (?:a|an|our|the|my) (?:new|first-time|non-technical|junior|non-finance) \w+/, 1.0, 'so-reader-can'],
+      [/\b(?:customers|clients|regulators|auditors|investors|the board|management|leadership) (?:keep|keeps|have been|are) (?:asking|requesting|pushing|concerned)\b/, 1.0, 'stakeholder-asking'],
+      [/\bas (?:the |an? |our )?(?:head of \w+|vp of \w+|cro|cae|cfo|cco|ciso|cio|chair|admin|tester|lead|coach|preparer|owner|reviewer|controller|treasurer|team|member)\b/, 1.1, 'as-title'],
+      [/\b(?:you are (?:an?|the|my|our|now|acting|playing|working as|serving as)\b|act as|acting as|pretend (?:to be|you are)|imagine you are|take the role of|play the role of|role:|as my|from the perspective of|wear(?:ing)? (?:your|the|an?) [\w ]{2,30} hat|put on (?:your|an?) [\w ]{2,30} hat|think like)\b/, 1.2, 'role'],
+      [/\bas (?:an?|the|our) (?:experienced |senior |seasoned |skeptical |external |internal |independent )?(?:[\w&-]+ ){0,3}(?:analyst|auditor|reviewer|controller|accountant|expert|specialist|consultant|officer|manager|cfo|cco|ciso|partner|preparer|writer|editor|lead|director|advisor|adviser|counsel|lawyer|examiner|regulator|investor|economist|engineer|assessor|verifier)\b/, 1.2, 'as-role'],
+      [/\bfor (?:the |our |a |an |my )?(?:audit committee|board|board of directors|executives?|executive team|exec team|leadership|leadership team|senior leadership|c-suite|cfo|ceo|coo|cio|ciso|controller|investors?|analysts?|auditors?|external auditors?|internal audit|regulators?|the sec|sec staff|management|assurance (?:provider|team)|non-?(?:experts?|specialists?|finance (?:people|readers|audience))|new (?:hires?|analysts?|team members?|staff)|stakeholders|steering committee|disclosure committee|process owners?|control owners?|business owners?|employees|staff|customers|suppliers|lenders|rating agencies|shareholders|readers)\b/, 1.1, 'audience'],
+      [/\b(?:goes|going|go|headed|heading|will go|being sent|be sent|sent) to (?:the |our )?(?:audit committee|board|cfo|ceo|leadership|executives|auditors|regulators|investors|sec|committee|management)\b/, 1.1, 'goes-to'],
+      [/\b(?:presenting|present|presented|sharing|share|send|sending|submit|submitting) (?:it |this )?to (?:the |our )?(?:audit committee|board|cfo|ceo|leadership|executives|auditors|regulators|investors|committee|management|team)\b/, 1.0, 'presenting-to'],
+      [/\b(?:audience|readers?|reader base) (?:is|are|will be)\b|\bwritten for\b|\baimed at\b|\btargeted at\b|\bintended for\b/, 1.1, 'audience-is'],
+      [/\bfor (?:the |our |a |an |my )?(?!selected|attached|highlighted|open|current)(?:[\w&/-]+ ){0,3}(?:report|filing|10-k|10-q|8-k|20-f|md&a|mda|footnotes?|disclosures?|memo|email|newsletter|earnings (?:release|call|script)|press release|proxy|csrd|esrs|cdp|tcfd|issb|sustainability report|annual report|integrated report|board (?:pack|book|deck|meeting|update)|audit committee (?:deck|meeting|pre-?read|update)|submission|comment letter response|management letter|pre-?read|investor day|lender call|rating agency|deck|presentation|meeting|walkthrough|steering committee|committee)\b/, 1.0, 'destination'],
+      [/\b(?:we are|i am|our team is|the team is|we have|we will be|i will be) (?:preparing|getting ready|going through|working (?:on|through)|in the middle of|new to|about to|facing|undergoing|starting|kicking off|a first-?year|first-?time|under)\b/, 1.0, 'background'],
+      [/\b(?:ahead of|in preparation for|to prepare for|in advance of|before (?:the|our) (?:audit|assurance|filing|board|meeting|review|deadline|call))\b/, 0.9, 'ahead-of'],
+      [/\b(?:so that|so i can|so we can|so they can|so the|in order to|the goal is|our goal is|my goal is|the purpose is|purpose:|goal:|this will be used|we need this for|i need this for|which will be used|to help (?:the|our|me|us) (?:\w+ ){0,3}(?:decide|understand|prepare|explain|brief|present))\b/, 0.9, 'purpose'],
+      [/\b(?:first-?year|first-?time|newly public|recently ipo'd|ipo|pre-ipo|new to (?:csrd|sox|esrs|sec))\b/, 0.6, 'situation'],
+      [/\b(?:context|background|situation|audience|reader|readers|role|persona|for|purpose|goal|who)\s*[:=]\s*\S|\bfor context\b|\bsome context\b/, 1.1, 'context-label']
+    ],
+    E: [
+      [/\b(?:do not|never|please do not|without|avoid|no)\s+(?:any\s+)?(?:speculat\w*|guess\w*|invent\w*|mak(?:e|ing) (?:anything|things|stuff|it|numbers|facts)? ?up|fabricat\w*|embellish\w*|extrapolat\w*|hallucinat\w*|assum\w*|add(?:ing)? (?:any )?(?:new )?(?:facts|information|numbers|figures|data|claims|content)|introduc\w* (?:any )?(?:new )?(?:facts|information|numbers|figures|claims)|chang\w* (?:any |the )?(?:numbers|figures|values|amounts|dates|data))\b/, 1.3, 'no-invent'],
+      [/\b(?:preserve|keep|retain|leave|maintain)\s+(?:every|all|all of the|each|the|any)?\s*(?:numbers?|figures?|values?|amounts?|dates?|facts?|metrics?|targets?|percentages?|data points?)(?:\s+\w+){0,3}?\s*(?:exactly|as is|as-is|unchanged|intact|the same|as they are|verbatim)?/, 1.1, 'preserve'],
+      [/\bnothing (?:that is not|that isn't|not|beyond what is|outside(?: of)?) (?:in|from|supported by)\b|\bonly (?:say|state|include|report) what (?:is|the)\b|\bstick (?:strictly )?to (?:what is in|the facts|what the)\b/, 1.0, 'nothing-beyond'],
+      [/\b(?:cite|citing|citation|citations|footnote each|with sources|source each|sources for each|reference (?:the |each )?(?:cell|page|row|section|paragraph|line|note|slide|source|location|tab|column)|show (?:me )?where|point (?:me )?to (?:the |where)|link (?:back )?to (?:the )?(?:source|cell|row)|(?:page|cell|row|slide|section|line) references?|tell me where (?:each|it|you found|that)|where (?:each|it) (?:comes|came) from|which (?:cell|page|row|section|tab|line) (?:it|each|they) (?:came|comes|come) from)\b/, 1.2, 'cite'],
+      [/\b(?:hypothes[ie]s|hypothesi[sz]e|possible (?:explanations?|causes?|drivers?) to (?:test|confirm|check|verify)|label (?:them |each |it )?as (?:assumptions?|inferences?|hypothes[ie]s)|mark (?:anything|what|any|where) (?:you )?(?:inferred|assumed|guessed|estimated)|clearly (?:label|mark|flag) (?:any |all )?(?:assumptions?|inferences?|estimates?))\b/, 1.1, 'hypothesis'],
+      [/\b(?:open questions|follow-?up questions for|questions for (?:the )?(?:data owner|preparer|control owner|process owner|owner)|list (?:any |your |the )?(?:assumptions|gaps|unknowns|open items)|what (?:else )?(?:you would|you'd|i would|i'd|we would|we'd) need to (?:confirm|verify|know|check))\b/, 1.0, 'open-questions'],
+      [/\b(?:flag|mark|highlight|call out|note|tell me|let me know|say so|say that)\b[^.;\n]{0,50}\b(?:unsure|uncertain|not sure|unclear|ambiguous|missing|not supported|unsupported|cannot (?:find|confirm|verify|tell)|could not (?:find|confirm|verify)|low confidence|confidence|guess(?:ed|ing)?|estimat(?:e|ed)|inferr?(?:ed)?|assum(?:e|ed|ption))/, 1.1, 'flag-uncertain'],
+      [/\bif (?:you are|you're|you aren't|you are not) (?:not )?(?:sure|certain|confident|unsure|uncertain)\b|\bif (?:the |it |this |that )?(?:data|numbers|source|document|file|table|evidence|it) (?:does not|doesn't|cannot|can't|do not|don't|isn't|is not) (?:support|back|show|say|cover|contain|answer)|\bif (?:something|anything|it|a value|a number) is (?:missing|unclear|not there|not in)|\bif you cannot (?:find|tell|confirm|verify)\b/, 1.2, 'if-unsure'],
+      [/\b(?:do not|don't|without|not to) (?:decide|determine|pick|choose|judge|conclude) which\b|\bdo not (?:resolve|fix|correct) (?:them|it|the conflicts?|the differences?)\b|\bdo not (?:form|give|reach) (?:an? )?(?:opinion|conclusion)\b/, 1.1, 'no-decide'],
+      [/\b(?:separate|separately|distinguish(?: between)?|keep (?:the )?(?:facts|observations) (?:separate|apart)|split) (?:the )?(?:observed|observations?|facts?|data|what (?:the|is)|confirmed|evidence-?based)\b|\bfacts? (?:vs\.?|versus|from) (?:interpretation|opinion|explanation|speculation|assumptions?|inference)\b/, 1.0, 'separate-facts'],
+      [/\b(?:i|we) (?:will|'ll|am going to|are going to|plan to|need to) (?:verify|check|review|validate|confirm|make the (?:final )?call|sign off|decide)\b|\bfor (?:my|our|human|manual) review\b|\bbefore (?:i|we) (?:sign|file|submit|send|use it)\b|\b(?:the )?auditor (?:makes|will make) the (?:final )?(?:call|conclusion|judgment)\b/, 0.9, 'human-verifies'],
+      [/\b(?:only (?:use|rely on|draw on|draw from|base it on) (?:information|facts|data|what|figures) (?:that is |that's )?(?:in|from|on))\b/, 0.4, 'only-use-info'],
+      [/\b(?:verbatim|word-for-word|exact (?:quote|quotes|wording))\b/, 0.7, 'verbatim'],
+      [/\b(?:double-?check|cross-?check|sanity-?check|validate|reconcile) (?:your|the|each|all)? ?(?:answer|output|results?|work|totals?|figures|numbers) (?:against|to|with)\b/, 0.9, 'self-check'],
+      [/\bconfidence (?:level|score|rating)\b|\bhow confident\b|\brate your confidence\b/, 1.0, 'confidence'],
+      [/\b(?:do not|never|without|no need to|please do not)\s+(?:try to |attempt to )?(?:add anything|add any|adjust|classify|re-?rate|re-?score|concede|paraphrase|overstate|understate|promise|stretch|force|estimate|reconcile|soften|exaggerate|editoriali[sz]e|interpret|infer|conclude|make the (?:call|decision|determination)|make (?:it|them|anything) sound|ask about anything|include anything|fill (?:it|them|gaps|blanks)|guess|round|merge|drop|delete|omit|reorder|resolve)\b/, 1.1, 'do-not-judge'],
+      [/\b(?:call (?:that|it|them|those) out|warn me|tell me if|let me know if|tell me what (?:information|info|data|else)|tell me why you|explain any assumptions?)\b/, 1.0, 'call-out'],
+      [/\bleave (?:that|it|those|the \w+(?: \w+)?|final \w+) (?:to|for) (?:me|us|the auditor|the team|the reviewer)\b|\bfinal (?:call|determination|decision|say|judg(?:e)?ment)\b|\bdouble[- ]?check\b|\bi will (?:double|make|decide|confirm|check|review|validate|verify|sign)\b|\bnot asking you to (?:decide|make|determine|conclude)\b/, 1.0, 'leave-to-me'],
+      [/\bword[- ]for[- ]word\b|\b(?:keep|leave|preserve|retain|maintain)\b[^.;\n]{0,40}?\b(?:unchanged|intact|word for word|verbatim|exactly as (?:written|is|stated|they appear)|as written|identical)\b|\bno additions\b|\bexactly as written\b/, 1.1, 'keep-unchanged'],
+      [/\b(?:with|give|show|note|include|add|cite|list)\b[^.;\n]{0,30}?\b(?:page numbers?|row numbers?|line numbers?|paragraph numbers?|cell refs?|cell references?|control ids? you|ids you based|source (?:row|line|page|cell))\b|\byou based (?:each|it|your|the)\b|\bfor every (?:finding|row|item|number|figure|value|claim|statement|change)\b[^.;\n]{0,20}?\b(?:source|row|page|cell|reference|line)/, 1.1, 'refs'],
+      [/\b(?:rather than|instead of)\s+(?:\w+\s+)?(?:\w+ing)\b|\[[A-Z][A-Z \/]{1,20}(?:TBD|\?|NEEDED|MISSING|TO CONFIRM)\]/, 1.0, 'rather-than2'],
+      [/\b(?:note|mark|flag|say|tell me|list|show|identify|highlight|call out)\s+(?:any|which|where|the|each|those|every|all)?\s*(?:\w+\s+){0,6}?(?:where|that|which|when|if|whose|because|you)\s+(?:\w+\s+){0,5}?(?:does not|doesn't|isn't|is not|not enough|too vague|incomplete|silent|missing|needs? more|unclear|contradicts?|contradictory|can't|cannot|do not|don't|uncertain|ambiguous|insufficient|lacks?|conflict)\b/, 1.0, 'note-gaps'],
+      [/\bbase (?:every|each|all|your) (?:\w+ )?on\b|\bonly (?:quote|include|use|cite|list)\s+(?:\w+\s+){0,3}(?:from|that|the \w+ actually|what)\b|\bactually (?:requires|says|states|supports|shows)\b/, 1.0, 'base-on'],
+      [/\b(?:overstate|exaggerate|embellish|spin)\b|\bbetter or worse than\b/, 0.9, 'no-spin'],
+      [/\b(?:list|bullet|note|show|mark|flag) (?:any |the |all )?(?:changes|edits|ones|items|lines|steps|words) (?:you|that you) (?:made|had to|changed|reworded|removed|added|assumed)\b|\b(?:you are|you're) assuming\b|\byou assumed\b|\bany assumptions\b/, 1.0, 'show-changes'],
+      [/\bsay ['"][^'"]{2,30}['"]|\bmark (?:it|them) (?:as )?['"][^'"]{2,30}['"]|\bwrite ['"]n\/?a['"]/, 1.0, 'say-literal'],
+      [/\b(?:keep|preserve|retain|copy|quote|reproduce|use|leave)\s+(?:every|all|each|the|any)?\s*(?:[\w$-]+\s+){0,2}(?:numbers?|figures?|values?|amounts?|text|wording|language|dates?)\s+(?:\w+\s+){0,2}(?:exactly|unchanged|verbatim|intact|as (?:written|is|they are|stated))\b/, 1.1, 'preserve2'],
+      [/\b(?:quote|quoting)\s+(?:the |them|it|each|every|exact|exactly|directly|where|relevant|the rule|the letter|the source|the text)/, 1.0, 'quote'],
+      [/\bif\b[^.;\n]{0,60}?\b(?:cannot|can't|does not|doesn't|do not|isn't|is not|are not|aren't|has no|have no|lacks?|missing|not (?:there|available|disclosed|clear|present|in|found|shown|listed|stated)|ambiguous|unclear|no (?:good )?match|nothing)\b[^.;\n]{0,60}?\b(?:say so|say that|say ['"]|say it|tell me|leave (?:it |them |that )?blank|mark (?:it|them|that)|flag (?:it|them|that)|note (?:it|that|this)|write ['"]|return ['"]|put ['"]|list (?:it|them)|skip it)/, 1.2, 'if-then-say'],
+      [/\b(?:say|tell me|note|mark|flag|list|state|indicate)\s+(?:which|whether|if|any|anything|where)\b[^.;\n]{0,50}?\b(?:unsure|not sure|uncertain|not certain|could not|couldn't|can't|cannot|weren't sure|were not sure|unclear|guessed|missing|not (?:find|found|match|supported|answer)|unmatched|would break|might need|low confidence)/, 1.1, 'say-which-unsure'],
+      [/\b(?:flag|mark|list|note|call out)\s+(?:any |the |all )?(?:rows?|items?|cells?|entries|ones|those|anything|any)\b[^.;\n]{0,40}?\b(?:would break|could not|couldn't|can't|cannot|not sure|unsure|uncertain|weren't|were not)/, 1.0, 'flag-rows'],
+      [/\b(?:which|the|each|a|every)\s+(?:cells?|pages?|slides?|rows?|lines?|sentences?|sections?|tabs?|paragraphs?|sources?|source pages?|locations?|page numbers?|slide numbers?|cell references?)\b(?:\s+numbers?)?[^.;\n]{0,40}?\b(?:for each|each|used|it is in|is in|they are in|appear|appears|came from|comes from|prompted|supports?|you (?:used|relied on|pulled))/, 1.1, 'which-location'],
+      [/\b(?:show|give|note|include|tell me|list|cite|with|add)\b[^.;\n]{0,25}?\b(?:cells?|pages?|slides?|rows?|line numbers?|sentences?|sources?|source pages?|locations?|references?|page refs?)\b[^.;\n]{0,25}?\b(?:for each|each|used|it is in|is in|appears|came from|you used|per (?:row|item|line))/, 1.1, 'show-location'],
+      [/\bnote where (?:each|it|they)\b|\bwhere (?:each|it) (?:appears|is|was found)\b/, 1.0, 'note-where'],
+      [/\bso (?:that )?(?:i|we|the reviewer|reviewers|they) can (?:verify|check|confirm|validate|review|test|trace|audit|follow)\b|\bhow to (?:test|check|verify|validate) it\b|\bwalk me through how to (?:test|check|verify)\b/, 1.0, 'so-i-can-verify'],
+      [/\b(?:do not|never|without)\s+(?:fix|fill|correct|edit|touch|alter|resolve|mark|comment on|judge|rate|add or remove|remove or add|reword|rewrite|change)\s+(?:anything|any|it|them|the meaning|its meaning|something|whether|cells?|values?|numbers?|facts?|steps?|topics?|items?|in)\b/, 1.0, 'do-not-touch'],
+      [/\bwithout (?:changing|altering) (?:its|the|their|any) (?:meaning|substance|facts?|numbers?|figures?)\b|\bnothing (?:new|beyond|added|invented)\b|\b(?:every|all|each) (?:number|figure|value|amount)s? (?:unchanged|intact|exact)\b|\bunless (?:the|it|they|the table|the data|the source|the doc)\b[^.;\n]{0,30}\b(?:actually|clearly|explicitly)?\s*(?:shows?|says?|supports?|states?|contains?)\b/, 1.0, 'nothing-new'],
+      [/\b(?:do not|don't|never) add (?:\w+ ){0,2}(?:that|which) (?:are not|aren't|is not|isn't|the \w+ (?:does not|doesn't))\b|\bthat (?:the|it|this) (?:\w+ )?(?:does not|doesn't) support\b/, 1.0, 'no-add-unsupported'],
+      [/\bseparat(?:e|ely|ing)\b[^.;\n]{0,40}?\b(?:grounded|based|supported|backed|sourced) (?:in|on|by)\b|\bopen[- ]questions?\b|\bopen items section\b/, 1.0, 'separate-grounded'],
+      [/\b(?:that|which) (?:you|you are|you're) (?:not )?(?:unsure|not sure|not certain|uncertain)\b|\bnot certain (?:applies|apply|about)\b|\bunsure about\b/, 1.0, 'unsure-about'],
+      [/\b(?:rather than|instead of) (?:guessing|rewording|assuming|inventing|filling (?:it|them) in|making (?:it|something) up|fixing)\b/, 1.1, 'rather-than-guess']
+    ],
+    P: [
+      [/\b(?:(?:fy|cy)\s?'?\d{2,4}|q[1-4](?:\s?(?:fy)?\s?'?\d{2,4})?|h[12]|(?:19|20)\d{2}|ytd|qtd|prior (?:year|quarter|period)|current (?:year|quarter|period)|last (?:year|quarter|month)|this (?:year|quarter)|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*)\s*(?:vs\.?|versus|to|and|through|thru|-|–|compared (?:to|with)|against)\s*(?:(?:fy|cy)\s?'?\d{2,4}|q[1-4](?:\s?(?:fy)?\s?'?\d{2,4})?|h[12]|(?:19|20)\d{2}|ytd|qtd|prior (?:year|quarter|period)|current (?:year|quarter|period)|last (?:year|quarter|month)|this (?:year|quarter)|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*)\b|\b(?:between|from|for|in|during|across|since|over|covering|as of|through)\s+(?:the\s+)?(?:(?:fy|cy)\s?'?\d{2,4}|q[1-4](?:\s?(?:fy)?\s?'?\d{2,4})?|h[12]|(?:19|20)\d{2}|ytd|qtd|prior (?:year|quarter|period)|current (?:year|quarter|period)|last (?:year|quarter|month)|this (?:year|quarter)|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*)\b|\byear[- ]over[- ]year\b|\byoy\b|\bquarter[- ]over[- ]quarter\b|\bqoq\b|\b(?:monthly|quarterly|annual) (?:trend|change|movement)\b/, 1.0, 'period-scope'],
+      [/\b\d+\s+(?:[\w-]+\s+){0,2}(?:talking points|bullets?|bullet points|questions|sentences|items|rows|risks|points|steps|examples|options|takeaways|recommendations|findings|issues|metrics|lines|slides|paragraphs|minutes|words)\b/, 1.0, 'n-adj-unit'],
+      [/\bby\s+\d+\s?%|\b\d+\s?%\s+(?:of the |shorter|length)/, 1.0, 'by-pct'],
+      [/\bsound(?:s|ing)? (?:less|more|like|warmer|friendlier|crisper|clearer)\b|\b(?:less|more) (?:formal|corporate|defensive|technical|salesy|casual|direct|concise|confident|cautious)\b|\bno (?:fluff|jargon|legalese)\b/, 1.0, 'tone2'],
+      [/\b(?:fy|cy)?\s?'?\d{2,4}\s+only\b|\bq[1-4]\s+only\b|\b\w+ only\b(?=[\s,.;]|$)|\bonly (?:check|include|cover|ask about|look at|use|flag|list|consider|keep|show|report|review|pull|count)\b/, 0.9, 'only-limit'],
+      [/\b(?:in|to|into) (?:thousands|millions|billions|\$k|\$m)\b|\b(?:one|two|three|four|\d) decimals?\b|\bdecimal places?\b|\bround(?:ing|ed)? (?:to|up|down)\b|\bnearest (?:thousand|million|dollar|whole)\b/, 1.0, 'precision'],
+      [/\b(?:bar|line|pie|stacked|waterfall|bridge|column|scatter) (?:chart|graph)\b|\bgantt\b|\bheat ?map\b|\bswimlanes?\b/, 1.0, 'chart'],
+      [/\bmatch(?:ing)? the (?:style|format|formatting|tone|structure|layout) of\b|\bin the (?:same )?(?:style|format|voice) (?:of|as)\b|\bmodel(?:ed)? on\b/, 1.0, 'match-style'],
+      [/\bone (?:row|line|bullet|sentence|paragraph|slide|column) (?:per|for each)\b|\bper (?:row|item|line|segment|entity|control|peer|comment|account)\b|\btime per item\b|\bgrouped by\b|\bgroup(?:ed)? (?:them )?by\b|\bbroken (?:out|down) by\b|\bby (?:segment|region|entity|quarter|month|account|category|owner|severity|risk|tier|framework|scope)\b/, 0.9, 'granularity'],
+      [/\b(?:short|brief|concise|crisp|quick|tight)\s+(?:bullet list|bullets|list|summary|paragraph|memo|email|note|answer|overview|version)\b/, 1.0, 'short-format'],
+      [/\b(?:in|as|into|use|using|return|give me|provide|output|format(?:ted)? as|formatted in|in the form of|lay (?:it )?out (?:as|in))\s+(?:a |an |the )?(?:simple |short |two-column |three-column |\d+-column |numbered |bulleted |markdown |clean |summary )?(?:table|tables|bullets?|bullet points?|bulleted list|numbered list|list|columns?|json|csv|memo|email|paragraphs?|matrix|chart|outline|one-pager|slide|checklist|scorecard|heat ?map|template|grid|narrative)\b/, 1.2, 'format'],
+      [/\b(?:table|columns?|headers?|fields?)\s*(?:with|of|:|showing|containing|including)\s*[\w&/ -]{2,40},\s*[\w&/ -]{2,40}/, 1.2, 'columns-list'],
+      [/\b(?:bullet(?:ed)?|numbered)\b|\btwo-column\b|\bthree-column\b|\b\d+-column\b/, 1.0, 'format-word'],
+      [/\b(?:table|tabular|bullet|list|json|csv|memo|email|paragraph|outline|matrix|checklist|q&a|faq) (?:format|form|layout|style)\b/, 1.1, 'x-format'],
+      [/\b\d+\s*(?:-|to)?\s*\d*\s*(?:words?|sentences?|bullets?|bullet points?|paragraphs?|pages?|lines?|characters?|slides?|points?|items?|rows?|questions?|examples?|options?|recommendations?|risks?|findings?|steps?)\b/, 1.1, 'count-unit'],
+      [/\b(?:one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|a few|a couple of|single)\s+(?:largest|biggest|key|main|most|top|major|highest|lowest|smallest|primary|short|brief|concise)?\s*(?:words?|sentences?|bullets?|bullet points?|paragraphs?|pages?|lines?|slides?|points?|items?|questions?|examples?|options?|variances?|drivers?|risks?|controls?|findings?|recommendations?|takeaways?|themes?|issues?|gaps?|changes?|steps?|categories|bullets)\b/, 1.0, 'count-word'],
+      [/\btop\s*(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b/, 1.1, 'top-n'],
+      [/\b(?:under|no more than|max(?:imum)?|at most|up to|less than|fewer than|not more than|within|limit(?:ed)? to|cap(?:ped)? at|keep it (?:to|under)|around|about|roughly|approximately)\s+(?:\d+|one|two|three|four|five|ten|half a)\s*(?:words?|sentences?|bullets?|paragraphs?|pages?|lines?|characters?|slides?|minutes?|points?|page)?\b/, 1.1, 'max-length'],
+      [/\b\d+\s*%\s*(?:shorter|longer|shorter|reduction|less|fewer)\b|\b(?:half|a third|a quarter) (?:the|as) (?:length|long)\b|\b(?:one|1|a single|half a)[- ]page\b|\ba slide'?s? worth\b|\bone[- ]pager\b|\bone[- ]liner\b|\bshort paragraph\b|\bsingle paragraph\b/, 1.0, 'relative-length'],
+      [/\b(?:fy|cy)\s?'?\d{2,4}\b|\bq[1-4]\b|\bh[12]\b|\b(?:19|20)\d{2}\b|\bytd\b|\bqtd\b|\bmtd\b|\byear[- ]over[- ]year\b|\byoy\b|\bquarter[- ]over[- ]quarter\b|\bqoq\b|\bprior (?:year|quarter|period)\b|\bcurrent (?:year|quarter|period)\b|\blast (?:year|quarter|month|\d+ (?:years|quarters|months))\b|\bthis (?:year|quarter)\b|\bmonth[- ]end\b|\bquarter[- ]end\b|\byear[- ]end\b|\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\b/, 0.5, 'period'],
+      [/\bscopes? (?:1|2|3|one|two|three)\b(?:\s*(?:,|and|&|-)\s*(?:1|2|3))*|\bcategor(?:y|ies) \d+\b/, 1.0, 'scope-n'],
+      [/(?:[<>]=?|≥|≤)\s*\$?\d|\b(?:greater|more|higher|larger|bigger|less|lower|smaller) than\s+(?:\+|-|±)?\$?\d|\b(?:above|below|over|exceeding|exceeds|under|beyond|outside(?: of)?)\s+(?:\+|-|±)?\$?\d[\d,.]*\s*(?:%|percent|k|m|mm|million|bn|billion|thousand)?|\b±\s?\d+|\+\/-\s?\d+|\bthreshold\b|\bmateriality\b/, 1.1, 'threshold'],
+      [/\b\d+(?:\.\d+)?\s?(?:%|percent)\b|\$\s?\d[\d,.]*\s?(?:k|m|mm|million|bn|billion|thousand)?\b/, 0.6, 'number'],
+      [/\b(?:rank(?:ed)?|sort(?:ed)?|order(?:ed)?|organi[sz]e(?:d)?|group(?:ed)?|prioriti[sz]e(?:d)?|arrange(?:d)?)\s+(?:them |it |the \w+ |each \w+ |results )?(?:by|from|in order of|according to)\b|\bby magnitude\b|\blargest (?:to|first)\b|\bhighest (?:to|first)\b|\bmost (?:to least|important first|severe first)\b/, 1.0, 'ordering'],
+      [/\b(?:plain english|plain language|plain-language|non-?technical|layman'?s? terms|jargon|executive (?:tone|level|style|summary|audience)|board-?level|formal tone|informal tone|conversational tone|neutral tone|professional tone|tone|reading level|grade level|active voice|third person|first person|sec style|investor-?friendly)\b/, 1.0, 'tone'],
+      [/\b(?:only|just|limit (?:it|this|the \w+) to|focus(?:ing)? (?:only )?on|restrict(?:ed)? to|excluding|exclude|except|ignore)\s+(?:the )?(?:[\w&-]+ ){0,3}(?:region|segment|entity|entities|subsidiar(?:y|ies)|facilit(?:y|ies)|site|sites|business unit|bu|division|country|countries|accounts?|line items?|categor(?:y|ies)|controls?|key controls|processes|risks?|suppliers?|vendors?|period|quarter|year|scope)\b/, 0.9, 'scope-limit'],
+      [/\b(?:north america|emea|apac|latam|europe|us|u\.s\.|uk|germany|domestic|international)\b(?: only)?/, 0.4, 'region'],
+      [/\b(?:headings?|subheadings?|sections? for|a summary line|title|executive summary at the top|start with|end with|include (?:a|an) (?:column|row|section|summary|total))\b/, 0.6, 'structure'],
+      [/\b(?:absolute and percentage|in (?:absolute|percentage|dollar|\$) terms|both values|show the (?:change|difference|delta)|percent(?:age)? change|dollar change|\$ change|basis points|bps)\b/, 0.9, 'measures']
+    ]
+  };
+
+  // Objective: concrete verbs vs vague verbs. Verb must have an object after it.
+  const CONCRETE = 'make sure|ensure|confirm that|boil down|walk me through|do an? (?:\\w+ )?(?:analysis|review|check|tie-?out|recon|reconciliation|comparison|breakdown)|get me|i need (?:the|a|an|all|every)|help me understand|make (?:it|this|the \\w+(?: \\w+)?) (?:more|less|shorter|longer|clearer)|break (?:out|down)|broken (?:out|down)|identify|list|find|flag|compare|explain|summari[sz]e|draft|write|rewrite|re-write|shorten|tighten|condense|trim|simplify|translate|map|extract|pull(?: out| together)?|calculate|compute|reconcile|tie(?: out)?|tie-out|build|create|generate|outline|rank|classify|categori[sz]e|highlight|convert|propose|recommend|suggest|describe|prepare|produce|quantify|cross-?reference|fix|update|roll(?: forward)?|roll-forward|tag|edit|proofread|reword|rephrase|paraphrase|benchmark|score|grade|assess|evaluate|test|design|document|define|detail|break down|breakdown|enumerate|itemi[sz]e|tabulate|chart|plot|forecast|estimate|project|spot|detect|pinpoint|surface|call out|point out|show|tell me|give me|provide|turn|transform|restate|align|match|link|validate|verify|confirm|check (?:whether|if|that|for|each|every|all)|review (?:for|whether|if|each|every|against)|look (?:for|at whether)|scan (?:for|the)|search (?:for|the)|go through .{0,40}? (?:and|to) (?:find|flag|list|identify|pull)|determine|decide|answer|count|total|sum|average|split|merge|consolidate|format|reformat|restructure|reorgani[sz]e|sort|group|filter|segment|draft up|write up|put together|come up with|brainstorm|name|label|mark|annotate|comment on|critique|challenge|stress-?test|poke holes|red-?team|interpret|clarify|expand|elaborate|add|insert|remove|delete|replace|correct|standardi[sz]e|normali[sz]e|populate|fill in|complete|respond to|reply to'.split('|');
+  const VAGUE = /\b(?:analy[sz]e|look at|look over|go over|review|check|help(?: me)?(?: with)?|assist(?: with)?|work on|handle|deal with|thoughts on|improve|clean up|do something with|take a look|have a look|figure out|sort out|process|investigate|examine|study|evaluate|assess|tell me about|what do you think)\b/;
+  const QUESTION = /(?:^\s*|[.!?]\s+)(?:what|whats|why|which|how|where|when|who|is|are|does|do|did|can you tell|could you tell|would)\b[^?.!\n]{6,}\??/;
+  const STOP = new Set('the a an this that these those it them me us my our your of to for and or in on with at by from is are be please can could would you i we just some any all also then so very really quickly out up down off over key main attached selected stuff things something everything anything whatever etc pls'.split(' '));
+  const OFFTASK = /^\s*(?:hi|hello|hey|thanks|thank you|thx|ok|okay|cool|great|test|testing|yo|good morning|good afternoon|\?+|lol)\b[\s!.?]*$/;
+
+  function objective(t) {
+    const hits = [];
+    let score = 0, vagueOnly = false;
+    if (OFFTASK.test(t)) return { score: 0, hits, vagueOnly: false, verbs: [] };
+    const verbs = [];
+    const reC = new RegExp('\\b(' + CONCRETE.join('|') + ')\\b((?:\\s+[\\w&$%./:-]+){1,10})', 'g');
+    let m;
+    while ((m = reC.exec(t))) {
+      const verb = m[1];
+      if (/\b(?:not|never|without|no need to|avoid)\s+(?:\w+\s+)?$/.test(t.slice(Math.max(0, m.index - 20), m.index))) continue;
+      const objWords = m[2].trim().split(/\s+/).filter((w) => !STOP.has(w.replace(/[^\w&$%-]/g, '')));
+      // "summarize" or "tell me" with nothing meaningful after it does not count
+      if (objWords.length >= 1) {
+        verbs.push({ verb, index: m.index });
+        hits.push({ start: m.index, end: m.index + m[0].length, tag: 'verb:' + verb });
+      }
+    }
+    if (verbs.length) score = 1.2;
+    if (!verbs.length) {
+      const q = t.match(QUESTION);
+      if (q) {
+        const content = q[0].split(/\s+/).filter((w) => !STOP.has(w) && w.length > 3);
+        if (content.length >= 3) { score = 1.0; hits.push({ start: q.index, end: q.index + q[0].length, tag: 'question' }); }
+      }
+    }
+    // vague verb followed by a purpose clause that names a result
+    const vm = t.match(new RegExp(VAGUE.source + '[^.;\\n]{0,80}?\\b(?:for (?:any |all |possible |potential |obvious |the )?(?:errors?|mistakes?|issues?|problems?|gaps?|inconsistenc\\w*|discrepanc\\w*|anomal\\w*|outliers?|duplicates?|missing|typos?|variances?|changes|risks?|red flags?|deficienc\\w*|weakness\\w*|completeness|accuracy|compliance|consistency|conflicts?|mismatch\\w*)|to (?:find|see|identify|spot|flag|determine|confirm|check)|and (?:identify|flag|list|find|explain|tell|show|summari[sz]e)|whether|if there|against)\\b\\s*\\w*'));
+    if (!score && vm) { score = 1.0; hits.push({ start: vm.index, end: vm.index + vm[0].length, tag: 'vague+purpose' }); }
+    if (!score && VAGUE.test(t)) vagueOnly = true;
+    return { score, hits, vagueOnly, verbs };
+  }
+
+  // Two or more unrelated jobs: a connector followed closely by a second task verb.
+  const JOB_VERBS = 'summari[sz]e|draft|write|rewrite|translate|fix|build|create|make|map|tie(?: out)?|compare|explain|extract|pull|redo|update|email|send|remind|tell me (?:how|what|why)|check|review|format|reformat|convert|prepare|put together|design|update|schedule|set up|calculate|reconcile|draft up|write up|generate|look (?:for|at|into)|find|analy[sz]e|do(?! not)(?! the same)';
+  const CONNECT = new RegExp('(?:\\b(?:and also|also|and then|then also|plus|additionally|as well as|separately|on top of that|while you are at it|and after that|after that|oh and|next)\\b|,\\s*then\\b|;\\s*|\\.\\s+(?=(?:also|and|then|plus|separately)\\b))[,:]?\\s*(?:can you |could you |please |pls |i need you to |you can |also |then |go ahead and )?(?:' + JOB_VERBS + ')\\b', 'g');
+  const TOO = new RegExp('\\band (?:' + JOB_VERBS + ')\\b[^.;\\n]{3,60}\\b(?:too|as well)\\b');
+  function stacked(t, verbs) {
+    let n = 0, m;
+    const re = new RegExp(CONNECT.source, 'g');
+    while ((m = re.exec(t))) {
+      const before = t.slice(Math.max(0, m.index - 30), m.index);
+      if (/\b(?:questions|items|them|it|those|assumptions)\s*$/.test(before) && /separately/.test(m[0])) continue; // "list open questions separately"
+      n++;
+    }
+    if (TOO.test(t)) n++;
+    const listOfDeliverables = /\b(?:a|an) [\w-]+ (?:policy|memo|email|report|checklist|deck|plan),\s*(?:a|an) [\w-]+ (?:policy|memo|email|report|checklist|deck|plan),?\s*and (?:a|an) /.test(t);
+    return n >= 1 || listOfDeliverables;
+  }
+
+  function detect(prompt, opts) {
+    const files = (opts && opts.files) || [];
+    const nm = normalizeWithMap(prompt);
+    const t = nm.text;
+    const el = {};
+    for (const k of ['S', 'C', 'P', 'E']) {
+      let score = 0; const hits = [];
+      for (const [re, w, tag] of RULES[k]) {
+        const g = new RegExp(re.source, 'g');
+        let m, best = 0;
+        while ((m = g.exec(t))) { if (!m[0]) { g.lastIndex++; continue; } hits.push({ start: m.index, end: m.index + m[0].length, tag }); best = w; }
+        score += best; // each rule counts once
+      }
+      el[k] = { score, hits };
+    }
+    // attached file names mentioned in the prompt count as a source
+    for (const f of files) {
+      const base = String(f).toLowerCase().replace(/\.[a-z0-9]+$/, '');
+      const words = base.split(/[\s_\-.]+/).filter((w) => w.length > 3);
+      if (base && (t.includes(base) || (words.length && words.every((w) => t.includes(w))))) { el.S.score += 1.3; el.S.hits.push({ start: 0, end: 0, tag: 'attached-name' }); }
+    }
+    const o = objective(t);
+    el.O = { score: o.score, hits: o.hits };
+    for (const k of ['S', 'C', 'O', 'P', 'E']) el[k].on = el[k].score >= 1;
+    const words = t.trim().split(/\s+/).filter(Boolean).length;
+    const vague = [];
+    if (o.vagueOnly) vague.push('vague-verb');
+    if (/\b(?:stuff|things|etc|whatever|something|somehow|some kind of)\b/.test(t)) vague.push('filler');
+    if (words < 6) vague.push('too-short');
+    for (const k of ['S', 'C', 'O', 'P', 'E']) for (const h of el[k].hits) h.orig = toOriginal(nm.map, h.start, h.end);
+    return { text: t, el, stacked: stacked(t, o.verbs), vague, words, verbs: o.verbs.map((v) => v.verb) };
+  }
+
+  function grade(on) {
+    if (!on.S || !on.O) return 'weak';
+    return on.C && on.P && on.E ? 'strong' : 'better';
+  }
+
+  const api = { normalize, normalizeWithMap, detect, grade, RULES };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ScopeRules = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+;
+/* Tiny per-element logistic regression over hashed text features + rule hits.
+   predict(prompt, weights, {mode:'model'|'hybrid'}) -> {on, prob, stacked, el} */
+(function (root) {
+  const R = typeof module !== 'undefined' && module.exports ? require('./rules.js') : root.ScopeRules;
+  const K = ['S', 'C', 'O', 'P', 'E'];
+  const DIM = 1 << 18;
+
+  function hash(s) { // FNV-1a 32-bit
+    let h = 0x811c9dc5;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+    return (h >>> 0) % DIM;
+  }
+
+  function featurize(prompt, opts) {
+    const useRules = !opts || opts.mode !== 'model';
+    const useText = !opts || opts.mode !== 'rulefeat';
+    const d = R.detect(prompt, opts);
+    const t = d.text.replace(/[^a-z0-9&$%#./' -]/g, ' ').replace(/\s+/g, ' ').trim();
+    const toks = t.split(' ').filter(Boolean);
+    const f = new Map();
+    const add = (k, v = 1) => { const h = hash(k); f.set(h, (f.get(h) || 0) + v); };
+    add('__bias');
+    for (let i = 0; useText && i < toks.length; i++) {
+      const w = toks[i].replace(/^\d+(\.\d+)?$/, '<num>').replace(/^\d+%$/, '<pct>');
+      add('w:' + w);
+      if (i + 1 < toks.length) add('b:' + w + '_' + toks[i + 1].replace(/^\d+(\.\d+)?$/, '<num>'));
+      if (i + 2 < toks.length) add('t:' + w + '_' + toks[i + 1] + '_' + toks[i + 2]);
+    }
+    const padded = ' ' + t + ' ';
+    for (let i = 0; useText && i + 4 <= padded.length; i++) add('c:' + padded.slice(i, i + 4), 0.3);
+    const lenBucket = toks.length < 6 ? 'xs' : toks.length < 15 ? 's' : toks.length < 35 ? 'm' : toks.length < 70 ? 'l' : 'xl';
+    add('len:' + lenBucket);
+    if (useRules) {
+      for (const k of K) {
+        const e = d.el[k];
+        add('r:' + k + ':on', e.on ? 1 : 0);
+        add('r:' + k + ':score', Math.min(e.score, 3));
+        for (const h of e.hits) add('rt:' + k + ':' + h.tag);
+      }
+      for (const v of d.vague) add('vague:' + v);
+    }
+    // L2-normalize text features so long prompts don't dominate
+    let norm = 0; for (const v of f.values()) norm += v * v; norm = Math.sqrt(norm) || 1;
+    const out = []; for (const [k, v] of f) out.push([k, v / norm]);
+    return { x: out, d };
+  }
+
+  function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
+
+  function predict(prompt, weights, opts) {
+    const mode = (opts && opts.mode) || weights.mode || 'hybrid';
+    const { x, d } = featurize(prompt, { ...opts, mode });
+    const on = {}, prob = {};
+    for (const k of K) {
+      const W = weights.w[k]; let z = W.b || 0;
+      for (const [i, v] of x) { const wi = W.v[i]; if (wi) z += wi * v; }
+      prob[k] = sigmoid(z); on[k] = prob[k] >= (weights.thr && weights.thr[k] || 0.5);
+    }
+    if (d.text.trim().split(/\s+/).length <= 2 && !d.el.O.on) on.O = false; // greetings
+    return { on, prob, stacked: d.stacked, el: d.el, vague: d.vague, rules: d };
+  }
+
+  const api = { featurize, predict, hash, DIM };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ScopeModel = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+;
+/* Rewrite engine: builds weak / better / strong versions and the SCOPE breakdown without an LLM.
+   coach(prompt, {files: [{name, kind, sheets:[{name, headers:[]}], headings:[], slides:[], periods:[], text}]},
+         detector) -> { grade, detected, headline, stages:{weak,better,strong}, scope:{S..E}, notes[], intent, domain } */
+(function (root) {
+  const isNode = typeof module !== 'undefined' && module.exports;
+  const R = isNode ? require('./rules.js') : root.ScopeRules;
+  const K = ['S', 'C', 'O', 'P', 'E'];
+
+  /* ---------------- domain + intent ---------------- */
+  const DOMAIN = {
+    FR: /\b(10-?k|10-?q|8-?k|20-?f|md&a|mda|footnotes?|sec\b|xbrl|tie-?out|earnings|revenue|ebitda|gaap|non-gaap|ifrs|balance sheet|income statement|cash flow|accruals?|journal entr|trial balance|ledger|flux|close|consolidat|segment|eps|goodwill|lease|asc \d+|comment letter|proxy|annual report|financial statements?|opex|capex|margin|forecast|budget|audit committee)\b/g,
+    GRC: /\b(sox|icfr|controls?|rcm|risk (?:and )?control matrix|test (?:steps?|procedures?|of design|of operating)|toe|tod|walkthrough|evidence|deficienc|findings?|coso|nist|iso ?27001|soc ?[12]|itgc|policy|policies|procedures?|risk register|internal audit|audit plan|remediation|segregation of duties|sod|access review|compliance|key control|control owner|narrative|flowchart|attestation)\b/g,
+    SUS: /\b(csrd|esrs|issb|ifrs s[12]|ghg|scope [123]|emissions?|co2e?|carbon|climate|tcfd|cdp|double materiality|materiality assessment|sustainability|esg|assurance|net[- ]zero|transition plan|energy|water|waste|biodiversity|supplier data|e1-\d|s1-\d|g1-\d|taxonomy|sbti|decarboni)\b/g
+  };
+  function domainOf(t) {
+    let best = 'GEN', n = 0;
+    for (const [d, re] of Object.entries(DOMAIN)) { const c = (t.match(re) || []).length; if (c > n) { n = c; best = d; } }
+    return best;
+  }
+  const INTENTS = [
+    ['errors', /\b(errors?|typos?|mistakes?|proofread|grammar|spelling|wrong)/],
+    ['gaps', /\b(gaps?|missing (?:controls?|evidence|steps?|owners?|information|disclosures?)|incomplete|deficienc|weakness(?:es)?|not covered|coverage)/],
+    ['rewrite', /\b(rewrite|re-?word|rephrase|shorten|tighten|condense|trim|simplify|edit|proofread|polish|make (?:it|this) (?:shorter|clearer|more concise|sound)|plain english|tone)/],
+    ['formula', /\b(formula|vlookup|xlookup|sumif|index ?match|pivot|query|sql|wdata|calculated field|excel function)/],
+    ['consistency', /\b(consisten|inconsisten|conflict|contradict|tie[- ]?out|tie out|ties to|tick and tie|match(?:es)? (?:the|between)|cross-?check|cross-?reference|discrepanc|mismatch|agree to)/],
+    ['anomaly', /\b(anomal|outlier|unusual|missing values?|blank|duplicate|odd|spike|suspicious|data quality|gaps? in the data|errors? in the data)/],
+    ['variance', /\b(varian|flux|change[sd]? (?:from|between|vs|versus)|year[- ]over[- ]year|yoy|quarter[- ]over[- ]quarter|qoq|increase|decrease|drove|drivers?|movement|trend|went up|went down|spiked|dropped|grew|declin)/],
+    ['map', /\b(map|mapping|crosswalk|align (?:to|with)|which (?:principle|requirement|criteria|control objective)|link (?:each|the) .{0,20}to)/],
+    ['questions', /\b(questions?|what would (?:an|the) (?:auditor|reviewer|regulator) ask|challenge|poke holes|red-?team|interview)/],
+    ['checklist', /\b(checklist|steps|test procedures?|test steps|to-?do|action items|plan|procedure|walkthrough steps|playbook|how do i|how should we)/],
+    ['explain', /\b(explain|what does .{0,40}(?:require|mean)|what is required|requirement|standard|define|definition|meaning of|interpret)/],
+    ['compare', /\b(compare|comparison|benchmark|peers?|versus|vs\.?|against (?:the|our|prior)|gap analysis|differences? between)/],
+    ['extract', /\b(extract|pull (?:out|together)?|list (?:all|every|each)|find (?:all|every)|capture|collect|inventory of|table of all)/],
+    ['draft', /\b(draft|write|compose|create|prepare|generate|produce|put together|come up with)/],
+    ['summarize', /\b(summar|overview|recap|tl;?dr|key (?:points|takeaways|themes)|highlights|brief)/]
+  ];
+  function intentOf(t, hasData) {
+    for (const [name, re] of INTENTS) if (re.test(t)) return name;
+    return hasData ? 'variance' : 'summarize';
+  }
+
+  /* ---------------- vocabulary per domain ---------------- */
+  const ROLE = {
+    FR: { def: 'an SEC reporting manager', questions: 'an external auditor reviewing this filing', rewrite: 'a financial reporting editor', explain: 'a technical accounting advisor', map: 'a technical accounting advisor' },
+    GRC: { def: 'an internal auditor', questions: 'an external SOX auditor', checklist: 'a SOX compliance lead', map: 'a controls specialist', rewrite: 'a policy writer' },
+    SUS: { def: 'a sustainability reporting analyst', questions: 'a sustainability assurance reviewer', explain: 'a CSRD reporting advisor', map: 'a CSRD reporting advisor', rewrite: 'a sustainability report editor' },
+    GEN: { def: 'a reporting analyst', rewrite: 'an editor', questions: 'a careful reviewer' }
+  };
+  const DEST = {
+    FR: '[the 10-Q MD&A, the audit committee deck, or the close review]',
+    GRC: '[the SOX testing workpapers or the audit committee update]',
+    SUS: '[the climate section of the CSRD report or the assurance review]',
+    GEN: '[who will read this and what it is for]'
+  };
+  const OBJECT_DEFAULT = {
+    errors: 'text', gaps: 'document', variance: 'table', anomaly: 'table', consistency: 'document', rewrite: 'text', summarize: 'document', draft: 'source material',
+    extract: 'document', compare: 'table', explain: 'requirement', questions: 'document', map: 'items', checklist: 'process description', formula: 'range'
+  };
+
+  /* ---------------- file grounding ---------------- */
+  function words(s) { return (String(s).toLowerCase().match(/[a-z0-9][a-z0-9&%-]{2,}/g) || []); }
+  function bestSheet(files, t) {
+    const tw = new Set(words(t)); let best = null, score = -1;
+    for (const f of files) for (const sh of f.sheets || []) {
+      const s = words(sh.name + ' ' + (sh.headers || []).join(' ')).filter((w) => tw.has(w)).length;
+      if (s > score) { score = s; best = { file: f, sheet: sh }; }
+    }
+    return best;
+  }
+  function periodsIn(files) {
+    const set = new Set();
+    for (const f of files) for (const p of f.periods || []) set.add(p);
+    return [...set].sort();
+  }
+  function cleanFile(n) { return n.replace(/\s+/g, ' ').trim(); }
+
+  function sourceFragment(ctx) {
+    const { files, intent, domain } = ctx;
+    if (files.length) {
+      const sh = bestSheet(files, ctx.t);
+      if (sh && sh.sheet && files.length && (sh.file.sheets || []).length > 1) return 'Use only @' + cleanFile(sh.file.name) + ', sheet "' + sh.sheet.name + '". ';
+      if (files.length === 1) return 'Use only @' + cleanFile(files[0].name) + '. ';
+      return 'Use only ' + files.slice(0, 10).map((f) => '@' + cleanFile(f.name)).join(', ') + '. ';
+    }
+    if (intent === 'explain' && domain === 'SUS') return 'Use the ' + (/\b(?:issb|ifrs s[12])\b/.test(ctx.t) ? 'ISSB' : 'ESRS') + ' knowledge base. ';
+    if (intent === 'explain') return 'Use the [requirement or standard text] I have selected. ';
+    let obj = ctx.object || OBJECT_DEFAULT[intent] || 'content';
+    if (ctx.object && !/\b(?:data|table|rows?|columns?|sheet|tab|range|cells?|text|paragraph|section|report|document|doc|deck|slides?|file|memo|policy|matrix|rcm|register|log|list|schedule|note|draft|narrative|controls?|findings|letter|statement|workpaper|release|filing|disclosure)s?$/i.test(ctx.object)) obj += ['variance', 'anomaly', 'compare', 'formula'].includes(intent) ? ' data' : ' section';
+    if (['consistency', 'summarize', 'questions'].includes(intent)) return 'Work only from the open ' + (domain === 'GRC' && intent !== 'consistency' ? 'document' : 'report') + '. ';
+    return 'Work only from the selected ' + obj + '. ';
+  }
+
+  function contextFragment(ctx) {
+    const roles = ROLE[ctx.domain] || ROLE.GEN;
+    const role = roles[ctx.intent] || roles.def;
+    return 'You are ' + role + ' preparing ' + DEST[ctx.domain] + '. ';
+  }
+
+  function periodPhrase(ctx) {
+    const p = ctx.periods;
+    if (p.length >= 2) return p[p.length - 2] + ' and ' + p[p.length - 1];
+    return 'the current and prior period';
+  }
+
+  function objectiveFragment(ctx) {
+    const o = ctx.object ? ' ' + ctx.object : '';
+    switch (ctx.intent) {
+      case 'errors': return 'Find errors in the' + (o || ' text') + ': wrong numbers, inconsistent terms, typos, and broken references. ';
+      case 'gaps': return 'Identify gaps in the' + (o || ' content') + ': anything required that is missing, incomplete, or has no owner. ';
+      case 'variance': return 'Identify the largest changes' + (o ? ' in the' + o : '') + ' between ' + periodPhrase(ctx) + '. ';
+      case 'anomaly': return 'Find missing, unusual, or duplicate-looking values' + (o ? ' in the' + o : '') + '. ';
+      case 'consistency': return 'Identify every number or statement that conflicts with another table, chart, or narrative. ';
+      case 'rewrite': return 'Rewrite the selected' + (o || ' text') + ' for ' + (ctx.domain === 'GEN' ? 'a senior reader' : 'a senior executive audience') + '. ';
+      case 'summarize': return 'Summarize the' + (o || ' content') + ' for a reader who has not seen it. ';
+      case 'draft': return 'Draft ' + (ctx.object ? 'the ' + ctx.object : 'a first version of the section') + ' from the source. ';
+      case 'extract': return 'Extract every ' + (ctx.object || 'relevant item') + ' into one list. ';
+      case 'compare': return 'Compare the' + (o || ' figures') + ' against ' + (ctx.periods.length ? periodPhrase(ctx).split(' and ')[0] : 'the prior period') + ' and identify the differences that matter. ';
+      case 'explain': return 'Explain ' + (ctx.object ? ctx.object : '[the requirement]') + ' for the person collecting the evidence. ';
+      case 'questions': return 'Write the questions a reviewer is most likely to ask about the' + (o || ' content') + '. ';
+      case 'map': return 'Map each ' + (ctx.object || 'item') + ' to the relevant ' + (ctx.domain === 'GRC' ? 'COSO principle or framework requirement' : ctx.domain === 'SUS' ? 'ESRS disclosure requirement' : 'framework requirement') + '. ';
+      case 'checklist': return 'Turn the' + (o || ' process') + ' into test steps a new team member could follow. ';
+      case 'formula': return 'Write the formula that ' + (ctx.object ? 'calculates ' + ctx.object : '[does what you need]') + '. ';
+      default: return 'Identify the three most important points in the' + (o || ' content') + '. ';
+    }
+  }
+
+  function paramsFragment(ctx) {
+    const h = ctx.headers.slice(0, 4);
+    const cols = h.length >= 2 ? h.join(', ') : null;
+    switch (ctx.intent) {
+      case 'errors': return 'List each issue with its location, what is wrong, and the suggested correction, in a table. ';
+      case 'gaps': return 'Return a table: item, gap, why it matters, suggested fix, ranked by risk. ';
+      case 'variance': return 'Show the three largest changes greater than 10%, ranked by magnitude, in a table: ' + (cols ? cols + ', ' : 'metric, both values, ') + 'change in absolute and percentage terms. ';
+      case 'anomaly': return 'Return a table: ' + (cols ? cols + ', ' : 'item, period, value, ') + 'issue type, suggested check. Include variances greater than ±20%. ';
+      case 'consistency': return 'For each conflict, give both locations and both values in a table. ';
+      case 'rewrite': return 'Make it about 30% shorter, in plain English. ';
+      case 'summarize': return 'Use five bullets, under 120 words in total. ';
+      case 'draft': return 'Keep it to about 150 words, in the style of the existing section. ';
+      case 'extract': return 'Return a table with one row per item' + (cols ? ' and columns ' + cols : '') + '. ';
+      case 'compare': return 'Return a table: item, current, comparison, difference, and percent change. ';
+      case 'explain': return 'Cover what must be disclosed, the data needed, the likely owner, and the evidence to retain, as short bullets. ';
+      case 'questions': return 'Give ten questions ranked by priority, covering data quality, methodology, controls, assumptions, and evidence. ';
+      case 'map': return 'Return a table: item, framework reference, one-line rationale. ';
+      case 'checklist': return 'Use numbered steps, each with the evidence to collect and who owns it. ';
+      case 'formula': return 'Give the formula first, then one line explaining each part. ';
+      default: return 'Use five bullets, under 120 words. ';
+    }
+  }
+
+  function evalFragment(ctx) {
+    switch (ctx.intent) {
+      case 'errors': return 'Do not change anything yourself, and flag anything you are not sure is an error.';
+      case 'gaps': return 'Only flag gaps you can point to in the source, and mark judgment calls for my review.';
+      case 'variance': return 'Do not speculate beyond the data; phrase explanations as hypotheses and list open questions for the data owner separately.';
+      case 'anomaly': return 'Do not correct any values; flag anything you are unsure of.';
+      case 'consistency': return 'Do not decide which value is correct.';
+      case 'rewrite': return 'Preserve every number, date, and factual claim, and do not introduce new facts.';
+      case 'summarize': return 'Do not add anything that is not in the source, and keep every figure exactly as written.';
+      case 'draft': return 'Use only facts from the source, and mark anything I need to confirm as [to confirm].';
+      case 'extract': return 'If an item is missing or unclear, say so rather than guessing.';
+      case 'compare': return 'Show where each figure comes from, and do not explain causes the data does not support.';
+      case 'explain': return 'Cite the sources, and say if the requirement is not covered.';
+      case 'questions': return 'Base every question only on the source, and note which section each one refers to.';
+      case 'map': return 'Mark any mapping you are unsure of as needing review; I will make the final call.';
+      case 'checklist': return 'Do not invent controls or owners that are not in the source; list any gaps as open questions.';
+      case 'formula': return 'If the request is ambiguous, state your assumption before the formula.';
+      default: return 'Do not add facts that are not in the source, and list any open questions separately.';
+    }
+  }
+
+  /* ---------------- reuse the user's own words ---------------- */
+  // Turn the user's prompt into letter-tagged segments. Each sentence gets a host letter; cue
+  // phrases for other letters inside it become their own inline segments, so switching a letter
+  // off removes exactly its words. `alt` is what an inline segment collapses to when off.
+  const S_INLINE = /\b(?:selected|highlighted|attached|uploaded|pasted|open|opened|current|enclosed|provided|shared|linked)\b/i;
+  function userSegments(prompt, d, on) {
+    const sentences = [];
+    const re = /[^.;!?\n]+[.;!?]?/g; let m;
+    while ((m = re.exec(prompt))) if (m[0].trim()) sentences.push({ start: m.index, end: m.index + m[0].length });
+    const spans = [];
+    const FIXED = /^(period|scope-n|number|region|scope-limit|structure|measures|format-word|here-is|work-off|wdata|on-screen|demonstrative|numbered-part|only-use-info)$/;
+    for (const k of K) for (const h of d.el[k].hits) if (h.orig && h.orig[1] > h.orig[0] && !FIXED.test(h.tag)) {
+      let b = h.orig[1]; while (b > h.orig[0] && /[.,;:!?\s]/.test(prompt[b - 1])) b--;
+      spans.push({ k, a: h.orig[0], b, tag: h.tag });
+    }
+    const out = [];
+    for (const snt of sentences) {
+      const inside = spans.filter((x) => x.a >= snt.start && x.b <= snt.end + 1);
+      const cov = {};
+      for (const x of inside) cov[x.k] = (cov[x.k] || 0) + (x.b - x.a);
+      let host = inside.some((x) => x.k === 'O') ? 'O' : Object.keys(cov).sort((p, q) => cov[q] - cov[p])[0] || 'O';
+      const sentText = prompt.slice(snt.start, snt.end);
+      // inline spans for non-host letters, narrowed and de-overlapped
+      const inl = [];
+      for (const x of inside) {
+        if (x.k === host || x.k === 'O') continue;
+        let a = x.a, b = x.b, alt = '';
+        if (x.k === 'S') {
+          const sub = prompt.slice(a, b);
+          if (/\.(?:xlsx|xlsm|xls|csv|docx|doc|pdf|pptx|ppt|txt)\b/i.test(sub)) alt = 'the file';
+          else { const mm = sub.match(S_INLINE); if (!mm) continue; a = a + mm.index; b = a + mm[0].length; }
+        }
+        if (inl.some((y) => a < y.b && b > y.a)) continue;
+        inl.push({ k: x.k, a, b, alt });
+      }
+      inl.sort((p, q) => p.a - q.a);
+      const segs = []; let cur = snt.start;
+      for (const x of inl) {
+        if (x.a > cur) segs.push({ text: prompt.slice(cur, x.a), letter: host });
+        segs.push({ text: prompt.slice(x.a, x.b), letter: x.k, alt: x.alt, inline: true });
+        cur = x.b;
+      }
+      if (cur < snt.end) segs.push({ text: prompt.slice(cur, snt.end), letter: host });
+      const last = segs[segs.length - 1];
+      if (last && !/[.!?]\s*$/.test(last.text)) { if (last.inline) segs.push({ text: '.', letter: host }); else last.text = last.text.replace(/\s*$/, '.'); }
+      const vague = !inside.some((x) => x.k === 'O');
+      out.push({ host, segs, inside, text: sentText, vague, letters: new Set([host, ...inl.map((x) => x.k)]) });
+    }
+    return out;
+  }
+
+  function asSentence(k, phrase) {
+    let p = phrase.replace(/[.;,]+$/, '');
+    if (k === 'C' && /^(for|to)\b/i.test(p)) p = 'This is ' + p;
+    else if (k === 'P' && /^(in|as|into|under|within|no more than|at most|up to|less than|ranked|sorted|by)\b/i.test(p)) p = 'Return it ' + p;
+    return p.replace(/^./, (c) => c.toUpperCase()) + '.';
+  }
+
+  // Join segments, dropping letters that are off and tidying the spacing/punctuation left behind.
+  function assemble(segs, onSet) {
+    let t = segs.map((g) => (onSet.has(g.letter) ? g.text : g.inline ? g.alt || '' : '')).join('');
+    t = t.replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/,\s*([.;!?])/g, '$1').replace(/\(\s*\)/g, '').replace(/\b(the|a|an) (the|a|an)\b/gi, '$1').replace(/^\s*[,;:]\s*/, '').trim();
+    return t.replace(/(^|[.!?]\s+)([a-z])/g, (m0, p, c) => p + c.toUpperCase());
+  }
+
+  // The thing the prompt is about: noun phrase after the main verb, minus possessives.
+  function objectOf(t) {
+    const m = t.match(/\b(?:analy[sz]e|review|look at|check|summari[sz]e|explain|compare|identify|find|list|draft|write|rewrite|map|extract|help (?:me )?with|go over|improve|clean up|work on|tell me about)\s+(?:up |out |together |down )?(?:the |our |my |this |these |all |some |any |a |an )?((?:selected |attached |current |highlighted )?[a-z0-9&/-]+(?: [a-z0-9&/-]+){0,3}?)(?=[.,;?!]| for | and | to | so | in | from | with | by | that | which |\s*$)/);
+    if (!m) return null;
+    let o = m[1].replace(/^(?:selected|attached|current|highlighted) /, '').trim();
+    if (/^(it|this|that|them|me|us|stuff|things|everything|something)$/.test(o) || /^(?:for|to|in|on|at|with|by|from|over|into|if|whether|and|or)\b/.test(o)) return null;
+    return o.split(' ').length > 5 ? null : o;
+  }
+
+  function restoreCase(prompt, o) {
+    if (!o) return o;
+    const i = prompt.toLowerCase().indexOf(o);
+    return i >= 0 ? prompt.slice(i, i + o.length) : o;
+  }
+
+  /* ---------------- Workiva-specific tips (from Workiva support documentation) ---------------- */
+  function workivaTips(ctx, on, files) {
+    const tips = [];
+    if (files.length) tips.push('In Workiva AI chat, type @ and pick ' + (files.length === 1 ? 'the file' : 'each file') + ' so the AI can read ' + (files.length === 1 ? 'it' : 'them') + ' (up to 10 per prompt).');
+    else if (!on.S) tips.push('The document companion does not read your open file unless you reference it. Select the text or table first, or type @ in chat to reference a file.');
+    const tip = {
+      rewrite: 'For quick changes, select the text and use the companion’s quick edits: Shorten, Elaborate, Rephrase, or Change tone.',
+      formula: 'In a spreadsheet, select the cell and use Fix this formula or Explain this formula from the companion.',
+      variance: 'In a spreadsheet, the companion works on the current sheet. Select the rows first, or try Find trends for a quick first pass.',
+      anomaly: 'In a spreadsheet, the companion works on the current sheet. Select the range you want checked first.',
+      summarize: ctx.files.some((f) => f.kind === 'Excel') ? 'For a quick first pass on a range, try the spreadsheet companion’s Summarize data action.' : null,
+      consistency: ctx.domain === 'FR' ? 'If your package includes it, the Tie-Out Agent is built for finding discrepancies across a financial report. Ask your account team.' : null,
+      compare: ctx.domain === 'FR' && /\bpeers?|competitors?|benchmark/.test(ctx.t) ? 'If your package includes it, the Benchmarking Agent compares your SEC filings with peers. Ask your account team.' : null,
+      map: ctx.domain === 'SUS' ? 'If your package includes it, the Sustainability Disclosure Agent scores a disclosure against ESRS or ISSB requirements. Ask your account team.' : null,
+      gaps: ctx.domain === 'SUS' ? 'If your package includes it, the Sustainability Disclosure Agent runs a gap assessment against ESRS or ISSB. Ask your account team.' : null,
+      explain: ctx.domain === 'SUS' ? 'Switch the knowledge base to ESRS (or ISSB) for framework questions, then check the cited sources.' : null
+    }[ctx.intent];
+    if (tip) tips.push(tip);
+    return tips;
+  }
+
+  /* ---------------- verdicts ---------------- */
+  const MISSING = {
+    S: 'what to read', C: 'who it is for', O: 'the one thing you want back', P: 'a format or scope', E: 'a rule about invented facts'
+  };
+  function listify(a) { return a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
+  function verdictFor(stage, on, extra) {
+    const miss = K.filter((k) => !on[k]);
+    if (stage === 'weak') {
+      const core = ['S', 'O'].filter((k) => !on[k]).map((k) => MISSING[k]);
+      let v = 'The AI has to guess ' + listify(core.length ? core : miss.map((k) => MISSING[k])) + '. ';
+      if (extra.vague) v += 'A verb like "' + extra.vague + '" does not say what a finished answer looks like. ';
+      const rest = miss.filter((k) => !['S', 'O'].includes(k)).map((k) => MISSING[k]);
+      if (rest.length) v += 'It is also missing ' + listify(rest) + '.';
+      return v.trim();
+    }
+    if (stage === 'better') {
+      const rest = miss.map((k) => MISSING[k]);
+      return 'Now it has a source and a single job. ' + (rest.length ? 'Still missing: ' + listify(rest) + '.' : '');
+    }
+    return 'Source, context, one job, useful constraints, and a check. The AI has nothing left to guess, and you can verify the answer against the source.';
+  }
+
+  /* ---------------- main ---------------- */
+  function coach(prompt, opts) {
+    opts = opts || {};
+    const files = opts.files || [];
+    const detect = opts.detect || ((p) => { const d = R.detect(p, { files: files.map((f) => f.name) }); return { on: Object.fromEntries(K.map((k) => [k, d.el[k].on])), d }; });
+    const { on, d } = detect(prompt);
+    const t = d.text;
+    const grade = R.grade(on);
+    const chosen = bestSheet(files, t);
+    const headers = ((chosen && chosen.sheet && chosen.sheet.headers) || []).filter((h) => h && h.length < 30).slice(0, 6);
+    const ctx = {
+      t, files, domain: opts.domain || domainOf(t + ' ' + files.map((f) => (f.text || '').slice(0, 3000)).join(' ').toLowerCase()),
+      intent: null, object: restoreCase(prompt, objectOf(t)), periods: periodsIn(files), headers
+    };
+    ctx.intent = opts.intent || intentOf(t, files.some((f) => f.kind === 'Excel') || /\b(data|table|numbers|figures|emissions|revenue|metrics?)\b/.test(t));
+    const gen = { S: sourceFragment(ctx), C: contextFragment(ctx), O: objectiveFragment(ctx), P: paramsFragment(ctx), E: evalFragment(ctx) };
+    const sentences = userSegments(prompt, d, on);
+    // A vague objective sentence is replaced by the generated objective; keep its other cues.
+    const kept = [];
+    for (const snt of sentences) {
+      if (!on.O && (snt.host === 'O' || snt.vague &&  /\b(?:analy[sz]e|look at|look over|go over|review|check|help|assist|work on|handle|thoughts|improve|clean up|take a look|have a look|figure out|investigate|examine|evaluate|assess|tell me about)\b/i.test(snt.text))) {
+        const taken = [];
+        for (const x of snt.inside.filter((y) => y.k === 'C' || y.k === 'P' || y.k === 'E').sort((p, q) => p.a - q.a)) {
+          if (taken.some((y) => x.a < y.b && x.b > y.a)) continue; taken.push(x);
+          const phrase = prompt.slice(x.a, x.b).replace(/^[\s,]+|[\s,]+$/g, '');
+          kept.push({ host: x.k, segs: [{ text: asSentence(x.k, phrase) + ' ', letter: x.k }], letters: new Set([x.k]) });
+        }
+        continue;
+      }
+      kept.push(snt);
+    }
+    const present = new Set(); for (const snt of kept) for (const l of snt.letters) present.add(l);
+    const genUsed = new Set();
+    const segments = [];
+    for (const k of K) {
+      for (const snt of kept.filter((x) => x.host === k)) { for (const g of snt.segs) segments.push(g); segments.push({ text: ' ', letter: k }); }
+      if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) { segments.push({ text: gen[k], letter: k, generated: true }); genUsed.add(k); }
+    }
+    const allOn = new Set(K);
+    // Self-check: re-grade the strong version; if a generated letter does not register,
+    // swap in a more explicit wording for it (at most two passes).
+    const ALT = {
+      S: ['Use only the selected content and nothing outside it. '],
+      C: ['You are ' + ((ROLE[ctx.domain] || ROLE.GEN).def) + ', and this is for ' + DEST[ctx.domain] + '. '],
+      O: ['List the three most important findings in the' + (ctx.object ? ' ' + ctx.object : ' source') + ', one per line. ', 'Identify and list the specific items that answer this request. '],
+      P: ['Return a table with one row per item, under 150 words in total. '],
+      E: ['Do not guess or add facts that are not in the source; flag anything you are unsure of.']
+    };
+    for (let pass = 0; pass < 2; pass++) {
+      const chk = detect(assemble(segments, allOn)).on;
+      const bad = K.filter((k) => !chk[k] && genUsed.has(k));
+      if (!bad.length) break;
+      for (const k of bad) {
+        const seg = segments.find((g) => g.generated && g.letter === k);
+        const alt = (ALT[k] || [])[pass];
+        if (seg && alt) seg.text = alt;
+      }
+    }
+    const strongP = assemble(segments, allOn);
+    const betterSegs = segments.filter((g) => !g.generated || g.letter === 'S' || g.letter === 'O');
+    const betterP = assemble(betterSegs, allOn);
+    const vagueVerb = (t.match(/\b(analy[sz]e|look at|review|check|help(?: me)?(?: with)?|go over|improve|work on)\b/) || [])[1];
+    const weakP = grade === 'weak' ? prompt.trim() : (vagueVerb ? vagueVerb : 'Look at').replace(/^./, (c) => c.toUpperCase()) + ' ' + (ctx.object ? 'our ' + ctx.object : 'this') + '.';
+    const stages = {
+      weak: { prompt: grade === 'weak' ? prompt.trim() : weakP, verdict: verdictFor('weak', grade === 'weak' ? on : { S: false, C: false, O: false, P: false, E: false }, { vague: grade === 'weak' && !on.O ? vagueVerb : (grade === 'weak' ? null : vagueVerb || 'look at') }) },
+      better: { prompt: grade === 'better' ? prompt.trim() : betterP, verdict: verdictFor('better', grade === 'better' ? on : { ...on, S: true, O: true }, {}) },
+      strong: { prompt: grade === 'strong' ? prompt.trim() : strongP, verdict: verdictFor('strong', on, {}) }
+    };
+
+    const why = {
+      S: on.S ? 'You named what to read, so the answer stays inside your source.' : 'Added so the AI reads one specific source instead of guessing.',
+      C: on.C ? 'Your context tells the AI who the output is for.' : 'Added so tone and level of detail fit the reader.',
+      O: on.O ? 'Your one clear job gives the answer a finish line.' : 'Replaces a vague verb with one job that has a finish line.',
+      P: on.P ? 'Your constraints shape the answer so it drops straight into review.' : 'Added so the format, scope, and size are decided up front.',
+      E: on.E ? 'Your rule keeps a person in charge of what is true.' : 'Added so invented facts get flagged instead of slipping through.'
+    };
+    const scope = Object.fromEntries(K.map((k) => [k, { frag: assemble(segments.filter((g) => g.letter === k), allOn), why: why[k], mine: !genUsed.has(k) }]));
+
+    const notes = [];
+    if (d.stacked) notes.push({ kind: 'stacked', text: 'You are asking for several things at once. Split them into separate prompts and ask one at a time.' });
+    if (d.words < 6) notes.push({ kind: 'short', text: 'Very short prompts leave almost everything to guesswork. Aim for one or two full sentences.' });
+    if (files.length) {
+      const fileText = files.map((f) => (f.text || '') + ' ' + (f.sheets || []).map((s) => s.name + ' ' + (s.headers || []).join(' ')).join(' ')).join(' ').toLowerCase();
+      const terms = (prompt.match(/\b(?:FY|CY)\s?'?\d{2,4}\b|\bQ[1-4]\b|\b(?:19|20)\d{2}\b|\bScope [123]\b|\b[A-Z][A-Za-z]+(?: [A-Z][A-Za-z]+)+\b/g) || []).filter((x) => !/^(You|The|Use|Do|Please)\b/.test(x));
+      const missingTerms = [...new Set(terms)].filter((x) => !fileText.includes(x.toLowerCase()));
+      if (missingTerms.length) notes.push({ kind: 'grounding', text: 'Your prompt mentions ' + listify(missingTerms.map((x) => '"' + x + '"')) + ', which does not appear in the attached ' + (files.length === 1 ? 'file' : 'files') + '. Check you attached the right source.' });
+      if (ctx.periods.length) notes.push({ kind: 'periods', text: 'Periods found in your files: ' + ctx.periods.join(', ') + '.' });
+    }
+    const tips = workivaTips(ctx, on, files);
+    const filled = K.filter((k) => !on[k]);
+    const headline = grade === 'strong' ? 'It names a source, context, one job, constraints, and a check.'
+      : grade === 'better' ? 'It has a source and a job; it is missing ' + listify(filled.map((k) => MISSING[k])) + '.'
+      : 'The AI would have to guess ' + listify(['S', 'O'].filter((k) => !on[k]).map((k) => MISSING[k])) + '.';
+    const placeholders = (strongP.match(/\[[^\]]+\]/g) || []).length;
+    return { grade, detected: on, headline, stages, scope, segments, notes, tips, intent: ctx.intent, domain: ctx.domain, placeholders, hits: d.el };
+  }
+
+  const api = { coach, assemble, domainOf, intentOf, objectOf };
+  if (isNode) module.exports = api; else root.ScopeRewrite = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+;
+/* Browser-side file reading. Libraries load from cdnjs only when a file of that type is added.
+   readFile(File) -> {name, kind, text, sheets?:[{name, headers}], headings?:[], slides?:[], periods:[], detail} */
+(function (root) {
+  const LIBS = {
+    mammoth: 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',
+    xlsx: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+    jszip: 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+    pdf: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+    pdfWorker: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+  };
+  const loaded = {};
+  function load(key) {
+    if (!loaded[key]) loaded[key] = new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = LIBS[key]; s.onload = res;
+      s.onerror = () => { delete loaded[key]; rej(new Error('Could not load the reader for this file type. Check your connection and try again.')); };
+      document.head.append(s);
+    });
+    return loaded[key];
+  }
+  const MAX_TEXT = 60000;
+  const PERIOD = /\b(?:FY|CY)\s?'?\d{2,4}\b|\bQ[1-4]\s?(?:FY)?\s?'?\d{2,4}\b|\b(?:19|20)\d{2}\b/g;
+  function periodsOf(s) {
+    const counts = {};
+    for (const m of String(s).match(PERIOD) || []) { const k = m.replace(/\s+/g, ' ').trim(); counts[k] = (counts[k] || 0) + 1; }
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k]) => k)
+      .filter((k) => !/^(?:19|20)\d{2}$/.test(k) || +k >= 2015 && +k <= 2035).sort();
+  }
+  function headerRow(rows) {
+    for (const r of rows.slice(0, 12)) {
+      const cells = (r || []).map((c) => (c == null ? '' : String(c).trim())).filter(Boolean);
+      const texty = cells.filter((c) => /[A-Za-z]/.test(c) && c.length < 40);
+      if (texty.length >= 2) return cells.slice(0, 10);
+    }
+    return [];
+  }
+
+  async function readFile(file) {
+    const name = file.name, ext = name.split('.').pop().toLowerCase();
+    if (['txt', 'md', 'csv'].includes(ext)) {
+      const text = (await file.text()).slice(0, MAX_TEXT);
+      const out = { name, kind: ext === 'csv' ? 'CSV' : 'Text', text, periods: periodsOf(text) };
+      if (ext === 'csv') { const first = text.split(/\r?\n/).slice(0, 5).map((l) => l.split(',')); out.sheets = [{ name: name.replace(/\.csv$/i, ''), headers: headerRow(first) }]; }
+      return out;
+    }
+    const buf = await file.arrayBuffer();
+    if (ext === 'docx') {
+      await load('mammoth');
+      const html = (await root.mammoth.convertToHtml({ arrayBuffer: buf })).value;
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const headings = [...doc.querySelectorAll('h1,h2,h3')].map((h) => h.textContent.trim()).filter(Boolean).slice(0, 30);
+      const text = doc.body.textContent.replace(/\s+/g, ' ').slice(0, MAX_TEXT);
+      return { name, kind: 'Word', text, headings, periods: periodsOf(text), detail: headings.length ? headings.length + ' headings' : '' };
+    }
+    if (['xlsx', 'xlsm', 'xls'].includes(ext)) {
+      await load('xlsx');
+      const wb = root.XLSX.read(buf, { type: 'array' });
+      const sheets = [], parts = [];
+      for (const n of wb.SheetNames) {
+        const rows = root.XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, blankrows: false, raw: false });
+        const headers = headerRow(rows);
+        sheets.push({ name: n, headers });
+        parts.push('## ' + n + '\n' + rows.slice(0, 200).map((r) => r.join(', ')).join('\n'));
+      }
+      const text = parts.join('\n\n').slice(0, MAX_TEXT);
+      return { name, kind: 'Excel', text, sheets, periods: periodsOf(sheets.map((s) => s.headers.join(' ')).join(' ') + ' ' + text.slice(0, 8000)), detail: sheets.length + (sheets.length === 1 ? ' sheet' : ' sheets') };
+    }
+    if (ext === 'pptx') {
+      await load('jszip');
+      const zip = await root.JSZip.loadAsync(buf);
+      const paths = Object.keys(zip.files).filter((p) => /^ppt\/slides\/slide\d+\.xml$/.test(p)).sort((a, b) => parseInt(a.match(/\d+/)[0], 10) - parseInt(b.match(/\d+/)[0], 10));
+      const slides = [], parts = [];
+      for (const p of paths) {
+        const xml = await zip.file(p).async('string');
+        const dec = (s) => new DOMParser().parseFromString('<x>' + s + '</x>', 'text/html').body.textContent;
+        const title = (xml.match(/<p:ph type="(?:title|ctrTitle)"[\s\S]*?<\/p:sp>/) || [''])[0];
+        const tRuns = [...title.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((m) => m[1]).join(' ');
+        const all = [...xml.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((m) => m[1]);
+        slides.push(dec(tRuns || all[0] || '').trim());
+        parts.push(dec(all.join(' ')));
+      }
+      const text = parts.join('\n').slice(0, MAX_TEXT);
+      return { name, kind: 'PowerPoint', text, slides, periods: periodsOf(text), detail: slides.length + (slides.length === 1 ? ' slide' : ' slides') };
+    }
+    if (ext === 'pdf') {
+      await load('pdf'); await load('pdfWorker'); // worker script runs on the main thread
+      const doc = await root.pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+      const parts = [];
+      for (let i = 1; i <= doc.numPages && parts.join(' ').length < MAX_TEXT; i++) parts.push((await (await doc.getPage(i)).getTextContent()).items.map((it) => it.str).join(' '));
+      const text = parts.join('\n').slice(0, MAX_TEXT);
+      return { name, kind: 'PDF', text, periods: periodsOf(text), detail: doc.numPages + (doc.numPages === 1 ? ' page' : ' pages') };
+    }
+    if (['doc', 'ppt'].includes(ext)) throw new Error('Older .' + ext + ' files can’t be read here. Save it as .' + ext + 'x and add it again.');
+    throw new Error('This file type isn’t supported. Use Word, Excel, PowerPoint, PDF, CSV or text.');
+  }
+
+  root.ScopeFiles = { readFile, periodsOf };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const K = ['S', 'C', 'O', 'P', 'E'];
+  const META = {
+    S: { word: 'Source', q: 'What should the AI work from?', color: 'var(--blue)', ask: 'Which file, selection, sheet, or knowledge base should Workiva AI read?' },
+    C: { word: 'Context', q: 'What does it need to know?', color: 'var(--purple)', ask: 'Who is this for, or what is it for?' },
+    O: { word: 'Objective', q: 'What single job should it do?', color: 'var(--green)', ask: 'What exactly should come back? Name one job with a finish line.' },
+    P: { word: 'Parameters', q: 'What makes the result useful?', color: 'var(--orange)', ask: 'What format, length, period, or threshold should the answer use?' },
+    E: { word: 'Evaluate', q: 'How will we check it?', color: 'var(--red)', ask: 'How will you check the answer? Add a rule about invented facts.' }
+  };
+  const STAGES = [
+    { key: 'weak', label: 'Weak', verdictLabel: 'why it fails' },
+    { key: 'better', label: 'Better', verdictLabel: 'what improved' },
+    { key: 'strong', label: 'Strong', verdictLabel: 'why it works' }
+  ];
+  const INTENT_NAMES = { variance: 'Explain changes', anomaly: 'Find unusual values', consistency: 'Check consistency / tie-out', errors: 'Find errors', gaps: 'Find gaps', rewrite: 'Rewrite or edit', summarize: 'Summarize', draft: 'Draft new content', extract: 'Extract items', compare: 'Compare', explain: 'Explain a requirement', questions: 'Generate review questions', map: 'Map to a framework', checklist: 'Build steps or a checklist', formula: 'Formula or query help' };
+  const HINTS = [
+    'With nothing on, you’re back to “Analyze this” and the AI has to guess everything.',
+    'One element helps, but the AI is still guessing at most of the job.',
+    'Getting somewhere. Notice what the AI still has to invent.',
+    'Solid. One or two more elements remove the last of the guesswork.',
+    'Almost there. The Evaluate step is what keeps the human in the loop.',
+    'All five: source, situation, one job, useful constraints, and a check. This is the 30-second version of prompt engineering.'
+  ];
+  const EXAMPLES = [
+    { area: 'Sustainability', text: 'Analyze our emissions data.' },
+    { area: 'Financial reporting', text: 'can you look at the flux on the income statement tab for the audit committee' },
+    { area: 'GRC', text: 'Review the selected controls in the RCM and tell me what is missing.' },
+    { area: 'Financial reporting', text: 'Rewrite the highlighted MD&A paragraph for retail investors, about 30% shorter, and keep every number exactly as written.' },
+    { area: 'GRC', text: 'You are an external SOX auditor. Using only the attached RCM, write five walkthrough questions for the revenue process, ranked by risk, and note which control each question tests.' }
+  ];
+
+  const weights = window.SCOPE_WEIGHTS;
+  const detect = (p) => {
+    const r = ScopeModel.predict(p, weights, { mode: weights.mode });
+    return { on: r.on, d: r.rules };
+  };
+
+  const state = { files: [], stage: 0, on: Object.fromEntries(K.map((k) => [k, true])), result: null, openFix: null };
+  for (const [k, v] of Object.entries(INTENT_NAMES)) { const o = document.createElement('option'); o.value = k; o.textContent = v; $('intent').append(o); }
+
+  /* ---------------- live grading ---------------- */
+  let timer = 0;
+  function schedule() { clearTimeout(timer); timer = setTimeout(run, 180); }
+  function run() {
+    const prompt = $('prompt').value;
+    const files = state.files.filter((f) => f.ok);
+    if (!prompt.trim()) { renderEmpty(); return; }
+    const r = ScopeRewrite.coach(prompt, { files, detect, domain: $('domain').value || undefined, intent: $('intent').value || undefined });
+    // one job at a time: a stacked prompt can't be strong
+    r.displayGrade = r.grade === 'strong' && r.hits && ScopeRules.detect(prompt).stacked ? 'better' : r.grade;
+    const prevKey = state.result && state.result.stages.strong.prompt;
+    state.result = r;
+    if (prevKey !== r.stages.strong.prompt) state.on = Object.fromEntries(K.map((k) => [k, true]));
+    state.stage = Math.min(state.stage, 2);
+    renderMeter(prompt); renderStages(); renderScope();
+  }
+  function renderEmpty() {
+    $('mirror').textContent = ''; $('badge').className = 'badge weak'; $('badge').textContent = '—';
+    $('chips').replaceChildren(); $('headline').textContent = 'Type a prompt to see its grade.'; $('notes').replaceChildren(); $('fix').hidden = true;
+  }
+
+  function renderMirror(prompt, r) {
+    // paint each character with the letter of the cue that covers it (first letter wins)
+    const owner = new Array(prompt.length).fill(null);
+    for (const k of ['O', 'S', 'C', 'P', 'E']) {
+      if (!r.detected[k]) continue;
+      for (const h of r.hits[k].hits) if (h.orig) for (let i = h.orig[0]; i < h.orig[1]; i++) if (!owner[i]) owner[i] = k;
+    }
+    const m = $('mirror'); m.replaceChildren();
+    let i = 0;
+    while (i < prompt.length) {
+      let j = i; while (j < prompt.length && owner[j] === owner[i]) j++;
+      const txt = prompt.slice(i, j);
+      if (owner[i]) { const mk = document.createElement('mark'); mk.className = owner[i]; mk.textContent = txt; m.append(mk); } else m.append(txt);
+      i = j;
+    }
+    m.append('\n');
+    m.scrollTop = $('prompt').scrollTop;
+  }
+
+  function renderMeter(prompt) {
+    const r = state.result, g = r.displayGrade;
+    renderMirror(prompt, r);
+    const b = $('badge'); b.className = 'badge ' + g; b.textContent = g;
+    $('headline').textContent = r.displayGrade !== r.grade ? 'All five elements are here, but it asks for several things at once. Split it to make it strong.' : r.headline;
+    const chips = $('chips'); chips.replaceChildren();
+    K.forEach((k) => {
+      const on = r.detected[k];
+      const c = document.createElement('button'); c.type = 'button'; c.className = 'chip' + (on ? '' : ' off');
+      c.setAttribute('aria-expanded', String(state.openFix === k));
+      const i = document.createElement('i'); i.textContent = k; i.style.background = META[k].color;
+      const s = document.createElement('span'); s.textContent = META[k].word;
+      const st = document.createElement('span'); st.className = 'st'; st.textContent = on ? '✓' : 'add';
+      st.setAttribute('aria-label', on ? 'found' : 'missing');
+      c.append(i, s, st);
+      c.onclick = () => { state.openFix = state.openFix === k ? null : k; renderMeter($('prompt').value); };
+      chips.append(c);
+    });
+    renderFix();
+    $('detected').textContent = (!$('domain').value || !$('intent').value) ? 'Detected: ' + ({ FR: 'financial reporting', GRC: 'GRC and audit', SUS: 'sustainability', GEN: 'general' }[r.domain]) + ' · ' + (INTENT_NAMES[r.intent] || r.intent).toLowerCase() : '';
+    const notes = $('notes'); notes.replaceChildren();
+    const pii = /\b[\w.+-]+@[\w-]+\.[\w.]+\b|\b\d{3}-\d{2}-\d{4}\b|\b(?:\d[ -]?){13,16}\b|\bpassword\s*[:=]/i.test(prompt);
+    if (pii) notes.append(note('warn', 'This looks like personal or sensitive data (an email address, ID, card number, or password). Leave it out of AI prompts unless your AI policy allows it.'));
+    for (const n of r.notes) notes.append(note(n.kind === 'grounding' ? 'warn' : '', n.text));
+    for (const t of r.tips) notes.append(note('tip', t, 'Workiva tip: '));
+    if (r.placeholders) notes.append(note('', 'The stronger versions below include [bracketed placeholders]. Replace them with your own details.'));
+  }
+  function note(kind, text, lead) {
+    const d = document.createElement('div'); d.className = 'note' + (kind ? ' ' + kind : '');
+    if (lead) { const b = document.createElement('b'); b.textContent = lead; d.append(b); }
+    d.append(text); return d;
+  }
+
+  function renderFix() {
+    const k = state.openFix, box = $('fix'), r = state.result;
+    if (!k || !r) { box.hidden = true; return; }
+    box.hidden = false; box.replaceChildren();
+    const on = r.detected[k];
+    const h = document.createElement('h4'); h.textContent = (on ? 'Found: ' : 'Missing: ') + META[k].word;
+    const p = document.createElement('p');
+    if (on) {
+      const words = r.hits[k].hits.filter((x) => x.orig).map((x) => $('prompt').value.slice(x.orig[0], x.orig[1]).trim()).filter(Boolean);
+      p.textContent = words.length ? 'Earned by: “' + [...new Set(words)].slice(0, 3).join('”, “') + '”.' : 'Your prompt covers this.';
+      box.append(h, p); return;
+    }
+    p.textContent = META[k].ask;
+    const frag = (r.scope[k].frag || '').trim();
+    const code = document.createElement('code'); code.textContent = frag;
+    const row = document.createElement('div'); row.className = 'row';
+    const add = document.createElement('button'); add.type = 'button'; add.className = 'btn'; add.textContent = 'Add this to my prompt';
+    add.onclick = () => insertLetter(k, frag);
+    row.append(add);
+    if (k === 'S' && state.files.some((f) => f.ok)) {
+      for (const f of state.files.filter((x) => x.ok).slice(0, 3)) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = 'Use @' + f.name;
+        b.onclick = () => insertLetter('S', 'Use only @' + f.name + '.'); row.append(b);
+      }
+    }
+    box.append(h, p, code, row);
+  }
+  function insertLetter(k, frag) {
+    const ta = $('prompt'); let v = ta.value.trim();
+    if (v && !/[.!?]$/.test(v)) v += '.';
+    ta.value = k === 'S' || k === 'C' ? (frag + ' ' + v).trim() : (v + ' ' + frag).trim();
+    state.openFix = null; run(); ta.focus();
+  }
+
+  /* ---------------- ladder ---------------- */
+  function renderStages() {
+    const r = state.result;
+    const tabs = $('stageTabs'); tabs.replaceChildren();
+    STAGES.forEach((s, k) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'stage'; b.role = 'tab'; b.id = 'tab-' + s.key;
+      b.setAttribute('aria-selected', String(k === state.stage)); b.setAttribute('aria-controls', 'stagePanel');
+      b.textContent = s.label;
+      if (s.key === r.grade) { const sm = document.createElement('small'); sm.textContent = 'your prompt'; b.append(sm); }
+      b.onclick = () => { state.stage = k; renderStages(); };
+      tabs.append(b);
+    });
+    const s = STAGES[state.stage], data = r.stages[s.key];
+    const mine = s.key === r.grade;
+    const gi = STAGES.findIndex((x) => x.key === r.grade);
+    $('stageLabel').textContent = mine ? 'your prompt' : state.stage > gi ? 'a ' + s.key + ' version of your prompt' : 'a weaker version, for comparison';
+    const el = $('stagePrompt'); el.replaceChildren();
+    // underline what the coach added (only for rewrites above the user's grade)
+    const showAdded = state.stage > gi;
+    const segs = showAdded ? r.segments.filter((g) => s.key === 'strong' || !g.generated || g.letter === 'S' || g.letter === 'O') : null;
+    if (segs) {
+      el.append('“');
+      const text = ScopeRewrite.assemble(segs, new Set(K));
+      let cursor = 0;
+      for (const g of segs) {
+        if (!g.generated) continue;
+        const t = g.text.trim(); const at = text.indexOf(t, cursor); if (at < 0) continue;
+        appendWithPh(el, text.slice(cursor, at));
+        const sp = document.createElement('span'); sp.className = 'added'; appendWithPh(sp, t); el.append(sp);
+        cursor = at + t.length;
+      }
+      appendWithPh(el, text.slice(cursor)); el.append('”');
+    } else el.textContent = '“' + data.prompt + '”';
+    const lg = $('stageLegend'); lg.replaceChildren();
+    if (showAdded) lg.append(legendItem('rgba(255,255,255,.18)', 'added by the coach'), legendItem('#F8BD4F', '[fill in your details]'));
+    $('verdictLabel').textContent = s.verdictLabel;
+    $('verdictText').textContent = data.verdict;
+  }
+  function appendWithPh(el, text) {
+    const parts = text.split(/(\[[^\]]+\])/);
+    for (const p of parts) { if (!p) continue; if (/^\[[^\]]+\]$/.test(p)) { const s = document.createElement('span'); s.className = 'ph'; s.textContent = p; el.append(s); } else el.append(p); }
+  }
+  function legendItem(color, text) { const s = document.createElement('span'); const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = color; s.append(sw, text); return s; }
+
+  /* ---------------- scope builder ---------------- */
+  function renderScope() {
+    const r = state.result, on = state.on;
+    const list = $('letters'); list.replaceChildren();
+    K.forEach((k) => {
+      const m = META[k], active = on[k], sc = r.scope[k];
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'letter';
+      b.setAttribute('aria-pressed', String(active)); b.style.borderColor = active ? m.color : 'var(--line)';
+      const sq = document.createElement('span'); sq.className = 'sq'; sq.style.background = m.color; sq.textContent = k;
+      const mid = document.createElement('span');
+      const st = document.createElement('strong'); st.textContent = m.word;
+      const q = document.createElement('span'); q.className = 'q'; q.textContent = m.q; mid.append(st, q);
+      const stt = document.createElement('span'); stt.className = 'state'; stt.textContent = active ? 'ON' : 'OFF'; stt.style.color = active ? 'var(--green)' : 'var(--faint)';
+      const who = document.createElement('small'); who.textContent = sc.mine ? 'your words' : 'added'; stt.append(who);
+      const why = document.createElement('span'); why.className = 'why'; why.textContent = sc.why;
+      b.append(sq, mid, stt, why);
+      b.onclick = () => { state.on[k] = !state.on[k]; renderScope(); };
+      list.append(b);
+    });
+    const activeSet = new Set(K.filter((k) => on[k]));
+    const built = $('built'); built.replaceChildren();
+    const segs = r.segments.filter((g) => activeSet.has(g.letter) || (g.inline && g.alt));
+    if (!activeSet.size) built.textContent = '“Analyze this.”';
+    else {
+      // render with an underline per letter, using the same cleanup as assemble()
+      const full = ScopeRewrite.assemble(r.segments, activeSet);
+      built.append('“');
+      let cursor = 0;
+      for (const g of segs) {
+        if (!activeSet.has(g.letter)) continue;
+        const t = g.text.trim().replace(/\s+/g, ' '); if (!t || t === '.') continue;
+        const at = full.toLowerCase().indexOf(t.toLowerCase().replace(/\s+([,.;:!?])/g, '$1'), cursor);
+        if (at < 0) continue;
+        built.append(full.slice(cursor, at));
+        const sp = document.createElement('span'); sp.className = 'seg'; sp.style.textDecorationColor = META[g.letter].color;
+        sp.textContent = full.slice(at, at + t.replace(/\s+([,.;:!?])/g, '$1').length); built.append(sp);
+        cursor = at + sp.textContent.length;
+      }
+      built.append(full.slice(cursor), '”');
+    }
+    $('scopeScore').textContent = activeSet.size + ' / 5 elements';
+    $('hint').textContent = HINTS[activeSet.size];
+  }
+  function builtText() { const a = new Set(K.filter((k) => state.on[k])); return a.size ? ScopeRewrite.assemble(state.result.segments, a) : 'Analyze this.'; }
+
+  /* ---------------- copy ---------------- */
+  function copyFrom(btn, text, el) {
+    const done = () => { btn.textContent = 'copied'; setTimeout(() => { btn.textContent = 'copy'; }, 1400); };
+    const select = () => { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'press ⌘C / Ctrl+C'; setTimeout(() => { btn.textContent = 'copy'; }, 2400); };
+    try { navigator.clipboard.writeText(text).then(done, select); } catch (e) { select(); }
+  }
+  $('copyStage').onclick = (e) => copyFrom(e.currentTarget, state.result.stages[STAGES[state.stage].key].prompt, $('stagePrompt'));
+  $('copyBuilt').onclick = (e) => copyFrom(e.currentTarget, builtText(), $('built'));
+
+  /* ---------------- files ---------------- */
+  function renderFiles() {
+    const box = $('files'); box.replaceChildren();
+    for (const f of state.files) {
+      const row = document.createElement('div'); row.className = 'file';
+      const ext = document.createElement('span'); ext.className = 'ext'; ext.textContent = f.name.split('.').pop();
+      const name = document.createElement('span'); name.className = 'name'; name.textContent = f.name;
+      const meta = document.createElement('span'); meta.className = 'meta' + (f.error ? ' err' : '');
+      if (f.error) meta.textContent = f.error;
+      else if (!f.ok) meta.textContent = 'Reading…';
+      else {
+        const bits = [f.detail];
+        if (f.sheets && f.sheets.length) bits.push('sheets: ' + f.sheets.slice(0, 4).map((s) => s.name).join(', ') + (f.sheets.length > 4 ? '…' : ''));
+        if (f.headings && f.headings.length) bits.push('sections: ' + f.headings.slice(0, 3).join(', ') + (f.headings.length > 3 ? '…' : ''));
+        if (f.slides && f.slides.length) bits.push('slides: ' + f.slides.filter(Boolean).slice(0, 3).join(', ') + '…');
+        if (f.periods && f.periods.length) bits.push('periods: ' + f.periods.join(', '));
+        meta.textContent = bits.filter(Boolean).join(' · ') || 'Ready';
+      }
+      name.append(meta);
+      const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '×'; x.setAttribute('aria-label', 'Remove ' + f.name);
+      x.onclick = () => { state.files = state.files.filter((g) => g !== f); renderFiles(); run(); };
+      row.append(ext, name, x); box.append(row);
+    }
+  }
+  function addFiles(list) {
+    for (const file of list) {
+      const f = { name: file.name, ok: false };
+      state.files.push(f); renderFiles();
+      ScopeFiles.readFile(file).then((r) => { Object.assign(f, r, { ok: true }); if (!r.text || !r.text.trim()) { f.ok = false; f.error = 'No readable text found (scanned or image-only?).'; } })
+        .catch((e) => { f.error = e.message || 'Couldn’t read this file.'; })
+        .finally(() => { renderFiles(); run(); });
+    }
+  }
+  const drop = $('drop'), input = $('fileInput');
+  drop.onclick = () => input.click();
+  drop.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } };
+  input.onchange = () => { addFiles([...input.files]); input.value = ''; };
+  ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => { if (e.dataTransfer && e.dataTransfer.files.length) addFiles([...e.dataTransfer.files]); });
+
+  /* ---------------- examples + wiring ---------------- */
+  for (const ex of EXAMPLES) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'ex';
+    const t = document.createElement('b'); t.textContent = ex.area; b.append(t, ex.text);
+    b.onclick = () => { $('prompt').value = ex.text; $('domain').value = ''; $('intent').value = ''; state.stage = 0; run(); $('prompt').focus(); };
+    $('examples').append(b);
+  }
+  $('prompt').addEventListener('input', schedule);
+  $('prompt').addEventListener('scroll', () => { $('mirror').scrollTop = $('prompt').scrollTop; });
+  $('domain').onchange = run; $('intent').onchange = run;
+  try { const draft = localStorage.getItem('scope-coach-draft'); if (draft) $('prompt').value = draft; } catch (e) { /* storage unavailable */ }
+  $('prompt').addEventListener('input', () => { try { localStorage.setItem('scope-coach-draft', $('prompt').value); } catch (e) { /* ignore */ } });
+  run();
+})();
+</script>

@@ -1,0 +1,585 @@
+<title>Workiva AI Prompt Coach</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800;900&display=swap">
+<style>
+/* Layout: one column of three tools (live grade + fixes, weak/better/strong ladder, SCOPE builder),
+   in the Workiva AI explainer's language: heavy lowercase heads over a steel rule, steel prompt panels, cream page. */
+:root {
+  --bg: #FCF4E8; --surface: #FFFFFF; --ink: #333333; --muted: #666666; --faint: #B2B2B2; --line: #D8D8D8; --soft: #EBEBEB;
+  --panel: #333333; --panel-ink: #FCF4E8; --panel-label: #D5B1EB; --mist: #F1E8F7; --sand: #FDEFD3;
+  --blue: #0074E8; --blue-deep: #0058AF; --purple: #8C4CBD; --green: #3F9F3F; --orange: #D76C1F; --red: #DE2800;
+  --tint-S: rgba(0,116,232,.16); --tint-C: rgba(140,76,189,.18); --tint-O: rgba(63,159,63,.18); --tint-P: rgba(248,145,25,.22); --tint-E: rgba(222,40,0,.14);
+  --weak-bg: #FBE3DC; --better-bg: #FDEBCB; --strong-bg: #DDF5D0; --on-accent: #FFFFFF;
+  --font: "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #1E1D1B; --surface: #2A2826; --ink: #F3EDE3; --muted: #B5AFA6; --faint: #7A756E; --line: #45413C; --soft: #36332F;
+  --panel: #121212; --panel-ink: #F3EDE3; --mist: #352B3D; --sand: #3B3222;
+  --blue: #7CBEFF; --blue-deep: #A9D4FF; --purple: #C08EE6; --green: #85DD85; --orange: #F8BD4F; --red: #FF7A5C;
+  --tint-S: rgba(124,190,255,.22); --tint-C: rgba(192,142,230,.24); --tint-O: rgba(133,221,133,.2); --tint-P: rgba(248,189,79,.22); --tint-E: rgba(255,122,92,.22);
+  --weak-bg: #4A2A22; --better-bg: #4A3A1E; --strong-bg: #263F24; --on-accent: #121212; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #1E1D1B; --surface: #2A2826; --ink: #F3EDE3; --muted: #B5AFA6; --faint: #7A756E; --line: #45413C; --soft: #36332F;
+  --panel: #121212; --panel-ink: #F3EDE3; --mist: #352B3D; --sand: #3B3222;
+  --blue: #7CBEFF; --blue-deep: #A9D4FF; --purple: #C08EE6; --green: #85DD85; --orange: #F8BD4F; --red: #FF7A5C;
+  --tint-S: rgba(124,190,255,.22); --tint-C: rgba(192,142,230,.24); --tint-O: rgba(133,221,133,.2); --tint-P: rgba(248,189,79,.22); --tint-E: rgba(255,122,92,.22);
+  --weak-bg: #4A2A22; --better-bg: #4A3A1E; --strong-bg: #263F24; --on-accent: #121212; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5; }
+button, input, textarea, select { font-family: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 32px; }
+@media (max-width: 640px) { .wrap { padding-inline: 16px; } }
+.label { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; }
+
+.top { padding-block: 18px; border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.brand b { color: var(--ink); font-weight: 900; letter-spacing: 0; text-transform: none; font-size: 20px; margin-right: 10px; }
+.privacy { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--strong-bg); border-radius: 99px; padding: 6px 14px; }
+.privacy::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+
+.intro { padding-block: 48px 8px; }
+.intro h1 { margin: 0; font-size: clamp(44px, 8vw, 96px); font-weight: 900; line-height: .98; letter-spacing: -.005em; text-transform: lowercase; text-wrap: balance; }
+.intro h1 span { color: var(--green); }
+.intro p { max-width: 660px; font-size: 18px; margin: 22px 0 0; text-wrap: pretty; }
+
+section.block { padding-block: 44px; }
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; border-bottom: 2px solid var(--ink); padding-bottom: 16px; margin-bottom: 26px; }
+.head h2 { margin: 0; font-size: clamp(30px, 4.4vw, 52px); font-weight: 900; line-height: 1; letter-spacing: -.005em; text-transform: lowercase; text-wrap: balance; }
+
+/* compose */
+.compose { display: grid; grid-template-columns: 1.45fr 1fr; gap: 20px; align-items: start; }
+.compose > .card { padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.editor { position: relative; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.editor .mirror, .editor textarea { margin: 0; padding: 14px 16px; font-family: var(--mono); font-size: 15px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; letter-spacing: 0; }
+.editor .mirror { position: absolute; inset: 0; color: transparent; pointer-events: none; overflow: hidden; }
+.editor .mirror mark { color: transparent; border-radius: 3px; }
+.editor .mirror mark.S { background: var(--tint-S); } .editor .mirror mark.C { background: var(--tint-C); } .editor .mirror mark.O { background: var(--tint-O); }
+.editor .mirror mark.P { background: var(--tint-P); } .editor .mirror mark.E { background: var(--tint-E); }
+.editor textarea { position: relative; display: block; width: 100%; min-height: 170px; resize: vertical; border: none; background: transparent; caret-color: var(--ink); }
+.editor textarea:focus { outline: none; }
+.editor:focus-within { outline: 2px solid var(--blue); outline-offset: 1px; }
+.meter { display: grid; grid-template-columns: auto 1fr; gap: 12px 16px; align-items: center; }
+.badge { font-size: 22px; font-weight: 900; text-transform: lowercase; border-radius: 99px; padding: 6px 18px; line-height: 1.1; text-align: center; min-width: 108px; }
+.badge.weak { background: var(--weak-bg); color: var(--red); } .badge.better { background: var(--better-bg); color: var(--orange); } .badge.strong { background: var(--strong-bg); color: var(--green); }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; border-radius: 99px; padding: 4px 12px 4px 4px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
+.chip i { font-style: normal; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 13px; }
+.chip .st { font-size: 11px; font-weight: 800; letter-spacing: .04em; }
+.chip.off { color: var(--muted); border-style: dashed; }
+.chip.off i { background: var(--faint) !important; }
+.chip[aria-expanded="true"] { border-color: var(--ink); }
+.headline { margin: 0; font-size: 15px; font-weight: 700; grid-column: 1 / -1; text-wrap: pretty; }
+.fix { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 10px; background: var(--bg); }
+.fix h4 { margin: 0; font-size: 15px; font-weight: 800; }
+.fix p { margin: 0; font-size: 14px; color: var(--muted); }
+.fix code { font-family: var(--mono); font-size: 13.5px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: block; white-space: pre-wrap; color: var(--ink); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 8px; border: none; background: var(--blue); color: var(--on-accent); font-size: 14px; font-weight: 700; cursor: pointer; }
+.btn:hover { background: var(--blue-deep); }
+.ghost { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; font-weight: 700; cursor: pointer; }
+.ghost:hover { border-color: var(--ink); }
+.selects { display: flex; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); align-items: center; }
+select { font-size: 13px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 8px; }
+.notes { display: grid; gap: 8px; }
+.note { font-size: 14px; border-radius: 12px; padding: 10px 14px; background: var(--sand); text-wrap: pretty; }
+.note.warn { background: var(--weak-bg); }
+.note.tip { background: var(--mist); }
+.note b { font-weight: 800; }
+
+.drop { border: 2px dashed var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; cursor: pointer; min-height: 120px; }
+.drop:hover, .drop.over { border-color: var(--purple); background: var(--mist); }
+.drop strong { font-size: 15px; } .drop span { font-size: 13px; color: var(--muted); }
+.files { display: flex; flex-direction: column; gap: 8px; }
+.file { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); font-size: 13.5px; }
+.file .ext { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; border-radius: 6px; padding: 3px 7px; background: var(--soft); margin-top: 1px; }
+.file .name { min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
+.file .meta { display: block; font-weight: 500; color: var(--muted); font-size: 12.5px; }
+.file .meta.err { color: var(--red); }
+.x { border: none; background: transparent; cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 6px; color: var(--muted); border-radius: 6px; }
+.x:hover { color: var(--ink); background: var(--soft); }
+.examples { display: grid; gap: 8px; }
+.ex { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 12px; cursor: pointer; font-size: 13.5px; }
+.ex:hover { border-color: var(--ink); }
+.ex b { display: block; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+
+/* ladder */
+.stages { display: flex; gap: 10px; margin: 0 0 20px; flex-wrap: wrap; }
+.stage { padding: 10px 24px; border-radius: 99px; border: 2px solid var(--faint); background: transparent; font-size: 15px; font-weight: 800; cursor: pointer; }
+.stage[aria-selected="true"] { background: var(--purple); border-color: var(--purple); color: var(--on-accent); }
+.stage small { display: block; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; opacity: .85; }
+.pair { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }
+.panel { position: relative; overflow: hidden; background: var(--panel); color: var(--panel-ink); border-radius: 20px; padding: 30px 32px; min-width: 0; }
+.panel::before { content: ""; position: absolute; inset: 0; opacity: .12; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.6 0.6 0.6 0 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.panel > * { position: relative; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.panel-head .label { color: var(--panel-label); }
+.prompt-text { margin: 0; font-family: var(--mono); font-size: 15.5px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+.prompt-text .added { background: rgba(255,255,255,.09); border-radius: 4px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.prompt-text .ph { color: #F8BD4F; }
+.copy { border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.06); color: var(--panel-ink); border-radius: 99px; padding: 6px 14px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.copy:hover { background: rgba(255,255,255,.14); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 16px; font-size: 12px; font-weight: 700; color: var(--panel-label); }
+.legend .sw { display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+.verdict { padding: 26px 28px; min-width: 0; }
+.verdict p { margin: 10px 0 0; font-size: 16px; line-height: 1.6; text-wrap: pretty; }
+.practices { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; }
+.practice { background: var(--mist); border-radius: 16px; padding: 18px; }
+.practice b { display: block; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--purple); margin-bottom: 6px; }
+.practice span { font-size: 14.5px; font-weight: 600; line-height: 1.45; }
+
+/* scope */
+.scope-intro { margin: -6px 0 24px; max-width: 700px; font-size: 15px; color: var(--muted); text-wrap: pretty; }
+.scope { display: grid; grid-template-columns: 410px 1fr; gap: 20px; align-items: start; }
+.letters { display: flex; flex-direction: column; gap: 10px; }
+.letter { text-align: left; display: grid; grid-template-columns: 44px 1fr auto; gap: 10px 14px; align-items: center; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--line); background: transparent; cursor: pointer; }
+.letter[aria-pressed="true"] { background: var(--surface); }
+.letter .sq { width: 44px; height: 44px; border-radius: 10px; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; }
+.letter strong { display: block; font-size: 16px; font-weight: 800; }
+.letter .q { font-size: 13px; color: var(--muted); }
+.letter .state { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-align: right; }
+.letter .state small { display: block; font-size: 10.5px; color: var(--muted); letter-spacing: .04em; }
+.letter .why { grid-column: 2 / 4; font-size: 13.5px; line-height: 1.5; border-top: 1px solid var(--line); padding-top: 9px; text-wrap: pretty; }
+.letter[aria-pressed="false"] .why { color: var(--muted); }
+.sticky { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.built .seg { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
+.hint { padding: 14px 20px; font-size: 14px; color: var(--muted); border-radius: 14px; }
+
+/* how we grade */
+details.how { margin-top: 8px; }
+details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; padding: 14px 0; }
+.how-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.how-grid .card { padding: 18px 20px; font-size: 14.5px; }
+.how-grid h4 { margin: 0 0 6px; font-size: 15px; }
+.how-grid p, .how-grid ul { margin: 0; color: var(--muted); }
+.how-grid ul { padding-left: 18px; }
+.how-grid a { color: var(--blue); }
+.foot { padding-block: 36px 52px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.foot p { margin: 0; max-width: 780px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 980px) { .compose, .pair, .scope { grid-template-columns: 1fr; } .practices { grid-template-columns: 1fr 1fr; } .sticky { position: static; } }
+@media (max-width: 560px) { .practices { grid-template-columns: 1fr; } .panel { padding: 22px 20px; } .letter .why { grid-column: 1 / -1; } .meter { grid-template-columns: 1fr; } .badge { justify-self: start; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><b>workiva ai</b>prompt coach</div>
+    <div class="privacy">Runs in your browser. Your prompt and files are never uploaded.</div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap intro">
+    <h1>weak → better → <span>strong</span></h1>
+    <p>Type the prompt you'd give Workiva AI and add the files it should read. You'll see how strong it is as you type, which words earned each SCOPE element, and a stronger version built from your own words and files.</p>
+  </div>
+
+  <section class="block" aria-labelledby="h-grade">
+    <div class="wrap">
+      <div class="head"><h2 id="h-grade">grade your prompt</h2><span class="label">updates as you type</span></div>
+      <div class="compose">
+        <div class="card">
+          <label class="label" for="prompt">your prompt</label>
+          <div class="editor"><div class="mirror" id="mirror" aria-hidden="true"></div><textarea id="prompt" spellcheck="true">Analyze our emissions data.</textarea></div>
+          <div class="meter">
+            <div class="badge weak" id="badge" aria-live="polite">weak</div>
+            <div class="chips" id="chips" role="group" aria-label="SCOPE elements. Select a missing one to see how to add it."></div>
+            <p class="headline" id="headline"></p>
+          </div>
+          <div class="fix" id="fix" hidden></div>
+          <div class="selects">
+            <label for="domain">Area</label>
+            <select id="domain"><option value="">Detect for me</option><option value="FR">Financial reporting</option><option value="GRC">GRC and audit</option><option value="SUS">Sustainability</option><option value="GEN">General</option></select>
+            <label for="intent">Task</label>
+            <select id="intent"><option value="">Detect for me</option></select>
+            <span id="detected"></span>
+          </div>
+          <div class="notes" id="notes"></div>
+        </div>
+        <div class="card">
+          <span class="label" id="files-label">supporting files (optional)</span>
+          <div class="drop" id="drop" tabindex="0" role="button" aria-describedby="files-label">
+            <strong>Drop files or click to add</strong>
+            <span>Word, Excel, PowerPoint, PDF, CSV or text. Read here in your browser; nothing is uploaded.</span>
+          </div>
+          <input type="file" id="fileInput" multiple hidden accept=".docx,.xlsx,.xlsm,.xls,.csv,.pptx,.pdf,.txt,.md">
+          <div class="files" id="files"></div>
+          <span class="label">try an example</span>
+          <div class="examples" id="examples"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="h-ladder">
+    <div class="wrap">
+      <div class="head"><h2 id="h-ladder">prompting: weak → strong</h2><span class="label">see the difference</span></div>
+      <div class="stages" role="tablist" id="stageTabs" aria-label="Prompt versions"></div>
+      <div class="pair">
+        <div class="panel" role="tabpanel" id="stagePanel">
+          <div class="panel-head"><span class="label" id="stageLabel">the prompt</span><button class="copy" type="button" id="copyStage">copy</button></div>
+          <p class="prompt-text" id="stagePrompt"></p>
+          <div class="legend" id="stageLegend"></div>
+        </div>
+        <div class="card verdict">
+          <span class="label" id="verdictLabel">why it fails</span>
+          <p id="verdictText"></p>
+        </div>
+      </div>
+      <div class="practices">
+        <div class="practice"><b>be specific</b><span>State the task, topic, audience, and desired length or style.</span></div>
+        <div class="practice"><b>give context</b><span>Reference the file, select the cells, or explain the scenario. A role prefix helps.</span></div>
+        <div class="practice"><b>one question</b><span>Ask a single, focused question. Follow up rather than stacking asks.</span></div>
+        <div class="practice"><b>iterate</b><span>If the answer is off, adjust and try again. Use the response to guide the next prompt.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="h-scope">
+    <div class="wrap">
+      <div class="head"><h2 id="h-scope">build it with scope</h2><span class="label">toggle the letters</span></div>
+      <p class="scope-intro">The strong version, split into its five SCOPE elements. A simple mnemonic, not an official Workiva framework. Switch a letter off to see what the prompt loses without it.</p>
+      <div class="scope">
+        <div class="letters" id="letters"></div>
+        <div class="sticky">
+          <div class="panel">
+            <div class="panel-head"><span class="label">the assembled prompt</span><span class="row"><span class="label" id="scopeScore" style="color: var(--faint)">5 / 5 elements</span><button class="copy" type="button" id="copyBuilt">copy</button></span></div>
+            <p class="prompt-text built" id="built"></p>
+          </div>
+          <div class="card hint" id="hint"></div>
+        </div>
+      </div>
+
+      <details class="how">
+        <summary>How the coach grades</summary>
+        <div class="how-grid">
+          <div class="card"><h4>The rule</h4><p><b>Weak</b>: the AI would have to guess what to read or what you want back. <b>Better</b>: it names a source and one job. <b>Strong</b>: all five SCOPE elements, and one job at a time.</p></div>
+          <div class="card"><h4>How it works</h4><p>About 150 language patterns spot each element, and a small scoring model trained on 1,000+ labeled reporting, GRC and sustainability prompts weighs them. It all runs on this page; there is no AI service behind it.</p></div>
+          <div class="card"><h4>How accurate it is</h4><p id="accuracy">On 320 held-out prompts it matched expert grading about 86% of the time. It is a coach, not a judge: if it misses something you wrote, rephrase it more plainly or override the task type.</p></div>
+          <div class="card"><h4>Where the criteria come from</h4><ul>
+            <li><a href="https://support.workiva.com/hc/en-us/articles/19173586555412-Tips-for-getting-useful-responses-from-Workiva-AI" target="_blank" rel="noopener">Workiva: tips for useful responses</a></li>
+            <li><a href="https://support.workiva.com/hc/en-us/articles/28927643953172-Reference-specific-files-in-chat-with-Workiva-AI" target="_blank" rel="noopener">Workiva: reference files in chat</a></li>
+            <li><a href="https://learn.microsoft.com/en-in/training/modules/write-effective-prompts-do-more-prompting/2-write-effective-prompt" target="_blank" rel="noopener">Microsoft: goal, context, source, expectations</a></li>
+            <li><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/be-clear-and-direct" target="_blank" rel="noopener">Anthropic: be clear and direct</a></li>
+          </ul></div>
+        </div>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap"><p>Everything on this page runs in your browser. Your prompt and files are not uploaded or sent to any AI service; file readers load from a public CDN only when you add that file type. Rewrites are templates filled from your words and files: check them against your source before you use them, and follow your organization's AI policy.</p></div>
+</footer>
+
+<script>/*__ENGINE__*/</script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const K = ['S', 'C', 'O', 'P', 'E'];
+  const META = {
+    S: { word: 'Source', q: 'What should the AI work from?', color: 'var(--blue)', ask: 'Which file, selection, sheet, or knowledge base should Workiva AI read?' },
+    C: { word: 'Context', q: 'What does it need to know?', color: 'var(--purple)', ask: 'Who is this for, or what is it for?' },
+    O: { word: 'Objective', q: 'What single job should it do?', color: 'var(--green)', ask: 'What exactly should come back? Name one job with a finish line.' },
+    P: { word: 'Parameters', q: 'What makes the result useful?', color: 'var(--orange)', ask: 'What format, length, period, or threshold should the answer use?' },
+    E: { word: 'Evaluate', q: 'How will we check it?', color: 'var(--red)', ask: 'How will you check the answer? Add a rule about invented facts.' }
+  };
+  const STAGES = [
+    { key: 'weak', label: 'Weak', verdictLabel: 'why it fails' },
+    { key: 'better', label: 'Better', verdictLabel: 'what improved' },
+    { key: 'strong', label: 'Strong', verdictLabel: 'why it works' }
+  ];
+  const INTENT_NAMES = { variance: 'Explain changes', anomaly: 'Find unusual values', consistency: 'Check consistency / tie-out', errors: 'Find errors', gaps: 'Find gaps', rewrite: 'Rewrite or edit', summarize: 'Summarize', draft: 'Draft new content', extract: 'Extract items', compare: 'Compare', explain: 'Explain a requirement', questions: 'Generate review questions', map: 'Map to a framework', checklist: 'Build steps or a checklist', formula: 'Formula or query help' };
+  const HINTS = [
+    'With nothing on, you’re back to “Analyze this” and the AI has to guess everything.',
+    'One element helps, but the AI is still guessing at most of the job.',
+    'Getting somewhere. Notice what the AI still has to invent.',
+    'Solid. One or two more elements remove the last of the guesswork.',
+    'Almost there. The Evaluate step is what keeps the human in the loop.',
+    'All five: source, situation, one job, useful constraints, and a check. This is the 30-second version of prompt engineering.'
+  ];
+  const EXAMPLES = [
+    { area: 'Sustainability', text: 'Analyze our emissions data.' },
+    { area: 'Financial reporting', text: 'can you look at the flux on the income statement tab for the audit committee' },
+    { area: 'GRC', text: 'Review the selected controls in the RCM and tell me what is missing.' },
+    { area: 'Financial reporting', text: 'Rewrite the highlighted MD&A paragraph for retail investors, about 30% shorter, and keep every number exactly as written.' },
+    { area: 'GRC', text: 'You are an external SOX auditor. Using only the attached RCM, write five walkthrough questions for the revenue process, ranked by risk, and note which control each question tests.' }
+  ];
+
+  const weights = window.SCOPE_WEIGHTS;
+  const detect = (p) => {
+    const r = ScopeModel.predict(p, weights, { mode: weights.mode });
+    return { on: r.on, d: r.rules };
+  };
+
+  const state = { files: [], stage: 0, on: Object.fromEntries(K.map((k) => [k, true])), result: null, openFix: null };
+  for (const [k, v] of Object.entries(INTENT_NAMES)) { const o = document.createElement('option'); o.value = k; o.textContent = v; $('intent').append(o); }
+
+  /* ---------------- live grading ---------------- */
+  let timer = 0;
+  function schedule() { clearTimeout(timer); timer = setTimeout(run, 180); }
+  function run() {
+    const prompt = $('prompt').value;
+    const files = state.files.filter((f) => f.ok);
+    if (!prompt.trim()) { renderEmpty(); return; }
+    const r = ScopeRewrite.coach(prompt, { files, detect, domain: $('domain').value || undefined, intent: $('intent').value || undefined });
+    // one job at a time: a stacked prompt can't be strong
+    r.displayGrade = r.grade === 'strong' && r.hits && ScopeRules.detect(prompt).stacked ? 'better' : r.grade;
+    const prevKey = state.result && state.result.stages.strong.prompt;
+    state.result = r;
+    if (prevKey !== r.stages.strong.prompt) state.on = Object.fromEntries(K.map((k) => [k, true]));
+    state.stage = Math.min(state.stage, 2);
+    renderMeter(prompt); renderStages(); renderScope();
+  }
+  function renderEmpty() {
+    $('mirror').textContent = ''; $('badge').className = 'badge weak'; $('badge').textContent = '—';
+    $('chips').replaceChildren(); $('headline').textContent = 'Type a prompt to see its grade.'; $('notes').replaceChildren(); $('fix').hidden = true;
+  }
+
+  function renderMirror(prompt, r) {
+    // paint each character with the letter of the cue that covers it (first letter wins)
+    const owner = new Array(prompt.length).fill(null);
+    for (const k of ['O', 'S', 'C', 'P', 'E']) {
+      if (!r.detected[k]) continue;
+      for (const h of r.hits[k].hits) if (h.orig) for (let i = h.orig[0]; i < h.orig[1]; i++) if (!owner[i]) owner[i] = k;
+    }
+    const m = $('mirror'); m.replaceChildren();
+    let i = 0;
+    while (i < prompt.length) {
+      let j = i; while (j < prompt.length && owner[j] === owner[i]) j++;
+      const txt = prompt.slice(i, j);
+      if (owner[i]) { const mk = document.createElement('mark'); mk.className = owner[i]; mk.textContent = txt; m.append(mk); } else m.append(txt);
+      i = j;
+    }
+    m.append('\n');
+    m.scrollTop = $('prompt').scrollTop;
+  }
+
+  function renderMeter(prompt) {
+    const r = state.result, g = r.displayGrade;
+    renderMirror(prompt, r);
+    const b = $('badge'); b.className = 'badge ' + g; b.textContent = g;
+    $('headline').textContent = r.displayGrade !== r.grade ? 'All five elements are here, but it asks for several things at once. Split it to make it strong.' : r.headline;
+    const chips = $('chips'); chips.replaceChildren();
+    K.forEach((k) => {
+      const on = r.detected[k];
+      const c = document.createElement('button'); c.type = 'button'; c.className = 'chip' + (on ? '' : ' off');
+      c.setAttribute('aria-expanded', String(state.openFix === k));
+      const i = document.createElement('i'); i.textContent = k; i.style.background = META[k].color;
+      const s = document.createElement('span'); s.textContent = META[k].word;
+      const st = document.createElement('span'); st.className = 'st'; st.textContent = on ? '✓' : 'add';
+      st.setAttribute('aria-label', on ? 'found' : 'missing');
+      c.append(i, s, st);
+      c.onclick = () => { state.openFix = state.openFix === k ? null : k; renderMeter($('prompt').value); };
+      chips.append(c);
+    });
+    renderFix();
+    $('detected').textContent = (!$('domain').value || !$('intent').value) ? 'Detected: ' + ({ FR: 'financial reporting', GRC: 'GRC and audit', SUS: 'sustainability', GEN: 'general' }[r.domain]) + ' · ' + (INTENT_NAMES[r.intent] || r.intent).toLowerCase() : '';
+    const notes = $('notes'); notes.replaceChildren();
+    const pii = /\b[\w.+-]+@[\w-]+\.[\w.]+\b|\b\d{3}-\d{2}-\d{4}\b|\b(?:\d[ -]?){13,16}\b|\bpassword\s*[:=]/i.test(prompt);
+    if (pii) notes.append(note('warn', 'This looks like personal or sensitive data (an email address, ID, card number, or password). Leave it out of AI prompts unless your AI policy allows it.'));
+    for (const n of r.notes) notes.append(note(n.kind === 'grounding' ? 'warn' : '', n.text));
+    for (const t of r.tips) notes.append(note('tip', t, 'Workiva tip: '));
+    if (r.placeholders) notes.append(note('', 'The stronger versions below include [bracketed placeholders]. Replace them with your own details.'));
+  }
+  function note(kind, text, lead) {
+    const d = document.createElement('div'); d.className = 'note' + (kind ? ' ' + kind : '');
+    if (lead) { const b = document.createElement('b'); b.textContent = lead; d.append(b); }
+    d.append(text); return d;
+  }
+
+  function renderFix() {
+    const k = state.openFix, box = $('fix'), r = state.result;
+    if (!k || !r) { box.hidden = true; return; }
+    box.hidden = false; box.replaceChildren();
+    const on = r.detected[k];
+    const h = document.createElement('h4'); h.textContent = (on ? 'Found: ' : 'Missing: ') + META[k].word;
+    const p = document.createElement('p');
+    if (on) {
+      const words = r.hits[k].hits.filter((x) => x.orig).map((x) => $('prompt').value.slice(x.orig[0], x.orig[1]).trim()).filter(Boolean);
+      p.textContent = words.length ? 'Earned by: “' + [...new Set(words)].slice(0, 3).join('”, “') + '”.' : 'Your prompt covers this.';
+      box.append(h, p); return;
+    }
+    p.textContent = META[k].ask;
+    const frag = (r.scope[k].frag || '').trim();
+    const code = document.createElement('code'); code.textContent = frag;
+    const row = document.createElement('div'); row.className = 'row';
+    const add = document.createElement('button'); add.type = 'button'; add.className = 'btn'; add.textContent = 'Add this to my prompt';
+    add.onclick = () => insertLetter(k, frag);
+    row.append(add);
+    if (k === 'S' && state.files.some((f) => f.ok)) {
+      for (const f of state.files.filter((x) => x.ok).slice(0, 3)) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = 'Use @' + f.name;
+        b.onclick = () => insertLetter('S', 'Use only @' + f.name + '.'); row.append(b);
+      }
+    }
+    box.append(h, p, code, row);
+  }
+  function insertLetter(k, frag) {
+    const ta = $('prompt'); let v = ta.value.trim();
+    if (v && !/[.!?]$/.test(v)) v += '.';
+    ta.value = k === 'S' || k === 'C' ? (frag + ' ' + v).trim() : (v + ' ' + frag).trim();
+    state.openFix = null; run(); ta.focus();
+  }
+
+  /* ---------------- ladder ---------------- */
+  function renderStages() {
+    const r = state.result;
+    const tabs = $('stageTabs'); tabs.replaceChildren();
+    STAGES.forEach((s, k) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'stage'; b.role = 'tab'; b.id = 'tab-' + s.key;
+      b.setAttribute('aria-selected', String(k === state.stage)); b.setAttribute('aria-controls', 'stagePanel');
+      b.textContent = s.label;
+      if (s.key === r.grade) { const sm = document.createElement('small'); sm.textContent = 'your prompt'; b.append(sm); }
+      b.onclick = () => { state.stage = k; renderStages(); };
+      tabs.append(b);
+    });
+    const s = STAGES[state.stage], data = r.stages[s.key];
+    const mine = s.key === r.grade;
+    const gi = STAGES.findIndex((x) => x.key === r.grade);
+    $('stageLabel').textContent = mine ? 'your prompt' : state.stage > gi ? 'a ' + s.key + ' version of your prompt' : 'a weaker version, for comparison';
+    const el = $('stagePrompt'); el.replaceChildren();
+    // underline what the coach added (only for rewrites above the user's grade)
+    const showAdded = state.stage > gi;
+    const segs = showAdded ? r.segments.filter((g) => s.key === 'strong' || !g.generated || g.letter === 'S' || g.letter === 'O') : null;
+    if (segs) {
+      el.append('“');
+      const text = ScopeRewrite.assemble(segs, new Set(K));
+      let cursor = 0;
+      for (const g of segs) {
+        if (!g.generated) continue;
+        const t = g.text.trim(); const at = text.indexOf(t, cursor); if (at < 0) continue;
+        appendWithPh(el, text.slice(cursor, at));
+        const sp = document.createElement('span'); sp.className = 'added'; appendWithPh(sp, t); el.append(sp);
+        cursor = at + t.length;
+      }
+      appendWithPh(el, text.slice(cursor)); el.append('”');
+    } else el.textContent = '“' + data.prompt + '”';
+    const lg = $('stageLegend'); lg.replaceChildren();
+    if (showAdded) lg.append(legendItem('rgba(255,255,255,.18)', 'added by the coach'), legendItem('#F8BD4F', '[fill in your details]'));
+    $('verdictLabel').textContent = s.verdictLabel;
+    $('verdictText').textContent = data.verdict;
+  }
+  function appendWithPh(el, text) {
+    const parts = text.split(/(\[[^\]]+\])/);
+    for (const p of parts) { if (!p) continue; if (/^\[[^\]]+\]$/.test(p)) { const s = document.createElement('span'); s.className = 'ph'; s.textContent = p; el.append(s); } else el.append(p); }
+  }
+  function legendItem(color, text) { const s = document.createElement('span'); const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = color; s.append(sw, text); return s; }
+
+  /* ---------------- scope builder ---------------- */
+  function renderScope() {
+    const r = state.result, on = state.on;
+    const list = $('letters'); list.replaceChildren();
+    K.forEach((k) => {
+      const m = META[k], active = on[k], sc = r.scope[k];
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'letter';
+      b.setAttribute('aria-pressed', String(active)); b.style.borderColor = active ? m.color : 'var(--line)';
+      const sq = document.createElement('span'); sq.className = 'sq'; sq.style.background = m.color; sq.textContent = k;
+      const mid = document.createElement('span');
+      const st = document.createElement('strong'); st.textContent = m.word;
+      const q = document.createElement('span'); q.className = 'q'; q.textContent = m.q; mid.append(st, q);
+      const stt = document.createElement('span'); stt.className = 'state'; stt.textContent = active ? 'ON' : 'OFF'; stt.style.color = active ? 'var(--green)' : 'var(--faint)';
+      const who = document.createElement('small'); who.textContent = sc.mine ? 'your words' : 'added'; stt.append(who);
+      const why = document.createElement('span'); why.className = 'why'; why.textContent = sc.why;
+      b.append(sq, mid, stt, why);
+      b.onclick = () => { state.on[k] = !state.on[k]; renderScope(); };
+      list.append(b);
+    });
+    const activeSet = new Set(K.filter((k) => on[k]));
+    const built = $('built'); built.replaceChildren();
+    const segs = r.segments.filter((g) => activeSet.has(g.letter) || (g.inline && g.alt));
+    if (!activeSet.size) built.textContent = '“Analyze this.”';
+    else {
+      // render with an underline per letter, using the same cleanup as assemble()
+      const full = ScopeRewrite.assemble(r.segments, activeSet);
+      built.append('“');
+      let cursor = 0;
+      for (const g of segs) {
+        if (!activeSet.has(g.letter)) continue;
+        const t = g.text.trim().replace(/\s+/g, ' '); if (!t || t === '.') continue;
+        const at = full.toLowerCase().indexOf(t.toLowerCase().replace(/\s+([,.;:!?])/g, '$1'), cursor);
+        if (at < 0) continue;
+        built.append(full.slice(cursor, at));
+        const sp = document.createElement('span'); sp.className = 'seg'; sp.style.textDecorationColor = META[g.letter].color;
+        sp.textContent = full.slice(at, at + t.replace(/\s+([,.;:!?])/g, '$1').length); built.append(sp);
+        cursor = at + sp.textContent.length;
+      }
+      built.append(full.slice(cursor), '”');
+    }
+    $('scopeScore').textContent = activeSet.size + ' / 5 elements';
+    $('hint').textContent = HINTS[activeSet.size];
+  }
+  function builtText() { const a = new Set(K.filter((k) => state.on[k])); return a.size ? ScopeRewrite.assemble(state.result.segments, a) : 'Analyze this.'; }
+
+  /* ---------------- copy ---------------- */
+  function copyFrom(btn, text, el) {
+    const done = () => { btn.textContent = 'copied'; setTimeout(() => { btn.textContent = 'copy'; }, 1400); };
+    const select = () => { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'press ⌘C / Ctrl+C'; setTimeout(() => { btn.textContent = 'copy'; }, 2400); };
+    try { navigator.clipboard.writeText(text).then(done, select); } catch (e) { select(); }
+  }
+  $('copyStage').onclick = (e) => copyFrom(e.currentTarget, state.result.stages[STAGES[state.stage].key].prompt, $('stagePrompt'));
+  $('copyBuilt').onclick = (e) => copyFrom(e.currentTarget, builtText(), $('built'));
+
+  /* ---------------- files ---------------- */
+  function renderFiles() {
+    const box = $('files'); box.replaceChildren();
+    for (const f of state.files) {
+      const row = document.createElement('div'); row.className = 'file';
+      const ext = document.createElement('span'); ext.className = 'ext'; ext.textContent = f.name.split('.').pop();
+      const name = document.createElement('span'); name.className = 'name'; name.textContent = f.name;
+      const meta = document.createElement('span'); meta.className = 'meta' + (f.error ? ' err' : '');
+      if (f.error) meta.textContent = f.error;
+      else if (!f.ok) meta.textContent = 'Reading…';
+      else {
+        const bits = [f.detail];
+        if (f.sheets && f.sheets.length) bits.push('sheets: ' + f.sheets.slice(0, 4).map((s) => s.name).join(', ') + (f.sheets.length > 4 ? '…' : ''));
+        if (f.headings && f.headings.length) bits.push('sections: ' + f.headings.slice(0, 3).join(', ') + (f.headings.length > 3 ? '…' : ''));
+        if (f.slides && f.slides.length) bits.push('slides: ' + f.slides.filter(Boolean).slice(0, 3).join(', ') + '…');
+        if (f.periods && f.periods.length) bits.push('periods: ' + f.periods.join(', '));
+        meta.textContent = bits.filter(Boolean).join(' · ') || 'Ready';
+      }
+      name.append(meta);
+      const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '×'; x.setAttribute('aria-label', 'Remove ' + f.name);
+      x.onclick = () => { state.files = state.files.filter((g) => g !== f); renderFiles(); run(); };
+      row.append(ext, name, x); box.append(row);
+    }
+  }
+  function addFiles(list) {
+    for (const file of list) {
+      const f = { name: file.name, ok: false };
+      state.files.push(f); renderFiles();
+      ScopeFiles.readFile(file).then((r) => { Object.assign(f, r, { ok: true }); if (!r.text || !r.text.trim()) { f.ok = false; f.error = 'No readable text found (scanned or image-only?).'; } })
+        .catch((e) => { f.error = e.message || 'Couldn’t read this file.'; })
+        .finally(() => { renderFiles(); run(); });
+    }
+  }
+  const drop = $('drop'), input = $('fileInput');
+  drop.onclick = () => input.click();
+  drop.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } };
+  input.onchange = () => { addFiles([...input.files]); input.value = ''; };
+  ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => { if (e.dataTransfer && e.dataTransfer.files.length) addFiles([...e.dataTransfer.files]); });
+
+  /* ---------------- examples + wiring ---------------- */
+  for (const ex of EXAMPLES) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'ex';
+    const t = document.createElement('b'); t.textContent = ex.area; b.append(t, ex.text);
+    b.onclick = () => { $('prompt').value = ex.text; $('domain').value = ''; $('intent').value = ''; state.stage = 0; run(); $('prompt').focus(); };
+    $('examples').append(b);
+  }
+  $('prompt').addEventListener('input', schedule);
+  $('prompt').addEventListener('scroll', () => { $('mirror').scrollTop = $('prompt').scrollTop; });
+  $('domain').onchange = run; $('intent').onchange = run;
+  try { const draft = localStorage.getItem('scope-coach-draft'); if (draft) $('prompt').value = draft; } catch (e) { /* storage unavailable */ }
+  $('prompt').addEventListener('input', () => { try { localStorage.setItem('scope-coach-draft', $('prompt').value); } catch (e) { /* ignore */ } });
+  run();
+})();
+</script>
