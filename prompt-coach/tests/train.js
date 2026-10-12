@@ -9,10 +9,25 @@ const args = process.argv.slice(2);
 const mode = args.shift();
 const cvIdx = args.indexOf('--cv');
 const cv = cvIdx >= 0 ? +args.splice(cvIdx, 2)[1] : 0;
+if (args.includes('--tune')) args.splice(args.indexOf('--tune'), 1);
 const out = args.indexOf('--out') >= 0 ? args.splice(args.indexOf('--out'), 2)[1] : path.join(__dirname, '../engine/weights.json');
 const rows = args.flatMap((f) => fs.readFileSync(f, 'utf8').split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l)));
 
-function train(data, { epochs = 30, lr = 0.5, l2 = 1e-4 } = {}) {
+let seed = 12345;
+function rand() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }
+const R = require('../engine/rules.js');
+function train(data, opts = {}) {
+  // average of several seeded runs: same answer every build, less variance
+  const runs = opts.runs || 5, acc = {};
+  for (let r = 0; r < runs; r++) {
+    seed = 1000 + r * 7919;
+    const W = trainOnce(data, opts);
+    for (const k of K) { acc[k] = acc[k] || { b: 0, v: {} }; acc[k].b += W.w[k].b / runs; for (const [i, x] of Object.entries(W.w[k].v)) acc[k].v[i] = (acc[k].v[i] || 0) + x / runs; }
+  }
+  for (const k of K) { for (const i of Object.keys(acc[k].v)) { const x = +acc[k].v[i].toFixed(3); if (Math.abs(x) < 0.002) delete acc[k].v[i]; else acc[k].v[i] = x; } acc[k].b = +acc[k].b.toFixed(4); }
+  return { mode, w: acc, thr: Object.fromEntries(K.map((k) => [k, 0.5])) };
+}
+function trainOnce(data, { epochs = 30, lr = 0.5, l2 = 1e-4 } = {}) {
   const X = data.map((r) => M.featurize(r.prompt, { mode }).x);
   const w = {};
   for (const k of K) {
@@ -21,7 +36,7 @@ function train(data, { epochs = 30, lr = 0.5, l2 = 1e-4 } = {}) {
     const wPos = data.length / (2 * Math.max(pos, 1)), wNeg = data.length / (2 * Math.max(neg, 1)); // class balance
     const order = data.map((_, i) => i);
     for (let ep = 0; ep < epochs; ep++) {
-      for (let i = order.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [order[i], order[j]] = [order[j], order[i]]; }
+      for (let i = order.length - 1; i > 0; i--) { const j = (rand() * (i + 1)) | 0; [order[i], order[j]] = [order[j], order[i]]; }
       const rate = lr / (1 + ep * 0.15);
       for (const i of order) {
         const x = X[i]; let z = b; for (const [h, val] of x) z += v[h] * val;
@@ -38,7 +53,7 @@ function train(data, { epochs = 30, lr = 0.5, l2 = 1e-4 } = {}) {
 }
 
 if (cv) {
-  const idx = rows.map((_, i) => i).sort(() => Math.random() - 0.5);
+  seed = 99; const idx = rows.map((_, i) => i).sort(() => rand() - 0.5);
   const agg = Object.fromEntries(K.map((k) => [k, { tp: 0, fp: 0, fn: 0 }])); let gOk = 0;
   const R = require('../engine/rules.js');
   for (let f = 0; f < cv; f++) {
@@ -55,6 +70,24 @@ if (cv) {
   console.log(`CV(${cv}) mode=${mode} grade acc=${(gOk / rows.length).toFixed(3)}`);
 } else {
   const W = train(rows);
+  if (process.argv.includes('--tune')) {
+    // out-of-fold probabilities -> per-letter thresholds that maximize grade accuracy on training data
+    seed = 7; const idx = rows.map((_, i) => i).sort(() => rand() - 0.5); const folds = 5; const oof = new Array(rows.length);
+    for (let f = 0; f < folds; f++) {
+      const teI = new Set(idx.filter((_, j) => j % folds === f));
+      const Wf = train(rows.filter((_, i) => !teI.has(i)), { runs: 3 });
+      for (const i of teI) oof[i] = M.predict(rows[i].prompt, Wf, { mode }).prob;
+    }
+    const gold = rows.map((r) => R.grade(Object.fromEntries(K.map((k) => [k, !!r[k]]))));
+    const thr = Object.fromEntries(K.map((k) => [k, 0.5]));
+    const score = () => oof.reduce((a, p, i) => a + (R.grade(Object.fromEntries(K.map((k) => [k, p[k] >= thr[k]]))) === gold[i] ? 1 : 0), 0);
+    for (let pass = 0; pass < 3; pass++) for (const k of K) {
+      let best = thr[k], bs = -1;
+      for (let t = 0.3; t <= 0.701; t += 0.025) { thr[k] = t; const sc = score(); if (sc > bs) { bs = sc; best = +t.toFixed(3); } }
+      thr[k] = best;
+    }
+    W.thr = thr; console.log('tuned thresholds', JSON.stringify(thr), 'oof grade acc', (score() / rows.length).toFixed(3));
+  }
   fs.writeFileSync(out, JSON.stringify(W));
   console.log('wrote', out, (fs.statSync(out).size / 1024).toFixed(0) + ' KB', K.map((k) => k + ':' + Object.keys(W.w[k].v).length).join(' '));
 }
