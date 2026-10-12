@@ -1,0 +1,14 @@
+@import './tokens/fig-tokens.css';
+@import './tokens/colors.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+@import './components/core/fig-assets.css';
+
+* { box-sizing: border-box; }
+body {
+  font-family: var(--font-brand);
+  color: var(--text-primary);
+  background: var(--surface-page);
+}
+a { color: var(--link-color); text-decoration: none; }
+a:hover { color: var(--link-hover); text-decoration: underline; }

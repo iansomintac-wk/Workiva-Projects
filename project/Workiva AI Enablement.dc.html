@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <template id="__bundler_thumbnail" data-bg-color="#FCF4E8"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#FCF4E8"></rect><text x="60" y="74" text-anchor="middle" font-family="sans-serif" font-size="44" font-weight="900" fill="#333333">w</text><circle cx="86" cy="38" r="7" fill="#FBAD17"></circle></svg></template>
+  <link rel="stylesheet" href="_ds/workiva-design-system-cd9c7bfa-8ed4-4a1f-a090-25c8d6659f4b/tokens/fig-tokens.css">
+  <link rel="stylesheet" href="_ds/workiva-design-system-cd9c7bfa-8ed4-4a1f-a090-25c8d6659f4b/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/workiva-design-system-cd9c7bfa-8ed4-4a1f-a090-25c8d6659f4b/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/workiva-design-system-cd9c7bfa-8ed4-4a1f-a090-25c8d6659f4b/tokens/spacing.css">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap">
+  <script src="_ds/workiva-design-system-cd9c7bfa-8ed4-4a1f-a090-25c8d6659f4b/_ds_bundle.js"></script>
+  <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+  <script src="wk-three.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--color-warm-light); color: var(--color-steel); font-family: var(--font-brand); }
+    a { color: var(--color-link-blue); text-decoration: none; }
+    a:hover { color: var(--color-poseidon); }
+  </style>
+</helmet>
+<div style="min-height: 100vh; background: var(--color-warm-light); color: var(--color-steel); font-family: var(--font-brand); position: relative; overflow: hidden; display: flex; flex-direction: column;">
+  <x-import component-from-global-scope="wk-field" accent="#333333" density="22" opacity="0.16" hint-size="100%,100%"></x-import>
+  <header style="position: relative; display: flex; align-items: center; justify-content: space-between; padding: 22px 48px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 93px; height: 22px; overflow: hidden; flex-shrink: 0;"><div style="width: 1266px; height: 300px; transform: scale(0.0733); transform-origin: top left;"><x-import component-from-global-scope="WorkivaDesignSystem_cd9c7b.WorkivaLogoSteelEn" hint-size="1266px,300px"></x-import></div></div>
+      <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-storm-cloud);">AI enablement</span>
+    </div>
+    <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-storm-cloud);">internal · sales &amp; customer success</span>
+  </header>
+  <main style="position: relative; flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 60px 48px 90px; max-width: 1280px; width: 100%; margin: 0 auto;">
+    <h1 style="margin: 0; font-size: clamp(64px, 9vw, 128px); font-weight: 900; line-height: 0.98; letter-spacing: -0.005em; text-transform: lowercase;">pick your<br>edition</h1>
+    <p style="max-width: 560px; font-size: 19px; line-height: 1.5; margin: 32px 0 48px; text-wrap: pretty;">Three guides to Workiva AI, each built around a solution. The team editions carry talk tracks, objection handling, and call evidence; the customer editions are safe to present.</p>
+    <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud); margin-bottom: 14px;">present to customers</div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 40px;">
+      <a href="Workiva AI for Financial Reporting.dc.html" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; background: var(--color-paper); border: 2px solid var(--color-link-blue); color: var(--color-steel); border-radius: 20px; padding: 22px 28px; transition: transform 0.2s ease;" style-hover="transform: translateY(-3px); color: var(--color-steel);">
+        <span><strong style="display: block; font-size: 20px; font-weight: 900; letter-spacing: -0.005em; text-transform: lowercase;">financial reporting</strong><span style="font-size: 13.5px; color: var(--color-storm-cloud);">for controllers and SEC reporting teams</span></span>
+        <span style="font-size: 13px; font-weight: 800; color: var(--color-link-blue); white-space: nowrap;">open →</span>
+      </a>
+      <a href="Workiva AI for GRC.dc.html" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; background: var(--color-paper); border: 2px solid var(--color-mr-toad); color: var(--color-steel); border-radius: 20px; padding: 22px 28px; transition: transform 0.2s ease;" style-hover="transform: translateY(-3px); color: var(--color-steel);">
+        <span><strong style="display: block; font-size: 20px; font-weight: 900; letter-spacing: -0.005em; text-transform: lowercase;">governance, risk &amp; compliance</strong><span style="font-size: 13.5px; color: var(--color-storm-cloud);">for audit, risk, and compliance teams</span></span>
+        <span style="font-size: 13px; font-weight: 800; color: var(--color-mr-toad); white-space: nowrap;">open →</span>
+      </a>
+      <a href="Workiva AI for Sustainability.dc.html" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; background: var(--color-paper); border: 2px solid var(--color-forest); color: var(--color-steel); border-radius: 20px; padding: 22px 28px; transition: transform 0.2s ease;" style-hover="transform: translateY(-3px); color: var(--color-steel);">
+        <span><strong style="display: block; font-size: 20px; font-weight: 900; letter-spacing: -0.005em; text-transform: lowercase;">sustainability</strong><span style="font-size: 13.5px; color: var(--color-storm-cloud);">for ESG and sustainability reporting teams</span></span>
+        <span style="font-size: 13px; font-weight: 800; color: var(--color-forest); white-space: nowrap;">open →</span>
+      </a>
+    </div>
+    <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud); margin-bottom: 14px;">team enablement · internal only</div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+      <a href="Workiva AI - Financial Reporting.dc.html" style="display: grid; grid-template-columns: 1fr 160px; gap: 16px; align-items: center; background: var(--color-link-blue); color: var(--color-paper); border-radius: 40px 40px 40px 8px; padding: 40px 44px; min-height: 260px; position: relative; overflow: hidden; transition: transform 0.2s ease;" style-hover="transform: translateY(-4px); color: var(--color-paper);">
+        <div style="position: absolute; inset: 0; opacity: 0.14; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+        <div style="position: relative;">
+          <div style="font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-bottom: 14px;">edition one · 6 chapters</div>
+          <div style="font-size: clamp(26px, 2.6vw, 36px); font-weight: 900; line-height: 1; letter-spacing: -0.005em; text-transform: lowercase;">financial<br>reporting</div>
+          <p style="margin: 18px 0 0; font-size: 15px; line-height: 1.5; opacity: 0.92;">10-K narrative, footnotes, tie-outs, and peer benchmarking with SEC Filing Intelligence.</p>
+        </div>
+        <x-import component-from-global-scope="wk-object" shape="ledger" accent="#FBAD17" secondary="#FCF4E8" tertiary="#7CBEFF" style="height: 160px;" hint-size="160px,160px"></x-import>
+      </a>
+      <a href="Workiva AI - GRC.dc.html" style="display: grid; grid-template-columns: 1fr 160px; gap: 16px; align-items: center; background: var(--color-mr-toad); color: var(--color-paper); border-radius: 40px 40px 8px 40px; padding: 40px 44px; min-height: 260px; position: relative; overflow: hidden; transition: transform 0.2s ease;" style-hover="transform: translateY(-4px); color: var(--color-paper);">
+        <div style="position: absolute; inset: 0; opacity: 0.14; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+        <div style="position: relative;">
+          <div style="font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-bottom: 14px;">edition two · 6 chapters</div>
+          <div style="font-size: clamp(26px, 2.6vw, 36px); font-weight: 900; line-height: 1; letter-spacing: -0.005em; text-transform: lowercase;">governance,<br>risk &amp; compliance</div>
+          <p style="margin: 18px 0 0; font-size: 15px; line-height: 1.5; opacity: 0.92;">Control matrices, framework coverage, remediation drafting, and the flowchart visualizer.</p>
+        </div>
+        <x-import component-from-global-scope="wk-object" shape="graph" accent="#FBAD17" secondary="#FCF4E8" tertiary="#333333" style="height: 160px;" hint-size="160px,160px"></x-import>
+      </a>
+      <a href="Workiva AI - Sustainability.dc.html" style="display: grid; grid-template-columns: 1fr 160px; gap: 16px; align-items: center; background: var(--color-forest); color: var(--color-paper); border-radius: 8px 40px 40px 40px; padding: 40px 44px; min-height: 260px; position: relative; overflow: hidden; transition: transform 0.2s ease;" style-hover="transform: translateY(-4px); color: var(--color-paper);">
+        <div style="position: absolute; inset: 0; opacity: 0.14; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+        <div style="position: relative;">
+          <div style="font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-bottom: 14px;">edition three · 6 chapters</div>
+          <div style="font-size: clamp(26px, 2.6vw, 36px); font-weight: 900; line-height: 1; letter-spacing: -0.005em; text-transform: lowercase;">sustainability</div>
+          <p style="margin: 18px 0 0; font-size: 15px; line-height: 1.5; opacity: 0.92;">Emissions variance, pre-assurance anomaly checks, ESRS / ISSB Intelligence, and the Disclosure Agent.</p>
+        </div>
+        <x-import component-from-global-scope="wk-object" shape="sparkle" accent="#FBAD17" secondary="#FCF4E8" style="height: 160px;" hint-size="160px,160px"></x-import>
+      </a>
+    </div>
+  </main>
+  <footer style="position: relative; padding: 24px 48px; border-top: 1px solid var(--color-ethereal); font-size: 13px; color: var(--color-storm-cloud);">Built from Workiva AI support and release guidance · Sept 2026</footer>
+</div>
+</x-dc>
+</body>
+</html>

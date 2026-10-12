@@ -1,0 +1,50 @@
+{
+  "placeholder": false,
+  "note": "Strict audit of the Gong FR archetype audit, Sept 3 2026. See FR evidence audit.md. Only first-person quotes that name the task count.",
+  "keptCount": "two",
+  "patterns": [
+    {
+      "archetype": "narrative-to-number consistency review",
+      "strength": "CUSTOMER-SPECIFIC",
+      "customers": 1,
+      "operation": "CHECK · COMPARE",
+      "quotes": [
+        { "text": "We have a lot of internal inconsistencies with different tables… I'm trying to build in these kind of manual checks and balances", "who": "mid-cap restaurant & entertainment" }
+      ],
+      "listenFor": [
+        "\"The tables don't agree with each other.\"",
+        "\"We built our own checks.\"",
+        "\"Someone has to read everything before it goes out.\""
+      ],
+      "askLabel": "ask · listen, then probe",
+      "discovery": "When the document is nearly final, what does your team still verify by hand across the tables, the narrative, and the schedules?",
+      "talkTrack": "You said you're building manual checks for inconsistencies between tables. That's a first pass Workiva AI can take inside the document, with your team confirming anything it flags.",
+      "availability": "included"
+    },
+    {
+      "archetype": "GAAP-to-statutory reconciliation",
+      "strength": "CUSTOMER-SPECIFIC",
+      "customers": 1,
+      "operation": "TIE-OUT · EXPLAIN",
+      "quotes": [
+        { "text": "Wait, you do GAAP to stat? Tell me more… I'm over here manually doing this", "who": "mid-cap print & communications" }
+      ],
+      "listenFor": [
+        "\"We reconcile GAAP to stat by hand.\"",
+        "\"Every entity has its own adjustments.\"",
+        "\"We explain the same differences every year.\""
+      ],
+      "askLabel": "ask · listen, then probe",
+      "discovery": "When you reconcile GAAP to statutory, how much of the time is the math, and how much is explaining and documenting the differences?",
+      "talkTrack": "You mentioned doing GAAP-to-stat manually. Once the numbers are in Workiva, the explanation of each difference is something Workiva AI can draft from the reconciliation for your team to verify.",
+      "availability": "included"
+    }
+  ],
+  "gaps": [
+    { "archetype": "variance narrative for the MD&A", "operation": "ANALYZE · EXPLAIN · DRAFT" },
+    { "archetype": "peer disclosure benchmarking", "operation": "RESEARCH · COMPARE" },
+    { "archetype": "multi-contributor commentary consolidation", "operation": "SUMMARIZE · REWRITE" },
+    { "archetype": "year-over-year change identification", "operation": "COMPARE · EXTRACT" },
+    { "archetype": "earnings call preparation", "operation": "DRAFT · SUMMARIZE" }
+  ]
+}

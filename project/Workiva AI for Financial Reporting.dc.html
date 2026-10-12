@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <template id="__bundler_thumbnail" data-bg-color="#FCF4E8"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#FCF4E8"></rect><text x="60" y="74" text-anchor="middle" font-family="sans-serif" font-size="44" font-weight="900" fill="#333333">w</text><circle cx="86" cy="38" r="7" fill="#0074E8"></circle></svg></template>
+  <link rel="stylesheet" href="_ds/workiva-design-system-cd9c7bfa-8ed4-4a1f-a090-25c8d6659f4b/tokens/fig-tokens.css">
+  <link rel="stylesheet" href="_ds/workiva-design-system-cd9c7bfa-8ed4-4a1f-a090-25c8d6659f4b/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/workiva-design-system-cd9c7bfa-8ed4-4a1f-a090-25c8d6659f4b/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/workiva-design-system-cd9c7bfa-8ed4-4a1f-a090-25c8d6659f4b/tokens/spacing.css">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap">
+  <script src="_ds/workiva-design-system-cd9c7bfa-8ed4-4a1f-a090-25c8d6659f4b/_ds_bundle.js"></script>
+  <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+  <script src="wk-three.js"></script>
+  <style>
+    html { scroll-behavior: smooth; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--color-warm-light); color: var(--color-steel); font-family: var(--font-brand); }
+    a { color: var(--color-link-blue); text-decoration: none; }
+    a:hover { color: var(--color-poseidon); }
+    ::selection { background: var(--color-presentation); color: var(--color-steel); }
+  </style>
+</helmet>
+<div style="min-height: 100vh; background: var(--color-warm-light); color: var(--color-steel); font-family: var(--font-brand);">
+  <div style="position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 60; background: rgba(51,51,51,0.08);">
+    <div style="height: 100%; background: var(--color-link-blue); width: {{ progressW }};"></div>
+  </div>
+  <header style="position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 16px 48px; background: rgba(252,244,232,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--color-ethereal);">
+    <a href="#top" style="display: flex; align-items: center; gap: 12px; color: var(--color-steel);">
+      <div style="width: 93px; height: 22px; overflow: hidden; flex-shrink: 0;"><div style="width: 1266px; height: 300px; transform: scale(0.0733); transform-origin: top left;"><x-import component-from-global-scope="WorkivaDesignSystem_cd9c7b.WorkivaLogoSteelEn" hint-size="1266px,300px"></x-import></div></div>
+      <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-storm-cloud); white-space: nowrap;">workiva ai · financial reporting</span>
+    </a>
+    <nav style="display: flex; gap: 18px; font-size: 13px; font-weight: 600; flex-wrap: wrap; justify-content: flex-end; white-space: nowrap;">
+      <a href="#what" style="color: var(--color-steel);" style-hover="color: var(--color-link-blue);">01 what</a>
+      <a href="#capabilities" style="color: var(--color-steel);" style-hover="color: var(--color-purple-mountain);">02 capabilities</a>
+      <a href="#use-cases" style="color: var(--color-steel);" style-hover="color: var(--color-mr-toad);">03 use cases</a>
+      <a href="#demo" style="color: var(--color-steel);" style-hover="color: var(--color-cheetah);">04 walkthrough</a>
+      <a href="#talk-tracks" style="color: var(--color-steel);" style-hover="color: var(--color-storm-cloud);">05 questions</a>
+      <a href="#roadmap" style="color: var(--color-steel);" style-hover="color: var(--color-poseidon);">06 roadmap</a>
+    </nav>
+  </header>
+
+  <section id="top" data-screen-label="Hero" style="position: relative; padding: 110px 48px 100px; overflow: hidden; min-height: 80vh;">
+    <x-import component-from-global-scope="wk-field" accent="#333333" density="22" opacity="0.18" hint-size="100%,100%"></x-import>
+    <div style="position: relative; max-width: 1180px; margin: 0 auto;">
+      <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud); margin-bottom: 40px;">
+        <span>a guide for financial reporting teams</span>
+        <span>six chapters, one scroll</span>
+      </div>
+      <h1 style="margin: 0; font-size: clamp(72px, 11vw, 156px); font-weight: 900; line-height: 0.98; letter-spacing: -0.005em; text-transform: lowercase;">workiva ai,<br>inside the<br><span style="color: var(--color-link-blue);">filing</span></h1>
+      <p style="max-width: 580px; font-size: 19px; line-height: 1.5; margin: 42px 0 0; color: var(--color-steel); text-wrap: pretty;">A practical guide to Workiva AI for your reporting team: what it is, where it lives, the tasks it speeds up, and how to get a useful result on day one.</p>
+      <div style="display: flex; gap: 14px; margin-top: 36px; align-items: center;">
+        <a href="#what" style="display: inline-flex; align-items: center; justify-content: center; padding: 14px 28px; border-radius: 8px; background: var(--color-link-blue); color: var(--color-paper); font-size: 16px; font-weight: 700; line-height: 1; white-space: nowrap; transition: background 0.15s ease;" style-hover="background: var(--color-poseidon); color: var(--color-paper);">Start with chapter one</a>
+        <a href="#start" style="font-size: 15px; font-weight: 700; color: var(--color-steel);" style-hover="color: var(--color-link-blue);">Skip to getting started →</a>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Thesis" style="padding: 90px 48px; background: var(--color-steel); position: relative; overflow: hidden;">
+    <div style="position: absolute; inset: 0; opacity: 0.18; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+    <div style="position: relative; max-width: 1180px; margin: 0 auto;">
+      <div style="font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-stainless); margin-bottom: 34px;">the one idea</div>
+      <div style="background: var(--color-warm-light); border-radius: 99px; padding: 64px 84px;">
+        <p style="margin: 0; font-size: clamp(24px, 3vw, 38px); font-weight: 800; line-height: 1.25; letter-spacing: -0.005em; color: var(--color-steel); text-wrap: pretty;">Workiva AI is most useful when you give it <span style="color: var(--color-link-blue);">a real reporting task</span>, <span style="color: var(--color-purple-mountain);">the source data or document it should read</span>, and <span style="color: var(--color-mr-toad);">a clear picture of what a useful answer looks like</span>.</p>
+      </div>
+      <p style="max-width: 640px; margin: 34px 0 0; font-size: 16px; line-height: 1.55; color: var(--color-ethereal);">Quick wins come from tasks that are repetitive and text-heavy: drafting, explaining, and checking. You don't need to learn "AI" — find one of those tasks in your close and remove part of it this quarter.</p>
+    </div>
+  </section>
+
+  <section data-screen-label="Why Workiva AI" style="padding: 96px 48px 40px;">
+    <div style="max-width: 1180px; margin: 0 auto;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--color-steel); padding-bottom: 18px; margin-bottom: 44px; gap: 24px; flex-wrap: wrap;">
+        <h2 style="margin: 0; font-size: clamp(38px, 5vw, 62px); font-weight: 900; letter-spacing: -0.005em; line-height: 1; text-transform: lowercase;">why workiva is building this</h2>
+        <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud);">from the amplify keynote</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch;">
+        <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 24px; padding: 36px; display: flex; flex-direction: column; gap: 16px;">
+          <div style="font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-link-blue);">the shift</div>
+          <h3 style="margin: 0; font-size: clamp(24px, 2.6vw, 34px); font-weight: 900; letter-spacing: -0.005em; line-height: 1.1; text-transform: lowercase; text-wrap: pretty;">software that helps <span style="color: var(--color-link-blue);">→</span> software that does the work</h3>
+          <p style="margin: 0; font-size: 15.5px; line-height: 1.6; text-wrap: pretty;">Enterprise software has always run on one model: you do the work and the software helps by organizing, connecting, and speeding things up. AI breaks that model. Software can now understand what needs to happen and do it.</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: auto;">
+            <div style="background: var(--color-warm-light); border-radius: 14px; padding: 18px 20px;">
+              <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud); margin-bottom: 8px;">old model</div>
+              <p style="margin: 0; font-size: 14px; line-height: 1.5;">Your team decides in a meeting that you need to know why revenue moved in one segment. That becomes an action item for the controller.</p>
+            </div>
+            <div style="background: var(--color-steel); color: var(--color-warm-light); border-radius: 14px; padding: 18px 20px;">
+              <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-cool-ranch); margin-bottom: 8px;">new model</div>
+              <p style="margin: 0; font-size: 14px; line-height: 1.5;">The software is already pulling the two periods, comparing them, and drafting the variance narrative before the meeting ends.</p>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 22px;">
+          <div style="background: var(--color-steel); color: var(--color-warm-light); border-radius: 24px; padding: 36px; position: relative; overflow: hidden; flex: 1;">
+            <div style="position: absolute; inset: 0; opacity: 0.14; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+            <div style="position: relative; display: flex; flex-direction: column; gap: 14px; height: 100%;">
+              <div style="font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-robins-egg);">the line that never moves</div>
+              <h3 style="margin: 0; font-size: clamp(24px, 2.6vw, 34px); font-weight: 900; letter-spacing: -0.005em; line-height: 1.1; text-transform: lowercase;">traceable. governed. defensible.</h3>
+              <p style="margin: 0; font-size: 15.5px; line-height: 1.6; color: var(--color-silver-diva); text-wrap: pretty;">More automation means more decisions about how much control to hand over, and you make that choice. Self-driving on a familiar route in good weather feels fine; on an icy mountain road you want the wheel back. Every AI action explains itself, respects permissions, and holds up to an audit. That isn’t a constraint on the AI story. It is the AI story.</p>
+              <p style="margin: auto 0 0; font-size: 17px; font-weight: 800; line-height: 1.4; background: var(--color-warm-light); color: var(--color-steel); border-radius: 14px; padding: 18px 22px;">“More of the work gets done, you stay in control, and you can trust the result.” <span style="display: block; margin-top: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-storm-cloud);">Julie Iskow, President &amp; CEO</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="background: var(--color-tertiary-sky); border-radius: 24px; padding: 28px 36px; margin-top: 22px; display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: center;">
+        <div style="font-size: clamp(30px, 3vw, 40px); font-weight: 900; letter-spacing: -0.01em; line-height: 1; color: var(--color-poseidon); white-space: nowrap;">5.3 billion</div>
+        <p style="margin: 0; font-size: 14.5px; line-height: 1.55; text-wrap: pretty;">Means nothing on its own. Add revenue, for which period, which segment, how it compares to last year, and suddenly it can be analyzed, explained, and questioned. Workiva AI is moving from the value in a cell to understanding what that number is, where it came from, and what it connects to. That understanding is what lets it take on more of the work well, not just faster.</p>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Outcomes" style="padding: 40px 48px 96px;">
+    <div style="max-width: 1180px; margin: 0 auto;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--color-steel); padding-bottom: 18px; margin-bottom: 48px;">
+        <h2 style="margin: 0; font-size: clamp(38px, 5vw, 62px); font-weight: 900; letter-spacing: -0.005em; line-height: 1; text-transform: lowercase;">what you'll be able to do</h2>
+        <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud);">five outcomes</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <sc-for list="{{ outcomes }}" as="o" hint-placeholder-count="5">
+          <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 14px;">
+            <span style="font-size: 15px; font-weight: 900; color: {{ o.color }};">{{ o.num }}</span>
+            <p style="margin: 0; font-size: 16px; line-height: 1.5; font-weight: 600; text-wrap: pretty;">{{ o.text }}</p>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 01 WHAT IT IS ================= -->
+  <section id="what" data-screen-label="Ch1 Hero" style="position: relative; padding: 100px 48px 90px; background: var(--color-link-blue); color: var(--color-paper); overflow: hidden;">
+    <div style="position: absolute; inset: 0; opacity: 0.14; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+    <div style="position: relative; max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center;">
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 36px; opacity: 0.85;">
+          <span>chapter one</span><span>01 / 06</span>
+        </div>
+        <h1 style="margin: 0; font-size: clamp(56px, 8vw, 116px); font-weight: 900; line-height: 0.98; letter-spacing: -0.005em; text-transform: lowercase;">what<br>workiva ai is</h1>
+        <p style="max-width: 560px; font-size: 19px; line-height: 1.5; margin: 36px 0 0; text-wrap: pretty;">A secure, integrated assistant built into the Workiva platform. Not a separate chatbot you paste into — it reads the document, spreadsheet, or filing you're already working in.</p>
+      </div>
+      <x-import component-from-global-scope="wk-object" shape="sparkle" accent="#FCF4E8" secondary="#7CBEFF" style="height: 460px;" hint-size="100%,460px"></x-import>
+    </div>
+  </section>
+
+  <section data-screen-label="Where it shows up" style="padding: 96px 48px 40px;">
+    <div style="max-width: 1180px; margin: 0 auto;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--color-steel); padding-bottom: 18px; margin-bottom: 44px;">
+        <h2 style="margin: 0; font-size: clamp(34px, 4.4vw, 56px); font-weight: 900; letter-spacing: -0.005em; line-height: 1; text-transform: lowercase;">three places it shows up</h2>
+        <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud);">where to find them</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;">
+        <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 20px; padding: 34px; display: flex; flex-direction: column; gap: 14px;">
+          <x-import component-from-global-scope="WorkivaDesignSystem_cd9c7b.Icon" name="SparkleSizeMedium" size="{{ n40 }}" style="color: var(--color-link-blue);" hint-size="40px,40px"></x-import>
+          <h3 style="margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.005em;">Global chat</h3>
+          <p style="margin: 0; font-size: 15px; line-height: 1.55; text-wrap: pretty;">Available anywhere in the platform, including mobile. Ask questions, brainstorm, attach reference files (PDF, DOCX) for analysis, and iterate turn by turn.</p>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--color-storm-cloud);">Best for: questions, first drafts, working through a problem.</p>
+        </div>
+        <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 20px; padding: 34px; display: flex; flex-direction: column; gap: 14px;">
+          <x-import component-from-global-scope="WorkivaDesignSystem_cd9c7b.Icon" name="FinanceReportSizeMedium" size="{{ n40 }}" style="color: var(--color-purple-mountain);" hint-size="40px,40px"></x-import>
+          <h3 style="margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.005em;">File companions</h3>
+          <p style="margin: 0; font-size: 15px; line-height: 1.55; text-wrap: pretty;">A panel inside Documents and Spreadsheets that reads the current file. Select a table or paragraph, then edit inline, generate content, or use pre-built quick edits.</p>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--color-storm-cloud);">Best for: summarizing tables, drafting footnotes, tightening MD&amp;A.</p>
+        </div>
+        <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 20px; padding: 34px; display: flex; flex-direction: column; gap: 14px;">
+          <x-import component-from-global-scope="WorkivaDesignSystem_cd9c7b.Icon" name="BinocularsSizeMedium" size="{{ n40 }}" style="color: var(--color-mr-toad);" hint-size="40px,40px"></x-import>
+          <h3 style="margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.005em;">SEC Filing Intelligence</h3>
+          <p style="margin: 0; font-size: 15px; line-height: 1.55; text-wrap: pretty;">Load peer 10-Ks and 10-Qs and ask the AI to compare disclosures, surface trends, or list the language competitors use.</p>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--color-storm-cloud);">Best for: benchmarking, disclosure gap checks, peer research.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Governance" style="padding: 40px 48px 96px;">
+    <div style="max-width: 1180px; margin: 0 auto; background: var(--color-steel); color: var(--color-warm-light); border-radius: 28px; padding: 52px 56px; position: relative; overflow: hidden;">
+      <div style="position: absolute; inset: 0; opacity: 0.14; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+      <div style="position: relative; display: grid; grid-template-columns: 1fr 1.1fr; gap: 44px; align-items: start;">
+        <div>
+          <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-robins-egg); margin-bottom: 16px;">security, first</div>
+          <h2 style="margin: 0 0 18px; font-size: clamp(28px, 3.4vw, 44px); font-weight: 900; letter-spacing: -0.005em; line-height: 1.05; text-transform: lowercase; text-wrap: pretty;">your data stays in workiva</h2>
+          <p style="margin: 0; font-size: 15.5px; line-height: 1.6; color: var(--color-silver-diva); text-wrap: pretty;">The questions your security and legal teams will ask, answered plainly.</p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{ facts }}" as="f" hint-placeholder-count="4">
+            <div style="display: flex; align-items: flex-start; gap: 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: 12px; padding: 16px 20px; font-size: 15px; font-weight: 600; line-height: 1.45;">
+              <x-import component-from-global-scope="WorkivaDesignSystem_cd9c7b.Icon" name="CheckSizeSmall" size="{{ n20 }}" style="color: var(--color-ectoplasm); flex-shrink: 0; margin-top: 2px;" hint-size="20px,20px"></x-import>
+              <span>{{ f }}</span>
+            </div>
+          </sc-for>
+          <p style="margin: 12px 0 0; font-size: 15px; line-height: 1.55; font-weight: 700; background: var(--color-warm-light); color: var(--color-steel); border-radius: 12px; padding: 16px 20px;">In short: it operates inside the Workiva environment you already control. Your data isn't used to train it, your existing permissions still apply, and your own AI policy still governs what you put in.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 02 CAPABILITIES ================= -->
+  <section id="capabilities" data-screen-label="Ch2 Hero" style="position: relative; padding: 100px 48px 90px; background: var(--color-purple-mountain); color: var(--color-paper); overflow: hidden;">
+    <div style="position: absolute; inset: 0; opacity: 0.14; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+    <div style="position: relative; max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center;">
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 36px; opacity: 0.85;">
+          <span>chapter two</span><span>02 / 06</span>
+        </div>
+        <h1 style="margin: 0; font-size: clamp(56px, 8vw, 116px); font-weight: 900; line-height: 0.98; letter-spacing: -0.005em; text-transform: lowercase;">key<br>capabilities</h1>
+        <p style="max-width: 560px; font-size: 19px; line-height: 1.5; margin: 36px 0 0; text-wrap: pretty;">Think of the capabilities as a stack: the further down you go, the more context the AI already has, and the less you have to explain in the prompt.</p>
+      </div>
+      <x-import component-from-global-scope="wk-object" shape="stack" accent="#FBAD17" secondary="#FCF4E8" tertiary="#D5B1EB" style="height: 460px;" hint-size="100%,460px"></x-import>
+    </div>
+  </section>
+
+  <section data-screen-label="Capability explorer" style="padding: 96px 48px;">
+    <div style="max-width: 1180px; margin: 0 auto;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--color-steel); padding-bottom: 18px; margin-bottom: 20px;">
+        <h2 style="margin: 0; font-size: clamp(34px, 4.4vw, 56px); font-weight: 900; letter-spacing: -0.005em; line-height: 1; text-transform: lowercase;">eight capabilities, one stack</h2>
+        <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud);">click a layer</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-storm-cloud); margin-bottom: 8px;">
+        <span>general</span><span>grounded in the filing</span>
+      </div>
+      <div style="height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--color-stainless), var(--color-purple-mountain)); margin-bottom: 36px;"></div>
+      <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 36px; align-items: stretch;">
+        <x-import component-from-global-scope="wk-layers" selected="{{ selLayer }}" sc-camel-on-layerselect="{{ onLayerSelect }}" colors="[&quot;#B2B2B2&quot;,&quot;#7CBEFF&quot;,&quot;#8C4CBD&quot;,&quot;#0074E8&quot;,&quot;#66CC66&quot;,&quot;#FBAD17&quot;,&quot;#F89119&quot;,&quot;#333333&quot;]" style="min-height: 520px; border-radius: 24px; background: var(--color-paper); border: 1px solid var(--color-ethereal);" hint-size="100%,520px"></x-import>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{ layers }}" as="l" hint-placeholder-count="8">
+            <button sc-camel-on-click="{{ l.select }}" style="text-align: left; display: grid; grid-template-columns: 18px 210px 1fr; gap: 14px; align-items: baseline; padding: 13px 18px; border-radius: 12px; border: 1px solid {{ l.border }}; background: {{ l.bg }}; color: var(--color-steel); font-family: var(--font-brand); font-size: 14px; cursor: pointer; transition: all 0.15s ease;" style-hover="border-color: var(--color-purple-mountain);">
+              <span style="width: 12px; height: 12px; border-radius: 3px; background: {{ l.dot }}; display: inline-block; transform: translateY(1px);"></span>
+              <strong style="font-weight: 800;">{{ l.name }}</strong>
+              <span style="color: var(--color-storm-cloud); font-weight: 500;">{{ l.think }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="margin-top: 26px; background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 20px; padding: 30px 36px; display: grid; grid-template-columns: auto 1fr auto; gap: 28px; align-items: center; min-height: 90px;">
+        <div style="width: 56px; height: 56px; border-radius: 14px; background: {{ selDot }}; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 18px;">{{ selNum }}</div>
+        <div>
+          <div style="font-size: 20px; font-weight: 800; margin-bottom: 6px;">{{ selName }} <span style="color: var(--color-storm-cloud); font-weight: 500; font-size: 15px;">— {{ selThink }}</span></div>
+          <div style="font-size: 15px; line-height: 1.5;">{{ selBest }}</div>
+        </div>
+        <span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; background: {{ selAvailBg }}; color: {{ selAvailInk }}; border-radius: 99px; padding: 7px 16px; white-space: nowrap;">{{ selAvail }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Prompting" style="padding: 0 48px 96px;">
+    <div style="max-width: 1180px; margin: 0 auto;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--color-steel); padding-bottom: 18px; margin-bottom: 44px;">
+        <h2 style="margin: 0; font-size: clamp(34px, 4.4vw, 56px); font-weight: 900; letter-spacing: -0.005em; line-height: 1; text-transform: lowercase;">prompting: weak → strong</h2>
+        <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud);">see the difference</span>
+      </div>
+      <div style="display: flex; gap: 10px; margin-bottom: 26px;">
+        <sc-for list="{{ stages }}" as="st" hint-placeholder-count="3">
+          <button sc-camel-on-click="{{ st.select }}" style="padding: 12px 26px; border-radius: 99px; border: 2px solid {{ st.border }}; background: {{ st.bg }}; color: {{ st.ink }}; font-family: var(--font-brand); font-size: 15px; font-weight: 800; cursor: pointer; transition: all 0.15s ease;">{{ st.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 22px; align-items: start;">
+        <div style="background: var(--color-steel); color: var(--color-warm-light); border-radius: 20px; padding: 36px; min-height: 240px; position: relative; overflow: hidden;">
+          <div style="position: absolute; inset: 0; opacity: 0.12; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+          <div style="position: relative;">
+            <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-lavendery); margin-bottom: 18px;">the prompt</div>
+            <p style="margin: 0; font-family: var(--font-mono); font-size: 17px; line-height: 1.65; text-wrap: pretty;">{{ stagePrompt }}</p>
+          </div>
+        </div>
+        <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 20px; padding: 32px;">
+          <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-storm-cloud); margin-bottom: 16px;">{{ stageVerdictLabel }}</div>
+          <p style="margin: 0; font-size: 16px; line-height: 1.6; text-wrap: pretty;">{{ stageVerdict }}</p>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 22px;">
+        <sc-for list="{{ practices }}" as="p" hint-placeholder-count="4">
+          <div style="background: var(--color-tertiary-mist); border-radius: 16px; padding: 24px;">
+            <div style="font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-purple-mountain); margin-bottom: 10px;">{{ p.kind }}</div>
+            <div style="font-size: 15px; font-weight: 600; line-height: 1.45; text-wrap: pretty;">{{ p.text }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top: 22px; background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 99px; padding: 26px 44px; display: flex; align-items: center; gap: 24px; justify-content: space-between; flex-wrap: wrap;">
+        <p style="margin: 0; font-size: clamp(17px, 1.8vw, 22px); font-weight: 800; letter-spacing: -0.005em;">Treat it like a knowledgeable coworker: write full sentences and include the background.</p>
+        <p style="margin: 0; font-size: 14px; font-weight: 600; color: var(--color-storm-cloud);">Default knowledge base is general. Switch to Workiva Support Intelligence for product or standards questions.</p>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="SCOPE builder" style="padding: 0 48px 96px;">
+    <div style="max-width: 1180px; margin: 0 auto;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--color-steel); padding-bottom: 18px; margin-bottom: 20px;">
+        <h2 style="margin: 0; font-size: clamp(34px, 4.4vw, 56px); font-weight: 900; letter-spacing: -0.005em; line-height: 1; text-transform: lowercase;">build it with scope</h2>
+        <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud);">toggle the letters</span>
+      </div>
+      <p style="margin: 0 0 34px; font-size: 15px; color: var(--color-storm-cloud); max-width: 680px; text-wrap: pretty;">A simple mnemonic (not an official Workiva framework) that turns "analyze this" into a strong prompt in about 30 seconds. Watch the prompt rebuild as each element switches on.</p>
+      <div style="display: grid; grid-template-columns: 380px 1fr; gap: 22px; align-items: start;">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{ scope }}" as="s" hint-placeholder-count="5">
+            <button sc-camel-on-click="{{ s.toggle }}" style="text-align: left; display: grid; grid-template-columns: 44px 1fr auto; gap: 16px; align-items: center; padding: 16px 18px; border-radius: 14px; border: 2px solid {{ s.border }}; background: {{ s.bg }}; cursor: pointer; font-family: var(--font-brand); transition: all 0.15s ease;">
+              <span style="width: 44px; height: 44px; border-radius: 10px; background: {{ s.color }}; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900;">{{ s.letter }}</span>
+              <span><strong style="display: block; font-size: 16px; font-weight: 800; color: var(--color-steel);">{{ s.word }}</strong><span style="font-size: 13px; color: var(--color-storm-cloud);">{{ s.q }}</span></span>
+              <span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; color: {{ s.stateColor }};">{{ s.stateLabel }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="position: sticky; top: 96px;">
+          <div style="background: var(--color-steel); color: var(--color-warm-light); border-radius: 20px; padding: 36px; min-height: 320px; position: relative; overflow: hidden;">
+            <div style="position: absolute; inset: 0; opacity: 0.12; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+            <div style="position: relative;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-lavendery);">the assembled prompt</div>
+                <div style="font-size: 13px; font-weight: 700; color: var(--color-stainless);">{{ scopeScore }}</div>
+              </div>
+              <p style="margin: 0; font-family: var(--font-mono); font-size: 16px; line-height: 1.75;">{{ builtPrompt }}</p>
+            </div>
+          </div>
+          <div style="margin-top: 14px; background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 14px; padding: 18px 24px; font-size: 14px; line-height: 1.5; color: var(--color-storm-cloud);">{{ scopeHint }}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 03 USE CASES ================= -->
+  <section id="use-cases" data-screen-label="Ch3 Hero" style="position: relative; padding: 100px 48px 90px; background: var(--color-zesty-neue); color: var(--color-steel); overflow: hidden;">
+    <div style="position: absolute; inset: 0; opacity: 0.14; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+    <div style="position: relative; max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center;">
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 36px; opacity: 0.8;">
+          <span>chapter three</span><span>03 / 06</span>
+        </div>
+        <h1 style="margin: 0; font-size: clamp(56px, 8vw, 116px); font-weight: 900; line-height: 0.98; letter-spacing: -0.005em; text-transform: lowercase;">financial reporting<br>quick wins</h1>
+        <p style="max-width: 560px; font-size: 19px; line-height: 1.5; margin: 36px 0 0; text-wrap: pretty;">Don't start with "write my 10-K." Start where you can check the result instantly: a table you already trust, a paragraph you already approved.</p>
+      </div>
+      <x-import component-from-global-scope="wk-object" shape="ledger" accent="#0074E8" secondary="#FCF4E8" tertiary="#333333" style="height: 460px;" hint-size="100%,460px"></x-import>
+    </div>
+  </section>
+
+  <section data-screen-label="Quick win deck" style="padding: 96px 48px;">
+    <div style="max-width: 1180px; margin: 0 auto;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--color-steel); padding-bottom: 18px; margin-bottom: 40px;">
+        <h2 style="margin: 0; font-size: clamp(34px, 4.4vw, 56px); font-weight: 900; letter-spacing: -0.005em; line-height: 1; text-transform: lowercase;">six use cases, ordered by ease</h2>
+        <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud);">{{ cardCounter }} · step through</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 72px 1fr 72px; gap: 26px; align-items: center;">
+        <button sc-camel-on-click="{{ prevCard }}" aria-label="Previous" style="width: 72px; height: 72px; border-radius: 50%; border: 2px solid var(--color-steel); background: transparent; color: var(--color-steel); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease;" style-hover="background: var(--color-steel); color: var(--color-warm-light);">
+          <x-import component-from-global-scope="WorkivaDesignSystem_cd9c7b.Icon" name="ArrowForwardSize24px" size="{{ n24 }}" style="color: currentColor; transform: rotate(180deg);" hint-size="24px,24px"></x-import>
+        </button>
+        <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 28px; padding: 44px 52px; min-height: 430px; box-shadow: 0 2px 6px rgba(51,51,51,0.05), 0 14px 34px rgba(51,51,51,0.07);">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;">
+            <span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; background: {{ card.stageBg }}; color: {{ card.stageInk }}; border-radius: 99px; padding: 7px 16px;">{{ card.stage }}</span>
+            <span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; background: var(--color-silver-diva); color: var(--color-steel); border-radius: 99px; padding: 7px 16px;">effort: {{ card.effort }}</span>
+            <span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; background: var(--color-silver-diva); color: var(--color-steel); border-radius: 99px; padding: 7px 16px;">where: {{ card.where }}</span>
+          </div>
+          <h3 style="margin: 0 0 8px; font-size: clamp(28px, 3vw, 42px); font-weight: 900; letter-spacing: -0.005em; line-height: 1.05; text-transform: lowercase; text-wrap: pretty;">{{ card.title }}</h3>
+          <p style="margin: 0 0 24px; font-size: 15px; font-weight: 600; color: var(--color-mr-toad);">{{ card.motion }}</p>
+          <div style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 26px;">
+            <div style="background: var(--color-steel); color: var(--color-warm-light); border-radius: 16px; padding: 24px 28px;">
+              <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-ectoplasm); margin-bottom: 12px;">starter prompt</div>
+              <p style="margin: 0; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.65;">{{ card.prompt }}</p>
+            </div>
+            <div>
+              <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-storm-cloud); margin-bottom: 12px;">why start here</div>
+              <p style="margin: 0; font-size: 14.5px; line-height: 1.6; text-wrap: pretty;">{{ card.why }}</p>
+            </div>
+          </div>
+        </div>
+        <button sc-camel-on-click="{{ nextCard }}" aria-label="Next" style="width: 72px; height: 72px; border-radius: 50%; border: 2px solid var(--color-steel); background: transparent; color: var(--color-steel); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease;" style-hover="background: var(--color-steel); color: var(--color-warm-light);">
+          <x-import component-from-global-scope="WorkivaDesignSystem_cd9c7b.Icon" name="ArrowForwardSize24px" size="{{ n24 }}" style="color: currentColor;" hint-size="24px,24px"></x-import>
+        </button>
+      </div>
+      <div style="display: flex; justify-content: center; gap: 8px; margin-top: 26px;">
+        <sc-for list="{{ dots }}" as="d" hint-placeholder-count="6">
+          <button sc-camel-on-click="{{ d.go }}" aria-label="Go to card" style="width: {{ d.w }}; height: 10px; border-radius: 99px; border: none; background: {{ d.bg }}; cursor: pointer; padding: 0; transition: all 0.2s ease;"></button>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Close cycle" style="padding: 0 48px 96px;">
+    <div style="max-width: 1180px; margin: 0 auto; background: var(--color-steel); color: var(--color-warm-light); border-radius: 28px; padding: 52px 56px; position: relative; overflow: hidden;">
+      <div style="position: absolute; inset: 0; opacity: 0.14; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+      <div style="position: relative;">
+        <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-stainless); margin-bottom: 18px;">don't look for an ai feature yet</div>
+        <h2 style="margin: 0 0 40px; font-size: clamp(30px, 3.8vw, 50px); font-weight: 900; letter-spacing: -0.005em; line-height: 1.02; text-transform: lowercase; max-width: 880px; text-wrap: pretty;">walk your reporting cycle and find the <span style="color: var(--color-ectoplasm);">read, draft, or check</span> inside it</h2>
+        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;">
+          <sc-for list="{{ cycle }}" as="w" hint-placeholder-count="6">
+            <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; padding: 20px 18px;">
+              <div style="font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-ectoplasm); margin-bottom: 10px;">{{ w.stage }}</div>
+              <div style="font-size: 14.5px; font-weight: 600; line-height: 1.45;">"{{ w.q }}"</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 04 DEMO ================= -->
+  <section id="demo" data-screen-label="Ch4 Hero" style="position: relative; padding: 100px 48px 90px; background: var(--color-presentation); color: var(--color-steel); overflow: hidden;">
+    <div style="position: absolute; inset: 0; opacity: 0.14; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+    <div style="position: relative; max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center;">
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 36px; opacity: 0.8;">
+          <span>chapter four</span><span>04 / 06</span>
+        </div>
+        <h1 style="margin: 0; font-size: clamp(56px, 8vw, 116px); font-weight: 900; line-height: 0.98; letter-spacing: -0.005em; text-transform: lowercase;">the ten-minute<br>walkthrough</h1>
+        <p style="max-width: 560px; font-size: 19px; line-height: 1.5; margin: 36px 0 0; text-wrap: pretty;">One income statement, one companion panel, one peer filing. Follow the steps in your own draft; it takes about ten minutes.</p>
+      </div>
+      <x-import component-from-global-scope="wk-object" shape="peers" accent="#0074E8" secondary="#FCF4E8" tertiary="#333333" style="height: 460px;" hint-size="100%,460px"></x-import>
+    </div>
+  </section>
+
+  <section data-screen-label="Demo walkthrough" style="padding: 96px 48px;">
+    <div style="max-width: 1180px; margin: 0 auto;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--color-steel); padding-bottom: 18px; margin-bottom: 40px;">
+        <h2 style="margin: 0; font-size: clamp(34px, 4.4vw, 56px); font-weight: 900; letter-spacing: -0.005em; line-height: 1; text-transform: lowercase;">step by step</h2>
+        <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud);">click a step</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 400px 1fr; gap: 22px; align-items: start;">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{ demoSteps }}" as="d" hint-placeholder-count="6">
+            <button sc-camel-on-click="{{ d.select }}" style="text-align: left; display: grid; grid-template-columns: 40px 1fr; gap: 16px; align-items: center; padding: 16px 18px; border-radius: 14px; border: 2px solid {{ d.border }}; background: {{ d.bg }}; cursor: pointer; font-family: var(--font-brand); transition: all 0.15s ease;">
+              <span style="width: 40px; height: 40px; border-radius: 10px; background: {{ d.numBg }}; color: {{ d.numInk }}; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900;">{{ d.num }}</span>
+              <span><strong style="display: block; font-size: 16px; font-weight: 800; color: var(--color-steel);">{{ d.title }}</strong><span style="font-size: 13px; color: var(--color-storm-cloud);">{{ d.sub }}</span></span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="position: sticky; top: 96px;">
+          <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 20px; overflow: hidden; box-shadow: 0 2px 6px rgba(51,51,51,0.05), 0 14px 34px rgba(51,51,51,0.07);">
+            <div style="display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-bottom: 1px solid var(--color-ethereal); background: var(--color-silver-diva);">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--color-stainless);"></span>
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--color-stainless);"></span>
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--color-stainless);"></span>
+              <span style="margin-left: 12px; font-size: 12px; font-weight: 700; color: var(--color-storm-cloud);">{{ demo.screen }}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; min-height: 340px;">
+              <div style="padding: 26px 28px; border-right: 1px solid var(--color-ethereal);">
+                <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-storm-cloud); margin-bottom: 12px;">what you do</div>
+                <p style="margin: 0 0 20px; font-size: 15px; line-height: 1.6; text-wrap: pretty;">{{ demo.action }}</p>
+                <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-storm-cloud); margin-bottom: 12px;">what's happening</div>
+                <p style="margin: 0; font-size: 15px; line-height: 1.6; font-weight: 700; text-wrap: pretty;">{{ demo.say }}</p>
+              </div>
+              <div style="padding: 26px 28px; background: var(--color-steel); color: var(--color-warm-light);">
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-cool-ranch); margin-bottom: 12px;">
+                  <x-import component-from-global-scope="WorkivaDesignSystem_cd9c7b.Icon" name="SparkleSizeSmall" size="{{ n16 }}" style="color: currentColor;" hint-size="16px,16px"></x-import>
+                  <span>workiva ai panel</span>
+                </div>
+                <p style="margin: 0; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.65;">{{ demo.prompt }}</p>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top: 14px; background: var(--color-tertiary-sand); border-radius: 14px; padding: 18px 24px; font-size: 14px; line-height: 1.55; color: var(--color-steel);"><strong>Tip:</strong> {{ demo.watch }}</div>
+        </div>
+      </div>
+      <div style="margin-top: 40px; background: var(--color-tertiary-sand); border-radius: 99px; padding: 30px 48px; display: flex; align-items: center; gap: 24px; justify-content: space-between; flex-wrap: wrap;">
+        <p style="margin: 0; font-size: clamp(18px, 2vw, 24px); font-weight: 800; letter-spacing: -0.005em;">Type at least <span style="color: var(--color-squashy);">one prompt yourself</span>.</p>
+        <p style="margin: 0; font-size: 14.5px; font-weight: 600; color: var(--color-storm-cloud);">Reading about it tells you Workiva has AI. Typing one prompt tells you that you can use it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 05 TALK TRACKS ================= -->
+  <section id="talk-tracks" data-screen-label="Ch5 Hero" style="position: relative; padding: 100px 48px 90px; background: var(--color-steel); color: var(--color-warm-light); overflow: hidden;">
+    <div style="position: absolute; inset: 0; opacity: 0.16; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+    <div style="position: relative; max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center;">
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 36px; opacity: 0.8;">
+          <span>chapter five</span><span>05 / 06</span>
+        </div>
+        <h1 style="margin: 0; font-size: clamp(56px, 8vw, 116px); font-weight: 900; line-height: 0.98; letter-spacing: -0.005em; text-transform: lowercase;">common<br>questions</h1>
+        <p style="max-width: 560px; font-size: 19px; line-height: 1.5; margin: 36px 0 0; text-wrap: pretty;">Reporting teams are professionally skeptical. Good. Here are straight answers to the questions we hear most, based on what the product does today.</p>
+      </div>
+      <x-import component-from-global-scope="wk-object" shape="shield" accent="#FBAD17" secondary="#FCF4E8" style="height: 460px;" hint-size="100%,460px"></x-import>
+    </div>
+  </section>
+
+  <section data-screen-label="Objections" style="padding: 96px 48px 40px;">
+    <div style="max-width: 1180px; margin: 0 auto;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--color-steel); padding-bottom: 18px; margin-bottom: 44px;">
+        <h2 style="margin: 0; font-size: clamp(34px, 4.4vw, 56px); font-weight: 900; letter-spacing: -0.005em; line-height: 1; text-transform: lowercase;">six questions we hear most</h2>
+        <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud);">click for the answer</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <sc-for list="{{ objections }}" as="o" hint-placeholder-count="6">
+          <button sc-camel-on-click="{{ o.toggle }}" style="text-align: left; border: 1px solid {{ o.border }}; background: {{ o.bg }}; color: var(--color-steel); border-radius: 16px; padding: 24px 28px; cursor: pointer; font-family: var(--font-brand); transition: all 0.15s ease;" style-hover="border-color: var(--color-cheetah);">
+            <div style="display: flex; justify-content: space-between; gap: 16px; align-items: baseline;">
+              <span style="font-size: 17px; font-weight: 900; letter-spacing: -0.005em;">{{ o.say }}</span>
+              <span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-cheetah); flex-shrink: 0;">{{ o.cta }}</span>
+            </div>
+            <sc-if value="{{ o.open }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 16px 0 0; font-size: 15px; line-height: 1.6; color: var(--color-steel); text-wrap: pretty;">{{ o.answer }}</p>
+            </sc-if>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Positioning" style="padding: 40px 48px 96px;">
+    <div style="max-width: 1180px; margin: 0 auto;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--color-steel); padding-bottom: 18px; margin-bottom: 20px;">
+        <h2 style="margin: 0; font-size: clamp(34px, 4.4vw, 56px); font-weight: 900; letter-spacing: -0.005em; line-height: 1; text-transform: lowercase;">how it differs from a general chatbot</h2>
+        <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud);">same question, different context</span>
+      </div>
+      <p style="margin: 0 0 34px; font-size: 15.5px; line-height: 1.6; color: var(--color-storm-cloud); max-width: 760px; text-wrap: pretty;">A general assistant is a fine tool, and you'll keep using one. The difference is where the work happens and what the AI can see when you ask.</p>
+      <div style="border: 1px solid var(--color-ethereal); border-radius: 20px; overflow: hidden; background: var(--color-paper);">
+        <div style="display: grid; grid-template-columns: 1.1fr 1fr 1fr; background: var(--color-steel); color: var(--color-warm-light); font-size: 13px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;">
+          <div style="padding: 18px 24px;">axis</div>
+          <div style="padding: 18px 24px; border-left: 1px solid rgba(255,255,255,0.14);">copy-paste into a general chatbot</div>
+          <div style="padding: 18px 24px; border-left: 1px solid rgba(255,255,255,0.14); color: var(--color-cool-ranch);">workiva ai</div>
+        </div>
+        <sc-for list="{{ compare }}" as="c" hint-placeholder-count="5">
+          <div style="display: grid; grid-template-columns: 1.1fr 1fr 1fr; border-top: 1px solid var(--color-silver-diva); font-size: 14.5px; line-height: 1.5;">
+            <div style="padding: 18px 24px; font-weight: 800;">{{ c.axis }}</div>
+            <div style="padding: 18px 24px; border-left: 1px solid var(--color-silver-diva); color: var(--color-storm-cloud);">{{ c.them }}</div>
+            <div style="padding: 18px 24px; border-left: 1px solid var(--color-silver-diva); font-weight: 600;">{{ c.us }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 06 ROADMAP + QUIZ ================= -->
+  <section id="roadmap" data-screen-label="Ch6 Hero" style="position: relative; padding: 100px 48px 90px; background: var(--color-poseidon); color: var(--color-paper); overflow: hidden;">
+    <div style="position: absolute; inset: 0; opacity: 0.14; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+    <div style="position: relative; max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center;">
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 36px; opacity: 0.85;">
+          <span>chapter six</span><span>06 / 06</span>
+        </div>
+        <h1 style="margin: 0; font-size: clamp(56px, 8vw, 116px); font-weight: 900; line-height: 0.98; letter-spacing: -0.005em; text-transform: lowercase;">what's next,<br>and how to start</h1>
+        <p style="max-width: 560px; font-size: 19px; line-height: 1.5; margin: 36px 0 0; text-wrap: pretty;">What's available today, what sits in advanced packages, and what's planned, so you can plan your rollout around what you can switch on now. Plus the four-stage direction Workiva laid out at Amplify.</p>
+      </div>
+      <x-import component-from-global-scope="wk-object" shape="check" accent="#66CC66" secondary="#FCF4E8" tertiary="#7CBEFF" style="height: 460px;" hint-size="100%,460px"></x-import>
+    </div>
+  </section>
+
+  <section data-screen-label="Roadmap" style="padding: 96px 48px 40px;">
+    <div style="max-width: 1180px; margin: 0 auto;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--color-steel); padding-bottom: 18px; margin-bottom: 44px;">
+        <h2 style="margin: 0; font-size: clamp(34px, 4.4vw, 56px); font-weight: 900; letter-spacing: -0.005em; line-height: 1; text-transform: lowercase;">core, premium, planned</h2>
+        <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud);">availability depends on your package</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: start;">
+        <sc-for list="{{ roadmap }}" as="r" hint-placeholder-count="3">
+          <div style="display: flex; flex-direction: column;">
+            <div style="background: {{ r.bg }}; color: {{ r.ink }}; border-radius: 16px 16px 0 0; padding: 22px 24px;">
+              <div style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8;">{{ r.label }}</div>
+              <div style="font-size: 22px; font-weight: 900; letter-spacing: -0.005em; margin-top: 6px;">{{ r.title }}</div>
+            </div>
+            <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-top: none; border-radius: 0 0 16px 16px; padding: 8px 24px 20px;">
+              <sc-for list="{{ r.items }}" as="it" hint-placeholder-count="3">
+                <div style="padding: 14px 0; border-bottom: 1px solid var(--color-silver-diva);">
+                  <div style="font-size: 15.5px; font-weight: 800;">{{ it.name }}</div>
+                  <div style="margin-top: 4px; font-size: 13.5px; line-height: 1.5; color: var(--color-storm-cloud);">{{ it.desc }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top: 44px; display: flex; align-items: baseline; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 22px;">
+        <h3 style="margin: 0; font-size: clamp(22px, 2.4vw, 30px); font-weight: 900; letter-spacing: -0.005em; line-height: 1.05; text-transform: lowercase;">four stages, and they compound</h3>
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud);">happening at once, not one after another</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;">
+        <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;"><span style="font-size: 22px; font-weight: 900; color: var(--color-forest);">01</span><span style="font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; background: var(--color-morning-dew); color: var(--color-forest); border-radius: 99px; padding: 5px 12px;">live</span></div>
+          <div style="font-size: 17px; font-weight: 800;">Fit-for-purpose agents</div>
+          <p style="margin: 0; font-size: 14px; line-height: 1.5; color: var(--color-storm-cloud); text-wrap: pretty;">AI acting inside workflows you already run: tying out numbers, drafting disclosures, tagging filings. Early adopters are cutting time on these tasks in half.</p>
+        </div>
+        <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;"><span style="font-size: 22px; font-weight: 900; color: var(--color-cheetah);">02</span><span style="font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; background: var(--color-plastic-cheese); color: var(--color-steel); border-radius: 99px; padding: 5px 12px;">announced</span></div>
+          <div style="font-size: 17px; font-weight: 800;">Agent Studio</div>
+          <p style="margin: 0; font-size: 14px; line-height: 1.5; color: var(--color-storm-cloud); text-wrap: pretty;">Build your own agents in plain language, no code. Workiva’s own sustainability team built three working agents in one day, including one that replaced months of vendor back-and-forth.</p>
+        </div>
+        <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;"><span style="font-size: 22px; font-weight: 900; color: var(--color-purple-mountain);">03</span><span style="font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; background: var(--color-lavendery); color: var(--color-california-raisins); border-radius: 99px; padding: 5px 12px;">next</span></div>
+          <div style="font-size: 17px; font-weight: 800;">Agent orchestration</div>
+          <p style="margin: 0; font-size: 14px; line-height: 1.5; color: var(--color-storm-cloud); text-wrap: pretty;">Multiple agents running an end-to-end process together, like a full 10-K, with people stepping in only at the decision points that matter.</p>
+        </div>
+        <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;"><span style="font-size: 22px; font-weight: 900; color: var(--color-steel);">04</span><span style="font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; background: var(--color-silver-diva); color: var(--color-steel); border-radius: 99px; padding: 5px 12px;">vision</span></div>
+          <div style="font-size: 17px; font-weight: 800;">Agentic applications</div>
+          <p style="margin: 0; font-size: 14px; line-height: 1.5; color: var(--color-storm-cloud); text-wrap: pretty;">The platform anticipates obligations before anyone asks, flagging a new filing requirement the moment an entity’s ownership structure changes. Reporting platform becomes the platform for regulatory work.</p>
+        </div>
+      </div>
+      <div style="margin-top: 22px; background: var(--color-tertiary-sand); border-radius: 99px; padding: 22px 40px; display: flex; align-items: center; gap: 24px; justify-content: space-between; flex-wrap: wrap;">
+        <p style="margin: 0; font-size: 15.5px; font-weight: 800;">Packaging: <span style="color: var(--color-forest);">Core AI</span> included for everyone · <span style="color: var(--color-cheetah);">Premium AI</span> tiers for agents · <span style="color: var(--color-purple-mountain);">AI Builder</span> add-on for Agent Studio.</p>
+        <p style="margin: 0; font-size: 14px; font-weight: 600; color: var(--color-storm-cloud);">Your account team can confirm which tier you’re on.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="start" data-screen-label="Getting started" style="padding: 40px 48px 96px;">
+    <div style="max-width: 1180px; margin: 0 auto;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--color-steel); padding-bottom: 18px; margin-bottom: 44px;">
+        <h2 style="margin: 0; font-size: clamp(34px, 4.4vw, 56px); font-weight: 900; letter-spacing: -0.005em; line-height: 1; text-transform: lowercase;">getting started</h2>
+        <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud);">your first two weeks</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;">
+        <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 20px; padding: 28px; display: flex; flex-direction: column; gap: 12px;">
+          <span style="width: 44px; height: 44px; border-radius: 12px; background: var(--color-poseidon); color: var(--color-paper); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900;">01</span>
+          <h3 style="margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.005em;">Enable it</h3>
+          <p style="margin: 0; font-size: 15px; line-height: 1.55; text-wrap: pretty;">Your Org Admin accepts the Workiva AI Terms of Use in admin settings. Chat and the companions switch on for permitted users.</p>
+        </div>
+        <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 20px; padding: 28px; display: flex; flex-direction: column; gap: 12px;">
+          <span style="width: 44px; height: 44px; border-radius: 12px; background: var(--color-poseidon); color: var(--color-paper); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900;">02</span>
+          <h3 style="margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.005em;">Pick one task</h3>
+          <p style="margin: 0; font-size: 15px; line-height: 1.55; text-wrap: pretty;">A table you summarize every close, a footnote you roll forward, a figure you re-tie by hand. Pick the one that takes longest.</p>
+        </div>
+        <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 20px; padding: 28px; display: flex; flex-direction: column; gap: 12px;">
+          <span style="width: 44px; height: 44px; border-radius: 12px; background: var(--color-poseidon); color: var(--color-paper); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900;">03</span>
+          <h3 style="margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.005em;">Run the walkthrough</h3>
+          <p style="margin: 0; font-size: 15px; line-height: 1.55; text-wrap: pretty;">Chapter four, in your own file. Compare the output against the source before you trust the rest of it.</p>
+        </div>
+        <div style="background: var(--color-paper); border: 1px solid var(--color-ethereal); border-radius: 20px; padding: 28px; display: flex; flex-direction: column; gap: 12px;">
+          <span style="width: 44px; height: 44px; border-radius: 12px; background: var(--color-poseidon); color: var(--color-paper); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900;">04</span>
+          <h3 style="margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.005em;">Save what works</h3>
+          <p style="margin: 0; font-size: 15px; line-height: 1.55; text-wrap: pretty;">Keep the prompts that gave you a good answer and reuse them next cycle. The library below is a starting point.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Prompt library" style="padding: 0 48px 96px;">
+    <div style="max-width: 1180px; margin: 0 auto;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--color-steel); padding-bottom: 18px; margin-bottom: 40px;">
+        <h2 style="margin: 0; font-size: clamp(34px, 4.4vw, 56px); font-weight: 900; letter-spacing: -0.005em; line-height: 1; text-transform: lowercase;">starter prompts to copy</h2>
+        <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-storm-cloud);">click to copy</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+        <sc-for list="{{ library }}" as="p" hint-placeholder-count="6">
+          <button sc-camel-on-click="{{ p.copy }}" style="text-align: left; background: var(--color-steel); color: var(--color-warm-light); border: none; border-radius: 16px; padding: 22px 24px; cursor: pointer; font-family: var(--font-brand); display: flex; flex-direction: column; gap: 10px; transition: transform 0.15s ease;" style-hover="transform: translateY(-2px);">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-cool-ranch);"><span>{{ p.kind }}</span><span>{{ p.copied }}</span></div>
+            <div style="font-family: var(--font-mono); font-size: 13px; line-height: 1.6;">"{{ p.text }}"</div>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Closing" style="padding: 100px 48px; background: var(--color-steel); color: var(--color-warm-light); position: relative; overflow: hidden;">
+    <div style="position: absolute; inset: 0; opacity: 0.16; pointer-events: none; background-image: url('assets/noise-grain.svg');"></div>
+    <x-import component-from-global-scope="wk-field" accent="#FBAD17" density="14" opacity="0.22" hint-size="100%,100%"></x-import>
+    <div style="position: relative; max-width: 1180px; margin: 0 auto;">
+      <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-stainless); margin-bottom: 34px;">the short version</div>
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <sc-for list="{{ donts }}" as="d" hint-placeholder-count="5">
+          <p style="margin: 0; font-size: clamp(26px, 3.6vw, 46px); font-weight: 900; line-height: 1.08; letter-spacing: -0.005em; text-transform: lowercase;"><span style="color: var(--color-cool-ranch);">{{ d.no }}</span> {{ d.yes }}</p>
+        </sc-for>
+      </div>
+      <p style="margin: 48px 0 0; max-width: 720px; font-size: 15.5px; line-height: 1.6; color: var(--color-silver-diva); text-wrap: pretty;">Start small: one table, one paragraph, one check. Ground the AI in your own filing, get a useful result in minutes, verify it, and then make it part of every close.</p>
+    </div>
+  </section>
+
+  <footer style="background: var(--color-warm-light); color: var(--color-steel); padding: 56px 48px; border-top: 1px solid var(--color-ethereal);">
+    <div style="max-width: 1180px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 40px; flex-wrap: wrap;">
+      <div style="font-size: 13px; color: var(--color-storm-cloud);">Built from Workiva AI support and release guidance · Sept 2026</div>
+      <nav style="display: flex; gap: 22px; font-size: 14px; font-weight: 600;">
+        <a href="#top" style="color: var(--color-storm-cloud);" style-hover="color: var(--color-steel);">↑ top</a>
+      </nav>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { progress: 0, sel: 4, stage: 0, on: { S: true, C: true, O: true, P: true, E: true }, i: 0, step: 0, open: -1, answers: {}, copied: -1 };
+  componentDidMount() {
+    this._onScroll = () => {
+      const d = document.documentElement, max = d.scrollHeight - d.clientHeight;
+      this.setState({ progress: max > 0 ? Math.min(100, (d.scrollTop / max) * 100) : 0 });
+    };
+    window.addEventListener('scroll', this._onScroll, { passive: true });
+  }
+  componentWillUnmount() { window.removeEventListener('scroll', this._onScroll); }
+  renderVals() {
+    const S = this.state;
+    const layerData = [
+      { name: 'Global chat', think: 'a blank-ish canvas', best: 'Questions, brainstorming, first drafts, iterative follow-up. Available anywhere in the platform, including mobile.', dot: '#B2B2B2', avail: 'included' },
+      { name: 'Prompt Library', think: 'a starting-point library', best: 'Sample prompts such as "Year-over-Year Financial Narrative" to adapt. Kills the blank page for new users.', dot: '#7CBEFF', avail: 'included' },
+      { name: 'Knowledge bases', think: 'domain-grounded Q&A', best: 'Switch from the general KB to Workiva Support Intelligence for product and standards questions pulled from trusted documentation.', dot: '#8C4CBD', avail: 'included' },
+      { name: 'File reference', think: '"use this as your evidence"', best: 'Attach PDFs or DOCX (analyst transcripts, board decks, prior-year filings) and ask questions against them.', dot: '#0074E8', avail: 'included' },
+      { name: 'Document companion', think: 'an assistant inside the report', best: 'Reads the open 10-K or 10-Q. Draft footnotes and MD&A, run quick edits like "clarify this paragraph" or "check this against ASC 606".', dot: '#66CC66', avail: 'included' },
+      { name: 'Spreadsheet companion', think: 'object-level analysis', best: 'Select rows or a table and ask it to summarize, explain variance drivers, or turn numbers into narrative.', dot: '#FBAD17', avail: 'included' },
+      { name: 'SEC Filing Intelligence', think: 'peer filings on tap', best: 'Filter peer 10-Ks and 10-Qs; compare EBITDA margin, list supply-chain risk disclosures, find common revenue-recognition language.', dot: '#F89119', avail: 'included' },
+      { name: 'Tie-Out & Benchmarking agents', think: 'multi-step reporting jobs', best: 'Tie-Out Agent flags mismatched figures across schedules and links each to its source (planned). Benchmarking Agent finds disclosure gaps against peers (advanced packages).', dot: '#333333', avail: 'advanced / planned' }
+    ];
+    const sel = S.sel, L = layerData[sel];
+    const stageData = [
+      { label: 'Weak', prompt: 'Explain this table.', verdictLabel: 'why it fails', verdict: 'No period, no audience, no definition of "explain." The AI has to guess whether you want a sentence or a page, and which numbers matter.' },
+      { label: 'Better', prompt: 'Explain the year-over-year change in revenue in the selected income statement table.', verdictLabel: 'what improved', verdict: 'Now it has a source (the selected table) and a job (YoY revenue change). Still missing: length, audience, and a rule about invented causes.' },
+      { label: 'Strong', prompt: 'You are a senior financial reporting analyst. Using only the selected FY2025 vs FY2024 income statement table, explain the year-over-year change in revenue and gross margin for the MD&A. Quantify each change in dollars and percent. Keep it under 120 words in a formal tone. Do not speculate about causes not supported by the table; list possible drivers separately as questions for the controller.', verdictLabel: 'why it works', verdict: 'Role, source, task, audience, length, tone, and a factuality rule. This mirrors Workiva\u2019s own guidance: be clear and specific, state topic and audience, provide context, ask one thing at a time.' }
+    ];
+    const st = stageData[S.stage];
+    const parts = {
+      S: { word: 'Source', q: 'What should the AI work from?', color: 'var(--color-link-blue)', frag: 'Using only the selected FY2025 vs FY2024 income statement table, ' },
+      C: { word: 'Context', q: 'What does it need to know?', color: 'var(--color-purple-mountain)', frag: 'for the results-of-operations section of our 10-K MD&A, ' },
+      O: { word: 'Objective', q: 'What single job should it do?', color: 'var(--color-mr-toad)', frag: 'explain the year-over-year change in revenue and gross margin. ' },
+      P: { word: 'Parameters', q: 'What makes the result useful?', color: 'var(--color-cheetah)', frag: 'Quantify each change in dollars and percent, formal tone, under 120 words. ' },
+      E: { word: 'Evaluate', q: 'How will we check it?', color: 'var(--color-five-alarm-chili)', frag: 'Do not speculate about causes the table doesn\u2019t support; list possible drivers separately as questions for the controller.' }
+    };
+    const on = S.on, letters = ['S', 'C', 'O', 'P', 'E'];
+    const activeCount = letters.filter((l) => on[l]).length;
+    let built = letters.filter((l) => on[l]).map((l) => parts[l].frag).join('');
+    if (activeCount === 0) built = 'Analyze this.';
+    const hints = [
+      'With nothing on, you\u2019re back to \u201cAnalyze this\u201d \u2014 the AI has to guess everything.',
+      'One element helps, but the AI is still guessing at most of the job.',
+      'Getting somewhere \u2014 but notice what the AI still has to invent.',
+      'Solid. One or two more elements remove the last of the guesswork.',
+      'Almost there \u2014 the Evaluate step is what keeps the human in the loop.',
+      'All five: source, situation, one job, useful constraints, and a check. This is the 30-second version of prompt engineering.'
+    ];
+    const wins = [
+      { title: 'summarize a table into narrative', motion: 'Spreadsheet or report table \u2192 select \u2192 companion', effort: 'very low', where: 'companion', stage: 'first AI experience',
+        prompt: 'Summarize the selected income statement table for a non-technical reader. Preserve the exact reported values and units. Maximum 100 words.',
+        why: 'The truth stays visible right next to the output, so you can check it in seconds. Use it first as a writer for numbers you already trust.' },
+      { title: 'explain the variance drivers', motion: 'Select current + prior period \u2192 structured prompt', effort: 'low', where: 'companion', stage: 'first AI experience',
+        prompt: 'Explain the key year-over-year variance drivers in the selected table. Rank by magnitude, quantify each in dollars and percent, and separate observed changes from possible explanations.',
+        why: 'The value isn\u2019t prose, it\u2019s telling your reviewer where to look. One of the most common ways finance teams use Workiva AI.' },
+      { title: 'draft or QA a footnote', motion: 'Document companion \u2192 draft, or highlight \u2192 quick edit', effort: 'low', where: 'document', stage: 'early repeatable',
+        prompt: 'Draft a revenue recognition footnote based on our accounting policy section and last year\u2019s disclosure in this document. Keep the structure of last year\u2019s note; flag anything that needs a current-year number.',
+        why: 'Then flip it: highlight a paragraph and use "clarify this paragraph" or "check this against ASC 606." Drafting and reviewing happen in the same panel.' },
+      { title: 'benchmark against peer filings', motion: 'SEC Filing Intelligence \u2192 filter peers \u2192 ask', effort: 'low', where: 'sec filing intelligence', stage: 'research',
+        prompt: 'Across the selected peer 10-Ks, what common revenue recognition language do competitors use? Then list any risk factors they disclose that we do not.',
+        why: 'Replaces hours of reading peer filings. Also great for "how did our EBITDA margin compare?" or "list peer disclosures about supply chain risk."' },
+      { title: 'check a figure ties out', motion: 'Reference the schedules \u2192 ask for a consistency check', effort: 'low\u2013med', where: 'chat + file reference', stage: 'review stage',
+        prompt: 'Check whether the total assets figure in this document matches the sum of the referenced schedules X and Y. If not, show both values and where each appears. Do not decide which is correct.',
+        why: 'Reframes AI from writer to reviewer. It\u2019s also the natural bridge to the planned Tie-Out Agent, which automates this across the whole report.' },
+      { title: 'reshape executive commentary', motion: 'Load management comments \u2192 rewrite or summarize', effort: 'very low', where: 'chat', stage: 'earnings season',
+        prompt: 'Rewrite this earnings release quote in a formal tone suitable for the press release. Preserve every number and forward-looking caveat.',
+        why: 'Or: "Summarize this analyst call transcript for key financial highlights." Fast, verifiable, and lands during the busiest week of the quarter.' }
+    ];
+    const n = wins.length, i = S.i, w = wins[i];
+    const stageColors = {
+      'first AI experience': ['var(--color-morning-dew)', 'var(--color-forest)'],
+      'early repeatable': ['var(--color-tertiary-sky)', 'var(--color-poseidon)'],
+      'research': ['var(--color-lavendery)', 'var(--color-california-raisins)'],
+      'review stage': ['var(--color-foggy)', 'var(--color-poseidon)'],
+      'earnings season': ['var(--color-cool-ranch)', 'var(--color-steel)']
+    };
+    const sc = stageColors[w.stage] || ['var(--color-silver-diva)', 'var(--color-steel)'];
+    const demoData = [
+      { title: 'Open the 10-K draft', sub: 'Document \u00b7 Item 7 MD&A', screen: 'FY2025 Form 10-K \u2014 Document', action: 'Open the working draft of the annual report and scroll to the results-of-operations table. Open the Workiva AI companion panel.', say: 'Everything happens inside the document you already work in. Nothing gets exported or pasted anywhere.', prompt: '\u2014 companion open, reading the current document \u2014', watch: 'the panel already knows what document it\u2019s in; you don\u2019t need to describe it.' },
+      { title: 'Select the income statement table', sub: 'Selection = source context', screen: 'FY2025 Form 10-K \u2014 Document', action: 'Click-drag to select the revenue and gross margin rows for both periods.', say: 'Selecting is how you tell the AI what to read. The closer it is to the source, the less we have to explain.', prompt: '\u2014 selection: 6 rows \u00d7 3 columns \u2014', watch: 'you don\u2019t need to retype the numbers. Selection is the context.' },
+      { title: 'Ask for the variance narrative', sub: 'The first prompt', screen: 'Workiva AI companion', action: 'Type the prompt and run it. Then compare two numbers against the table.', say: 'Notice the numbers match the table exactly. It\u2019s a draft for the MD&A, not the MD&A.', prompt: '"Explain the year-over-year change in revenue and gross margin in the selected table for the MD&A. Quantify in dollars and percent. Under 120 words. Don\u2019t speculate about causes."', watch: 'read it critically. Check two numbers against the table before you trust the rest.' },
+      { title: 'Refine once', sub: 'Iteration is conversation', screen: 'Workiva AI companion', action: 'Ask a follow-up in the same thread instead of rewriting the prompt.', say: 'If the first answer isn\u2019t right, you don\u2019t start over. You tell it what to change.', prompt: '"Good. Make it more formal, lead with gross margin, and add one sentence noting the change is consistent with the segment table."', watch: 'follow-ups keep the context of the thread, so short instructions work.' },
+      { title: 'Quick-edit a disclosure paragraph', sub: 'AI as reviewer', screen: 'FY2025 Form 10-K \u2014 Note 2', action: 'Highlight the revenue recognition paragraph. Use the quick edit "check this against ASC 606", then "clarify this paragraph".', say: 'Same panel, different job. Now it\u2019s a second reviewer, not a writer.', prompt: '"Check this paragraph against ASC 606 and list anything that reads as incomplete or ambiguous. Then suggest a clearer version without changing meaning."', watch: 'review tasks are usually the easiest place to trust the output first.' },
+      { title: 'Peer check in SEC Filing Intelligence', sub: 'Then save the prompt', screen: 'SEC Filing Intelligence', action: 'Filter to three named peers, ask one benchmarking question, then type the second one yourself.', say: 'You\u2019ll need this again next quarter. Save the prompt.', prompt: '"How does our revenue recognition language compare with these three peers? List any disclosures they include that we don\u2019t."', watch: 'type this one yourself, then change one thing about it and run it again.' }
+    ];
+    const D = demoData[S.step];
+    const objections = [
+      { say: 'Where does our data go?', answer: 'It stays inside the Workiva platform. Data is encrypted in transit and isn\u2019t used to train models. Your Org Admin enables Workiva AI by accepting the AI Terms of Use, and your existing permissions still apply.' },
+      { say: 'Can we trust it with SEC numbers?', answer: 'Not blindly, and it doesn\u2019t ask you to. Start with tasks where the source is on screen: selected tables, your own footnotes. The output is a draft or a review aid; a person still signs the filing.' },
+      { say: 'Won\u2019t checking it take as long as writing it?', answer: 'Then start with review tasks instead of drafting: tie a figure to its schedules, check a paragraph against ASC 606, flag variances over a threshold. Verification is where the value is.' },
+      { say: 'Do we need to learn prompt engineering?', answer: 'No. Say what to read, what to do, and what a good answer looks like. Or start from the Prompt Library and change the brackets.' },
+      { say: 'We already have Copilot or ChatGPT. Why this?', answer: 'Keep using them for general work. The difference here is that Workiva AI can read the filing you\u2019re in, the schedules it links to, and peer SEC filings, and the output lands back in the document, inside your controls.' },
+      { say: 'Is it included in our subscription?', answer: 'Chat and the companions come with Workiva AI once enabled. Some agents, like Benchmarking and the planned Tie-Out Agent, sit in advanced packages. Your account team can confirm what your subscription includes.' }
+    ];
+    const quizData = [
+      { text: 'A customer asks, "Where does my data go when I use Workiva AI?" Best answer:', options: ['It\u2019s sent to a third-party model and deleted after 30 days.', 'It stays within the Workiva platform, encrypted in transit, and isn\u2019t used to train models.', 'Nothing is stored or processed anywhere.'], correct: 1, explain: 'Match Workiva\u2019s own language: integrated, encrypted in transit, not trained on customer data. Avoid "nothing is processed," which overstates it.' },
+      { text: 'The fastest way to improve a mediocre answer to "explain this table" is to:', options: ['Rewrite the prompt several times with more adjectives.', 'Select the exact table and state the audience, length, and period.', 'Switch to a different knowledge base.'], correct: 1, explain: 'Source context first: select the data, then be specific about task, audience, and format. Knowledge bases help with product and standards questions, not table math.' },
+      { text: 'Which feature lets a finance team compare their disclosures with peer 10-Ks?', options: ['Spreadsheet companion', 'SEC Filing Intelligence', 'Prompt Library'], correct: 1, explain: 'SEC Filing Intelligence loads peer filings so you can ask comparison and trend questions against real SEC data.' },
+      { text: 'A customer wants AI to flag mismatched totals across every schedule automatically. You should say:', options: ['That\u2019s the Tie-Out Agent; it\u2019s planned and may sit in a premium tier. Today, ask the companion to check specific figures.', 'That\u2019s fully available in every subscription right now.', 'AI can\u2019t help with numbers.'], correct: 0, explain: 'Be precise about availability. The Tie-Out Agent is planned; targeted consistency checks work today via prompts against referenced data.' },
+      { text: 'The best first demo for a skeptical controller is:', options: ['Generate a complete MD&A from scratch.', 'Summarize a table they already trust and compare the numbers live.', 'Show a long list of every AI feature.'], correct: 1, explain: 'Start where the truth is visible next to the output. Small, verifiable, in their own document.' }
+    ];
+    const answered = Object.keys(S.answers).length;
+    const correct = quizData.filter((q, k) => S.answers[k] === q.correct).length;
+    const verdicts = ['Answer the five questions to see how ready you are.', 'Reread chapter one before the next customer call.', 'Solid on the basics; rehearse the demo script once more.', 'You could run the ten-minute demo tomorrow.'];
+    const verdict = answered < quizData.length ? verdicts[0] : correct <= 2 ? verdicts[1] : correct <= 4 ? verdicts[2] : verdicts[3];
+    const libraryData = [
+      { kind: 'narrative', text: 'Explain the year-over-year change in revenue in the selected table for the MD&A. Quantify in dollars and percent. Under 120 words. No speculation about causes.' },
+      { kind: 'footnote', text: 'Generate a brief footnote on lease accounting for [entity], following the structure of last year\u2019s note in this document. Flag every number that needs updating.' },
+      { kind: 'review', text: 'Check this paragraph against ASC 606. List anything incomplete or ambiguous, then suggest a clearer version without changing meaning.' },
+      { kind: 'tie-out', text: 'Check whether the total assets figure in this document matches the sum of schedules [X] and [Y]. Show both values and their locations. Do not decide which is correct.' },
+      { kind: 'benchmark', text: 'Across the selected peer 10-Ks, how does our EBITDA margin compare? Then list any peer disclosures about supply chain risk that we do not include.' },
+      { kind: 'investor Q&A', text: 'Draft a Q&A for investors based on this quarter\u2019s financial highlights in the attached release. Eight questions, formal tone, every figure traceable to the release.' }
+    ];
+    const copy = (k, text) => { try { navigator.clipboard.writeText(text); } catch (e) { /* ignore */ } this.setState({ copied: k }); clearTimeout(this._ct); this._ct = setTimeout(() => this.setState({ copied: -1 }), 1400); };
+    return {
+      progressW: S.progress.toFixed(1) + '%',
+      n16: 16, n20: 20, n24: 24, n40: 40,
+      outcomes: [
+        { num: '01', color: 'var(--color-link-blue)', text: 'Know what Workiva AI is, where it lives in the platform, and how your data is protected.' },
+        { num: '02', color: 'var(--color-purple-mountain)', text: 'Pick the right capability for the job: chat, companion, selected table, file reference, or SEC Filing Intelligence.' },
+        { num: '03', color: 'var(--color-mr-toad)', text: 'Get three Financial Reporting quick wins with prompts you can copy today.' },
+        { num: '04', color: 'var(--color-cheetah)', text: 'Run a ten-minute walkthrough inside your own 10-K draft.' },
+        { num: '05', color: 'var(--color-five-alarm-chili)', text: 'Get straight answers to the six questions reporting teams ask most.' }
+      ],
+      facts: [
+        'Built into the Workiva platform; no customer data leaves the environment.',
+        'Encrypted in transit and never used to train on proprietary data.',
+        'An Org Admin enables it by signing the Workiva AI Terms of Use.',
+        'Companions read only the file you have open; existing permissions still apply.'
+      ],
+      selLayer: String(sel),
+      onLayerSelect: (e) => this.setState({ sel: e.detail.index }),
+      layers: layerData.map((d, k) => ({
+        name: d.name, think: d.think, dot: d.dot,
+        bg: k === sel ? 'var(--color-paper)' : 'transparent',
+        border: k === sel ? 'var(--color-purple-mountain)' : 'var(--color-ethereal)',
+        select: () => this.setState({ sel: k })
+      })),
+      selName: L.name, selThink: L.think, selBest: L.best, selDot: L.dot, selNum: String(sel + 1).padStart(2, '0'),
+      selAvail: L.avail,
+      selAvailBg: L.avail === 'included' ? 'var(--color-morning-dew)' : 'var(--color-plastic-cheese)',
+      selAvailInk: L.avail === 'included' ? 'var(--color-forest)' : 'var(--color-steel)',
+      stages: stageData.map((sd, k) => ({
+        label: sd.label, select: () => this.setState({ stage: k }),
+        bg: k === S.stage ? 'var(--color-purple-mountain)' : 'transparent',
+        ink: k === S.stage ? 'var(--color-paper)' : 'var(--color-steel)',
+        border: k === S.stage ? 'var(--color-purple-mountain)' : 'var(--color-stainless)'
+      })),
+      stagePrompt: '\u201c' + st.prompt + '\u201d', stageVerdictLabel: st.verdictLabel, stageVerdict: st.verdict,
+      practices: [
+        { kind: 'be specific', text: 'State the task, topic, audience, and desired length or style.' },
+        { kind: 'give context', text: 'Reference the file, select the cells, or explain the scenario. A role prefix helps.' },
+        { kind: 'one question', text: 'Ask a single, focused question. Follow up rather than stacking asks.' },
+        { kind: 'iterate', text: 'If the answer is off, adjust and try again. Use the response to guide the next prompt.' }
+      ],
+      scope: letters.map((l) => ({
+        letter: l, word: parts[l].word, q: parts[l].q, color: parts[l].color,
+        toggle: () => this.setState((s) => ({ on: { ...s.on, [l]: !s.on[l] } })),
+        bg: on[l] ? 'var(--color-paper)' : 'transparent',
+        border: on[l] ? parts[l].color : 'var(--color-ethereal)',
+        stateLabel: on[l] ? 'ON' : 'OFF',
+        stateColor: on[l] ? 'var(--color-mr-toad)' : 'var(--color-stainless)'
+      })),
+      builtPrompt: '\u201c' + built + '\u201d',
+      scopeScore: activeCount + ' / 5 elements',
+      scopeHint: hints[activeCount],
+      evidencePlaceholder: !!(S.ev && S.ev.placeholder),
+      evidenceKept: S.ev ? S.ev.keptCount : '\u2026',
+      patterns: (S.ev ? S.ev.patterns : []).map((p) => {
+        const strong = p.strength === 'STRONG PATTERN';
+        return { ...p,
+          badgeBg: strong ? 'var(--color-morning-dew)' : 'var(--color-plastic-cheese)',
+          badgeInk: strong ? 'var(--color-forest)' : 'var(--color-steel)',
+          hasTalk: !!p.talkTrack, customersLabel: p.customers + (p.customers === 1 ? ' customer' : ' customers') + ' with direct evidence'
+        };
+      }),
+      gaps: S.ev ? S.ev.gaps : [],
+      patternCols: (S.ev && S.ev.patterns.length !== 3) ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
+      discoveryQs: [
+        { q: 'What do you have to read through manually before the filing goes out?', why: 'surfaces review-heavy workflows' },
+        { q: 'What do you repeatedly compare each quarter: periods, schedules, peers?', why: 'surfaces variance, tie-out, and benchmarking work' },
+        { q: 'What do you have to check every close?', why: 'surfaces verification and consistency work' },
+        { q: 'What do you regularly draft, roll forward, or wordsmith?', why: 'surfaces MD&A and footnote drafting effort' },
+        { q: 'What takes multiple rounds of review because several people contribute?', why: 'surfaces consolidation and consistency work' }
+      ],
+      measures: [
+        { name: 'AI enabled / access confirmed', q: 'Can the customer actually use it?' },
+        { name: 'First real task completed', q: 'Did they experience value?' },
+        { name: 'First prompt / workflow recorded', q: 'Can they repeat it?' },
+        { name: 'Customer performed prompt themselves', q: 'Did skill transfer happen?' },
+        { name: 'Repeat use reported at next call', q: 'Did demo become behavior?' },
+        { name: 'Estimated minutes saved', q: 'Does the use case have economic value?' },
+        { name: 'Review issue caught', q: 'Is AI contributing to quality too?' },
+        { name: 'Second use case adopted', q: 'Is usage expanding?' }
+      ],
+      card: { title: w.title, motion: w.motion, effort: w.effort, where: w.where, stage: w.stage, stageBg: sc[0], stageInk: sc[1], prompt: '\u201c' + w.prompt + '\u201d', why: w.why },
+      cardCounter: String(i + 1).padStart(2, '0') + ' / ' + n,
+      prevCard: () => this.setState((s) => ({ i: (s.i - 1 + n) % n })),
+      nextCard: () => this.setState((s) => ({ i: (s.i + 1) % n })),
+      dots: wins.map((_, k) => ({ go: () => this.setState({ i: k }), bg: k === i ? 'var(--color-mr-toad)' : 'var(--color-stainless)', w: k === i ? '30px' : '10px' })),
+      cycle: [
+        { stage: 'Close', q: 'Which totals do you re-check by hand?' },
+        { stage: 'Analyze', q: 'What changed, and where should I look?' },
+        { stage: 'Draft', q: 'Turn this table into MD&A narrative.' },
+        { stage: 'Disclose', q: 'Does this footnote read complete and clear?' },
+        { stage: 'Review', q: 'Where do figures disagree across the report?' },
+        { stage: 'Benchmark', q: 'What do peers disclose that we don\u2019t?' }
+      ],
+      demoSteps: demoData.map((d, k) => ({
+        num: String(k + 1).padStart(2, '0'), title: d.title, sub: d.sub, select: () => this.setState({ step: k }),
+        bg: k === S.step ? 'var(--color-paper)' : 'transparent',
+        border: k === S.step ? 'var(--color-cheetah)' : 'var(--color-ethereal)',
+        numBg: k === S.step ? 'var(--color-cheetah)' : 'var(--color-silver-diva)',
+        numInk: k === S.step ? 'var(--color-paper)' : 'var(--color-steel)'
+      })),
+      demo: D,
+      objections: objections.map((o, k) => ({
+        say: o.say, answer: o.answer, open: S.open === k, cta: S.open === k ? 'close' : 'the answer',
+        bg: S.open === k ? 'var(--color-paper)' : 'transparent',
+        border: S.open === k ? 'var(--color-cheetah)' : 'var(--color-ethereal)',
+        toggle: () => this.setState((s) => ({ open: s.open === k ? -1 : k }))
+      })),
+      compare: [
+        { axis: 'What the AI can see', them: 'Only what you paste in.', us: 'The open document or spreadsheet, referenced files, and peer SEC filings.' },
+        { axis: 'Where the output lands', them: 'In a chat window; you copy it back.', us: 'Inline in the report, with styles and links preserved.' },
+        { axis: 'Governance', them: 'Depends on the vendor plan and who pasted what.', us: 'Inside Workiva permissions; data not used for training; admin-enabled.' },
+        { axis: 'Domain grounding', them: 'General web knowledge.', us: 'Knowledge bases such as Workiva Support Intelligence, plus SEC filing data.' },
+        { axis: 'Repeatability', them: 'Re-paste next quarter.', us: 'Saved prompts and quick edits inside the same workflow, every close.' }
+      ],
+      roadmap: [
+        { label: 'core ai · included', title: 'Workiva AI', bg: 'var(--color-zesty-neue)', ink: 'var(--color-steel)', items: [
+          { name: 'Global chat + file attachments', desc: 'Anywhere in the platform, including mobile. Attach PDF or DOCX for analysis.' },
+          { name: 'Document & Spreadsheet companions', desc: 'Read the open file; inline edits, quick edits, content generation, table summaries.' },
+          { name: 'Prompt Library + knowledge bases', desc: 'Sample prompts to adapt; switch KBs for trusted product and standards answers.' },
+          { name: 'SEC Filing Intelligence', desc: 'Load peer 10-K/10-Q filings and ask comparison questions.' }
+        ] },
+        { label: 'premium ai tiers', title: 'Agents', bg: 'var(--color-presentation)', ink: 'var(--color-steel)', items: [
+          { name: 'Benchmarking Agent', desc: 'Analyzes peer SEC filings to find disclosure gaps. Ask your account team whether it\u2019s in your package.' }
+        ] },
+        { label: 'planned', title: 'Coming', bg: 'var(--color-steel)', ink: 'var(--color-paper)', items: [
+          { name: 'Tie-Out Agent', desc: 'Automated consistency checks across schedules and reports; flags mismatched figures and links each to its source. May require a premium tier.' },
+          { name: 'Guided workflows', desc: 'AI operating inside specific reporting jobs rather than as a generic chat. Direction of travel; timing not yet announced.' }
+        ] }
+      ],
+      quiz: quizData.map((q, k) => {
+        const a = S.answers[k], done = a !== undefined;
+        return {
+          num: String(k + 1), text: q.text, answered: done, explain: q.explain,
+          resultLabel: done ? (a === q.correct ? 'Correct.' : 'Not quite.') : '',
+          resultColor: a === q.correct ? 'var(--color-mr-toad)' : 'var(--color-five-alarm-chili)',
+          options: q.options.map((t, j) => ({
+            text: t, pick: () => { if (!done) this.setState((s) => ({ answers: { ...s.answers, [k]: j } })); },
+            bg: done && j === q.correct ? 'var(--color-morning-dew)' : done && j === a ? 'var(--color-tertiary-salmon)' : 'transparent',
+            border: done && j === q.correct ? 'var(--color-mr-toad)' : done && j === a ? 'var(--color-five-alarm-chili)' : 'var(--color-ethereal)'
+          }))
+        };
+      }),
+      quizScore: answered + ' / ' + quizData.length + ' answered \u00b7 ' + correct + ' correct',
+      quizVerdict: verdict,
+      resetQuiz: () => this.setState({ answers: {} }),
+      library: libraryData.map((p, k) => ({ kind: p.kind, text: p.text, copied: S.copied === k ? 'copied' : 'copy', copy: () => copy(k, p.text) })),
+      donts: [
+        { no: 'don\u2019t start with the ai.', yes: 'start with a task in your close.' },
+        { no: 'don\u2019t make it guess.', yes: 'select the table, reference the file.' },
+        { no: 'don\u2019t chase the perfect prompt.', yes: 'be specific, then iterate.' },
+        { no: 'don\u2019t treat the output as final.', yes: 'a person still signs the filing.' },
+        { no: 'don\u2019t wait for the roadmap.', yes: 'start with what\u2019s enabled today.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

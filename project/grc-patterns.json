@@ -1,0 +1,84 @@
+{
+  "placeholder": false,
+  "note": "Strict audit of the Gong archetype report, Sept 3 2026. See GRC evidence audit.md. Only cited verbatim quotes count.",
+  "keptCount": "four",
+  "patterns": [
+    {
+      "archetype": "control rationalization",
+      "strength": "CUSTOMER-SPECIFIC",
+      "customers": 1,
+      "operation": "READ · COMPARE · CLASSIFY",
+      "quotes": [
+        { "text": "We manually review every control description to find duplicates and overlaps", "who": "GRC customer call · 3:33:58" }
+      ],
+      "listenFor": [
+        "\"We need to rationalize our controls.\"",
+        "\"We have too many controls that do the same thing.\"",
+        "\"Nobody has time to go through the whole RCM.\""
+      ],
+      "askLabel": "ask · listen, then probe",
+      "discovery": "When you're rationalizing controls, what do you look for to decide two controls are duplicates rather than legitimately separate?",
+      "talkTrack": "You mentioned reviewing every description by hand to find overlaps. That's the kind of first pass Workiva AI can do against your current RCM, with your team deciding what actually gets consolidated.",
+      "availability": "included"
+    },
+    {
+      "archetype": "framework mapping and gap review",
+      "strength": "CUSTOMER-SPECIFIC",
+      "customers": 1,
+      "operation": "MAP · CHECK",
+      "quotes": [
+        { "text": "We need to map our controls to a new framework and identify gaps", "who": "GRC customer call · 37:50" }
+      ],
+      "listenFor": [
+        "\"We're adopting NIST / ISO / SOC 2.\"",
+        "\"We don't know what's missing.\"",
+        "\"We cross-reference everything by hand.\""
+      ],
+      "askLabel": "ask · listen, then probe",
+      "discovery": "When you map controls to a new framework, how long does it take, and what's the most time-consuming part?",
+      "talkTrack": "You're adding a framework. Workiva AI can do a first-pass mapping of your existing controls to the new requirements and list where nothing maps, which your team then reviews.",
+      "availability": "included"
+    },
+    {
+      "archetype": "evidence sufficiency review",
+      "strength": "CUSTOMER-SPECIFIC",
+      "customers": 1,
+      "operation": "CHECK · READ",
+      "quotes": [
+        { "text": "We have to validate the completeness and accuracy of evidence", "who": "GRC customer call · 30:30" }
+      ],
+      "listenFor": [
+        "\"Someone has to open every evidence file.\"",
+        "\"We spend weeks reviewing evidence.\"",
+        "\"Does this actually support the control?\""
+      ],
+      "askLabel": "ask · listen, then probe",
+      "discovery": "When control owners upload evidence, what does your team have to read to decide whether it's sufficient?",
+      "talkTrack": "You said validating evidence takes real time each cycle. Today you can reference a file and ask Workiva AI whether it contains what the control requires; the automated Evidence Analyzer is planned, so we won't promise it.",
+      "availability": "planned"
+    },
+    {
+      "archetype": "test step drafting",
+      "strength": "CUSTOMER-SPECIFIC",
+      "customers": 1,
+      "operation": "DRAFT",
+      "quotes": [
+        { "text": "We have to define detailed test steps and attributes for each control", "who": "GRC customer call · 41:31" }
+      ],
+      "listenFor": [
+        "\"Setting up testing takes significant time.\"",
+        "\"We copy from similar controls and adjust.\"",
+        "\"Every new control needs its own test plan.\""
+      ],
+      "askLabel": "ask · listen, then probe",
+      "discovery": "When you set up testing for a new control, do you start from scratch or copy from a similar one, and what takes longest?",
+      "talkTrack": "Defining test steps for each control is repetitive. Workiva AI can suggest steps and attributes from the control description as a starting point your team customizes.",
+      "availability": "requires entitlement validation"
+    }
+  ],
+  "gaps": [
+    { "archetype": "control description drafting", "operation": "DRAFT · REWRITE" },
+    { "archetype": "issue and remediation write-ups", "operation": "SUMMARIZE · DRAFT" },
+    { "archetype": "narrative-to-flowchart translation", "operation": "READ · CLASSIFY" }
+  ]
+}

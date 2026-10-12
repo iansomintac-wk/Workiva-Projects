@@ -1,0 +1,89 @@
+{
+  "placeholder": true,
+  "note": "Replace with the JSON from the Gong export prompt (Sustainability). Set placeholder to false.",
+  "keptCount": "three",
+  "patterns": [
+    {
+      "archetype": "pre-assurance anomaly review",
+      "strength": "STRONG PATTERN",
+      "customers": 3,
+      "operation": "CHECK · COMPARE",
+      "quotes": [
+        {
+          "text": "we scan every value by hand before the auditors see it",
+          "who": "mid-cap industrials"
+        },
+        {
+          "text": "someone has to eyeball the whole factbook for outliers",
+          "who": "large-cap consumer"
+        },
+        {
+          "text": "we find the bad data after it's already in the draft",
+          "who": "regional utility"
+        }
+      ],
+      "listenFor": [
+        "\"We check every number before assurance.\"",
+        "\"We found an error late.\"",
+        "\"Where should we look first?\""
+      ],
+      "askLabel": "ask · proactively discover",
+      "discovery": "Before assurance, how does your team decide which values to re-check, and how long does that take?",
+      "availability": "included"
+    },
+    {
+      "archetype": "requirement-to-workflow translation",
+      "strength": "EMERGING PATTERN",
+      "customers": 2,
+      "operation": "READ · EXPLAIN · CLASSIFY",
+      "quotes": [
+        {
+          "text": "we read the standard three times and still aren't sure who owns the evidence",
+          "who": "mid-cap software"
+        },
+        {
+          "text": "turning ESRS into a to-do list is the hardest part",
+          "who": "large-cap healthcare"
+        }
+      ],
+      "listenFor": [
+        "\"What does this requirement actually need?\"",
+        "\"Who owns this data point?\"",
+        "\"We're still interpreting the standard.\""
+      ],
+      "askLabel": "ask · discover and probe",
+      "discovery": "When a new requirement lands, how do you work out what data is needed and who should provide it?",
+      "availability": "included"
+    },
+    {
+      "archetype": "narrative tightening for executives",
+      "strength": "CUSTOMER-SPECIFIC",
+      "customers": 1,
+      "operation": "REWRITE · SUMMARIZE",
+      "quotes": [
+        {
+          "text": "the board version takes as long as the report itself",
+          "who": "regional bank"
+        }
+      ],
+      "listenFor": [
+        "\"We rewrite it for the board.\"",
+        "\"It's too long.\"",
+        "\"Every audience gets a different version.\""
+      ],
+      "askLabel": "ask · listen, then probe",
+      "discovery": "How many versions of the same narrative does your team produce each cycle, and who writes them?",
+      "availability": "included"
+    }
+  ],
+  "gaps": [
+    {
+      "archetype": "disclosure gap assessment against ESRS",
+      "operation": "CHECK · MAP"
+    },
+    {
+      "archetype": "facility-level query building",
+      "operation": "EXTRACT · ANALYZE"
+    }
+  ]
+}
