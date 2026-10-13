@@ -34,6 +34,6 @@ file when they add it; until then, follow these.
   before anything customer-facing ships.
 
 # Repo map
-- `project/` — Claude Design handoff bundle (prototypes, design system, chat transcript). Read-only reference.
-- `sustainability-explainer/` — React + three.js build of the Sustainability explainer (`npm run build`).
-- `prompt-coach/` — offline SCOPE prompt grader: engine, data, tests, build. See its README.
+- `prompt-coach/` — the deliverable: offline SCOPE prompt coach (engine, data, tests, build). See its README.
+- `project/` — Claude Design handoff bundle. Design reference only (Workiva look, "prompting: weak → strong" and
+  "build it with scope" sections); not something to build.
