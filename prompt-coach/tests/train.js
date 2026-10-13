@@ -28,12 +28,13 @@ function train(data, opts = {}) {
   return { mode, w: acc, thr: Object.fromEntries(K.map((k) => [k, 0.5])) };
 }
 function trainOnce(data, { epochs = 30, lr = 0.5, l2 = 1e-4 } = {}) {
-  const X = data.map((r) => M.featurize(r.prompt, { mode }).x);
+  const F = data.map((r) => M.featurize(r.prompt, { mode }));
   const w = {};
   for (const k of K) {
     const v = new Float64Array(M.DIM); let b = 0;
     const pos = data.filter((r) => r[k]).length, neg = data.length - pos;
     const wPos = data.length / (2 * Math.max(pos, 1)), wNeg = data.length / (2 * Math.max(neg, 1)); // class balance
+    const X = F.map((f) => (f.per ? f.per[k] : f.x));
     const order = data.map((_, i) => i);
     for (let ep = 0; ep < epochs; ep++) {
       for (let i = order.length - 1; i > 0; i--) { const j = (rand() * (i + 1)) | 0; [order[i], order[j]] = [order[j], order[i]]; }

@@ -17,10 +17,11 @@ node tests/train.js rulefeat --tune data/train_*.jsonl   # retrain engine/weight
 | Layer | File | What it does |
 |---|---|---|
 | Rules | `engine/rules.js` | ~150 regex cues per SCOPE letter on normalized text (typos, contractions, curly quotes). Each hit maps back to the user's original characters for highlighting. Also detects stacked asks and vague verbs. |
-| Model | `engine/model.js` + `engine/weights.json` (16 KB) | Per-letter logistic regression over the rule hits only (no raw words), averaged over 5 seeded runs, with thresholds tuned on out-of-fold training predictions. |
+| Model | `engine/model.js` + `engine/weights.json` (4 KB) | Per-letter logistic regression over that letter's own rule hits only (no raw words, no cross-letter features, so one element can't vouch for another), averaged over 5 seeded runs, thresholds tuned on out-of-fold training predictions. |
+| Task + area | `engine/classify.js` + `engine/cls-weights.json` (166 KB) | Softmax regression over words + intent/domain pattern hits. Task 69.7% / area 86.3% on test (pattern-only baseline: 48% / 78%); 79% when confident. Low confidence falls back to patterns and the page asks the user to confirm. |
 | Rewrites | `engine/rewrite.js` | Detects area (FR / GRC / SUS / general) and task (15 intents). Splits the prompt into letter-tagged segments so the user's own wording is kept; fills missing letters from intent-specific templates and file metadata (file name, best-matching sheet, header row, periods). Re-grades its own strong version and swaps in more explicit wording if a letter doesn't register. Adds Workiva-specific tips. |
 | Files | `engine/files.js` | Reads .docx (headings), .xlsx (sheets + header rows), .pptx (slide titles), .pdf, .csv, .txt in the browser; libraries load from cdnjs only when needed. |
-| Page | `web/template.html` | Live grading, highlights, click-to-fix, ladder, SCOPE builder, examples, "how we grade". |
+| Page | `web/template.html` | Live grading, highlights, click-to-fix with one-tap options and an "I already included this" override, task confirmation when unsure, ladder, SCOPE builder, examples, "how we grade". |
 
 Grade rule: weak if Source or Objective is missing; strong if all five are present (and the
 prompt asks for one thing at a time); otherwise better.
@@ -41,7 +42,13 @@ would likely be lower).
 | Rules only | 83.4% | 90% | 0 KB |
 | Word/char n-gram model only | 75.9% | 42% | 2.6 MB |
 | Rules + n-gram hybrid | 86.9% | 75% | 2.6 MB |
-| **Rules + rule-feature model (shipped)** | **87.5%** | 82% | **18 KB** |
+| Rules + rule-feature model, shared features | 87.5% | 82% | 18 KB |
+| **Rules + per-letter rule-feature model (shipped)** | **85.6%** | 82% | **4 KB** |
+
+The shared-feature model scored higher by inferring letters from other letters (a prompt with an
+audience usually also has a check rule). That made the coach credit elements the user never
+wrote, so the shipped model credits each element only from its own cues. It also finds more of
+what users did write: Context recall 0.77 → 0.81, Parameters 0.75 → 0.81.
 
 Rewrite simulation over 2,070 runs (training prompts, with and without a sample file): generated
 strong versions re-grade as strong 99.8% of the time; toggling any letter always changes the

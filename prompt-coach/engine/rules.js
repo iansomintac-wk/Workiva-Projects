@@ -167,7 +167,7 @@
       [/\b\d+\s+(?:[\w-]+\s+){0,2}(?:talking points|bullets?|bullet points|questions|sentences|items|rows|risks|points|steps|examples|options|takeaways|recommendations|findings|issues|metrics|lines|slides|paragraphs|minutes|words)\b/, 1.0, 'n-adj-unit'],
       [/\bby\s+\d+\s?%|\b\d+\s?%\s+(?:of the |shorter|length)/, 1.0, 'by-pct'],
       [/\bsound(?:s|ing)? (?:less|more|like|warmer|friendlier|crisper|clearer)\b|\b(?:less|more) (?:formal|corporate|defensive|technical|salesy|casual|direct|concise|confident|cautious)\b|\bno (?:fluff|jargon|legalese)\b/, 1.0, 'tone2'],
-      [/\b(?:fy|cy)?\s?'?\d{2,4}\s+only\b|\bq[1-4]\s+only\b|\b\w+ only\b(?=[\s,.;]|$)|\bonly (?:check|include|cover|ask about|look at|use|flag|list|consider|keep|show|report|review|pull|count)\b/, 0.9, 'only-limit'],
+      [/\b(?:fy|cy)?\s?'?\d{2,4}\s+only\b|\bq[1-4]\s+only\b|\b(?!using\b|use\b|rely\b|based\b|work\b|working\b|go\b|going\b|draw\b|stick\b|if\b|not\b)\w+ only\b(?=[\s,.;]|$)|\bonly (?:check|include|cover|ask about|look at|use|flag|list|consider|keep|show|report|review|pull|count)\b/, 0.9, 'only-limit'],
       [/\b(?:in|to|into) (?:thousands|millions|billions|\$k|\$m)\b|\b(?:one|two|three|four|\d) decimals?\b|\bdecimal places?\b|\bround(?:ing|ed)? (?:to|up|down)\b|\bnearest (?:thousand|million|dollar|whole)\b/, 1.0, 'precision'],
       [/\b(?:bar|line|pie|stacked|waterfall|bridge|column|scatter) (?:chart|graph)\b|\bgantt\b|\bheat ?map\b|\bswimlanes?\b/, 1.0, 'chart'],
       [/\bmatch(?:ing)? the (?:style|format|formatting|tone|structure|layout) of\b|\bin the (?:same )?(?:style|format|voice) (?:of|as)\b|\bmodel(?:ed)? on\b/, 1.0, 'match-style'],

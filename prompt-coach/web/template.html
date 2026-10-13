@@ -86,6 +86,7 @@ section.block { padding-block: 44px; }
 .ghost:hover { border-color: var(--ink); }
 .selects { display: flex; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); align-items: center; }
 select { font-size: 13px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 8px; }
+select.ask { border: 2px solid var(--orange); }
 .notes { display: grid; gap: 8px; }
 .note { font-size: 14px; border-radius: 12px; padding: 10px 14px; background: var(--sand); text-wrap: pretty; }
 .note.warn { background: var(--weak-bg); }
@@ -261,8 +262,8 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
         <summary>How the coach grades</summary>
         <div class="how-grid">
           <div class="card"><h4>The rule</h4><p><b>Weak</b>: the AI would have to guess what to read or what you want back. <b>Better</b>: it names a source and one job. <b>Strong</b>: all five SCOPE elements, and one job at a time.</p></div>
-          <div class="card"><h4>How it works</h4><p>About 200 language patterns spot each element, and a small scoring model trained on 1,080 labeled reporting, GRC and sustainability prompts weighs them. It all runs on this page; there is no AI service behind it.</p></div>
-          <div class="card"><h4>How accurate it is</h4><p id="accuracy">On 320 held-out prompts it matched careful human-style grading 87% of the time, and nearly never confuses weak with strong. It is a coach, not a judge: if it misses something you wrote, rephrase it more plainly or override the task type.</p></div>
+          <div class="card"><h4>How it works</h4><p>About 200 language patterns spot each element, and small scoring models trained on 1,080 labeled reporting, GRC and sustainability prompts weigh them and recognize the kind of task. Each element is credited only from its own words. It all runs on this page; there is no AI service behind it.</p></div>
+          <div class="card"><h4>How accurate it is</h4><p id="accuracy">On 320 held-out prompts it matched careful human-style grading 86% of the time, and nearly never confuses weak with strong. It is a coach, not a judge: if it misses something you wrote, rephrase it more plainly or override the task type.</p></div>
           <div class="card"><h4>Where the criteria come from</h4><ul>
             <li><a href="https://support.workiva.com/hc/en-us/articles/19173586555412-Tips-for-getting-useful-responses-from-Workiva-AI" target="_blank" rel="noopener">Workiva: tips for useful responses</a></li>
             <li><a href="https://support.workiva.com/hc/en-us/articles/28927643953172-Reference-specific-files-in-chat-with-Workiva-AI" target="_blank" rel="noopener">Workiva: reference files in chat</a></li>
@@ -314,12 +315,39 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
   ];
 
   const weights = window.SCOPE_WEIGHTS;
+  const CLS = ScopeClassify.unpack(window.SCOPE_CLS);
+  // Task and area: trust the classifier when it is confident; otherwise fall back to patterns and ask.
+  function pickTask(prompt) {
+    const c = ScopeClassify.classify(prompt, CLS);
+    let intent = $('intent').value || null, unsure = false;
+    if (!intent) {
+      const sure = c.intent.label !== 'other' && c.intent.p >= 0.5;
+      const pattern = ScopeRewrite.intentOf(ScopeRules.normalize(prompt), false, true);
+      if (sure) intent = c.intent.label;
+      else { intent = pattern || (c.intent.label !== 'other' ? c.intent.label : null); unsure = true; }
+    }
+    const domain = $('domain').value || (c.domain.p >= 0.5 ? c.domain.label : undefined);
+    return { intent: intent || undefined, domain, unsure };
+  }
   const detect = (p) => {
     const r = ScopeModel.predict(p, weights, { mode: weights.mode });
+    // letters the user says they already covered count as present for their own prompt
+    if (p === $('prompt').value) for (const k of K) if (state.overrides[k]) r.on[k] = true;
     return { on: r.on, d: r.rules };
   };
+  const QUICK = {
+    S: () => ['Use only the selected text.', 'Use only the selected table.', 'Use only the open document.'],
+    C: (d) => ({
+      FR: ['the audit committee', 'the CFO', 'our external auditors', 'investors'],
+      GRC: ['the audit committee', 'our external auditors', 'control owners', 'a new team member'],
+      SUS: ['our assurance provider', 'the sustainability committee', 'the board', 'investors'],
+      GEN: ['leadership', 'my manager', 'a new team member', 'customers']
+    }[d] || []).map((a) => 'This is for ' + a + '.'),
+    P: () => ['Return a table.', 'Use five bullets.', 'Keep it under 150 words.', 'Rank items by importance.'],
+    E: () => ['Do not guess or add facts that are not in the source.', 'Show where each point comes from.', 'List open questions separately.', 'Flag anything you are unsure of.']
+  };
 
-  const state = { files: [], stage: 0, on: Object.fromEntries(K.map((k) => [k, true])), result: null, openFix: null };
+  const state = { files: [], stage: 0, on: Object.fromEntries(K.map((k) => [k, true])), result: null, openFix: null, overrides: {} };
   for (const [k, v] of Object.entries(INTENT_NAMES)) { const o = document.createElement('option'); o.value = k; o.textContent = v; $('intent').append(o); }
 
   /* ---------------- live grading ---------------- */
@@ -329,7 +357,9 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     const prompt = $('prompt').value;
     const files = state.files.filter((f) => f.ok);
     if (!prompt.trim()) { renderEmpty(); return; }
-    const r = ScopeRewrite.coach(prompt, { files, detect, domain: $('domain').value || undefined, intent: $('intent').value || undefined });
+    const pick = pickTask(prompt);
+    const r = ScopeRewrite.coach(prompt, { files, detect, domain: pick.domain, intent: pick.intent });
+    r.taskUnsure = pick.unsure && prompt.trim().split(/\s+/).length >= 3;
     // one job at a time: a stacked prompt can't be strong
     r.displayGrade = r.grade === 'strong' && r.hits && ScopeRules.detect(prompt).stacked ? 'better' : r.grade;
     const prevKey = state.result && state.result.stages.strong.prompt;
@@ -339,6 +369,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     renderMeter(prompt); renderStages(); renderScope();
   }
   function renderEmpty() {
+    state.overrides = {};
     $('mirror').textContent = ''; $('badge').className = 'badge weak'; $('badge').textContent = '—';
     $('chips').replaceChildren(); $('headline').textContent = 'Type a prompt to see its grade.'; $('notes').replaceChildren(); $('fix').hidden = true;
   }
@@ -374,14 +405,17 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
       c.setAttribute('aria-expanded', String(state.openFix === k));
       const i = document.createElement('i'); i.textContent = k; i.style.background = META[k].color;
       const s = document.createElement('span'); s.textContent = META[k].word;
-      const st = document.createElement('span'); st.className = 'st'; st.textContent = on ? '✓' : 'add';
+      const st = document.createElement('span'); st.className = 'st'; st.textContent = state.overrides[k] ? '✓ you' : on ? '✓' : 'add';
       st.setAttribute('aria-label', on ? 'found' : 'missing');
       c.append(i, s, st);
       c.onclick = () => { state.openFix = state.openFix === k ? null : k; renderMeter($('prompt').value); };
       chips.append(c);
     });
     renderFix();
-    $('detected').textContent = (!$('domain').value || !$('intent').value) ? 'Detected: ' + ({ FR: 'financial reporting', GRC: 'GRC and audit', SUS: 'sustainability', GEN: 'general' }[r.domain]) + ' · ' + (INTENT_NAMES[r.intent] || r.intent).toLowerCase() : '';
+    const areaName = { FR: 'financial reporting', GRC: 'GRC and audit', SUS: 'sustainability', GEN: 'general' }[r.domain];
+    const taskName = (INTENT_NAMES[r.intent] || r.intent).toLowerCase();
+    $('detected').textContent = (!$('domain').value || !$('intent').value) ? (r.taskUnsure ? 'Looks like: ' + areaName + ' · ' + taskName + '? Pick the task if not.' : 'Detected: ' + areaName + ' · ' + taskName) : '';
+    $('intent').classList.toggle('ask', !!r.taskUnsure && !$('intent').value);
     const notes = $('notes'); notes.replaceChildren();
     const pii = /\b[\w.+-]+@[\w-]+\.[\w.]+\b|\b\d{3}-\d{2}-\d{4}\b|\b(?:\d[ -]?){13,16}\b|\bpassword\s*[:=]/i.test(prompt);
     if (pii) notes.append(note('warn', 'This looks like personal or sensitive data (an email address, ID, card number, or password). Leave it out of AI prompts unless your AI policy allows it.'));
@@ -402,6 +436,12 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     const on = r.detected[k];
     const h = document.createElement('h4'); h.textContent = (on ? 'Found: ' : 'Missing: ') + META[k].word;
     const p = document.createElement('p');
+    if (on && state.overrides[k]) {
+      p.textContent = 'You marked this as already in your prompt.';
+      const undo = document.createElement('button'); undo.type = 'button'; undo.className = 'ghost'; undo.textContent = 'Undo';
+      undo.onclick = () => { delete state.overrides[k]; run(); };
+      box.append(h, p, undo); return;
+    }
     if (on) {
       const words = r.hits[k].hits.filter((x) => x.orig).map((x) => $('prompt').value.slice(x.orig[0], x.orig[1]).trim()).filter(Boolean);
       p.textContent = words.length ? 'Earned by: “' + [...new Set(words)].slice(0, 3).join('”, “') + '”.' : 'Your prompt covers this.';
@@ -413,7 +453,16 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     const row = document.createElement('div'); row.className = 'row';
     const add = document.createElement('button'); add.type = 'button'; add.className = 'btn'; add.textContent = 'Add this to my prompt';
     add.onclick = () => insertLetter(k, frag);
-    row.append(add);
+    const mine = document.createElement('button'); mine.type = 'button'; mine.className = 'ghost'; mine.textContent = 'I already included this';
+    mine.onclick = () => { state.overrides[k] = true; state.openFix = k; run(); };
+    row.append(add, mine);
+    const quick = (QUICK[k] ? QUICK[k](r.domain) : []);
+    let qrow = null;
+    if (quick.length) {
+      qrow = document.createElement('div'); qrow.className = 'row';
+      const lab = document.createElement('span'); lab.className = 'label'; lab.textContent = 'or add one:'; qrow.append(lab);
+      for (const q of quick) { const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = q.replace(/^This is for /, 'For ').replace(/\.$/, ''); b.onclick = () => insertLetter(k, q); qrow.append(b); }
+    }
     if (k === 'S' && state.files.some((f) => f.ok)) {
       for (const f of state.files.filter((x) => x.ok).slice(0, 3)) {
         const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = 'Use @' + f.name;
@@ -421,6 +470,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
       }
     }
     box.append(h, p, code, row);
+    if (qrow) box.append(qrow);
   }
   function insertLetter(k, frag) {
     const ta = $('prompt'); let v = ta.value.trim();
@@ -572,7 +622,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
   for (const ex of EXAMPLES) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'ex';
     const t = document.createElement('b'); t.textContent = ex.area; b.append(t, ex.text);
-    b.onclick = () => { $('prompt').value = ex.text; $('domain').value = ''; $('intent').value = ''; state.stage = 0; run(); $('prompt').focus(); };
+    b.onclick = () => { $('prompt').value = ex.text; state.overrides = {}; $('domain').value = ''; $('intent').value = ''; state.stage = 0; run(); $('prompt').focus(); };
     $('examples').append(b);
   }
   $('prompt').addEventListener('input', schedule);

@@ -42,6 +42,21 @@
     // L2-normalize text features so long prompts don't dominate
     let norm = 0; for (const v of f.values()) norm += v * v; norm = Math.sqrt(norm) || 1;
     const out = []; for (const [k, v] of f) out.push([k, v / norm]);
+    if (opts && opts.mode === 'rulefeat') {
+      // each letter sees only its own cues plus shared signals, so one letter can't vouch for another
+      const per = {};
+      for (const k of K) {
+        const g = new Map(); const put = (key, v = 1) => { const h = hash(key); g.set(h, (g.get(h) || 0) + v); };
+        put('__bias'); put('len:' + lenBucket);
+        const e = d.el[k];
+        put('r:' + k + ':on', e.on ? 1 : 0); put('r:' + k + ':score', Math.min(e.score, 3));
+        for (const h of e.hits) put('rt:' + k + ':' + h.tag);
+        for (const v of d.vague) put('vague:' + v);
+        let n2 = 0; for (const v of g.values()) n2 += v * v; n2 = Math.sqrt(n2) || 1;
+        per[k] = [...g].map(([h, v]) => [h, v / n2]);
+      }
+      return { x: out, per, d };
+    }
     return { x: out, d };
   }
 
@@ -49,11 +64,11 @@
 
   function predict(prompt, weights, opts) {
     const mode = (opts && opts.mode) || weights.mode || 'hybrid';
-    const { x, d } = featurize(prompt, { ...opts, mode });
+    const { x, per, d } = featurize(prompt, { ...opts, mode });
     const on = {}, prob = {};
     for (const k of K) {
       const W = weights.w[k]; let z = W.b || 0;
-      for (const [i, v] of x) { const wi = W.v[i]; if (wi) z += wi * v; }
+      for (const [i, v] of (per ? per[k] : x)) { const wi = W.v[i]; if (wi) z += wi * v; }
       prob[k] = sigmoid(z); on[k] = prob[k] >= (weights.thr && weights.thr[k] || 0.5);
     }
     if (d.text.trim().split(/\s+/).length <= 2 && !d.el.O.on) on.O = false; // greetings

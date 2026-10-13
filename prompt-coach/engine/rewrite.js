@@ -34,8 +34,9 @@
     ['draft', /\b(draft|write|compose|create|prepare|generate|produce|put together|come up with)/],
     ['summarize', /\b(summar|overview|recap|tl;?dr|key (?:points|takeaways|themes)|highlights|brief)/]
   ];
-  function intentOf(t, hasData) {
+  function intentOf(t, hasData, strict) {
     for (const [name, re] of INTENTS) if (re.test(t)) return name;
+    if (strict) return null;
     return hasData ? 'variance' : 'summarize';
   }
 
@@ -388,6 +389,6 @@
     return { grade, detected: on, headline, stages, scope, segments, notes, tips, intent: ctx.intent, domain: ctx.domain, placeholders, hits: d.el };
   }
 
-  const api = { coach, assemble, domainOf, intentOf, objectOf };
+  const api = { coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
   if (isNode) module.exports = api; else root.ScopeRewrite = api;
 })(typeof window !== 'undefined' ? window : globalThis);
