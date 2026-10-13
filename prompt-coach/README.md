@@ -10,6 +10,9 @@ node tests/build.js                      # -> dist/prompt-coach.html (single fil
 node tests/eval.js rulefeat data/test.jsonl          # accuracy on held-out prompts
 node tests/simulate.js data/train_*.jsonl            # rewrite invariants
 node tests/train.js rulefeat --tune data/train_*.jsonl   # retrain engine/weights.json
+node tests/train_cls.js --eval data/test.jsonl data/train_*.jsonl   # retrain task/area classifier
+python3 tests/make_fixtures.py && VENDOR=<npm dir> node tests/filetest.js   # real-file test
+node tests/eval_real.js real-eval/prompts.csv        # score on real prompts (see real-eval/README.md)
 ```
 
 ## How it works
@@ -63,4 +66,12 @@ prompt; no duplicate sentences, empty fragments, or broken punctuation.
 - Knowledge-base and agent names come from Workiva support pages as of Oct 2026; confirm
   before publishing externally.
 
-Research notes: `research/findings.md`.
+## Real files
+
+`tests/filetest.js` loads real Word, Excel, PowerPoint, PDF and CSV files (from
+`tests/make_fixtures.py`) into the built page in Chromium, serving the page's CDN libraries from a
+local npm install of the same versions. Last run: all 8 fixtures read correctly (sheet names,
+header rows, headings, slide titles, periods); image-only PDFs and legacy .doc files show clear
+messages.
+
+Research notes: `research/findings.md`. Real-prompt evaluation kit: `real-eval/README.md`.
