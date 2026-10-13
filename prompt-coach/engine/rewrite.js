@@ -98,6 +98,9 @@
   }
 
   function periodPhrase(ctx) {
+    const mine = ctx.promptPeriods || [];
+    if (mine.length >= 2) return mine[0] + ' and ' + mine[1];
+    if (mine.length === 1) return null; // a single named period: "for Q4 FY26", not "between"
     const p = ctx.periods;
     if (p.length >= 2) return p[p.length - 2] + ' and ' + p[p.length - 1];
     return 'the current and prior period';
@@ -108,14 +111,14 @@
     switch (ctx.intent) {
       case 'errors': return 'Find errors in the' + (o || ' text') + ': wrong numbers, inconsistent terms, typos, and broken references. ';
       case 'gaps': return 'Identify gaps in the' + (o || ' content') + ': anything required that is missing, incomplete, or has no owner. ';
-      case 'variance': return 'Identify the largest changes' + (o ? ' in the' + o : '') + ' between ' + periodPhrase(ctx) + '. ';
+      case 'variance': { const pp = periodPhrase(ctx); return 'Identify the largest changes' + (o ? ' in the' + o : '') + (pp ? ' between ' + pp : ' for ' + ctx.promptPeriods[0]) + '. '; }
       case 'anomaly': return 'Find missing, unusual, or duplicate-looking values' + (o ? ' in the' + o : '') + '. ';
       case 'consistency': return 'Identify every number or statement that conflicts with another table, chart, or narrative. ';
       case 'rewrite': return 'Rewrite the selected' + (o || ' text') + ' for ' + (ctx.domain === 'GEN' ? 'a senior reader' : 'a senior executive audience') + '. ';
       case 'summarize': return 'Summarize the' + (o || ' content') + ' for a reader who has not seen it. ';
       case 'draft': return 'Draft ' + (ctx.object ? 'the ' + ctx.object : 'a first version of the section') + ' from the source. ';
       case 'extract': return 'Extract every ' + (ctx.object || 'relevant item') + ' into one list. ';
-      case 'compare': return 'Compare the' + (o || ' figures') + ' against ' + (ctx.periods.length ? periodPhrase(ctx).split(' and ')[0] : 'the prior period') + ' and identify the differences that matter. ';
+      case 'compare': return 'Compare the' + (o || ' figures') + ' against ' + ((ctx.promptPeriods && ctx.promptPeriods[0]) || (ctx.periods.length ? (periodPhrase(ctx) || '').split(' and ')[0] : '') || 'the prior period') + ' and identify the differences that matter. ';
       case 'explain': return 'Explain ' + (ctx.object ? ctx.object : '[the requirement]') + ' for the person collecting the evidence. ';
       case 'questions': return 'Write the questions a reviewer is most likely to ask about the' + (o || ' content') + '. ';
       case 'map': return 'Map each ' + (ctx.object || 'item') + ' to the relevant ' + (ctx.domain === 'GRC' ? 'COSO principle or framework requirement' : ctx.domain === 'SUS' ? 'ESRS disclosure requirement' : 'framework requirement') + '. ';
@@ -223,6 +226,7 @@
   function asSentence(k, phrase) {
     let p = phrase.replace(/[.;,]+$/, '');
     if (k === 'C' && /^(for|to)\b/i.test(p)) p = 'This is ' + p;
+    else if (k === 'P' && /^(?:for|during|over|across|since|from|between)\s/i.test(p)) p = 'Focus on ' + p.replace(/^\w+\s/, '');
     else if (k === 'P' && /^(in|as|into|under|within|no more than|at most|up to|less than|ranked|sorted|by)\b/i.test(p)) p = 'Return it ' + p;
     return p.replace(/^./, (c) => c.toUpperCase()) + '.';
   }
@@ -236,7 +240,7 @@
 
   // The thing the prompt is about: noun phrase after the main verb, minus possessives.
   function objectOf(t) {
-    const m = t.match(/\b(?:analy[sz]e|review|look at|check|summari[sz]e|explain|compare|identify|find|list|draft|write|rewrite|map|extract|help (?:me )?with|go over|improve|clean up|work on|tell me about)\s+(?:up |out |together |down )?(?:the |our |my |this |these |all |some |any |a |an )?((?:selected |attached |current |highlighted )?[a-z0-9&/-]+(?: [a-z0-9&/-]+){0,3}?)(?=[.,;?!]| for | and | to | so | in | from | with | by | that | which |\s*$)/);
+    const m = t.match(/\b(?:analy[sz]e|review|look at|check|summari[sz]e|explain|compare|identify|find|list|draft|write|rewrite|map|extract|help (?:me )?with|go over|improve|clean up|work on|tell me about)\s+(?:up |out |together |down )?(?:the |our |my |this |these |all |some |any |a |an )?((?:selected |attached |current |highlighted )?[a-z0-9&/-]+(?: [a-z0-9&/-]+){0,3}?)(?=[.,;?!]| for | and | to | so | in | from | with | by | that | which | vs\.? | versus | against | compared |\s*$)/);
     if (!m) return null;
     let o = m[1].replace(/^(?:selected|attached|current|highlighted) /, '').trim();
     if (/^(it|this|that|them|me|us|stuff|things|everything|something)$/.test(o) || /^(?:for|to|in|on|at|with|by|from|over|into|if|whether|and|or)\b/.test(o)) return null;
@@ -304,6 +308,7 @@
     const headers = ((chosen && chosen.sheet && chosen.sheet.headers) || []).filter((h) => h && h.length < 30).slice(0, 6);
     const ctx = {
       t, files, domain: opts.domain || domainOf(t + ' ' + files.map((f) => (f.text || '').slice(0, 3000)).join(' ').toLowerCase()),
+      promptPeriods: [...new Set((prompt.match(/\b(?:FY|CY)\s?'?\d{2,4}\b|\bQ[1-4]\s?(?:FY\s?'?\d{2,4})?\b|\bH[12]\s?(?:FY\s?'?\d{2,4})?\b|\b20\d{2}\b/gi) || []).map((x) => x.replace(/\s+/g, ' ').toUpperCase()))],
       intent: null, object: restoreCase(prompt, objectOf(t)), periods: periodsIn(files), headers
     };
     ctx.intent = opts.intent || intentOf(t, files.some((f) => f.kind === 'Excel') || /\b(data|table|numbers|figures|emissions|revenue|metrics?)\b/.test(t));
@@ -317,6 +322,8 @@
         for (const x of snt.inside.filter((y) => y.k === 'C' || y.k === 'P' || y.k === 'E').sort((p, q) => p.a - q.a)) {
           if (taken.some((y) => x.a < y.b && x.b > y.a)) continue; taken.push(x);
           const phrase = prompt.slice(x.a, x.b).replace(/^[\s,]+|[\s,]+$/g, '');
+          const core = phrase.replace(/^(?:for|during|over|across|since|from|between|in)\s+/i, '').toLowerCase();
+          if (core && gen[x.k === 'P' ? 'O' : x.k] && gen.O.toLowerCase().includes(core)) continue; // already stated by the new objective
           kept.push({ host: x.k, segs: [{ text: asSentence(x.k, phrase) + ' ', letter: x.k }], letters: new Set([x.k]) });
         }
         continue;
@@ -375,7 +382,7 @@
     if (d.words < 6) notes.push({ kind: 'short', text: 'Very short prompts leave almost everything to guesswork. Aim for one or two full sentences.' });
     if (files.length) {
       const fileText = files.map((f) => (f.text || '') + ' ' + (f.sheets || []).map((s) => s.name + ' ' + (s.headers || []).join(' ')).join(' ')).join(' ').toLowerCase();
-      const terms = (prompt.match(/\b(?:FY|CY)\s?'?\d{2,4}\b|\bQ[1-4]\b|\b(?:19|20)\d{2}\b|\bScope [123]\b|\b[A-Z][A-Za-z]+(?: [A-Z][A-Za-z]+)+\b/g) || []).filter((x) => !/^(You|The|Use|Do|Please)\b/.test(x));
+      const terms = (prompt.match(/\bQ[1-4]\s?FY\s?'?\d{2,4}\b|\b(?:FY|CY)\s?'?\d{2,4}\b|\bQ[1-4]\b|\b(?:19|20)\d{2}\b|\bScope [123]\b|\b[A-Z][A-Za-z]+(?: [A-Z][A-Za-z]+)+\b/g) || []).filter((x) => !/^(You|The|Use|Do|Please)\b/.test(x));
       const missingTerms = [...new Set(terms)].filter((x) => !fileText.includes(x.toLowerCase()));
       if (missingTerms.length) notes.push({ kind: 'grounding', text: 'Your prompt mentions ' + listify(missingTerms.map((x) => '"' + x + '"')) + ', which does not appear in the attached ' + (files.length === 1 ? 'file' : 'files') + '. Check you attached the right source.' });
       if (ctx.periods.length) notes.push({ kind: 'periods', text: 'Periods found in your files: ' + ctx.periods.join(', ') + '.' });
