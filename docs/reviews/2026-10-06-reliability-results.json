@@ -1,0 +1,17 @@
+{
+  "revision": "3ce0e69",
+  "trackerSha256": "a21ca8c34c9c0859bf6b26e77f53a748e34daa026c21d2dba8f95f980d2fbddb",
+  "method": "Unchanged extracted app functions with synthetic storage and DOM; real adapter with injected fetch; no live vendor calls",
+  "cases": [
+    {"case": "stale tab overwrite", "bannerShown": true, "saveSucceeded": true, "persistedArr": 100, "newerArrOverwritten": 200},
+    {"case": "CSV import quota failure", "saveSucceeded": false, "memoryArr": 999, "persistedArr": 100, "callerUnconditionalSuccess": true},
+    {"case": "backup bypasses rejected-load saving block", "normalSave": false, "backupResult": true, "persistedCustomers": [], "backupCustomers": []},
+    {"case": "CTA accepted without id versus tracker contract", "vendorStatus": "sent", "externalId": null, "firstTrackerSent": 0, "firstTrackerFailed": 0, "retryTrackerSent": 0, "queueStatusAfterRetry": "queued", "vendorCalls": 1},
+    {"case": "concurrent pushes lose sent ledger entry", "submittedIds": ["q-race-a", "q-race-b"], "rememberedIds": ["q-race-b"], "vendorCallsAfterRetry": 3},
+    {"case": "concurrent same-id CTA push", "vendorCalls": 2}
+  ],
+  "captures": [
+    {"name": "today", "seed": "demo-seed-today.js", "viewport": {"width": 1440, "height": 900}, "pngWidth": 1425, "pngHeight": 8483, "sha256": "0ac54a9f9ee5692fb19bcfc2a9ef5e05ab03255ac83ee6d073510860ea5a9a85", "runtimeErrors": []},
+    {"name": "account-overview", "seed": "demo-seed-today.js", "viewport": {"width": 1440, "height": 900}, "pngWidth": 1425, "pngHeight": 2262, "sha256": "378577efa19395a4420fbbd27b281c439fd6c374612d23d68516bd881b1e07cf", "runtimeErrors": []}
+  ]
+}
