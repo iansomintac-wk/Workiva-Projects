@@ -17,8 +17,8 @@ const rows = files.flatMap((f) => fs.readFileSync(f, 'utf8').split('\n').filter(
 const words = (s) => (s.toLowerCase().match(/[a-z0-9]+(?:['’][a-z]+)?/g) || []);
 const VAGUE_ONLY = /^\s*(?:(?:please|pls|can (?:you|u)|could you)\s+)*(?:analy[sz]e|review|look (?:at|over)|go over|check|help(?: me)?(?: with)?|work on|take a look at)\b[^?]*$/i;
 // the coach tidies chat shorthand in the user's words; compare against the tidied form
-const tidy = (x) => x.replace(/\bcan u\b/gi, 'can you').replace(/\bu\b/gi, 'you').replace(/\bur\b/gi, 'your').replace(/\b(?:pls|plz)\b/gi, 'please').replace(/^\s*(?:hi|hey|hello)\b[\s,!.]*/i, '');
-const fail = { numbers: [], role: [], askLost: [], sheet: [], notStrong: [], fileHeadline: [], casual: [], unsureTask: [], unsureArea: [], splitNumber: [], assumedSource: [], writeOnly: [] };
+const tidy = (x) => x.replace(/\bcan u\b/gi, 'can you').replace(/\bu\b/gi, 'you').replace(/\bur\b/gi, 'your').replace(/\b(?:pls|plz)\b/gi, 'please').replace(/^\s*(?:hi|hey|hello)\b[\s,!.]*/i, '').replace(/\b(?:any )?thoughts\s*\?+/gi, '').replace(/^\s*(?:thanks|thank you|thx|ty)\b[^.!?]*[.!?]*/i, '');
+const fail = { numbers: [], role: [], askLost: [], sheet: [], notStrong: [], fileHeadline: [], casual: [], unsureTask: [], unsureArea: [], splitNumber: [], assumedSource: [], writeOnly: [], subjectLost: [] };
 let n = 0;
 for (const r of rows) for (const withFile of [false, true]) {
   const file = withFile ? FILES[r.domain] : null; if (withFile && !file) continue;
@@ -40,12 +40,16 @@ for (const r of rows) for (const withFile of [false, true]) {
   if (sh && !r.prompt.toLowerCase().includes(sh[1].toLowerCase())) fail.sheet.push([r.prompt, sh[1]]);
   { const on = detect(s).on; if (R.grade(on) !== 'strong') fail.notStrong.push([r.prompt, 'missing ' + K.filter((k) => !on[k]).join(''), s]); }
   if (/\b(?:can u|u|ur|pls|plz)\b|(?:^|[.!?]\s+)(?:any )?thoughts\?|(?:^|[.!?]\s+)(?:hi|hey|hello|thanks|thx)\b/i.test(s)) fail.casual.push([r.prompt, s]);
-  if (!pick.taskSure && !o.detected.O && !/Identify and list \[what you want back/.test(s)) fail.unsureTask.push([r.prompt, s]);
+  if (!pick.taskSure && !o.detected.O && !/identify and list \[what you want back/i.test(s)) fail.unsureTask.push([r.prompt, s]);
   if (!pick.areaSure && /10-Q MD&A|SOX testing workpapers|CSRD report|audit committee|external auditors|assurance provider/.test(s.replace(r.prompt, ''))) fail.unsureArea.push([r.prompt, s]);
   if (/[A-Za-z0-9]\. [0-9]/.test(s) && !/[A-Za-z0-9]\. [0-9]/.test(r.prompt)) fail.splitNumber.push([r.prompt, s]);
   { const m = bare.match(/\b(?:the )?(?:selected|open) (table|report|document|text|range|data|rows?|section)\b/i);
     if (!file && !o.detected.S && m && !new RegExp('\\b' + m[1].replace(/s$/, ''), 'i').test(r.prompt)) fail.assumedSource.push([r.prompt, m[0]]); }
   if (['draft', 'checklist'].includes(o.intent) && /\bwork only from\b/i.test(s)) fail.writeOnly.push([r.prompt, s]);
+  // the subject must survive even when a vague sentence is rewritten ("analyze our emissions data")
+  { const VERBS = /^(?:analy[sz]e|review|look|check|help|with|go|over|work|take|please|pls|can|could|you|u|our|my|the|this|these|that|a|an|some|at|on|of|for|and|to|in|it|me|data|stuff|things|numbers)$/;
+    const have = new Set(words(s)); const subj = words(tidy(r.prompt)).filter((w) => !VERBS.test(w) && w.length > 2);
+    if (subj.length && subj.filter((w) => have.has(w)).length / subj.length < 0.6) fail.subjectLost.push([r.prompt, s]); }
   if (file && !o.detected.S && !o.headline.includes('@' + file.name)) fail.fileHeadline.push([r.prompt, o.headline]);
 }
 let bad = 0;

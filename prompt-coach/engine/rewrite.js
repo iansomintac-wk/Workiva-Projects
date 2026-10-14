@@ -306,6 +306,14 @@
     return 'Source, context, one job, useful constraints, and a check. The AI has nothing left to guess, and you can verify the answer against the source.';
   }
 
+  // does the generated objective keep the subject of the user's sentence ("emissions data")?
+  const FILLER = /^(?:analy[sz]e|review|look|check|help|with|go|over|work|take|please|pls|can|could|you|u|our|my|the|this|these|that|a|an|some|at|on|of|for|and|to|in|it|me|is|are|stuff|things)$/;
+  function covers(objective, sentence) {
+    const o = objective.toLowerCase();
+    const subj = (sentence.toLowerCase().match(/[a-z0-9&-]+/g) || []).filter((w) => w.length > 2 && !FILLER.test(w));
+    return !subj.length || subj.filter((w) => o.includes(w)).length / subj.length >= 0.6;
+  }
+  const VAGUE_LEAD = /^\s*(?:(?:please|pls|can (?:you|u)|could you)\s+)*(?:analy[sz]e|review|look (?:at|over)|go over|check|help(?: me)?(?: with)?|work on|take a look at)\s+/i;
   const VAGUE_VERB = /\b(?:analy[sz]e|look at|look over|go over|review|check|help|assist|work on|handle|thoughts|improve|clean up|take a look|have a look|figure out|investigate|examine|evaluate|assess|tell me about)\b/i;
   const VAGUE_ONLY = /^\s*(?:(?:please|pls|can (?:you|u)|could you)\s+)*(?:analy[sz]e|review|look (?:at|over)|go over|check|help(?: me)?(?: with)?|work on|take a look at)\b[^?]*$/i;
 
@@ -334,13 +342,14 @@
     // First try keeping every sentence of the user's own ask. If the strong version still has no
     // clear job, fall back to replacing the vague sentence (the user's other cues are kept).
     function build(broad) {
-      const g = { ...gen };
+      const g = { ...gen }; let folded = false;
       // A vague objective sentence is replaced by the generated objective; keep its other cues.
       const kept = [];
       for (const snt of sentences) {
         if (!/[a-z0-9]/i.test(tidyChat(snt.text))) continue; // only "thoughts?" or a greeting
         // Only a bare "analyze/review/look at X" is replaced; any other wording is the user's ask and stays.
-        if (!on.O && (VAGUE_ONLY.test(snt.text) && snt.text.trim().split(/\s+/).length <= 8 || broad && (snt.host === 'O' || snt.vague && VAGUE_VERB.test(snt.text)))) {
+        // ...and a bare one only when the new objective still names what it was about (the fallback keeps its cues)
+        if (!on.O && (covers(g.O, snt.text) && VAGUE_ONLY.test(snt.text) && snt.text.trim().split(/\s+/).length <= 8 || broad && (snt.host === 'O' || snt.vague && VAGUE_VERB.test(snt.text)))) {
           const taken = [];
           for (const x of snt.inside.filter((y) => y.k === 'C' || y.k === 'P' || y.k === 'E').sort((p, q) => p.a - q.a)) {
             if (taken.some((y) => x.a < y.b && x.b > y.a)) continue; taken.push(x);
@@ -351,10 +360,16 @@
           }
           continue;
         }
+        if (!on.O && !folded && VAGUE_ONLY.test(snt.text) && snt.text.trim().split(/\s+/).length <= 8) {
+          const subject = snt.text.trim().replace(VAGUE_LEAD, '').replace(/[.!?\s]+$/, '');
+          if (subject && !/^(?:it|this|that|them|these|those)$/i.test(subject)) {
+            g.O = 'For ' + subject + ': ' + g.O.charAt(0).toLowerCase() + g.O.slice(1); folded = true; continue;
+          }
+        }
         kept.push(snt);
       }
       // The user's own question stays as the job; add only a finish line for them to fill in.
-      if (!on.O && kept.some((x) => x.text && x.host === 'O')) Object.assign(g, { O: BLANK.O, P: BLANK.P, E: BLANK.E });
+      if (!on.O && !folded && kept.some((x) => x.text && x.host === 'O')) Object.assign(g, { O: BLANK.O, P: BLANK.P, E: BLANK.E });
       const present = new Set(); for (const snt of kept) for (const l of snt.letters) present.add(l);
       const genUsed = new Set();
       const segments = [];

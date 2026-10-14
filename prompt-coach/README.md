@@ -98,7 +98,9 @@ stand-ins, not real users.
   or the user asked their own question, add a blank finish line and format instead of a task
   template; tidy chat shorthand; keep decimals like "14.2%" intact. (3) With no file and no
   source named, the source is a blank; writing tasks "start from" it; audience examples follow
-  the area only when the prompt has area words.
+  the area only when the prompt has area words. (4) A bare "analyze our emissions data" keeps its
+  subject: "For our emissions data: identify and list [...]" (the previous round dropped it;
+  `customer_check.js` now checks this on `data/test.jsonl` too: 13 → 0).
 
 | Reviewer measure (121 prompts) | Before | Round 1 | Round 2 | Round 3 |
 |---|---|---|---|---|
