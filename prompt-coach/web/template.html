@@ -2,7 +2,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800;900&display=swap">
 <style>
-/* Layout: one column of three tools (live grade + fixes, weak/better/strong ladder, SCOPE builder),
+/* Layout: two tools (weak/better/strong ladder with your live-graded prompt as its first tab, SCOPE builder),
    in the Workiva AI explainer's language: heavy lowercase heads over a steel rule, steel prompt panels, cream page. */
 :root {
   --bg: #FCF4E8; --surface: #FFFFFF; --ink: #333333; --muted: #666666; --faint: #B2B2B2; --line: #D8D8D8; --soft: #EBEBEB;
@@ -52,9 +52,9 @@ section.block { padding-block: 44px; }
 .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; border-bottom: 2px solid var(--ink); padding-bottom: 16px; margin-bottom: 26px; }
 .head h2 { margin: 0; font-size: clamp(30px, 4.4vw, 52px); font-weight: 900; line-height: 1; letter-spacing: -.005em; text-transform: lowercase; text-wrap: balance; }
 
-/* compose */
-.compose { display: grid; grid-template-columns: 1.45fr 1fr; gap: 20px; align-items: start; }
-.compose > .card { padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+/* editor */
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+#yourVerdict .notes:not(:empty) { margin-top: 14px; }
 .editor { position: relative; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
 .editor .mirror, .editor textarea { margin: 0; padding: 14px 16px; font-family: var(--mono); font-size: 15px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; letter-spacing: 0; }
 .editor .mirror { position: absolute; inset: 0; color: transparent; pointer-events: none; overflow: hidden; }
@@ -64,38 +64,13 @@ section.block { padding-block: 44px; }
 .editor textarea { position: relative; display: block; width: 100%; min-height: 170px; resize: vertical; border: none; background: transparent; caret-color: var(--ink); }
 .editor textarea:focus { outline: none; }
 .editor:focus-within { outline: 2px solid var(--blue); outline-offset: 1px; }
-.meter { display: grid; grid-template-columns: auto 1fr; gap: 12px 16px; align-items: center; }
-.badge { font-size: 22px; font-weight: 900; text-transform: lowercase; border-radius: 99px; padding: 6px 18px; line-height: 1.1; text-align: center; min-width: 108px; }
-.badge.weak { background: var(--weak-bg); color: var(--red); } .badge.better { background: var(--better-bg); color: var(--orange); } .badge.strong { background: var(--strong-bg); color: var(--green); }
-.chips { display: flex; gap: 8px; flex-wrap: wrap; }
-.chip { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; border-radius: 99px; padding: 4px 12px 4px 4px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
-.chip i { font-style: normal; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 13px; }
-.chip .st { font-size: 11px; font-weight: 800; letter-spacing: .04em; }
-.chip.off { color: var(--muted); border-style: dashed; }
-.chip.off i { background: var(--faint) !important; }
-.chip[aria-expanded="true"] { border-color: var(--ink); }
-.headline { margin: 0; font-size: 15px; font-weight: 700; grid-column: 1 / -1; text-wrap: pretty; }
-.fix { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 10px; background: var(--bg); }
-.fix h4 { margin: 0; font-size: 15px; font-weight: 800; }
-.fix p { margin: 0; font-size: 14px; color: var(--muted); }
-.fix code { font-family: var(--mono); font-size: 13.5px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: block; white-space: pre-wrap; color: var(--ink); }
-.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 8px; border: none; background: var(--blue); color: var(--on-accent); font-size: 14px; font-weight: 700; cursor: pointer; }
-.btn:hover { background: var(--blue-deep); }
-.ghost { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; font-weight: 700; cursor: pointer; }
-.ghost:hover { border-color: var(--ink); }
-.selects { display: flex; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); align-items: center; }
 select { font-size: 13px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 8px; }
-select.ask { border: 2px solid var(--orange); }
 .notes { display: grid; gap: 8px; }
 .note { font-size: 14px; border-radius: 12px; padding: 10px 14px; background: var(--sand); text-wrap: pretty; }
 .note.warn { background: var(--weak-bg); }
 .note.tip { background: var(--mist); }
 .note b { font-weight: 800; }
 
-.drop { border: 2px dashed var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; cursor: pointer; min-height: 120px; }
-.drop:hover, .drop.over { border-color: var(--purple); background: var(--mist); }
-.drop strong { font-size: 15px; } .drop span { font-size: 13px; color: var(--muted); }
 .files { display: flex; flex-direction: column; gap: 8px; }
 .file { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); font-size: 13.5px; }
 .file .ext { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; border-radius: 6px; padding: 3px 7px; background: var(--soft); margin-top: 1px; }
@@ -104,10 +79,6 @@ select.ask { border: 2px solid var(--orange); }
 .file .meta.err { color: var(--red); }
 .x { border: none; background: transparent; cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 6px; color: var(--muted); border-radius: 6px; }
 .x:hover { color: var(--ink); background: var(--soft); }
-.examples { display: grid; gap: 8px; }
-.ex { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 12px; cursor: pointer; font-size: 13.5px; }
-.ex:hover { border-color: var(--ink); }
-.ex b { display: block; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
 
 /* ladder */
 .stages { display: flex; gap: 10px; margin: 0 0 20px; flex-wrap: wrap; }
@@ -133,6 +104,25 @@ select.ask { border: 2px solid var(--orange); }
 .practice { background: var(--mist); border-radius: 16px; padding: 18px; }
 .practice b { display: block; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--purple); margin-bottom: 6px; }
 .practice span { font-size: 14.5px; font-weight: 600; line-height: 1.45; }
+
+/* your prompt, inside the ladder's steel panel */
+[hidden] { display: none !important; }
+.panel .editor { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.2); }
+.panel .editor textarea { color: var(--panel-ink); caret-color: var(--panel-ink); min-height: 150px; }
+.panel .editor .mirror mark.S { background: rgba(124,190,255,.34); } .panel .editor .mirror mark.C { background: rgba(192,142,230,.36); }
+.panel .editor .mirror mark.O { background: rgba(133,221,133,.3); } .panel .editor .mirror mark.P { background: rgba(248,189,79,.34); }
+.panel .editor .mirror mark.E { background: rgba(255,122,92,.34); }
+.panel.over { outline: 2px dashed var(--panel-label); outline-offset: -8px; }
+select.mini { background: transparent; color: var(--panel-ink); border: 1px solid rgba(255,255,255,.25); border-radius: 99px; padding: 5px 10px; font-size: 12px; font-weight: 700; max-width: 100%; }
+select.mini option { color: #333; background: #fff; }
+.attach-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.attach-hint { font-size: 12.5px; color: var(--panel-label); }
+.panel .files { margin-top: 10px; }
+.panel .files:empty { display: none; }
+.panel .file { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.18); color: var(--panel-ink); }
+.panel .file .ext { background: rgba(255,255,255,.14); }
+.panel .file .meta { color: var(--panel-label); }
+.panel .x { color: var(--panel-label); } .panel .x:hover { color: var(--panel-ink); background: rgba(255,255,255,.1); }
 
 /* scope */
 .scope-intro { margin: -6px 0 24px; max-width: 700px; font-size: 15px; color: var(--muted); text-wrap: pretty; }
@@ -164,8 +154,8 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
 .foot p { margin: 0; max-width: 780px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-@media (max-width: 980px) { .compose, .pair, .scope { grid-template-columns: 1fr; } .practices { grid-template-columns: 1fr 1fr; } .sticky { position: static; } }
-@media (max-width: 560px) { .practices { grid-template-columns: 1fr; } .panel { padding: 22px 20px; } .letter .why { grid-column: 1 / -1; } .meter { grid-template-columns: 1fr; } .badge { justify-self: start; } }
+@media (max-width: 980px) { .pair, .scope { grid-template-columns: 1fr; } .practices { grid-template-columns: 1fr 1fr; } .sticky { position: static; } }
+@media (max-width: 560px) { .practices { grid-template-columns: 1fr; } .panel { padding: 22px 20px; } .letter .why { grid-column: 1 / -1; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 
@@ -179,58 +169,37 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
 <main>
   <div class="wrap intro">
     <h1>weak → better → <span>strong</span></h1>
-    <p>Type the prompt you'd give Workiva AI and add the files it should read. You'll see how strong it is as you type, which words earned each SCOPE element, and a stronger version built from your own words and files.</p>
+    <p>Type the prompt you'd give Workiva AI and attach the files it should read. It's graded as you type, and the Better and Strong tabs show a stronger version built from your own words and files.</p>
   </div>
-
-  <section class="block" aria-labelledby="h-grade">
-    <div class="wrap">
-      <div class="head"><h2 id="h-grade">grade your prompt</h2><span class="label">updates as you type</span></div>
-      <div class="compose">
-        <div class="card">
-          <label class="label" for="prompt">your prompt</label>
-          <div class="editor"><div class="mirror" id="mirror" aria-hidden="true"></div><textarea id="prompt" spellcheck="true">Analyze our emissions data.</textarea></div>
-          <div class="meter">
-            <div class="badge weak" id="badge" aria-live="polite">weak</div>
-            <div class="chips" id="chips" role="group" aria-label="SCOPE elements. Select a missing one to see how to add it."></div>
-            <p class="headline" id="headline"></p>
-          </div>
-          <div class="fix" id="fix" hidden></div>
-          <div class="selects">
-            <label for="domain">Area</label>
-            <select id="domain"><option value="">Detect for me</option><option value="FR">Financial reporting</option><option value="GRC">GRC and audit</option><option value="SUS">Sustainability</option><option value="GEN">General</option></select>
-            <label for="intent">Task</label>
-            <select id="intent"><option value="">Detect for me</option></select>
-            <span id="detected"></span>
-          </div>
-          <div class="notes" id="notes"></div>
-        </div>
-        <div class="card">
-          <span class="label" id="files-label">supporting files (optional)</span>
-          <div class="drop" id="drop" tabindex="0" role="button" aria-describedby="files-label">
-            <strong>Drop files or click to add</strong>
-            <span>Word, Excel, PowerPoint, PDF, CSV or text. Read here in your browser; nothing is uploaded.</span>
-          </div>
-          <input type="file" id="fileInput" multiple hidden accept=".docx,.xlsx,.xlsm,.xls,.csv,.pptx,.pdf,.txt,.md">
-          <div class="files" id="files"></div>
-          <span class="label">try an example</span>
-          <div class="examples" id="examples"></div>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <section class="block" aria-labelledby="h-ladder">
     <div class="wrap">
-      <div class="head"><h2 id="h-ladder">prompting: weak → strong</h2><span class="label">see the difference</span></div>
+      <div class="head"><h2 id="h-ladder">prompting: weak → strong</h2><span class="label">type yours, see it get stronger</span></div>
       <div class="stages" role="tablist" id="stageTabs" aria-label="Prompt versions"></div>
       <div class="pair">
-        <div class="panel" role="tabpanel" id="stagePanel">
+        <div class="panel" role="tabpanel" id="yourPanel">
+          <div class="panel-head"><label class="label" for="prompt">your prompt · graded as you type</label>
+            <select class="mini" id="examples" aria-label="Try an example"><option value="">try an example</option></select></div>
+          <div class="editor"><div class="mirror" id="mirror" aria-hidden="true"></div><textarea id="prompt" spellcheck="true">Analyze our emissions data.</textarea></div>
+          <div class="attach-row">
+            <button class="copy" type="button" id="attach">+ attach file</button>
+            <span class="attach-hint">Word, Excel, PowerPoint or PDF. Read here, never uploaded.</span>
+          </div>
+          <div class="files" id="files"></div>
+          <input type="file" id="fileInput" multiple hidden accept=".docx,.xlsx,.xlsm,.xls,.csv,.pptx,.pdf,.txt,.md">
+        </div>
+        <div class="panel" role="tabpanel" id="stagePanel" hidden>
           <div class="panel-head"><span class="label" id="stageLabel">the prompt</span><button class="copy" type="button" id="copyStage">copy</button></div>
           <p class="prompt-text" id="stagePrompt"></p>
           <div class="legend" id="stageLegend"></div>
         </div>
-        <div class="card verdict">
-          <span class="label" id="verdictLabel">why it fails</span>
+        <div class="card verdict" id="yourVerdict">
+          <span class="label" id="yourLabel">your prompt</span>
+          <p id="headline">Type a prompt to see its grade.</p>
+          <div class="notes" id="notes"></div>
+        </div>
+        <div class="card verdict" id="stageVerdict" hidden>
+          <span class="label" id="verdictLabel">why it works</span>
           <p id="verdictText"></p>
         </div>
       </div>
@@ -263,7 +232,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
         <div class="how-grid">
           <div class="card"><h4>The rule</h4><p><b>Weak</b>: the AI would have to guess what to read or what you want back. <b>Better</b>: it names a source and one job. <b>Strong</b>: all five SCOPE elements, and one job at a time.</p></div>
           <div class="card"><h4>How it works</h4><p>About 200 language patterns spot each element, and small scoring models trained on 1,080 labeled reporting, GRC and sustainability prompts weigh them and recognize the kind of task. Each element is credited only from its own words. It all runs on this page; there is no AI service behind it.</p></div>
-          <div class="card"><h4>How accurate it is</h4><p id="accuracy">On 320 held-out prompts it matched careful human-style grading 86% of the time, and nearly never confuses weak with strong. It is a coach, not a judge: if it misses something you wrote, rephrase it more plainly or override the task type.</p></div>
+          <div class="card"><h4>How accurate it is</h4><p id="accuracy">On 320 held-out prompts it matched careful human-style grading 86% of the time, and nearly never confuses weak with strong. It is a coach, not a judge: if it misses something you wrote, rephrase it more plainly.</p></div>
           <div class="card"><h4>Where the criteria come from</h4><ul>
             <li><a href="https://support.workiva.com/hc/en-us/articles/19173586555412-Tips-for-getting-useful-responses-from-Workiva-AI" target="_blank" rel="noopener">Workiva: tips for useful responses</a></li>
             <li><a href="https://support.workiva.com/hc/en-us/articles/28927643953172-Reference-specific-files-in-chat-with-Workiva-AI" target="_blank" rel="noopener">Workiva: reference files in chat</a></li>
@@ -297,7 +266,6 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     { key: 'better', label: 'Better', verdictLabel: 'what improved' },
     { key: 'strong', label: 'Strong', verdictLabel: 'why it works' }
   ];
-  const INTENT_NAMES = { variance: 'Explain changes', anomaly: 'Find unusual values', consistency: 'Check consistency / tie-out', errors: 'Find errors', gaps: 'Find gaps', rewrite: 'Rewrite or edit', summarize: 'Summarize', draft: 'Draft new content', extract: 'Extract items', compare: 'Compare', explain: 'Explain a requirement', questions: 'Generate review questions', map: 'Map to a framework', checklist: 'Build steps or a checklist', formula: 'Formula or query help' };
   const HINTS = [
     'With nothing on, you’re back to “Analyze this” and the AI has to guess everything.',
     'One element helps, but the AI is still guessing at most of the job.',
@@ -319,36 +287,21 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
   // Task and area: trust the classifier when it is confident; otherwise fall back to patterns and ask.
   function pickTask(prompt) {
     const c = ScopeClassify.classify(prompt, CLS);
-    let intent = $('intent').value || null, unsure = false;
+    let intent = null;
     if (!intent) {
       const sure = c.intent.label !== 'other' && c.intent.p >= 0.5;
       const pattern = ScopeRewrite.intentOf(ScopeRules.normalize(prompt), false, true);
       if (sure) intent = c.intent.label;
-      else { intent = pattern || (c.intent.label !== 'other' ? c.intent.label : null); unsure = true; }
+      else intent = pattern || (c.intent.label !== 'other' ? c.intent.label : null);
     }
-    const domain = $('domain').value || (c.domain.p >= 0.5 ? c.domain.label : undefined);
-    return { intent: intent || undefined, domain, unsure };
+    const domain = c.domain.p >= 0.5 ? c.domain.label : undefined;
+    return { intent: intent || undefined, domain };
   }
   const detect = (p) => {
     const r = ScopeModel.predict(p, weights, { mode: weights.mode });
-    // letters the user says they already covered count as present for their own prompt
-    if (p === $('prompt').value) for (const k of K) if (state.overrides[k]) r.on[k] = true;
     return { on: r.on, d: r.rules };
   };
-  const QUICK = {
-    S: () => ['Use only the selected text.', 'Use only the selected table.', 'Use only the open document.'],
-    C: (d) => ({
-      FR: ['the audit committee', 'the CFO', 'our external auditors', 'investors'],
-      GRC: ['the audit committee', 'our external auditors', 'control owners', 'a new team member'],
-      SUS: ['our assurance provider', 'the sustainability committee', 'the board', 'investors'],
-      GEN: ['leadership', 'my manager', 'a new team member', 'customers']
-    }[d] || []).map((a) => 'This is for ' + a + '.'),
-    P: () => ['Return a table.', 'Use five bullets.', 'Keep it under 150 words.', 'Rank items by importance.'],
-    E: () => ['Do not guess or add facts that are not in the source.', 'Show where each point comes from.', 'List open questions separately.', 'Flag anything you are unsure of.']
-  };
-
-  const state = { files: [], stage: 0, on: Object.fromEntries(K.map((k) => [k, true])), result: null, openFix: null, overrides: {} };
-  for (const [k, v] of Object.entries(INTENT_NAMES)) { const o = document.createElement('option'); o.value = k; o.textContent = v; $('intent').append(o); }
+  const state = { files: [], stage: 'mine', on: Object.fromEntries(K.map((k) => [k, true])), result: null };
 
   /* ---------------- live grading ---------------- */
   let timer = 0;
@@ -359,19 +312,17 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     if (!prompt.trim()) { renderEmpty(); return; }
     const pick = pickTask(prompt);
     const r = ScopeRewrite.coach(prompt, { files, detect, domain: pick.domain, intent: pick.intent });
-    r.taskUnsure = pick.unsure && prompt.trim().split(/\s+/).length >= 3;
     // one job at a time: a stacked prompt can't be strong
     r.displayGrade = r.grade === 'strong' && r.hits && ScopeRules.detect(prompt).stacked ? 'better' : r.grade;
     const prevKey = state.result && state.result.stages.strong.prompt;
     state.result = r;
     if (prevKey !== r.stages.strong.prompt) state.on = Object.fromEntries(K.map((k) => [k, true]));
-    state.stage = Math.min(state.stage, 2);
     renderMeter(prompt); renderStages(); renderScope();
   }
   function renderEmpty() {
-    state.overrides = {};
-    $('mirror').textContent = ''; $('badge').className = 'badge weak'; $('badge').textContent = '—';
-    $('chips').replaceChildren(); $('headline').textContent = 'Type a prompt to see its grade.'; $('notes').replaceChildren(); $('fix').hidden = true;
+    $('mirror').textContent = ''; $('yourLabel').textContent = 'your prompt'; $('yourLabel').style.color = '';
+    $('headline').textContent = 'Type a prompt to see its grade.'; $('notes').replaceChildren();
+    state.result = null; renderStages();
   }
 
   function renderMirror(prompt, r) {
@@ -393,35 +344,17 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     m.scrollTop = $('prompt').scrollTop;
   }
 
+  const GRADE_LABEL = { weak: 'why it’s weak', better: 'why it’s better', strong: 'why it’s strong' };
+  const GRADE_COLOR = { weak: 'var(--red)', better: 'var(--orange)', strong: 'var(--green)' };
   function renderMeter(prompt) {
     const r = state.result, g = r.displayGrade;
     renderMirror(prompt, r);
-    const b = $('badge'); b.className = 'badge ' + g; b.textContent = g;
-    $('headline').textContent = r.displayGrade !== r.grade ? 'All five elements are here, but it asks for several things at once. Split it to make it strong.' : r.headline;
-    const chips = $('chips'); chips.replaceChildren();
-    K.forEach((k) => {
-      const on = r.detected[k];
-      const c = document.createElement('button'); c.type = 'button'; c.className = 'chip' + (on ? '' : ' off');
-      c.setAttribute('aria-expanded', String(state.openFix === k));
-      const i = document.createElement('i'); i.textContent = k; i.style.background = META[k].color;
-      const s = document.createElement('span'); s.textContent = META[k].word;
-      const st = document.createElement('span'); st.className = 'st'; st.textContent = state.overrides[k] ? '✓ you' : on ? '✓' : 'add';
-      st.setAttribute('aria-label', on ? 'found' : 'missing');
-      c.append(i, s, st);
-      c.onclick = () => { state.openFix = state.openFix === k ? null : k; renderMeter($('prompt').value); };
-      chips.append(c);
-    });
-    renderFix();
-    const areaName = { FR: 'financial reporting', GRC: 'GRC and audit', SUS: 'sustainability', GEN: 'general' }[r.domain];
-    const taskName = (INTENT_NAMES[r.intent] || r.intent).toLowerCase();
-    $('detected').textContent = (!$('domain').value || !$('intent').value) ? (r.taskUnsure ? 'Looks like: ' + areaName + ' · ' + taskName + '? Pick the task if not.' : 'Detected: ' + areaName + ' · ' + taskName) : '';
-    $('intent').classList.toggle('ask', !!r.taskUnsure && !$('intent').value);
+    $('yourLabel').textContent = GRADE_LABEL[g]; $('yourLabel').style.color = GRADE_COLOR[g];
+    $('headline').textContent = g !== r.grade ? 'All five SCOPE elements are here, but it asks for several things at once. Split it into one ask at a time.' : r.headline;
+    // only warnings that matter: sensitive data, or a file that doesn't match the prompt
     const notes = $('notes'); notes.replaceChildren();
-    const pii = /\b[\w.+-]+@[\w-]+\.[\w.]+\b|\b\d{3}-\d{2}-\d{4}\b|\b(?:\d[ -]?){13,16}\b|\bpassword\s*[:=]/i.test(prompt);
-    if (pii) notes.append(note('warn', 'This looks like personal or sensitive data (an email address, ID, card number, or password). Leave it out of AI prompts unless your AI policy allows it.'));
-    for (const n of r.notes) notes.append(note(n.kind === 'grounding' ? 'warn' : '', n.text));
-    for (const t of r.tips) notes.append(note('tip', t, 'Workiva tip: '));
-    if (r.placeholders) notes.append(note('', 'The stronger versions below include [bracketed placeholders]. Replace them with your own details.'));
+    if (/\b[\w.+-]+@[\w-]+\.[\w.]+\b|\b\d{3}-\d{2}-\d{4}\b|\b(?:\d[ -]?){13,16}\b|\bpassword\s*[:=]/i.test(prompt)) notes.append(note('warn', 'This looks like personal or sensitive data. Leave it out of AI prompts unless your AI policy allows it.'));
+    const ground = r.notes.find((n) => n.kind === 'grounding'); if (ground) notes.append(note('warn', ground.text));
   }
   function note(kind, text, lead) {
     const d = document.createElement('div'); d.className = 'note' + (kind ? ' ' + kind : '');
@@ -429,75 +362,30 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     d.append(text); return d;
   }
 
-  function renderFix() {
-    const k = state.openFix, box = $('fix'), r = state.result;
-    if (!k || !r) { box.hidden = true; return; }
-    box.hidden = false; box.replaceChildren();
-    const on = r.detected[k];
-    const h = document.createElement('h4'); h.textContent = (on ? 'Found: ' : 'Missing: ') + META[k].word;
-    const p = document.createElement('p');
-    if (on && state.overrides[k]) {
-      p.textContent = 'You marked this as already in your prompt.';
-      const undo = document.createElement('button'); undo.type = 'button'; undo.className = 'ghost'; undo.textContent = 'Undo';
-      undo.onclick = () => { delete state.overrides[k]; run(); };
-      box.append(h, p, undo); return;
-    }
-    if (on) {
-      const words = r.hits[k].hits.filter((x) => x.orig).map((x) => $('prompt').value.slice(x.orig[0], x.orig[1]).trim()).filter(Boolean);
-      p.textContent = words.length ? 'Earned by: “' + [...new Set(words)].slice(0, 3).join('”, “') + '”.' : 'Your prompt covers this.';
-      box.append(h, p); return;
-    }
-    p.textContent = META[k].ask;
-    const frag = (r.scope[k].frag || '').trim();
-    const code = document.createElement('code'); code.textContent = frag;
-    const row = document.createElement('div'); row.className = 'row';
-    const add = document.createElement('button'); add.type = 'button'; add.className = 'btn'; add.textContent = 'Add this to my prompt';
-    add.onclick = () => insertLetter(k, frag);
-    const mine = document.createElement('button'); mine.type = 'button'; mine.className = 'ghost'; mine.textContent = 'I already included this';
-    mine.onclick = () => { state.overrides[k] = true; state.openFix = k; run(); };
-    row.append(add, mine);
-    const quick = (QUICK[k] ? QUICK[k](r.domain) : []);
-    let qrow = null;
-    if (quick.length) {
-      qrow = document.createElement('div'); qrow.className = 'row';
-      const lab = document.createElement('span'); lab.className = 'label'; lab.textContent = 'or add one:'; qrow.append(lab);
-      for (const q of quick) { const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = q.replace(/^This is for /, 'For ').replace(/\.$/, ''); b.onclick = () => insertLetter(k, q); qrow.append(b); }
-    }
-    if (k === 'S' && state.files.some((f) => f.ok)) {
-      for (const f of state.files.filter((x) => x.ok).slice(0, 3)) {
-        const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = 'Use @' + f.name;
-        b.onclick = () => insertLetter('S', 'Use only @' + f.name + '.'); row.append(b);
-      }
-    }
-    box.append(h, p, code, row);
-    if (qrow) box.append(qrow);
-  }
-  function insertLetter(k, frag) {
-    const ta = $('prompt'); let v = ta.value.trim();
-    if (v && !/[.!?]$/.test(v)) v += '.';
-    ta.value = k === 'S' || k === 'C' ? (frag + ' ' + v).trim() : (v + ' ' + frag).trim();
-    state.openFix = null; run(); ta.focus();
-  }
-
   /* ---------------- ladder ---------------- */
   function renderStages() {
-    const r = state.result;
+    // tabs: your prompt (live, editable), then each stronger version above its grade
+    const r = state.result, order = ['weak', 'better', 'strong'];
+    const gi = r ? order.indexOf(r.grade) : 0;
+    const keys = ['mine', ...(r ? order.slice(gi + 1) : [])];
+    if (!keys.includes(state.stage)) state.stage = 'mine';
     const tabs = $('stageTabs'); tabs.replaceChildren();
-    STAGES.forEach((s, k) => {
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'stage'; b.role = 'tab'; b.id = 'tab-' + s.key;
-      b.setAttribute('aria-selected', String(k === state.stage)); b.setAttribute('aria-controls', 'stagePanel');
-      b.textContent = s.label;
-      if (s.key === r.grade) { const sm = document.createElement('small'); sm.textContent = 'your prompt'; b.append(sm); }
-      b.onclick = () => { state.stage = k; renderStages(); };
+    for (const key of keys) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'stage'; b.role = 'tab'; b.id = 'tab-' + key;
+      b.setAttribute('aria-selected', String(key === state.stage)); b.setAttribute('aria-controls', key === 'mine' ? 'yourPanel' : 'stagePanel');
+      b.textContent = key === 'mine' ? 'Your prompt' : key[0].toUpperCase() + key.slice(1);
+      const sm = document.createElement('small'); sm.textContent = key === 'mine' ? (r ? r.displayGrade : 'type to grade') : 'suggested'; b.append(sm);
+      b.onclick = () => { state.stage = key; renderStages(); };
       tabs.append(b);
-    });
-    const s = STAGES[state.stage], data = r.stages[s.key];
-    const mine = s.key === r.grade;
-    const gi = STAGES.findIndex((x) => x.key === r.grade);
-    $('stageLabel').textContent = mine ? 'your prompt' : state.stage > gi ? 'a ' + s.key + ' version of your prompt' : 'a weaker version, for comparison';
+    }
+    const mine = state.stage === 'mine';
+    $('yourPanel').hidden = !mine; $('yourVerdict').hidden = !mine; $('stagePanel').hidden = mine; $('stageVerdict').hidden = mine;
+    if (mine) return;
+    const s = STAGES.find((x) => x.key === state.stage), data = r.stages[s.key];
+    $('stageLabel').textContent = 'a ' + s.key + ' version of your prompt';
     const el = $('stagePrompt'); el.replaceChildren();
     // underline what the coach added (only for rewrites above the user's grade)
-    const showAdded = state.stage > gi;
+    const showAdded = true;
     const segs = showAdded ? r.segments.filter((g) => s.key === 'strong' || !g.generated || g.letter === 'S' || g.letter === 'O') : null;
     if (segs) {
       el.append('“');
@@ -574,7 +462,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     const select = () => { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'press ⌘C / Ctrl+C'; setTimeout(() => { btn.textContent = 'copy'; }, 2400); };
     try { navigator.clipboard.writeText(text).then(done, select); } catch (e) { select(); }
   }
-  $('copyStage').onclick = (e) => copyFrom(e.currentTarget, state.result.stages[STAGES[state.stage].key].prompt, $('stagePrompt'));
+  $('copyStage').onclick = (e) => copyFrom(e.currentTarget, state.result.stages[state.stage].prompt, $('stagePrompt'));
   $('copyBuilt').onclick = (e) => copyFrom(e.currentTarget, builtText(), $('built'));
 
   /* ---------------- files ---------------- */
@@ -610,24 +498,21 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
         .finally(() => { renderFiles(); run(); });
     }
   }
-  const drop = $('drop'), input = $('fileInput');
-  drop.onclick = () => input.click();
-  drop.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } };
+  const drop = $('yourPanel'), input = $('fileInput');
+  $('attach').onclick = () => input.click();
   input.onchange = () => { addFiles([...input.files]); input.value = ''; };
   ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
   ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
   drop.addEventListener('drop', (e) => { if (e.dataTransfer && e.dataTransfer.files.length) addFiles([...e.dataTransfer.files]); });
 
   /* ---------------- examples + wiring ---------------- */
-  for (const ex of EXAMPLES) {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'ex';
-    const t = document.createElement('b'); t.textContent = ex.area; b.append(t, ex.text);
-    b.onclick = () => { $('prompt').value = ex.text; state.overrides = {}; $('domain').value = ''; $('intent').value = ''; state.stage = 0; run(); $('prompt').focus(); };
-    $('examples').append(b);
-  }
+  EXAMPLES.forEach((ex, i) => { const o = document.createElement('option'); o.value = i; o.textContent = ex.area + ': ' + ex.text; $('examples').append(o); });
+  $('examples').onchange = (e) => {
+    const ex = EXAMPLES[e.target.value]; e.target.value = ''; if (!ex) return;
+    $('prompt').value = ex.text; state.stage = 'mine'; run(); $('prompt').focus();
+  };
   $('prompt').addEventListener('input', schedule);
   $('prompt').addEventListener('scroll', () => { $('mirror').scrollTop = $('prompt').scrollTop; });
-  $('domain').onchange = run; $('intent').onchange = run;
   try { const draft = localStorage.getItem('scope-coach-draft'); if (draft) $('prompt').value = draft; } catch (e) { /* storage unavailable */ }
   $('prompt').addEventListener('input', () => { try { localStorage.setItem('scope-coach-draft', $('prompt').value); } catch (e) { /* ignore */ } });
   run();

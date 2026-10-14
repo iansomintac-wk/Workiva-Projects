@@ -33,9 +33,9 @@ const MAP = {
   await p.locator('#prompt').fill('look at revenue for Q4 FY26'); await p.waitForTimeout(400);
   await p.locator('#tab-strong').click();
   console.log('\nSTRONG with Q3 Flux.xlsx:', await p.locator('#stagePrompt').innerText());
+  await p.locator('#tab-mine').click();
   console.log('NOTES:', (await p.locator('#notes').innerText()).replace(/\n+/g, ' | '));
-  await p.locator('.chip.off').first().click().catch(() => {});
-  console.log('FIX:', (await p.locator('#fix').innerText()).replace(/\n+/g, ' | ').slice(0, 300));
+  console.log('VERDICT:', (await p.locator('#yourVerdict').innerText()).replace(/\n+/g, ' | ').slice(0, 300));
   console.log('\nlibraries served:', served.join(', '));
   console.log('errors:', errs);
   await b.close();

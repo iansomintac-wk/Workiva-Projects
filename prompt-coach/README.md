@@ -6,9 +6,10 @@ strong version into toggleable SCOPE elements. Everything runs in the browser: n
 server, no uploads. Built for customer-facing use where Claude access can't be provisioned.
 
 ```sh
-node tests/build.js                      # -> dist/prompt-coach.html (single file, ~140 KB)
+node tests/build.js                      # -> dist/prompt-coach.html (single file, ~300 KB)
 node tests/eval.js rulefeat data/test.jsonl          # accuracy on held-out prompts
 node tests/simulate.js data/train_*.jsonl            # rewrite invariants
+node tests/customer_check.js                         # strong version keeps the user's ask, adds blanks not facts
 node tests/train.js rulefeat --tune data/train_*.jsonl   # retrain engine/weights.json
 node tests/train_cls.js --eval data/test.jsonl data/train_*.jsonl   # retrain task/area classifier
 python3 tests/make_fixtures.py && VENDOR=<npm dir> node tests/filetest.js   # real-file test
@@ -24,7 +25,7 @@ node tests/eval_real.js real-eval/prompts.csv        # score on real prompts (se
 | Task + area | `engine/classify.js` + `engine/cls-weights.json` (166 KB) | Softmax regression over words + intent/domain pattern hits. Task 69.7% / area 86.3% on test (pattern-only baseline: 48% / 78%); 79% when confident. Low confidence falls back to patterns and the page asks the user to confirm. |
 | Rewrites | `engine/rewrite.js` | Detects area (FR / GRC / SUS / general) and task (15 intents). Splits the prompt into letter-tagged segments so the user's own wording is kept; fills missing letters from intent-specific templates and file metadata (file name, best-matching sheet, header row, periods). Re-grades its own strong version and swaps in more explicit wording if a letter doesn't register. Adds Workiva-specific tips. |
 | Files | `engine/files.js` | Reads .docx (headings), .xlsx (sheets + header rows), .pptx (slide titles), .pdf, .csv, .txt in the browser; libraries load from cdnjs only when needed. |
-| Page | `web/template.html` | Live grading, highlights, click-to-fix with one-tap options and an "I already included this" override, task confirmation when unsure, ladder, SCOPE builder, examples, "how we grade". |
+| Page | `web/template.html` | Two sections. Weak → strong: your prompt is the first tab (live grade with one-sentence reason, highlights, a small attach-file button, an example menu), then Better and Strong tabs. Build it with SCOPE: toggle each letter of the strong version. Task and area are detected automatically. Plus "how we grade". |
 
 Grade rule: weak if Source or Objective is missing; strong if all five are present (and the
 prompt asks for one thing at a time); otherwise better.
@@ -75,3 +76,27 @@ header rows, headings, slide titles, periods); image-only PDFs and legacy .doc f
 messages.
 
 Research notes: `research/findings.md`. Real-prompt evaluation kit: `real-eval/README.md`.
+
+## Simulated-customer review (2026-10-14)
+
+121 new prompts written as 15 customer personas (`data/sim_customers.jsonl`, blind-labeled by
+an LLM), run through the page's own code, half with a file attached. Two LLM reviewers played
+each customer and rated what the page showed. All personas, labels and reviewers are AI
+stand-ins, not real users.
+
+- Grade matches the blind label 64.5% (78/121), against 86% on `data/test.jsonl`; these prompts
+  are more casual. No blind-weak prompt was graded strong.
+- After the rewrite changes (keep the user's own sentence, add blanks instead of roles,
+  counts, limits or unnamed sheets; name an attached file in the reason line):
+
+| Reviewer measure (121 prompts) | Before | After |
+|---|---|---|
+| Strong version keeps what the user meant | 76 | 91 |
+| ...of the 72 weak prompts | 33 | 43 |
+| Adds specifics the user never gave | 67 | 37 |
+| Reads clumsily | 49 | 62 |
+| Would copy it (1-5), weak prompts | 1.96 | 2.28 |
+
+Still open: wrong task templates when the task is misread, audience examples that don't fit the
+area, and the user's casual wording ("can u") kept verbatim.
+

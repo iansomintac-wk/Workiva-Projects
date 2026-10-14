@@ -24,7 +24,7 @@
     ['formula', /\b(formula|vlookup|xlookup|sumif|index ?match|pivot|query|sql|wdata|calculated field|excel function)/],
     ['consistency', /\b(consisten|inconsisten|conflict|contradict|tie[- ]?out|tie out|ties to|tick and tie|match(?:es)? (?:the|between)|cross-?check|cross-?reference|discrepanc|mismatch|agree to)/],
     ['anomaly', /\b(anomal|outlier|unusual|missing values?|blank|duplicate|odd|spike|suspicious|data quality|gaps? in the data|errors? in the data)/],
-    ['variance', /\b(varian|flux|change[sd]? (?:from|between|vs|versus)|year[- ]over[- ]year|yoy|quarter[- ]over[- ]quarter|qoq|increase|decrease|drove|drivers?|movement|trend|went up|went down|spiked|dropped|grew|declin)/],
+    ['variance', /\b(varian|flux|change[sd]? (?:from|between|vs|versus)|year[- ]over[- ]year|yoy|quarter[- ]over[- ]quarter|qoq|increase|decrease|drove|drivers?|movement|trend|went up|went down|go(?:es)? (?:up|down)|(?:up|down) (?:vs|versus|from|compared)|spiked|dropped|grew|declin)/],
     ['map', /\b(map|mapping|crosswalk|align (?:to|with)|which (?:principle|requirement|criteria|control objective)|link (?:each|the) .{0,20}to)/],
     ['questions', /\b(questions?|what would (?:an|the) (?:auditor|reviewer|regulator) ask|challenge|poke holes|red-?team|interview)/],
     ['checklist', /\b(checklist|steps|test procedures?|test steps|to-?do|action items|plan|procedure|walkthrough steps|playbook|how do i|how should we)/],
@@ -53,6 +53,9 @@
     SUS: '[the climate section of the CSRD report or the assurance review]',
     GEN: '[who will read this and what it is for]'
   };
+  // Generated text adds a finish line and a format, but never facts, counts, or limits the user
+  // did not give: those become [blanks] for the user to fill in.
+  const AUDIENCE = { FR: 'the audit committee', GRC: 'our external auditors', SUS: 'our assurance provider', GEN: 'my manager' };
   const OBJECT_DEFAULT = {
     errors: 'text', gaps: 'document', variance: 'table', anomaly: 'table', consistency: 'document', rewrite: 'text', summarize: 'document', draft: 'source material',
     extract: 'document', compare: 'table', explain: 'requirement', questions: 'document', map: 'items', checklist: 'process description', formula: 'range'
@@ -64,7 +67,9 @@
     const tw = new Set(words(t)); let best = null, score = -1;
     for (const f of files) for (const sh of f.sheets || []) {
       const s = words(sh.name + ' ' + (sh.headers || []).join(' ')).filter((w) => tw.has(w)).length;
-      if (s > score) { score = s; best = { file: f, sheet: sh }; }
+      const named = t.includes(sh.name.toLowerCase());
+      if (named) return { file: f, sheet: sh, score: s, named };
+      if (s > score) { score = s; best = { file: f, sheet: sh, score: s, named }; }
     }
     return best;
   }
@@ -79,7 +84,7 @@
     const { files, intent, domain } = ctx;
     if (files.length) {
       const sh = bestSheet(files, ctx.t);
-      if (sh && sh.sheet && files.length && (sh.file.sheets || []).length > 1) return 'Use only @' + cleanFile(sh.file.name) + ', sheet "' + sh.sheet.name + '". ';
+      if (sh && sh.named && (sh.file.sheets || []).length > 1) return 'Use only @' + cleanFile(sh.file.name) + ', sheet "' + sh.sheet.name + '". ';
       if (files.length === 1) return 'Use only @' + cleanFile(files[0].name) + '. ';
       return 'Use only ' + files.slice(0, 10).map((f) => '@' + cleanFile(f.name)).join(', ') + '. ';
     }
@@ -91,10 +96,9 @@
     return 'Work only from the selected ' + obj + '. ';
   }
 
+  // Who it is for is the user's to say: offer it as a blank with examples, never assert a role.
   function contextFragment(ctx) {
-    const roles = ROLE[ctx.domain] || ROLE.GEN;
-    const role = roles[ctx.intent] || roles.def;
-    return 'You are ' + role + ' preparing ' + DEST[ctx.domain] + '. ';
+    return 'This is for ' + DEST[ctx.domain] + '. ';
   }
 
   function periodPhrase(ctx) {
@@ -109,22 +113,22 @@
   function objectiveFragment(ctx) {
     const o = ctx.object ? ' ' + ctx.object : '';
     switch (ctx.intent) {
-      case 'errors': return 'Find errors in the' + (o || ' text') + ': wrong numbers, inconsistent terms, typos, and broken references. ';
-      case 'gaps': return 'Identify gaps in the' + (o || ' content') + ': anything required that is missing, incomplete, or has no owner. ';
-      case 'variance': { const pp = periodPhrase(ctx); return 'Identify the largest changes' + (o ? ' in the' + o : '') + (pp ? ' between ' + pp : ' for ' + ctx.promptPeriods[0]) + '. '; }
-      case 'anomaly': return 'Find missing, unusual, or duplicate-looking values' + (o ? ' in the' + o : '') + '. ';
-      case 'consistency': return 'Identify every number or statement that conflicts with another table, chart, or narrative. ';
-      case 'rewrite': return 'Rewrite the selected' + (o || ' text') + ' for ' + (ctx.domain === 'GEN' ? 'a senior reader' : 'a senior executive audience') + '. ';
-      case 'summarize': return 'Summarize the' + (o || ' content') + ' for a reader who has not seen it. ';
-      case 'draft': return 'Draft ' + (ctx.object ? 'the ' + ctx.object : 'a first version of the section') + ' from the source. ';
+      case 'errors': return 'List each error in the' + (o || ' text') + ' and where it is. ';
+      case 'gaps': return 'List what is missing from the' + (o || ' content') + '. ';
+      case 'variance': { const pp = periodPhrase(ctx); return 'Identify what drove the change' + (o ? ' in the' + o : '') + (pp ? ' between ' + pp : ctx.promptPeriods[0] ? ' for ' + ctx.promptPeriods[0] : '') + '. '; }
+      case 'anomaly': return 'List any values' + (o ? ' in the' + o : '') + ' that look wrong, missing, or out of place. ';
+      case 'consistency': return 'List every number or statement that does not match. ';
+      case 'rewrite': return 'Rewrite the selected' + (o || ' text') + ' and return the revised version. ';
+      case 'summarize': return 'Summarize the key points of the' + (o || ' content') + '. ';
+      case 'draft': return 'Draft ' + (ctx.object ? 'the ' + ctx.object : 'the text') + ' from the source. ';
       case 'extract': return 'Extract every ' + (ctx.object || 'relevant item') + ' into one list. ';
-      case 'compare': return 'Compare the' + (o || ' figures') + ' against ' + ((ctx.promptPeriods && ctx.promptPeriods[0]) || (ctx.periods.length ? (periodPhrase(ctx) || '').split(' and ')[0] : '') || 'the prior period') + ' and identify the differences that matter. ';
-      case 'explain': return 'Explain ' + (ctx.object ? ctx.object : '[the requirement]') + ' for the person collecting the evidence. ';
-      case 'questions': return 'Write the questions a reviewer is most likely to ask about the' + (o || ' content') + '. ';
-      case 'map': return 'Map each ' + (ctx.object || 'item') + ' to the relevant ' + (ctx.domain === 'GRC' ? 'COSO principle or framework requirement' : ctx.domain === 'SUS' ? 'ESRS disclosure requirement' : 'framework requirement') + '. ';
-      case 'checklist': return 'Turn the' + (o || ' process') + ' into test steps a new team member could follow. ';
+      case 'compare': return 'List what is different between the two' + (o ? ' ' + ctx.object : '') + '. ';
+      case 'explain': return 'Explain ' + (ctx.object ? ctx.object : '[the requirement]') + ' in plain terms. ';
+      case 'questions': return 'List the questions a reviewer is most likely to ask. ';
+      case 'map': return 'Map each ' + (ctx.object || 'item') + ' to [the framework and version]. ';
+      case 'checklist': return 'Turn the' + (o || ' process') + ' into numbered steps. ';
       case 'formula': return 'Write the formula that ' + (ctx.object ? 'calculates ' + ctx.object : '[does what you need]') + '. ';
-      default: return 'Identify the three most important points in the' + (o || ' content') + '. ';
+      default: return 'List the most important points in the' + (o || ' content') + '. ';
     }
   }
 
@@ -132,22 +136,22 @@
     const h = ctx.headers.slice(0, 4);
     const cols = h.length >= 2 ? h.join(', ') : null;
     switch (ctx.intent) {
-      case 'errors': return 'List each issue with its location, what is wrong, and the suggested correction, in a table. ';
-      case 'gaps': return 'Return a table: item, gap, why it matters, suggested fix, ranked by risk. ';
-      case 'variance': return 'Show the three largest changes greater than 10%, ranked by magnitude, in a table: ' + (cols ? cols + ', ' : 'metric, both values, ') + 'change in absolute and percentage terms. ';
-      case 'anomaly': return 'Return a table: ' + (cols ? cols + ', ' : 'item, period, value, ') + 'issue type, suggested check. Include variances greater than ±20%. ';
-      case 'consistency': return 'For each conflict, give both locations and both values in a table. ';
-      case 'rewrite': return 'Make it about 30% shorter, in plain English. ';
-      case 'summarize': return 'Use five bullets, under 120 words in total. ';
-      case 'draft': return 'Keep it to about 150 words, in the style of the existing section. ';
-      case 'extract': return 'Return a table with one row per item' + (cols ? ' and columns ' + cols : '') + '. ';
-      case 'compare': return 'Return a table: item, current, comparison, difference, and percent change. ';
-      case 'explain': return 'Cover what must be disclosed, the data needed, the likely owner, and the evidence to retain, as short bullets. ';
-      case 'questions': return 'Give ten questions ranked by priority, covering data quality, methodology, controls, assumptions, and evidence. ';
-      case 'map': return 'Return a table: item, framework reference, one-line rationale. ';
-      case 'checklist': return 'Use numbered steps, each with the evidence to collect and who owns it. ';
+      case 'errors': return 'Return a table: location, what is wrong, suggested fix. ';
+      case 'gaps': return 'Return a table: item, what is missing, why it matters. ';
+      case 'variance': return 'Return a table: ' + (cols ? cols + ', ' : 'item, both values, ') + 'change in amount and percent. Include only changes over [your threshold]. ';
+      case 'anomaly': return 'Return a table: ' + (cols ? cols + ', ' : 'item, value, ') + 'why it looks wrong, what to check. ';
+      case 'consistency': return 'For each mismatch, give both locations and both values in a table. ';
+      case 'rewrite': return 'Keep it to [target length], in the same voice. ';
+      case 'summarize': return 'Use [number] bullets. ';
+      case 'draft': return 'Keep it to about [length], in the style of the existing text. ';
+      case 'extract': return 'Return a table with one row per item' + (cols ? ' and columns ' + cols : ' and where it appears') + '. ';
+      case 'compare': return 'Return a table: item, before, after, what changed. ';
+      case 'explain': return 'Use short bullets. ';
+      case 'questions': return 'Give [number] questions, most important first. ';
+      case 'map': return 'Return a table: item, framework reference, one-line reason. ';
+      case 'checklist': return 'Use numbered steps, each with the evidence to keep. ';
       case 'formula': return 'Give the formula first, then one line explaining each part. ';
-      default: return 'Use five bullets, under 120 words. ';
+      default: return 'Use [number] short bullets. ';
     }
   }
 
@@ -296,6 +300,9 @@
     return 'Source, context, one job, useful constraints, and a check. The AI has nothing left to guess, and you can verify the answer against the source.';
   }
 
+  const VAGUE_VERB = /\b(?:analy[sz]e|look at|look over|go over|review|check|help|assist|work on|handle|thoughts|improve|clean up|take a look|have a look|figure out|investigate|examine|evaluate|assess|tell me about)\b/i;
+  const VAGUE_ONLY = /^\s*(?:(?:please|pls|can (?:you|u)|could you)\s+)*(?:analy[sz]e|review|look (?:at|over)|go over|check|help(?: me)?(?: with)?|work on|take a look at)\b[^?]*$/i;
+
   /* ---------------- main ---------------- */
   function coach(prompt, opts) {
     opts = opts || {};
@@ -305,7 +312,7 @@
     const t = d.text;
     const grade = R.grade(on);
     const chosen = bestSheet(files, t);
-    const headers = ((chosen && chosen.sheet && chosen.sheet.headers) || []).filter((h) => h && h.length < 30).slice(0, 6);
+    const headers = ((chosen && (chosen.named || (chosen.score > 0 && chosen.file.sheets.length === 1)) && chosen.sheet.headers) || []).filter((h) => h && h.length < 30).slice(0, 6);
     const ctx = {
       t, files, domain: opts.domain || domainOf(t + ' ' + files.map((f) => (f.text || '').slice(0, 3000)).join(' ').toLowerCase()),
       promptPeriods: [...new Set((prompt.match(/\b(?:FY|CY)\s?'?\d{2,4}\b|\bQ[1-4]\s?(?:FY\s?'?\d{2,4})?\b|\bH[12]\s?(?:FY\s?'?\d{2,4})?\b|\b20\d{2}\b/gi) || []).map((x) => x.replace(/\s+/g, ' ').toUpperCase()))],
@@ -314,49 +321,60 @@
     ctx.intent = opts.intent || intentOf(t, files.some((f) => f.kind === 'Excel') || /\b(data|table|numbers|figures|emissions|revenue|metrics?)\b/.test(t));
     const gen = { S: sourceFragment(ctx), C: contextFragment(ctx), O: objectiveFragment(ctx), P: paramsFragment(ctx), E: evalFragment(ctx) };
     const sentences = userSegments(prompt, d, on);
-    // A vague objective sentence is replaced by the generated objective; keep its other cues.
-    const kept = [];
-    for (const snt of sentences) {
-      if (!on.O && (snt.host === 'O' || snt.vague &&  /\b(?:analy[sz]e|look at|look over|go over|review|check|help|assist|work on|handle|thoughts|improve|clean up|take a look|have a look|figure out|investigate|examine|evaluate|assess|tell me about)\b/i.test(snt.text))) {
-        const taken = [];
-        for (const x of snt.inside.filter((y) => y.k === 'C' || y.k === 'P' || y.k === 'E').sort((p, q) => p.a - q.a)) {
-          if (taken.some((y) => x.a < y.b && x.b > y.a)) continue; taken.push(x);
-          const phrase = prompt.slice(x.a, x.b).replace(/^[\s,]+|[\s,]+$/g, '');
-          const core = phrase.replace(/^(?:for|during|over|across|since|from|between|in)\s+/i, '').toLowerCase();
-          if (core && gen[x.k === 'P' ? 'O' : x.k] && gen.O.toLowerCase().includes(core)) continue; // already stated by the new objective
-          kept.push({ host: x.k, segs: [{ text: asSentence(x.k, phrase) + ' ', letter: x.k }], letters: new Set([x.k]) });
+    // First try keeping every sentence of the user's own ask. If the strong version still has no
+    // clear job, fall back to replacing the vague sentence (the user's other cues are kept).
+    function build(broad) {
+      // A vague objective sentence is replaced by the generated objective; keep its other cues.
+      const kept = [];
+      for (const snt of sentences) {
+        // Only a bare "analyze/review/look at X" is replaced; any other wording is the user's ask and stays.
+        if (!on.O && (VAGUE_ONLY.test(snt.text) && snt.text.trim().split(/\s+/).length <= 8 || broad && (snt.host === 'O' || snt.vague && VAGUE_VERB.test(snt.text)))) {
+          const taken = [];
+          for (const x of snt.inside.filter((y) => y.k === 'C' || y.k === 'P' || y.k === 'E').sort((p, q) => p.a - q.a)) {
+            if (taken.some((y) => x.a < y.b && x.b > y.a)) continue; taken.push(x);
+            const phrase = prompt.slice(x.a, x.b).replace(/^[\s,]+|[\s,]+$/g, '');
+            const core = phrase.replace(/^(?:for|during|over|across|since|from|between|in)\s+/i, '').toLowerCase();
+            if (core && gen[x.k === 'P' ? 'O' : x.k] && gen.O.toLowerCase().includes(core)) continue; // already stated by the new objective
+            kept.push({ host: x.k, segs: [{ text: asSentence(x.k, phrase) + ' ', letter: x.k }], letters: new Set([x.k]) });
+          }
+          continue;
         }
-        continue;
+        kept.push(snt);
       }
-      kept.push(snt);
+      const present = new Set(); for (const snt of kept) for (const l of snt.letters) present.add(l);
+      const genUsed = new Set();
+      const segments = [];
+      for (const k of K) {
+        for (const snt of kept.filter((x) => x.host === k)) { for (const g of snt.segs) segments.push(g); segments.push({ text: ' ', letter: k }); }
+        if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) { segments.push({ text: gen[k], letter: k, generated: true }); genUsed.add(k); }
+      }
+      const allOn = new Set(K);
+      // Self-check: re-grade the strong version; if a generated letter does not register,
+      // swap in a more explicit wording for it (at most two passes).
+      const ALT = {
+        S: ['Use only the selected content and nothing outside it. '],
+        C: ['The audience is [who will read it, such as ' + AUDIENCE[ctx.domain] + ']. ', 'The reader is [such as ' + AUDIENCE[ctx.domain] + ']; it is for ' + DEST[ctx.domain] + '. '],
+        O: ['List the specific items that answer this, one per line. ', 'Identify and list the specific items that answer this request. '],
+        P: ['Return a table with one row per item, under [length]. '],
+        E: ['Do not guess or add facts that are not in the source; flag anything you are unsure of.']
+      };
+      for (let pass = 0; pass < 2; pass++) {
+        const chk = detect(assemble(segments, allOn)).on;
+        const bad = K.filter((k) => !chk[k] && genUsed.has(k));
+        if (!bad.length) break;
+        for (const k of bad) {
+          const seg = segments.find((g) => g.generated && g.letter === k);
+          const alt = (ALT[k] || [])[pass];
+          if (seg && alt) seg.text = alt;
+        }
+      }
+      const betterOk = R.grade(detect(assemble(segments.filter((g) => !g.generated || g.letter === 'S' || g.letter === 'O'), allOn)).on) !== 'weak';
+      return { segments, genUsed, ok: detect(assemble(segments, allOn)).on.O && betterOk };
     }
-    const present = new Set(); for (const snt of kept) for (const l of snt.letters) present.add(l);
-    const genUsed = new Set();
-    const segments = [];
-    for (const k of K) {
-      for (const snt of kept.filter((x) => x.host === k)) { for (const g of snt.segs) segments.push(g); segments.push({ text: ' ', letter: k }); }
-      if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) { segments.push({ text: gen[k], letter: k, generated: true }); genUsed.add(k); }
-    }
+    let built = build(false);
+    if (!built.ok && !on.O) { const alt = build(true); if (alt.ok) built = alt; }
+    const { segments, genUsed } = built;
     const allOn = new Set(K);
-    // Self-check: re-grade the strong version; if a generated letter does not register,
-    // swap in a more explicit wording for it (at most two passes).
-    const ALT = {
-      S: ['Use only the selected content and nothing outside it. '],
-      C: ['You are ' + ((ROLE[ctx.domain] || ROLE.GEN).def) + ', and this is for ' + DEST[ctx.domain] + '. '],
-      O: ['List the three most important findings in the' + (ctx.object ? ' ' + ctx.object : ' source') + ', one per line. ', 'Identify and list the specific items that answer this request. '],
-      P: ['Return a table with one row per item, under 150 words in total. '],
-      E: ['Do not guess or add facts that are not in the source; flag anything you are unsure of.']
-    };
-    for (let pass = 0; pass < 2; pass++) {
-      const chk = detect(assemble(segments, allOn)).on;
-      const bad = K.filter((k) => !chk[k] && genUsed.has(k));
-      if (!bad.length) break;
-      for (const k of bad) {
-        const seg = segments.find((g) => g.generated && g.letter === k);
-        const alt = (ALT[k] || [])[pass];
-        if (seg && alt) seg.text = alt;
-      }
-    }
     const strongP = assemble(segments, allOn);
     const betterSegs = segments.filter((g) => !g.generated || g.letter === 'S' || g.letter === 'O');
     const betterP = assemble(betterSegs, allOn);
@@ -391,6 +409,7 @@
     const filled = K.filter((k) => !on[k]);
     const headline = grade === 'strong' ? 'It names a source, context, one job, constraints, and a check.'
       : grade === 'better' ? 'It has a source and a job; it is missing ' + listify(filled.map((k) => MISSING[k])) + '.'
+      : !on.S && files.length ? 'You attached ' + listify(files.map((f) => cleanFile(f.name))) + ', but the prompt does not point to it. Start with ' + files.map((f) => '@' + cleanFile(f.name)).join(' ') + (on.O ? ' so the AI knows what to read.' : ' and say the one thing you want back.')
       : 'The AI would have to guess ' + listify(['S', 'O'].filter((k) => !on[k]).map((k) => MISSING[k])) + '.';
     const placeholders = (strongP.match(/\[[^\]]+\]/g) || []).length;
     return { grade, detected: on, headline, stages, scope, segments, notes, tips, intent: ctx.intent, domain: ctx.domain, placeholders, hits: d.el };
