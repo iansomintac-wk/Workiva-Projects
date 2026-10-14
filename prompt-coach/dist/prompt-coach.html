@@ -310,7 +310,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     return a === null ? null : [a, b];
   }
 
-  const NOUN_SRC = '(?:data(?:set)?|table|tables|cells?|rows?|columns?|range|ranges|text|paragraphs?|sections?|files?|docs?|documents?|reports?|sheets?|spreadsheets?|workbook|worksheets?|deck|slides?|presentation|tabs?|query|queries|pdf|memo|policy|policies|matrix|rcm|narratives?|drafts?|disclosures?|figures|numbers|values|schedule|schedules|footnotes?|notes?|exhibits?|entries|lines?|items?|controls?|findings|evidence|results|output|chart|graph|list|content|language|wording|summary|filing|statement|statements|ledger|tb|trial balance|register|log|workpapers?|template|appendix|transcript|minutes|email|contract|agreement|invoice|samples?|population|inventory|factbook|questionnaire|survey|responses|letter|comment letter|10-k|10-q|8-k|md&a|esg report|sustainability report|annual report)';
+  const NOUN_SRC = '(?:data(?:set)?|paras?|commentar(?:y|ies)|quotes?|entry|journal entr(?:y|ies)|recommendations?|descriptions?|release|table|tables|cells?|rows?|columns?|range|ranges|text|paragraphs?|sections?|files?|docs?|documents?|reports?|sheets?|spreadsheets?|workbook|worksheets?|deck|slides?|presentation|tabs?|query|queries|pdf|memo|policy|policies|matrix|rcm|narratives?|drafts?|disclosures?|figures|numbers|values|schedule|schedules|footnotes?|notes?|exhibits?|entries|lines?|items?|controls?|findings|evidence|results|output|chart|graph|list|content|language|wording|summary|filing|statement|statements|ledger|tb|trial balance|register|log|workpapers?|template|appendix|transcript|minutes|email|contract|agreement|invoice|samples?|population|inventory|factbook|questionnaire|survey|responses|letter|comment letter|10-k|10-q|8-k|md&a|esg report|sustainability report|annual report)';
   const SRC_LOCATOR = '(?:selected|highlighted|attached|uploaded|pasted|linked|open|opened|current|enclosed|following|above|below|provided|shared)';
 
   // Each rule: [regex, weight, tag]. Weights are summed; an element is "on" at >= 1.
@@ -339,6 +339,9 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       [/"[^"]{2,60}"\s+(?:tab|sheet|worksheet|column|section|slide|file|query|table|report|deck|document)\b/, 1.2, 'quoted-part'],
       [/\b(?:tab|sheet|worksheet|column|section|slide|query|table|report|file)\s+"[^"]{2,60}"/, 1.2, 'quoted-part2'],
       [/\b(?:note|footnote|slide|page|section|item|exhibit|appendix|schedule|row|rows|column|columns|cell|cells|tab|part)\s+(?:[a-z]?\d+[a-z]?(?:\.\d+)*|[ivx]+|[a-z]{1,3}\d+(?::[a-z]{1,3}\d+)?)\b/, 1.0, 'numbered-part'],
+      // a definite reference to one open document ("the doc", "the policy"); "our controls" stays vague, and
+      // "the 10-K" is usually a destination ("for the 10-Q MD&A"), so filings are left to the locator rules
+      [/\b(?:the|this|that)\s+(?:q[1-4]\s+|fy\d{2}\s+|draft\s+|current\s+)?(?:doc|document|policy|memo|deck|workbook|spreadsheet)\b(?!\s+(?:template|process|owner|team))/, 1.0, 'the-document'],
       [/\b(?:knowledge base|knowledgebase|esrs\s*\/\s*issb intelligence|issb intelligence|esrs intelligence|support intelligence|framework kb|the kb)\b/, 1.2, 'kb'],
       [/\b(?:wdata|the query|saved query|connected data|the dataset)\b/, 0.7, 'wdata'],
       [/\b(?:using|use|based on|from|in|off|within|against|per)\s+(?:only\s+)?(?:the\s+)?(?:my|our)\s+(?:attached|selected|open|current|uploaded)\b/, 1.0, 'using-my-attached'],
@@ -455,6 +458,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
   const VAGUE = /\b(?:analy[sz]e|look at|look over|go over|review|check|help(?: me)?(?: with)?|assist(?: with)?|work on|handle|deal with|thoughts on|improve|clean up|do something with|take a look|have a look|figure out|sort out|process|investigate|examine|study|evaluate|assess|tell me about|what do you think)\b/;
   const QUESTION = /(?:(?:^\s*|[.!?]\s+)(?:what|whats|why|which|how|where|when|who|is|are|does|do(?! not)|did|can you tell|could you tell|would)|(?:[:;,]\s+|\s-\s+)(?:what|whats|why|which|how|where|when|who))\b[^?.!\n]{6,}\??/;
   const STOP = new Set('the a an this that these those it them me us my our your of to for and or in on with at by from is are be please can could would you i we just some any all also then so very really quickly out up down off over key main attached selected stuff things something everything anything whatever etc pls'.split(' '));
+  const CASUAL_ASK = /\bwhy (?:is|are|did|does|do|has|have|was|were)\s+(?:\w+\s+){0,4}(?:up|down|higher|lower|so (?:high|low|big)|different|off|negative|zero)\b|\bwhich (?:one |number |figure |value )?is (?:right|correct|wrong)\b|\bwhat does (?:this|that|the) (?:\w+\s+){0,3}(?:do|mean|require)\b|\b(?:need|want|give me|get me)\s+(?:a|an|the|some)\s+(?:[\w&-]+\s+){0,4}(?:checklist|list|summary|table|memo|template|outline|plan|questions|test steps)\b|(?:^|[.!?]\s+)(?:[\w&-]+\s+){0,3}(?:questions|checklist|test steps)\s+(?:for|on|about)\s+\w+|\bmake (?:this|it) (?:sound|read|look)\s+(?:more|less|better|clearer|\w+er)\b/;
   const OFFTASK = /^\s*(?:hi|hello|hey|thanks|thank you|thx|ok|okay|cool|great|test|testing|yo|good morning|good afternoon|\?+|lol)\b[\s!.?]*$/;
 
   function objective(t) {
@@ -484,6 +488,10 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     }
     // vague verb followed by a purpose clause that names a result
     const vm = t.match(new RegExp(VAGUE.source + '[^.;\\n]{0,80}?\\b(?:for (?:any |all |possible |potential |obvious |the )?(?:errors?|mistakes?|issues?|problems?|gaps?|inconsistenc\\w*|discrepanc\\w*|anomal\\w*|outliers?|duplicates?|missing|typos?|variances?|changes|risks?|red flags?|deficienc\\w*|weakness\\w*|completeness|accuracy|compliance|consistency|conflicts?|mismatch\\w*)|to (?:find|see|identify|spot|flag|determine|confirm|check)|and (?:identify|flag|list|find|explain|tell|show|summari[sz]e)|whether|if there|against)\\b\\s*\\w*'));
+    if (!score) {
+      const ca = t.match(CASUAL_ASK);
+      if (ca) { score = 1.0; hits.push({ start: ca.index, end: ca.index + ca[0].length, tag: 'question' }); }
+    }
     if (!score && vm) { score = 1.0; hits.push({ start: vm.index, end: vm.index + vm[0].length, tag: 'vague+purpose' }); }
     if (!score && VAGUE.test(t)) vagueOnly = true;
     return { score, hits, vagueOnly, verbs };
@@ -689,10 +697,6 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
   // Generated text adds a finish line and a format, but never facts, counts, or limits the user
   // did not give: those become [blanks] for the user to fill in.
   const AUDIENCE = { FR: 'the audit committee', GRC: 'our external auditors', SUS: 'our assurance provider', GEN: 'my manager' };
-  const OBJECT_DEFAULT = {
-    errors: 'text', gaps: 'document', variance: 'table', anomaly: 'table', consistency: 'document', rewrite: 'text', summarize: 'document', draft: 'source material',
-    extract: 'document', compare: 'table', explain: 'requirement', questions: 'document', map: 'items', checklist: 'process description', formula: 'range'
-  };
 
   /* ---------------- file grounding ---------------- */
   function words(s) { return (String(s).toLowerCase().match(/[a-z0-9][a-z0-9&%-]{2,}/g) || []); }
@@ -721,17 +725,17 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       if (files.length === 1) return 'Use only @' + cleanFile(files[0].name) + '. ';
       return 'Use only ' + files.slice(0, 10).map((f) => '@' + cleanFile(f.name)).join(', ') + '. ';
     }
-    if (intent === 'explain' && domain === 'SUS') return 'Use the ' + (/\b(?:issb|ifrs s[12])\b/.test(ctx.t) ? 'ISSB' : 'ESRS') + ' knowledge base. ';
+    // No file: name what the user named; otherwise leave the source as a blank, never a guessed type.
+    if (intent === 'explain' && domain === 'SUS') return /\b(?:issb|ifrs s[12])\b/.test(ctx.t) ? 'Use the ISSB knowledge base. ' : /\besrs\b/.test(ctx.t) ? 'Use the ESRS knowledge base. ' : 'Use [the ESRS or ISSB knowledge base, or the standard text you selected]. ';
     if (intent === 'explain') return 'Use the [requirement or standard text] I have selected. ';
-    let obj = ctx.object || OBJECT_DEFAULT[intent] || 'content';
-    if (ctx.object && !/\b(?:data|table|rows?|columns?|sheet|tab|range|cells?|text|paragraph|section|report|document|doc|deck|slides?|file|memo|policy|matrix|rcm|register|log|list|schedule|note|draft|narrative|controls?|findings|letter|statement|workpaper|release|filing|disclosure)s?$/i.test(ctx.object)) obj += ['variance', 'anomaly', 'compare', 'formula'].includes(intent) ? ' data' : ' section';
-    if (['consistency', 'summarize', 'questions'].includes(intent)) return 'Work only from the open ' + (domain === 'GRC' && intent !== 'consistency' ? 'document' : 'report') + '. ';
-    return 'Work only from the selected ' + obj + '. ';
+    // writing tasks need room for new wording, so the source is a starting point, not a fence
+    const lead = ['draft', 'checklist'].includes(intent) ? 'Start from ' : 'Work only from ';
+    return lead + '[the selected text, table, or file]. ';
   }
 
   // Who it is for is the user's to say: offer it as a blank with examples, never assert a role.
   function contextFragment(ctx) {
-    return 'This is for ' + DEST[ctx.domain] + '. ';
+    return 'This is for ' + DEST[ctx.audDomain] + '. ';
   }
 
   function periodPhrase(ctx) {
@@ -751,7 +755,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       case 'variance': { const pp = periodPhrase(ctx); return 'Identify what drove the change' + (o ? ' in the' + o : '') + (pp ? ' between ' + pp : ctx.promptPeriods[0] ? ' for ' + ctx.promptPeriods[0] : '') + '. '; }
       case 'anomaly': return 'List any values' + (o ? ' in the' + o : '') + ' that look wrong, missing, or out of place. ';
       case 'consistency': return 'List every number or statement that does not match. ';
-      case 'rewrite': return 'Rewrite the selected' + (o || ' text') + ' and return the revised version. ';
+      case 'rewrite': return 'Rewrite ' + (o ? 'the' + o : 'it') + ' and return the revised version. ';
       case 'summarize': return 'Summarize the key points of the' + (o || ' content') + '. ';
       case 'draft': return 'Draft ' + (ctx.object ? 'the ' + ctx.object : 'the text') + ' from the source. ';
       case 'extract': return 'Extract every ' + (ctx.object || 'relevant item') + ' into one list. ';
@@ -816,7 +820,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
   const S_INLINE = /\b(?:selected|highlighted|attached|uploaded|pasted|open|opened|current|enclosed|provided|shared|linked)\b/i;
   function userSegments(prompt, d, on) {
     const sentences = [];
-    const re = /[^.;!?\n]+[.;!?]?/g; let m;
+    const re = /(?:[^.;!?\n]|\.(?=[^\s.]))+[.;!?]*/g; let m; // a period inside "14.2%" or "A.8.x" is not a sentence end
     while ((m = re.exec(prompt))) if (m[0].trim()) sentences.push({ start: m.index, end: m.index + m[0].length });
     const spans = [];
     const FIXED = /^(period|scope-n|number|region|scope-limit|structure|measures|format-word|here-is|work-off|wdata|on-screen|demonstrative|numbered-part|only-use-info)$/;
@@ -868,10 +872,20 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     return p.replace(/^./, (c) => c.toUpperCase()) + '.';
   }
 
+  // Chat shorthand reads badly in a prompt someone will reuse; greetings and "thoughts?" add nothing.
+  function tidyChat(t) {
+    return t.replace(/\bcan u\b/gi, (m) => m.slice(0, 4) + 'you').replace(/\bu\b/g, 'you').replace(/\bur\b/g, 'your').replace(/\b(?:pls|plz)\b/gi, 'please')
+      .replace(/(^|[.!?]\s+)(?:hi|hey|hello)(?: there| all| team)?\b\s*[,!.]*\s*/gi, '$1')
+      .replace(/(^|[.!?]\s+)(?:thanks|thank you|thx|ty)\b[^.!?]*(?:[.!?]+\s*|$)/gi, '$1')
+      .replace(/(^|[.!?]\s+)(?:any )?thoughts\s*\?+\s*/gi, '$1')
+      .replace(/,?\s*(?:any )?thoughts\s*\?+/gi, '.').replace(/\.\./g, '.').trim();
+  }
+
   // Join segments, dropping letters that are off and tidying the spacing/punctuation left behind.
   function assemble(segs, onSet) {
     let t = segs.map((g) => (onSet.has(g.letter) ? g.text : g.inline ? g.alt || '' : '')).join('');
     t = t.replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/,\s*([.;!?])/g, '$1').replace(/\(\s*\)/g, '').replace(/\b(the|a|an) (the|a|an)\b/gi, '$1').replace(/^\s*[,;:]\s*/, '').trim();
+    t = tidyChat(t).replace(/([.!?])[.!?]+/g, (m) => (m.includes('?') ? '?' : m[0])); // "...", "??" -> one mark
     return t.replace(/(^|[.!?]\s+)([a-z])/g, (m0, p, c) => p + c.toUpperCase());
   }
 
@@ -951,15 +965,21 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       promptPeriods: [...new Set((prompt.match(/\b(?:FY|CY)\s?'?\d{2,4}\b|\bQ[1-4]\s?(?:FY\s?'?\d{2,4})?\b|\bH[12]\s?(?:FY\s?'?\d{2,4})?\b|\b20\d{2}\b/gi) || []).map((x) => x.replace(/\s+/g, ' ').toUpperCase()))],
       intent: null, object: restoreCase(prompt, objectOf(t)), periods: periodsIn(files), headers
     };
+    ctx.audDomain = opts.areaSure === false ? 'GEN' : ctx.domain;
     ctx.intent = opts.intent || intentOf(t, files.some((f) => f.kind === 'Excel') || /\b(data|table|numbers|figures|emissions|revenue|metrics?)\b/.test(t));
+    const taskSure = opts.taskSure !== false;
     const gen = { S: sourceFragment(ctx), C: contextFragment(ctx), O: objectiveFragment(ctx), P: paramsFragment(ctx), E: evalFragment(ctx) };
+    const BLANK = { O: 'Identify and list [what you want back, such as the issues and where they are, or the key points]. ', P: 'Format it as [a table, bullets, or a short paragraph]. ', E: evalFragment({ intent: null }) };
+    if (!taskSure) Object.assign(gen, BLANK);
     const sentences = userSegments(prompt, d, on);
     // First try keeping every sentence of the user's own ask. If the strong version still has no
     // clear job, fall back to replacing the vague sentence (the user's other cues are kept).
     function build(broad) {
+      const g = { ...gen };
       // A vague objective sentence is replaced by the generated objective; keep its other cues.
       const kept = [];
       for (const snt of sentences) {
+        if (!/[a-z0-9]/i.test(tidyChat(snt.text))) continue; // only "thoughts?" or a greeting
         // Only a bare "analyze/review/look at X" is replaced; any other wording is the user's ask and stays.
         if (!on.O && (VAGUE_ONLY.test(snt.text) && snt.text.trim().split(/\s+/).length <= 8 || broad && (snt.host === 'O' || snt.vague && VAGUE_VERB.test(snt.text)))) {
           const taken = [];
@@ -974,19 +994,21 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
         }
         kept.push(snt);
       }
+      // The user's own question stays as the job; add only a finish line for them to fill in.
+      if (!on.O && kept.some((x) => x.text && x.host === 'O')) Object.assign(g, { O: BLANK.O, P: BLANK.P, E: BLANK.E });
       const present = new Set(); for (const snt of kept) for (const l of snt.letters) present.add(l);
       const genUsed = new Set();
       const segments = [];
       for (const k of K) {
         for (const snt of kept.filter((x) => x.host === k)) { for (const g of snt.segs) segments.push(g); segments.push({ text: ' ', letter: k }); }
-        if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) { segments.push({ text: gen[k], letter: k, generated: true }); genUsed.add(k); }
+        if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) { segments.push({ text: g[k], letter: k, generated: true }); genUsed.add(k); }
       }
       const allOn = new Set(K);
       // Self-check: re-grade the strong version; if a generated letter does not register,
       // swap in a more explicit wording for it (at most two passes).
       const ALT = {
         S: ['Use only the selected content and nothing outside it. '],
-        C: ['The audience is [who will read it, such as ' + AUDIENCE[ctx.domain] + ']. ', 'The reader is [such as ' + AUDIENCE[ctx.domain] + ']; it is for ' + DEST[ctx.domain] + '. '],
+        C: ['The audience is [who will read it, such as ' + AUDIENCE[ctx.audDomain] + ']. ', 'The reader is [such as ' + AUDIENCE[ctx.audDomain] + ']; it is for ' + DEST[ctx.audDomain] + '. '],
         O: ['List the specific items that answer this, one per line. ', 'Identify and list the specific items that answer this request. '],
         P: ['Return a table with one row per item, under [length]. '],
         E: ['Do not guess or add facts that are not in the source; flag anything you are unsure of.']
@@ -1005,7 +1027,8 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       return { segments, genUsed, ok: detect(assemble(segments, allOn)).on.O && betterOk };
     }
     let built = build(false);
-    if (!built.ok && !on.O) { const alt = build(true); if (alt.ok) built = alt; }
+    // with no confident task there is nothing better to put in its place, so never drop their words
+    if (!built.ok && !on.O && taskSure) { const alt = build(true); if (alt.ok) built = alt; }
     const { segments, genUsed } = built;
     const allOn = new Set(K);
     const strongP = assemble(segments, allOn);
@@ -1106,7 +1129,19 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     return { intent: softmaxHead(x, weights.intent), domain: softmaxHead(x, weights.domain) };
   }
 
-  const api = { featurize, classify, unpack, DIM };
+  // Task and area for the coach: trust the classifier when it is confident, else fall back to
+  // patterns and report that it is unsure (the coach then adds blanks instead of a task template).
+  function pick(prompt, weights) {
+    const c = classify(prompt, weights);
+    const taskSure = c.intent.label !== 'other' && c.intent.p >= 0.5;
+    const pattern = W.intentOf(R.normalize(prompt), false, true);
+    const intent = (taskSure ? c.intent.label : pattern || (c.intent.label !== 'other' ? c.intent.label : null)) || undefined;
+    // a prompt with no area words ("make this sound less harsh") is not sure, however the model leans
+    const areaSure = c.domain.p >= 0.85 || (c.domain.p >= 0.5 && W.domainOf(R.normalize(prompt)) !== 'GEN');
+    return { intent, domain: areaSure ? c.domain.label : undefined, taskSure, areaSure };
+  }
+
+  const api = { featurize, classify, unpack, pick, DIM };
   if (isNode) module.exports = api; else root.ScopeClassify = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -1243,19 +1278,6 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
 
   const weights = window.SCOPE_WEIGHTS;
   const CLS = ScopeClassify.unpack(window.SCOPE_CLS);
-  // Task and area: trust the classifier when it is confident; otherwise fall back to patterns and ask.
-  function pickTask(prompt) {
-    const c = ScopeClassify.classify(prompt, CLS);
-    let intent = null;
-    if (!intent) {
-      const sure = c.intent.label !== 'other' && c.intent.p >= 0.5;
-      const pattern = ScopeRewrite.intentOf(ScopeRules.normalize(prompt), false, true);
-      if (sure) intent = c.intent.label;
-      else intent = pattern || (c.intent.label !== 'other' ? c.intent.label : null);
-    }
-    const domain = c.domain.p >= 0.5 ? c.domain.label : undefined;
-    return { intent: intent || undefined, domain };
-  }
   const detect = (p) => {
     const r = ScopeModel.predict(p, weights, { mode: weights.mode });
     return { on: r.on, d: r.rules };
@@ -1269,8 +1291,8 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     const prompt = $('prompt').value;
     const files = state.files.filter((f) => f.ok);
     if (!prompt.trim()) { renderEmpty(); return; }
-    const pick = pickTask(prompt);
-    const r = ScopeRewrite.coach(prompt, { files, detect, domain: pick.domain, intent: pick.intent });
+    const pick = ScopeClassify.pick(prompt, CLS);
+    const r = ScopeRewrite.coach(prompt, { files, detect, ...pick });
     // one job at a time: a stacked prompt can't be strong
     r.displayGrade = r.grade === 'strong' && r.hits && ScopeRules.detect(prompt).stacked ? 'better' : r.grade;
     const prevKey = state.result && state.result.stages.strong.prompt;

@@ -56,10 +56,6 @@
   // Generated text adds a finish line and a format, but never facts, counts, or limits the user
   // did not give: those become [blanks] for the user to fill in.
   const AUDIENCE = { FR: 'the audit committee', GRC: 'our external auditors', SUS: 'our assurance provider', GEN: 'my manager' };
-  const OBJECT_DEFAULT = {
-    errors: 'text', gaps: 'document', variance: 'table', anomaly: 'table', consistency: 'document', rewrite: 'text', summarize: 'document', draft: 'source material',
-    extract: 'document', compare: 'table', explain: 'requirement', questions: 'document', map: 'items', checklist: 'process description', formula: 'range'
-  };
 
   /* ---------------- file grounding ---------------- */
   function words(s) { return (String(s).toLowerCase().match(/[a-z0-9][a-z0-9&%-]{2,}/g) || []); }
@@ -88,17 +84,17 @@
       if (files.length === 1) return 'Use only @' + cleanFile(files[0].name) + '. ';
       return 'Use only ' + files.slice(0, 10).map((f) => '@' + cleanFile(f.name)).join(', ') + '. ';
     }
-    if (intent === 'explain' && domain === 'SUS') return 'Use the ' + (/\b(?:issb|ifrs s[12])\b/.test(ctx.t) ? 'ISSB' : 'ESRS') + ' knowledge base. ';
+    // No file: name what the user named; otherwise leave the source as a blank, never a guessed type.
+    if (intent === 'explain' && domain === 'SUS') return /\b(?:issb|ifrs s[12])\b/.test(ctx.t) ? 'Use the ISSB knowledge base. ' : /\besrs\b/.test(ctx.t) ? 'Use the ESRS knowledge base. ' : 'Use [the ESRS or ISSB knowledge base, or the standard text you selected]. ';
     if (intent === 'explain') return 'Use the [requirement or standard text] I have selected. ';
-    let obj = ctx.object || OBJECT_DEFAULT[intent] || 'content';
-    if (ctx.object && !/\b(?:data|table|rows?|columns?|sheet|tab|range|cells?|text|paragraph|section|report|document|doc|deck|slides?|file|memo|policy|matrix|rcm|register|log|list|schedule|note|draft|narrative|controls?|findings|letter|statement|workpaper|release|filing|disclosure)s?$/i.test(ctx.object)) obj += ['variance', 'anomaly', 'compare', 'formula'].includes(intent) ? ' data' : ' section';
-    if (['consistency', 'summarize', 'questions'].includes(intent)) return 'Work only from the open ' + (domain === 'GRC' && intent !== 'consistency' ? 'document' : 'report') + '. ';
-    return 'Work only from the selected ' + obj + '. ';
+    // writing tasks need room for new wording, so the source is a starting point, not a fence
+    const lead = ['draft', 'checklist'].includes(intent) ? 'Start from ' : 'Work only from ';
+    return lead + '[the selected text, table, or file]. ';
   }
 
   // Who it is for is the user's to say: offer it as a blank with examples, never assert a role.
   function contextFragment(ctx) {
-    return 'This is for ' + DEST[ctx.domain] + '. ';
+    return 'This is for ' + DEST[ctx.audDomain] + '. ';
   }
 
   function periodPhrase(ctx) {
@@ -118,7 +114,7 @@
       case 'variance': { const pp = periodPhrase(ctx); return 'Identify what drove the change' + (o ? ' in the' + o : '') + (pp ? ' between ' + pp : ctx.promptPeriods[0] ? ' for ' + ctx.promptPeriods[0] : '') + '. '; }
       case 'anomaly': return 'List any values' + (o ? ' in the' + o : '') + ' that look wrong, missing, or out of place. ';
       case 'consistency': return 'List every number or statement that does not match. ';
-      case 'rewrite': return 'Rewrite the selected' + (o || ' text') + ' and return the revised version. ';
+      case 'rewrite': return 'Rewrite ' + (o ? 'the' + o : 'it') + ' and return the revised version. ';
       case 'summarize': return 'Summarize the key points of the' + (o || ' content') + '. ';
       case 'draft': return 'Draft ' + (ctx.object ? 'the ' + ctx.object : 'the text') + ' from the source. ';
       case 'extract': return 'Extract every ' + (ctx.object || 'relevant item') + ' into one list. ';
@@ -183,7 +179,7 @@
   const S_INLINE = /\b(?:selected|highlighted|attached|uploaded|pasted|open|opened|current|enclosed|provided|shared|linked)\b/i;
   function userSegments(prompt, d, on) {
     const sentences = [];
-    const re = /[^.;!?\n]+[.;!?]?/g; let m;
+    const re = /(?:[^.;!?\n]|\.(?=[^\s.]))+[.;!?]*/g; let m; // a period inside "14.2%" or "A.8.x" is not a sentence end
     while ((m = re.exec(prompt))) if (m[0].trim()) sentences.push({ start: m.index, end: m.index + m[0].length });
     const spans = [];
     const FIXED = /^(period|scope-n|number|region|scope-limit|structure|measures|format-word|here-is|work-off|wdata|on-screen|demonstrative|numbered-part|only-use-info)$/;
@@ -235,10 +231,20 @@
     return p.replace(/^./, (c) => c.toUpperCase()) + '.';
   }
 
+  // Chat shorthand reads badly in a prompt someone will reuse; greetings and "thoughts?" add nothing.
+  function tidyChat(t) {
+    return t.replace(/\bcan u\b/gi, (m) => m.slice(0, 4) + 'you').replace(/\bu\b/g, 'you').replace(/\bur\b/g, 'your').replace(/\b(?:pls|plz)\b/gi, 'please')
+      .replace(/(^|[.!?]\s+)(?:hi|hey|hello)(?: there| all| team)?\b\s*[,!.]*\s*/gi, '$1')
+      .replace(/(^|[.!?]\s+)(?:thanks|thank you|thx|ty)\b[^.!?]*(?:[.!?]+\s*|$)/gi, '$1')
+      .replace(/(^|[.!?]\s+)(?:any )?thoughts\s*\?+\s*/gi, '$1')
+      .replace(/,?\s*(?:any )?thoughts\s*\?+/gi, '.').replace(/\.\./g, '.').trim();
+  }
+
   // Join segments, dropping letters that are off and tidying the spacing/punctuation left behind.
   function assemble(segs, onSet) {
     let t = segs.map((g) => (onSet.has(g.letter) ? g.text : g.inline ? g.alt || '' : '')).join('');
     t = t.replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/,\s*([.;!?])/g, '$1').replace(/\(\s*\)/g, '').replace(/\b(the|a|an) (the|a|an)\b/gi, '$1').replace(/^\s*[,;:]\s*/, '').trim();
+    t = tidyChat(t).replace(/([.!?])[.!?]+/g, (m) => (m.includes('?') ? '?' : m[0])); // "...", "??" -> one mark
     return t.replace(/(^|[.!?]\s+)([a-z])/g, (m0, p, c) => p + c.toUpperCase());
   }
 
@@ -318,15 +324,21 @@
       promptPeriods: [...new Set((prompt.match(/\b(?:FY|CY)\s?'?\d{2,4}\b|\bQ[1-4]\s?(?:FY\s?'?\d{2,4})?\b|\bH[12]\s?(?:FY\s?'?\d{2,4})?\b|\b20\d{2}\b/gi) || []).map((x) => x.replace(/\s+/g, ' ').toUpperCase()))],
       intent: null, object: restoreCase(prompt, objectOf(t)), periods: periodsIn(files), headers
     };
+    ctx.audDomain = opts.areaSure === false ? 'GEN' : ctx.domain;
     ctx.intent = opts.intent || intentOf(t, files.some((f) => f.kind === 'Excel') || /\b(data|table|numbers|figures|emissions|revenue|metrics?)\b/.test(t));
+    const taskSure = opts.taskSure !== false;
     const gen = { S: sourceFragment(ctx), C: contextFragment(ctx), O: objectiveFragment(ctx), P: paramsFragment(ctx), E: evalFragment(ctx) };
+    const BLANK = { O: 'Identify and list [what you want back, such as the issues and where they are, or the key points]. ', P: 'Format it as [a table, bullets, or a short paragraph]. ', E: evalFragment({ intent: null }) };
+    if (!taskSure) Object.assign(gen, BLANK);
     const sentences = userSegments(prompt, d, on);
     // First try keeping every sentence of the user's own ask. If the strong version still has no
     // clear job, fall back to replacing the vague sentence (the user's other cues are kept).
     function build(broad) {
+      const g = { ...gen };
       // A vague objective sentence is replaced by the generated objective; keep its other cues.
       const kept = [];
       for (const snt of sentences) {
+        if (!/[a-z0-9]/i.test(tidyChat(snt.text))) continue; // only "thoughts?" or a greeting
         // Only a bare "analyze/review/look at X" is replaced; any other wording is the user's ask and stays.
         if (!on.O && (VAGUE_ONLY.test(snt.text) && snt.text.trim().split(/\s+/).length <= 8 || broad && (snt.host === 'O' || snt.vague && VAGUE_VERB.test(snt.text)))) {
           const taken = [];
@@ -341,19 +353,21 @@
         }
         kept.push(snt);
       }
+      // The user's own question stays as the job; add only a finish line for them to fill in.
+      if (!on.O && kept.some((x) => x.text && x.host === 'O')) Object.assign(g, { O: BLANK.O, P: BLANK.P, E: BLANK.E });
       const present = new Set(); for (const snt of kept) for (const l of snt.letters) present.add(l);
       const genUsed = new Set();
       const segments = [];
       for (const k of K) {
         for (const snt of kept.filter((x) => x.host === k)) { for (const g of snt.segs) segments.push(g); segments.push({ text: ' ', letter: k }); }
-        if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) { segments.push({ text: gen[k], letter: k, generated: true }); genUsed.add(k); }
+        if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) { segments.push({ text: g[k], letter: k, generated: true }); genUsed.add(k); }
       }
       const allOn = new Set(K);
       // Self-check: re-grade the strong version; if a generated letter does not register,
       // swap in a more explicit wording for it (at most two passes).
       const ALT = {
         S: ['Use only the selected content and nothing outside it. '],
-        C: ['The audience is [who will read it, such as ' + AUDIENCE[ctx.domain] + ']. ', 'The reader is [such as ' + AUDIENCE[ctx.domain] + ']; it is for ' + DEST[ctx.domain] + '. '],
+        C: ['The audience is [who will read it, such as ' + AUDIENCE[ctx.audDomain] + ']. ', 'The reader is [such as ' + AUDIENCE[ctx.audDomain] + ']; it is for ' + DEST[ctx.audDomain] + '. '],
         O: ['List the specific items that answer this, one per line. ', 'Identify and list the specific items that answer this request. '],
         P: ['Return a table with one row per item, under [length]. '],
         E: ['Do not guess or add facts that are not in the source; flag anything you are unsure of.']
@@ -372,7 +386,8 @@
       return { segments, genUsed, ok: detect(assemble(segments, allOn)).on.O && betterOk };
     }
     let built = build(false);
-    if (!built.ok && !on.O) { const alt = build(true); if (alt.ok) built = alt; }
+    // with no confident task there is nothing better to put in its place, so never drop their words
+    if (!built.ok && !on.O && taskSure) { const alt = build(true); if (alt.ok) built = alt; }
     const { segments, genUsed } = built;
     const allOn = new Set(K);
     const strongP = assemble(segments, allOn);

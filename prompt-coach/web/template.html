@@ -284,19 +284,6 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
 
   const weights = window.SCOPE_WEIGHTS;
   const CLS = ScopeClassify.unpack(window.SCOPE_CLS);
-  // Task and area: trust the classifier when it is confident; otherwise fall back to patterns and ask.
-  function pickTask(prompt) {
-    const c = ScopeClassify.classify(prompt, CLS);
-    let intent = null;
-    if (!intent) {
-      const sure = c.intent.label !== 'other' && c.intent.p >= 0.5;
-      const pattern = ScopeRewrite.intentOf(ScopeRules.normalize(prompt), false, true);
-      if (sure) intent = c.intent.label;
-      else intent = pattern || (c.intent.label !== 'other' ? c.intent.label : null);
-    }
-    const domain = c.domain.p >= 0.5 ? c.domain.label : undefined;
-    return { intent: intent || undefined, domain };
-  }
   const detect = (p) => {
     const r = ScopeModel.predict(p, weights, { mode: weights.mode });
     return { on: r.on, d: r.rules };
@@ -310,8 +297,8 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     const prompt = $('prompt').value;
     const files = state.files.filter((f) => f.ok);
     if (!prompt.trim()) { renderEmpty(); return; }
-    const pick = pickTask(prompt);
-    const r = ScopeRewrite.coach(prompt, { files, detect, domain: pick.domain, intent: pick.intent });
+    const pick = ScopeClassify.pick(prompt, CLS);
+    const r = ScopeRewrite.coach(prompt, { files, detect, ...pick });
     // one job at a time: a stacked prompt can't be strong
     r.displayGrade = r.grade === 'strong' && r.hits && ScopeRules.detect(prompt).stacked ? 'better' : r.grade;
     const prevKey = state.result && state.result.stages.strong.prompt;

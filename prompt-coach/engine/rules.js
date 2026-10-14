@@ -55,7 +55,7 @@
     return a === null ? null : [a, b];
   }
 
-  const NOUN_SRC = '(?:data(?:set)?|table|tables|cells?|rows?|columns?|range|ranges|text|paragraphs?|sections?|files?|docs?|documents?|reports?|sheets?|spreadsheets?|workbook|worksheets?|deck|slides?|presentation|tabs?|query|queries|pdf|memo|policy|policies|matrix|rcm|narratives?|drafts?|disclosures?|figures|numbers|values|schedule|schedules|footnotes?|notes?|exhibits?|entries|lines?|items?|controls?|findings|evidence|results|output|chart|graph|list|content|language|wording|summary|filing|statement|statements|ledger|tb|trial balance|register|log|workpapers?|template|appendix|transcript|minutes|email|contract|agreement|invoice|samples?|population|inventory|factbook|questionnaire|survey|responses|letter|comment letter|10-k|10-q|8-k|md&a|esg report|sustainability report|annual report)';
+  const NOUN_SRC = '(?:data(?:set)?|paras?|commentar(?:y|ies)|quotes?|entry|journal entr(?:y|ies)|recommendations?|descriptions?|release|table|tables|cells?|rows?|columns?|range|ranges|text|paragraphs?|sections?|files?|docs?|documents?|reports?|sheets?|spreadsheets?|workbook|worksheets?|deck|slides?|presentation|tabs?|query|queries|pdf|memo|policy|policies|matrix|rcm|narratives?|drafts?|disclosures?|figures|numbers|values|schedule|schedules|footnotes?|notes?|exhibits?|entries|lines?|items?|controls?|findings|evidence|results|output|chart|graph|list|content|language|wording|summary|filing|statement|statements|ledger|tb|trial balance|register|log|workpapers?|template|appendix|transcript|minutes|email|contract|agreement|invoice|samples?|population|inventory|factbook|questionnaire|survey|responses|letter|comment letter|10-k|10-q|8-k|md&a|esg report|sustainability report|annual report)';
   const SRC_LOCATOR = '(?:selected|highlighted|attached|uploaded|pasted|linked|open|opened|current|enclosed|following|above|below|provided|shared)';
 
   // Each rule: [regex, weight, tag]. Weights are summed; an element is "on" at >= 1.
@@ -84,6 +84,9 @@
       [/"[^"]{2,60}"\s+(?:tab|sheet|worksheet|column|section|slide|file|query|table|report|deck|document)\b/, 1.2, 'quoted-part'],
       [/\b(?:tab|sheet|worksheet|column|section|slide|query|table|report|file)\s+"[^"]{2,60}"/, 1.2, 'quoted-part2'],
       [/\b(?:note|footnote|slide|page|section|item|exhibit|appendix|schedule|row|rows|column|columns|cell|cells|tab|part)\s+(?:[a-z]?\d+[a-z]?(?:\.\d+)*|[ivx]+|[a-z]{1,3}\d+(?::[a-z]{1,3}\d+)?)\b/, 1.0, 'numbered-part'],
+      // a definite reference to one open document ("the doc", "the policy"); "our controls" stays vague, and
+      // "the 10-K" is usually a destination ("for the 10-Q MD&A"), so filings are left to the locator rules
+      [/\b(?:the|this|that)\s+(?:q[1-4]\s+|fy\d{2}\s+|draft\s+|current\s+)?(?:doc|document|policy|memo|deck|workbook|spreadsheet)\b(?!\s+(?:template|process|owner|team))/, 1.0, 'the-document'],
       [/\b(?:knowledge base|knowledgebase|esrs\s*\/\s*issb intelligence|issb intelligence|esrs intelligence|support intelligence|framework kb|the kb)\b/, 1.2, 'kb'],
       [/\b(?:wdata|the query|saved query|connected data|the dataset)\b/, 0.7, 'wdata'],
       [/\b(?:using|use|based on|from|in|off|within|against|per)\s+(?:only\s+)?(?:the\s+)?(?:my|our)\s+(?:attached|selected|open|current|uploaded)\b/, 1.0, 'using-my-attached'],
@@ -200,6 +203,7 @@
   const VAGUE = /\b(?:analy[sz]e|look at|look over|go over|review|check|help(?: me)?(?: with)?|assist(?: with)?|work on|handle|deal with|thoughts on|improve|clean up|do something with|take a look|have a look|figure out|sort out|process|investigate|examine|study|evaluate|assess|tell me about|what do you think)\b/;
   const QUESTION = /(?:(?:^\s*|[.!?]\s+)(?:what|whats|why|which|how|where|when|who|is|are|does|do(?! not)|did|can you tell|could you tell|would)|(?:[:;,]\s+|\s-\s+)(?:what|whats|why|which|how|where|when|who))\b[^?.!\n]{6,}\??/;
   const STOP = new Set('the a an this that these those it them me us my our your of to for and or in on with at by from is are be please can could would you i we just some any all also then so very really quickly out up down off over key main attached selected stuff things something everything anything whatever etc pls'.split(' '));
+  const CASUAL_ASK = /\bwhy (?:is|are|did|does|do|has|have|was|were)\s+(?:\w+\s+){0,4}(?:up|down|higher|lower|so (?:high|low|big)|different|off|negative|zero)\b|\bwhich (?:one |number |figure |value )?is (?:right|correct|wrong)\b|\bwhat does (?:this|that|the) (?:\w+\s+){0,3}(?:do|mean|require)\b|\b(?:need|want|give me|get me)\s+(?:a|an|the|some)\s+(?:[\w&-]+\s+){0,4}(?:checklist|list|summary|table|memo|template|outline|plan|questions|test steps)\b|(?:^|[.!?]\s+)(?:[\w&-]+\s+){0,3}(?:questions|checklist|test steps)\s+(?:for|on|about)\s+\w+|\bmake (?:this|it) (?:sound|read|look)\s+(?:more|less|better|clearer|\w+er)\b/;
   const OFFTASK = /^\s*(?:hi|hello|hey|thanks|thank you|thx|ok|okay|cool|great|test|testing|yo|good morning|good afternoon|\?+|lol)\b[\s!.?]*$/;
 
   function objective(t) {
@@ -229,6 +233,10 @@
     }
     // vague verb followed by a purpose clause that names a result
     const vm = t.match(new RegExp(VAGUE.source + '[^.;\\n]{0,80}?\\b(?:for (?:any |all |possible |potential |obvious |the )?(?:errors?|mistakes?|issues?|problems?|gaps?|inconsistenc\\w*|discrepanc\\w*|anomal\\w*|outliers?|duplicates?|missing|typos?|variances?|changes|risks?|red flags?|deficienc\\w*|weakness\\w*|completeness|accuracy|compliance|consistency|conflicts?|mismatch\\w*)|to (?:find|see|identify|spot|flag|determine|confirm|check)|and (?:identify|flag|list|find|explain|tell|show|summari[sz]e)|whether|if there|against)\\b\\s*\\w*'));
+    if (!score) {
+      const ca = t.match(CASUAL_ASK);
+      if (ca) { score = 1.0; hits.push({ start: ca.index, end: ca.index + ca[0].length, tag: 'question' }); }
+    }
     if (!score && vm) { score = 1.0; hits.push({ start: vm.index, end: vm.index + vm[0].length, tag: 'vague+purpose' }); }
     if (!score && VAGUE.test(t)) vagueOnly = true;
     return { score, hits, vagueOnly, verbs };

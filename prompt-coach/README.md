@@ -84,19 +84,36 @@ an LLM), run through the page's own code, half with a file attached. Two LLM rev
 each customer and rated what the page showed. All personas, labels and reviewers are AI
 stand-ins, not real users.
 
-- Grade matches the blind label 64.5% (78/121), against 86% on `data/test.jsonl`; these prompts
-  are more casual. No blind-weak prompt was graded strong.
-- After the rewrite changes (keep the user's own sentence, add blanks instead of roles,
-  counts, limits or unnamed sheets; name an attached file in the reason line):
+- Grade matches the blind label 64.5% (78/121) at first, against 86% on `data/test.jsonl`; these
+  prompts are more casual. No blind-weak prompt was graded strong.
+- Casual wording, scored on a held-out half (61 prompts; patterns written from the other half
+  only): 62.3% at first; 68.9% after relabeling 8 prompts to the owner's rule that a bare "this"
+  ("make this sound less harsh") does not name a source, while "this para", "this journal entry"
+  or "the doc" does; 70.5% after adding casual source and ask patterns. `data/test.jsonl` stays
+  at 85.6%. Retraining with the tuning half added did not move the held-out half, so the shipped
+  weights are unchanged. "the 10-K" still does not count as a source (the labeling guide treats
+  it as a destination, as in "for the 10-Q MD&A").
+- Rewrite changes, in rounds: (1) keep the user's own sentence; blanks instead of roles, counts,
+  limits or unnamed sheets; name an attached file in the reason line. (2) When the task is unclear
+  or the user asked their own question, add a blank finish line and format instead of a task
+  template; tidy chat shorthand; keep decimals like "14.2%" intact. (3) With no file and no
+  source named, the source is a blank; writing tasks "start from" it; audience examples follow
+  the area only when the prompt has area words.
 
-| Reviewer measure (121 prompts) | Before | After |
-|---|---|---|
-| Strong version keeps what the user meant | 76 | 91 |
-| ...of the 72 weak prompts | 33 | 43 |
-| Adds specifics the user never gave | 67 | 37 |
-| Reads clumsily | 49 | 62 |
-| Would copy it (1-5), weak prompts | 1.96 | 2.28 |
+| Reviewer measure (121 prompts) | Before | Round 1 | Round 2 | Round 3 |
+|---|---|---|---|---|
+| Strong version keeps what the user meant | 76 | 91 | 97 | 104 |
+| ...of the 72 weak prompts | 33 | 43 | 50 | 56 |
+| ...no file attached (61 prompts) | 41 | | 53 | 58 |
+| Adds specifics the user never gave, no file attached | 29 | | 24 | 4 |
+| Would copy it (1-5), all prompts | 2.76 | 2.99 | 3.27 | 3.25 |
 
-Still open: wrong task templates when the task is misread, audience examples that don't fit the
-area, and the user's casual wording ("can u") kept verbatim.
+**How far to trust this.** The reviewers are not consistent. On outputs that did not change
+between two runs, "reads clumsily" went from 15 to 33 of 83, and "adds specifics" on 47
+unchanged file-attached outputs went from 3 to 32. Read only large, repeated movements; the
+deterministic checks in `tests/customer_check.js` and real prompts (`real-eval/`) are the
+better evidence. The file-attached half is also skewed by the test setup: every second prompt
+got a file of its area whether or not the prompt was about it.
 
+Still open: when the coach rewrites a bare "analyze/review X" it still picks a task format, which
+can be wrong if the task is misread; the reason line for weak prompts is generic.

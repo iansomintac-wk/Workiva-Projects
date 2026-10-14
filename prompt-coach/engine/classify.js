@@ -51,6 +51,18 @@
     return { intent: softmaxHead(x, weights.intent), domain: softmaxHead(x, weights.domain) };
   }
 
-  const api = { featurize, classify, unpack, DIM };
+  // Task and area for the coach: trust the classifier when it is confident, else fall back to
+  // patterns and report that it is unsure (the coach then adds blanks instead of a task template).
+  function pick(prompt, weights) {
+    const c = classify(prompt, weights);
+    const taskSure = c.intent.label !== 'other' && c.intent.p >= 0.5;
+    const pattern = W.intentOf(R.normalize(prompt), false, true);
+    const intent = (taskSure ? c.intent.label : pattern || (c.intent.label !== 'other' ? c.intent.label : null)) || undefined;
+    // a prompt with no area words ("make this sound less harsh") is not sure, however the model leans
+    const areaSure = c.domain.p >= 0.85 || (c.domain.p >= 0.5 && W.domainOf(R.normalize(prompt)) !== 'GEN');
+    return { intent, domain: areaSure ? c.domain.label : undefined, taskSure, areaSure };
+  }
+
+  const api = { featurize, classify, unpack, pick, DIM };
   if (isNode) module.exports = api; else root.ScopeClassify = api;
 })(typeof window !== 'undefined' ? window : globalThis);
