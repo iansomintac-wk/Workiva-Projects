@@ -163,6 +163,36 @@
         }
       }
 
+      { // T10 (final-review S4): Back up now says why it did not back up
+        const saved = {h: _fsHandle, s: _fsState, r: _rejectedLoadPayload, syn: DATA.synthetic, e: DATA.lastExportedAt, raw: localStorage.getItem(STORAGE_KEY), t: window.showToast};
+        const toasts = []; window.showToast = function(m){ toasts.push(String(m)); };
+        const cases = [
+          ['the last load was rejected', () => { _rejectedLoadPayload = 'raw text that failed to load'; delete DATA.synthetic; }],
+          ['this is a test book', () => { _rejectedLoadPayload = null; DATA.synthetic = true; }]
+        ];
+        try{
+          rec('T10 fsBlockedReason exists', typeof fsBlockedReason === 'function');
+          for(const [reason, arrange] of cases){
+            const f = fakeBackupFile();
+            _fsHandle = f; _fsState = 'ready'; arrange();
+            toasts.length = 0;
+            const ok = await fsWriteNow(false);
+            rec(`T10 Back up now refused (${reason}) toasts "Not backed up: ${reason}." and writes no file`,
+              ok === false && f.writes === 0 && toasts.length === 1 && toasts[0] === `Not backed up: ${reason}.`, `ok=${ok} writes=${f.writes} toasts=${JSON.stringify(toasts)}`);
+            toasts.length = 0;
+            await fsWriteNow(true);
+            rec(`T10 the automatic backup refused (${reason}) shows 0 toasts`, toasts.length === 0, `toasts=${toasts.length}`);
+            const line = fsStatusLine(), chip = renderBackupStatus();
+            rec(`T10 status line and header chip say why (${reason})`,
+              line.includes(reason) && chip.includes('Not backing up') && chip.includes(reason), `line=${line} chip=${chip.slice(0, 120)}`);
+          }
+        }finally{
+          window.showToast = saved.t; _fsHandle = saved.h; _fsState = saved.s; _rejectedLoadPayload = saved.r; DATA.lastExportedAt = saved.e;
+          if(saved.syn === undefined) delete DATA.synthetic; else DATA.synthetic = saved.syn;
+          if(saved.raw !== null) realSet.call(localStorage, STORAGE_KEY, saved.raw);
+        }
+      }
+
       rec('probe reached the end', true);
     }catch(e){
       rec('probe threw', false, String(e && e.stack || e));

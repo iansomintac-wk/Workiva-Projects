@@ -9092,6 +9092,7 @@ function renderBackupStatus(){
      current, and warning about it would train the user to ignore the warning that
      matters. When it is merely PAUSED the opposite is true: that is exactly the
      state worth one loud line, because it looks protected and is not. */
+  if(_fsState === 'ready' && fsBlockedReason()) return `<span style="color:var(--status-watch-text); font-weight:700;" title="${escapeAttr(fsStatusLine())}">Not backing up: ${escapeHtml(fsBlockedReason())}</span>`;
   if(_fsState === 'ready') return `<span title="${escapeAttr(fsStatusLine())}">backing up to ${escapeHtml((_fsHandle && _fsHandle.name) || 'your file')}</span>`;
   if(_fsState === 'needs-permission'){
     return `<button class="link-btn" id="btn-fs-resume-header" style="color:var(--status-watch-text); font-weight:700; font-size:inherit; text-decoration:underline;" title="One click per session lets the tracker write to the file you chose">auto-backup paused — click to resume</button>`;
@@ -17804,6 +17805,12 @@ async function fsForget(){
 }
 // The one serializer for every book that leaves the app (export, file backup). Self-check A7 proves ids survive it.
 function serializeBook(data){ return JSON.stringify(data, null, 2); }
+// Why the backup path is refusing right now, or '' when it is not.
+function fsBlockedReason(){
+  if(_rejectedLoadPayload !== null) return 'the last load was rejected';
+  if(DATA && DATA.synthetic === true) return 'this is a test book';
+  return '';
+}
 async function fsWriteNow(silent){
   /* The guard that matters. The suite hands DATA fabricated books; writing one of
      those to the user's real backup file would be the worst bug this project
@@ -17812,8 +17819,11 @@ async function fsWriteNow(silent){
   /* 1.1 Step 0: after a failed load the app shows an EMPTY book and saveData()
      refuses to write it. The backup path must refuse too, or "Back up now" puts
      the empty book in the backup file (and in storage, via the export stamp). */
-  if(_rejectedLoadPayload !== null) return false;
-  if(DATA && DATA.synthetic === true) return false; // a tool-made book never goes to the backup file
+  const blocked = fsBlockedReason();
+  if(blocked){
+    if(!silent) showToast('Not backed up: ' + blocked + '.');
+    return false;   // a tool-made book never goes to the backup file
+  }
   _fsWriting = true;
   try{
     const w = await _fsHandle.createWritable();
@@ -17854,6 +17864,8 @@ function fsStatusLine(){
   if(_fsState === 'unset') return 'Not set up. Pick a file once and the tracker keeps it current on its own.';
   if(_fsState === 'needs-permission') return 'Paused — the browser needs one click per session before it can write to your file.';
   if(_fsState === 'error') return _fsError || 'Something went wrong with the backup file.';
+  const blocked = fsBlockedReason();
+  if(blocked) return 'Not backing up: ' + blocked + '.';
   const name = (_fsHandle && _fsHandle.name) ? _fsHandle.name : 'your chosen file';
   return _fsLastWriteAt
     ? `Writing to ${name}. Last saved ${new Date(_fsLastWriteAt).toLocaleTimeString()}.`
