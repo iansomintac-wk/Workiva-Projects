@@ -1,0 +1,34 @@
+Runway 1.1 Step 0 (safety): the run.
+
+Project: C:\Users\teasp\Documents\Runway Tracker. Work on branch worktree-runway-step0-plan
+(worktree .claude\worktrees\runway-step0-plan), which holds the approved plan.
+
+Plan (approved by Ian 2026-10-15, "yes, cut it and commit the plan"):
+  docs/superpowers/plans/2026-10-15-runway-1.1-step0-safety.md
+Spec: design-work\DESIGN.md section 4 (untracked; read it from the main checkout path).
+
+Method: studio-harness:talk-and-run, "The run". Lead coordinates only; one fresh helper per task,
+in order T1..T7, never in parallel; a fresh checker after each; the lead re-runs the task's check
+itself. Ledger: .ledger/2026-10-15-runway-step0/progress.md (add .ledger/ to .gitignore in T1's commit
+if it is not ignored).
+
+Checks the lead re-runs (from the worktree root):
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 475
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect <N for the task>
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 475
+Baseline measured 2026-10-15: 1.0 suite 475/475 in 4 s.
+
+Safety rules (Ian's, from the first build step on):
+- Never edit osm-book-of-business-tracker-1.0.html. All app edits go to the 1.1 copy.
+- Never open any HTML file from this folder in Ian's normal Chrome profile. Only tools/selfcheck.mjs
+  (headless, throwaway profile) runs the app.
+- Never write test or synthetic data where the real book lives.
+- Don't publish or upload anything from this folder without asking.
+
+Stops: the plan's own stop rules (T4 step 6, T5 step 4); a check failing twice (two strikes);
+push or merge (slip: see .ledger/2026-10-15-runway-step0/slip.json; anything not named there is no);
+any decision only Ian can make. At a stop: push notification, then ask.
+
+End: final whole-branch review, evidence doc docs/evidence/2026-10-15-runway-step0.md with the
+before/after numbers, then stop for merge. Talk to Ian in plain English, recommendation first,
+one question at a time.
