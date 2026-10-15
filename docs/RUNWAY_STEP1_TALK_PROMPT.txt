@@ -1,0 +1,39 @@
+Runway 1.1 Step 1 talk (needs Ian; studio-harness:talk-and-run, "The talk"; superpowers:brainstorming, architectural path).
+
+Predecessor: session 4660563d ("Runway after Step 0"). It built Step 0.1 on branch runway-step0-1
+(base master 051e93c; commits 2fada2a, 2a6da09, ae1a847, b9d3ee9, plus this prompt). Probe 34/34, suite 475/475.
+Merge/push state: see the last line of .ledger/2026-10-15-runway-step0-1/progress.md in the MAIN checkout
+(C:\Users\teasp\Documents\Runway Tracker\.ledger\). Step 0 ledger and reviews are copied there too
+(.ledger/2026-10-15-runway-step0/, reviews/final-opus.md).
+
+Ask Ian one question at a time, plain English, recommendation first. In this order:
+
+1. Step 0.1 leftover (checker should-fix 2): with NO backup file set up, a test book still shows the
+   "never exported - back up now" nag in the header, and clicking it downloads the test book. The "Test book"
+   marker and "This is my real book now" button do show beside it. Recommend: leave it (a downloaded test book
+   is refused by import over a real book anyway); the alternative is to swap the nag for "Not backing up: this is
+   a test book" when DATA.synthetic is true (small task, probe check red first).
+2. Step 0 review S6: DESIGN 4.4's last sentence "Check suites and harnesses use their own storage key and browser
+   profile" was never planned or cut. Facts to give him: tools/selfcheck.mjs already runs a throwaway Chrome
+   profile; demo-seed.js commits to origin 127.0.0.1:8801, apart from the real book; the risk left is a test page
+   opened as file:// sharing the real book's storage, now guarded by the synthetic stamp (Step 0 T6) rather than
+   kept apart. Ask: record it as cut (stamp is enough), or add it as a small task. Check before recommending:
+   grep for which tools open HTML via file:// versus a 127.0.0.1 origin.
+3. Then Step 1 itself: design-work\DESIGN.md (main checkout, untracked) section 5, transcripts out of the book into
+   IndexedDB obm-transcripts-v1. Probe before spec: counts the spec will carry (transcript sizes, how many
+   activities have transcripts, localStorage bytes) come from a read-only probe. Never read the real book from
+   Ian's Chrome; use a demo/synthetic book in tools/selfcheck.mjs, and ask Ian for any real-book figure you need
+   (or for an export he chooses to share). Then 2-3 approaches, design in sections, spec in
+   docs/superpowers/specs/, run prompt, budget.json, bedtime slip (three questions: push, merge, spend; starting
+   sessions needs no yes, Ian 2026-10-15), then launch the run and tell Ian.
+
+Open item from DESIGN 9: does Ian still have tools/selfchecks.js? (It is in the repo: tools/selfchecks.js exists
+on master; confirm with him only if the spec depends on the original.)
+
+Safety (Runway): never edit osm-book-of-business-tracker-1.0.html; never open any HTML from that folder in Ian's
+normal Chrome; only tools/selfcheck.mjs runs the app; never write test data where the real book lives; don't
+publish or upload without asking. Work in a worktree off master (or off runway-step0-1 if it is not merged yet).
+
+Session names: you are "NEW - Runway Step 1 talk". When done, follow talk-and-run's session-name rule for
+predecessor 4660563d. Predecessor 3b0b7d9b may still exist (state done, all pushed); its worktree's .ledger was
+copied to the main checkout, so it can go via `claude rm 3b0b7d9b` if that needs no force flags.
