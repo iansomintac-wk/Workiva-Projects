@@ -51,6 +51,18 @@
         delete DATA.__probeMark; saveData({maintenance: true});
       }
 
+      { // T4: drawing and tab clicks
+        const clickTabs = async () => { for(const v of ['today','accounts','risk','copilot','today']){
+          const t = document.querySelector(`.tab[data-view="${v}"]`); if(t) t.click(); await settle(); } };
+        await clickTabs();                              // first round may stamp genuinely new state
+        const w0 = bookWrites();
+        await clickTabs();
+        rec('T4 a second round of tab clicks writes the book 0 times', bookWrites() === w0, `writes=${bookWrites() - w0}`);
+        const w1 = bookWrites();
+        render(); render(); await settle();
+        rec('T4 redrawing an unchanged book writes 0 times', bookWrites() === w1, `writes=${bookWrites() - w1}`);
+      }
+
       rec('probe reached the end', true);
     }catch(e){
       rec('probe threw', false, String(e && e.stack || e));

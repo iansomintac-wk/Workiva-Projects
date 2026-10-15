@@ -9175,7 +9175,7 @@ function renderTabs(){
     <div class="tabs" role="tablist" aria-label="Views">
       <button type="button" role="tab" aria-selected="${ui.view==='today'}" class="tab ${ui.view==='today'?'active':''}" data-view="today"><span class="ch">01</span>Today <span class="count">${todayCount}</span></button>
       <button type="button" role="tab" aria-selected="${ui.view==='accounts'}" class="tab ${ui.view==='accounts'?'active':''}" data-view="accounts"><span class="ch">02</span>Accounts</button>
-      <button type="button" role="tab" aria-selected="${ui.view==='risk'}" class="tab ${ui.view==='risk'?'active':''}" data-view="risk"><span class="ch">03</span>Risk${(()=>{ const n = buildRiskHubList().filter(it => ['unactioned','maintenance_due'].includes(riskAttention(it).state)).length; return n ? ` <span class="count">${n}</span>` : ''; })()}</button>
+      <button type="button" role="tab" aria-selected="${ui.view==='risk'}" class="tab ${ui.view==='risk'?'active':''}" data-view="risk"><span class="ch">03</span>Risk${(()=>{ const n = buildRiskHubList({readOnly:true}).filter(it => ['unactioned','maintenance_due'].includes(riskAttention(it).state)).length; return n ? ` <span class="count">${n}</span>` : ''; })()}</button>
       <button type="button" role="tab" aria-selected="${ui.view==='copilot'}" class="tab ${ui.view==='copilot'?'active':''}" data-view="copilot"><span class="ch">04</span>Copilot</button>
     </div>
   `;
@@ -10390,29 +10390,31 @@ function buildRiskHubList(opts){
   // tracking, prune memory for risks that no longer exist.
   const log = readOnly ? (isRecordObject(DATA.riskLog) ? DATA.riskLog : {}) : getRiskLog();
   const activeKeys = new Set();
+  let changed = false;
   items.forEach(it => {
     const k = riskItemKey(it);
     it.logKey = k;
     activeKeys.add(k);
     if(readOnly){ it.tracking = isRecordObject(log[k]) ? log[k] : {firstSeen: todayISO(), lastActioned: null}; return; }
-    if(!isRecordObject(log[k]) || !isRealISODate(log[k].firstSeen)) log[k] = {firstSeen: todayISO(), lastActioned: null};
+    if(!isRecordObject(log[k]) || !isRealISODate(log[k].firstSeen)) { log[k] = {firstSeen: todayISO(), lastActioned: null}; changed = true; }
     /* v67: severity history — appended ONLY when the observed severity actually
        changes, so the log stays short and every entry is a real transition. This
        is what makes "worsening" an observation rather than a guess. Capped: a
        risk that oscillates must not grow an unbounded array. */
-    if(!Array.isArray(log[k].sevLog)) log[k].sevLog = [{date: todayISO(), sev: it.sev}];
+    if(!Array.isArray(log[k].sevLog)) { log[k].sevLog = [{date: todayISO(), sev: it.sev}]; changed = true; }
     else {
       const last = log[k].sevLog[log[k].sevLog.length - 1];
       if(!last || last.sev !== it.sev){
         log[k].sevLog.push({date: todayISO(), sev: it.sev});
+        changed = true;
         if(log[k].sevLog.length > 12) log[k].sevLog.splice(0, log[k].sevLog.length - 12);
       }
     }
     it.tracking = log[k];
   });
   if(readOnly) return items.sort((a,b)=> b.sev - a.sev || (a.c.name < b.c.name ? -1 : 1));
-  Object.keys(log).forEach(k => { if(!activeKeys.has(k)) delete log[k]; });
-  queueSave();
+  Object.keys(log).forEach(k => { if(!activeKeys.has(k)){ delete log[k]; changed = true; } });
+  if(changed) queueSave();
   return items.sort((a,b)=> b.sev - a.sev || (a.c.name < b.c.name ? -1 : 1));
 }
 /* ============ v65: RISK EXECUTIVE SUMMARY ============
@@ -15040,8 +15042,12 @@ The draft is discarded. The risk itself stays open.`)) return;
   $$('.tab[data-view]').forEach(t => t.addEventListener('click', ()=>{
     const newView = t.dataset.view;
     if(ui.view === 'today' && newView !== 'today'){
-      DATA.todayLastSeenIds = needsAttentionList().map(x=>x.c.id);
-      saveData();
+      const ids = needsAttentionList().map(x=>x.c.id);
+      // 1.1 Step 0: an unchanged list is not a change - don't rewrite the book or replace the undo snapshot.
+      if(JSON.stringify(ids) !== JSON.stringify(DATA.todayLastSeenIds)){
+        DATA.todayLastSeenIds = ids;
+        saveData();
+      }
     }
     ui.view = newView;
     render();
