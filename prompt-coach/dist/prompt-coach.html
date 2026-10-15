@@ -1212,7 +1212,10 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const headings = [...doc.querySelectorAll('h1,h2,h3')].map((h) => h.textContent.trim()).filter(Boolean).slice(0, 30);
       const text = doc.body.textContent.replace(/\s+/g, ' ').slice(0, MAX_TEXT);
-      return { name, kind: 'Word', text, headings, periods: periodsOf(text), detail: headings.length ? headings.length + ' headings' : '' };
+      // one entry per paragraph, list item or table row, for tools that work line by line (checklists)
+      const lines = [...doc.querySelectorAll('p, li, h1, h2, h3, tr')].filter((el) => el.tagName === 'TR' || !el.closest('td, th, li li'))
+        .map((el) => (el.tagName === 'TR' ? [...el.children].map((c) => c.textContent.trim()).filter(Boolean).join(', ') : el.textContent).replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 2000);
+      return { name, kind: 'Word', text, lines, headings, periods: periodsOf(text), detail: headings.length ? headings.length + ' headings' : '' };
     }
     if (['xlsx', 'xlsm', 'xls'].includes(ext)) {
       await load('xlsx');

@@ -1,0 +1,487 @@
+<title>Workiva AI Fit Finder</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800;900&display=swap">
+<style>
+/* Fit Finder: where Workiva AI fits in a customer's own work. Same look as the Prompt Coach. */
+:root {
+  --bg: #FCF4E8; --surface: #FFFFFF; --ink: #333333; --muted: #666666; --faint: #B2B2B2; --line: #D8D8D8; --soft: #EBEBEB;
+  --panel: #333333; --panel-ink: #FCF4E8; --panel-label: #D5B1EB; --mist: #F1E8F7; --sand: #FDEFD3;
+  --blue: #0074E8; --blue-deep: #0058AF; --purple: #8C4CBD; --green: #3F9F3F; --orange: #D76C1F; --red: #DE2800;
+  --tint-S: rgba(0,116,232,.16); --tint-C: rgba(140,76,189,.18); --tint-O: rgba(63,159,63,.18); --tint-P: rgba(248,145,25,.22); --tint-E: rgba(222,40,0,.14);
+  --weak-bg: #FBE3DC; --better-bg: #FDEBCB; --strong-bg: #DDF5D0; --on-accent: #FFFFFF;
+  --font: "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #1E1D1B; --surface: #2A2826; --ink: #F3EDE3; --muted: #B5AFA6; --faint: #7A756E; --line: #45413C; --soft: #36332F;
+  --panel: #121212; --panel-ink: #F3EDE3; --mist: #352B3D; --sand: #3B3222;
+  --blue: #7CBEFF; --blue-deep: #A9D4FF; --purple: #C08EE6; --green: #85DD85; --orange: #F8BD4F; --red: #FF7A5C;
+  --tint-S: rgba(124,190,255,.22); --tint-C: rgba(192,142,230,.24); --tint-O: rgba(133,221,133,.2); --tint-P: rgba(248,189,79,.22); --tint-E: rgba(255,122,92,.22);
+  --weak-bg: #4A2A22; --better-bg: #4A3A1E; --strong-bg: #263F24; --on-accent: #121212; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #1E1D1B; --surface: #2A2826; --ink: #F3EDE3; --muted: #B5AFA6; --faint: #7A756E; --line: #45413C; --soft: #36332F;
+  --panel: #121212; --panel-ink: #F3EDE3; --mist: #352B3D; --sand: #3B3222;
+  --blue: #7CBEFF; --blue-deep: #A9D4FF; --purple: #C08EE6; --green: #85DD85; --orange: #F8BD4F; --red: #FF7A5C;
+  --tint-S: rgba(124,190,255,.22); --tint-C: rgba(192,142,230,.24); --tint-O: rgba(133,221,133,.2); --tint-P: rgba(248,189,79,.22); --tint-E: rgba(255,122,92,.22);
+  --weak-bg: #4A2A22; --better-bg: #4A3A1E; --strong-bg: #263F24; --on-accent: #121212; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5; }
+button, input, textarea, select { font-family: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 32px; }
+@media (max-width: 640px) { .wrap { padding-inline: 16px; } }
+.label { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; }
+
+.top { padding-block: 18px; border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.brand b { color: var(--ink); font-weight: 900; letter-spacing: 0; text-transform: none; font-size: 20px; margin-right: 10px; }
+.privacy { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--strong-bg); border-radius: 99px; padding: 6px 14px; }
+.privacy::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+
+.intro { padding-block: 48px 8px; }
+.intro h1 { margin: 0; font-size: clamp(44px, 8vw, 96px); font-weight: 900; line-height: .98; letter-spacing: -.005em; text-transform: lowercase; text-wrap: balance; }
+.intro h1 span { color: var(--green); }
+.intro p { max-width: 660px; font-size: 18px; margin: 22px 0 0; text-wrap: pretty; }
+
+section.block { padding-block: 44px; }
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; border-bottom: 2px solid var(--ink); padding-bottom: 16px; margin-bottom: 26px; }
+.head h2 { margin: 0; font-size: clamp(30px, 4.4vw, 52px); font-weight: 900; line-height: 1; letter-spacing: -.005em; text-transform: lowercase; text-wrap: balance; }
+
+.panel { position: relative; overflow: hidden; background: var(--panel); color: var(--panel-ink); border-radius: 20px; padding: 30px 32px; min-width: 0; }
+.panel::before { content: ""; position: absolute; inset: 0; opacity: .12; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.6 0.6 0.6 0 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.panel > * { position: relative; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.panel-head .label { color: var(--panel-label); }
+.prompt-text { margin: 0; font-family: var(--mono); font-size: 15.5px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+.prompt-text .added { background: rgba(255,255,255,.09); border-radius: 4px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.prompt-text .ph { color: #F8BD4F; }
+.copy { border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.06); color: var(--panel-ink); border-radius: 99px; padding: 6px 14px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.copy:hover { background: rgba(255,255,255,.14); }
+
+[hidden] { display: none !important; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.pad { padding: 24px 26px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+textarea.task { width: 100%; min-height: 120px; resize: vertical; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); padding: 14px 16px; font-size: 16px; line-height: 1.5; }
+textarea.task:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+select.mini { max-width: 100%; }
+select.mini, .seg button { font-size: 13px; font-weight: 700; border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 6px 12px; cursor: pointer; }
+.seg { display: inline-flex; gap: 4px; }
+.seg button[aria-pressed="true"] { background: var(--purple); border-color: var(--purple); color: var(--on-accent); }
+.q { font-size: 14px; font-weight: 700; }
+.fitbadge { align-self: flex-start; font-size: 22px; font-weight: 900; text-transform: lowercase; border-radius: 99px; padding: 6px 18px; }
+.fitbadge.good { background: var(--strong-bg); color: var(--green); } .fitbadge.partial { background: var(--better-bg); color: var(--orange); } .fitbadge.not { background: var(--weak-bg); color: var(--red); } .fitbadge.none { background: var(--soft); color: var(--muted); }
+.why { margin: 0; font-size: 16px; line-height: 1.55; text-wrap: pretty; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.steps li { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; padding: 10px 12px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); }
+.steps .who { grid-row: span 2; align-self: center; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; border-radius: 99px; padding: 4px 10px; white-space: nowrap; }
+.steps .who.ai { background: var(--strong-bg); color: var(--green); } .steps .who.you { background: var(--soft); color: var(--muted); }
+.steps b { font-size: 14.5px; } .steps span.d { font-size: 13.5px; color: var(--muted); }
+.starter { margin-top: 20px; }
+.hint { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
+.counts { display: flex; gap: 8px; flex-wrap: wrap; }
+.count { font-size: 13px; font-weight: 800; border-radius: 99px; padding: 4px 12px; }
+.count.good { background: var(--strong-bg); color: var(--green); } .count.partial { background: var(--better-bg); color: var(--orange); } .count.not { background: var(--weak-bg); color: var(--red); }
+table.scan { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.scan th { text-align: left; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); }
+table.scan td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.scan tr { cursor: pointer; } table.scan tbody tr:hover { background: var(--bg); }
+.tag { font-size: 11px; font-weight: 800; text-transform: uppercase; border-radius: 99px; padding: 3px 9px; white-space: nowrap; }
+.tag.good { background: var(--strong-bg); color: var(--green); } .tag.partial { background: var(--better-bg); color: var(--orange); } .tag.not { background: var(--weak-bg); color: var(--red); }
+.scanwrap { overflow-x: auto; }
+.filebtn { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 8px 14px; font-size: 13px; font-weight: 800; cursor: pointer; }
+.filebtn:hover { border-color: var(--ink); }
+textarea.list { width: 100%; min-height: 140px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); padding: 12px 14px; font-size: 14px; line-height: 1.5; resize: vertical; }
+.filemeta { font-size: 13px; color: var(--muted); }
+details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; padding: 14px 0; }
+.how-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.how-grid .card { padding: 18px 20px; font-size: 14.5px; } .how-grid h4 { margin: 0 0 6px; font-size: 15px; } .how-grid p { margin: 0; color: var(--muted); }
+.foot { padding-block: 36px 52px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); } .foot p { margin: 0; max-width: 780px; }
+@media (max-width: 900px) { .pair { grid-template-columns: 1fr; } table.scan .hide-sm { display: none; } }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><b>workiva ai</b>fit finder</div>
+    <div class="privacy">Runs in your browser. Nothing is uploaded.</div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap intro">
+    <h1>where does <span>workiva ai</span> fit?</h1>
+    <p>Describe a task you do, or attach a checklist. You'll see which steps Workiva AI can take a first pass at, which stay with you, and a prompt to start with.</p>
+  </div>
+
+  <section class="block" aria-labelledby="h-task">
+    <div class="wrap">
+      <div class="head"><h2 id="h-task">describe a task</h2><span class="label">rated as you type</span></div>
+      <div class="pair">
+        <div class="card pad">
+          <label class="label" for="task">a task you do</label>
+          <textarea class="task" id="task" spellcheck="true">Every quarter I compare the MD&A to last year's and flag what changed.</textarea>
+          <div class="row"><select class="mini" id="examples" aria-label="Try an example"><option value="">try an example</option></select></div>
+          <div class="row"><span class="q" id="repQ">Does it come back every period?</span>
+            <span class="seg" role="group" aria-labelledby="repQ"><button type="button" data-rep="auto" aria-pressed="true">Detect</button><button type="button" data-rep="yes" aria-pressed="false">Yes</button><button type="button" data-rep="no" aria-pressed="false">No</button></span>
+            <span class="filemeta" id="repNote"></span></div>
+        </div>
+        <div class="card pad" aria-live="polite">
+          <div class="fitbadge none" id="fit">type a task</div>
+          <p class="why" id="why"></p>
+          <ul class="steps" id="steps"></ul>
+        </div>
+      </div>
+      <div class="panel starter" id="starterPanel">
+        <div class="panel-head"><span class="label">a prompt to start with</span><button class="copy" type="button" id="copy">copy</button></div>
+        <p class="prompt-text" id="starter"></p>
+      </div>
+      <p class="hint">Fill in the [brackets], then paste it into the Prompt Coach to strengthen it, or straight into Workiva AI.</p>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="h-scan">
+    <div class="wrap">
+      <div class="head"><h2 id="h-scan">scan a checklist</h2><span class="label">close checklists, test plans, calendars</span></div>
+      <div class="pair">
+        <div class="card pad">
+          <div class="row"><button class="filebtn" type="button" id="attach">+ attach file</button><span class="filemeta" id="fileMeta">Word, Excel, PowerPoint, PDF, CSV or text. Read here, never uploaded.</span></div>
+          <input type="file" id="fileInput" hidden accept=".docx,.xlsx,.xlsm,.xls,.csv,.pptx,.pdf,.txt,.md">
+          <label class="label" for="list">or paste a list, one task per line</label>
+          <textarea class="list" id="list" placeholder="Pull the trial balance from the ERP&#10;Review flux commentary for each account and flag gaps&#10;CFO approves the package"></textarea>
+        </div>
+        <div class="card pad">
+          <div class="counts" id="counts"><span class="filemeta">Add a file or a list to see every step rated.</span></div>
+          <div class="scanwrap"><table class="scan" id="scan" hidden><thead><tr><th>Task</th><th>Fit</th><th class="hide-sm">Workiva AI can take</th></tr></thead><tbody></tbody></table></div>
+          <p class="hint" id="scanHint" hidden>Select a row to see its steps and a starter prompt above.</p>
+        </div>
+      </div>
+
+      <details class="how">
+        <summary>How it rates</summary>
+        <div class="how-grid">
+          <div class="card"><h4>The rule</h4><p>Good fits recur and are mostly reading, comparing, checking, summarizing, drafting or rewriting text and tables. Judgment and sign-off, exact calculation, work in other systems and chasing people stay with you. Workiva AI does a first pass; a person reviews it.</p></div>
+          <div class="card"><h4>How accurate it is</h4><p>Language patterns, no AI service. On 60 held-out task descriptions written in customers' voices it matched careful labeling 75% of the time. It has not yet been measured on real customers' tasks, so treat the rating as a starting point.</p></div>
+          <div class="card"><h4>What it does not claim</h4><p>It describes what generative AI can do with your text, not specific Workiva features or packages. Ask your Workiva team which capabilities your license includes.</p></div>
+        </div>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap"><p>Everything on this page runs in your browser. Your tasks and files are not uploaded or sent to any AI service; file readers load from a public CDN only when you add that file type.</p></div>
+</footer>
+
+<script>/* Fit engine: does a described task have a part Workiva AI can take?
+   rate(text) -> { fit: 'good'|'partial'|'not', repeats, ops:[...], blockers:[...], hits:{op:[phrases]} }
+   Rule from the Workiva AI explainer: repetitive, text-heavy reading, drafting, explaining and
+   checking is a fit; judgment, sign-off, exact calculation, other systems and chasing people are not. */
+(function (root) {
+  const isNode = typeof module !== 'undefined' && module.exports;
+
+  // what the task asks a person to do with text or tables
+  const OPS = {
+    READ: /\b(?:read(?:ing)?|go(?:ing)? through|review(?:ing)?|look(?:ing)? (?:at|over|through)|skim|pore over|wade through)\b/,
+    SUMMARIZE: /\b(?:summar\w*|recap\w*|condens\w*|boil\w* (?:it |them )?down|key points|highlights|tl;?dr|brief(?:ing)?s?\b|exec(?:utive)? summary|status update)/,
+    COMPARE: /\b(?:compar\w*|vs\.?|versus|against (?:last|prior|the)|what changed|changes? (?:from|between|since)|year[- ]over[- ]year|yoy|prior (?:year|period|quarter)|last (?:year|quarter)'?s?|diff(?:ing)?|benchmark\w*|peers?)\b/,
+    CHECK: /\b(?:check\w*|tie[- ]?out\w*|ti(?:e|ing) (?:out|back)|reconcil\w*|verif\w*|validat\w*|proofread\w*|catch\w* (?:errors?|typos?|mistakes?)|look(?:ing)? for (?:errors?|gaps?|mistakes?|inconsisten\w*)|flag\w*|make sure|consisten\w*|inconsisten\w*|gaps?|missing|mismatch\w*|duplicates?|outliers?|anomal\w*|errors?|typos?|(?:don'?t|doesn'?t|do not|does not|still) match\w*|match(?:es)? (?:what|the)|see if|leav\w* comments|review comments|broken|foot(?:s|ing)? (?:and|to)|cross[- ]?foot\w*)\b/,
+    EXTRACT: /\b(?:pull(?:ing)? (?:out|together)?|extract\w*|list(?:ing)? (?:all|every|out)|compil\w*|gather(?:ing)? (?:all|the) (?:\w+ )?(?:from|in)|copy(?:ing)? (?:over|out)|find(?:ing)? (?:all|every|where))\b/,
+    DRAFT: /\b(?:draft\w*|writ(?:e|ing)|wrote|prepar\w* (?:the |a )?(?:narrative|memo|commentary|footnote|finding|report|section|summary|response|reply|email|letter|deck|script|disclosure)|put together|write[- ]?ups?|creat\w* (?:the |a )?(?:narrative|memo|deck|slides?|template|checklist|test steps)|come up with)\b/,
+    REWRITE: /\b(?:rewrit\w*|re-?word\w*|rephras\w*|edit\w*|tighten\w*|shorten\w*|simplif\w*|clean(?:ing)? up (?:the )?(?:language|wording|text)|polish\w*|tone|plain english|update (?:the )?(?:language|wording|narrative|section|policy|commentary|disclosure)|roll(?:ing)? forward (?:[\w']+ ){0,3}(?:commentary|narrative|text|language|disclosures?|sections?)|keep(?:ing)? (?:[\w-]+ ){0,6}up to date)\b/,
+    EXPLAIN: /\b(?:explain\w*|interpret\w*|what (?:a|the) (?:new )?(?:rule|standard|requirement)s? (?:means?|requires?)|understand(?:ing)? (?:the|what|how)|walk(?:ing)? (?:\w+ )?through|answer(?:ing)? (?:\w+ ){0,2}questions?|new (?:rules?|standards?|requirements?|guidance))\b/,
+    MAP: /\b(?:map\w*|crosswalk\w*|align\w* (?:to|with)|link\w* (?:\w+ ){0,3}to|which (?:principle|requirement|datapoint|criteria)|esrs datapoints?|coso|nist|iso ?27001|tag(?:ging)? (?:to|with))\b/,
+    CLASSIFY: /\b(?:classif\w*|categori[sz]\w*|sort(?:ing)?|group(?:ing)?|bucket\w*|triag\w*|rat(?:e|ing) (?:each|the|them)|scor(?:e|ing) (?:each|the|them))\b/,
+    CALCULATE: /\b(?:calculat\w*|comput\w*|recalc\w*|math|add(?:ing)? up|sum(?:ming)?|totals?|emission factors?|convert(?:ing)? (?:units|kwh|litres|liters|gallons|currenc\w*)|fx|allocat\w*|accru\w*|depreciat\w*|forecast\w*|model(?:ing|ling)?\b|pivot)\b/,
+    DECIDE: /\b(?:decid\w*|approv\w*|sign(?:ing)?[- ]?off|signs? off|judg\w*|materialit\w*|conclud\w*|determin\w*|assess(?:ing)? whether|evaluat\w* whether|whether (?:it|we|this) (?:is|are|should)|choos\w*|pick(?:ing)? (?:which|the)|call on|make the call|prioriti[sz]\w*|negotiat\w*)\b/,
+    ACT: /\b(?:(?:from|out of|into) (?:the )?(?:erp|sap|oracle|netsuite|hyperion|onestream|blackline|gl system|system)\b|post(?:ing)? (?:the )?(?:[\w-]+ )?(?:entries|journals?|je)|migrat\w*|calendar invites?|book(?:ing)?|upload\w*|submit\w*|fil(?:e|ing) (?:with|on|to) (?:the )?(?:sec|edgar)|edgar|send(?:ing)?|email(?:ing)? (?:out|the|everyone|them)|schedul\w*|set(?:ting)? up (?:meetings?|calls?)|updat\w* (?:the )?(?:erp|sap|oracle|netsuite|system|portal|tracker|jira)|enter(?:ing)? (?:\w+ ){0,2}into|key(?:ing)? in|log(?:ging)? into|download\w*|export\w*|print\w*|distribut\w*|kick off|run(?:ning)? the (?:close|consolidation|report))\b/,
+    COLLECT: /\b(?:chas\w*|follow(?:ing)?[- ]up(?! questions?)|track(?:ing)? down|workshops?|interview\w*|what (?:the )?(?:[\w-]+ )?(?:owners?|teams?|people|managers?) (?:say|tell)|nudg\w*|remind\w*|ping(?:ing)?|hound\w*|collect\w* (?:\w+ ){0,3}from|get(?:ting)? (?:\w+ ){0,4}(?:from|out of) (?:the )?(?:sites?|suppliers?|vendors?|owners?|teams?|people|managers?|business|plants?|facilit\w*)|request\w* (?:\w+ ){0,3}from|wait(?:ing)? (?:on|for) (?:people|them|the \w+ team|suppliers?|owners?|sites?)|survey(?:ing)? (?:the )?(?:suppliers?|sites?))\b/
+  };
+  const AI_OPS = ['READ', 'SUMMARIZE', 'COMPARE', 'CHECK', 'EXTRACT', 'DRAFT', 'REWRITE', 'EXPLAIN', 'MAP', 'CLASSIFY'];
+  const BLOCKER_OF = { DECIDE: 'judgment', ACT: 'cross-system', COLLECT: 'collect-from-people', CALCULATE: 'exact-calc' };
+  const REPEATS = /\b(?:every|each|all (?:\d+|the|our)|monthly|quarterly|annual(?:ly)?|weekly|daily|recurring|routine|always|again|each time|per (?:quarter|month|year|period)|every (?:quarter|month|year|close|cycle|period|time)|close|q[1-4]s?\b|quarter(?:s|ly)?|year[- ]end|10-?qs?|cycle|season|\d+ (?:entities|controls|suppliers|sites|sections|accounts|policies|risks)|10-?k|month[- ]end|earnings|board deck|management report|findings|workpapers|colleagues'? drafts|drafts from|responses|line by line|same email|filing|assurance|survey)\b/;
+  const ONE_OFF = /\b(?:one[- ]?off|one[- ]time|once(?! a (?:year|quarter|month|week))|first time|this (?:one|single)|new project|implementation|migration|just this|ad hoc|this year only)\b/;
+  const APPROVAL_ONLY = /\b(?:approv\w*|sign(?:ing)?[- ]?off|signs? off|final (?:call|decision)|materiality (?:call|decision|judg\w*))\b/;
+
+  function normalize(t) {
+    return (' ' + String(t || '').toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, ' ') + ' ')
+      .replace(/\bu\b/g, 'you').replace(/\bw\/o\b/g, 'without').replace(/\b(?:prev|prv)\b/g, 'previous');
+  }
+
+  function rate(text, opts) {
+    const t = normalize(text);
+    const ops = [], hits = {};
+    for (const [op, re] of Object.entries(OPS)) {
+      const m = t.match(new RegExp(re.source, 'g'));
+      if (m) { ops.push(op); hits[op] = [...new Set(m.map((s) => s.trim()))]; }
+    }
+    const ai = ops.filter((o) => AI_OPS.includes(o));
+    // "read" alone is how every task starts; it counts only next to a real job
+    const aiCore = ai.filter((o) => o !== 'READ');
+    const blockers = [...new Set(ops.map((o) => BLOCKER_OF[o]).filter(Boolean))];
+    const repeats = opts && typeof opts.repeats === 'boolean' ? opts.repeats : REPEATS.test(t) && !ONE_OFF.test(t);
+    if (ONE_OFF.test(t)) blockers.push('one-off');
+    let fit;
+    if (!aiCore.length) fit = ai.length && !blockers.length ? 'partial' : 'not';
+    else if (!blockers.length) fit = repeats ? 'good' : 'partial';
+    else if (aiCore.every((o) => o === 'CHECK' || o === 'COMPARE') && blockers.some((b) => b !== 'judgment')) fit = 'not';
+    else fit = aiCore.length >= 2 || !APPROVAL_ONLY.test(t) ? 'partial' : 'not';
+    return { fit, repeats: repeats ? 1 : 0, ops, blockers, hits, steps: steps(t, ops), prompt: starter(text, ops, fit) };
+  }
+
+  // what each step is, who keeps it, and why (plain words; no product claims)
+  const STEP = {
+    READ: ['Read the material', 'ai', 'Workiva AI reads the file or selection you point it to.'],
+    SUMMARIZE: ['Summarize it', 'ai', 'A first summary you can edit.'],
+    COMPARE: ['Compare versions or periods', 'ai', 'It lists what changed; you judge what matters.'],
+    CHECK: ['First-pass check', 'ai', 'It flags errors, gaps and mismatches; you confirm each one.'],
+    EXTRACT: ['Pull out the items', 'ai', 'It lists every item it finds, with where it is.'],
+    DRAFT: ['Write a first draft', 'ai', 'A draft from your source; you edit and own the final words.'],
+    REWRITE: ['Rewrite or update text', 'ai', 'Shorter, clearer or updated wording; every number stays yours to check.'],
+    EXPLAIN: ['Explain it', 'ai', 'A plain-language explanation; you check it against the source.'],
+    MAP: ['Map to a framework', 'ai', 'Suggested links with reasons; you make the final call.'],
+    CLASSIFY: ['Sort or tag items', 'ai', 'Suggested groups; you confirm them.'],
+    CALCULATE: ['Calculate the numbers', 'you', 'Exact numbers belong in formulas or your system of record; the AI can explain a formula.'],
+    DECIDE: ['Decide or sign off', 'you', 'Judgment and sign-off stay with a person.'],
+    ACT: ['Act in other systems', 'you', 'Posting, sending, uploading and scheduling stay with you or your other tools.'],
+    COLLECT: ['Get input from people', 'you', 'Chasing people stays with you; the AI can draft the request.']
+  };
+  function steps(t, ops) {
+    const at = (op) => { const m = t.match(OPS[op]); return m ? m.index : 1e9; };
+    return [...ops].sort((a, b) => at(a) - at(b)).map((op) => ({ op, label: STEP[op][0], who: STEP[op][1], why: STEP[op][2] }));
+  }
+
+  // a starter prompt for the part Workiva AI can take, keeping the person's own description
+  const ASK = {
+    CHECK: 'Check it for errors, gaps and mismatches. List each issue with where it is and why it looks wrong.',
+    COMPARE: 'Compare the two versions or periods and list what changed, with where each change is.',
+    SUMMARIZE: 'Summarize the key points in [number] bullets for [who will read it].',
+    DRAFT: 'Draft a first version for [who will read it]. Mark anything I need to confirm as [to confirm].',
+    REWRITE: 'Rewrite it to be [shorter, clearer, or up to date], keeping every number and fact.',
+    EXTRACT: 'Pull every [item] into a table, with where each one appears.',
+    EXPLAIN: 'Explain it in plain terms for [who will read it].',
+    MAP: 'Map each item to [the framework], with a one-line reason. Mark any you are unsure of.',
+    CLASSIFY: 'Sort the items into [the groups you use], one line each with the reason.',
+    READ: 'Read it and list the points I should look at first.'
+  };
+  function starter(text, ops, fit) {
+    const ai = ops.filter((o) => AI_OPS.includes(o));
+    // the first thing the task does that the AI can take (reading only when nothing else is there)
+    const t = normalize(text), at = (op) => { const m = t.match(OPS[op]); return m ? m.index : 1e9; };
+    const lead = ai.filter((o) => o !== 'READ').sort((a, b) => at(a) - at(b))[0] || (ai.includes('READ') ? 'READ' : null);
+    const task = String(text || '').trim().replace(/\s+/g, ' ').replace(/[.!?]*$/, '.');
+    if (!lead) {
+      if (ops.includes('COLLECT')) return 'Draft a short, polite request to [who] asking for [what you need] by [date]. Context: ' + task;
+      return null;
+    }
+    return 'Use only [the selected file or table]. My task: ' + task + ' ' + ASK[lead] + ' Do not add facts that are not in the source; I will review and decide.';
+  }
+
+  // a checklist, test plan or calendar: rate every line that reads like a task
+  function scan(text) {
+    const lines = String(text || '').split(/\r?\n|;\s+|\u2022/).map((l) => l.replace(/^\s*(?:[-*\d.)\]]+|\[[ x]\])\s*/i, '').replace(/,\s*,+/g, ',').trim())
+      .filter((l) => l.split(/\s+/).length >= 3 && l.length <= 300 && !/^##\s/.test(l));
+    const seen = new Set(), out = [];
+    for (const l of lines) {
+      const k = l.toLowerCase(); if (seen.has(k)) continue; seen.add(k);
+      const r = rate(l);
+      if (r.ops.length) out.push({ task: l, ...r });
+    }
+    return out;
+  }
+
+  const api = { rate, scan, normalize, OPS, AI_OPS, STEP };
+  if (isNode) module.exports = api; else root.FitEngine = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+/* Browser-side file reading. Libraries load from cdnjs only when a file of that type is added.
+   readFile(File) -> {name, kind, text, sheets?:[{name, headers}], headings?:[], slides?:[], periods:[], detail} */
+(function (root) {
+  const LIBS = {
+    mammoth: 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',
+    xlsx: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+    jszip: 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+    pdf: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+    pdfWorker: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+  };
+  const loaded = {};
+  function load(key) {
+    if (!loaded[key]) loaded[key] = new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = LIBS[key]; s.onload = res;
+      s.onerror = () => { delete loaded[key]; rej(new Error('Could not load the reader for this file type. Check your connection and try again.')); };
+      document.head.append(s);
+    });
+    return loaded[key];
+  }
+  const MAX_TEXT = 60000;
+  const PERIOD = /\b(?:FY|CY)\s?'?\d{2,4}\b|\bQ[1-4]\s?(?:FY)?\s?'?\d{2,4}\b|\b(?:19|20)\d{2}\b/g;
+  function periodsOf(s) {
+    const counts = {};
+    for (const m of String(s).match(PERIOD) || []) { const k = m.replace(/\s+/g, ' ').trim(); counts[k] = (counts[k] || 0) + 1; }
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k]) => k)
+      .filter((k) => !/^(?:19|20)\d{2}$/.test(k) || +k >= 2015 && +k <= 2035).sort();
+  }
+  function headerRow(rows) {
+    for (const r of rows.slice(0, 12)) {
+      const cells = (r || []).map((c) => (c == null ? '' : String(c).trim())).filter(Boolean);
+      const texty = cells.filter((c) => /[A-Za-z]/.test(c) && c.length < 40);
+      if (texty.length >= 2) return cells.slice(0, 10);
+    }
+    return [];
+  }
+
+  async function readFile(file) {
+    const name = file.name, ext = name.split('.').pop().toLowerCase();
+    if (['txt', 'md', 'csv'].includes(ext)) {
+      const text = (await file.text()).slice(0, MAX_TEXT);
+      const out = { name, kind: ext === 'csv' ? 'CSV' : 'Text', text, periods: periodsOf(text) };
+      if (ext === 'csv') { const first = text.split(/\r?\n/).slice(0, 5).map((l) => l.split(',')); out.sheets = [{ name: name.replace(/\.csv$/i, ''), headers: headerRow(first) }]; }
+      return out;
+    }
+    const buf = await file.arrayBuffer();
+    if (ext === 'docx') {
+      await load('mammoth');
+      const html = (await root.mammoth.convertToHtml({ arrayBuffer: buf })).value;
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const headings = [...doc.querySelectorAll('h1,h2,h3')].map((h) => h.textContent.trim()).filter(Boolean).slice(0, 30);
+      const text = doc.body.textContent.replace(/\s+/g, ' ').slice(0, MAX_TEXT);
+      // one entry per paragraph, list item or table row, for tools that work line by line (checklists)
+      const lines = [...doc.querySelectorAll('p, li, h1, h2, h3, tr')].filter((el) => el.tagName === 'TR' || !el.closest('td, th, li li'))
+        .map((el) => (el.tagName === 'TR' ? [...el.children].map((c) => c.textContent.trim()).filter(Boolean).join(', ') : el.textContent).replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 2000);
+      return { name, kind: 'Word', text, lines, headings, periods: periodsOf(text), detail: headings.length ? headings.length + ' headings' : '' };
+    }
+    if (['xlsx', 'xlsm', 'xls'].includes(ext)) {
+      await load('xlsx');
+      const wb = root.XLSX.read(buf, { type: 'array' });
+      const sheets = [], parts = [];
+      for (const n of wb.SheetNames) {
+        const rows = root.XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, blankrows: false, raw: false });
+        const headers = headerRow(rows);
+        sheets.push({ name: n, headers });
+        parts.push('## ' + n + '\n' + rows.slice(0, 200).map((r) => r.join(', ')).join('\n'));
+      }
+      const text = parts.join('\n\n').slice(0, MAX_TEXT);
+      return { name, kind: 'Excel', text, sheets, periods: periodsOf(sheets.map((s) => s.headers.join(' ')).join(' ') + ' ' + text.slice(0, 8000)), detail: sheets.length + (sheets.length === 1 ? ' sheet' : ' sheets') };
+    }
+    if (ext === 'pptx') {
+      await load('jszip');
+      const zip = await root.JSZip.loadAsync(buf);
+      const paths = Object.keys(zip.files).filter((p) => /^ppt\/slides\/slide\d+\.xml$/.test(p)).sort((a, b) => parseInt(a.match(/\d+/)[0], 10) - parseInt(b.match(/\d+/)[0], 10));
+      const slides = [], parts = [];
+      for (const p of paths) {
+        const xml = await zip.file(p).async('string');
+        const dec = (s) => new DOMParser().parseFromString('<x>' + s + '</x>', 'text/html').body.textContent;
+        const title = (xml.match(/<p:ph type="(?:title|ctrTitle)"[\s\S]*?<\/p:sp>/) || [''])[0];
+        const tRuns = [...title.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((m) => m[1]).join(' ');
+        const all = [...xml.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((m) => m[1]);
+        slides.push(dec(tRuns || all[0] || '').trim());
+        parts.push(dec(all.join(' ')));
+      }
+      const text = parts.join('\n').slice(0, MAX_TEXT);
+      return { name, kind: 'PowerPoint', text, slides, periods: periodsOf(text), detail: slides.length + (slides.length === 1 ? ' slide' : ' slides') };
+    }
+    if (ext === 'pdf') {
+      await load('pdf'); await load('pdfWorker'); // worker script runs on the main thread
+      const doc = await root.pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+      const parts = [];
+      for (let i = 1; i <= doc.numPages && parts.join(' ').length < MAX_TEXT; i++) parts.push((await (await doc.getPage(i)).getTextContent()).items.map((it) => it.str).join(' '));
+      const text = parts.join('\n').slice(0, MAX_TEXT);
+      return { name, kind: 'PDF', text, periods: periodsOf(text), detail: doc.numPages + (doc.numPages === 1 ? ' page' : ' pages') };
+    }
+    if (['doc', 'ppt'].includes(ext)) throw new Error('Older .' + ext + ' files can’t be read here. Save it as .' + ext + 'x and add it again.');
+    throw new Error('This file type isn’t supported. Use Word, Excel, PowerPoint, PDF, CSV or text.');
+  }
+
+  root.ScopeFiles = { readFile, periodsOf };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const EXAMPLES = [
+    'Every quarter I compare the MD&A to last year\'s and flag what changed.',
+    'I draft audit findings from the testing workpapers for each failed control.',
+    'Each year I rewrite the climate section so it matches the new emissions data.',
+    'Every close I tie out the numbers in the earnings release to the financial statements.',
+    'I chase site managers every month for their electricity and fuel data.',
+    'The CFO and I sign off the final 10-Q before it is filed.'
+  ];
+  const BLOCK = { judgment: 'judgment or sign-off', 'exact-calc': 'exact calculation', 'cross-system': 'work in other systems', 'collect-from-people': 'getting input from people', 'one-off': 'a one-off' };
+  const NAME = { good: 'good fit', partial: 'partial fit', not: 'not a fit' };
+  const list = (a) => a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+  let rep = 'auto';
+
+  function why(r) {
+    const ai = r.steps.filter((s) => s.who === 'ai' && s.op !== 'READ').map((s) => s.label.toLowerCase());
+    const b = r.blockers.filter((x) => x !== 'one-off').map((x) => BLOCK[x]);
+    if (r.fit === 'good') return 'It comes back every period and the core is reading, drafting or checking: hand Workiva AI the first pass and review what it gives you.';
+    if (r.fit === 'partial') {
+      if (!b.length && !r.repeats) return 'Workiva AI can take a first pass at this. It pays off most on work you repeat, so it is a better fit if this comes back every period.';
+      return 'Workiva AI can take part of it' + (ai.length ? ' (' + list(ai) + ')' : '') + '. ' + (b.length ? 'The ' + list(b) + ' stays with you.' : 'The rest stays with you.');
+    }
+    if (!r.ops.length) return 'Add a verb or two (compare, check, draft, approve, send) so it can tell what the task involves.';
+    return 'The core of this is ' + (b.length ? list(b) : 'work without a text or table to start from') + ', which stays with you.' + (ai.length ? ' Workiva AI can still help with the ' + list(ai) + '.' : r.ops.includes('COLLECT') ? ' Workiva AI can draft the request for you.' : '');
+  }
+
+  function render() {
+    const text = $('task').value.trim();
+    const fitEl = $('fit'), steps = $('steps');
+    steps.replaceChildren();
+    if (!text) { fitEl.className = 'fitbadge none'; fitEl.textContent = 'type a task'; $('why').textContent = ''; $('starterPanel').hidden = true; $('repNote').textContent = ''; return; }
+    const r = FitEngine.rate(text, rep === 'auto' ? undefined : { repeats: rep === 'yes' });
+    $('repNote').textContent = rep === 'auto' ? (r.repeats ? 'looks recurring' : 'looks one-off or unclear') : '';
+    fitEl.className = 'fitbadge ' + (r.ops.length ? r.fit : 'none'); fitEl.textContent = r.ops.length ? NAME[r.fit] : 'not sure yet';
+    $('why').textContent = why(r);
+    for (const s of r.steps) {
+      const li = document.createElement('li');
+      const who = document.createElement('span'); who.className = 'who ' + s.who; who.textContent = s.who === 'ai' ? 'Workiva AI' : 'stays with you';
+      const b = document.createElement('b'); b.textContent = s.label;
+      const d = document.createElement('span'); d.className = 'd'; d.textContent = s.why;
+      li.append(who, b, d); steps.append(li);
+    }
+    $('starterPanel').hidden = !r.prompt;
+    $('starter').textContent = r.prompt ? '\u201c' + r.prompt + '\u201d' : '';
+  }
+
+  function renderScan(text, source) {
+    const rows = FitEngine.scan(text), body = $('scan').tBodies[0], counts = $('counts');
+    body.replaceChildren(); counts.replaceChildren();
+    if (!rows.length) { $('scan').hidden = true; $('scanHint').hidden = true; const s = document.createElement('span'); s.className = 'filemeta'; s.textContent = text.trim() ? 'No task-like lines found. Each line needs a verb, like review, draft or approve.' : 'Add a file or a list to see every step rated.'; counts.append(s); return; }
+    const order = { good: 0, partial: 1, not: 2 };
+    rows.sort((a, b) => order[a.fit] - order[b.fit]);
+    for (const f of ['good', 'partial', 'not']) { const n = rows.filter((r) => r.fit === f).length; if (n) { const c = document.createElement('span'); c.className = 'count ' + f; c.textContent = n + ' ' + NAME[f]; counts.append(c); } }
+    if (source) { const s = document.createElement('span'); s.className = 'filemeta'; s.textContent = 'from ' + source; counts.append(s); }
+    for (const r of rows.slice(0, 300)) {
+      const tr = document.createElement('tr'); tr.tabIndex = 0;
+      const t = document.createElement('td'); t.textContent = r.task;
+      const f = document.createElement('td'); const tag = document.createElement('span'); tag.className = 'tag ' + r.fit; tag.textContent = NAME[r.fit]; f.append(tag);
+      const a = document.createElement('td'); a.className = 'hide-sm'; a.textContent = r.steps.filter((s) => s.who === 'ai' && s.op !== 'READ').map((s) => s.label.toLowerCase()).join(', ') || '\u2014';
+      tr.append(t, f, a);
+      const pick = () => { $('task').value = r.task; rep = 'auto'; setRep(); render(); $('h-task').scrollIntoView({ behavior: 'smooth' }); };
+      tr.onclick = pick; tr.onkeydown = (e) => { if (e.key === 'Enter') pick(); };
+      body.append(tr);
+    }
+    $('scan').hidden = false; $('scanHint').hidden = false;
+  }
+
+  function setRep() { for (const b of document.querySelectorAll('[data-rep]')) b.setAttribute('aria-pressed', String(b.dataset.rep === rep)); }
+  for (const b of document.querySelectorAll('[data-rep]')) b.onclick = () => { rep = b.dataset.rep; setRep(); render(); };
+  EXAMPLES.forEach((t, i) => { const o = document.createElement('option'); o.value = i; o.textContent = t; $('examples').append(o); });
+  $('examples').onchange = (e) => { const t = EXAMPLES[e.target.value]; e.target.value = ''; if (t) { $('task').value = t; rep = 'auto'; setRep(); render(); } };
+  let timer = 0;
+  $('task').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(render, 150); });
+  $('list').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => renderScan($('list').value), 200); });
+  $('copy').onclick = (e) => { const btn = e.currentTarget; const text = $('starter').textContent.replace(/^\u201c|\u201d$/g, ''); const done = () => { btn.textContent = 'copied'; setTimeout(() => { btn.textContent = 'copy'; }, 1400); }; try { navigator.clipboard.writeText(text).then(done, () => { btn.textContent = 'select and copy'; }); } catch (err) { btn.textContent = 'select and copy'; } };
+  $('attach').onclick = () => $('fileInput').click();
+  $('fileInput').onchange = () => {
+    const file = $('fileInput').files[0]; $('fileInput').value = ''; if (!file) return;
+    $('fileMeta').textContent = 'Reading ' + file.name + '\u2026';
+    ScopeFiles.readFile(file).then((r) => { $('fileMeta').textContent = file.name + (r.detail ? ' \u00b7 ' + r.detail : ''); renderScan(r.lines ? r.lines.join('\n') : r.text || '', file.name); })
+      .catch((err) => { $('fileMeta').textContent = err.message || 'Could not read this file.'; });
+  };
+  render();
+})();
+</script>

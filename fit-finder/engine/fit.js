@@ -12,14 +12,14 @@
     COMPARE: /\b(?:compar\w*|vs\.?|versus|against (?:last|prior|the)|what changed|changes? (?:from|between|since)|year[- ]over[- ]year|yoy|prior (?:year|period|quarter)|last (?:year|quarter)'?s?|diff(?:ing)?|benchmark\w*|peers?)\b/,
     CHECK: /\b(?:check\w*|tie[- ]?out\w*|ti(?:e|ing) (?:out|back)|reconcil\w*|verif\w*|validat\w*|proofread\w*|catch\w* (?:errors?|typos?|mistakes?)|look(?:ing)? for (?:errors?|gaps?|mistakes?|inconsisten\w*)|flag\w*|make sure|consisten\w*|inconsisten\w*|gaps?|missing|mismatch\w*|duplicates?|outliers?|anomal\w*|errors?|typos?|(?:don'?t|doesn'?t|do not|does not|still) match\w*|match(?:es)? (?:what|the)|see if|leav\w* comments|review comments|broken|foot(?:s|ing)? (?:and|to)|cross[- ]?foot\w*)\b/,
     EXTRACT: /\b(?:pull(?:ing)? (?:out|together)?|extract\w*|list(?:ing)? (?:all|every|out)|compil\w*|gather(?:ing)? (?:all|the) (?:\w+ )?(?:from|in)|copy(?:ing)? (?:over|out)|find(?:ing)? (?:all|every|where))\b/,
-    DRAFT: /\b(?:draft\w*|writ(?:e|ing)|wrote|prepar\w* (?:the |a )?(?:narrative|memo|commentary|footnote|finding|report|section|summary|response|reply|email|letter|deck|script|disclosure)|put together|commentary|write[- ]?ups?|creat\w* (?:the |a )?(?:narrative|memo|deck|slides?|template|checklist|test steps)|come up with)\b/,
-    REWRITE: /\b(?:rewrit\w*|re-?word\w*|rephras\w*|edit\w*|tighten\w*|shorten\w*|simplif\w*|clean(?:ing)? up (?:the )?(?:language|wording|text)|polish\w*|tone|plain english|update (?:the )?(?:language|wording|narrative|section|policy|commentary|disclosure)|roll(?:ing)? forward (?:\w+ ){0,3}(?:commentary|narrative|text|language|disclosures?|sections?)|keep(?:ing)? (?:[\w-]+ ){0,6}up to date)\b/,
+    DRAFT: /\b(?:draft\w*|writ(?:e|ing)|wrote|prepar\w* (?:the |a )?(?:narrative|memo|commentary|footnote|finding|report|section|summary|response|reply|email|letter|deck|script|disclosure)|put together|write[- ]?ups?|creat\w* (?:the |a )?(?:narrative|memo|deck|slides?|template|checklist|test steps)|come up with)\b/,
+    REWRITE: /\b(?:rewrit\w*|re-?word\w*|rephras\w*|edit\w*|tighten\w*|shorten\w*|simplif\w*|clean(?:ing)? up (?:the )?(?:language|wording|text)|polish\w*|tone|plain english|update (?:the )?(?:language|wording|narrative|section|policy|commentary|disclosure)|roll(?:ing)? forward (?:[\w']+ ){0,3}(?:commentary|narrative|text|language|disclosures?|sections?)|keep(?:ing)? (?:[\w-]+ ){0,6}up to date)\b/,
     EXPLAIN: /\b(?:explain\w*|interpret\w*|what (?:a|the) (?:new )?(?:rule|standard|requirement)s? (?:means?|requires?)|understand(?:ing)? (?:the|what|how)|walk(?:ing)? (?:\w+ )?through|answer(?:ing)? (?:\w+ ){0,2}questions?|new (?:rules?|standards?|requirements?|guidance))\b/,
     MAP: /\b(?:map\w*|crosswalk\w*|align\w* (?:to|with)|link\w* (?:\w+ ){0,3}to|which (?:principle|requirement|datapoint|criteria)|esrs datapoints?|coso|nist|iso ?27001|tag(?:ging)? (?:to|with))\b/,
     CLASSIFY: /\b(?:classif\w*|categori[sz]\w*|sort(?:ing)?|group(?:ing)?|bucket\w*|triag\w*|rat(?:e|ing) (?:each|the|them)|scor(?:e|ing) (?:each|the|them))\b/,
     CALCULATE: /\b(?:calculat\w*|comput\w*|recalc\w*|math|add(?:ing)? up|sum(?:ming)?|totals?|emission factors?|convert(?:ing)? (?:units|kwh|litres|liters|gallons|currenc\w*)|fx|allocat\w*|accru\w*|depreciat\w*|forecast\w*|model(?:ing|ling)?\b|pivot)\b/,
     DECIDE: /\b(?:decid\w*|approv\w*|sign(?:ing)?[- ]?off|signs? off|judg\w*|materialit\w*|conclud\w*|determin\w*|assess(?:ing)? whether|evaluat\w* whether|whether (?:it|we|this) (?:is|are|should)|choos\w*|pick(?:ing)? (?:which|the)|call on|make the call|prioriti[sz]\w*|negotiat\w*)\b/,
-    ACT: /\b(?:post(?:ing)? (?:the )?(?:[\w-]+ )?(?:entries|journals?|je)|migrat\w*|calendar invites?|book(?:ing)?|upload\w*|submit\w*|fil(?:e|ing) (?:with|on|to) (?:the )?(?:sec|edgar)|edgar|send(?:ing)?|email(?:ing)? (?:out|the|everyone|them)|schedul\w*|set(?:ting)? up (?:meetings?|calls?)|updat\w* (?:the )?(?:erp|sap|oracle|netsuite|system|portal|tracker|jira)|enter(?:ing)? (?:\w+ ){0,2}into|key(?:ing)? in|log(?:ging)? into|download\w*|export\w*|print\w*|distribut\w*|kick off|run(?:ning)? the (?:close|consolidation|report))\b/,
+    ACT: /\b(?:(?:from|out of|into) (?:the )?(?:erp|sap|oracle|netsuite|hyperion|onestream|blackline|gl system|system)\b|post(?:ing)? (?:the )?(?:[\w-]+ )?(?:entries|journals?|je)|migrat\w*|calendar invites?|book(?:ing)?|upload\w*|submit\w*|fil(?:e|ing) (?:with|on|to) (?:the )?(?:sec|edgar)|edgar|send(?:ing)?|email(?:ing)? (?:out|the|everyone|them)|schedul\w*|set(?:ting)? up (?:meetings?|calls?)|updat\w* (?:the )?(?:erp|sap|oracle|netsuite|system|portal|tracker|jira)|enter(?:ing)? (?:\w+ ){0,2}into|key(?:ing)? in|log(?:ging)? into|download\w*|export\w*|print\w*|distribut\w*|kick off|run(?:ning)? the (?:close|consolidation|report))\b/,
     COLLECT: /\b(?:chas\w*|follow(?:ing)?[- ]up(?! questions?)|track(?:ing)? down|workshops?|interview\w*|what (?:the )?(?:[\w-]+ )?(?:owners?|teams?|people|managers?) (?:say|tell)|nudg\w*|remind\w*|ping(?:ing)?|hound\w*|collect\w* (?:\w+ ){0,3}from|get(?:ting)? (?:\w+ ){0,4}(?:from|out of) (?:the )?(?:sites?|suppliers?|vendors?|owners?|teams?|people|managers?|business|plants?|facilit\w*)|request\w* (?:\w+ ){0,3}from|wait(?:ing)? (?:on|for) (?:people|them|the \w+ team|suppliers?|owners?|sites?)|survey(?:ing)? (?:the )?(?:suppliers?|sites?))\b/
   };
   const AI_OPS = ['READ', 'SUMMARIZE', 'COMPARE', 'CHECK', 'EXTRACT', 'DRAFT', 'REWRITE', 'EXPLAIN', 'MAP', 'CLASSIFY'];
@@ -33,7 +33,7 @@
       .replace(/\bu\b/g, 'you').replace(/\bw\/o\b/g, 'without').replace(/\b(?:prev|prv)\b/g, 'previous');
   }
 
-  function rate(text) {
+  function rate(text, opts) {
     const t = normalize(text);
     const ops = [], hits = {};
     for (const [op, re] of Object.entries(OPS)) {
@@ -44,16 +44,77 @@
     // "read" alone is how every task starts; it counts only next to a real job
     const aiCore = ai.filter((o) => o !== 'READ');
     const blockers = [...new Set(ops.map((o) => BLOCKER_OF[o]).filter(Boolean))];
-    const repeats = REPEATS.test(t) && !ONE_OFF.test(t);
+    const repeats = opts && typeof opts.repeats === 'boolean' ? opts.repeats : REPEATS.test(t) && !ONE_OFF.test(t);
     if (ONE_OFF.test(t)) blockers.push('one-off');
     let fit;
     if (!aiCore.length) fit = ai.length && !blockers.length ? 'partial' : 'not';
     else if (!blockers.length) fit = repeats ? 'good' : 'partial';
     else if (aiCore.every((o) => o === 'CHECK' || o === 'COMPARE') && blockers.some((b) => b !== 'judgment')) fit = 'not';
     else fit = aiCore.length >= 2 || !APPROVAL_ONLY.test(t) ? 'partial' : 'not';
-    return { fit, repeats: repeats ? 1 : 0, ops, blockers, hits };
+    return { fit, repeats: repeats ? 1 : 0, ops, blockers, hits, steps: steps(t, ops), prompt: starter(text, ops, fit) };
   }
 
-  const api = { rate, normalize, OPS, AI_OPS };
+  // what each step is, who keeps it, and why (plain words; no product claims)
+  const STEP = {
+    READ: ['Read the material', 'ai', 'Workiva AI reads the file or selection you point it to.'],
+    SUMMARIZE: ['Summarize it', 'ai', 'A first summary you can edit.'],
+    COMPARE: ['Compare versions or periods', 'ai', 'It lists what changed; you judge what matters.'],
+    CHECK: ['First-pass check', 'ai', 'It flags errors, gaps and mismatches; you confirm each one.'],
+    EXTRACT: ['Pull out the items', 'ai', 'It lists every item it finds, with where it is.'],
+    DRAFT: ['Write a first draft', 'ai', 'A draft from your source; you edit and own the final words.'],
+    REWRITE: ['Rewrite or update text', 'ai', 'Shorter, clearer or updated wording; every number stays yours to check.'],
+    EXPLAIN: ['Explain it', 'ai', 'A plain-language explanation; you check it against the source.'],
+    MAP: ['Map to a framework', 'ai', 'Suggested links with reasons; you make the final call.'],
+    CLASSIFY: ['Sort or tag items', 'ai', 'Suggested groups; you confirm them.'],
+    CALCULATE: ['Calculate the numbers', 'you', 'Exact numbers belong in formulas or your system of record; the AI can explain a formula.'],
+    DECIDE: ['Decide or sign off', 'you', 'Judgment and sign-off stay with a person.'],
+    ACT: ['Act in other systems', 'you', 'Posting, sending, uploading and scheduling stay with you or your other tools.'],
+    COLLECT: ['Get input from people', 'you', 'Chasing people stays with you; the AI can draft the request.']
+  };
+  function steps(t, ops) {
+    const at = (op) => { const m = t.match(OPS[op]); return m ? m.index : 1e9; };
+    return [...ops].sort((a, b) => at(a) - at(b)).map((op) => ({ op, label: STEP[op][0], who: STEP[op][1], why: STEP[op][2] }));
+  }
+
+  // a starter prompt for the part Workiva AI can take, keeping the person's own description
+  const ASK = {
+    CHECK: 'Check it for errors, gaps and mismatches. List each issue with where it is and why it looks wrong.',
+    COMPARE: 'Compare the two versions or periods and list what changed, with where each change is.',
+    SUMMARIZE: 'Summarize the key points in [number] bullets for [who will read it].',
+    DRAFT: 'Draft a first version for [who will read it]. Mark anything I need to confirm as [to confirm].',
+    REWRITE: 'Rewrite it to be [shorter, clearer, or up to date], keeping every number and fact.',
+    EXTRACT: 'Pull every [item] into a table, with where each one appears.',
+    EXPLAIN: 'Explain it in plain terms for [who will read it].',
+    MAP: 'Map each item to [the framework], with a one-line reason. Mark any you are unsure of.',
+    CLASSIFY: 'Sort the items into [the groups you use], one line each with the reason.',
+    READ: 'Read it and list the points I should look at first.'
+  };
+  function starter(text, ops, fit) {
+    const ai = ops.filter((o) => AI_OPS.includes(o));
+    // the first thing the task does that the AI can take (reading only when nothing else is there)
+    const t = normalize(text), at = (op) => { const m = t.match(OPS[op]); return m ? m.index : 1e9; };
+    const lead = ai.filter((o) => o !== 'READ').sort((a, b) => at(a) - at(b))[0] || (ai.includes('READ') ? 'READ' : null);
+    const task = String(text || '').trim().replace(/\s+/g, ' ').replace(/[.!?]*$/, '.');
+    if (!lead) {
+      if (ops.includes('COLLECT')) return 'Draft a short, polite request to [who] asking for [what you need] by [date]. Context: ' + task;
+      return null;
+    }
+    return 'Use only [the selected file or table]. My task: ' + task + ' ' + ASK[lead] + ' Do not add facts that are not in the source; I will review and decide.';
+  }
+
+  // a checklist, test plan or calendar: rate every line that reads like a task
+  function scan(text) {
+    const lines = String(text || '').split(/\r?\n|;\s+|\u2022/).map((l) => l.replace(/^\s*(?:[-*\d.)\]]+|\[[ x]\])\s*/i, '').replace(/,\s*,+/g, ',').trim())
+      .filter((l) => l.split(/\s+/).length >= 3 && l.length <= 300 && !/^##\s/.test(l));
+    const seen = new Set(), out = [];
+    for (const l of lines) {
+      const k = l.toLowerCase(); if (seen.has(k)) continue; seen.add(k);
+      const r = rate(l);
+      if (r.ops.length) out.push({ task: l, ...r });
+    }
+    return out;
+  }
+
+  const api = { rate, scan, normalize, OPS, AI_OPS, STEP };
   if (isNode) module.exports = api; else root.FitEngine = api;
 })(typeof window !== 'undefined' ? window : globalThis);
