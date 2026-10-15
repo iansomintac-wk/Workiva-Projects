@@ -194,7 +194,7 @@
       }
 
       { // T11 (final-review S5): test book marker and "This is my real book now"
-        const keep = DATA, keepRaw = localStorage.getItem(STORAGE_KEY), realToast = window.showToast, realConfirm = window.showConfirmModal;
+        const keep = DATA, keepSyn = DATA.synthetic, keepRaw = localStorage.getItem(STORAGE_KEY), realToast = window.showToast, realConfirm = window.showConfirmModal;
         const savedFs = {h: _fsHandle, s: _fsState};
         const toasts = []; window.showToast = function(m){ toasts.push(String(m)); };
         try{
@@ -235,7 +235,7 @@
             `syn=${DATA.synthetic} storedSyn=${stored.synthetic} ok=${okFs} writes=${f.writes}`);
         }finally{
           window.showToast = realToast; window.showConfirmModal = realConfirm; _fsHandle = savedFs.h; _fsState = savedFs.s;
-          DATA = keep; DATA.synthetic = true; realSet.call(localStorage, STORAGE_KEY, keepRaw);
+          DATA = keep; if(keepSyn === undefined) delete DATA.synthetic; else DATA.synthetic = keepSyn; realSet.call(localStorage, STORAGE_KEY, keepRaw);
           render();
         }
       }
