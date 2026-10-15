@@ -5615,7 +5615,6 @@ function performUndo(){
    test carries synthetic:true and may never replace a stored real book. An empty
    stored book is nothing to protect; an unreadable one is treated as real. Only
    synthetic books pay for the parse. */
-let _syntheticToastShown = false;
 function syntheticWouldReplaceReal(){
   if(!(DATA && DATA.synthetic === true)) return false;
   try{
@@ -5647,7 +5646,8 @@ function saveData(opts){
      have. It sits AFTER the rejected-load branch so that contract is untouched. */
   if(_suiteRunning) return true;
   if(syntheticWouldReplaceReal()){
-    if(!_syntheticToastShown){ _syntheticToastShown = true; showToast('Not saved — this is a test book and a real book is stored here.'); }
+    // Every user save says so; only maintenance (bookkeeping) saves stay silent.
+    if(!maintenance) showToast('Not saved — this is a test book and a real book is stored here.');
     return false;
   }
   // Read BEFORE the write: this is the pre-mutation state, for free.

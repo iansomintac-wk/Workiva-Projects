@@ -145,6 +145,24 @@
         }
       }
 
+      { // T9 (final-review S3): the refusal toast shows on every user save, never on maintenance saves
+        const keep = DATA, keepRaw = localStorage.getItem(STORAGE_KEY), realToast = window.showToast;
+        const toasts = []; window.showToast = function(m){ toasts.push(String(m)); };
+        const real = JSON.parse(JSON.stringify(DATA)); delete real.synthetic;
+        try{
+          realSet.call(localStorage, STORAGE_KEY, JSON.stringify(real));
+          const w0 = bookWrites();
+          const a = saveData(), b = saveData();
+          rec('T9 two user saves of a test book over a real one -> 2 toasts, both refused, 0 book writes',
+            a === false && b === false && toasts.length === 2 && bookWrites() === w0, `a=${a} b=${b} toasts=${toasts.length} writes=${bookWrites() - w0}`);
+          toasts.length = 0;
+          const m = saveData({maintenance: true});
+          rec('T9 a maintenance save refused the same way shows 0 toasts', m === false && toasts.length === 0, `m=${m} toasts=${toasts.length}`);
+        }finally{
+          window.showToast = realToast; DATA = keep; realSet.call(localStorage, STORAGE_KEY, keepRaw);
+        }
+      }
+
       rec('probe reached the end', true);
     }catch(e){
       rec('probe threw', false, String(e && e.stack || e));
