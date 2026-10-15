@@ -35,9 +35,14 @@
   6. Preserve existing scoring/risk logic (computeRisk, healthScore, gates) unless objectively wrong.
 
   RELEASE NOTES:
-  1.1 — Step 0 (safety), in progress. Writes the book only when something
-        changed; no backup after a failed load; a test book can never replace
-        a real one. Design: design-work/DESIGN.md section 4.
+  1.1 — Step 0 (safety). Writes the book only when something changed:
+        - no backup (file or stored book) after a failed load;
+        - bookkeeping saves skip an unchanged book;
+        - tab clicks and redraws write the book 0 times;
+        - loading saves only when migration or backfill changed the book;
+        - a tool-made book (synthetic:true) can never replace a stored real
+          book via save, import or backup.
+        Design: design-work/DESIGN.md section 4.
   1.0 — First working prototype.
         A single-file book of business you keep on your own machine: a Today tab
         whose axis is the workday, risk and health scoring driven by one signal

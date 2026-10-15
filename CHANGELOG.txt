@@ -1,6 +1,19 @@
 OSM Runway — release notes
 ==========================
 
+1.1 — Step 0 (safety). The book is written only when something changed.
+
+    - No backup (file or stored book) is written after a failed load.
+    - Bookkeeping saves skip an unchanged book.
+    - Tab clicks and redraws write the book 0 times; the tab badge is read-only and
+      risk memory and leaving Today save only on change.
+    - Loading saves only when migration or backfill changed the book.
+    - A tool-made book (synthetic:true, demo seed stamped) can never replace a stored
+      real book via save, import or backup.
+
+  Checks: step 0 probe 14/14; 1.1 suite 475/475; 1.0 suite 475/475 (1.0 file untouched).
+  Design: design-work/DESIGN.md section 4.
+
 1.0 — August 6, 2026. First working prototype.
 
   The tracker and its onboarding guide, bundled and validated together for the
