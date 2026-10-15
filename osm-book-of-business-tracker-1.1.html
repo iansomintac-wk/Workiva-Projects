@@ -5522,7 +5522,8 @@ async function loadData(){
         try{ localStorage.setItem(STORAGE_KEY + '-prerepair-' + todayISO(), raw); }catch(e){}
         showToast('Loaded with repairs: ' + repairs);
       }
-      saveData(); // persist successful migrations/backfills/pause cleanup once
+      // 1.1 Step 0: persist migrations/backfills/pause cleanup only when they changed the book.
+      if(JSON.stringify(DATA) !== raw) saveData();
     }
   }catch(e){
     DATA = defaultData();

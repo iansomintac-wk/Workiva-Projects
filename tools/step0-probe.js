@@ -63,6 +63,23 @@
         rec('T4 redrawing an unchanged book writes 0 times', bookWrites() === w1, `writes=${bookWrites() - w1}`);
       }
 
+      { // T5: loadData
+        const keep = DATA, keepRaw = localStorage.getItem(STORAGE_KEY);
+        try{
+          saveData();
+          const w0 = bookWrites();
+          await loadData();
+          rec('T5 loading an up-to-date book writes nothing', bookWrites() === w0, `writes=${bookWrites() - w0}`);
+          const old = JSON.parse(localStorage.getItem(STORAGE_KEY)); delete old.weeklySnapshot;   // backfill restores it
+          realSet.call(localStorage, STORAGE_KEY, JSON.stringify(old));
+          const w1 = bookWrites();
+          await loadData();
+          rec('T5 control: loading a book that needs a backfill writes once', bookWrites() === w1 + 1, `writes=${bookWrites() - w1}`);
+        }finally{
+          DATA = keep; realSet.call(localStorage, STORAGE_KEY, keepRaw);
+        }
+      }
+
       rec('probe reached the end', true);
     }catch(e){
       rec('probe threw', false, String(e && e.stack || e));
