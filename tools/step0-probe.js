@@ -17,7 +17,7 @@
       // ===== Step 0 checks go here, in task order =====
 
       { // T2: fsWriteNow after a rejected load
-        const saved = {h: _fsHandle, s: _fsState, r: _rejectedLoadPayload, e: DATA.lastExportedAt, syn: DATA.synthetic};
+        const saved = {h: _fsHandle, s: _fsState, r: _rejectedLoadPayload, e: DATA.lastExportedAt, syn: DATA.synthetic, raw: localStorage.getItem(STORAGE_KEY)};
         delete DATA.synthetic;   // after Task 6 the seed is synthetic and fsWriteNow would refuse it for that reason instead
         try{
           const ctl = fakeBackupFile();
@@ -36,6 +36,7 @@
         }finally{
           _fsHandle = saved.h; _fsState = saved.s; _rejectedLoadPayload = saved.r; DATA.lastExportedAt = saved.e;
           if(saved.syn !== undefined) DATA.synthetic = saved.syn;
+          if(saved.raw !== null) realSet.call(localStorage, STORAGE_KEY, saved.raw);   // the control backup also stamps storage; put the stored book back
         }
       }
 
@@ -75,6 +76,30 @@
           const w1 = bookWrites();
           await loadData();
           rec('T5 control: loading a book that needs a backfill writes once', bookWrites() === w1 + 1, `writes=${bookWrites() - w1}`);
+        }finally{
+          DATA = keep; realSet.call(localStorage, STORAGE_KEY, keepRaw);
+        }
+      }
+
+      { // T6: synthetic books
+        rec('T6 the demo seed book is stamped synthetic and the stamp survives loading', DATA.synthetic === true, `synthetic=${DATA.synthetic}`);
+        const keep = DATA, keepRaw = localStorage.getItem(STORAGE_KEY);
+        const real = JSON.parse(JSON.stringify(DATA)); delete real.synthetic;
+        try{
+          realSet.call(localStorage, STORAGE_KEY, JSON.stringify(real));       // a real book is stored
+          const w0 = bookWrites();
+          const ok = saveData();
+          rec('T6 saving a synthetic book over a real one is refused', ok === false && bookWrites() === w0 && localStorage.getItem(STORAGE_KEY) === JSON.stringify(real), `ok=${ok}`);
+          const cand = JSON.parse(JSON.stringify(keep));
+          const okImp = commitDataCandidate(cand);
+          rec('T6 importing a synthetic book over a real one is refused and leaves DATA as it was', okImp === false && DATA === keep, `ok=${okImp}`);
+          const f = fakeBackupFile(), sv = {h: _fsHandle, s: _fsState};
+          _fsHandle = f; _fsState = 'ready';
+          const okFs = await fsWriteNow(true);
+          _fsHandle = sv.h; _fsState = sv.s;
+          rec('T6 a synthetic book is never written to the backup file', okFs === false && f.writes === 0, `ok=${okFs} writes=${f.writes}`);
+          DATA = real;
+          rec('T6 control: a real book still saves over a real one', saveData() === true);
         }finally{
           DATA = keep; realSet.call(localStorage, STORAGE_KEY, keepRaw);
         }

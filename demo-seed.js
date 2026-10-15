@@ -171,7 +171,8 @@
     customers, activities,
     healthHistory: {}, riskLog: {}, pauseReturns: [],
     weeklySnapshot: {ids: [customers[3].id, customers[7].id], date: D(T,-7)},
-    lastExportedAt: D(T,-2)
+    lastExportedAt: D(T,-2),
+    synthetic: true // made by a tool: may never replace a real book (Runway 1.1)
   };
   const candidate = prepareBookData(book, 'best-state demo');
   commitDataCandidate(candidate);

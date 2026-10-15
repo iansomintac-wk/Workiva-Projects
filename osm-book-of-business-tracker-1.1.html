@@ -5605,6 +5605,21 @@ function performUndo(){
    user edit, which is why they were deferred in the first place. So the whole
    deferred path is marked maintenance: it still writes, it just no longer gets
    to redefine what "before" means. */
+/* 1.1 Step 0: every local HTML file in Chrome shares ONE storage area (measured
+   2026-10-13), so a test page can reach the real book. A book made by a tool or
+   test carries synthetic:true and may never replace a stored real book. An empty
+   stored book is nothing to protect; an unreadable one is treated as real. Only
+   synthetic books pay for the parse. */
+let _syntheticToastShown = false;
+function syntheticWouldReplaceReal(){
+  if(!(DATA && DATA.synthetic === true)) return false;
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const p = JSON.parse(raw);
+    return !(p && p.synthetic === true) && Array.isArray(p.customers) && p.customers.length > 0;
+  }catch(e){ return true; }
+}
 function saveData(opts){
   const maintenance = !!(opts && opts.maintenance);
   if(_rejectedLoadPayload !== null){
@@ -5626,6 +5641,10 @@ function saveData(opts){
      funnels through, and it returns true so callers behave exactly as they would
      have. It sits AFTER the rejected-load branch so that contract is untouched. */
   if(_suiteRunning) return true;
+  if(syntheticWouldReplaceReal()){
+    if(!_syntheticToastShown){ _syntheticToastShown = true; showToast('Not saved — this is a test book and a real book is stored here.'); }
+    return false;
+  }
   // Read BEFORE the write: this is the pre-mutation state, for free.
   let prior = null;
   try{ prior = localStorage.getItem(STORAGE_KEY); }catch(e){ prior = null; }
@@ -17789,6 +17808,7 @@ async function fsWriteNow(silent){
      refuses to write it. The backup path must refuse too, or "Back up now" puts
      the empty book in the backup file (and in storage, via the export stamp). */
   if(_rejectedLoadPayload !== null) return false;
+  if(DATA && DATA.synthetic === true) return false; // a tool-made book never goes to the backup file
   _fsWriting = true;
   try{
     const w = await _fsHandle.createWritable();
