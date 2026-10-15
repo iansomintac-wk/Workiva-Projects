@@ -34,7 +34,10 @@ const expect = flag('expect', null);
 const verbose = args.includes('--verbose');
 const seedPaths = (flag('seed', '') || '').split(',').filter(Boolean);
 const HERE = dirname(fileURLToPath(import.meta.url));
-const SUITE_FOR = { 'osm-book-of-business-tracker-1.0.html': join(HERE, 'selfchecks.js') };
+const SUITE_FOR = {
+  'osm-book-of-business-tracker-1.0.html': join(HERE, 'selfchecks.js'),
+  'osm-book-of-business-tracker-1.1.html': join(HERE, 'selfchecks.js'),
+};
 const suiteFlag = flag('suite', null);
 const suitePath = suiteFlag === 'none' ? null : (suiteFlag ? resolve(suiteFlag) : (SUITE_FOR[basename(target)] || null));
 const width = Number(flag('width', 1440));
@@ -236,9 +239,9 @@ if (seedPaths.length) {
 }
 
 const run = await send('Runtime.evaluate', {
-  expression: `(() => {
+  expression: `(async () => {
     try {
-      const r = window[${JSON.stringify(fnName)}]();
+      const r = await window[${JSON.stringify(fnName)}]();
       const list = Array.isArray(r) ? r : (r && r.results) || [];
       return JSON.stringify({ ok: true, total: list.length,
         passes: ${verbose ? 'true' : 'false'} ? list.filter(x => x.ok).map(x => ({ name: x.name, detail: String(x.detail || '').slice(0, 1000) })) : [],

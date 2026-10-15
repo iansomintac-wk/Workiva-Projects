@@ -66,3 +66,4 @@ connector/sent-record.json
 connector/dry-run.jsonl
 connector/*.tmp
 connector/*.lock
+.ledger/
