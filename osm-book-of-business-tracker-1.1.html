@@ -17774,6 +17774,10 @@ async function fsWriteNow(silent){
      those to the user's real backup file would be the worst bug this project
      could ship, and it has already overwritten a live book twice by other means. */
   if(_suiteRunning || _fsWriting || !_fsHandle || _fsState !== 'ready') return false;
+  /* 1.1 Step 0: after a failed load the app shows an EMPTY book and saveData()
+     refuses to write it. The backup path must refuse too, or "Back up now" puts
+     the empty book in the backup file (and in storage, via the export stamp). */
+  if(_rejectedLoadPayload !== null) return false;
   _fsWriting = true;
   try{
     const w = await _fsHandle.createWritable();
