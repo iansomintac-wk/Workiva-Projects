@@ -25,6 +25,14 @@ Safety rules (Ian's, from the first build step on):
 - Never write test or synthetic data where the real book lives.
 - Don't publish or upload anything from this folder without asking.
 
+Slip (Ian, 2026-10-15, verbatim in .ledger/2026-10-15-runway-step0/slip.json):
+- Push: yes, this branch only ("yes, it can push its own branch"). Never push master.
+- Merge: no.
+- Spend on paid tools: $0 ("nothing, $0").
+- New sessions: only when the run hits the context or usage limits already set (context-stop
+  200k, budget caps), via a resume prompt; never otherwise ("I want to ensure that sessions don't
+  open unncessarily of course").
+
 Stops: the plan's own stop rules (T4 step 6, T5 step 4); a check failing twice (two strikes);
 push or merge (slip: see .ledger/2026-10-15-runway-step0/slip.json; anything not named there is no);
 any decision only Ian can make. At a stop: push notification, then ask.
