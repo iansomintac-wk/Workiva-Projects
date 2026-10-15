@@ -9086,6 +9086,21 @@ const BACKUP_NAG_DAYS = 14;
    told you the book was unprotected and then gave you nothing to click, so
    acting on it meant opening Settings and hunting for Export JSON. A warning
    you cannot act on is decoration. */
+function renderTestBookMarker(){
+  if(!(DATA && DATA.synthetic === true)) return '';
+  return `<span style="font-weight:700;">Test book</span> <button class="link-btn" id="btn-make-real" style="font-size:inherit; text-decoration:underline;" title="Keep this book as your real one">This is my real book now</button> · `;
+}
+// A test book becomes real only where no real book is stored; it never replaces one.
+function makeBookReal(){
+  if(syntheticWouldReplaceReal()){
+    showToast('A real book is already stored here, so this test book cannot become it.');
+    return false;
+  }
+  delete DATA.synthetic;
+  if(!saveData()){ DATA.synthetic = true; return false; }
+  render();
+  return true;
+}
 function renderBackupStatus(){
   const nag = txt => `<button class="link-btn" id="btn-backup-now" style="color:var(--status-watch-text); font-weight:700; font-size:inherit; text-decoration:underline;" title="Download a full JSON backup of the book right now">${txt}</button>`;
   /* v99: when the file backup is live the nag is wrong — the book IS being kept
@@ -9125,7 +9140,7 @@ function renderHeader(){
     <div class="header">
       <div>
         <h1>Book of Business — Runway</h1>
-        <div class="sub">Post-implementation TTFV tracking · ${DATA.customers.length} accounts · ${renderBackupStatus()}${renderConnectorStatus() ? ' · ' + renderConnectorStatus() : ''}</div>
+        <div class="sub">Post-implementation TTFV tracking · ${DATA.customers.length} accounts · ${renderTestBookMarker()}${renderBackupStatus()}${renderConnectorStatus() ? ' · ' + renderConnectorStatus() : ''}</div>
       </div>
       <div class="header-actions">
         ${(function(){
@@ -15708,6 +15723,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     else showToast('Nothing to undo.');
   });
   $('#btn-backup-now') && $('#btn-backup-now').addEventListener('click', exportData);
+  $('#btn-make-real') && $('#btn-make-real').addEventListener('click', () => showConfirmModal('Make this your real book? From now on it is saved and backed up like any real book. Only do this if the accounts in it are yours.', makeBookReal, 'Make it my real book'));
   $('#btn-fs-resume-header') && $('#btn-fs-resume-header').addEventListener('click', fsResume);
   $('#btn-quick-log') && $('#btn-quick-log').addEventListener('click', openQuickLogModal);
   /* v67 coordination writes. One collection helper for all three so add/toggle/

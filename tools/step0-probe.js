@@ -193,6 +193,53 @@
         }
       }
 
+      { // T11 (final-review S5): test book marker and "This is my real book now"
+        const keep = DATA, keepRaw = localStorage.getItem(STORAGE_KEY), realToast = window.showToast, realConfirm = window.showConfirmModal;
+        const savedFs = {h: _fsHandle, s: _fsState};
+        const toasts = []; window.showToast = function(m){ toasts.push(String(m)); };
+        try{
+          DATA.synthetic = true;
+          const on = renderHeader();
+          rec('T11 a test book shows the Test book marker and the button', on.includes('Test book') && on.includes('id="btn-make-real"') && on.includes('This is my real book now'), on.slice(0, 160));
+          delete DATA.synthetic;
+          const off = renderHeader();
+          rec('T11 a real book shows neither marker nor button', !off.includes('Test book') && !off.includes('btn-make-real'));
+          DATA.synthetic = true;
+
+          let asked = null; window.showConfirmModal = function(msg, fn, label){ asked = {msg, fn, label}; };
+          render();
+          const btn = document.getElementById('btn-make-real');
+          if(btn) btn.click();
+          rec('T11 clicking the button asks for confirmation with the stated wording',
+            !!asked && asked.label === 'Make it my real book' && typeof makeBookReal === 'function' && asked.fn === makeBookReal &&
+            asked.msg === 'Make this your real book? From now on it is saved and backed up like any real book. Only do this if the accounts in it are yours.',
+            `btn=${!!btn} asked=${JSON.stringify(asked && asked.label)}`);
+          window.showConfirmModal = realConfirm;
+
+          const real = JSON.parse(JSON.stringify(DATA)); delete real.synthetic;
+          realSet.call(localStorage, STORAGE_KEY, JSON.stringify(real));
+          toasts.length = 0;
+          const w0 = bookWrites();
+          if(typeof makeBookReal === 'function') makeBookReal();
+          rec('T11 making a test book real over a stored real book is refused: stamp kept, 0 book writes, refusal toast',
+            typeof makeBookReal === 'function' && DATA.synthetic === true && bookWrites() === w0 && localStorage.getItem(STORAGE_KEY) === JSON.stringify(real) &&
+            toasts.includes('A real book is already stored here, so this test book cannot become it.'), `syn=${DATA.synthetic} writes=${bookWrites() - w0} toasts=${JSON.stringify(toasts)}`);
+
+          realSet.call(localStorage, STORAGE_KEY, JSON.stringify({customers: []}));
+          if(typeof makeBookReal === 'function') makeBookReal();
+          const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          const f = fakeBackupFile(); _fsHandle = f; _fsState = 'ready';
+          const okFs = await fsWriteNow(true);
+          rec('T11 with no real book stored, making it real drops the stamp (in memory and stored) and the backup then writes once',
+            typeof makeBookReal === 'function' && DATA.synthetic === undefined && stored.synthetic === undefined && Array.isArray(stored.customers) && stored.customers.length > 0 && okFs === true && f.writes === 1,
+            `syn=${DATA.synthetic} storedSyn=${stored.synthetic} ok=${okFs} writes=${f.writes}`);
+        }finally{
+          window.showToast = realToast; window.showConfirmModal = realConfirm; _fsHandle = savedFs.h; _fsState = savedFs.s;
+          DATA = keep; DATA.synthetic = true; realSet.call(localStorage, STORAGE_KEY, keepRaw);
+          render();
+        }
+      }
+
       rec('probe reached the end', true);
     }catch(e){
       rec('probe threw', false, String(e && e.stack || e));
