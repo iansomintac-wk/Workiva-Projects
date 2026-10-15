@@ -5628,8 +5628,12 @@ function saveData(opts){
   // Read BEFORE the write: this is the pre-mutation state, for free.
   let prior = null;
   try{ prior = localStorage.getItem(STORAGE_KEY); }catch(e){ prior = null; }
+  const json = JSON.stringify(DATA);
+  /* 1.1 Step 0: bookkeeping that changed nothing writes nothing. Render-time
+     queueSave() calls used to rewrite the whole book on every tab click. */
+  if(maintenance && prior === json) return true;
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+    localStorage.setItem(STORAGE_KEY, json);
     if(prior !== null && !maintenance){
       _undoSnapshot = {json: prior, at: Date.now(), label: _undoLabel};
       if(_undoLabel !== 'undo' && _undoLabel !== 'redo') _lastActionWasUndo = false;

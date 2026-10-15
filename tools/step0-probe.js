@@ -39,6 +39,18 @@
         }
       }
 
+      { // T3: maintenance save with nothing changed
+        saveData();                                   // storage now equals DATA
+        const w0 = bookWrites();
+        const ok = saveData({maintenance: true});
+        rec('T3 a bookkeeping save of an unchanged book writes nothing', ok === true && bookWrites() === w0, `ok=${ok} writes=${bookWrites() - w0}`);
+        DATA.__probeMark = 1;
+        const w1 = bookWrites();
+        saveData({maintenance: true});
+        rec('T3 control: a bookkeeping save of a changed book writes once', bookWrites() === w1 + 1, `writes=${bookWrites() - w1}`);
+        delete DATA.__probeMark; saveData({maintenance: true});
+      }
+
       rec('probe reached the end', true);
     }catch(e){
       rec('probe threw', false, String(e && e.stack || e));
