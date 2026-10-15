@@ -63,6 +63,11 @@ section.block { padding-block: 44px; }
 .copy:hover { background: rgba(255,255,255,.14); }
 
 [hidden] { display: none !important; }
+.stages { display: flex; gap: 10px; margin: 0 0 20px; flex-wrap: wrap; }
+.stage { padding: 10px 24px; border-radius: 99px; border: 2px solid var(--faint); background: transparent; font-size: 15px; font-weight: 800; cursor: pointer; }
+.stage[aria-selected="true"] { background: var(--purple); border-color: var(--purple); color: var(--on-accent); }
+.who-line { margin: 0; font-size: 15px; } .who-line b { font-weight: 800; }
+.q input { margin-right: 6px; }
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
 .pad { padding: 24px 26px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 textarea.task { width: 100%; min-height: 120px; resize: vertical; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); padding: 14px 16px; font-size: 16px; line-height: 1.5; }
@@ -114,59 +119,51 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
 <main>
   <div class="wrap intro">
     <h1>where does <span>workiva ai</span> fit?</h1>
-    <p>Describe a task you do, or attach a checklist. You'll see which steps Workiva AI can take a first pass at, which stay with you, and a prompt to start with.</p>
+    <p>Describe a task or attach a checklist. See what Workiva AI can take a first pass at, and get a prompt to start with.</p>
   </div>
 
-  <section class="block" aria-labelledby="h-task">
+  <section class="block" aria-labelledby="h-fit">
     <div class="wrap">
-      <div class="head"><h2 id="h-task">describe a task</h2><span class="label">rated as you type</span></div>
-      <div class="pair">
-        <div class="card pad">
-          <label class="label" for="task">a task you do</label>
-          <textarea class="task" id="task" spellcheck="true">Every quarter I compare the MD&A to last year's and flag what changed.</textarea>
-          <div class="row"><select class="mini" id="examples" aria-label="Try an example"><option value="">try an example</option></select></div>
-          <div class="row"><span class="q" id="repQ">Does it come back every period?</span>
-            <span class="seg" role="group" aria-labelledby="repQ"><button type="button" data-rep="auto" aria-pressed="true">Detect</button><button type="button" data-rep="yes" aria-pressed="false">Yes</button><button type="button" data-rep="no" aria-pressed="false">No</button></span>
-            <span class="filemeta" id="repNote"></span></div>
-        </div>
-        <div class="card pad" aria-live="polite">
-          <div class="fitbadge none" id="fit">type a task</div>
-          <p class="why" id="why"></p>
-          <ul class="steps" id="steps"></ul>
-        </div>
-      </div>
-      <div class="panel starter" id="starterPanel">
-        <div class="panel-head"><span class="label">a prompt to start with</span><button class="copy" type="button" id="copy">copy</button></div>
-        <p class="prompt-text" id="starter"></p>
-      </div>
-      <p class="hint">Fill in the [brackets], then paste it into the Prompt Coach to strengthen it, or straight into Workiva AI.</p>
-    </div>
-  </section>
+      <div class="head"><h2 id="h-fit">find the fit</h2><span class="label">rated as you type</span></div>
+      <div class="stages" role="tablist" aria-label="What to rate"><button class="stage" type="button" role="tab" id="tab-task" aria-selected="true" aria-controls="pane-task">One task</button><button class="stage" type="button" role="tab" id="tab-list" aria-selected="false" aria-controls="pane-list">A checklist</button></div>
 
-  <section class="block" aria-labelledby="h-scan">
-    <div class="wrap">
-      <div class="head"><h2 id="h-scan">scan a checklist</h2><span class="label">close checklists, test plans, calendars</span></div>
-      <div class="pair">
-        <div class="card pad">
-          <div class="row"><button class="filebtn" type="button" id="attach">+ attach file</button><span class="filemeta" id="fileMeta">Word, Excel, PowerPoint, PDF, CSV or text. Read here, never uploaded.</span></div>
-          <input type="file" id="fileInput" hidden accept=".docx,.xlsx,.xlsm,.xls,.csv,.pptx,.pdf,.txt,.md">
-          <label class="label" for="list">or paste a list, one task per line</label>
-          <textarea class="list" id="list" placeholder="Pull the trial balance from the ERP&#10;Review flux commentary for each account and flag gaps&#10;CFO approves the package"></textarea>
+      <div id="pane-task" role="tabpanel" aria-labelledby="tab-task">
+        <div class="pair">
+          <div class="card pad">
+            <textarea class="task" id="task" spellcheck="true" aria-label="A task you do">Every quarter I compare the MD&A to last year's and flag what changed.</textarea>
+            <div class="row"><select class="mini" id="examples" aria-label="Try an example"><option value="">try an example</option></select>
+              <label class="q"><input type="checkbox" id="repeats"> comes back every period</label></div>
+          </div>
+          <div class="card pad" aria-live="polite">
+            <div class="fitbadge none" id="fit">type a task</div>
+            <p class="why" id="why"></p>
+            <p class="who-line" id="aiLine"></p>
+            <p class="who-line" id="youLine"></p>
+          </div>
         </div>
-        <div class="card pad">
-          <div class="counts" id="counts"><span class="filemeta">Add a file or a list to see every step rated.</span></div>
-          <div class="scanwrap"><table class="scan" id="scan" hidden><thead><tr><th>Task</th><th>Fit</th><th class="hide-sm">Workiva AI can take</th></tr></thead><tbody></tbody></table></div>
-          <p class="hint" id="scanHint" hidden>Select a row to see its steps and a starter prompt above.</p>
+        <div class="panel starter" id="starterPanel">
+          <div class="panel-head"><span class="label">a prompt to start with</span><button class="copy" type="button" id="copy">copy</button></div>
+          <p class="prompt-text" id="starter"></p>
+        </div>
+      </div>
+
+      <div id="pane-list" role="tabpanel" aria-labelledby="tab-list" hidden>
+        <div class="pair">
+          <div class="card pad">
+            <div class="row"><button class="filebtn" type="button" id="attach">+ attach file</button><span class="filemeta" id="fileMeta">Word, Excel, PDF or text. Never uploaded.</span></div>
+            <input type="file" id="fileInput" hidden accept=".docx,.xlsx,.xlsm,.xls,.csv,.pptx,.pdf,.txt,.md">
+            <textarea class="list" id="list" aria-label="Or paste a list, one task per line" placeholder="Or paste a list, one task per line"></textarea>
+          </div>
+          <div class="card pad">
+            <div class="counts" id="counts"><span class="filemeta">Each line gets a rating. Select one to open it.</span></div>
+            <div class="scanwrap"><table class="scan" id="scan" hidden><thead><tr><th>Task</th><th>Fit</th></tr></thead><tbody></tbody></table></div>
+          </div>
         </div>
       </div>
 
       <details class="how">
         <summary>How it rates</summary>
-        <div class="how-grid">
-          <div class="card"><h4>The rule</h4><p>Good fits recur and are mostly reading, comparing, checking, summarizing, drafting or rewriting text and tables. Judgment and sign-off, exact calculation, work in other systems and chasing people stay with you. Workiva AI does a first pass; a person reviews it.</p></div>
-          <div class="card"><h4>How accurate it is</h4><p>Language patterns, no AI service. On 60 held-out task descriptions written in customers' voices it matched careful labeling 75% of the time. It has not yet been measured on real customers' tasks, so treat the rating as a starting point.</p></div>
-          <div class="card"><h4>What it does not claim</h4><p>It describes what generative AI can do with your text, not specific Workiva features or packages. Ask your Workiva team which capabilities your license includes.</p></div>
-        </div>
+        <p class="hint">Good fits come back every period and are mostly reading, comparing, checking, summarizing or drafting. Judgment, exact calculation, other systems and chasing people stay with you. Pattern-based, no AI; it matched careful labeling on 75% of 60 test tasks, not yet measured on real ones. It describes what the AI does, not which Workiva features your license includes.</p>
       </details>
     </div>
   </section>
@@ -413,6 +410,9 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
   const NAME = { good: 'good fit', partial: 'partial fit', not: 'not a fit' };
   const list = (a) => a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
   let rep = 'auto';
+  for (const [t, p] of [['tab-task', 'pane-task'], ['tab-list', 'pane-list']]) $(t).onclick = () => {
+    for (const [t2, p2] of [['tab-task', 'pane-task'], ['tab-list', 'pane-list']]) { $(t2).setAttribute('aria-selected', String(t2 === t)); $(p2).hidden = p2 !== p; }
+  };
 
   function why(r) {
     const ai = r.steps.filter((s) => s.who === 'ai' && s.op !== 'READ').map((s) => s.label.toLowerCase());
@@ -427,29 +427,23 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
   }
 
   function render() {
-    const text = $('task').value.trim();
-    const fitEl = $('fit'), steps = $('steps');
-    steps.replaceChildren();
-    if (!text) { fitEl.className = 'fitbadge none'; fitEl.textContent = 'type a task'; $('why').textContent = ''; $('starterPanel').hidden = true; $('repNote').textContent = ''; return; }
+    const text = $('task').value.trim(), fitEl = $('fit');
+    if (!text) { fitEl.className = 'fitbadge none'; fitEl.textContent = 'type a task'; for (const id of ['why', 'aiLine', 'youLine']) $(id).textContent = ''; $('starterPanel').hidden = true; return; }
     const r = FitEngine.rate(text, rep === 'auto' ? undefined : { repeats: rep === 'yes' });
-    $('repNote').textContent = rep === 'auto' ? (r.repeats ? 'looks recurring' : 'looks one-off or unclear') : '';
+    $('repeats').checked = !!r.repeats;
     fitEl.className = 'fitbadge ' + (r.ops.length ? r.fit : 'none'); fitEl.textContent = r.ops.length ? NAME[r.fit] : 'not sure yet';
     $('why').textContent = why(r);
-    for (const s of r.steps) {
-      const li = document.createElement('li');
-      const who = document.createElement('span'); who.className = 'who ' + s.who; who.textContent = s.who === 'ai' ? 'Workiva AI' : 'stays with you';
-      const b = document.createElement('b'); b.textContent = s.label;
-      const d = document.createElement('span'); d.className = 'd'; d.textContent = s.why;
-      li.append(who, b, d); steps.append(li);
-    }
+    const ai = r.steps.filter((s) => s.who === 'ai').map((s) => s.label.toLowerCase()), you = r.steps.filter((s) => s.who === 'you').map((s) => s.label.toLowerCase());
+    line('aiLine', 'Workiva AI takes: ', ai); line('youLine', 'Stays with you: ', you);
     $('starterPanel').hidden = !r.prompt;
     $('starter').textContent = r.prompt ? '\u201c' + r.prompt + '\u201d' : '';
   }
+  function line(id, lead, items) { const el = $(id); el.replaceChildren(); if (!items.length) return; const b = document.createElement('b'); b.textContent = lead; el.append(b, list(items)); }
 
   function renderScan(text, source) {
     const rows = FitEngine.scan(text), body = $('scan').tBodies[0], counts = $('counts');
     body.replaceChildren(); counts.replaceChildren();
-    if (!rows.length) { $('scan').hidden = true; $('scanHint').hidden = true; const s = document.createElement('span'); s.className = 'filemeta'; s.textContent = text.trim() ? 'No task-like lines found. Each line needs a verb, like review, draft or approve.' : 'Add a file or a list to see every step rated.'; counts.append(s); return; }
+    if (!rows.length) { $('scan').hidden = true; const s = document.createElement('span'); s.className = 'filemeta'; s.textContent = text.trim() ? 'No task-like lines found. Each line needs a verb, like review, draft or approve.' : 'Add a file or a list to see every step rated.'; counts.append(s); return; }
     const order = { good: 0, partial: 1, not: 2 };
     rows.sort((a, b) => order[a.fit] - order[b.fit]);
     for (const f of ['good', 'partial', 'not']) { const n = rows.filter((r) => r.fit === f).length; if (n) { const c = document.createElement('span'); c.className = 'count ' + f; c.textContent = n + ' ' + NAME[f]; counts.append(c); } }
@@ -458,19 +452,17 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
       const tr = document.createElement('tr'); tr.tabIndex = 0;
       const t = document.createElement('td'); t.textContent = r.task;
       const f = document.createElement('td'); const tag = document.createElement('span'); tag.className = 'tag ' + r.fit; tag.textContent = NAME[r.fit]; f.append(tag);
-      const a = document.createElement('td'); a.className = 'hide-sm'; a.textContent = r.steps.filter((s) => s.who === 'ai' && s.op !== 'READ').map((s) => s.label.toLowerCase()).join(', ') || '\u2014';
-      tr.append(t, f, a);
-      const pick = () => { $('task').value = r.task; rep = 'auto'; setRep(); render(); $('h-task').scrollIntoView({ behavior: 'smooth' }); };
+      tr.append(t, f);
+      const pick = () => { $('task').value = r.task; rep = 'auto'; $('tab-task').click(); render(); $('h-fit').scrollIntoView({ behavior: 'smooth' }); };
       tr.onclick = pick; tr.onkeydown = (e) => { if (e.key === 'Enter') pick(); };
       body.append(tr);
     }
-    $('scan').hidden = false; $('scanHint').hidden = false;
+    $('scan').hidden = false;
   }
 
-  function setRep() { for (const b of document.querySelectorAll('[data-rep]')) b.setAttribute('aria-pressed', String(b.dataset.rep === rep)); }
-  for (const b of document.querySelectorAll('[data-rep]')) b.onclick = () => { rep = b.dataset.rep; setRep(); render(); };
+  $('repeats').onchange = (e) => { rep = e.target.checked ? 'yes' : 'no'; render(); };
   EXAMPLES.forEach((t, i) => { const o = document.createElement('option'); o.value = i; o.textContent = t; $('examples').append(o); });
-  $('examples').onchange = (e) => { const t = EXAMPLES[e.target.value]; e.target.value = ''; if (t) { $('task').value = t; rep = 'auto'; setRep(); render(); } };
+  $('examples').onchange = (e) => { const t = EXAMPLES[e.target.value]; e.target.value = ''; if (t) { $('task').value = t; rep = 'auto'; render(); } };
   let timer = 0;
   $('task').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(render, 150); });
   $('list').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => renderScan($('list').value), 200); });
