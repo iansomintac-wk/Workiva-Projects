@@ -87,6 +87,13 @@ select.mini, .seg button { font-size: 13px; font-weight: 700; border: 1px solid 
 .steps .who.ai { background: var(--strong-bg); color: var(--green); } .steps .who.you { background: var(--soft); color: var(--muted); }
 .steps b { font-size: 14.5px; } .steps span.d { font-size: 13.5px; color: var(--muted); }
 .starter { margin-top: 20px; }
+.where { margin-top: 20px; display: grid; gap: 10px; }
+.where h3 { margin: 0; font-size: 19px; font-weight: 900; line-height: 1.3; }
+.where p { margin: 0; font-size: 15px; line-height: 1.55; text-wrap: pretty; } .where p b { font-weight: 800; }
+.avail { justify-self: start; font-size: 12px; font-weight: 800; letter-spacing: .04em; border-radius: 99px; padding: 4px 12px; background: var(--strong-bg); color: var(--green); }
+.avail.entitlement, .avail.assumed { background: var(--better-bg); color: var(--orange); }
+.where .src { font-size: 13px; color: var(--muted); } .where .src a { color: inherit; }
+.where .also { font-size: 13.5px; color: var(--muted); }
 .hint { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
 .counts { display: flex; gap: 8px; flex-wrap: wrap; }
 .count { font-size: 13px; font-weight: 800; border-radius: 99px; padding: 4px 12px; }
@@ -141,6 +148,7 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
             <p class="who-line" id="youLine"></p>
           </div>
         </div>
+        <div class="card pad where" id="where" hidden aria-live="polite"></div>
         <div class="panel starter" id="starterPanel">
           <div class="panel-head"><span class="label">a prompt to start with</span><button class="copy" type="button" id="copy">copy</button></div>
           <p class="prompt-text" id="starter"></p>
@@ -163,7 +171,7 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
 
       <details class="how">
         <summary>How it rates</summary>
-        <p class="hint">Good fits come back every period and are mostly reading, comparing, checking, summarizing or drafting. Judgment, exact calculation, other systems and chasing people stay with you. Pattern-based, no AI; it matched careful labeling on 75% of 60 test tasks, not yet measured on real ones. It describes what the AI does, not which Workiva features your license includes.</p>
+        <p class="hint">Good fits come back every period and are mostly reading, comparing, checking, summarizing or drafting. Judgment, exact calculation, other systems and chasing people stay with you. Pattern-based, no AI; it matched careful labeling on 75% of 60 test tasks, not yet measured on real ones. Workiva AI features come from Workiva's support pages (checked 15 Oct 2026). Ones marked “check your entitlement” belong to named Workiva solutions your organization may not have.</p>
       </details>
     </div>
   </section>
@@ -214,8 +222,31 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
     $('why').textContent = why(r);
     const ai = r.steps.filter((s) => s.who === 'ai').map((s) => s.label.toLowerCase()), you = r.steps.filter((s) => s.who === 'you').map((s) => s.label.toLowerCase());
     line('aiLine', 'Workiva AI takes: ', ai); line('youLine', 'Stays with you: ', you);
+    const uc = r.fit === 'not' ? [] : FitEngine.match(text, FitCatalogue);
+    where(r, uc);
     $('starterPanel').hidden = !r.prompt;
     $('starter').textContent = r.prompt ? '\u201c' + r.prompt + '\u201d' : '';
+  }
+
+  // where in Workiva AI: only what data/catalogue.json sources, with links to the support pages
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
+  function where(r, uc) {
+    const box = $('where'); box.replaceChildren();
+    if (r.fit === 'not' || !r.ops.length) { box.hidden = true; return; }
+    const C = FitCatalogue, u = uc[0];
+    const sid = u ? u.surfaces : ['files'], s = C.surfaces[sid[0]];
+    box.append(el('span', 'label', u ? 'closest sourced use case' : 'where in Workiva AI'));
+    box.append(el('h3', '', u ? u.task : 'Ask Workiva AI chat about your file'));
+    const use = el('p'); use.append(el('b', '', 'Use: '), s.name + '. ' + s.how); box.append(use);
+    const basis = u ? u.fitBasis : 'assumed';
+    box.append(el('span', 'avail ' + (basis === 'assumed' ? 'assumed' : s.availability), basis === 'assumed' ? 'not a named feature: try it on one file first' : s.availability === 'entitlement' ? 'check your entitlement' : 'included with Workiva AI'));
+    if (u) { const st = el('p'); st.append(el('b', '', 'Stays with you: '), u.stays); box.append(st); }
+    const refs = [...new Set([...(u ? u.refs : []), ...sid.flatMap((x) => C.surfaces[x].sources)])];
+    const src = el('p', 'src', 'Source: ');
+    refs.forEach((k, i) => { const a = el('a', '', C.sources[k].title); a.href = C.sources[k].url; a.target = '_blank'; a.rel = 'noopener'; src.append(i ? ', ' : '', a); });
+    box.append(src);
+    if (uc.length > 1) box.append(el('p', 'also', 'Also close: ' + uc.slice(1).map((x) => x.task.replace(/\.$/, '').toLowerCase()).join('; ') + '.'));
+    box.hidden = false;
   }
   function line(id, lead, items) { const el = $(id); el.replaceChildren(); if (!items.length) return; const b = document.createElement('b'); b.textContent = lead; el.append(b, list(items)); }
 

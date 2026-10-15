@@ -1,0 +1,193 @@
+{
+  "about": "Sourced Workiva AI use cases. The page may show only what is in this file. Every surface cites a Workiva support page; every use case cites a surface and says how sure we are that it fits. Customer names never go here.",
+  "checked": "2026-10-15",
+  "sources": {
+    "S1": { "title": "Where AI is used in Workiva", "url": "https://support.workiva.com/hc/en-us/articles/31536381653396-Where-AI-is-used-in-Workiva" },
+    "S2": { "title": "Workiva AI for documents", "url": "https://support.workiva.com/hc/en-us/articles/37495608316308-Workiva-AI-for-documents" },
+    "S3": { "title": "Reference specific files in chat with Workiva AI", "url": "https://support.workiva.com/hc/en-us/articles/28927643953172-Reference-specific-files-in-chat-with-Workiva-AI" },
+    "S4": { "title": "Tips for getting useful responses from Workiva AI", "url": "https://support.workiva.com/hc/en-us/articles/19173586555412-Tips-for-getting-useful-responses-from-Workiva-AI" },
+    "S5": { "title": "Troubleshooting Workiva AI", "url": "https://support.workiva.com/hc/en-us/articles/29758666795412-Troubleshooting-Workiva-AI" },
+    "S6": { "title": "Chat with Workiva AI", "url": "https://support.workiva.com/hc/en-us/articles/19165395779860-Chat-with-Workiva-AI" }
+  },
+  "availability": {
+    "workiva-ai": "Workiva AI, once your organization has signed the Workiva AI Terms of Use. Your admin can limit it to some workspaces or users.",
+    "entitlement": "Part of a named Workiva solution. Check with your Workiva team that your organization has it."
+  },
+  "surfaces": {
+    "chat": { "name": "Workiva AI chat", "how": "The sparkles icon at the top of the screen. It follows you between files and understands documents, spreadsheets, presentations, Wdata and files.", "availability": "workiva-ai", "sources": ["S1", "S6"] },
+    "files": { "name": "Workiva AI chat with workspace files", "how": "In chat, click Add workspace files or type @ (up to 10 files), or right-click a file and choose Ask Workiva AI. Files must be in your workspace first. It reads text, numbers and charts, including scanned PDFs and images.", "availability": "workiva-ai", "sources": ["S3", "S6"] },
+    "doc": { "name": "Workiva AI in a document", "how": "Open Workiva AI from the document, then Insert the answer at your cursor or Copy it. Use Refine to change the tone or shorten it.", "availability": "workiva-ai", "sources": ["S2", "S6"] },
+    "advisor": { "name": "Prompt advisor", "how": "Ready-made prompts by industry, from the Workiva AI chat.", "availability": "workiva-ai", "sources": ["S1", "S2", "S6"] },
+    "sheet": { "name": "Inline content editor in spreadsheets", "how": "Generates content from document sources, in spreadsheets.", "availability": "workiva-ai", "sources": ["S1"] },
+    "translate": { "name": "Translations", "how": "Translate document content.", "availability": "workiva-ai", "sources": ["S1"] },
+    "sec-intel": { "name": "SEC filing intelligence (Intelligent finance)", "how": "Analyzes filings and compares them against peers using Workiva's knowledge base.", "availability": "entitlement", "sources": ["S1"] },
+    "grc-chat": { "name": "Risk and controls intelligence (AI-Powered GRC)", "how": "A chat assistant inside GRC workflows.", "availability": "entitlement", "sources": ["S1"] },
+    "control-creator": { "name": "Control creator (AI-Powered GRC)", "how": "Drafts a control from the definition of a risk.", "availability": "entitlement", "sources": ["S1"] },
+    "test-steps": { "name": "Test step and attribute generation (AI-Powered GRC)", "how": "Generates test steps and attributes for a control.", "availability": "entitlement", "sources": ["S1"] },
+    "evidence": { "name": "Evidence analyzer (AI-Powered GRC)", "how": "Analyzes evidence for controls.", "availability": "entitlement", "sources": ["S1"] },
+    "issues": { "name": "Issue generation (AI-Powered GRC)", "how": "Generates issues in GRC workflows.", "availability": "entitlement", "sources": ["S1"] },
+    "flowchart": { "name": "Flowchart visualizer (AI-Powered GRC)", "how": "Builds a flowchart from process documentation, control and risk information.", "availability": "entitlement", "sources": ["S1"] },
+    "risk-summary": { "name": "Risk interview and risk activity summaries (AI-Powered GRC)", "how": "Summarizes risk interviews and risk activity.", "availability": "entitlement", "sources": ["S1"] },
+    "esrs-issb": { "name": "ESRS and ISSB intelligence (Intelligent sustainability)", "how": "Knowledge bases that summarize ESRS and ISSB standards and disclosure requirements.", "availability": "entitlement", "sources": ["S1"] },
+    "disclosure": { "name": "ESRS/ISSB disclosure creator (Intelligent sustainability)", "how": "Summarizes disclosure requirements, finds related content and drafts narrative from collected data.", "availability": "entitlement", "sources": ["S1"] }
+  },
+  "fitBasis": {
+    "named": "Workiva names a feature or example for this job.",
+    "assumed": "No feature is named for this exact job; it is the general chat-with-files ability applied to it. Try it on one real file before relying on it."
+  },
+  "evidence": {
+    "heard": "Customers described this task in their own words (explainer evidence audit; names removed).",
+    "pattern": "A pattern across several customers in the explainer audit.",
+    "workiva": "Workiva itself gives this as a use or example."
+  },
+  "useCases": [
+    {
+      "id": "fr-yoy-narrative", "area": "FR", "role": "SEC or external reporting",
+      "task": "Write the first draft of the year-over-year change narrative.",
+      "ops": ["DRAFT", "COMPARE"], "match": "year[- ]over[- ]year|yoy|variance (?:narrative|commentary|explanations?)|md&a|flux|change narrative",
+      "surfaces": ["advisor", "doc", "files"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S2"],
+      "prompt": "Using @[this year's file] and @[last year's file], draft the year-over-year change narrative for [section]. Explain each change of more than [threshold] in one or two sentences, using only figures in the files. Mark anything I need to confirm as [to confirm].",
+      "stays": "Checking every figure, and deciding what is worth explaining."
+    },
+    {
+      "id": "fr-narrative-tables", "area": "FR", "role": "SEC or external reporting",
+      "task": "Check that the narrative and the tables say the same thing before the draft goes to review.",
+      "ops": ["CHECK", "COMPARE"], "match": "tables?|narrative|footnotes?|10-?[qk]|consisten\\w*|tie[- ]?out|don'?t (?:agree|match)",
+      "surfaces": ["files", "doc"], "fitBasis": "assumed", "evidence": ["heard"], "refs": ["S3", "S5"],
+      "prompt": "You are reviewing @[the draft] before it goes to review. List every place where a number or statement in the narrative does not match the tables, with the section and both values. Do not fix anything; I will check each one.",
+      "stays": "The tie-out itself and every correction. Keep to one section at a time for long filings."
+    },
+    {
+      "id": "fr-gaap-stat", "area": "FR", "role": "Statutory or entity reporting",
+      "task": "Explain the GAAP-to-statutory differences for each entity.",
+      "ops": ["EXPLAIN", "COMPARE"], "match": "statutory|stat\\b|gaap|local gaap|entit(?:y|ies)|reconcil\\w*",
+      "surfaces": ["files", "sheet"], "fitBasis": "assumed", "evidence": ["heard"], "refs": ["S3"],
+      "prompt": "Using @[the reconciliation file] for [entity], list each GAAP-to-statutory adjustment with a one-line plain-English explanation of why it exists. Use only what is in the file and mark anything unclear as [to confirm].",
+      "stays": "The math and the adjustments themselves. Excel files need your organization's AWS model provider turned on."
+    },
+    {
+      "id": "fr-peers", "area": "FR", "role": "SEC or external reporting",
+      "task": "See how our disclosures compare with peers' filings.",
+      "ops": ["COMPARE", "READ"], "match": "peers?|competitors?|benchmark\\w*|other companies|industry",
+      "surfaces": ["sec-intel"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S1", "S6"],
+      "prompt": "Compare our [disclosure topic] disclosure in @[our filing] with how [peer companies] describe it in their latest filings. List what they cover that we do not, with where each appears.",
+      "stays": "Deciding what, if anything, to change."
+    },
+    {
+      "id": "gen-summarize-file", "area": "GEN", "role": "Anyone",
+      "task": "Pull the key points out of a long document before a meeting.",
+      "ops": ["SUMMARIZE", "READ", "EXTRACT"], "match": "summar\\w*|key points|recap|long (?:document|file|report|memo)|before (?:a|the) meeting|brief(?:ing)?",
+      "surfaces": ["files", "chat"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S3", "S6"],
+      "prompt": "Summarize @[the document] in [number] bullets for [who will read it]. Then list the [three] points that need a decision. Use only what is in the file.",
+      "stays": "What to act on. Check each Sources link Workiva AI lists under its answer."
+    },
+    {
+      "id": "gen-rewrite", "area": "GEN", "role": "Anyone",
+      "task": "Rewrite a section to be shorter or clearer for a different audience.",
+      "ops": ["REWRITE"], "match": "rewrit\\w*|shorten\\w*|tighten\\w*|plain english|board|executives?|audience|tone|too long",
+      "surfaces": ["doc"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S2", "S6"],
+      "prompt": "Rewrite the selected section for [audience] in under [number] words. Keep every number and fact exactly as written.",
+      "stays": "The final wording and every number."
+    },
+    {
+      "id": "gen-translate", "area": "GEN", "role": "Anyone",
+      "task": "Translate a document's content into another language.",
+      "ops": ["REWRITE"], "match": "translat\\w*|language versions?|in (?:french|german|spanish|japanese|chinese|portuguese|italian|dutch)",
+      "surfaces": ["translate"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S1"],
+      "prompt": null,
+      "stays": "A native speaker's review before anything is published."
+    },
+    {
+      "id": "grc-rationalize", "area": "GRC", "role": "Internal controls or SOX",
+      "task": "Find controls that overlap or duplicate each other.",
+      "ops": ["READ", "COMPARE", "CLASSIFY"], "match": "rationali[sz]\\w*|overlap\\w*|duplicat\\w*|redundan\\w*|too many controls|control descriptions?",
+      "surfaces": ["grc-chat", "files"], "fitBasis": "assumed", "evidence": ["heard"], "refs": ["S1", "S3"],
+      "prompt": "You are an internal controls analyst. Using @[the control list], group controls whose descriptions cover the same risk or activity. For each group give the control IDs and one line on why they look alike. Do not recommend removing any.",
+      "stays": "Which controls to merge or retire. Work through one process at a time for long lists."
+    },
+    {
+      "id": "grc-framework", "area": "GRC", "role": "Compliance or IT risk",
+      "task": "Map our existing controls to a new framework and see what is missing.",
+      "ops": ["MAP", "CHECK"], "match": "framework|nist|iso|soc ?2|coso|crosswalk|map\\w*|gaps?",
+      "surfaces": ["grc-chat", "files"], "fitBasis": "assumed", "evidence": ["heard"], "refs": ["S1", "S3"],
+      "prompt": "Map each control in @[our control list] to the [framework] requirements in @[the framework file]. Give a one-line reason for each match, mark weak matches as [unsure], and list requirements with no matching control.",
+      "stays": "Accepting each mapping and deciding how to close gaps."
+    },
+    {
+      "id": "grc-evidence", "area": "GRC", "role": "Internal controls or internal audit",
+      "task": "Check each control's evidence for missing attributes.",
+      "ops": ["READ", "CHECK"], "match": "evidence|screenshots?|support(?:ing)? documents?|workpapers?",
+      "surfaces": ["evidence", "files"], "fitBasis": "named", "evidence": ["heard"], "refs": ["S1", "S3"],
+      "prompt": "Check @[the evidence file] against this control: [control description]. List which attributes it shows, which it does not, and anything unclear, with where you found each.",
+      "stays": "Concluding whether the evidence is enough."
+    },
+    {
+      "id": "grc-test-steps", "area": "GRC", "role": "Internal controls or internal audit",
+      "task": "Write test steps and attributes for each control.",
+      "ops": ["DRAFT"], "match": "test (?:steps?|plans?|attributes?|procedures?)|testing|walkthrough",
+      "surfaces": ["test-steps"], "fitBasis": "named", "evidence": ["heard"], "refs": ["S1"],
+      "prompt": null,
+      "stays": "Reviewing every step and the testing itself."
+    },
+    {
+      "id": "grc-control-from-risk", "area": "GRC", "role": "Risk or controls",
+      "task": "Draft a control for a newly identified risk.",
+      "ops": ["DRAFT"], "match": "new risks?|draft (?:a )?controls?|design (?:a )?controls?|control (?:for|to address)",
+      "surfaces": ["control-creator"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S1"],
+      "prompt": null,
+      "stays": "Whether the control fits your process, and who owns it."
+    },
+    {
+      "id": "grc-remediation", "area": "GRC", "role": "Risk or controls",
+      "task": "Write a remediation plan for a control failure.",
+      "ops": ["DRAFT"], "match": "remediat\\w*|control (?:failures?|deficienc\\w*)|findings?|issues?|action plans?",
+      "surfaces": ["files", "issues"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S4", "S1"],
+      "prompt": "You are a GRC analyst. Write a detailed remediation plan for the [process] control failure described in @[the file], with steps to reduce the risk until it is fixed.",
+      "stays": "Agreeing the plan with the owner and the dates."
+    },
+    {
+      "id": "grc-risk-summary", "area": "GRC", "role": "Risk management",
+      "task": "Summarize risk interviews and risk activity for the risk committee.",
+      "ops": ["SUMMARIZE"], "match": "risk (?:interviews?|assessments?|activity|committee|register)|interview notes",
+      "surfaces": ["risk-summary", "files"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S1"],
+      "prompt": "Summarize @[the interview notes] in [number] bullets for the risk committee: the risks raised, who raised them, and anything that changed since [last period].",
+      "stays": "Rating the risks and deciding what goes to the committee."
+    },
+    {
+      "id": "grc-flowchart", "area": "GRC", "role": "Internal controls or process owners",
+      "task": "Draft a flowchart from the process narrative.",
+      "ops": ["READ", "DRAFT"], "match": "flow ?charts?|process (?:maps?|narratives?|diagrams?)|walkthrough",
+      "surfaces": ["flowchart"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S1"],
+      "prompt": null,
+      "stays": "Checking the flow matches how the process really runs."
+    },
+    {
+      "id": "sus-requirements", "area": "SUS", "role": "Sustainability reporting",
+      "task": "Understand what a new ESRS or ISSB requirement asks us to disclose.",
+      "ops": ["EXPLAIN", "READ"], "match": "esrs|issb|csrd|ifrs s[12]|requirements?|datapoints?|disclosure requirements?|standards?",
+      "surfaces": ["esrs-issb", "chat"], "fitBasis": "named", "evidence": ["pattern"], "refs": ["S1"],
+      "prompt": "Using the [ESRS or ISSB] knowledge base, explain what [requirement] asks us to disclose, in plain terms, as a list of the data we would need.",
+      "stays": "Deciding what is material and who owns each data point."
+    },
+    {
+      "id": "sus-disclosure", "area": "SUS", "role": "Sustainability reporting",
+      "task": "Draft a sustainability disclosure from the data we have collected.",
+      "ops": ["DRAFT"], "match": "disclosures?|sustainability report|esg report|narrative|draft",
+      "surfaces": ["disclosure"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S1", "S6"],
+      "prompt": null,
+      "stays": "Checking every figure and the final wording before assurance."
+    },
+    {
+      "id": "sus-exec-narrative", "area": "SUS", "role": "Sustainability reporting",
+      "task": "Rewrite the sustainability narrative for executives or the board.",
+      "ops": ["REWRITE", "SUMMARIZE"], "match": "sustainab\\w*|esg|climate|carbon|emissions",
+      "surfaces": ["doc"], "fitBasis": "named", "evidence": ["heard"], "refs": ["S2", "S6"],
+      "prompt": "Rewrite the selected sustainability narrative for [the board] in under [number] words. Lead with what changed since [last period]. Keep every number and fact exactly as written.",
+      "stays": "The message and every number."
+    }
+  ],
+  "leftOut": [
+    { "pattern": "Pre-assurance anomaly review of sustainability figures", "why": "No Workiva AI feature for it is named in the six support pages; XBRL outlier detection covers SEC tagging, not sustainability data." },
+    { "pattern": "Named Workiva AI agents", "why": "The July 2026 press release and recent release notes were not available to check." }
+  ]
+}
