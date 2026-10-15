@@ -11,7 +11,7 @@ OSM Runway — release notes
     - A tool-made book (synthetic:true, demo seed stamped) can never replace a stored
       real book via save, import or backup.
 
-  Checks: step 0 probe 14/14; 1.1 suite 475/475; 1.0 suite 475/475 (1.0 file untouched).
+  Checks: step 0 probe 20/20; 1.1 suite 475/475; 1.0 suite 475/475 (1.0 file untouched).
   Design: design-work/DESIGN.md section 4.
 
 1.0 — August 6, 2026. First working prototype.

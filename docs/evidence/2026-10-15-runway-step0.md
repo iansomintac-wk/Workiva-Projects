@@ -20,11 +20,11 @@ Each "before" is the task's new check run against the previous commit's app; eac
 End checks (lead, fresh, 110fee8):
 
 - `node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 475` -> `475/475 passed`
-- `node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 14` -> `14/14 passed`
+- `node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 20` -> `20/20 passed` (14 at T7; 6 added in T8)
 - `node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 475` -> `475/475 passed` (baseline before the run: 475/475, 5.4 s)
 - `git diff --stat master -- osm-book-of-business-tracker-1.0.html` -> empty (1.0 untouched)
 
-Prediction in the plan (probe 14/14, both suites 475/475, 1.0 untouched): held. Disproof conditions: none observed.
+Prediction in the plan (probe 14/14 at T7, 20/20 after T8; both suites 475/475, 1.0 untouched): held. Disproof conditions: none observed.
 
 ## What went off-plan
 
@@ -36,11 +36,12 @@ Prediction in the plan (probe 14/14, both suites 475/475, 1.0 untouched): held. 
 
 - Ian's real Chrome profile is never used; behaviour on the real book after upgrade is shown only with the synthetic book.
 - Risk-memory first-seen stamps still happen while drawing (by design); they now write once per real change.
-- T4's tab-badge `readOnly` edit and `buildRiskHubList`'s `if(changed)` guard have no check that fails without them (T3's skip masks them); only the leave-Today guard is proven red. (Final review S1.)
-- The T4 tab-click check does not assert that any tab was clicked. (S2)
-- `syntheticWouldReplaceReal` edge cases (unreadable stored book, empty customers, stored synthetic book) have no checks. (S7)
 - DESIGN.md 4.4 "check suites and harnesses use their own storage key" has no task and was not recorded as cut; the separate browser profile part is met. (S6)
 - Behaviour gaps the review raised for a decision: refusal toast shows once per session (S3); refused backups say nothing (S4); nothing ever clears `synthetic`, so a demo book turned real work is never backed up (S5).
+
+## T8 follow-up (final-review S1, S2, S7)
+
+Six probe checks added (14 -> 20), each failing on a mutant copy (in `.claude/jobs/3b0b7d9b/tmp/t8mut/`, not in the repo) and passing on the real file. S1a: `readOnly` forced false -> "read-only risk list ... queues 0 saves" fails (queued=1, changed=true). S1b: `if(changed) queueSave()` -> `queueSave()` -> "normal risk list on a stable book queues 0 saves" fails (queued=1). S2: tab selector matching nothing -> "each round ... clicked all 5 tabs" fails (round1=0 round2=0). S7: catch -> `return false` fails the unreadable-book check; dropping `customers.length > 0` fails the no-accounts check; dropping the `synthetic` test fails the stored-synthetic check. The tab-badge call site itself (9203) is still not pinned, only the `readOnly` path it relies on.
 
 ## Cost
 

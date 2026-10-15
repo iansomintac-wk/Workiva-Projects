@@ -53,11 +53,14 @@
       }
 
       { // T4: drawing and tab clicks
+        let clicked = 0;                                // how many tabs were really found and clicked
         const clickTabs = async () => { for(const v of ['today','accounts','risk','copilot','today']){
-          const t = document.querySelector(`.tab[data-view="${v}"]`); if(t) t.click(); await settle(); } };
+          const t = document.querySelector(`.tab[data-view="${v}"]`); if(t){ t.click(); clicked++; } await settle(); } };
         await clickTabs();                              // first round may stamp genuinely new state
+        const c1 = clicked;
         const w0 = bookWrites();
         await clickTabs();
+        rec('T8 each round of tab clicks found and clicked all 5 tabs (so the 0-writes check below is not vacuous)', c1 === 5 && clicked - c1 === 5, `round1=${c1} round2=${clicked - c1}`);
         rec('T4 a second round of tab clicks writes the book 0 times', bookWrites() === w0, `writes=${bookWrites() - w0}`);
         const w1 = bookWrites();
         render(); render(); await settle();
@@ -102,6 +105,43 @@
           rec('T6 control: a real book still saves over a real one', saveData() === true);
         }finally{
           DATA = keep; realSet.call(localStorage, STORAGE_KEY, keepRaw);
+        }
+      }
+
+      { // T8 (final-review S1): the read-only risk list must not stamp risk memory; the normal one saves only on change
+        const realQ = window.queueSave; let queued = 0;
+        window.queueSave = function(){ queued++; };    // observe saves here, so T3's maintenance skip cannot hide one
+        const keepLog = JSON.stringify(DATA.riskLog);
+        try{
+          buildRiskHubList();                          // settle the log
+          const stable = JSON.stringify(DATA.riskLog);
+          queued = 0;
+          buildRiskHubList();
+          rec('T8 the normal risk list on a stable book queues 0 saves', queued === 0, `queued=${queued}`);
+          const ks = Object.keys(DATA.riskLog || {});
+          if(ks.length) delete DATA.riskLog[ks[0]];    // one risk is now brand new
+          const before = JSON.stringify(DATA.riskLog);
+          queued = 0;
+          const items = buildRiskHubList({readOnly: true});
+          rec('T8 the read-only risk list with a brand-new risk leaves the risk memory unchanged and queues 0 saves',
+            ks.length > 0 && items.length > 0 && JSON.stringify(DATA.riskLog) === before && queued === 0,
+            `risks=${ks.length} items=${items.length} queued=${queued} changed=${JSON.stringify(DATA.riskLog) !== before}`);
+        }finally{
+          window.queueSave = realQ; DATA.riskLog = JSON.parse(keepLog);
+        }
+      }
+
+      { // T8 (final-review S7): edge cases of syntheticWouldReplaceReal
+        const keep = DATA, keepRaw = localStorage.getItem(STORAGE_KEY);
+        try{
+          realSet.call(localStorage, STORAGE_KEY, '{not json');
+          rec('T8 a synthetic book is refused over an unreadable stored book', syntheticWouldReplaceReal() === true);
+          realSet.call(localStorage, STORAGE_KEY, JSON.stringify({customers: []}));
+          rec('T8 a synthetic book may replace a stored book with no accounts', syntheticWouldReplaceReal() === false);
+          realSet.call(localStorage, STORAGE_KEY, JSON.stringify(keep));
+          rec('T8 a synthetic book may replace a stored synthetic book', keep.synthetic === true && syntheticWouldReplaceReal() === false);
+        }finally{
+          realSet.call(localStorage, STORAGE_KEY, keepRaw);
         }
       }
 
