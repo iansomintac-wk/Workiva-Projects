@@ -1,0 +1,30 @@
+After Runway 1.1 Step 0: two jobs, in order.
+
+Predecessor: the Step 0 run (merged to master locally at 051e93c, not pushed; branch
+worktree-runway-step0-plan pushed). Ledger: .claude/worktrees/runway-step0-plan/.ledger/2026-10-15-runway-step0/progress.md
+
+JOB 1 - make Ian's standing permission global (studio-harness repo, C:\Users\teasp\Documents\studio-harness).
+Ian, 2026-10-15, verbatim: "why do you still ask me if you should start the next session? I mentioned
+already things should be automated as much as possible as long as nothing breaks or gets ruined. Starting
+a new session shouldn't do either of those so you already have my permission to start new sessions, I
+believe I mentioned this somewhere already and should be known for all sessions current and new."
+That quote is his yes to changing the global rules for this one point only.
+- The global ~/.claude/CLAUDE.md is generated from rules/core.md by bin/rules-sync.mjs; edit the source, not the output.
+- Remove "start a next session" from "Never without Ian's yes"; change the "Runs and hand-offs" / talk-and-run
+  wording ("Ask: Start the next session?", "Start the next session only on Ian's yes") to: launch the successor and
+  tell Ian. Keep push, merge, spend, deletes as they are. Keep the bedtime slip's other three questions.
+- test/rules.test.mjs asserts rule strings: update tests first (red), then the source, run rules-sync, show the
+  diff of ~/.claude/CLAUDE.md, run the repo's tests. Work in a worktree on a branch; commit; push the branch;
+  do not merge (merge needs Ian's yes).
+- Also note it in the brain (studio-harness:brain) as a decision with his verbatim words.
+- Memory already saved for the Runway project: memory/start-sessions-without-asking.md.
+
+JOB 2 - Runway Step 1 talk (needs Ian; studio-harness:talk-and-run, "The talk").
+Start from design-work\DESIGN.md (main checkout, untracked) and the four items carried from Step 0's final review
+(.ledger/2026-10-15-runway-step0/reviews/final-opus.md S3-S6): refusal toast shows once per session; refused
+backups are silent; nothing clears synthetic:true so a demo book turned real is never backed up; DESIGN 4.4
+"harnesses use their own storage key" never planned or cut. Ask Ian one question at a time, recommendation first.
+
+Safety (Runway): never edit osm-book-of-business-tracker-1.0.html; never open any HTML from that folder in Ian's
+normal Chrome; only tools/selfcheck.mjs runs the app; never write test data where the real book lives; don't
+publish or upload without asking.
