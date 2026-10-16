@@ -113,6 +113,18 @@ for (const t of ['Each year we compare our controls to find the duplicates.',
   check('match: duplicate controls - ' + t.slice(0, 40), () => assert.strictEqual(top(t), 'grc-rationalize'));
 check('ops: listing explanations people owe you is not explaining', () =>
   assert(!rate('Chase owners and list their explanations of variances.').ops.includes('EXPLAIN')));
+// a decimal point does not end the sentence the year-over-year guard looks in (re-review of 2deb044;
+// Ian chose to fix it 2026-10-16), on either side of the year-over-year
+for (const t of ['Explain the year-over-year change of 3.5% in Scope 2 emissions.',
+  'Our Scope 2 emissions rose 3.5% year-over-year; explain the change.'])
+  check('match: decimal keeps the sustainability guard - ' + t.slice(0, 40), () => assert(!matched(t).includes('fr-yoy-narrative'), matched(t).join(',')));
+for (const t of ['Explain the year-over-year change of 3.5% in revenue.',
+  'Revenue rose 3.5% year-over-year; explain the change.'])
+  check('match: decimal in a financial year-over-year - ' + t.slice(0, 40), () => assert(matched(t).includes('fr-yoy-narrative'), matched(t).join(',')));
+// ...while a full stop, also one right after a number, still ends it
+for (const t of ['Write the year-over-year commentary on revenue. Emissions are covered in a separate report.',
+  'Write the year-over-year commentary on revenue for 2025. Scope 2 emissions are in a separate report.'])
+  check('match: a full stop still ends the sentence - ' + t.slice(-40), () => assert(matched(t).includes('fr-yoy-narrative'), matched(t).join(',')));
 
 // sources say how they were read and, when read from the public API, when Workiva last updated them
 for (const [k, s] of Object.entries(cat.sources)) check('source ' + k, () => {
