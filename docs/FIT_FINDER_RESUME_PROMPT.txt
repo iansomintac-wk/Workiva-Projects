@@ -7,6 +7,19 @@ hand-off) and this WIP commit. Push only with Ian's yes. Draft PR #1 into prompt
 merged). Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 6 = dist of
 4545647; do not republish until the item below is finished and Ian says yes.
 
+NEXT SESSION (written by a316ccd1, supersedes the NEXT SESSION paragraph at the end)
+Ian, 2026-10-16, verbatim: "Fix it in the next session then" (the decimal-point gap).
+Read this file, CLAUDE.md and fit-finder/README.md. Fix the decimal-point gap, test first:
+- Add catalogue checks: "Explain the year-over-year change of 3.5% in Scope 2 emissions." does NOT get
+  fr-yoy-narrative; "Explain the year-over-year change of 3.5% in revenue." still does. Confirm red.
+- Probe first: how many of the 139 texts contain digit.digit (data/tasks.jsonl + data/real/*.jsonl).
+- Candidate (assumed, untested): in both look-arounds replace [^.;] with (?:[^.;]|(?<=d).(?=d)),
+  keep the 300-char cap. Other [^.;] patterns (sus-anomalies, sus-disclosure's [^.]) may share the gap;
+  measure, fix only with Ian's yes.
+- Re-run: catalogue checks (incl. the speed check, under 2 s), cap mutants + a decimal mutant, the
+  139-text old-vs-new diff (expect only digit.digit texts to change), eval A/B, build, pagetest; README.
+- Commit; then ask Ian, one at a time: push? republish (v8)?
+
 UPDATE 2026-10-16, session a316ccd1 (successor of 927f0985)
 - Items 1-4 DONE in 2deb044 (on top of the WIP commit 0a7524d): fr-yoy-narrative look-arounds capped
   at 300 chars. New check 'speed: ... 300k words with no full stops runs under 2 s' failed first
