@@ -1,15 +1,43 @@
-Fit Finder v4.9: hand-off (2026-10-16, session df09b9bd, successor of 18196daf; reading-only fix done in dd1adcd, local)
+Fit Finder v4.10: hand-off (2026-10-16, session ef7552f6, successor of df09b9bd; cap-300 pin done in e9036b4, local)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to f7e2d58. LOCAL ONLY (not pushed): f9caef0 (hand-off),
-dd1adcd (reading-only fix) and the hand-off commit after it, unless the UPDATE below says pushed.
-Push only with Ian's yes. Draft PR #1 into prompt-coach (not merged). Live page
-https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 10 (version id 1792188113-42e1) = dist
-of c43ff3f (81,778 bytes LF), NOT dd1adcd's dist (82,037 bytes LF). Republish only with Ian's yes.
-(Updated by df09b9bd.)
+worktree-fit-finder-v4. Pushed to origin up to 8e764c5 (checked after fetch by ef7552f6). LOCAL ONLY
+(not pushed): e9036b4 (cap-300 checks) and the hand-off commit after it, unless the launch note says
+pushed. Push only with Ian's yes. Draft PR #1 into prompt-coach (not merged). Live page
+https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 11 (version id 1792191655-4eb4) = dist
+of dd1adcd (82,037 bytes LF), per df09b9bd (not re-checked by ef7552f6). e9036b4 changes no dist
+(rebuilt byte-identical), so there is nothing to republish. (Updated by ef7552f6.)
 
-NEXT SESSION (written by df09b9bd; supersedes every NEXT SESSION below)
+NEXT SESSION (written by ef7552f6; supersedes every NEXT SESSION below)
+Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. If the launch note does not
+say pushed, ask Ian directly: push e9036b4 and the hand-off commit? (No republish: dist unchanged.)
+A relayed answer is not his yes. Then ask which STILL OPEN item next, recommendation first, one question.
+Suggested (PM check, Sonnet, 2026-10-16): the right-suggestion rate. "Reach a use case" (16 of 30
+held-out fitting tasks) counts wrong suggestions. Probe first, read-only: list the 16 with their first
+card; then ask Ian who labels the right card (Ian on a sample, or the top model blind with his
+spot-check; project CLAUDE.md puts labeled data on the larger model). Program lead: "NEW - 24h program
+lead 5" (592afc9a) unless renamed; send it status.
+
+UPDATE 2026-10-16, session ef7552f6 (successor of df09b9bd): STILL OPEN "cap at exactly 300" DONE in e9036b4
+- Probe (read-only, before asking): both cards hold {0,300} twice (one per word order). Moving both
+  caps of either card to 200, 250, 299, 301, 350 or 500 passed every check (12 of 12 survived);
+  control: 100 and 150 failed for both, 180 for sus-anomalies only (so the probe can catch one).
+- Ian picked "Pin the 300 limit (Recommended)" (option label, question tool, no relay message).
+- Fix (tests only, catalogue.test.js): 8 checks, card x word order x gap, through match(): words 300
+  apart get the card, 301 apart do not; each asserts the gap in normalize(text) equals n. 26 of 26
+  cap mutants killed (each cap alone to 299/301: 8; both caps 100-500: 18). No engine, catalogue or
+  dist change (dist rebuilt byte-identical); A 52/60, B 45/60; reach 16 of 30; pagetest 72 checks,
+  0 failed. README sentence. Mutant script: job ef7552f6 tmp/mut301.js (may be gone).
+- Sonnet review (54,388 tokens, 5 tool uses): 0 Critical, 0 Important; re-ran the checks and the
+  per-cap mutants. Minor left: nothing pins that the filler words hold no keyword; the 300/301 pair
+  catches it in practice (a keyword in the filler would make 301 match).
+- Hook gotcha: a studio-harness:pm dispatch with no model is refused; name the model (sonnet).
+- Predecessor df09b9bd kept (done, COMPLETED; shares this worktree, so claude rm would remove it).
+- Rulings: none new in Ian's own words. Still unrecorded: "Fix it in the next session then" and
+  "Would research and/or testing/simulations inform better here?" (18196daf's session).
+
+NEXT SESSION (written by df09b9bd; DONE by ef7552f6 above; kept for the record)
 Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. If the UPDATE below does not
 say pushed / republished, ask Ian directly, one at a time: push? republish v11 (dist of dd1adcd)? A
 relayed answer is not his yes. Then ask which STILL OPEN item next, recommendation first, one question.
@@ -243,7 +271,8 @@ STILL OPEN (each needs Ian's yes)
 - Minor from c43ff3f's review: a first-person past tense is now missed with two adverbs or an -ly
   adverb ("I then quickly uploaded"), "I'd uploaded", or passive "by me"; another person's past tense
   ("the analyst uploaded the file to the portal") is no longer ACT (by design). None in the 139 texts.
-- No check pins the sus cards' cap at exactly 300 (a 301-character gap); Sonnet review Minor.
+- DONE in e9036b4: no check pinned the sus cards' cap at exactly 300 (any cap from 200 to 500 passed).
+- Next suggested (PM check): the right-suggestion rate (the "reach a use case" item below).
 - DONE in dd1adcd: S7 and task 42 read as READ only ("review <data> for unusual changes": 0 of 139).
 - Idea only (no card covers it): S7 drafts assurance questions; a sourced card would need a Workiva page.
 - Assumed, not shown to Ian (dd1adcd review): "note all deviations from budget for the board deck" rates
