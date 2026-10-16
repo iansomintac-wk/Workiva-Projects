@@ -1,11 +1,26 @@
-Fit Finder v4.6: hand-off (2026-10-16, session db631e26, stopped at the 200k context line; WIP sus decimal fix local)
+Fit Finder v4.6: hand-off (2026-10-16, session 85919228, successor of db631e26; sus decimal fix finished, local)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to 3fa192c. LOCAL ONLY (not pushed): the hand-off
-commits after it. Push only with Ian's yes. Draft PR #1 into prompt-coach (not merged). Live page
-https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 7 = dist of 2deb044; do not
-republish until the item below is finished and Ian says yes. (Updated by a316ccd1.)
+worktree-fit-finder-v4. Pushed to origin up to 4da5266. LOCAL ONLY (not pushed): af8366a and
+the commits after it. Push only with Ian's yes. Draft PR #1 into prompt-coach (not merged). Live page
+https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 8 = dist of b18ad11; the local dist
+(105d94c) is the v9 candidate; republish only with Ian's yes. (Updated by 85919228.)
+
+UPDATE 2026-10-16, session 85919228 (successor of db631e26): NOT-DONE items 1-3 below DONE
+- Item 1: the sus-anomalies candidate got no card because "submitted" reads as ACT, so rate() gives fit
+  'not' and match() returns [] before any keyword check (shown: dropping only "submitted" -> fit good).
+  Not the cap. Check uses "entered". Two long-sentence checks (one per card, keywords ~200 apart) pass at
+  cap 300, fail at cap 100: mutants 10 of 10 killed (were 8 of 10).
+- Item 2 (measured): 139 texts vs b18ad11: 0 changed, 0 contain digit.digit (control removing
+  sus-anomalies changes 92 and S3; a dot-rule control changed 0, so it proves nothing). A 52/60,
+  B 45/60. Dist 81,570 bytes LF; pagetest 72 checks, 0 failed. README paragraph + byte count.
+- Item 3: Sonnet review (54,890 tokens, 5 tool uses): 0 Critical, 0 Important. Minor fixed: README
+  said 4-8 s, test comment ~9 s for the uncapped table; re-measured both cards uncapped: 13.9, 14.2,
+  15.5 s (capped 0.10-0.17 s); both now say 9-15 s. Minor left: no check pins exactly 300 (a 301 gap).
+- Found, not fixed (pre-existing, idea for Ian): "sites submitted" (past tense, describing data) reads
+  as ACT and rates the whole task "not a fit".
+- Next: ask Ian, one at a time: push? republish v9? Then the STILL OPEN list.
 
 NEXT SESSION (written by db631e26 at the 200k stop; supersedes every NEXT SESSION below)
 Read this file, CLAUDE.md and fit-finder/README.md. State: b18ad11 (year-over-year decimal fix) is pushed

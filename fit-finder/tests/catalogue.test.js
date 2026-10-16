@@ -213,7 +213,7 @@ check('speed: fr-yoy-narrative on 300k words with no full stops runs under 2 s',
   assert(ms < 2000, ms + ' ms');
 });
 // ...and so do the two sustainability cards' (capped too, Ian 2026-10-16): a pasted 5,000-row emissions
-// table has decimals and no full stops; uncapped, the page took ~9 s to rate it at every typing pause
+// table has decimals and no full stops; uncapped, the page took 9-15 s to rate it at every typing pause
 check('speed: a pasted 5,000-row emissions table rates under 2 s', () => {
   const out = ['Check this table for anomalies.', 'Site,Year,Scope,Datapoint,Value (tCO2e)'];
   for (let i = 0; i < 5000; i++) out.push(`Plant ${i % 40},${2020 + (i % 6)},Scope ${1 + (i % 3)},ESRS E1-6,${(i * 7.3 % 997).toFixed(1)}`);
