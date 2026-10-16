@@ -2924,7 +2924,7 @@ function transcriptControlsHtml(c, act){
                <button class="btn btn-sm" data-remove-transcript="${c.id}|${act.id}">Remove</button>`
             : tr
             ? `<span class="badge badge-ontrack" title="Stored with this activity — included in exports and archives.">${icon('check')} Transcript attached (${tr.text.length.toLocaleString()} chars)</span>
-               ${(tr.truncated || (meta.chars || 0) > DEBRIEF_TRANSCRIPT_CHAR_CAP) ? `<span style="font-size:var(--text-xs); color:var(--accent-watch-text);">truncated to the first 120,000 characters</span>` : ''}
+               ${tr.truncated ? `<span style="font-size:var(--text-xs); color:var(--accent-watch-text);">truncated to the first 120,000 characters</span>` : ((meta.chars || 0) > DEBRIEF_TRANSCRIPT_CHAR_CAP ? `<span style="font-size:var(--text-xs); color:var(--accent-watch-text);">the AI is sent the first 120,000 characters (note included)</span>` : '')}
                <button class="btn btn-sm" data-view-transcript="${c.id}|${act.id}">View</button>
                <button class="btn btn-sm" data-attach-transcript="${act.id}">Replace</button>
                <button class="btn btn-sm" data-remove-transcript="${c.id}|${act.id}">Remove</button>`
@@ -5771,7 +5771,10 @@ async function loadData(){
         let copied = false;
         try{ await savePremigrationCopy(raw); copied = true; }catch(e){ copied = false; }
         if(copied) await moveInlineTranscripts(DATA);
-        else window.__moveSkipped = 'pre-move copy failed';   // nothing moved; transcripts stay inline; the next load tries again
+        else{
+          window.__moveSkipped = 'pre-move copy failed';   // nothing moved; transcripts stay inline; the next load tries again
+          showToast('Could not save the safety copy of your old book. Your data is safe; keep the Export you made before opening 1.1.');
+        }
       }
       // 1.1 Step 0: persist migrations/backfills/pause cleanup only when they changed the book.
       if(JSON.stringify(DATA) !== raw) saveData();
@@ -17842,6 +17845,7 @@ function openSettingsModal(){
       _rejectedLoadPayload = null;
       if(!commitDataCandidate(defaultData())){ _rejectedLoadPayload = armed; return false; }
       wipeTranscriptStore();
+      clearUndoSlot();   // Undo must not bring back refs to the transcripts just erased
       backdrop.remove();
       ui.openCustomerId = null;
       render();
@@ -18134,6 +18138,8 @@ async function stageImportedTranscripts(activityLists, fileTranscripts){
 function fsBlockedReason(){
   if(_rejectedLoadPayload !== null) return 'the last load was rejected';
   if(DATA && DATA.synthetic === true) return 'this is a test book';
+  /* a transcript the book points to is not in this browser: the backup file may be the only copy left, so keep it */
+  if(DATA && Object.values(DATA.activities || {}).some(list => (list || []).some(a => a && a.transcript && typeof a.transcript.ref === 'string' && a.transcript.ref && !_transcriptMap.has(a.transcript.ref)))) return 'a transcript is missing from this browser';
   return '';
 }
 async function fsWriteNow(silent){
@@ -18997,7 +19003,8 @@ function handleRestoreArchiveFile(e){
       showToast('Not saved - this is a test book and a real book is stored here.');
       return;
     }
-    await stageImportedTranscripts([archive.activities], parsed.transcripts);
+    try{ await stageImportedTranscripts([archive.activities], parsed.transcripts); }
+    catch(err){ showToast('Could not save the archive transcripts - nothing was restored.'); return; }
     const originalId = archive.customer.id;
     const idCollision = DATA.customers.some(c => c.id === originalId);
     const restoredId = idCollision ? uid() : originalId;

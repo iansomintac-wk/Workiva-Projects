@@ -195,10 +195,12 @@
               a.transcript.chars === 157060 && run.len >= budget && p.slice(run.start + budget, run.start + budget + 40) !== text.slice(budget, budget + 40) && p.includes('truncated to the first 120,000 characters'), `runLen=${run.len}`);
           }
           const oldRef = a.transcript.ref;
+          markUndoable('x'); saveData();   // put something in the undo slot, so the null check below can fail
+          const slotHeld = _undoSnapshot !== null;
           const ok2 = await attachTranscript(cid, 'att1', {text: text + ' more', truncated: false});
           const a2 = DATA.activities[cid].find(x => x.id === 'att1');
           rec('T5 Replace writes the new version under its own ref, then deletes the old record and clears the undo slot',
-            ok2 === true && a2.transcript.ref !== oldRef && (await tsGet(oldRef)) === undefined && (await tsGet(a2.transcript.ref)) && _undoSnapshot === null);
+            ok2 === true && a2.transcript.ref !== oldRef && (await tsGet(oldRef)) === undefined && (await tsGet(a2.transcript.ref)) && slotHeld && _undoSnapshot === null);
           const keepRef = a2.transcript.ref;
           const realCommit = window.commitDataCandidate; window.commitDataCandidate = () => false;
           let ok3; try{ ok3 = await attachTranscript(cid, 'att1', {text: 'replacement that will fail to commit', truncated: false}); }finally{ window.commitDataCandidate = realCommit; }
@@ -293,7 +295,17 @@
           try{ await loadData(); }finally{ window.savePremigrationCopy = realCopy; }
           rec('T6 if the pre-move copy cannot be saved, nothing moves: transcripts stay inline and readable, no record is written',
             tsOf().length === 2 && tsOf().every(a => a.transcript.text && !a.transcript.ref) && activityTranscript(tsOf()[0]).text === fixtureText(0, 3000) &&
-            (await tsTx('transcripts', 'readonly', s => s.count())) === 0);
+            (await tsTx('transcripts', 'readonly', s => s.count())) === 0,
+            'storedSchema=' + JSON.parse(localStorage.getItem(STORAGE_KEY)).schemaVersion);
+        });
+        await withBook(async () => {   // S1: the failed copy is told to the user
+          const raw = mkRaw(2, 3000);
+          realSet.call(localStorage, STORAGE_KEY, raw);
+          const toasts = []; const rt = window.showToast; window.showToast = m => toasts.push(m);
+          const realCopy = window.savePremigrationCopy; window.savePremigrationCopy = async () => { throw new Error('probe: copy refused'); };
+          try{ await loadData(); }finally{ window.savePremigrationCopy = realCopy; window.showToast = rt; }
+          rec('Final S1 a failed pre-move copy shows a visible warning that the safety copy could not be saved and to keep the Export',
+            toasts.some(m => /safety copy/i.test(m) && /could not/i.test(m) && /export/i.test(m)), JSON.stringify(toasts));
         });
         await withBook(async () => {   // C5 (Guard: green before the change, because nothing moves yet)
           const raw = mkRaw(2, 5000);
@@ -522,6 +534,15 @@
           rec('T9 the real restore handler brings the account back with its transcript readable at once (no reload)',
             okR === true && !!restored && !!ra && activityTranscript(ra) && activityTranscript(ra).text === fixtureText(3, 30000) && (await tsGet(ref)).text === fixtureText(3, 30000), JSON.stringify(d.toasts));
         });
+        await withBook(async book => {   // S3: a failing transcript save during restore is visible and changes nothing
+          const base = cloneData(DATA.customers[0]); Object.assign(base, {id: 'arch3', name: 'Archive stage fails', stage: 'active'});
+          const txt = JSON.stringify({archiveVersion: 1, customer: base, activities: [{id: 'sf1', date: todayISO(), type: 'Call', summary: 's', checklist: []}], healthHistory: [], transcripts: {}});
+          const realStage = window.stageImportedTranscripts; window.stageImportedTranscripts = async () => { throw new Error('probe: stage failed'); };
+          const nBefore = DATA.customers.length; let d;
+          try{ d = await driveRestore(txt); }finally{ window.stageImportedTranscripts = realStage; }
+          rec('Final S3 a failed transcript save during archive restore shows a toast, changes nothing and offers no confirm',
+            d.cb === null && d.toasts.length > 0 && DATA.customers.length === nBefore && !DATA.customers.some(x => x.name === 'Archive stage fails'), JSON.stringify(d.toasts));
+        });
         await withBook(async book => {
           // a restore while a test book would replace a stored real one is refused before any record is written
           const real = cloneData(DATA); delete real.synthetic; real.customers = real.customers.slice(0, 1);
@@ -560,6 +581,49 @@
           const sp = (a, name) => `${name} spread=${(spread(a) * 100).toFixed(0)}% ${median(a) < SPREAD_FLOOR_MS ? '(median under ' + SPREAD_FLOOR_MS + ' ms: floor, stop rule not applied)' : '(median at/over floor: lead applies the 15% stop rule)'}`;
           rec('T10 C7: backup preparation for 500 x 40K with transcripts unchanged takes under 30 ms per write (median of 3)',
             median(after) < 30, `after=${fmt(after)} median=${median(after).toFixed(1)}ms; before(today)=${fmt(before)} median=${median(before).toFixed(1)}ms (spec: 167); ${sp(after, 'after')}; ${sp(before, 'before')}`);
+        });
+      }
+
+      { // Final review fixes: S2, S4, I1
+        await withBook(async book => {   // S2: Clear all data must not leave an Undo that points at erased transcripts
+          const act = {id: 'cl1', date: todayISO(), type: 'Call', summary: 's', checklist: []};
+          book.activities[cid] = (book.activities[cid] || []).concat([act]);
+          act.transcript = await saveTranscriptVerified('cl1', 'to be erased');
+          markUndoable('x'); saveData();
+          const heldBefore = _undoSnapshot !== null;
+          const rc = window.showConfirmModal; window.showConfirmModal = (msg, onConfirm) => { onConfirm(); };
+          try{ openSettingsModal(); document.getElementById('btn-clear-all').click(); await settle(); await settle(); }finally{ window.showConfirmModal = rc; document.querySelectorAll('.modal-backdrop').forEach(b => b.remove()); }
+          rec('Final S2 after Clear all data the undo slot is empty, so Undo cannot bring back refs to erased transcripts',
+            heldBefore && _undoSnapshot === null && undoAvailable() === null && (await tsGet(act.transcript.ref)) === undefined, `held=${heldBefore} undo=${undoAvailable()}`);
+        });
+        { // S4
+          const ref = 'lg4:0123456789ab', sha = 'c'.repeat(40);
+          _transcriptMap.set(ref, {text: 'x'.repeat(DEBRIEF_TRANSCRIPT_CHAR_CAP + 10), chars: DEBRIEF_TRANSCRIPT_CHAR_CAP + 10, sha1: sha});
+          const mk = trunc => ({id: 'lg4', date: todayISO(), type: 'Call', summary: 's', checklist: [], transcript: {ref, chars: DEBRIEF_TRANSCRIPT_CHAR_CAP + 10, sha1: sha, truncated: trunc}});
+          const whole = transcriptControlsHtml({id: cid}, mk(false)), cut = transcriptControlsHtml({id: cid}, mk(true));
+          _transcriptMap.delete(ref);
+          rec('Final S4 a whole stored transcript over 120,000 chars is not labelled "truncated"; it says the AI is sent the first part',
+            !/truncated/i.test(whole) && /AI is sent the first 120,000 characters/.test(whole), whole.replace(/\s+/g, ' ').slice(0, 300));
+          rec('Final S4 a transcript cut by an older version keeps the "truncated" label', /truncated to the first 120,000 characters/.test(cut));
+        }
+        await withBook(async book => {   // I1: no automatic backup write while a referenced transcript is missing
+          const act = {id: 'bk1', date: todayISO(), type: 'Call', summary: 's', checklist: []};
+          book.activities[cid] = (book.activities[cid] || []).concat([act]);
+          act.transcript = await saveTranscriptVerified('bk1', 'kept in the backup');
+          const f = fakeBackupFile(); const sv = {h: _fsHandle, s: _fsState, syn: DATA.synthetic};
+          delete DATA.synthetic; _fsHandle = f; _fsState = 'ready';
+          const saved = _transcriptMap.get(act.transcript.ref); _transcriptMap.delete(act.transcript.ref); _tsVersion++;
+          const rt = window.showToast; window.showToast = () => {};
+          let okMissing, okBack, status = '', writesWhileMissing = -1;
+          try{
+            okMissing = await fsWriteNow(true); status = fsStatusLine(); writesWhileMissing = f.writes;
+            _transcriptMap.set(act.transcript.ref, saved); _tsVersion++;
+            okBack = await fsWriteNow(true);
+          }finally{ window.showToast = rt; _fsHandle = sv.h; _fsState = sv.s; DATA.synthetic = sv.syn; }
+          rec('Final I1 an automatic backup write is skipped, with a visible reason, while a transcript the book references is missing',
+            okMissing === false && writesWhileMissing === 0 && /transcript/i.test(status) && /Not backing up/.test(status), `writes=${f.writes} status=${status}`);
+          rec('Final I1 once the transcript is back the backup writes again, with the transcript in it',
+            okBack === true && f.writes === 1 && Object.values(JSON.parse(f.last).transcripts).includes('kept in the backup'), `writes=${f.writes}`);
         });
       }
 

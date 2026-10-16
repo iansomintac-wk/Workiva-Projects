@@ -16,8 +16,9 @@ OSM Runway — release notes
     - One-way: book schema 17. Once a book is opened in 1.1, 1.0 refuses it. Click
       Export in your current tracker BEFORE first opening 1.1. The first open takes a
       pre-move copy of the book, then moves the transcripts.
-    - Known gap: a backup taken while a transcript is missing leaves that transcript
-      out (not fixed in Step 1).
+    - While a transcript the book points to is missing from this browser, the
+      automatic backup file is not rewritten (the status line says why), so the
+      file keeps its copy of that transcript. Export still works.
     - Timing (recorded, not asserted; 30 ms floor): backup preparation, 500 calls x 40K,
       median about 6-10 ms now vs about 110-190 ms before. Load step, same book, medians
       271-427 ms over six runs (limit 500 ms; the spec's earlier reference was about
