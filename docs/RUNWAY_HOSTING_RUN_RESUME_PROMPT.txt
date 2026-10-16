@@ -1,0 +1,59 @@
+Runway hosting run: RESUME after the lead's context stop (lead 50d4c352, 2026-10-16 ~15:20 PDT).
+
+Read first, in order:
+  docs/RUNWAY_HOSTING_RUN_PROMPT.txt  (the run prompt: order of work, checks, safety rules, slip. All of it still holds.)
+  .ledger/2026-10-15-runway-hosting/progress.md  (the run's memory; every row so far)
+Method: studio-harness:talk-and-run, "The run". First check: echo "$STUDIO_RUN_LEDGER"; test -f on its budget.json and slip.json.
+Lead coordinates only; one fresh helper per piece, in order, never in parallel.
+
+Where it stands (branch runway-hosting, worktree C:/Users/teasp/Documents/Runway Tracker/.claude/worktrees/runway-hosting):
+  Step 0 records: done (12 ruling records 2026-10-15-runway-*, project shared; bank Q16, Q17).
+  Plan: docs/superpowers/plans/2026-10-15-runway-hosting.md, committed 9f79da2, sha256 cd6d24f0ed0074b2. 6 tasks.
+    APPROVED by Ian 2026-10-16 14:18 PDT ("Yes, incl. token raises (Recommended)"), relayed by the 24h program lead 3
+    and verified by the lead in that session's transcript (see progress.md "Plan approval"). Do not edit the plan.
+  Task 1: done, checked, lead re-run green. Commit 9f70fc7. N1 (step1Probe count) = 72.
+  Task 2: BUILT, NOT YET CHECKED. Commit c4e4486 (parent 9f70fc7). Implementer's figures are in progress.md (not re-run).
+
+Next, in order:
+  1. Task 2 checker. First make the red export (the checker never makes one):
+       X=$CLAUDE_JOB_DIR/tmp/t2-parent; mkdir -p "$X"; git archive 9f70fc7 README.txt CHANGELOG.txt .gitignore tools docs test
+         demo-seed.js osm-book-of-business-tracker-1.1.html | tar -x -C "$X"; then copy from c4e4486 (git show c4e4486:<path> > "$X/<path>")
+         test/static-server.test.mjs, test/hosting-docs.test.mjs, tools/hosting-probe.js, tools/hosting-spy.js (NOT selfcheck.mjs,
+         NOT static-server.mjs); then (cd "$X" && node tools/build-site.mjs) so site/ exists for the red --serve run.
+     Then write role-checks.txt, one exact line each, runnable from anywhere (cd "<dir>" && ...), tests with
+     env -u STUDIO_RUN_LEDGER bash -c 'set -o pipefail; node --test --test-reporter=spec ... | grep -E "(pass|fail|skipped) [0-9]+$"':
+       red on the export: node --test test/static-server.test.mjs test/hosting-docs.test.mjs -> pass 5, fail 2;
+       red on the export: the Task 2 --serve probe command (plan Task 2 Step 3) -> exit 1, hostingProbe 1/3, no serving/page origin line;
+       green in the worktree: node --test test/build-site.test.mjs test/static-server.test.mjs test/hosting-docs.test.mjs -> fail 0
+         (one skip allowed only with the EPERM reason printed);
+       green: the two probe commands of plan Task 2 (served and file) -> 3/3 each, page origin lines, console errors: 0;
+       green: served 475 (node tools/build-site.mjs, then selfcheck 1.1 --serve site --seed demo-seed.js --expect 475);
+       negative control from the plan (origin assertion must be able to fail);
+       1.0 diff exit 0; git diff --name-only 9f70fc7 c4e4486 = the 8 Task 2 files; 0 locked files changed.
+     Dispatch studio-harness:checker with the packet shape (Outcome/Files/Acceptance/Budget/Brain/Reply-to), then the lead re-runs
+     the same lines itself, writes the ledger rows, empties role-checks.txt.
+  2. Tasks 3, 4, 5, 6 as in the plan, each: implementer -> fresh checker (with a lead-made parent export for the red step) ->
+     lead re-run (task checks + 1.0 diff + 1.1/1.0 475 + step0Probe 34 + step1Probe 72 + served 475 after Tasks 3-6) -> ledger row.
+  3. Run prompt steps 5-7: final review (studio-harness:final-reviewer + Codex on `git diff master...runway-hosting` piped as TEXT),
+     fix round, evidence doc docs/evidence/2026-10-15-runway-hosting.md, C9, merge under the slip's conditions, copy the ledger to
+     the main checkout's .ledger/, final message to Ian.
+
+Known traps, learned this run:
+  - Token cap stays 2,000,000 (Ian via program lead). 619,317 used at this stop (sum of helper-rows.md tokens). If the cap refuses
+    a helper: stop, notify, and say how much more is needed; Ian's standing yes covers raises up to +600k per run through the
+    24h program lead (find it with ListAgents; lead 3 has ended). budget.json tasksLeft = helpers still expected; set it to 13
+    (T2 checker + 4 x (impl + checker) + final reviewer + PM + 2 fix-round helpers, assumed).
+  - At every stop: push notification AND the question in the session. The first lead sent only the notification at plan approval;
+    the run waited 13.5 h.
+  - Codex: no shell on this PC; pipe text on stdin, -o <file>. A Codex job was once reaped by Claude Code for low memory AFTER it
+    had printed its answer; the answer was recovered from its log. Do not restart a reaped job on your own.
+  - Hand-off PM dispatch (studio-harness:pm) needs model: sonnet (gotcha 2026-10-16-handoff-pm-dispatch-needs-a-model).
+  - Local merge may be refused by the auto-mode classifier despite the slip (gotcha 2026-10-16-slip-merge-yes-does-not-clear-
+    classifier-for-local-merge): then stop and give Ian the one `!` command.
+  - Do NOT `claude rm` 8e5707bc (talk) or 50d4c352 (this lead) before the end: `claude rm` deletes the session's worktree, and
+    both sessions' worktree is this run's worktree, which holds the git-ignored ledger. After the ledger is copied to the main
+    checkout, remove sessions only if rm needs no force flags; remove worktrees only with studio-harness bin/remove-worktree.mjs.
+  - README.txt, CHANGELOG.txt, tools/selfcheck.mjs are CRLF; keep their line endings.
+
+Session names: you are the successor of 50d4c352 ("NEW - Runway hosting run"). Its rename to COMPLETED is done by 50d4c352 itself
+once you are running.
