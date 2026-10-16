@@ -473,6 +473,68 @@
         });
       }
 
+      { // T9: archive and restore
+        const captureBlob = fn => {
+          let captured = null; const realURL = URL.createObjectURL, realBlob = window.Blob, realClick = HTMLAnchorElement.prototype.click;
+          window.Blob = function(parts, opts){ captured = parts.join(''); return new realBlob(parts, opts); };
+          URL.createObjectURL = () => 'blob:probe'; HTMLAnchorElement.prototype.click = function(){};
+          try{ fn(); }finally{ window.Blob = realBlob; URL.createObjectURL = realURL; HTMLAnchorElement.prototype.click = realClick; }
+          return captured;
+        };
+        const driveRestore = async fileText => {
+          let cb = null; const toasts = [];
+          const rc = window.showConfirmModal, rt = window.showToast;
+          window.showConfirmModal = (msg, onConfirm) => { cb = onConfirm; }; window.showToast = m => toasts.push(m);
+          try{
+            handleRestoreArchiveFile({target: {files: [new File([fileText], 'archive.json')], value: 'x'}});
+            await waitFor(() => cb !== null || toasts.length > 0, 8000);
+            await settle();
+          }finally{ window.showConfirmModal = rc; window.showToast = rt; }
+          return {cb, toasts};
+        };
+        await withBook(async book => {
+          const base = cloneData(DATA.customers[0]); Object.assign(base, {id: 'arch1', name: 'Archive probe', stage: 'active'});
+          book.customers.push(base);
+          const act = {id: 'ar-a1', date: todayISO(), type: 'Call', summary: 's', checklist: []};
+          book.activities['arch1'] = [act];
+          await attachTranscript('arch1', 'ar-a1', {text: fixtureText(3, 30000), truncated: false});
+          const ref = DATA.activities['arch1'][0].transcript.ref;
+          const captured = captureBlob(() => archiveCustomer('arch1'));
+          const file = JSON.parse(captured);
+          rec('T9 the archive file carries the customer\'s transcripts, and the book no longer references them',
+            file.transcripts && file.transcripts[ref] === fixtureText(3, 30000) && !DATA.customers.some(x => x.id === 'arch1') && !JSON.stringify(DATA.activities).includes(ref));
+          rec('T9 archiving keeps the record in IndexedDB (unlinked, never auto-deleted)', (await tsGet(ref)) && (await tsGet(ref)).text === fixtureText(3, 30000));
+          // restore with the record present: re-link without rewriting
+          const before = (await tsGet(ref)).savedAt;
+          const st = await stageImportedTranscripts([file.activities], file.transcripts);
+          rec('T9 restore with the record still present re-links it without rewriting', st.missing === 0 && (await tsGet(ref)).savedAt === before && st.written === 0, JSON.stringify(st));
+          // restore with the record gone: written from the file
+          await tsDelete(ref); _transcriptMap.delete(ref);
+          const file2 = JSON.parse(captured);
+          const st2 = await stageImportedTranscripts([file2.activities], file2.transcripts);
+          rec('T9 restore with the record gone writes it from the file and the text reads back', st2.written === 1 && (await tsGet(ref)).text === fixtureText(3, 30000));
+          // the REAL restore handler: record gone, restored account's transcript readable at once
+          await tsDelete(ref); _transcriptMap.clear(); _tsVersion++;
+          const d = await driveRestore(captured);
+          const okR = d.cb ? d.cb() === true : false;
+          const restored = DATA.customers.find(x => x.name === 'Archive probe');
+          const ra = restored && (DATA.activities[restored.id] || [])[0];
+          rec('T9 the real restore handler brings the account back with its transcript readable at once (no reload)',
+            okR === true && !!restored && !!ra && activityTranscript(ra) && activityTranscript(ra).text === fixtureText(3, 30000) && (await tsGet(ref)).text === fixtureText(3, 30000), JSON.stringify(d.toasts));
+        });
+        await withBook(async book => {
+          // a restore while a test book would replace a stored real one is refused before any record is written
+          const real = cloneData(DATA); delete real.synthetic; real.customers = real.customers.slice(0, 1);
+          realSet.call(localStorage, STORAGE_KEY, JSON.stringify(real));
+          const base = cloneData(DATA.customers[0]); Object.assign(base, {id: 'arch2', name: 'Archive refused', stage: 'active'});
+          const archiveText = JSON.stringify({archiveVersion: 1, customer: base, activities: [{id: 'rf1', date: todayISO(), type: 'Call', summary: 's', checklist: [], transcript: {text: 'must not be stored', truncated: false}}], healthHistory: [], transcripts: {}});
+          await tsClearAll();
+          const d = await driveRestore(archiveText);
+          rec('T9 a restore while a test book would replace a stored real one is refused before any transcript is written',
+            d.cb === null && d.toasts.some(m => /test book/i.test(m)) && (await tsTx('transcripts', 'readonly', s => s.count())) === 0, JSON.stringify(d.toasts));
+        });
+      }
+
       rec('probe reached the end', true);
     }catch(e){
       rec('probe threw', false, String(e && e.stack || e));

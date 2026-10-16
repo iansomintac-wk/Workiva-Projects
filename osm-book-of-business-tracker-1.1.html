@@ -17903,7 +17903,8 @@ function archiveCustomer(customerId){
     archivedDate: todayISO(),
     customer: c,
     activities: DATA.activities[c.id] || [],
-    healthHistory: (DATA.healthHistory || {})[c.id] || [] // v39 — optional field, older restore code tolerates absence
+    healthHistory: (DATA.healthHistory || {})[c.id] || [], // v39 — optional field, older restore code tolerates absence
+    transcripts: transcriptsForBook({activities: {[c.id]: DATA.activities[c.id] || []}}) // Step 1: the records are kept in IndexedDB too (unlinked)
   };
   const candidate = cloneData(DATA);
   candidate.customers = candidate.customers.filter(x=>x.id!==customerId);
@@ -18971,7 +18972,7 @@ function handleRestoreArchiveFile(e){
   const file = e.target.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = evt => {
+  reader.onload = async evt => {
     let parsed;
     try {
       parsed = JSON.parse(evt.target.result);
@@ -18985,6 +18986,11 @@ function handleRestoreArchiveFile(e){
       showToast(err.message || 'That does not look like a valid single-account archive.');
       return;
     }
+    if(syntheticWouldReplaceReal()){
+      showToast('Not saved - this is a test book and a real book is stored here.');
+      return;
+    }
+    await stageImportedTranscripts([archive.activities], parsed.transcripts);
     const originalId = archive.customer.id;
     const idCollision = DATA.customers.some(c => c.id === originalId);
     const restoredId = idCollision ? uid() : originalId;
