@@ -571,4 +571,27 @@
     }
     return {results};
   };
+  window.step1SeedLarge = async function(){
+    const all = window.STEP1_CALLS.join('\n');
+    const ft = (i, n) => { const k = (i * 7919) % all.length; let s = '[' + i + '] ' + all.slice(k) + all.slice(0, k); while(s.length < n) s += s; return s.slice(0, n); };
+    if(!DATA.customers.length) DATA.customers.push({id: 'c8seed', name: 'C8 seed account', module: DATA.config.modules[0], stage: 'kickoff', implementationDate: todayISO(), totalSessions: 8, stageHistory: [{stage: 'kickoff', date: todayISO()}], sessionNotes: {}});   // a fresh profile has no account
+    DATA.synthetic = true;
+    const cid = DATA.customers[0].id;
+    DATA.activities[cid] = (DATA.activities[cid] || []).filter(a => !a.id.startsWith('lg'));
+    for(let i = 0; i < 500; i++){
+      const a = {id: 'lg' + i, date: todayISO(), type: 'Call', summary: 'l' + i, checklist: []};
+      a.transcript = await saveTranscriptVerified(a.id, ft(i, 40000));
+      DATA.activities[cid].push(a);
+    }
+    const ok = saveData();
+    await new Promise(r => setTimeout(r, 8000));      // let the browser flush localStorage before it is killed
+    return {results: [{name: 'seed: 500 transcripts stored', ok: ok === true && DATA.activities[cid].filter(a => a.transcript && a.transcript.ref).length === 500, detail: 'customers=' + DATA.customers.length}]};
+  };
+  window.step1StartupCheck = async function(){
+    try{ await window.__transcriptLoadDone; }catch(e){}
+    const L = window.__transcriptLoad || {};
+    return {results: [
+      {name: 'startup: 500 transcripts loaded from the profile', ok: L.count === 500 && L.bad === 0, detail: JSON.stringify(L)},
+      {name: 'startup: load time recorded', ok: typeof window.__loadDataMs === 'number', detail: `loadMs=${window.__loadDataMs} mapMs=${L.ms} readyMs=${window.__startupMs}`}]};
+  };
 })();
