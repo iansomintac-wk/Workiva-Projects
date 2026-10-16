@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, readFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -117,5 +117,58 @@ test('a build whose source trips the guard exits 1 and leaves no index.html behi
     assert.equal(r.status, 1);
     assert.match(r.stderr, /guard \(c\)/);
     assert.equal(existsSync(join(root, 'site/index.html')), false);
+  } finally { cleanup(root); }
+});
+
+test('FX2 builder refuses a site/ that is a junction/symlink: exit 2, names the rule, target untouched', t => {
+  const root = mkRoot(), target = mkdtempSync(join(tmpdir(), 'build-site-target-'));
+  try {
+    try { symlinkSync(target, join(root, 'site'), 'junction'); }
+    catch (e) { return t.skip('could not create a junction here: ' + (e.code || e.message)); }
+    const r = run('--root', root);
+    assert.equal(r.status, 2, r.stderr);
+    assert.match(r.stderr, /symlink or junction/);
+    assert.deepEqual(readdirSync(target), []);
+  } finally { cleanup(root); cleanup(target); }
+});
+
+test('FX3a guard (a): a .nojekyll that is a symlink to an empty file exits 1 and names the rule (skipped if file symlinks cannot be made here)', t => {
+  const root = mkRoot();
+  try {
+    const dir = join(root, 'out'); mkdirSync(dir);
+    writeFileSync(join(dir, 'index.html'), readFileSync(join(root, SRC)));
+    writeFileSync(join(root, 'empty.txt'), '');
+    try { symlinkSync(join(root, 'empty.txt'), join(dir, '.nojekyll'), 'file'); }
+    catch (e) { return t.skip('could not create a file symlink on this machine: ' + (e.code || e.message)); }
+    const r = run('--check', dir, '--root', root);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /guard \(a\)/);
+    assert.match(r.stderr, /\.nojekyll/);
+  } finally { cleanup(root); }
+});
+
+test('FX3a2 guard (a): index.html that is a directory junction exits 1 and names the rule', t => {
+  const root = mkRoot();
+  try {
+    const dir = join(root, 'out'); mkdirSync(dir); mkdirSync(join(root, 'real'));
+    writeFileSync(join(dir, '.nojekyll'), '');
+    try { symlinkSync(join(root, 'real'), join(dir, 'index.html'), 'junction'); }
+    catch (e) { return t.skip('could not create a junction here: ' + (e.code || e.message)); }
+    const r = run('--check', dir, '--root', root);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /guard \(a\)/);
+  } finally { cleanup(root); }
+});
+
+test('FX3b guard (d): a non-empty .nojekyll exits 1 and names the rule', () => {
+  const root = mkRoot();
+  try {
+    const dir = join(root, 'out'); mkdirSync(dir);
+    writeFileSync(join(dir, 'index.html'), readFileSync(join(root, SRC)));
+    writeFileSync(join(dir, '.nojekyll'), 'x');
+    const r = run('--check', dir, '--root', root);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /guard \(d\)/);
+    assert.match(r.stderr, /\.nojekyll/);
   } finally { cleanup(root); }
 });

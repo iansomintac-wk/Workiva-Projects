@@ -15,6 +15,9 @@ OSM Runway — release notes
       hidden on file:// and as soon as the book has an account.
     - tools/move-book.mjs proves an Export from a file copy imports into a served
       copy (counts and transcript hash equal) and records whether the AI key is in Export.
+    - Hosting fixes: selfcheck exits 1 on any console error; build-site refuses a linked
+      site/ and --check needs plain files and an empty .nojekyll; the static server
+      answers 500 instead of crashing when a file cannot be read.
 
 1.1 — Step 1 (transcripts out of the book). Call transcripts move out of the book.
 

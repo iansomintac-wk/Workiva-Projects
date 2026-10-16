@@ -349,5 +349,5 @@ if (expect !== null && out.total !== Number(expect)) {
   console.log(`\nExpected ${expect} checks, the suite defines ${out.total}.`);
   code = 1;
 }
-if (pageErrors.length) code = 1;
+if (pageErrors.length || errTotal > 0) code = 1;
 process.exit(code);

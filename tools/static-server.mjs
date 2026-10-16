@@ -19,19 +19,22 @@ export async function startStaticServer(dir) {
     let p;
     try { p = decodeURIComponent(req.url.split('?')[0].split('#')[0]); } catch { return plain(res, 400); }
     if (p.includes('\0') || p.includes('\\')) return plain(res, 400);
-    let file = resolve(join(root, p));
+    let file = resolve(join(root, p)), size;
     try {
       if (!inside(file)) return plain(res, 404);
       if (statSync(file).isDirectory()) file = join(file, 'index.html');
       if (!existsSync(file)) return plain(res, 404);
       file = realpathSync(file);                       // follows symlinks and junctions: the REAL location must still be inside
       if (!inside(file) || !statSync(file).isFile()) return plain(res, 404);
+      size = statSync(file).size;
     } catch { return plain(res, 404); }
+    const rs = createReadStream(file);
+    rs.on('error', () => { if (!res.headersSent) plain(res, 500); else res.destroy(); });
     res.writeHead(200, {
       'Content-Type': TYPES[extname(file).toLowerCase()] || 'application/octet-stream',
-      'Content-Length': statSync(file).size, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
+      'Content-Length': size, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
     });
-    createReadStream(file).pipe(res);
+    rs.pipe(res);
   };
   for (let attempt = 0; attempt < 5; attempt++) {
     const server = http.createServer(handler);

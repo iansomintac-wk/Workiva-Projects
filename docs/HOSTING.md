@@ -24,7 +24,7 @@ Exactly two files, made by `node tools/build-site.mjs` into the `site/` folder: 
 
 1. Change the tracker file (never the 1.0 file).
 2. `node tools/build-site.mjs` rebuilds `site/` and refuses to run if `site/` holds anything else.
-3. Run the `--serve site` command above and the same command without `--serve site`; both must print 475/475 and the same `console errors:` count.
+3. Run the `--serve site` command above and the same command without `--serve site`; both must print 475/475 and `console errors: 0` (selfcheck exits 1 on any console error).
 4. Upload the two files in `site/` only when the owner of the site says yes.
 
 ## Keeping the browser's storage

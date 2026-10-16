@@ -2,8 +2,8 @@
 // Runway site builder (D1). No dependencies.
 //   node tools/build-site.mjs [--root <dir>]                  build <root>/site from the list below, then run the guard
 //   node tools/build-site.mjs --check <dir> [--root <dir>]    run the guard alone on <dir>
-// Exit 0 ok. Exit 1 guard failure (stderr names the rule). Exit 2 foreign file in site/ or missing source.
-import { existsSync, readdirSync, readFileSync, writeFileSync, copyFileSync, mkdirSync, rmSync, statSync } from 'node:fs';
+// Exit 0 ok. Exit 1 guard failure (stderr names the rule). Exit 2 foreign file in site/, site/ is a link, or missing source.
+import { existsSync, readdirSync, readFileSync, writeFileSync, copyFileSync, mkdirSync, rmSync, statSync, lstatSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,7 +19,8 @@ const NAMES = ['index.html', '.nojekyll'];
 
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const sha256 = buf => createHash('sha256').update(buf).digest('hex');
-const isFile = p => { try { return statSync(p).isFile(); } catch { return false; } };
+const isFile = p => { try { return lstatSync(p).isFile(); } catch { return false; } };   // lstat: a link of any kind is not a plain file
+const isLink = p => { try { return lstatSync(p).isSymbolicLink(); } catch { return false; } };
 
 function guard(dir, srcPath) {
   const fails = [];
@@ -30,6 +31,8 @@ function guard(dir, srcPath) {
   if (extra.length || missing.length || notFiles.length) {
     fails.push(`guard (a) failed: the file set must be exactly {${NAMES.join(', ')}}, both plain files; unexpected: [${extra.join(', ')}] missing: [${missing.join(', ')}] not a plain file: [${notFiles.join(', ')}]`);
   }
+  const nj = join(dir, '.nojekyll');
+  if (isFile(nj) && statSync(nj).size !== 0) fails.push(`guard (d) failed: .nojekyll must be empty (it is ${statSync(nj).size} bytes)`);
   const idx = join(dir, 'index.html');
   if (isFile(idx)) {
     const buf = readFileSync(idx);
@@ -53,6 +56,10 @@ if (checkDir) {
 }
 
 const out = join(root, 'site');
+if (isLink(out)) {
+  console.error(`site/ is a symlink or junction; refusing to read or write through it (nothing was touched): ${out}`);
+  process.exit(2);
+}
 if (existsSync(out)) {
   const foreign = readdirSync(out, { withFileTypes: true }).filter(e => !NAMES.includes(e.name) || !e.isFile()).map(e => e.name);
   if (foreign.length) {
