@@ -2,10 +2,10 @@ Fit Finder v4.4: hand-off (2026-10-16, session 927f0985, stopped at the 200k con
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to 0f549bb. LOCAL ONLY (not pushed): 0fb4187 (last
-hand-off) and this WIP commit. Push only with Ian's yes. Draft PR #1 into prompt-coach (not
-merged). Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 6 = dist of
-4545647; do not republish until the item below is finished and Ian says yes.
+worktree-fit-finder-v4. Pushed to origin up to 3fa192c. LOCAL ONLY (not pushed): the hand-off
+commits after it. Push only with Ian's yes. Draft PR #1 into prompt-coach (not merged). Live page
+https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 7 = dist of 2deb044; do not
+republish until the item below is finished and Ian says yes. (Updated by a316ccd1.)
 
 NEXT SESSION (written by a316ccd1, supersedes the NEXT SESSION paragraph at the end)
 Ian, 2026-10-16, verbatim: "Fix it in the next session then" (the decimal-point gap).
@@ -13,7 +13,7 @@ Read this file, CLAUDE.md and fit-finder/README.md. Fix the decimal-point gap, t
 - Add catalogue checks: "Explain the year-over-year change of 3.5% in Scope 2 emissions." does NOT get
   fr-yoy-narrative; "Explain the year-over-year change of 3.5% in revenue." still does. Confirm red.
 - Probe first: how many of the 139 texts contain digit.digit (data/tasks.jsonl + data/real/*.jsonl).
-- Candidate (assumed, untested): in both look-arounds replace [^.;] with (?:[^.;]|(?<=d).(?=d)),
+- Candidate (assumed, untested): in both look-arounds replace [^.;] with (?:[^.;]|(?<=\d)\.(?=\d)) (JSON: \\d, \\.),
   keep the 300-char cap. Other [^.;] patterns (sus-anomalies, sus-disclosure's [^.]) may share the gap;
   measure, fix only with Ian's yes.
 - Re-run: catalogue checks (incl. the speed check, under 2 s), cap mutants + a decimal mutant, the
