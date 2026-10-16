@@ -63,3 +63,22 @@ system, a plan to chase people or an exact accounting estimate), so all 19 agree
 held-out score. None of the 120 labelled tasks uses those words (0 of 120 changed fit, steps or
 use case; A and B unchanged), so the held-out figures cannot show the fix is right, only that
 nothing else moved. Not yet measured: whether real tasks get the right use case.
+
+Use cases on real tasks (2026-10-16): four of the Community sustainability prompts got a wrong use
+case or none. A bare "year-over-year" sent an emissions analysis (S1), a data check (S2) and a
+Wdata query (S10) to the financial year-over-year narrative; "duplicate records" sent S2 to finding
+duplicate controls; a "Wdata table" sent S10 to the narrative-and-tables check; and S3 ("generate
+potential explanations ... from the prior reporting period") read as reading only. Now a bare
+"year-over-year" points to the financial narrative only when its sentence names no sustainability
+data and no outliers, anomalies or unusual items; a Wdata table and duplicate records, rows or
+entries no longer match;
+writing, giving or generating explanations is explaining (not explanations other people owe you);
+the prior reporting period is a comparison; and creating a query is drafting. S1 now leads with
+the sustainability executive narrative, S2 gets "ask Workiva AI chat about your file", S3 the
+sustainability anomaly check and S10 the Wdata card (S21: create, improve, explain or fix SQL).
+No fit changed on the 139 tasks; A and B are unchanged. Of the 120 labelled tasks only task 92
+(writing variance explanations for the year-over-year change in emissions) changed: it gains an
+"Explain it" step and its first use case is now the sustainability anomaly check instead of the
+financial narrative. S9 (an executive summary of a query's results) keeps "summarize a file": the
+Wdata card is for writing or fixing a query. Still open: S7 and "review <data> for unusual changes"
+read as reading only, so they reach no use case.

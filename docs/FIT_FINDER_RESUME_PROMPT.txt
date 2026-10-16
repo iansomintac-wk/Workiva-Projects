@@ -1,65 +1,70 @@
-Fit Finder v4.3: hand-off (2026-10-15, session 5127436a, stopped at the 200k context line)
+Fit Finder v4.4: hand-off (2026-10-16, session 927f0985, stopped at the 200k context line)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to fca7320. LOCAL ONLY (not pushed): fb86572, a28bb69,
-61cce43, 9f0aa0c, be12bcf, 5af64e0, 36ff399, 4545647 and this hand-off commit. Push only with
-Ian's yes. Draft PR #1 into prompt-coach: https://github.com/iansomintac/Workiva/pull/1 (not
-merged). Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is still version 5 = dist of
-fca7320 (not republished).
+worktree-fit-finder-v4. Pushed to origin up to 0f549bb. LOCAL ONLY (not pushed): 0fb4187 (last
+hand-off) and this WIP commit. Push only with Ian's yes. Draft PR #1 into prompt-coach (not
+merged). Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 6 = dist of
+4545647; do not republish until the item below is finished and Ian says yes.
 
-IAN'S RULINGS (2026-10-15, his words)
-- On the engine's fit for the 19 Community tasks: "s4, s5, s6 should be partial." (16 of 19
-  agreed; marks saved as ianFit in the git-ignored fit-finder/data/real/2026-10-15-community.jsonl)
-- On how to fix it: "option 1" (narrow word fix, not a rubric rewrite or relabel)
-- On the sustainability anomaly job: "Build option 1." (a use case from S16, no Community post)
-- Session 5127436a, asked "May I push the branch now?": "Yes" (pushed fca7320..c78b4d2).
-- On the sus-anomalies badge: "Most customers have a solution either sustainability, grc, or
-  financial reporting. They can request to enable workiva AI and it works on anything they have
-  in their workspace so if they are we using sustainability they should be able to use any
-  prompt." Then, asked "So keep 'included' and change nothing?": "Yes". The badge stays
-  "included with Workiva AI". (Ledger refused it: project workiva is not registered.)
+IAN'S RULING THIS SESSION (2026-10-16)
+- Asked which open item next, he picked "Fix wrong pointers (Recommended)" (S1, S2, S3, S9/S10
+  of the 19 Community prompts). That is an option label he chose, not his own words.
 
-DONE IN SESSION 5127436a (measured)
-- 5af64e0 finished 9f0aa0c: README (26 use cases, 22 named, 4 left out), capabilities-confirmed.md
-  (left-out line removed; note that S16 names the job), dist rebuilt.
-- Sonnet review of a28bb69..5af64e0 found 4 Important items, each re-run before fixing:
-  36ff399 fixed three (a plan "on how to", "in a table", "into a slide" or "to get our emissions
-  down" had become "not"; "Estimate the tax provision required" was rated good; sus-anomalies
-  matched "unusual wording", carbon credit invoices and an ESG word after ";").
-  Sonnet re-review of 36ff399: ready, minors only; 4545647 fixed two (a plan "in the Workiva
-  platform" or "in a slide tool" read as another system; "carbon numbers" not read as data).
-- Final numbers at 4545647: catalogue checks all pass (13 new checks, each failed first);
-  A 52/60, B 45/60; reach 14 of 30; vs 5af64e0 0 of 120 labelled and 0 of 19 real changed fit,
-  steps or top match; vs fb86572 only S4-S6 (not -> partial); 19 of 19 agree with Ian; mutant
-  without the sustainability words fails the trial-balance guard and 3 negatives; 300k-word input
-  402 ms; build 81,110 bytes; pagetest 72 checks 0 failed.
-- S16 re-read from the raw API (updated 2026-10-01): "Select the periods' data — such as in your
-  sustainability report or Factbook Spreadsheet — then enter this prompt: Analyze this data from
-  [current period] against [previous period]." and "This article is for: Sustainability Reporting
-  Advanced workspaces with Workiva AI enabled Note: Workiva AI is available for any customer who
-  signs the Workiva AI Terms of Use."
+DONE IN THIS WIP COMMIT (measured this session)
+- Cause, traced per prompt: a bare "year-over-year" sent S1 (emissions), S2 (data check) and S10
+  (Wdata query) to fr-yoy-narrative; "duplicate records" sent S2 to grc-rationalize; "Wdata table"
+  sent S10 to fr-narrative-tables; S3's "generate potential explanations ... prior reporting
+  period" read as READ only; "Create a query" was not DRAFT.
+- Fix (word level): engine EXPLAIN = (generat|giv|writ|draft|suggest|offer)\w* + up to 2 words
+  (not "their") + explanations; COMPARE "prior (reporting )?period"; DRAFT "create a query".
+  Catalogue: fr-yoy-narrative bare year-over-year/yoy only when its sentence names no
+  sustainability data and no outliers/anomalies/unusual; fr-narrative-tables not "wdata table";
+  grc-rationalize not "duplicate records/rows/entries/values/data/transactions/invoices/payments/lines".
+- After: S1 -> sus-exec-narrative, gen-summarize-file; S2 -> none (chat with file; the anomaly card
+  needs a sustainability word by design, trial-balance guard); S3 -> sus-anomalies; S10 -> gen-wdata
+  (S21: create, improve, explain, fix SQL). S9 left alone on purpose: it summarizes a query's
+  results, and gen-wdata is for writing or fixing a query (the old hand-off's "S9 misses gen-wdata"
+  was wrong for S9).
+- Checks: catalogue all pass (new checks each failed first); 10 of 10 mutants killed (incl. the two
+  rejected first versions); 139 tasks before/after: only S1, S2, S3, S10 and labelled task 92 changed
+  (92 gains an Explain step; first use case sus-anomalies, then fr-yoy-narrative); no fit changed;
+  A 52/60, B 45/60 unchanged; reach 14 of 30 unchanged.
+- Sonnet review (60,663 tokens, 7 tool uses): 3 Important, all re-run and confirmed, all fixed
+  (financial yoy tasks without "narrative" lost the card; "duplicate control entries" lost
+  grc-rationalize; "list their explanations" became EXPLAIN). Minor "data table" narrowed to wdata.
+- README paragraph "Use cases on real tasks (2026-10-16)" describes the current rule.
 
-ASK IAN (one at a time, recommendation first)
-1. (answered: push yes) 2. (answered: keep "included")
-3. (answered "Yes" to "should I update the live page now?" and push the ruling commit): pushed
-   0f549bb; live page republished as version 6 (version id 1792133074-92ad) from the dist of
-   4545647 (81,110 bytes). Before publishing, the live v5 matched fca7320's dist exactly (only the
-   publish wrapper differed), and fit-finder/web, tests/build.js and prompt-coach/engine had not
-   changed since fca7320, so v6 differs only by the reviewed engine and catalogue changes.
-4. NEXT: ask Ian which open item next (one question, recommendation first).
+NOT DONE (the next session does these, in order)
+1. SPEED REGRESSION, must fix before anything ships. Measured with tmp/regexcost.js (copy below):
+   the changed patterns on a 300k-word input with NO full stops take ~31 s (old 33 ms); on
+   ordinary sentences 61 ms (old 50 ms). Cause: fr-yoy-narrative's lookbehind
+   (?<![^.;]*\b(SUS)\b[^.;]*) and lookahead (?![^.;]*\b(SUS)\b) scan the whole sentence at every
+   year-over-year hit. Planned fix: drop the useless leading [^.;]* in the lookbehind and cap both
+   scans at 300 chars: (?<!\b(SUS)\b[^.;]{0,300}) ... (?![^.;]{0,300}\b(SUS)\b). Test first: a
+   check that fr-yoy-narrative's regex on 300k words with no full stops runs under 2 s (fails now
+   at ~31 s), then the cap, then re-run catalogue checks, the 10 mutants and the 139-task diff.
+   Note: the WHOLE old engine already takes ~32-40 s on that no-stop input (other [^.;]* patterns,
+   e.g. sus-anomalies); that is pre-existing and not in scope unless Ian says so.
+2. Rebuild dist (node tests/build.js), run node tests/pagetest.js (not run this session), update
+   the README byte count. Size note: the committed dist blob is 80,867 bytes (LF), 81,469 on disk
+   (CRLF); README says 81,110 - check which figure build.js prints and use that.
+3. Sonnet re-review of the final diff (git diff 0fb4187..HEAD -- fit-finder/engine
+   fit-finder/data/catalogue.json fit-finder/tests fit-finder/README.md).
+4. Amend nothing; commit the speed fix on top of this WIP commit.
+5. Ask Ian, one at a time: push the branch? republish the live page (v7)?
+Scratch scripts used (in the old job's tmp, may be gone): snap.js (fit/ops/steps/top-3 per task),
+compare.js (old vs new on inputs), mutants.js, regexcost.js. To rebuild "old": git show
+4545647:fit-finder/engine/fit.js and :fit-finder/data/catalogue.json into a scratch folder.
 
 STILL OPEN (each needs Ian's yes)
-- Matching gaps: S1 -> fr-yoy-narrative first; S2 -> grc-rationalize via "duplicate"; S9/S10 miss
-  gen-wdata; S3 "explanations" not read as EXPLAIN. "Review <data> for unusual changes" reads as
-  READ only, so it reaches no use case (match() needs a shared step beyond READ).
-- S16 also offers "Perform a cross-reference check ... quantitative inconsistencies within your
-  sustainability report": a possible second use case (idea only, not raised with Ian).
+- S7 and "review <data> for unusual changes" read as READ only, so they reach no use case.
+- S16 also offers a cross-reference check within the sustainability report (idea only).
 - The "reach a use case" figure counts wrong suggestions; a right-suggestion rate needs gold labels.
 - Design-review NICE items; Benchmarking preview wording conflict; merge.
-- Sessions 648f12e7 (done), 4583497d (blocked), ed322f71 (done) and 5127436a all own this
-  worktree; `claude rm` deletes the worktree, so remove none while a session works here.
+- Sessions 648f12e7, 4583497d, ed322f71, 5127436a, 927f0985 all own this worktree; `claude rm`
+  deletes the worktree, so remove none while a session works here.
 
 NEXT SESSION
-Read this file, CLAUDE.md and fit-finder/README.md. Ask Ian the three questions above, one at a
-time; do only what he says yes to.
+Read this file, CLAUDE.md and fit-finder/README.md. Do NOT-DONE items 1-3 (Ian already chose this
+item), then item 5's questions, one at a time; do only what he says yes to.

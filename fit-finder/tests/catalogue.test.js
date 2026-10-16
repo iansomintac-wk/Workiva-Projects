@@ -72,6 +72,48 @@ for (const t of ['Every quarter I check the sustainability report for typos and 
 check('left out: anomaly review is now a use case', () =>
   assert(!cat.leftOut.some((l) => /anomal/i.test(l.pattern)), 'still listed as left out'));
 
+// Community sustainability prompts (S1, S2, S3, S10 of 2026-10-15) got wrong or no pointers; Ian chose
+// to fix them 2026-10-16. A bare "year-over-year", a "Wdata table" or "duplicate records" is not a
+// financial narrative, a financial table or a duplicate control.
+const matched = (t) => match(t, cat).map((u) => u.id);
+check('S1: emissions year-over-year drivers get no financial card', () => {
+  const m = matched('Analyze our emissions data and find the top three drivers of the year-over-year change in Scope 1 and 2, then summarize it for executives.');
+  assert(!m.some((id) => id.startsWith('fr-')), m.join(','));
+  assert(/^sus-/.test(m[0] || ''), 'first: ' + m[0]);
+});
+check('S2: duplicate records and year-over-year variances are not a narrative or duplicate controls', () => {
+  const m = matched('Review this dataset for outliers, unusual year-over-year variances, missing values and duplicate records, and explain why each needs a look.');
+  assert(!m.includes('fr-yoy-narrative') && !m.includes('grc-rationalize'), m.join(','));
+});
+check('S3: explanations for energy variances against the prior period reach the anomaly check', () =>
+  assert.strictEqual(top('Review this energy consumption data and give possible explanations for any site with a variance over 10% from the prior reporting period.'), 'sus-anomalies'));
+check('S10: a query over a Wdata emissions table reaches the Wdata card, not a financial one', () => {
+  const m = matched('I have a Wdata table of facility, year, emissions source and CO2e. Create a query that returns year-over-year emissions changes by facility.');
+  assert.strictEqual(m[0], 'gen-wdata', m.join(','));
+  assert(!m.some((id) => id.startsWith('fr-')), m.join(','));
+});
+check('ops: explanations is explaining', () => assert(rate('Give explanations for the variances.').ops.includes('EXPLAIN')));
+// ...but not explanations other people owe you, or deciding whether one is needed (labelled tasks 3 and 117)
+for (const t of ['I chase the business unit controllers for their flux explanations.',
+  'Approving cost data, mostly deciding whether odd-looking items need an explanation.'])
+  check('ops: not explaining - ' + t.slice(0, 40), () => assert(!rate(t).ops.includes('EXPLAIN')));
+check('ops: the prior reporting period is a comparison', () =>
+  assert(rate('List each variance from the prior reporting period.').ops.includes('COMPARE')));
+check('ops: creating a query is drafting', () => assert(rate('Create a query that lists each facility.').ops.includes('DRAFT')));
+// ...while the financial narrative and duplicate controls still match (review of the first fix:
+// it needed "narrative" beside year-over-year and dropped these)
+for (const t of ['Every quarter I write the year-over-year commentary on revenue and margins.',
+  'Write the year-over-year bridge for revenue and compare to last year in the 10-K.',
+  "Compare this year's 10-K to last year's and write up what changed year-over-year.",
+  'Draft year-over-year variance analysis for the quarterly filing.',
+  'Explain the yoy movement in opex to the CFO. Include narrative.'])
+  check('match: financial year-over-year - ' + t.slice(0, 40), () => assert(matched(t).includes('fr-yoy-narrative'), matched(t).join(',')));
+for (const t of ['Each year we compare our controls to find the duplicates.',
+  'Find duplicate control entries in our SOX control matrix and group them.'])
+  check('match: duplicate controls - ' + t.slice(0, 40), () => assert.strictEqual(top(t), 'grc-rationalize'));
+check('ops: listing explanations people owe you is not explaining', () =>
+  assert(!rate('Chase owners and list their explanations of variances.').ops.includes('EXPLAIN')));
+
 // sources say how they were read and, when read from the public API, when Workiva last updated them
 for (const [k, s] of Object.entries(cat.sources)) check('source ' + k, () => {
   assert(['api', 'saved'].includes(s.read), 'read must be api or saved');

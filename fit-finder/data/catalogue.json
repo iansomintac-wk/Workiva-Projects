@@ -85,7 +85,7 @@
     {
       "id": "fr-yoy-narrative", "area": "FR", "role": "SEC or external reporting",
       "task": "Write the first draft of the year-over-year change narrative.",
-      "ops": ["DRAFT", "COMPARE"], "match": "year[- ]over[- ]year|yoy|variance (?:narrative|commentary|explanations?)|md&a|flux|change narrative",
+      "ops": ["DRAFT", "COMPARE"], "match": "(?<![^.;]*\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|co2e?|carbon|energy (?:use|usage|consumption|data)|factbook|anomal\\w*|outliers?|unusual)\\b[^.;]*)(?:year[- ]over[- ]year|yoy)\\b(?![^.;]*\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|co2e?|carbon|energy (?:use|usage|consumption|data)|factbook|anomal\\w*|outliers?|unusual)\\b)|variance (?:narrative|commentary|explanations?)|md&a|flux|change narrative",
       "surfaces": ["advisor", "doc", "files"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S2", "S23"],
       "prompt": "Using @[this year's file] and @[last year's file], draft the year-over-year change narrative for [section]. Explain each change of more than [threshold] in one or two sentences, using only figures in the files. Mark anything I need to confirm as [to confirm].",
       "stays": "Checking every figure, and deciding what is worth explaining.",
@@ -103,7 +103,7 @@
     {
       "id": "fr-narrative-tables", "area": "FR", "role": "SEC or external reporting",
       "task": "Check that the narrative, the tables and related documents such as the earnings release say the same thing.",
-      "ops": ["CHECK", "COMPARE"], "match": "narrative|tables?|footnotes?|earnings release|press release|financial statements|consisten\\w*|don'?t (?:agree|match)",
+      "ops": ["CHECK", "COMPARE"], "match": "narrative|(?<!wdata )tables?|footnotes?|earnings release|press release|financial statements|consisten\\w*|don'?t (?:agree|match)",
       "surfaces": ["files", "doc"], "fitBasis": "assumed", "evidence": ["heard"], "refs": ["S3", "S5"],
       "prompt": "You are reviewing @[the draft] against @[the other document] before it goes to review. List every place where a number or statement does not match, with the section and both values. Do not fix anything; I will check each one.",
       "stays": "The tie-out itself and every correction. Keep to one section at a time for long filings.",
@@ -202,7 +202,7 @@
     {
       "id": "grc-rationalize", "area": "GRC", "role": "Internal controls or SOX",
       "task": "Find controls that overlap or duplicate each other.",
-      "ops": ["CLASSIFY", "COMPARE", "READ"], "match": "rationali[sz]\\w*|overlap\\w*|duplicat\\w*|redundan\\w*|too many controls|control descriptions?",
+      "ops": ["CLASSIFY", "COMPARE", "READ"], "match": "rationali[sz]\\w*|overlap\\w*|duplicat\\w*\\b(?! (?:records?|rows?|entries|values?|data|transactions?|invoices?|payments?|lines?)\\b)|redundan\\w*|too many controls|control descriptions?",
       "surfaces": ["grc-chat", "files"], "fitBasis": "assumed", "evidence": ["heard"], "refs": ["S1", "S3"],
       "prompt": "You are an internal controls analyst. Using @[the control list], group controls whose descriptions cover the same risk or activity. For each group give the control IDs and one line on why they look alike. Do not recommend removing any.",
       "stays": "Which controls to merge or retire. Work through one process at a time for long lists.",
