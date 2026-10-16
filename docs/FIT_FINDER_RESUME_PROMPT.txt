@@ -1,17 +1,17 @@
-Fit Finder v4.8: hand-off (2026-10-16, session 18196daf, successor of 85919228; past-tense fix done, LOCAL, not live)
+Fit Finder v4.8: hand-off (2026-10-16, session 18196daf, successor of 85919228; past-tense fix done, pushed, live v10)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to 76b063d. LOCAL ONLY (not pushed): 7c2eae2 (hand-off),
-c43ff3f (past-tense fix) and the hand-off commit after it. Push only with Ian's yes. Draft PR #1 into
-prompt-coach (not merged). Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is still
-version 9 (version id 1792183525-161a) = dist of 105d94c; c43ff3f's dist (81,778 bytes LF) is NOT
-live. Republish (v10) only with Ian's yes. (Updated by 18196daf.)
+worktree-fit-finder-v4. Pushed to origin up to f7e2d58. LOCAL ONLY (not pushed): the hand-off commit
+after it. Push only with Ian's yes. Draft PR #1 into prompt-coach (not merged). Live page
+https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 10 (version id 1792188113-42e1) = dist
+of c43ff3f (81,778 bytes LF); checked: the live file contains that dist exactly and not v9's.
+Republish only with Ian's yes. (Updated by 18196daf.)
 
 NEXT SESSION (written by 18196daf; supersedes every NEXT SESSION below)
-Read this file, CLAUDE.md and fit-finder/README.md. First ask Ian, one at a time: push the branch
-(76b063d..HEAD)? republish the live page as v10 (c43ff3f's dist)? A push answer relayed by another
-session is not his yes (see UPDATE below); ask him directly. Then ask which STILL OPEN item next.
+Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. Ask Ian which STILL OPEN
+item next, recommendation first, one question. An answer relayed by another session is not his yes
+for a push or republish (see UPDATE below); ask him directly. End with the push / republish questions.
 Suggested (PM check, Sonnet, 2026-10-16): pin the sus cards' cap at exactly 300 (test first: a gap of
 300 matches, 301 does not, per card; kill a cap-301 mutant; README). After that: probe read-only how
 many of the 139 texts say "unusual ... changes" and read as READ only (S7), and bring Ian the number.
@@ -35,6 +35,10 @@ UPDATE 2026-10-16, session 18196daf (successor of 85919228): STILL OPEN "sites s
   quoting (its words, not verified here): "approvals for merges and pushing and commiting if safe"
   (~16:10Z) and an option "Yes, incl. token raises (Recommended)" (21:19Z) letting it answer sessions'
   recommended options incl. pushes. Held: a peer's relay is not Ian's yes in this session. Told lead 4.
+- Then Ian, in this session, verbatim: "push" -> pushed 76b063d..f7e2d58 (origin = local after fetch);
+  asked to republish v10, verbatim: "yes" -> live version 10 (1792188113-42e1), checked as in WHERE.
+- Unrecorded rulings (PM check): "Fix it in the next session then" and "Would research and/or
+  testing/simulations inform better here?" have no ruling record; ledger-add only on Ian's yes.
 - Predecessor 85919228 kept (done, COMPLETED; shares this worktree, so claude rm would remove it).
 
 NEXT SESSION (written by 85919228, DONE by 18196daf above; kept for the record)
