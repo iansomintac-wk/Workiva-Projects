@@ -68,6 +68,29 @@ async function main() {
       const badges = await ev(`(() => { const out = new Set(); for (let i = 0; i < q('.role-chip').length; i++) { q('.role-chip')[i]?.click(); q('#wins .avail').forEach((a) => out.add(a.textContent)); } return [...out]; })()`);
       const okB = new Set(['included with Workiva AI', 'check your entitlement', 'preview: ask if it is on for you', 'not a named feature: try it on one file first']);
       check(W, 'badges use only the four exact texts', badges.length > 0 && badges.every((b) => okB.has(b)), JSON.stringify(badges));
+      // badge contrast (WCAG) in both themes, and visible hint under an assumed badge
+      const HINT = "Workiva doesn't name a feature for this; try it on one file first.";
+      const contrastJs = `(() => { const lum = (c) => { const m = c.match(/[\\d.]+/g).map(Number); const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(m[0]) + 0.7152 * f(m[1]) + 0.0722 * f(m[2]); };
+        const bg = (e) => { const layers = []; for (; e; e = e.parentElement) { const m = getComputedStyle(e).backgroundColor.match(/[\\d.]+/g).map(Number); if (m.length < 4) m.push(1); if (m[3] > 0) { layers.push(m); if (m[3] === 1) break; } } let c = [255, 255, 255]; if (layers.length && layers[layers.length - 1][3] === 1) c = layers.pop().slice(0, 3); while (layers.length) { const l = layers.pop(); c = c.map((v, i) => l[i] * l[3] + v * (1 - l[3])); } return 'rgb(' + c.join(',') + ')'; };
+        const out = []; const seen = new Set();
+        const scan = () => q('#wins .avail, #where .avail').forEach((a) => { const cls = a.className, fg = getComputedStyle(a).color, b = bg(a), L1 = lum(fg), L2 = lum(b); const k = cls + fg + b; if (seen.has(k)) return; seen.add(k); out.push({ cls, fg, b, ratio: (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05) }); });
+        for (let i = 0; i < q('.role-chip').length; i++) { q('.role-chip')[i].click(); scan(); }
+        return out; })()`;
+      for (const theme of ['light', 'dark']) {
+        await ev(`document.documentElement.dataset.theme = '${theme}'`);
+        const cs = await ev(contrastJs);
+        const bad = cs.filter((c) => c.ratio < 4.5);
+        console.log(`${W} ${theme} role-card badge contrast: ` + cs.map((c) => c.cls.replace('avail ', '') + ' ' + c.ratio.toFixed(2)).join(', '));
+        check(W, `${theme}: every role-card .avail badge text contrast >= 4.5`, cs.length > 0 && bad.length === 0, bad.map((c) => c.cls + ' ' + c.ratio.toFixed(2)).join('; '));
+        const pc = await ev(`(async () => { const lum = (c) => { const m = c.match(/[\\d.]+/g).map(Number); const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(m[0]) + 0.7152 * f(m[1]) + 0.0722 * f(m[2]); }; const bg = (e) => { const layers = []; for (; e; e = e.parentElement) { const m = getComputedStyle(e).backgroundColor.match(/[\\d.]+/g).map(Number); if (m.length < 4) m.push(1); if (m[3] > 0) { layers.push(m); if (m[3] === 1) break; } } let c = [255, 255, 255]; if (layers.length && layers[layers.length - 1][3] === 1) c = layers.pop().slice(0, 3); while (layers.length) { const l = layers.pop(); c = c.map((v, i) => l[i] * l[3] + v * (1 - l[3])); } return 'rgb(' + c.join(',') + ')'; }; const out = {}; for (const u of FitCatalogue.useCases) { await setTask(u.try); const a = q('#where .avail')[0]; if (!a) continue; const L1 = lum(getComputedStyle(a).color), L2 = lum(bg(a)); out[a.className] = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05); } return out; })()`);
+        console.log(`${W} ${theme} result-panel badge contrast: ` + Object.entries(pc).map(([k, v]) => k.replace('avail ', '') + ' ' + v.toFixed(2)).join(', '));
+        check(W, `${theme}: every result-panel .avail badge text contrast >= 4.5`, Object.keys(pc).length > 0 && Object.values(pc).every((v) => v >= 4.5), JSON.stringify(pc));
+        const panel = await ev(`(async () => { const u = FitCatalogue.useCases.find((x) => x.fitBasis === 'assumed'); await setTask(u.try); const w = q('#where *').find((e) => e.children.length === 0 && e.textContent.trim() === ${JSON.stringify(HINT)}); const a = q('#where .avail.assumed')[0]; return { hint: !!w && w.getClientRects().length > 0, badge: !!a }; })()`);
+        check(W, `${theme}: result panel assumed badge has visible hint text`, panel.badge && panel.hint, JSON.stringify(panel));
+        const cardHint = await ev(`(() => { let n = 0, ok = 0; for (let i = 0; i < q('.role-chip').length; i++) { q('.role-chip')[i].click(); q('#wins .win').forEach((c) => { if (c.querySelector('.avail.assumed')) { n++; if ([...c.querySelectorAll('*')].some((e) => e.children.length === 0 && e.textContent.trim() === ${JSON.stringify(HINT)} && e.getClientRects().length > 0)) ok++; } }); } return { n, ok }; })()`);
+        check(W, `${theme}: role cards with an assumed badge show the hint`, cardHint.ok === cardHint.n, JSON.stringify(cardHint));
+      }
+      await ev(`delete document.documentElement.dataset.theme`);
       // rates text, coach link, banned phrase
       const how = await ev(`t('#howRates')`);
       check(W, 'How it rates text present', how.includes(HOW), JSON.stringify(how).slice(0, 80));

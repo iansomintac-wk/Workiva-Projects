@@ -6,7 +6,7 @@
 :root {
   --bg: #FCF4E8; --surface: #FFFFFF; --ink: #333333; --muted: #666666; --faint: #B2B2B2; --line: #D8D8D8; --soft: #EBEBEB;
   --panel: #333333; --panel-ink: #FCF4E8; --panel-label: #D5B1EB; --mist: #F1E8F7; --sand: #FDEFD3;
-  --blue: #0074E8; --blue-deep: #0058AF; --purple: #8C4CBD; --green: #3F9F3F; --orange: #D76C1F; --red: #DE2800;
+  --blue: #0074E8; --blue-deep: #0058AF; --purple: #8C4CBD; --green: #3F9F3F; --orange: #D76C1F; --red: #DE2800; --green-text: #2B7A2B; --orange-text: #9A4A00; --purple-text: #7A3AAA;
   --tint-S: rgba(0,116,232,.16); --tint-C: rgba(140,76,189,.18); --tint-O: rgba(63,159,63,.18); --tint-P: rgba(248,145,25,.22); --tint-E: rgba(222,40,0,.14);
   --weak-bg: #FBE3DC; --better-bg: #FDEBCB; --strong-bg: #DDF5D0; --on-accent: #FFFFFF;
   --font: "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
@@ -15,14 +15,14 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #1E1D1B; --surface: #2A2826; --ink: #F3EDE3; --muted: #B5AFA6; --faint: #7A756E; --line: #45413C; --soft: #36332F;
   --panel: #121212; --panel-ink: #F3EDE3; --mist: #352B3D; --sand: #3B3222;
-  --blue: #7CBEFF; --blue-deep: #A9D4FF; --purple: #C08EE6; --green: #85DD85; --orange: #F8BD4F; --red: #FF7A5C;
+  --blue: #7CBEFF; --blue-deep: #A9D4FF; --purple: #C08EE6; --green: #85DD85; --orange: #F8BD4F; --red: #FF7A5C; --green-text: #85DD85; --orange-text: #F8BD4F; --purple-text: #D5B1EB;
   --tint-S: rgba(124,190,255,.22); --tint-C: rgba(192,142,230,.24); --tint-O: rgba(133,221,133,.2); --tint-P: rgba(248,189,79,.22); --tint-E: rgba(255,122,92,.22);
   --weak-bg: #4A2A22; --better-bg: #4A3A1E; --strong-bg: #263F24; --on-accent: #121212; color-scheme: dark;
 } }
 :root[data-theme="dark"] {
   --bg: #1E1D1B; --surface: #2A2826; --ink: #F3EDE3; --muted: #B5AFA6; --faint: #7A756E; --line: #45413C; --soft: #36332F;
   --panel: #121212; --panel-ink: #F3EDE3; --mist: #352B3D; --sand: #3B3222;
-  --blue: #7CBEFF; --blue-deep: #A9D4FF; --purple: #C08EE6; --green: #85DD85; --orange: #F8BD4F; --red: #FF7A5C;
+  --blue: #7CBEFF; --blue-deep: #A9D4FF; --purple: #C08EE6; --green: #85DD85; --orange: #F8BD4F; --red: #FF7A5C; --green-text: #85DD85; --orange-text: #F8BD4F; --purple-text: #D5B1EB;
   --tint-S: rgba(124,190,255,.22); --tint-C: rgba(192,142,230,.24); --tint-O: rgba(133,221,133,.2); --tint-P: rgba(248,189,79,.22); --tint-E: rgba(255,122,92,.22);
   --weak-bg: #4A2A22; --better-bg: #4A3A1E; --strong-bg: #263F24; --on-accent: #121212; color-scheme: dark;
 }
@@ -90,8 +90,8 @@ select.mini, .seg button { font-size: 13px; font-weight: 700; border: 1px solid 
 .where { margin-top: 20px; display: grid; gap: 10px; }
 .where h3 { margin: 0; font-size: 19px; font-weight: 900; line-height: 1.3; }
 .where p { margin: 0; font-size: 15px; line-height: 1.55; text-wrap: pretty; } .where p b { font-weight: 800; }
-.avail { justify-self: start; font-size: 12px; font-weight: 800; letter-spacing: .04em; border-radius: 99px; padding: 4px 12px; background: var(--strong-bg); color: var(--green); }
-.avail.entitlement, .avail.assumed { background: var(--better-bg); color: var(--orange); }
+.avail { justify-self: start; font-size: 12px; font-weight: 800; letter-spacing: .04em; border-radius: 99px; padding: 4px 12px; background: var(--strong-bg); color: var(--green-text); }
+.avail.entitlement, .avail.assumed { background: var(--better-bg); color: var(--orange-text); }
 .where .src { font-size: 13px; color: var(--muted); } .where .src a { color: inherit; }
 .where .also { font-size: 13.5px; color: var(--muted); }
 .roles { margin: 0 0 22px; }
@@ -106,7 +106,7 @@ select.mini, .seg button { font-size: 13px; font-weight: 700; border: 1px solid 
 .win .avail { cursor: help; }
 .win button.try { margin-top: auto; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); border-radius: 99px; padding: 6px 16px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
 .win button.try:hover { background: var(--purple); border-color: var(--purple); color: var(--on-accent); }
-.avail.preview { background: var(--tint-C); color: var(--purple); }
+.avail.preview { background: var(--tint-C); color: var(--purple-text); }
 #firstTry { margin-top: 20px; display: grid; gap: 10px; } #firstTry h3 { margin: 0; font-size: 19px; font-weight: 900; }
 #firstTry ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; font-size: 15px; }
 .coachline { margin: 12px 0 0; font-size: 14.5px; } .coachline a { color: var(--blue-deep); font-weight: 700; }
@@ -501,6 +501,7 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
     firstTry(r.fit === 'not' ? null : uc[0]);
   }
 
+  const HINT = "Workiva doesn't name a feature for this; try it on one file first.";
   const BADGE = { 'workiva-ai': 'included with Workiva AI', entitlement: 'check your entitlement', preview: 'preview: ask if it is on for you' };
   function badge(u, s) {
     const named = u.fitBasis !== 'assumed';
@@ -528,7 +529,7 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
         role.wins.slice(0, 3).map((w) => C.useCases.find((u) => u.id === w)).forEach((u) => {
           const s = C.surfaces[u.surfaces[0]], card = el('div', 'card win'), t = el('button', 'try', 'Try it'); t.type = 'button';
           t.onclick = () => { $('task').value = u.try; rep = 'auto'; render(); $('h-fit').scrollIntoView({ behavior: 'smooth' }); };
-          card.append(el('p', 'win-task', u.task), el('p', 'win-feature', s.name), badge(u, s), t);
+          card.append(el('p', 'win-task', u.task), el('p', 'win-feature', s.name), badge(u, s)); if (u.fitBasis === 'assumed') card.append(el('p', 'win-feature', HINT)); card.append(t);
           wins.append(card);
         });
       };
@@ -547,6 +548,7 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
     box.append(el('h3', '', u ? u.task : 'Ask Workiva AI chat about your file'));
     const use = el('p'); use.append(el('b', '', 'Use: '), s.name + '. ' + s.how); box.append(use);
     box.append(badge(u || { fitBasis: 'assumed' }, s));
+    if (!u || u.fitBasis === 'assumed') box.append(el('p', 'also', HINT));
     if (u) { const st = el('p'); st.append(el('b', '', 'Stays with you: '), u.stays); box.append(st); }
     const refs = [...new Set([...(u ? u.refs : []), ...sid.flatMap((x) => C.surfaces[x].sources)])];
     const src = el('p', 'src', 'Source: ');
