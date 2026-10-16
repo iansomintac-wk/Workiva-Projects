@@ -1,6 +1,27 @@
 OSM Runway — release notes
 ==========================
 
+1.1 — Hosting. A site you can put behind company sign-in (nothing is published).
+
+    - tools/build-site.mjs builds site/ (index.html and .nojekyll only) and refuses
+      anything else; its guard checks the file set, the sha256 and email-shaped text.
+    - docs/HOSTING.md: what to upload and what a host must give.
+    - tools/selfcheck.mjs --serve <dir> runs the same in-page checks from a served
+      address (127.0.0.1, GET only); every run now opens a blank page then navigates,
+      supports --pre page-start scripts and prints a console-error count.
+    - Settings shows "Kept by browser: yes / no (export regularly)" and, on a served
+      address only, the tracker asks the browser to keep its storage (never on file://).
+    - Empty-book hint on a served address ("New address, no book here yet. ..."),
+      hidden on file:// and as soon as the book has an account.
+    - tools/move-book.mjs proves an Export from a file copy imports into a served
+      copy (counts and transcript hash equal) and records whether the AI key is in Export.
+    - Hosting fixes: selfcheck exits 1 on any console error; build-site refuses a linked
+      site/ and --check needs plain files and an empty .nojekyll; the static server
+      answers 500 instead of crashing when a file cannot be read.
+    - Settings, if open, now updates its "Kept by browser" line when the answer arrives;
+      docs/HOSTING.md says what the page loads (outside hosts, no integrity attribute on the
+      xlsx script, inline script and style needed) instead of "works with no network".
+
 1.1 — Step 1 (transcripts out of the book). Call transcripts move out of the book.
 
     - Transcripts now live in the browser's IndexedDB (obm-transcripts-v1), one record

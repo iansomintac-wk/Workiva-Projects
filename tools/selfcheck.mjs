@@ -4,14 +4,19 @@
 //   --suite: an external suite injected as an INLINE <script> after the page loads. Default: tools/selfchecks.js
 //   when the target is osm-book-of-business-tracker-1.0.html, otherwise none (the guide keeps its in-page suite).
 //   --profile: use <dir> (must be inside the OS temp folder) as the Chrome profile and do not delete it at exit.
+//   --dump <file>: after the run, write window.__dump (a string) to <file> (must be inside the OS temp folder).
+//   --serve <dir>: serve <dir> (must hold an index.html with the same sha256 as the positional file) from a GET-only server on 127.0.0.1 and run against http://127.0.0.1:<port>/ instead of file://.
+//   --pre a.js[,b.js]: scripts registered with Page.addScriptToEvaluateOnNewDocument, so they run before the page's own scripts. window.__hostExpect = {protocol, host} is always registered first.
 // Exit 0 when every check passes and the count matches --expect.
 // NOT part of the distributable bundle — dev tooling, like docs/.
 
 import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, basename, dirname, sep } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
+import { startStaticServer } from './static-server.mjs';
 
 const CHROME_CANDIDATES = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
@@ -54,23 +59,43 @@ if (!existsSync(target)) { console.error(`No such file: ${target}`); process.exi
 const chrome = CHROME_CANDIDATES.find(p => existsSync(p));
 if (!chrome) { console.error('Could not find Chrome or Edge.'); process.exit(2); }
 
-const targetUrl = pathToFileURL(target).href;
+const serveFlag = flag('serve', null);
+let served = null;
+if (serveFlag) {
+  const dir = resolve(serveFlag), idx = join(dir, 'index.html');
+  if (!existsSync(idx)) { console.error(`--serve: no index.html in ${dir}`); process.exit(2); }
+  const h = f => createHash('sha256').update(readFileSync(f)).digest('hex');
+  if (h(idx) !== h(target)) { console.error(`--serve: ${idx} is not the same build as ${target} (sha256 differs). Run: node tools/build-site.mjs`); process.exit(2); }
+  served = await startStaticServer(dir);
+  console.log(`serving ${dir} at ${served.url}`);
+}
+const targetUrl = served ? served.url : pathToFileURL(target).href;
+const expectProtocol = served ? 'http:' : 'file:';
+const expectHost = served ? new URL(served.url).host : '';
+const preFiles = (flag('pre', '') || '').split(',').filter(Boolean);
+for (const f of preFiles) if (!existsSync(resolve(f))) { console.error(`--pre: no such file: ${resolve(f)}`); process.exit(2); }
 const profileFlag = flag('profile', null);
 if (profileFlag) {
   const root = (resolve(tmpdir()) + sep).toLowerCase(), want = (resolve(profileFlag) + sep).toLowerCase();
   if (!want.startsWith(root)) { console.error('--profile must be a folder inside ' + tmpdir()); process.exit(2); }
+}
+const dumpFlag = flag('dump', null);
+if (dumpFlag) {
+  const root = (resolve(tmpdir()) + sep).toLowerCase(), want = resolve(dumpFlag).toLowerCase();
+  if (!want.startsWith(root)) { console.error('--dump must be a file inside ' + tmpdir()); process.exit(2); }
 }
 const profile = profileFlag ? resolve(profileFlag) : mkdtempSync(join(tmpdir(), 'selfcheck-'));
 const child = spawn(chrome, [
   '--headless=new', `--remote-debugging-port=${PORT}`, `--user-data-dir=${profile}`,
   '--no-first-run', '--no-default-browser-check', '--disable-gpu',
   '--allow-file-access-from-files',
-  targetUrl,
+  'about:blank',
 ], { stdio: ['ignore', 'ignore', 'pipe'] });
 
 let chromeStderr = '';
 child.stderr.on('data', d => { chromeStderr += String(d); });
 const cleanup = () => {
+  try { if (served) { served.server.closeAllConnections?.(); served.server.close(); } } catch {}
   try { child.kill('SIGKILL'); } catch {}
   try { if (!profileFlag) rmSync(profile, { recursive: true, force: true }); } catch {}
 };
@@ -151,7 +176,7 @@ function rpc(ws) {
   });
 }
 
-const page = await findPage(Date.now() + 20000, targetUrl);
+const page = await findPage(Date.now() + 20000, 'about:blank');
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((res, rej) => {
   ws.addEventListener('open', res, { once: true });
@@ -159,14 +184,32 @@ await new Promise((res, rej) => {
 });
 const send = rpc(ws);
 
-const pageErrors = [];
+const pageErrors = [];     // Runtime.exceptionThrown (counted before, and still decides the exit code)
+const consoleErrors = [];  // console.error(...) calls
+const logErrors = [];      // Log.entryAdded level "error": failed resource loads, security messages
+const netFails = [];       // Network.loadingFailed, not cancelled
+const reqUrl = new Map();
+let ignoredFavicon = 0;
+const isFavicon = u => /\/favicon\.ico(\?|$)/i.test(String(u || ''));
 await send('Runtime.enable');
 await send('Page.enable');
+await send('Log.enable');
+await send('Network.enable');
 ws.addEventListener('message', ev => {
   let m; try { m = JSON.parse(ev.data); } catch { return; }
+  const p = m.params || {};
   if (m.method === 'Runtime.exceptionThrown') {
-    pageErrors.push(m.params.exceptionDetails?.exception?.description
-      || m.params.exceptionDetails?.text || 'unknown exception');
+    pageErrors.push(p.exceptionDetails?.exception?.description || p.exceptionDetails?.text || 'unknown exception');
+  } else if (m.method === 'Runtime.consoleAPICalled' && p.type === 'error') {
+    consoleErrors.push((p.args || []).map(a => a.value ?? a.description ?? '').join(' ').slice(0, 200));
+  } else if (m.method === 'Log.entryAdded' && p.entry?.level === 'error') {
+    if (isFavicon(p.entry.url) || isFavicon(p.entry.text)) ignoredFavicon++;
+    else logErrors.push(`${p.entry.source}: ${String(p.entry.text).slice(0, 160)} ${p.entry.url || ''}`);
+  } else if (m.method === 'Network.requestWillBeSent') {
+    reqUrl.set(p.requestId, p.request?.url);
+  } else if (m.method === 'Network.loadingFailed' && !p.canceled) {
+    const u = reqUrl.get(p.requestId);
+    if (isFavicon(u)) ignoredFavicon++; else netFails.push(`${u || p.requestId}: ${p.errorText}`);
   }
 });
 
@@ -182,10 +225,17 @@ await send('Emulation.setDeviceMetricsOverride', {
   width, height, deviceScaleFactor: 1, mobile: false,
 });
 
+// Page-start scripts first, THEN navigate: they run before any of the page's own scripts.
+const pre = [`window.__hostExpect = ${JSON.stringify({ protocol: expectProtocol, host: expectHost })};`,
+  ...preFiles.map(f => readFileSync(resolve(f), 'utf8'))];
+for (const source of pre) await send('Page.addScriptToEvaluateOnNewDocument', { source });
+const nav = await send('Page.navigate', { url: targetUrl });
+if (nav.errorText) { console.error(`Page.navigate to ${targetUrl} failed: ${nav.errorText}`); process.exit(2); }
+
 // For a page with an external suite, wait for the app, not for runSelfChecks.
 const readyExpr = suitePath
-  ? `document.readyState === 'complete' && typeof saveData === 'function' && window.__appReadyDone !== false`
-  : `document.readyState === 'complete' && typeof window[${JSON.stringify(seedPaths.length ? 'runSelfChecks' : fnName)}] === 'function'`;
+  ? `location.href !== 'about:blank' && document.readyState === 'complete' && typeof saveData === 'function' && window.__appReadyDone !== false`
+  : `location.href !== 'about:blank' && document.readyState === 'complete' && typeof window[${JSON.stringify(seedPaths.length ? 'runSelfChecks' : fnName)}] === 'function'`;
 const readyDeadline = Date.now() + 30000;
 let ready = false;
 while (Date.now() < readyDeadline) {
@@ -201,6 +251,10 @@ if (!ready) {
   if (pageErrors.length) console.error('Page errors:\n  ' + pageErrors.join('\n  '));
   process.exit(2);
 }
+const gotOrigin = (await send('Runtime.evaluate', { expression: 'location.protocol + "//" + location.host', returnByValue: true })).result?.value;
+const wantOrigin = `${expectProtocol}//${expectHost}`;
+console.log(`page origin: ${gotOrigin}`);
+if (gotOrigin !== wantOrigin) { console.error(`page origin ${gotOrigin} is not the expected ${wantOrigin}`); process.exit(2); }
 
 if (suitePath) {
   if (!existsSync(suitePath)) { console.error(`No such suite: ${suitePath}`); process.exit(2); }
@@ -277,15 +331,23 @@ const passed = out.total - out.failed.length;
 if (verbose) for (const p of out.passes) console.log(`  PASS  ${p.name}${p.detail ? ` — ${p.detail}` : ''}`);
 console.log(`${fnName}: ${passed}/${out.total} passed, ${out.failed.length} failed`);
 for (const f of out.failed) console.log(`  FAIL  ${f.name}${f.detail ? ` — ${f.detail}` : ''}`);
+const errTotal = pageErrors.length + consoleErrors.length + logErrors.length + netFails.length;
+console.log(`console errors: ${errTotal} (exceptions ${pageErrors.length}, console.error ${consoleErrors.length}, log ${logErrors.length}, network ${netFails.length}; favicon requests ignored ${ignoredFavicon})`);
+for (const e of [...consoleErrors, ...logErrors, ...netFails]) console.log('  ' + String(e).split('\n')[0]);
 if (pageErrors.length) {
   console.log(`\n${pageErrors.length} console error(s) on load:`);
   for (const e of pageErrors) console.log('  ' + e.split('\n')[0]);
 }
 
+if (dumpFlag) {
+  const d = await send('Runtime.evaluate', { expression: 'typeof window.__dump === "string" ? window.__dump : null', returnByValue: true });
+  if (typeof d.result?.value !== 'string') { console.error('--dump: window.__dump was not set by the run.'); process.exit(2); }
+  writeFileSync(resolve(dumpFlag), d.result.value);
+}
 let code = out.failed.length ? 1 : 0;
 if (expect !== null && out.total !== Number(expect)) {
   console.log(`\nExpected ${expect} checks, the suite defines ${out.total}.`);
   code = 1;
 }
-if (pageErrors.length) code = 1;
+if (pageErrors.length || errTotal > 0) code = 1;
 process.exit(code);

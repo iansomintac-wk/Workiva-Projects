@@ -1,0 +1,50 @@
+Runway hosting run: RESUME after lead 2's context stop (lead a1bd5f15, 2026-10-16 ~16:12 PDT).
+
+Read first, in order:
+  docs/RUNWAY_HOSTING_RUN_PROMPT.txt  (the run prompt: order of work, checks, safety rules, slip. All of it still holds.)
+  .ledger/2026-10-15-runway-hosting/progress.md  (the run's memory; read from "## Resume (lead a1bd5f15" down)
+  .ledger/2026-10-15-runway-hosting/reviews/final-merged.md  (the fix round, FX1-FX6, and Ian's one call)
+Method: studio-harness:talk-and-run, "The run". First check: echo "$STUDIO_RUN_LEDGER"; test -f on its budget.json and slip.json.
+Lead coordinates only; one fresh helper per piece, in order, never in parallel.
+
+Where it stands (branch runway-hosting, head 5175f9a, pushed to origin/runway-hosting under the slip):
+  Plan tasks 1-6: ALL DONE, each checked by a fresh checker and re-run by the lead (rows T1..T6L). Final C1-C8 at 5175f9a:
+    C1 sha256 b3f7bf8520421e60d7e73f7445c281840cac7724b9f218b95054dde1730fe36b (1.1 = site/index.html = HOSTING.md), 2 files;
+    node tests 37 pass/0 fail/1 skipped (file symlink EPERM; junction test runs); 475/475 file, served and 1.0, console errors 0;
+    hostingProbe 14/14 both ways; step0 34/34; step1 72/72; move-book C6 PASS 17/17 87/87 3/3, C4 PASS, C7 FINDING absent;
+    1.0 diff exit 0. C9 measured at 5175f9a (c9-final.txt): remote unchanged, .github 0, Pages 404, PRIVATE, no origin/master.
+  Final review: Codex (revise, 2 MUST) + Opus (approve, 0 MUST); merged in reviews/final-merged.md. The lead resolved the
+    must-fix disagreement by fixing both in the fix round. Helper tokens used: 1,019,302 of 2,000,000; budget.json tasksLeft 5.
+
+Next, in order:
+  1. Fix task FA (FX1-FX4: selfcheck exit 1 on console errors + control + HOSTING.md:27; build-site refuses a linked site/;
+     --check lstat + empty .nojekyll; static-server stat/stream errors). FX1 FIRST: measure the console-errors line on the
+     step0Probe and step1Probe runs (assumed 0, not measured); non-zero = STOP for Ian.
+     studio-harness:implementer -> lead-made red export (parent tree + FA's new tests) -> studio-harness:checker -> lead re-run.
+  2. Fix task FB (FX5 Settings line refresh + probe check, hostingProbe 14 -> 15, HOSTING.md fingerprint in the same commit;
+     FX6 HOSTING.md "What the page loads"). Same chain; REG with P = 15.
+  3. Evidence doc docs/evidence/2026-10-15-runway-hosting.md: C1-C9 each marked measured, C7 finding (absent), the real-host
+     checks not yet run (publish session), Ian's call (pin or vendor xlsx), nits N1-N4/N7 as later.
+  4. Lead re-runs C1-C9 on the final head. Then the Hand-off PM step (studio-harness:pm, model: sonnet), commit its draft.
+  5. Merge under the slip ONLY if all hold: C1-C9 green on the lead's re-run, no must-fix open, master tagged pre-hosting first,
+     one --no-ff merge commit; keep the branch; never push master. Push runway-hosting again (slip: "Yes, its own branch").
+     Copy .ledger/2026-10-15-runway-hosting to the main checkout's .ledger/. Final message to Ian (push notification AND in
+     session): what merged, the evidence doc, Ian's xlsx call, and that publishing waits on his Settings -> Pages check.
+
+Known traps (both leads):
+  - At every stop: push notification AND the question in the session.
+  - Check lines: write them with a quoted heredoc. A backslash before & slipped in once (2>\&1 wrote a file named "&1").
+    Smoke-run each new line yourself before a checker uses it. Grep "Harness failure|never became available" in selfcheck
+    lines: an old-harness exit 2 once showed no reason (recorded as load; passed on 2 re-runs).
+  - A task's parent may be a hand-off commit: diff the file list from the real parent (Task 3's was 6ca30b4, not c4e4486).
+  - The 1.1 app file has 5 "function render(){"; the top-level one is ~9305.
+  - Codex: text on stdin from the job tmp dir: codex exec --skip-git-repo-check -s read-only -o <file> < input. Only while
+    codex login status says "Logged in using ChatGPT". A reaped Codex job: recover the answer from its log; do not restart it.
+  - Hand-off PM dispatch needs model: sonnet. A local merge may be refused by the auto-mode classifier despite the slip: then
+    stop and give Ian the one `!` command.
+  - Do NOT claude rm 8e5707bc, 50d4c352 or a1bd5f15 before the ledger is copied to the main checkout (claude rm deletes the
+    session's worktree, which is this run's worktree). Remove worktrees only with studio-harness bin/remove-worktree.mjs.
+  - README.txt, CHANGELOG.txt, tools/selfcheck.mjs are CRLF in the working tree; keep their line endings.
+
+Session names: you are the successor of a1bd5f15 ("NEW - Runway hosting run 2"). Its rename to COMPLETED is done by
+a1bd5f15 itself once you are running. Name yourself per the launch: "NEW - Runway hosting run 3".

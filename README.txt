@@ -27,6 +27,10 @@ Copilot features are the exception: they send a prompt to an AI provider
 Settings or through the optional local connector, and need a network
 connection. Everything else works offline.
 
+Hosted: the 1.1 tracker can also be served from a company-sign-in site. Running
+node tools/build-site.mjs makes site/ (two files); docs/HOSTING.md says what a
+host must provide. Nothing here publishes anything.
+
 
 What the tracker does
 ---------------------
