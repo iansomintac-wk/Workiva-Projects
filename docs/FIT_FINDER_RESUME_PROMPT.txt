@@ -18,7 +18,10 @@ UPDATE 2026-10-16, session a316ccd1 (successor of 927f0985)
   point splits the sentence, so 'Explain the year-over-year change of 3.5% in Scope 2 emissions.'
   still gets fr-yoy-narrative (same at 0fb4187 and 0a7524d, not caused by the cap). Open, needs Ian.
 - Predecessor 927f0985 kept (shares this worktree; rm would delete it; unpushed commits).
-- Remaining: item 5 questions (push? republish v7?), then the decimal-point gap if Ian wants it.
+- Ian said yes to both item 5 questions (option labels he chose, not his words): branch pushed
+  (0f549bb..3fa192c); live page republished as version 7 (version id 1792163169-5d77), checked:
+  the live file contains the new dist exactly. This note itself is a local commit (not pushed).
+- Next, needs Ian: the decimal-point gap above; then the STILL OPEN list.
 
 IAN'S RULING THIS SESSION (2026-10-16)
 - Asked which open item next, he picked "Fix wrong pointers (Recommended)" (S1, S2, S3, S9/S10
