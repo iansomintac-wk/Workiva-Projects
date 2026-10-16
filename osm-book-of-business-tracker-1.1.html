@@ -3044,6 +3044,32 @@ async function saveTranscriptVerified(activityId, text){
   _tsVersion++;
   return out;
 }
+/* Task 6: the move on load. savePremigrationCopy is a function declaration (the probe swaps it). It THROWS on
+   failure; loadData moves nothing unless it succeeded. Key = date + first 12 hex of the original string's SHA-1. */
+async function savePremigrationCopy(raw){
+  const key = todayISO() + ':' + (await sha1Hex(raw)).slice(0, 12);
+  await tsTx('premigration', 'readwrite', s => s.put({date: key, raw}));
+}
+async function moveInlineTranscripts(data){
+  if(!(await tsOpen())) return {moved: 0, failed: 0, unavailable: true};
+  let moved = 0, failed = 0;
+  for(const list of Object.values((data && data.activities) || {})){
+    for(const a of (list || [])){
+      const old = a && a.transcript;
+      if(!old || typeof old.text !== 'string' || !old.text.trim()) continue;
+      try{
+        const t = await saveTranscriptVerified(a.id, old.text);
+        if(!t){ failed++; continue; }
+        a.transcript = {ref: t.ref, chars: t.chars, sha1: t.sha1, truncated: old.truncated === true};
+        moved++;
+      }catch(e){ failed++; }   // this one stays inline; the others still move
+    }
+  }
+  return {moved, failed, unavailable: false};
+}
+function hasInlineTranscript(data){
+  return Object.values((data && data.activities) || {}).some(list => (list || []).some(a => a && a.transcript && typeof a.transcript.text === 'string' && a.transcript.text.trim()));
+}
 /* Task 5: the safe saving order. Stage (write, read back, check) -> commit the book -> only then drop the
    old record. A call drops only a record it created, and never one the book (any activity) still points to. */
 async function stageTranscript(activityId, text){
@@ -5106,7 +5132,7 @@ function requestStageChange(c, stageKey){
    explicit step in migrateData(). backfillCustomerRecord remains for per-record field
    defaults on legacy/imported records, but new-shape changes get a numbered migration —
    version-blind additive guessing is how backfill logic rots. */
-const CURRENT_SCHEMA_VERSION = 16; // 16: queue items carry status/fields/externalId/sentAt/error; optional gong/gainsight records; optional stakeholder email (C-1); 15: FR/GRC default gate lists filled where empty (M3); 14: + c.goals, c.exit, c.graduation, config.goalGates (13: curriculum identity)
+const CURRENT_SCHEMA_VERSION = 17; // 17: transcripts live in IndexedDB (obm-transcripts-v1); activity.transcript is {ref,chars,sha1,truncated}, inline {text,truncated} still read; 16: queue items carry status/fields/externalId/sentAt/error; optional gong/gainsight records; optional stakeholder email (C-1); 15: FR/GRC default gate lists filled where empty (M3); 14: + c.goals, c.exit, c.graduation, config.goalGates (13: curriculum identity)
 
 /* The single gate for clock times. Accepts "H:MM" and "HH:MM" on a 24h clock and
    returns a zero-padded "HH:MM"; everything else returns null and the field is
@@ -5551,6 +5577,11 @@ function migrateData(data){
     });
     v = 16;
   }
+  if(v === 16){
+    /* v16 -> v17 (Step 1). No shape change here: loadData() moves inline transcript text into IndexedDB
+       (after the pre-move copy is saved) and an inline {text,truncated} stays legal in 17. */
+    v = 17;
+  }
   data.schemaVersion = v;
   // Sanity: contradictory risk thresholds (watch >= alert) make the watch tier
   // unreachable and invert the risk ladder silently — reset both to defaults.
@@ -5709,7 +5740,10 @@ async function loadData(){
   let raw = null;
   try{
     raw = localStorage.getItem(STORAGE_KEY);
-    DATA = raw ? prepareBookData(JSON.parse(raw), 'Saved data') : defaultData();
+    let storedSchema = CURRENT_SCHEMA_VERSION;
+    let parsedRaw = null;
+    if(raw){ parsedRaw = JSON.parse(raw); storedSchema = parsedRaw && parsedRaw.schemaVersion; }   // read BEFORE prepareBookData migrates it in place
+    DATA = raw ? prepareBookData(parsedRaw, 'Saved data') : defaultData();
     if(raw){
       const repairs = repairReportSummary(_repairReport);
       if(repairs){
@@ -5717,6 +5751,14 @@ async function loadData(){
         // below — keep the pre-repair payload under a dated side key first.
         try{ localStorage.setItem(STORAGE_KEY + '-prerepair-' + todayISO(), raw); }catch(e){}
         showToast('Loaded with repairs: ' + repairs);
+      }
+      // 1.1 Step 1: move inline transcripts to IndexedDB, but ONLY after the pre-move copy of the original book is saved.
+      const needsMove = !(storedSchema >= 17) || hasInlineTranscript(DATA);
+      if(needsMove && await tsOpen()){
+        let copied = false;
+        try{ await savePremigrationCopy(raw); copied = true; }catch(e){ copied = false; }
+        if(copied) await moveInlineTranscripts(DATA);
+        else window.__moveSkipped = 'pre-move copy failed';   // nothing moved; transcripts stay inline; the next load tries again
       }
       // 1.1 Step 0: persist migrations/backfills/pause cleanup only when they changed the book.
       if(JSON.stringify(DATA) !== raw) saveData();

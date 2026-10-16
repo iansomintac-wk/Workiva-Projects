@@ -243,6 +243,91 @@
         }
       }
 
+      { // T6: the move
+        const tsOf = () => DATA.activities[cid].filter(a => a.id.startsWith('mv'));
+        const keyOf = async raw => todayISO() + ':' + (await sha1Hex(raw)).slice(0, 12);
+        const getPre = async raw => { const k = await keyOf(raw); return tsTx('premigration', 'readonly', s => s.get(k)); };
+        const mkRaw = (n, chars, schema) => { const b = cloneData(DATA); b.schemaVersion = schema || 16; b.synthetic = true;
+          b.activities[cid] = (b.activities[cid] || []).filter(a => !a.id.startsWith('mv'));
+          for(let i = 0; i < n; i++) b.activities[cid].push({id: 'mv' + i, date: todayISO(), type: 'Call', summary: 's' + i, checklist: [], transcript: {text: fixtureText(i, chars), truncated: false}});
+          return JSON.stringify(b); };
+        await withBook(async () => {
+          const raw = mkRaw(3, 20000);
+          realSet.call(localStorage, STORAGE_KEY, raw);
+          const w0 = bookWrites();
+          await loadData();
+          const stored = localStorage.getItem(STORAGE_KEY);
+          const first = tsOf()[0];
+          rec('T6 a v16 book with inline transcripts moves: refs in the book, schema 17, exact records, readable at once',
+            DATA.schemaVersion === 17 && tsOf().every(a => a.transcript.ref && a.transcript.text === undefined) && !stored.includes(fixtureText(0, 20000).slice(100, 300)) &&
+            activityTranscript(first).text === fixtureText(0, 20000) && (await tsGet(first.transcript.ref)).text === fixtureText(0, 20000));
+          rec('T6 the move saves the book exactly once (guard: also true before the change)', bookWrites() - w0 === 1, 'writes=' + (bookWrites() - w0));
+          const pre = await getPre(raw);
+          rec('T6 C6: the pre-move copy in IndexedDB is identical to the original book string', !!pre && pre.raw === raw, `same=${pre && pre.raw === raw}`);
+          const before = await tsTx('transcripts', 'readonly', s => s.count());
+          const w1 = bookWrites(); await loadData();
+          const after = await tsTx('transcripts', 'readonly', s => s.count());
+          rec('T6 loading the moved book again writes nothing and adds no records (a second tab moving at once would write the same refs)',
+            bookWrites() === w1 && before === 3 && after === 3 && DATA.schemaVersion === 17, `records=${after}`);
+        });
+        await withBook(async () => {   // two different books on one day each keep their own original
+          const rawA = mkRaw(1, 2000), rawB = mkRaw(2, 2500);
+          realSet.call(localStorage, STORAGE_KEY, rawA); await loadData();
+          realSet.call(localStorage, STORAGE_KEY, rawB); await loadData();
+          const pa = await getPre(rawA), pb = await getPre(rawB);
+          rec('T6 C6 (same day): a second, different book moved the same day keeps its own original, not the first one',
+            !!pa && !!pb && pa.raw === rawA && pb.raw === rawB && pa.date !== pb.date);
+        });
+        await withBook(async () => {   // a book already stamped 17 (IndexedDB was down) that still holds inline text
+          const raw = mkRaw(2, 4000, 17);
+          realSet.call(localStorage, STORAGE_KEY, raw);
+          await loadData();
+          const pre = await getPre(raw);
+          rec('T6 a book already stamped 17 that still holds inline text gets the pre-move copy BEFORE its transcripts move',
+            !!pre && pre.raw === raw && tsOf().length === 2 && tsOf().every(a => a.transcript.ref));
+        });
+        await withBook(async () => {   // the copy must succeed before anything moves
+          const raw = mkRaw(2, 3000);
+          realSet.call(localStorage, STORAGE_KEY, raw);
+          const realCopy = window.savePremigrationCopy; window.savePremigrationCopy = async () => { throw new Error('probe: copy refused'); };
+          try{ await loadData(); }finally{ window.savePremigrationCopy = realCopy; }
+          rec('T6 if the pre-move copy cannot be saved, nothing moves: transcripts stay inline and readable, no record is written',
+            tsOf().length === 2 && tsOf().every(a => a.transcript.text && !a.transcript.ref) && activityTranscript(tsOf()[0]).text === fixtureText(0, 3000) &&
+            (await tsTx('transcripts', 'readonly', s => s.count())) === 0);
+        });
+        await withBook(async () => {   // C5 (Guard: green before the change, because nothing moves yet)
+          const raw = mkRaw(2, 5000);
+          realSet.call(localStorage, STORAGE_KEY, raw);
+          _tsForceDown = true; _tsDbP = null;
+          const toasts = []; const rt = window.showToast; window.showToast = m => toasts.push(m);
+          let threw = false; try{ await loadData(); }catch(e){ threw = true; }
+          window.showToast = rt; _tsForceDown = false; _tsDbP = null;
+          rec('T6 C5 (guard): IndexedDB unavailable - the book loads, inline transcripts stay readable and stay inline, no error toast',
+            !threw && DATA.customers.length > 0 && tsOf().length === 2 && tsOf().every(a => a.transcript.text && !a.transcript.ref) &&
+            activityTranscript(tsOf()[1]).text === fixtureText(1, 5000) && !toasts.some(m => /error|fail|could not/i.test(m)), JSON.stringify(toasts));
+        });
+        await withBook(async () => {   // one bad record must not block the others
+          const raw = mkRaw(3, 3000);
+          realSet.call(localStorage, STORAGE_KEY, raw);
+          const realGet = tsGet; window.tsGet = async ref => { const r = await realGet(ref); return r && ref.startsWith('mv1:') ? Object.assign({}, r, {text: r.text + '!'}) : r; };
+          try{ await loadData(); }finally{ window.tsGet = realGet; }
+          rec('T6 a record that fails its read-back stays inline while the others move',
+            tsOf().filter(a => a.transcript.ref).length === 2 && tsOf().filter(a => a.transcript.text).length === 1 && tsOf().every(a => activityTranscript(a)));
+        });
+        await withBook(async () => {   // C2
+          const N = 50;
+          const rawWith = mkRaw(N, 40000);
+          realSet.call(localStorage, STORAGE_KEY, rawWith);
+          await loadData();
+          const stored = localStorage.getItem(STORAGE_KEY);
+          const base = JSON.parse(stored); base.activities[cid].forEach(a => { if(a.id.startsWith('mv')) delete a.transcript; });   // same normalized book, transcripts removed
+          const baseLen = JSON.stringify(base).length;
+          let kept = 0; tsOf().forEach((a, i) => { if(a.transcript && a.transcript.ref && activityTranscript(a) && activityTranscript(a).text === fixtureText(i, 40000)) kept++; });
+          rec('T6 C2: after the move the stored book is at most 200 chars per transcript above the same book with none, and all 50 refs and their texts survive',
+            stored.length - baseLen <= 200 * N && tsOf().length === N && kept === N, `stored=${stored.length} base=${baseLen} perTranscript=${((stored.length - baseLen) / N).toFixed(0)} kept=${kept}`);
+        });
+      }
+
       rec('probe reached the end', true);
     }catch(e){
       rec('probe threw', false, String(e && e.stack || e));

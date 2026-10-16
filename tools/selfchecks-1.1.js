@@ -7673,11 +7673,11 @@ function _runSelfChecksInner(){
       const again = prepareBookData(cloneData(p), 'SelfCheck');
       const noGong = Object.keys(p.activities).every(k => p.activities[k].every(a => a.gong === undefined));
       const noGs = p.customers.every(c => c.gainsight === undefined);
-      ok = CURRENT_SCHEMA_VERSION === 16 && p.schemaVersion === 16 && snap(again) === before && noGong && noGs
+      ok = CURRENT_SCHEMA_VERSION === 17 && p.schemaVersion === 17 && snap(again) === before && noGong && noGs
         && p.gainsightQueue[0].status === 'queued';
       detail = JSON.stringify({cur: CURRENT_SCHEMA_VERSION, schema: p.schemaVersion, idem: snap(again) === before, noGong, noGs});
     }catch(err){ detail = err.message; }
-    check('c1e (trim): CURRENT_SCHEMA_VERSION is 16; a v15 book lands on 16, adds no gong/gainsight, and a second pass is JSON-identical', ok, detail);
+    check('c1e (trim): CURRENT_SCHEMA_VERSION is 17; a v15 book lands on 17, adds no gong/gainsight, and a second pass is JSON-identical', ok, detail);
   })();
   (function(){                                   // c1f (trim) stakeholder email
     let ok = false, detail = '';
