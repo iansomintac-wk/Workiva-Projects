@@ -17,6 +17,15 @@ Suggested (PM check, Sonnet, 2026-10-16): pin the sus cards' cap at exactly 300 
 both cards' cap is 300; test first: a gap of 300 matches, 301 does not, per card; kill a cap-301 mutant;
 README). Program lead is now "NEW - 24h program lead 5" (592afc9a); send it status.
 
+UPDATE 2026-10-16, session df09b9bd: PUSHED and REPUBLISHED (supersedes WHERE's "local only" / "v10")
+- Ian picked "Push (Recommended)" (option label, question tool, no relay message): pushed
+  f7e2d58..77c4131; after fetch origin = local = 77c4131. LOCAL ONLY now: the commit that adds this note.
+- Ian picked "Republish v11 (Recommended)" (same): live is version 11 (version id 1792191655-4eb4) = dist
+  of dd1adcd (82,037 bytes LF). Before publishing: v10's live file contained c43ff3f's dist exactly, and
+  the new dist differed from it only in the 4 engine lines. Checked after: the live file contains the new
+  dist and not v10's.
+- Stopped at the 200k context line, task boundary; nothing half-done.
+
 UPDATE 2026-10-16, session df09b9bd (successor of 18196daf): STILL OPEN "S7 reads as READ only" DONE in dd1adcd
 - Probe (read-only, before asking): 2 of 139 texts read as READ only: S7 ("generate ten questions") and
   task 42 (held-out B, gold good, rated partial: "note exceptions ... whether our ... controls cover
