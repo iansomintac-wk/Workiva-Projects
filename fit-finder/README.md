@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (81,110 bytes)
+node tests/build.js                                               # -> dist/fit-finder.html (81,408 bytes)
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
 node tests/pagetest.js [capture-folder]                            # real Chrome at 1280 and 375 px; needs Chrome, no npm deps
@@ -69,7 +69,8 @@ case or none. A bare "year-over-year" sent an emissions analysis (S1), a data ch
 Wdata query (S10) to the financial year-over-year narrative; "duplicate records" sent S2 to finding
 duplicate controls; a "Wdata table" sent S10 to the narrative-and-tables check; and S3 ("generate
 potential explanations ... from the prior reporting period") read as reading only. Now a bare
-"year-over-year" points to the financial narrative only when its sentence names no sustainability
+"year-over-year" points to the financial narrative only when its sentence (looking at most 300
+characters either side, so a long paste with no full stops stays fast) names no sustainability
 data and no outliers, anomalies or unusual items; a Wdata table and duplicate records, rows or
 entries no longer match;
 writing, giving or generating explanations is explaining (not explanations other people owe you);

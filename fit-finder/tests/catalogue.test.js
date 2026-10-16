@@ -176,6 +176,15 @@ for (const t of ['Build a plan on how to reduce emissions.', 'Create a roadmap o
   check('fit: a drafted plan is partial - ' + t, () => assert.strictEqual(rate(t).fit, 'partial'));
 check('fit: an exact tax estimate stays not', () =>
   assert.strictEqual(rate('Estimate the tax provision required for the quarter.').fit, 'not'));
+// speed: the sentence look-arounds in fr-yoy-narrative stay bounded on a long paste with no full stops
+check('speed: fr-yoy-narrative on 300k words with no full stops runs under 2 s', () => {
+  const u = cat.useCases.find((x) => x.id === 'fr-yoy-narrative');
+  const words = []; for (let i = 0; i < 300000; i++) words.push(i % 50 === 0 ? 'year-over-year' : i % 97 === 0 ? 'carbon' : 'figures');
+  const re = new RegExp('\\b(?:' + u.match + ')', 'g'), t0 = Date.now();
+  words.join(' ').match(re);
+  const ms = Date.now() - t0;
+  assert(ms < 2000, ms + ' ms');
+});
 check('ops: estimating the yearly cut to reach a target is an estimate', () =>
   assert(rate('Estimate how much we need to cut each year to reach the target.').ops.includes('ESTIMATE')));
 

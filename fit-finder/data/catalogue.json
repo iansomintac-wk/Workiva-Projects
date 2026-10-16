@@ -85,7 +85,7 @@
     {
       "id": "fr-yoy-narrative", "area": "FR", "role": "SEC or external reporting",
       "task": "Write the first draft of the year-over-year change narrative.",
-      "ops": ["DRAFT", "COMPARE"], "match": "(?<![^.;]*\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|co2e?|carbon|energy (?:use|usage|consumption|data)|factbook|anomal\\w*|outliers?|unusual)\\b[^.;]*)(?:year[- ]over[- ]year|yoy)\\b(?![^.;]*\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|co2e?|carbon|energy (?:use|usage|consumption|data)|factbook|anomal\\w*|outliers?|unusual)\\b)|variance (?:narrative|commentary|explanations?)|md&a|flux|change narrative",
+      "ops": ["DRAFT", "COMPARE"], "match": "(?<!\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|co2e?|carbon|energy (?:use|usage|consumption|data)|factbook|anomal\\w*|outliers?|unusual)\\b[^.;]{0,300})(?:year[- ]over[- ]year|yoy)\\b(?![^.;]{0,300}\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|co2e?|carbon|energy (?:use|usage|consumption|data)|factbook|anomal\\w*|outliers?|unusual)\\b)|variance (?:narrative|commentary|explanations?)|md&a|flux|change narrative",
       "surfaces": ["advisor", "doc", "files"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S2", "S23"],
       "prompt": "Using @[this year's file] and @[last year's file], draft the year-over-year change narrative for [section]. Explain each change of more than [threshold] in one or two sentences, using only figures in the files. Mark anything I need to confirm as [to confirm].",
       "stays": "Checking every figure, and deciding what is worth explaining.",
