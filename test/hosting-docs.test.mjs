@@ -47,3 +47,8 @@ test('HOSTING.md gives the three Settings storage lines verbatim; CHANGELOG name
   for (const s of ['Kept by browser: yes', 'Kept by browser: no (export regularly)', 'Kept by browser: not available when opened as a file']) assert.ok(t.includes(s), s);
   assert.match(firstSection(), /Kept by browser/);
 });
+
+test('HOSTING.md gives the empty-book hint verbatim; CHANGELOG names the hint', () => {
+  assert.ok(hosting().includes('New address, no book here yet. Export from your old copy, then Import here (Settings).'));
+  assert.match(firstSection(), /empty-book hint/i);
+});

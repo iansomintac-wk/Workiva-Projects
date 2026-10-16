@@ -30,3 +30,7 @@ Exactly two files, made by `node tools/build-site.mjs` into the `site/` folder: 
 ## Keeping the browser's storage
 
 On a served address the tracker asks the browser, once at start-up, to keep its storage (it asks first whether the browser already does, and only asks if not). Chrome and Edge answer on their own, without a prompt; the answer depends on how the browser rates the site. Settings shows one line with the result: `Kept by browser: yes`, `Kept by browser: no (export regularly)`, or, for a copy opened as a file (where no request is made), `Kept by browser: not available when opened as a file`. Export regularly either way.
+
+## A new address starts empty
+
+A hosted address has its own storage, so its tracker starts with no accounts. While the book has no accounts, and only on a served address (never for a copy opened as a file), the tracker shows one line under the tabs: "New address, no book here yet. Export from your old copy, then Import here (Settings)." It disappears as soon as the book has an account, so also after an Import.

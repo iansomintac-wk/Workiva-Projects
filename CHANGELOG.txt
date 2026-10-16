@@ -11,6 +11,8 @@ OSM Runway — release notes
       supports --pre page-start scripts and prints a console-error count.
     - Settings shows "Kept by browser: yes / no (export regularly)" and, on a served
       address only, the tracker asks the browser to keep its storage (never on file://).
+    - Empty-book hint on a served address ("New address, no book here yet. ..."),
+      hidden on file:// and as soon as the book has an account.
 
 1.1 — Step 1 (transcripts out of the book). Call transcripts move out of the book.
 

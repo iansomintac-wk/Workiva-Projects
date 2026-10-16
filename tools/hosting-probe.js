@@ -66,6 +66,44 @@
           isFile ? sc(c, [0, 0], 'na', LINE.na) : sc(c, [1, 1], 'yes', LINE.yes), JSON.stringify(c));
         if(keep !== undefined) _storageKept = keep;
       }
+      { // T4: D2 empty-book hint
+        const TEXT = 'New address, no book here yet. Export from your old copy, then Import here (Settings).';
+        const hasFn = typeof shouldShowHostedHint === 'function' && typeof renderHostedEmptyHint === 'function';
+        rec('T4 the hint text is exactly the spec text', typeof HOSTED_EMPTY_HINT === 'string' && HOSTED_EMPTY_HINT === TEXT, typeof HOSTED_EMPTY_HINT === 'string' ? HOSTED_EMPTY_HINT : 'HOSTED_EMPTY_HINT missing');
+        rec('T4 shouldShowHostedHint: http empty yes, https empty yes, file empty no, http with an account no',
+          hasFn && shouldShowHostedHint('http:', {customers: []}) === true && shouldShowHostedHint('https:', {customers: []}) === true
+            && shouldShowHostedHint('file:', {customers: []}) === false && shouldShowHostedHint('http:', {customers: [{id: 'x'}]}) === false
+            && shouldShowHostedHint('http:', undefined) === true);
+        const hintInDom = () => { const el = document.getElementById('hosted-empty-hint'); return el ? el.textContent.trim() : null; };
+        const keepData = DATA, keepRaw = localStorage.getItem(STORAGE_KEY);
+        let emptyDom = 'not run', fullDom = 'not run', afterImport = 'not run';
+        try{
+          DATA = cloneData(keepData); DATA.customers = []; DATA.activities = {};   // an empty book, in memory only
+          render(); emptyDom = hintInDom();
+          DATA = keepData; render(); fullDom = hintInDom();                          // the test book: has accounts
+          // empty -> real Import handler -> accounts present
+          const exported = serializeBackup(keepData, serializeBook(keepData));
+          DATA = cloneData(keepData); DATA.customers = []; DATA.activities = {}; render();
+          let cb = null; const rc = window.showConfirmModal, rt = window.showToast;
+          window.showConfirmModal = (msg, onConfirm) => { cb = onConfirm; }; window.showToast = () => {};
+          try{
+            handleImportFile({target: {files: [new File([exported], 'test-book.json')], value: 'x'}});
+            const t0 = Date.now(); while(cb === null && Date.now() - t0 < 15000) await new Promise(r => setTimeout(r, 25));
+            await settle();
+          }finally{ window.showConfirmModal = rc; window.showToast = rt; }
+          const committed = cb ? cb() === true : false;
+          afterImport = committed ? hintInDom() : 'import did not commit';
+        }catch(e){ afterImport = 'threw: ' + e.message; }
+        finally{
+          DATA = keepData; if(keepRaw !== null) Storage.prototype.setItem.call(localStorage, STORAGE_KEY, keepRaw);
+          render();
+        }
+        rec('T4 empty book: hint ' + (isFile ? 'hidden on file://' : 'visible with the exact text when served'),
+          isFile ? emptyDom === null : emptyDom === TEXT, String(emptyDom));
+        rec('T4 a book with accounts: hint hidden', fullDom === null, String(fullDom));
+        rec('T4 after the real Import handler puts accounts in: hint ' + (isFile ? 'still hidden' : 'was visible before and is hidden now'),
+          afterImport === null && (isFile || emptyDom === TEXT), String(afterImport));
+      }
       // ===== end of hosting checks =====
       rec('probe reached the end', true);
     }catch(e){ rec('probe threw: ' + (e && e.message), false, String(e && e.stack || e).slice(0, 300)); }

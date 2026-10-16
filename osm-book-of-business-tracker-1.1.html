@@ -9292,6 +9292,16 @@ function syncPanelFocus(){
   _panelOpener = null;
 }
 
+/* Hosting D2: a hosted copy starts as a new address with its own empty storage. Say so, once, on an empty book.
+   Never on file:// (the book you opened is the book). Gone as soon as the book has an account, so also after an Import. */
+const HOSTED_EMPTY_HINT = 'New address, no book here yet. Export from your old copy, then Import here (Settings).';
+function shouldShowHostedHint(protocol, data){
+  return protocol !== 'file:' && !(data && Array.isArray(data.customers) && data.customers.length > 0);
+}
+function renderHostedEmptyHint(){
+  if(!shouldShowHostedHint(location.protocol, DATA)) return '';
+  return `<div id="hosted-empty-hint" role="note" style="margin:8px 0; padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg-panel); color:var(--text-faint); font-size:var(--text-xs);">${escapeHtml(HOSTED_EMPTY_HINT)}</div>`;
+}
 function render(){
   // A repaint is happening now, so any debounced one is redundant. Without this,
   // typing and then immediately clicking a tab renders twice — the second one
@@ -9309,6 +9319,7 @@ function render(){
     ${renderHeader()}
     ${renderStats()}
     ${renderTabs()}
+    ${renderHostedEmptyHint()}
     ${ui.view === 'today' ? renderToday()
       : ui.view === 'accounts' ? renderAccounts()
       : ui.view === 'risk' ? renderRiskTab()
