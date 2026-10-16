@@ -29,6 +29,12 @@ not      The core of the task is a blocker: deciding, approving or signing off; 
 
 When torn between two levels, pick the lower one.
 
+Ranking items, estimating progress against a target and drafting a plan or roadmap from the
+person's own data are partial, not "not": the AI does a first pass, and checking the numbers and
+deciding stay with the person (Ian, 2026-10-15, on three Workiva sustainability prompts: "s4, s5,
+s6 should be partial"). None of the 120 tasks in tasks.jsonl uses these words, so their labels
+are unchanged.
+
 ## repeats
 1 = the description says or clearly implies it recurs (every close, each quarter, every control,
 for each supplier, all 40 entities). 0 = one-off or unclear.
@@ -43,7 +49,8 @@ DRAFT      write new text (narrative, finding, footnote, email body)
 REWRITE    change tone, length or clarity of existing text
 EXPLAIN    explain a requirement, a change or a formula
 MAP        link items to a framework or standard
-CLASSIFY   sort or tag items into groups
+CLASSIFY   sort, rank or tag items into groups
+ESTIMATE   a first-pass projection from data (a trajectory, the yearly cut needed to reach a target)
 CALCULATE  compute numbers (a blocker when it must be exact)
 DECIDE     judgment, approval, sign-off, materiality call
 ACT        do something in another system or in the world (send, book, update, upload, schedule)

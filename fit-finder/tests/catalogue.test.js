@@ -102,6 +102,15 @@ for (const u of cat.useCases.filter((x) => x.prompt)) check('pattern prompt for 
 check('no pattern prompt when the use case has none', () =>
   assert.strictEqual(patternPrompt('I write test steps for each control every quarter.', byId['grc-test-steps']), null));
 
+// Ian 2026-10-15: "s4, s5, s6 should be partial" (Workiva sustainability prompts the engine rated "not");
+// the AI can do a first pass of a ranking, an estimate against a target or a roadmap; you check and decide
+check('fit: ranking sources from your data is partial', () =>
+  assert.strictEqual(rate('Rank our emission sources by total impact and pick the five biggest reduction opportunities.').fit, 'partial'));
+check('fit: estimating progress to a target is partial', () =>
+  assert.strictEqual(rate('From our history, calculate the reduction trajectory, say whether we are on track for the 2030 goal and estimate the yearly cut needed.').fit, 'partial'));
+check('fit: drafting a roadmap from data is partial', () =>
+  assert.strictEqual(rate('From this data, create a facility emissions reduction roadmap with a prioritized timeline.').fit, 'partial'));
+
 // coverage of the held-out half (option 4 check): how many fitting tasks reach a sourced use case
 const rows = fs.readFileSync(path.join(root, 'data/tasks.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
 // the same seeded split as tests/eval.js --ids B
