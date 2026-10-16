@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (79,119 bytes)
+node tests/build.js                                               # -> dist/fit-finder.html (79,276 bytes)
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
 node tests/pagetest.js [capture-folder]                            # real Chrome at 1280 and 375 px; needs Chrome, no npm deps
@@ -56,8 +56,9 @@ stays "describe your task" rather than "pick from a feature list".
 Fit on real tasks (2026-10-15): Ian marked the engine's fit on the 19 Community prompts and
 comments and agreed with 16. The three he marked are Workiva sustainability prompts (rank
 emission sources, check a target trajectory, draft a reduction roadmap) that the engine rated
-"not" and he rated partial. The engine now reads ranking, estimating and drafting a roadmap or
-plan as a first pass for the AI, so all 19 agree; that is the same tasks it was fixed on, not a
+"not" and he rated partial. The engine now reads ranking, estimating what it takes to reach a
+target and drafting a roadmap or plan as a first pass for the AI (not a plan kept in another
+system, a plan to chase people or an exact accounting estimate), so all 19 agree; that is the same tasks it was fixed on, not a
 held-out score. None of the 120 labelled tasks uses those words (0 of 120 changed fit, steps or
 use case; A and B unchanged), so the held-out figures cannot show the fix is right, only that
 nothing else moved. Not yet measured: whether real tasks get the right use case.

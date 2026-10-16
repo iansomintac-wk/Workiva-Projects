@@ -110,6 +110,10 @@ check('fit: estimating progress to a target is partial', () =>
   assert.strictEqual(rate('From our history, calculate the reduction trajectory, say whether we are on track for the 2030 goal and estimate the yearly cut needed.').fit, 'partial'));
 check('fit: drafting a roadmap from data is partial', () =>
   assert.strictEqual(rate('From this data, create a facility emissions reduction roadmap with a prioritized timeline.').fit, 'partial'));
+// ...but not a plan kept in another system, a plan to chase people, or an exact accounting estimate
+for (const t of ['Create the roadmap in Jira.', 'Build the plan in SAP and upload it.',
+  'Build a plan to chase the sites for data.', 'Estimate the tax provision and book the journal.'])
+  check('fit: stays not - ' + t, () => assert.strictEqual(rate(t).fit, 'not'));
 
 // coverage of the held-out half (option 4 check): how many fitting tasks reach a sourced use case
 const rows = fs.readFileSync(path.join(root, 'data/tasks.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
