@@ -109,4 +109,58 @@
     }catch(e){ rec('probe threw: ' + (e && e.message), false, String(e && e.stack || e).slice(0, 300)); }
     return {results};
   };
+  const fingerprint = async () => {
+    const acts = Object.values(DATA.activities || {}).flat();
+    const rows = [];
+    for(const a of acts){
+      const t = activityTranscript(a);
+      if(t && a.transcript && a.transcript.ref) rows.push(a.transcript.ref + '\n' + t.text + '\n');
+    }
+    rows.sort();
+    const buf = new TextEncoder().encode(rows.join(''));
+    const h = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', buf))).map(b => b.toString(16).padStart(2, '0')).join('');
+    return {accounts: DATA.customers.length, activities: acts.length, transcripts: rows.length, tsSha256: h};
+  };
+  const hintText = () => { const el = document.getElementById('hosted-empty-hint'); return el ? el.textContent.trim() : null; };
+  window.hostingMoveOut = async function(){
+    const KEY = 'TEST-KEY-NOT-REAL-0001';
+    const cid = DATA.customers[0].id;
+    DATA.activities[cid] = DATA.activities[cid] || [];
+    for(let i = 0; i < 3; i++){
+      const a = {id: 'mv' + i, date: todayISO(), type: 'Call', summary: 'move test ' + i, checklist: []};
+      a.transcript = await saveTranscriptVerified(a.id, window.STEP1_CALLS[i]);
+      DATA.activities[cid].push(a);
+    }
+    saveAiSettings({apiKey: KEY, model: 'gemini-2.5-flash'});
+    saveData();
+    // C7 precondition (review item M4): the fake key must really be stored BEFORE Export, or "absent" would prove nothing.
+    const keyStored = getAiSettings().apiKey === KEY && (localStorage.getItem(AI_SETTINGS_KEY) || '').includes(KEY);
+    const blobs = []; const realBlob = window.Blob, realURL = URL.createObjectURL, realClick = HTMLAnchorElement.prototype.click;
+    window.Blob = function(parts, opts){ blobs.push(parts.join('')); return new realBlob(parts, opts); };
+    URL.createObjectURL = () => 'blob:probe'; HTMLAnchorElement.prototype.click = function(){};
+    try{ exportData(); }finally{ window.Blob = realBlob; URL.createObjectURL = realURL; HTMLAnchorElement.prototype.click = realClick; }
+    const exportText = blobs[0] || '';
+    const fp = await fingerprint();
+    window.__dump = JSON.stringify({fp, exportText, keyStored, aiKeyInExport: exportText.includes(KEY)});
+    return {results: [
+      {name: 'move out: the fake AI key is stored (getAiSettings and the stored item) before Export', ok: keyStored, detail: 'keyStored=' + keyStored},
+      {name: 'move out: Export captured (' + exportText.length + ' bytes), fingerprint taken', ok: exportText.length > 0 && fp.transcripts === 3, detail: JSON.stringify(fp)},
+    ]};
+  };
+  window.hostingMoveIn = async function(){
+    if(typeof window.__incoming !== 'string') return {results: [{name: 'move in: window.__incoming missing', ok: false, detail: ''}]};
+    const hintBefore = hintText();
+    let cb = null; const rc = window.showConfirmModal, rt = window.showToast;
+    window.showConfirmModal = (msg, onConfirm) => { cb = onConfirm; }; window.showToast = () => {};
+    try{
+      handleImportFile({target: {files: [new File([window.__incoming], 'moved-book.json')], value: 'x'}});
+      const t0 = Date.now(); while(cb === null && Date.now() - t0 < 15000) await new Promise(r => setTimeout(r, 25));
+      await new Promise(r => setTimeout(r, 60));
+    }finally{ window.showConfirmModal = rc; window.showToast = rt; }
+    const committed = cb ? cb() === true : false;
+    await new Promise(r => setTimeout(r, 60));
+    const fp = await fingerprint();
+    window.__dump = JSON.stringify({fp, hintBefore, hintAfter: hintText(), aiKeyAfter: getAiSettings().apiKey || ''});
+    return {results: [{name: 'move in: Import committed', ok: committed, detail: JSON.stringify(fp)}]};
+  };
 })();

@@ -4,13 +4,14 @@
 //   --suite: an external suite injected as an INLINE <script> after the page loads. Default: tools/selfchecks.js
 //   when the target is osm-book-of-business-tracker-1.0.html, otherwise none (the guide keeps its in-page suite).
 //   --profile: use <dir> (must be inside the OS temp folder) as the Chrome profile and do not delete it at exit.
+//   --dump <file>: after the run, write window.__dump (a string) to <file> (must be inside the OS temp folder).
 //   --serve <dir>: serve <dir> (must hold an index.html with the same sha256 as the positional file) from a GET-only server on 127.0.0.1 and run against http://127.0.0.1:<port>/ instead of file://.
 //   --pre a.js[,b.js]: scripts registered with Page.addScriptToEvaluateOnNewDocument, so they run before the page's own scripts. window.__hostExpect = {protocol, host} is always registered first.
 // Exit 0 when every check passes and the count matches --expect.
 // NOT part of the distributable bundle — dev tooling, like docs/.
 
 import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, basename, dirname, sep } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
@@ -77,6 +78,11 @@ const profileFlag = flag('profile', null);
 if (profileFlag) {
   const root = (resolve(tmpdir()) + sep).toLowerCase(), want = (resolve(profileFlag) + sep).toLowerCase();
   if (!want.startsWith(root)) { console.error('--profile must be a folder inside ' + tmpdir()); process.exit(2); }
+}
+const dumpFlag = flag('dump', null);
+if (dumpFlag) {
+  const root = (resolve(tmpdir()) + sep).toLowerCase(), want = resolve(dumpFlag).toLowerCase();
+  if (!want.startsWith(root)) { console.error('--dump must be a file inside ' + tmpdir()); process.exit(2); }
 }
 const profile = profileFlag ? resolve(profileFlag) : mkdtempSync(join(tmpdir(), 'selfcheck-'));
 const child = spawn(chrome, [
@@ -333,6 +339,11 @@ if (pageErrors.length) {
   for (const e of pageErrors) console.log('  ' + e.split('\n')[0]);
 }
 
+if (dumpFlag) {
+  const d = await send('Runtime.evaluate', { expression: 'typeof window.__dump === "string" ? window.__dump : null', returnByValue: true });
+  if (typeof d.result?.value !== 'string') { console.error('--dump: window.__dump was not set by the run.'); process.exit(2); }
+  writeFileSync(resolve(dumpFlag), d.result.value);
+}
 let code = out.failed.length ? 1 : 0;
 if (expect !== null && out.total !== Number(expect)) {
   console.log(`\nExpected ${expect} checks, the suite defines ${out.total}.`);

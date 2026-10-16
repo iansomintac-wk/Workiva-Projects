@@ -13,6 +13,8 @@ OSM Runway — release notes
       address only, the tracker asks the browser to keep its storage (never on file://).
     - Empty-book hint on a served address ("New address, no book here yet. ..."),
       hidden on file:// and as soon as the book has an account.
+    - tools/move-book.mjs proves an Export from a file copy imports into a served
+      copy (counts and transcript hash equal) and records whether the AI key is in Export.
 
 1.1 — Step 1 (transcripts out of the book). Call transcripts move out of the book.
 

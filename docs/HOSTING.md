@@ -34,3 +34,12 @@ On a served address the tracker asks the browser, once at start-up, to keep its 
 ## A new address starts empty
 
 A hosted address has its own storage, so its tracker starts with no accounts. While the book has no accounts, and only on a served address (never for a copy opened as a file), the tracker shows one line under the tabs: "New address, no book here yet. Export from your old copy, then Import here (Settings)." It disappears as soon as the book has an account, so also after an Import.
+
+## Moving a book to the new address
+
+1. In the old copy: Settings, Export. The Export file carries the accounts, the activities and the call transcripts (transcripts travel inside the Export file).
+2. Open the new address. It shows "New address, no book here yet" until the import.
+3. In the new copy: Settings, Import, choose the Export file, confirm.
+4. AI key: The AI key is not in Export; enter it again after moving.
+
+`node tools/move-book.mjs` rehearses this with the test book only: it exports from a file copy, imports into a served copy in two throwaway browser profiles, and prints `C6 PASS` when the account, activity and transcript counts and a hash over the transcripts are equal on both sides.

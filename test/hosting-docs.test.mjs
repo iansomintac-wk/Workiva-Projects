@@ -52,3 +52,14 @@ test('HOSTING.md gives the empty-book hint verbatim; CHANGELOG names the hint', 
   assert.ok(hosting().includes('New address, no book here yet. Export from your old copy, then Import here (Settings).'));
   assert.match(firstSection(), /empty-book hint/i);
 });
+test('HOSTING.md states the C7 result exactly once (the AI key is, or is not, in Export)', () => {
+  const t = hosting();
+  const a = t.includes('The AI key is not in Export; enter it again after moving.');
+  const b = t.includes('The AI key is carried in Export; check it after moving.');
+  assert.equal(a !== b, true, 'exactly one of the two C7 sentences must appear');
+});
+test('HOSTING.md explains moving a book (Export, Import, transcripts); CHANGELOG names move-book', () => {
+  const t = hosting();
+  for (const re of [/Export/, /Import/, /transcripts/i, /Settings/]) assert.match(t, re);
+  assert.match(firstSection(), /move-book/);
+});
