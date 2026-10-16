@@ -2912,6 +2912,83 @@ function activityTranscript(activity){
   const t = activity && activity.transcript;
   return (t && typeof t === 'object' && typeof t.text === 'string' && t.text.trim()) ? t : null;
 }
+/* ============ 1.1 Step 1: TRANSCRIPT STORE ============
+   Transcripts live in IndexedDB (obm-transcripts-v1), one record per transcript VERSION, keyed
+   <activityId>:<12 hex of sha1>. The book keeps only {ref, chars, sha1, truncated}.
+   RULE: a call never deletes a record it did not create. */
+const TS_DB = 'obm-transcripts-v1';
+let _tsForceDown = false, _tsDbP = null, _tsVersion = 0;
+const _transcriptMap = new Map();
+function tsOpen(){
+  if(_tsForceDown) return Promise.resolve(null);
+  if(_tsDbP) return _tsDbP;
+  _tsDbP = new Promise(resolve => {
+    let req;
+    try{ req = indexedDB.open(TS_DB, 1); }catch(e){ resolve(null); return; }
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      db.createObjectStore('transcripts', {keyPath: 'ref'});
+      db.createObjectStore('premigration', {keyPath: 'date'});
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = req.onblocked = () => resolve(null);
+  });
+  return _tsDbP;
+}
+async function tsTx(store, mode, fn){
+  const db = await tsOpen();
+  if(!db) throw new Error('IndexedDB unavailable');
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, mode);
+    let out;
+    try{ out = fn(tx.objectStore(store)); }catch(e){ reject(e); return; }
+    tx.oncomplete = () => resolve(out && 'result' in out ? out.result : undefined);
+    tx.onerror = tx.onabort = () => reject(tx.error || new Error('IndexedDB transaction failed'));
+  });
+}
+const tsPut = rec => tsTx('transcripts', 'readwrite', s => s.put(rec));
+function tsGet(ref){ return tsTx('transcripts', 'readonly', s => s.get(ref)); }   // a function declaration: the probe swaps window.tsGet
+const tsDelete = ref => tsTx('transcripts', 'readwrite', s => s.delete(ref));
+async function tsGetMany(refs){
+  const out = new Map();
+  if(!refs.length) return out;
+  const db = await tsOpen();
+  if(!db) throw new Error('IndexedDB unavailable');
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('transcripts', 'readonly'), s = tx.objectStore('transcripts');
+    refs.forEach(r => { const q = s.get(r); q.onsuccess = () => { if(q.result) out.set(r, q.result); }; });
+    tx.oncomplete = () => resolve(out);
+    tx.onerror = tx.onabort = () => reject(tx.error || new Error('IndexedDB transaction failed'));
+  });
+}
+async function tsClearAll(){ await tsTx('transcripts', 'readwrite', s => s.clear()); await tsTx('premigration', 'readwrite', s => s.clear()); }
+async function sha1Hex(text){
+  const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf), b => b.toString(16).padStart(2, '0')).join('');
+}
+async function saveTranscriptVerified(activityId, text){
+  if(!(await tsOpen())) return null;
+  const sha1 = await sha1Hex(text);
+  const ref = activityId + ':' + sha1.slice(0, 12);
+  const out = {ref, chars: text.length, sha1, truncated: false};
+  let existing = null;
+  try{ existing = await tsGet(ref); }catch(e){}
+  const existingOk = !!(existing && typeof existing.text === 'string' && (await sha1Hex(existing.text)) === sha1);
+  if(!existingOk){
+    try{
+      await tsPut({ref, activityId, text, chars: text.length, sha1, savedAt: new Date().toISOString()});
+      const back = await tsGet(ref);
+      if(!back || back.text !== text || (await sha1Hex(back.text)) !== sha1) throw new Error('read-back check failed');
+    }catch(e){
+      if(!existing){ try{ await tsDelete(ref); }catch(e2){} }   // delete only what THIS call created
+      throw e;
+    }
+  }
+  Object.defineProperty(out, 'created', {value: !existing, enumerable: false});
+  _transcriptMap.set(ref, {text, chars: text.length, sha1});
+  _tsVersion++;
+  return out;
+}
 function getDebriefInput(activityId){
   if(!ui.debriefInputs) ui.debriefInputs = {};
   if(!ui.debriefInputs[activityId]) ui.debriefInputs[activityId] = {questions:''};
