@@ -32,5 +32,5 @@ try {
   code = med < 500 ? 0 : 1;
   console.log(code === 0 ? 'C8 PASS: median under 500 ms' : 'C8 FAIL: median 500 ms or more');
 } catch (e) { console.log(String(e.message || e)); code = 1; }
-finally { try { await unlocked(); } catch {} rmSync(profile, { recursive: true, force: true }); }
+finally { try { await unlocked(); } catch {} try { rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 }); } catch (e) { console.log('WARN: could not remove temp profile folder, leftover: ' + profile + ' (' + (e.code || e.message) + ')'); } }
 process.exit(code);
