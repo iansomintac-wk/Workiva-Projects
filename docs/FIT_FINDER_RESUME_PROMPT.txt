@@ -1,4 +1,4 @@
-Fit Finder v4.3: hand-off (2026-10-15 23:10 PDT, session 5127436a, at the task boundary)
+Fit Finder v4.3: hand-off (2026-10-15, session 5127436a, stopped at the 200k context line)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
@@ -42,8 +42,12 @@ DONE IN SESSION 5127436a (measured)
 
 ASK IAN (one at a time, recommendation first)
 1. (answered: push yes) 2. (answered: keep "included")
-3. Republish the live page from the current dist? (asked after the badge ruling)
-4. Which open item next.
+3. (answered "Yes" to "should I update the live page now?" and push the ruling commit): pushed
+   0f549bb; live page republished as version 6 (version id 1792133074-92ad) from the dist of
+   4545647 (81,110 bytes). Before publishing, the live v5 matched fca7320's dist exactly (only the
+   publish wrapper differed), and fit-finder/web, tests/build.js and prompt-coach/engine had not
+   changed since fca7320, so v6 differs only by the reviewed engine and catalogue changes.
+4. NEXT: ask Ian which open item next (one question, recommendation first).
 
 STILL OPEN (each needs Ian's yes)
 - Matching gaps: S1 -> fr-yoy-narrative first; S2 -> grc-rationalize via "duplicate"; S9/S10 miss
