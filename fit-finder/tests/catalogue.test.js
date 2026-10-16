@@ -3,7 +3,7 @@
 const fs = require('fs'), path = require('path'), assert = require('assert');
 const root = path.join(__dirname, '..');
 const cat = JSON.parse(fs.readFileSync(path.join(root, 'data/catalogue.json'), 'utf8'));
-const { rate, match, AI_OPS } = require('../engine/fit.js');
+const { rate, match, lead, patternPrompt, AI_OPS } = require('../engine/fit.js');
 let fails = 0;
 const check = (name, fn) => { try { fn(); } catch (e) { fails++; console.log('FAIL', name, '-', e.message); } };
 
@@ -37,9 +37,60 @@ const cases = [
   ['I read through what ESRS E1 requires and explain it to the data owners.', 'sus-requirements'],
   ['I review the evidence screenshots every control owner uploads each quarter.', 'grc-evidence'],
   ['I rewrite the sustainability section to be shorter for the board.', 'sus-exec-narrative'],
-  ['I approve the journal entries and post them in SAP.', undefined]
+  ['I approve the journal entries and post them in SAP.', undefined],
+  // named since the 2026-10-15 source check (Workiva AI workflows, AI Error Validation, knowledge bases)
+  ['Every quarter I tie out the figures throughout the 10-Q draft.', 'fr-tie-out'],
+  // the Tie-out assistant works inside one 10-K or 10-Q; across two documents it is chat with files
+  ['Every close I tie out the numbers in the earnings release to the financial statements.', 'fr-narrative-tables'],
+  ['Every quarter I fix the XBRL validation errors before we file.', 'fr-xbrl-errors'],
+  ['Every week I answer questions from colleagues about how to do things in Workiva.', 'gen-support'],
+  // "testing workpapers" is not writing test steps
+  ['I draft audit findings from the testing workpapers for each failed control.', 'grc-issues']
 ];
 for (const [t, want] of cases) check('match: ' + t.slice(0, 40), () => assert.strictEqual(top(t), want));
+
+// sources say how they were read and, when read from the public API, when Workiva last updated them
+for (const [k, s] of Object.entries(cat.sources)) check('source ' + k, () => {
+  assert(['api', 'saved'].includes(s.read), 'read must be api or saved');
+  if (s.read === 'api') assert(/^\d{4}-\d{2}-\d{2}$/.test(s.updated || ''), 'updated date');
+});
+// a preview feature says so
+check('preview availability', () => assert(cat.availability.preview && cat.surfaces['tie-out'].availability === 'preview'));
+
+// the role picker: every use case has a first-person example that the engine rates and routes back to it
+for (const u of cat.useCases) check('try routes home: ' + u.id, () => {
+  assert(u.try, 'no try example');
+  assert.notStrictEqual(rate(u.try).fit, 'not', 'engine rates its example "not"');
+  assert.strictEqual(top(u.try), u.id);
+});
+// each role offers at least three wins, and the first three name a Workiva feature
+check('roles', () => assert(Object.keys(cat.roles || {}).length >= 4, 'at least four roles'));
+for (const [id, r] of Object.entries(cat.roles || {})) check('role ' + id, () => {
+  assert(r.name && r.wins.length >= 3, 'name and three wins');
+  const us = r.wins.map((w) => cat.useCases.find((u) => u.id === w));
+  assert(us.every(Boolean), 'unknown use case');
+  assert(us.slice(0, 3).every((u) => u.fitBasis === 'named'), 'first three are named features');
+});
+
+// the lead step is the first AI step by position; reading counts only when nothing else is there
+check('lead: first by position, not by list order', () =>
+  assert.strictEqual(lead('I draft the commentary and then check it against the tables.'), 'DRAFT'));
+check('lead: reading gives way to a real job', () =>
+  assert.strictEqual(lead('I read the policy and summarize it for the board.'), 'SUMMARIZE'));
+check('lead: reading alone', () => assert.strictEqual(lead('I read the board minutes.'), 'READ'));
+check('lead: nothing for the AI', () => assert.strictEqual(lead('I approve the journal entries and post them in SAP.'), null));
+
+// the fuller prompt is offered only when its lead step is the person's lead step
+const byId = Object.fromEntries(cat.useCases.map((u) => [u.id, u]));
+check('pattern prompt hidden when lead step differs', () =>
+  assert.strictEqual(patternPrompt("Every quarter I compare the MD&A to last year's and flag what changed.", byId['fr-yoy-narrative']), null));
+check('pattern prompt shown when lead step matches', () =>
+  assert.strictEqual(patternPrompt('Every quarter I draft the year-over-year change narrative for the MD&A.', byId['fr-yoy-narrative']), byId['fr-yoy-narrative'].prompt));
+// a use case's first op is its prompt's lead step, so its own example gets the fuller prompt
+for (const u of cat.useCases.filter((x) => x.prompt)) check('pattern prompt for own example: ' + u.id, () =>
+  assert.strictEqual(patternPrompt(u.try, u), u.prompt, 'example leads with ' + lead(u.try) + ', use case with ' + u.ops[0]));
+check('no pattern prompt when the use case has none', () =>
+  assert.strictEqual(patternPrompt('I write test steps for each control every quarter.', byId['grc-test-steps']), null));
 
 // coverage of the held-out half (option 4 check): how many fitting tasks reach a sourced use case
 const rows = fs.readFileSync(path.join(root, 'data/tasks.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);

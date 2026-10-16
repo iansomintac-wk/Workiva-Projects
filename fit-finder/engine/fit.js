@@ -89,17 +89,24 @@
     CLASSIFY: 'Sort the items into [the groups you use], one line each with the reason.',
     READ: 'Read it and list the points I should look at first.'
   };
-  function starter(text, ops, fit) {
-    const ai = ops.filter((o) => AI_OPS.includes(o));
-    // the first thing the task does that the AI can take (reading only when nothing else is there)
+  // the first thing the task does that the AI can take (reading only when nothing else is there)
+  function lead(text) {
     const t = normalize(text), at = (op) => { const m = t.match(OPS[op]); return m ? m.index : 1e9; };
-    const lead = ai.filter((o) => o !== 'READ').sort((a, b) => at(a) - at(b))[0] || (ai.includes('READ') ? 'READ' : null);
+    const ai = AI_OPS.filter((o) => OPS[o].test(t));
+    return ai.filter((o) => o !== 'READ').sort((a, b) => at(a) - at(b))[0] || (ai.includes('READ') ? 'READ' : null);
+  }
+  function starter(text, ops, fit) {
+    const first = lead(text);
     const task = String(text || '').trim().replace(/\s+/g, ' ').replace(/[.!?]*$/, '.');
-    if (!lead) {
+    if (!first) {
       if (ops.includes('COLLECT')) return 'Draft a short, polite request to [who] asking for [what you need] by [date]. Context: ' + task;
       return null;
     }
-    return 'Use only [the selected file or table]. My task: ' + task + ' ' + ASK[lead] + ' Do not add facts that are not in the source; I will review and decide.';
+    return 'Use only [the selected file or table]. My task: ' + task + ' ' + ASK[first] + ' Do not add facts that are not in the source; I will review and decide.';
+  }
+  // a use case's fuller prompt fits only when it starts where the person's task starts
+  function patternPrompt(text, u) {
+    return u && u.prompt && u.ops && lead(text) === u.ops[0] ? u.prompt : null;
   }
 
   // a checklist, test plan or calendar: rate every line that reads like a task
@@ -128,6 +135,6 @@
     }).filter((x) => x.score).sort((a, b) => b.score - a.score).slice(0, max || 3).map((x) => x.u);
   }
 
-  const api = { rate, scan, match, normalize, OPS, AI_OPS, STEP };
+  const api = { rate, scan, match, lead, patternPrompt, normalize, OPS, AI_OPS, STEP };
   if (isNode) module.exports = api; else root.FitEngine = api;
 })(typeof window !== 'undefined' ? window : globalThis);

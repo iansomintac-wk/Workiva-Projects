@@ -12,15 +12,15 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (~40 KB)
+node tests/build.js                                               # -> dist/fit-finder.html (72 KB)
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
 ```
 
 | File | What it is |
 |---|---|
-| `engine/fit.js` | Rates a task: fit, recurring or not, steps (who keeps each), starter prompt; `scan()` rates every line of a checklist; `match()` finds the closest catalogue use cases |
-| `data/catalogue.json` | The only source of Workiva AI claims on the page: 6 support pages, 16 features, 18 use cases, 2 left out and why |
+| `engine/fit.js` | Rates a task: fit, recurring or not, steps (who keeps each), starter prompt; `scan()` rates every line of a checklist; `match()` finds the closest catalogue use cases; `lead()` names the first step the AI can take; `patternPrompt()` offers a use case's fuller prompt only when it starts with that same step |
+| `data/catalogue.json` | The only source of Workiva AI claims on the page: 23 support pages, 22 features, 25 use cases, 5 roles, 5 left out and why |
 | `web/template.html` | The page; `tests/build.js` inlines the catalogue, the engine and `../prompt-coach/engine/files.js` |
 | `data/LABELING.md` | The rubric: good / partial / not a fit, operations, blockers |
 | `data/tasks.jsonl` | 120 AI-written task descriptions, blind-labeled by an AI |
@@ -33,14 +33,17 @@ period?" instead of only guessing. Unchanged after adding "rationalize", "transl
 "review the evidence", and no longer reading "owners upload" as the person uploading.
 
 ## Workiva AI claims (2026-10-15)
-Every feature and use case on the page comes from `data/catalogue.json`, which cites six Workiva
-support pages Ian saved from his browser (the build environment cannot reach workiva.com). Each
-use case says whether Workiva names a feature for that job ("named") or it is the general
-chat-with-files ability applied to it ("assumed", shown as "try it on one file first"), and
-whether the feature is included with Workiva AI or belongs to a named solution ("check your
-entitlement"). Left out: pre-assurance anomaly review of sustainability figures (no feature
-named) and named AI agents (press release and release notes not seen).
+Every feature and use case on the page comes from `data/catalogue.json`, which cites 23 Workiva
+support pages: 22 read from the public Support Center (each with Workiva's own last-updated
+date) and one, "Where AI is used in Workiva", from a copy Ian saved because it needs a sign-in.
+Each use case says whether Workiva names a feature for that job ("named", 21) or it is the
+general chat-with-files ability applied to it ("assumed", 4, shown as "try it on one file
+first"), and whether the feature is included with Workiva AI (9), depends on the Workiva
+solutions an organization has (11) or is a preview offered to selected customers (2). Left out,
+with reasons in the catalogue: pre-assurance anomaly review of sustainability figures, agent
+names from the 29 July 2026 press release, the Roll forward workflow, Suggestions, and the
+Workiva MCP connection to Claude.
 
-Of the 30 held-out tasks that fit, 14 (47%) reach a specific use case; the rest get "ask Workiva
+Of the 30 held-out tasks that fit, 15 (50%) reach a specific use case; the rest get "ask Workiva
 AI chat about your file". So the page stays "describe your task" rather than "pick from a
 feature list". Not yet measured: real customers' tasks and real checklists.
