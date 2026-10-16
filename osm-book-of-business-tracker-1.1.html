@@ -17638,6 +17638,23 @@ function showWrapUpModal(rec){
   backdrop.querySelector('#modal-cancel').focus();
 }
 
+/* Hosting D3: ask the browser to keep this site's storage (so a hosted copy is not the first thing evicted).
+   Never on file:// (no call at all). Called once from init(); persisted() first, persist() only if it said no. */
+let _storageKept = 'no';   // 'yes' | 'no'; file:// is decided in storageKeptLine()
+async function initStoragePersistence(){
+  if(location.protocol === 'file:') return 'na';
+  try{
+    if(!(navigator.storage && navigator.storage.persist)){ _storageKept = 'no'; return 'no'; }
+    let kept = navigator.storage.persisted ? await navigator.storage.persisted() : false;
+    if(!kept) kept = await navigator.storage.persist();
+    _storageKept = kept ? 'yes' : 'no';
+  }catch(e){ _storageKept = 'no'; }
+  return _storageKept;
+}
+function storageKeptLine(){
+  if(location.protocol === 'file:') return 'Kept by browser: not available when opened as a file';
+  return _storageKept === 'yes' ? 'Kept by browser: yes' : 'Kept by browser: no (export regularly)';
+}
 function openSettingsModal(){
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
@@ -17656,6 +17673,7 @@ function openSettingsModal(){
         <button class="btn btn-sm" id="btn-restore-archive-settings">Restore Archive</button>
       </div>
       <p style="color:var(--text-faint); font-size:var(--text-xs); margin:-2px 0 8px;">${icon('warn')} Your tracker lives <strong>only in this browser on this device</strong>. It is not synced or shared — teammates who open their own copy get a separate, independent book. Clearing browser data, using a different browser or device, or private/incognito mode will not show this data. Use <strong>Export JSON</strong> regularly as your backup, and Import it to move your book to another browser or device.</p>
+      <p id="storage-kept-line" style="color:var(--text-faint); font-size:var(--text-xs); margin:-2px 0 8px;">${escapeHtml(storageKeptLine())}</p>
       <details class="advanced-settings">
         <summary>Advanced: taxonomy labels (readiness domains &amp; outcome names)</summary>
         <div class="advanced-settings-body">
@@ -20303,6 +20321,7 @@ window.__appReadyDone = false;
   snapshotHealthHistory(); // v39: visit-driven weekly snapshot — before first render so trend data includes today
   applyRoute(); // v64: AFTER loadData — the route validates account ids against the loaded book
   render();
+  initStoragePersistence();  // hosting D3: no await, it never blocks start-up and never throws
   /* v99: resolve the backup handle before deciding whether to nag. fsInit() only
      QUERIES permission — it never prompts, because asking without a gesture would
      either fail outright or ambush someone who just opened the tab. It re-renders

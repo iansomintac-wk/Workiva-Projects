@@ -26,3 +26,7 @@ Exactly two files, made by `node tools/build-site.mjs` into the `site/` folder: 
 2. `node tools/build-site.mjs` rebuilds `site/` and refuses to run if `site/` holds anything else.
 3. Run the `--serve site` command above and the same command without `--serve site`; both must print 475/475 and the same `console errors:` count.
 4. Upload the two files in `site/` only when the owner of the site says yes.
+
+## Keeping the browser's storage
+
+On a served address the tracker asks the browser, once at start-up, to keep its storage (it asks first whether the browser already does, and only asks if not). Chrome and Edge answer on their own, without a prompt; the answer depends on how the browser rates the site. Settings shows one line with the result: `Kept by browser: yes`, `Kept by browser: no (export regularly)`, or, for a copy opened as a file (where no request is made), `Kept by browser: not available when opened as a file`. Export regularly either way.

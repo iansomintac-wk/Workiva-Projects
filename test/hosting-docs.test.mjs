@@ -42,3 +42,8 @@ test('HOSTING.md covers checking a copy from an address and publishing a new ver
   for (const re of [/--serve site/, /node tools\/selfcheck\.mjs/, /upload/i, /475/]) assert.match(t, re);
   assert.match(firstSection(), /--serve/);
 });
+test('HOSTING.md gives the three Settings storage lines verbatim; CHANGELOG names them', () => {
+  const t = hosting();
+  for (const s of ['Kept by browser: yes', 'Kept by browser: no (export regularly)', 'Kept by browser: not available when opened as a file']) assert.ok(t.includes(s), s);
+  assert.match(firstSection(), /Kept by browser/);
+});

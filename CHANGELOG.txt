@@ -9,6 +9,8 @@ OSM Runway — release notes
     - tools/selfcheck.mjs --serve <dir> runs the same in-page checks from a served
       address (127.0.0.1, GET only); every run now opens a blank page then navigates,
       supports --pre page-start scripts and prints a console-error count.
+    - Settings shows "Kept by browser: yes / no (export regularly)" and, on a served
+      address only, the tracker asks the browser to keep its storage (never on file://).
 
 1.1 — Step 1 (transcripts out of the book). Call transcripts move out of the book.
 
