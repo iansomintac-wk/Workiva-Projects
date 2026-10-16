@@ -1,0 +1,37 @@
+Runway hosting, the publish session (a talk, not a run). Nothing is published yet.
+
+Project: C:\Users\teasp\Documents\Runway Tracker, branch runway-hosting (worktree
+.claude\worktrees\runway-hosting; check first whether it is merged to master: the hosting run
+merges it locally under its slip, and master is never pushed).
+Read first: docs/evidence/2026-10-15-runway-hosting.md (C1-C9 measured at 348e13a; "For Ian"),
+docs/HOSTING.md (goes to IT unchanged), and the spec's section 5 "Out" list
+(docs/superpowers/specs/2026-10-15-runway-hosting-design.md).
+
+Method: studio-harness:talk-and-run, "The talk". Plain English to Ian, one question at a time,
+recommendation first. Run `brain query runway hosting publish` before asking him anything.
+
+Ask Ian first, and do nothing else until he answers:
+  His Settings -> Pages check in a company repo: is there a Visibility choice?
+  Present = private Pages (Option 1). Absent = send docs/HOSTING.md to IT (Option 2).
+Then ask who owns the pending internal approval and whether hosting this Workiva content on an
+internal site is fine with them.
+
+Two open items from the evidence doc, to settle with Ian before any upload:
+  (a) The xlsx script (cdnjs 0.18.5) has no integrity attribute. Pin it, or vendor it into 1.1.
+      Either edits 1.1 (a new file and a new fingerprint); needs his yes. Measure the SRI hash first.
+  (b) The HOSTING.md fingerprint is the CRLF working-tree hash (b247a93c...); the LF blob hashes
+      c650322b.... Choose one form and make the doc, the test and a .gitattributes agree.
+
+Real-host checks not yet run (measure on the real host, record as measured):
+  - sign-in redirect, in a private window
+  - location.origin is the site's own subdomain, not <org>.github.io
+  - the browser's persist answer on the real host
+  - Ian moving his real book with the move-book tool, after an export
+
+Safety, always:
+  - Never edit the 1.0 file. Never open the app in Ian's normal Chrome profile; throwaway profiles only.
+  - Synthetic test data only, except Ian moving his own book himself after an export.
+  - Create no repo, turn on no Pages, push nothing, add no remote or .github/ file without Ian's
+    yes for that step. Master is never pushed.
+  - Fresh yes per step; a yes covers only what it named.
+  - Logs go to files; replies at most 10 lines.
