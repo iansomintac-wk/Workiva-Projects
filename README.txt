@@ -151,6 +151,9 @@ Running the graduation checks headlessly (needs Chrome or Edge):
        --fn runGraduationScenarios --verbose --expect 6
   tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 475
   step 0 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 34
+  step 1 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 65
+  step 1 cold start (C8): node tools/step1-coldstart.mjs
+  tools/selfchecks-1.1.js is the 1.1 copy of the suite (same 475 checks; three edited, see CHANGELOG).
 
 The second runs six end-to-end scenarios (A3-A8) and prints the measured value
 for each. --seed takes a comma-separated list, run in order; --verbose also
@@ -245,6 +248,9 @@ tools/selfchecks.js (it is not in the shipped file); the guide's is in the page.
             must be 475/475 (the suite lives in tools/selfchecks.js and is not shipped)
   tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 475
   step 0 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 34
+  step 1 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 65
+  step 1 cold start (C8): node tools/step1-coldstart.mjs
+  tools/selfchecks-1.1.js is the 1.1 copy of the suite (same 475 checks; three edited, see CHANGELOG).
   guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
             must be 18/18 (window.runGuideSelfChecks() also works in the console)
 

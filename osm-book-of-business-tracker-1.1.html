@@ -35,6 +35,13 @@
   6. Preserve existing scoring/risk logic (computeRisk, healthScore, gates) unless objectively wrong.
 
   RELEASE NOTES:
+  1.1 — Step 1 (transcripts out of the book). Call transcripts now live in the
+        browser's IndexedDB (obm-transcripts-v1), are never cut when stored (the
+        first 120,000 characters of the note plus transcript are what the AI is
+        sent), and every export, backup file and archive carries them. Book
+        schema 17: once a book is opened here, 1.0 refuses it. Export from 1.0
+        BEFORE the first open.
+        Design: docs/superpowers/specs/2026-10-15-runway-1.1-step1-transcripts-design.md
   1.1 — Step 0 (safety). Writes the book only when something changed:
         - no backup (file or stored book) after a failed load;
         - bookkeeping saves skip an unchanged book;
