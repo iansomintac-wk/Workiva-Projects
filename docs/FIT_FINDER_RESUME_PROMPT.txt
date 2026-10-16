@@ -1,11 +1,20 @@
-Fit Finder v4.6: hand-off (2026-10-16, session 85919228, successor of db631e26; sus decimal fix finished, local)
+Fit Finder v4.6: hand-off (2026-10-16, session 85919228, successor of db631e26; sus decimal fix done, pushed, live v9)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to 4da5266. LOCAL ONLY (not pushed): af8366a and
-the commits after it. Push only with Ian's yes. Draft PR #1 into prompt-coach (not merged). Live page
-https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 8 = dist of b18ad11; the local dist
-(105d94c) is the v9 candidate; republish only with Ian's yes. (Updated by 85919228.)
+worktree-fit-finder-v4. Pushed to origin up to 76b063d. LOCAL ONLY (not pushed): the hand-off
+commit after it. Push only with Ian's yes. Draft PR #1 into prompt-coach (not merged). Live page
+https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 9 (version id 1792183525-161a) =
+dist of 105d94c (unchanged in 76b063d); checked: the live file contains that dist exactly and not
+v8's. Republish only with Ian's yes. (Updated by 85919228.)
+
+NEXT SESSION (written by 85919228; supersedes every NEXT SESSION below)
+Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. Ask Ian which STILL OPEN
+item (list at the end of this file) to take next, recommendation first, one question; do only what he
+says yes to, test first, and end with the same push / republish questions.
+Suggested first (PM check, Sonnet, 2026-10-16): the "sites submitted" reads-as-ACT item; before asking,
+probe read-only how many of the 139 texts hold a past-tense ACT verb ("submitted", "filed", ...) and
+whether their fit is wrong, so the question carries the number.
 
 UPDATE 2026-10-16, session 85919228 (successor of db631e26): NOT-DONE items 1-3 below DONE
 - Item 1: the sus-anomalies candidate got no card because "submitted" reads as ACT, so rate() gives fit
@@ -20,7 +29,10 @@ UPDATE 2026-10-16, session 85919228 (successor of db631e26): NOT-DONE items 1-3 
   15.5 s (capped 0.10-0.17 s); both now say 9-15 s. Minor left: no check pins exactly 300 (a 301 gap).
 - Found, not fixed (pre-existing, idea for Ian): "sites submitted" (past tense, describing data) reads
   as ACT and rates the whole task "not a fit".
-- Next: ask Ian, one at a time: push? republish v9? Then the STILL OPEN list.
+- Ian 2026-10-16 (option labels he chose, not his words): "Push (Recommended)" -> pushed
+  4da5266..76b063d; "Republish v9 (Recommended)" -> live version 9, checked as in WHERE.
+- Predecessor db631e26 kept (done, renamed COMPLETED; shares this worktree, so claude rm would
+  remove the worktree or need force flags).
 
 NEXT SESSION (written by db631e26 at the 200k stop; supersedes every NEXT SESSION below)
 Read this file, CLAUDE.md and fit-finder/README.md. State: b18ad11 (year-over-year decimal fix) is pushed
@@ -149,6 +161,9 @@ compare.js (old vs new on inputs), mutants.js, regexcost.js. To rebuild "old": g
 4545647:fit-finder/engine/fit.js and :fit-finder/data/catalogue.json into a scratch folder.
 
 STILL OPEN (each needs Ian's yes)
+- "sites submitted" (past tense, describing data) reads as ACT, so the whole task rates "not a fit"
+  (found 2026-10-16 by 85919228; pre-existing).
+- No check pins the sus cards' cap at exactly 300 (a 301-character gap); Sonnet review Minor.
 - S7 and "review <data> for unusual changes" read as READ only, so they reach no use case.
 - S16 also offers a cross-reference check within the sustainability report (idea only).
 - The "reach a use case" figure counts wrong suggestions; a right-suggestion rate needs gold labels.
