@@ -535,6 +535,34 @@
         });
       }
 
+      { // T10: C7. Before = today's cost (serializeBook of a book with the text inline, in memory only); after = serializeBackup with a warm cache.
+        const SPREAD_FLOOR_MS = 30;
+        const median = a => a.slice().sort((x, y) => x - y)[1];
+        const spread = a => (Math.max(...a) - Math.min(...a)) / median(a);
+        await withBook(async book => {
+          const N = 500;
+          book.activities[cid] = (book.activities[cid] || []).filter(a => !a.id.startsWith('lg'));
+          for(let i = 0; i < N; i++){
+            const a = {id: 'lg' + i, date: todayISO(), type: 'Call', summary: 'l' + i, checklist: []};
+            a.transcript = await saveTranscriptVerified(a.id, fixtureText(i, 40000));
+            book.activities[cid].push(a);
+          }
+          const inline = cloneData(book);                       // the pre-Step-1 shape, in memory only (never stored)
+          inline.activities[cid].forEach(a => { if(a.transcript && a.transcript.ref) a.transcript = {text: _transcriptMap.get(a.transcript.ref).text, truncated: false}; });
+          serializeBackup(book, serializeBook(book));           // warm the cache; also a warm-up run for both paths
+          serializeBook(inline);
+          const before = [], after = [];
+          for(let r = 0; r < 3; r++){                           // alternating before / after
+            let t = performance.now(); serializeBook(inline); before.push(performance.now() - t);
+            t = performance.now(); serializeBackup(book, serializeBook(book)); after.push(performance.now() - t);
+          }
+          const fmt = a => a.map(x => x.toFixed(1)).join('/');
+          const sp = (a, name) => `${name} spread=${(spread(a) * 100).toFixed(0)}% ${median(a) < SPREAD_FLOOR_MS ? '(median under ' + SPREAD_FLOOR_MS + ' ms: floor, stop rule not applied)' : '(median at/over floor: lead applies the 15% stop rule)'}`;
+          rec('T10 C7: backup preparation for 500 x 40K with transcripts unchanged takes under 30 ms per write (median of 3)',
+            median(after) < 30, `after=${fmt(after)} median=${median(after).toFixed(1)}ms; before(today)=${fmt(before)} median=${median(before).toFixed(1)}ms (spec: 167); ${sp(after, 'after')}; ${sp(before, 'before')}`);
+        });
+      }
+
       rec('probe reached the end', true);
     }catch(e){
       rec('probe threw', false, String(e && e.stack || e));
