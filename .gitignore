@@ -67,3 +67,6 @@ connector/dry-run.jsonl
 connector/*.tmp
 connector/*.lock
 .ledger/
+
+# Hosting build output (tools/build-site.mjs rebuilds it)
+site/

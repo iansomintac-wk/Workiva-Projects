@@ -1,6 +1,12 @@
 OSM Runway — release notes
 ==========================
 
+1.1 — Hosting. A site you can put behind company sign-in (nothing is published).
+
+    - tools/build-site.mjs builds site/ (index.html and .nojekyll only) and refuses
+      anything else; its guard checks the file set, the sha256 and email-shaped text.
+    - docs/HOSTING.md: what to upload and what a host must give.
+
 1.1 — Step 1 (transcripts out of the book). Call transcripts move out of the book.
 
     - Transcripts now live in the browser's IndexedDB (obm-transcripts-v1), one record

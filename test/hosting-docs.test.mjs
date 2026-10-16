@@ -1,0 +1,39 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync, existsSync } from 'node:fs';
+
+const read = f => (existsSync(f) ? readFileSync(f, 'utf8') : '');
+const hosting = () => read('docs/HOSTING.md');
+const firstSection = () => (read('CHANGELOG.txt').split(/\n(?=\d+\.\d+ )/)[1] || '');
+
+test('HOSTING.md says what this is, what to upload, and what the host must give', () => {
+  const t = hosting();
+  assert.ok(t.length > 0, 'docs/HOSTING.md is missing');
+  for (const re of [/site\/index\.html/, /\.nojekyll/, /node tools\/build-site\.mjs/, /own hostname/i, /https/i, /sign-in/i])
+    assert.match(t, re);
+});
+test('HOSTING.md is accurate about where data goes: the book stays in the browser, AI features send text to the provider', () => {
+  const t = hosting();
+  assert.ok(t.length > 0, 'docs/HOSTING.md is missing');
+  assert.match(t, /lives in this browser/i);
+  assert.match(t, /AI features/);
+  assert.match(t, /provider/i);
+  assert.doesNotMatch(t, /nothing (is sent|leaves)|never leaves the browser|no data leaves/i);
+});
+test('HOSTING.md carries no email-shaped string except .invalid, no restore-point file name, no company name', () => {
+  const t = hosting();
+  assert.ok(t.length > 0, 'docs/HOSTING.md is missing');
+  const bad = (t.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) || []).filter(m => !/\.invalid$/i.test(m));
+  assert.deepEqual(bad, []);
+  assert.doesNotMatch(t, /RESTORE-POINT/);
+  assert.doesNotMatch(t, /Workiva/i);
+});
+test('README.txt has a Hosted paragraph that points at docs/HOSTING.md', () => {
+  const t = read('README.txt');
+  assert.match(t, /^Hosted\b/m); assert.match(t, /docs\/HOSTING\.md/);
+});
+test('CHANGELOG.txt: the hosting heading is the FIRST version section and names the builder', () => {
+  const first = firstSection();
+  assert.match(first, /^1\.1 \S+ Hosting/);
+  assert.match(first, /build-site/);
+});
