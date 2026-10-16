@@ -37,3 +37,8 @@ test('CHANGELOG.txt: the hosting heading is the FIRST version section and names 
   assert.match(first, /^1\.1 \S+ Hosting/);
   assert.match(first, /build-site/);
 });
+test('HOSTING.md covers checking a copy from an address and publishing a new version; CHANGELOG names --serve', () => {
+  const t = hosting();
+  for (const re of [/--serve site/, /node tools\/selfcheck\.mjs/, /upload/i, /475/]) assert.match(t, re);
+  assert.match(firstSection(), /--serve/);
+});

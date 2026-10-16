@@ -6,6 +6,9 @@ OSM Runway — release notes
     - tools/build-site.mjs builds site/ (index.html and .nojekyll only) and refuses
       anything else; its guard checks the file set, the sha256 and email-shaped text.
     - docs/HOSTING.md: what to upload and what a host must give.
+    - tools/selfcheck.mjs --serve <dir> runs the same in-page checks from a served
+      address (127.0.0.1, GET only); every run now opens a blank page then navigates,
+      supports --pre page-start scripts and prints a console-error count.
 
 1.1 — Step 1 (transcripts out of the book). Call transcripts move out of the book.
 
