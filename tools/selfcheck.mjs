@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 // Headless runner for the tracker's in-page self-check suite.
-//   node tools/selfcheck.mjs [file.html] [--seed demo-seed.js[,second-seed.js]] [--fn runSelfChecks] [--expect 318] [--suite path|none] [--verbose]
+//   node tools/selfcheck.mjs [file.html] [--seed demo-seed.js[,second-seed.js]] [--fn runSelfChecks] [--expect 318] [--suite path|none] [--profile dir] [--verbose]
 //   --suite: an external suite injected as an INLINE <script> after the page loads. Default: tools/selfchecks.js
 //   when the target is osm-book-of-business-tracker-1.0.html, otherwise none (the guide keeps its in-page suite).
+//   --profile: use <dir> (must be inside the OS temp folder) as the Chrome profile and do not delete it at exit.
 // Exit 0 when every check passes and the count matches --expect.
 // NOT part of the distributable bundle — dev tooling, like docs/.
 
 import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve, basename, dirname } from 'node:path';
+import { join, resolve, basename, dirname, sep } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const CHROME_CANDIDATES = [
@@ -36,7 +37,7 @@ const seedPaths = (flag('seed', '') || '').split(',').filter(Boolean);
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SUITE_FOR = {
   'osm-book-of-business-tracker-1.0.html': join(HERE, 'selfchecks.js'),
-  'osm-book-of-business-tracker-1.1.html': join(HERE, 'selfchecks.js'),
+  'osm-book-of-business-tracker-1.1.html': join(HERE, 'selfchecks-1.1.js'),
 };
 const suiteFlag = flag('suite', null);
 const suitePath = suiteFlag === 'none' ? null : (suiteFlag ? resolve(suiteFlag) : (SUITE_FOR[basename(target)] || null));
@@ -54,7 +55,12 @@ const chrome = CHROME_CANDIDATES.find(p => existsSync(p));
 if (!chrome) { console.error('Could not find Chrome or Edge.'); process.exit(2); }
 
 const targetUrl = pathToFileURL(target).href;
-const profile = mkdtempSync(join(tmpdir(), 'selfcheck-'));
+const profileFlag = flag('profile', null);
+if (profileFlag) {
+  const root = (resolve(tmpdir()) + sep).toLowerCase(), want = (resolve(profileFlag) + sep).toLowerCase();
+  if (!want.startsWith(root)) { console.error('--profile must be a folder inside ' + tmpdir()); process.exit(2); }
+}
+const profile = profileFlag ? resolve(profileFlag) : mkdtempSync(join(tmpdir(), 'selfcheck-'));
 const child = spawn(chrome, [
   '--headless=new', `--remote-debugging-port=${PORT}`, `--user-data-dir=${profile}`,
   '--no-first-run', '--no-default-browser-check', '--disable-gpu',
@@ -66,7 +72,7 @@ let chromeStderr = '';
 child.stderr.on('data', d => { chromeStderr += String(d); });
 const cleanup = () => {
   try { child.kill('SIGKILL'); } catch {}
-  try { rmSync(profile, { recursive: true, force: true }); } catch {}
+  try { if (!profileFlag) rmSync(profile, { recursive: true, force: true }); } catch {}
 };
 process.on('exit', cleanup);
 
