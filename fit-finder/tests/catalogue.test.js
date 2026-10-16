@@ -3,7 +3,7 @@
 const fs = require('fs'), path = require('path'), assert = require('assert');
 const root = path.join(__dirname, '..');
 const cat = JSON.parse(fs.readFileSync(path.join(root, 'data/catalogue.json'), 'utf8'));
-const { rate, match, lead, patternPrompt, AI_OPS } = require('../engine/fit.js');
+const { rate, match, lead, patternPrompt, AI_OPS, normalize } = require('../engine/fit.js');
 let fails = 0;
 const check = (name, fn) => { try { fn(); } catch (e) { fails++; console.log('FAIL', name, '-', e.message); } };
 
@@ -145,6 +145,16 @@ check('match: figures the sites submitted reach sus-anomalies', () => {
   const t = 'Review the Scope 1 and 2 emissions that each of our forty manufacturing sites submitted through the quarterly collection template, covering the fleet, natural gas and purchased electricity lines for every site, and flag any anomalies.';
   assert(matched(t).includes('sus-anomalies'), matched(t).join(','));
 });
+// ...and the cap is exactly 300: the two words 300 characters apart still get the card, 301 apart do not,
+// in both word orders (the checks above let any cap from about 200 to 500 pass)
+const gap = (n) => { let g = (' ' + 'the forty sites '.repeat(30)).slice(0, n - 1); if (g.endsWith(' ')) g = g.slice(0, -1) + 's'; return g + ' '; };
+for (const [a, b, want] of [['Check our emissions', 'anomalies.', 'sus-anomalies'], ['Check the anomalies', 'emissions.', 'sus-anomalies'],
+  ['Write the sustainability', 'disclosure.', 'sus-disclosure'], ['Write the disclosure', 'sustainability pages.', 'sus-disclosure']])
+  for (const n of [300, 301]) check(`match: ${want}, ${a.split(' ').pop()} first, words ${n} apart`, () => {
+    const t = a + gap(n) + b, nt = normalize(t), w1 = a.split(' ').pop().toLowerCase(), w2 = b.split(/[ .]/)[0];
+    assert.strictEqual(nt.indexOf(w2) - nt.indexOf(w1) - w1.length, n, 'gap');
+    assert.strictEqual(matched(t).includes(want), n === 300, matched(t).join(','));
+  });
 
 // sources say how they were read and, when read from the public API, when Workiva last updated them
 for (const [k, s] of Object.entries(cat.sources)) check('source ' + k, () => {

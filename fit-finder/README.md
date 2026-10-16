@@ -84,7 +84,9 @@ sustainability anomaly check and S10 the Wdata card (S21: create, improve, expla
 The sustainability anomaly check and the sustainability disclosure card, which also look for two
 words in one sentence, likewise step over a decimal point ("3.5 million tonnes ... anomalies") and
 look at most 300 characters between the two words (uncapped, a pasted 5,000-row emissions table
-took 9 to 15 s to rate; capped, about 0.1 s).
+took 9 to 15 s to rate; capped, about 0.1 s). Checks hold that limit at exactly 300 in both word
+orders (300 characters apart gets the card, 301 does not); before them, a limit moved anywhere from
+200 to 500 passed every check.
 No fit changed on the 139 tasks; A and B are unchanged. Of the 120 labelled tasks only task 92
 (writing variance explanations for the year-over-year change in emissions) changed: it gains an
 "Explain it" step and its first use case is now the sustainability anomaly check instead of the
