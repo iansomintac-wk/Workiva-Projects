@@ -107,6 +107,74 @@
           n2.transcript && n2.transcript.ref === 'n2:0123456789ab' && n3.transcript === undefined && nd.activities['__t3__'].length === 3);
       }
 
+      const ALL = window.STEP1_CALLS.join('\n');
+      const fixtureText = (i, n) => { const k = (i * 7919) % ALL.length; let s = '[' + i + '] ' + ALL.slice(k) + ALL.slice(0, k); while(s.length < n) s += s; return s.slice(0, n); };
+      // the block of transcript text inside a prompt: how many of text's leading chars appear in a row, and where it starts
+      const sentRun = (p, text) => { const i = p.indexOf(text.slice(0, 200)); if(i < 0) return {start: -1, len: 0}; let k = 0; while(k < text.length && p[i + k] === text[k]) k++; return {start: i, len: k}; };
+
+      { // T4: no cut on read; cap only on send; C3 (send half), C4
+        rec('T4 fixture loaded: call1 is 157,060 chars (C3 input)', window.STEP1_CALLS.length === 4 && window.STEP1_CALLS[0].length === 157060, 'total=' + ALL.length);
+        const big = 'y'.repeat(130000);
+        let got = null; const realToast = window.showToast; const toasts = []; window.showToast = m => toasts.push(m);
+        readTranscriptFile(new File([big], 'big.txt'), t => { got = t; });
+        await waitFor(() => got !== null, 3000);
+        rec('T4 readTranscriptFile no longer cuts at 120,000', got && got.text.length === 130000 && got.truncated === false && !toasts.some(m => /truncated/i.test(m)), JSON.stringify(toasts));
+        let got2 = null; toasts.length = 0;
+        readTranscriptFile(new File([new Uint8Array(4 * 1024 * 1024 + 1)], 'huge.txt'), t => { got2 = t; });
+        await new Promise(r => setTimeout(r, 200));
+        window.showToast = realToast;
+        rec('T4 the 4 MB file-read limit still refuses', got2 === null && toasts.some(m => /over 4 MB/.test(m)));
+
+        await withBook(async book => {
+          const text = window.STEP1_CALLS[0];
+          const NOTE = 'note';
+          const act = {id: 'dbg1', date: todayISO(), type: 'Call', summary: NOTE, checklist: [], sessionNumber: 1};
+          act.transcript = await saveTranscriptVerified('dbg1', text);
+          book.activities[cid] = (book.activities[cid] || []).concat([act]);
+          const realAi = window.callAiAPI, sent = [];
+          window.callAiAPI = async (prompt, opts) => { sent.push(String(prompt)); return {text: '[]', truncated: false}; };
+          try{ await generateSessionDebrief(cid, 'dbg1'); }finally{ window.callAiAPI = realAi; }
+          const p = sent[0] || '';
+          const budget = DEBRIEF_TRANSCRIPT_CHAR_CAP - NOTE.length - 1;     // note + newline + transcript <= 120,000
+          const run = sentRun(p, text);
+          rec('T4 C3 (send half): of a 157,060-char call the debrief sends exactly 120,000 - note - 1 chars of transcript, then the truncated marker',
+            run.len === budget && p.includes('truncated to the first 120,000 characters'),
+            `prompts=${sent.length} runLen=${run.len} budget=${budget}`);
+          sent.length = 0;
+        });
+        await withBook(async book => {   // the cap is on the whole record: a long note leaves less room for transcript
+          const text = window.STEP1_CALLS[0], longNote = 'N' + 'n'.repeat(4999);
+          const act = {id: 'dbg2', date: todayISO(), type: 'Call', summary: longNote, checklist: [], sessionNumber: 1};
+          act.transcript = await saveTranscriptVerified('dbg2', text);
+          book.activities[cid] = (book.activities[cid] || []).concat([act]);
+          const realAi = window.callAiAPI, sent = [];
+          window.callAiAPI = async prompt => { sent.push(String(prompt)); return {text: '[]', truncated: false}; };
+          try{ await generateSessionDebrief(cid, 'dbg2'); }finally{ window.callAiAPI = realAi; }
+          const p = sent[0] || '', budget = DEBRIEF_TRANSCRIPT_CHAR_CAP - longNote.length - 1, run = sentRun(p, text);
+          rec('T4 the 120,000 cap covers note + transcript together (a 5,000-char note leaves 114,999 for the transcript)',
+            run.len === budget, `runLen=${run.len} budget=${budget}`);
+        });
+
+        // C4 (Guard: green when written, because Task 3 landed first; it protects the debrief half against a later break).
+        await withBook(async book => {
+          const text = window.STEP1_CALLS[0];
+          const act = {id: 'dbg3', date: todayISO(), type: 'Call', summary: 'note', checklist: [], sessionNumber: 1};
+          act.transcript = await saveTranscriptVerified('dbg3', text);
+          book.activities[cid] = (book.activities[cid] || []).concat([act]);
+          saveData();                                          // the stored book now holds the ref
+          await tsDelete(act.transcript.ref);                  // delete the record behind the app
+          await loadData();                                    // a real reload: startup must survive the missing record
+          const act2 = DATA.activities[cid].find(a => a.id === 'dbg3');
+          const realAi = window.callAiAPI, sent = [];
+          window.callAiAPI = async prompt => { sent.push(String(prompt)); return {text: '[]', truncated: false}; };
+          try{ await generateSessionDebrief(cid, 'dbg3'); }finally{ window.callAiAPI = realAi; }
+          const joined = sent.join('\n'), st = ui.sessionDebriefs && ui.sessionDebriefs['dbg3'];
+          rec('T4 C4 (guard): after a reload with the record deleted behind the app the book loads, the notice state shows, and the debrief (which did run) sends no transcript text',
+            DATA.customers.length > 0 && !!act2 && activityTranscriptState(act2) === 'missing' && window.__transcriptLoad.bad >= 1 &&
+            sent.length >= 1 && !joined.includes(text.slice(1000, 1200)) && (!st || !st.error), `prompts=${sent.length} bad=${window.__transcriptLoad.bad} err=${st && st.error}`);
+        });
+      }
+
       rec('probe reached the end', true);
     }catch(e){
       rec('probe threw', false, String(e && e.stack || e));

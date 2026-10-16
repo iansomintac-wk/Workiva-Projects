@@ -2899,9 +2899,7 @@ function readTranscriptFile(file, onDone){
   reader.onload = evt => {
     const raw = String(evt.target.result || '');
     if(!raw.trim()){ showToast('That file appears to be empty.'); return; }
-    const truncated = raw.length > DEBRIEF_TRANSCRIPT_CHAR_CAP;
-    if(truncated) showToast('Transcript truncated to the first 120,000 characters');
-    onDone({text: truncated ? raw.slice(0, DEBRIEF_TRANSCRIPT_CHAR_CAP) : raw, truncated});
+    onDone({text: raw, truncated: false});
   };
   reader.onerror = ()=> showToast('Could not read that file.');
   reader.readAsText(file);
@@ -3203,14 +3201,18 @@ async function generateSessionDebrief(customerId, activityId){
     // v51: the transcript is read from the activity record (logged with the
     // call or attached after), not from transient upload state.
     const storedTranscript = activityTranscript(activity);
-    const transcript = storedTranscript ? storedTranscript.text : '';
-    const transcriptTruncated = !!(storedTranscript && storedTranscript.truncated);
+    const fullText = storedTranscript ? storedTranscript.text : '';
+    const noteSent = activity.summary || '';
+    // the cap applies only to what is SENT, and to the record as a whole: noteSent + newline + transcript <= CAP
+    const budget = Math.max(0, DEBRIEF_TRANSCRIPT_CHAR_CAP - noteSent.length - 1);
+    const overCap = fullText.length > budget;
+    const transcript = overCap ? fullText.slice(0, budget) : fullText;
+    const transcriptTruncated = !!(storedTranscript && storedTranscript.truncated) || overCap;
     if(!(activity.summary || '').trim() && !transcript.trim()) throw new Error('This activity has no notes and no transcript to debrief');
     // v44: snapshot the record AS SENT — quote verification runs against exactly
     // this text, so an audit-line append landing mid-flight can't cause false
     // discards (approved ruling). v50: the snapshot now covers note + transcript,
     // matching what the extraction prompt actually carries.
-    const noteSent = activity.summary || '';
     const recordSent = transcript.trim() ? noteSent + '\n' + transcript : noteSent;
     const parsedQ = parseOutstandingQuestions(input.questions);
     if(parsedQ.dropped > 0) showToast(`Only the first ${DEBRIEF_MAX_QUESTIONS} questions were sent — ${parsedQ.dropped} more were left off.`);
