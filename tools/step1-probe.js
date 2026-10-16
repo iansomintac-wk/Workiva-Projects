@@ -328,6 +328,44 @@
         });
       }
 
+      { // T7: log form and Gong
+        await withBook(async book => {
+          const big = fixtureText(7, 130000);
+          const act = {id: 'lg1', date: todayISO(), type: 'Call', summary: 'logged', checklist: [], sessionNumber: null, flagged: false};
+          const c = DATA.customers.find(x => x.id === cid);
+          const ok = await submitLoggedActivity(c, act, big, false);
+          const a = DATA.activities[cid].find(x => x.id === 'lg1');
+          rec('T7 the log form stores a 130,000-char transcript whole, as a verified ref', ok === true && a.transcript.ref && a.transcript.chars === 130000 && a.transcript.truncated === false && activityTranscript(a).text === big);
+          const realCommit = window.commitDataCandidate; window.commitDataCandidate = () => false;
+          const act2 = {id: 'lg2', date: todayISO(), type: 'Call', summary: 'logged2', checklist: [], sessionNumber: null, flagged: false};
+          let ok2; try{ ok2 = await submitLoggedActivity(c, act2, 'text that must not stick', false); }finally{ window.commitDataCandidate = realCommit; }
+          rec('T7 a failed log commit leaves no record behind', ok2 === false && (await tsGet('lg2:' + (await sha1Hex('text that must not stick')).slice(0, 12))) === undefined);
+          _tsForceDown = true; _tsDbP = null;
+          const act3 = {id: 'lg3', date: todayISO(), type: 'Call', summary: 'logged3', checklist: [], sessionNumber: null, flagged: false};
+          const ok3 = await submitLoggedActivity(c, act3, big, false);
+          _tsForceDown = false; _tsDbP = null;
+          const a3 = DATA.activities[cid].find(x => x.id === 'lg3');
+          rec('T7 with IndexedDB unavailable the log form falls back to the inline, uncut form', ok3 === true && a3.transcript.text === big && !a3.transcript.ref);
+          // a second Save while the first is still writing
+          const actA = {id: 'lgA', date: todayISO(), type: 'Call', summary: 'A', checklist: [], sessionNumber: null, flagged: false};
+          const actB = {id: 'lgB', date: todayISO(), type: 'Call', summary: 'B', checklist: [], sessionNumber: null, flagged: false};
+          const [rA, rB] = await Promise.all([submitLoggedActivity(c, actA, fixtureText(11, 60000), false), submitLoggedActivity(c, actB, fixtureText(12, 60000), false)]);
+          rec('T7 a second Save while the first is still writing is refused (no double log)', rA === true && rB === false && DATA.activities[cid].some(x => x.id === 'lgA') && !DATA.activities[cid].some(x => x.id === 'lgB'));
+          // Gong: synchronous inline uncut, then moved to a ref
+          const saved = DATA.activities; DATA.activities = {gk: []};
+          const savedCust = DATA.customers; DATA.customers = [Object.assign(cloneData({c: savedCust[0]}).c, {id: 'gk', name: 'Gong probe'})];
+          let res, after;
+          try{
+            res = applyCallImport([{call: {callId: 'g-probe-1', title: 'Probe call', startedAt: new Date().toISOString(), transcript: fixtureText(9, 130000)}, customerId: 'gk', type: 'Call', sessionNumber: null, matchedBy: 'manual'}]);
+            const immediate = DATA.activities.gk[0].transcript;
+            await _transcriptMovePending;
+            after = DATA.activities.gk[0].transcript;
+            rec('T7 Gong import stores 130,000 chars uncut at once, then the move makes it a verified ref',
+              res.created === 1 && immediate.text.length === 130000 && immediate.truncated === false && after.ref && after.chars === 130000 && (await tsGet(after.ref)).text === fixtureText(9, 130000));
+          }finally{ DATA.activities = saved; DATA.customers = savedCust; }
+        });
+      }
+
       rec('probe reached the end', true);
     }catch(e){
       rec('probe threw', false, String(e && e.stack || e));

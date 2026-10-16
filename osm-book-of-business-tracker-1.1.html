@@ -3067,6 +3067,12 @@ async function moveInlineTranscripts(data){
   }
   return {moved, failed, unavailable: false};
 }
+let _transcriptMovePending = Promise.resolve();
+function scheduleTranscriptMove(){
+  if(_suiteRunning) return;
+  _transcriptMovePending = moveInlineTranscripts(DATA).then(r => { if(r.moved) saveData({maintenance:true}); render(); return r; });
+  return _transcriptMovePending;
+}
 function hasInlineTranscript(data){
   return Object.values((data && data.activities) || {}).some(list => (list || []).some(a => a && a.transcript && typeof a.transcript.text === 'string' && a.transcript.text.trim()));
 }
@@ -14960,7 +14966,7 @@ function renderLogActivityTab(c){
       <div style="display:flex; align-items:center; gap:8px; margin-top:4px; flex-wrap:wrap;">
         <button class="btn btn-sm" id="btn-act-transcript-attach">Attach transcript file</button>
         <input type="file" id="act-transcript-file" accept=".txt,.md,.vtt,.srt,.log,text/plain" style="display:none;">
-        <span style="font-size:var(--text-xs); color:var(--text-faint);">.txt/.md/.vtt/.srt · stored with this activity (and in exports); capped at 120,000 characters. The Session Debrief can then answer outstanding questions and draft the recap email from it.</span>
+        <span style="font-size:var(--text-xs); color:var(--text-faint);">.txt/.md/.vtt/.srt · stored with this activity (and in exports); no size cap on what is stored; the first 120,000 characters go to the AI. The Session Debrief can then answer outstanding questions and draft the recap email from it.</span>
       </div>
     </div>
     <label class="checklist-item" style="margin-bottom:8px;">
@@ -16635,7 +16641,7 @@ The draft is discarded. The risk itself stays open.`)) return;
       });
     });
     bindActTypeSessionLock(document);   // C-3 (G06)
-    $('#btn-save-activity') && $('#btn-save-activity').addEventListener('click', ()=>{
+    $('#btn-save-activity') && $('#btn-save-activity').addEventListener('click', async ()=>{
       const type = $('#act-type').value;
       const date = $('#act-date').value || todayISO();
       // Block future dates at the source, not just downstream: a future "touchpoint"
@@ -16649,33 +16655,50 @@ The draft is discarded. The risk itself stays open.`)) return;
       if(!summary){ showToast('Add a summary before logging'); return; }
       const checklist = (ACTIVITY_TYPES[type]||[]).map(label => ({label, done:false}));
       const activity = {id:uid(), date, type, summary, checklist, sessionNumber, flagged};
-      // v51: optional transcript, persisted ON the activity (rides exports and
-      // archives). Over-cap text is clamped with a stored, visible marker —
-      // never a silent truncation.
+      // Optional transcript: stored whole (no cut); the AI send is capped separately.
       const transcriptRaw = $('#act-transcript') ? $('#act-transcript').value : '';
-      if(transcriptRaw.trim()){
-        const tTrunc = transcriptRaw.length > DEBRIEF_TRANSCRIPT_CHAR_CAP;
-        activity.transcript = {text: tTrunc ? transcriptRaw.slice(0, DEBRIEF_TRANSCRIPT_CHAR_CAP) : transcriptRaw, truncated: tTrunc};
-        if(tTrunc) showToast('Transcript stored — truncated to the first 120,000 characters');
-      }
-      const candidate = cloneData(DATA);
-      const candidateCustomer = candidate.customers.find(x=>x.id===c.id);
-      if(!candidate.activities[c.id]) candidate.activities[c.id] = [];
-      candidate.activities[c.id].push(activity);
-      // v43 Spec 4: evidence entry linked to this activity; achievedOn recomputes
-      // to the earliest evidence date (handles backdated catch-up logs honestly).
-      if(isFirstValue){
-        const previous = DATA; DATA = candidate;
-        try{ addFirstValueEvidence(candidateCustomer, activity); } finally { DATA = previous; }
-      }
-      if(!commitDataCandidate(candidate)) return;
-      ui.panelTab = 'activity';
-      showToast(flagged ? 'Activity logged and flagged as priority'
-        : isFirstValue ? 'Activity logged — first value evidence recorded'
-        : checklist.length ? 'Activity logged — Gainsight checklist ready' : 'Activity logged');
-      render();
+      const saveBtn = $('#btn-save-activity');
+      if(saveBtn) saveBtn.disabled = true;
+      try{ await submitLoggedActivity(c, activity, transcriptRaw, isFirstValue); }
+      finally{ if(saveBtn) saveBtn.disabled = false; }
     });
   }
+}
+
+let _logSaving = false;
+async function submitLoggedActivity(c, activity, transcriptRaw, isFirstValue){
+  if(_logSaving) return false;
+  _logSaving = true;
+  try{
+    const flagged = activity.flagged;
+    const checklist = activity.checklist;
+    let staged = null;
+    if(transcriptRaw && transcriptRaw.trim()){
+      try{ staged = await stageTranscript(activity.id, transcriptRaw); }
+      catch(e){ showToast('Could not save the transcript - nothing was logged'); return false; }
+      activity.transcript = staged.ref ? {ref: staged.ref, chars: staged.chars, sha1: staged.sha1, truncated: false} : {text: transcriptRaw, truncated: false};
+    }
+    const candidate = cloneData(DATA);
+    const candidateCustomer = candidate.customers.find(x=>x.id===c.id);
+    if(!candidate.activities[c.id]) candidate.activities[c.id] = [];
+    candidate.activities[c.id].push(activity);
+    // v43 Spec 4: evidence entry linked to this activity; achievedOn recomputes
+    // to the earliest evidence date (handles backdated catch-up logs honestly).
+    if(isFirstValue){
+      const previous = DATA; DATA = candidate;
+      try{ addFirstValueEvidence(candidateCustomer, activity); } finally { DATA = previous; }
+    }
+    if(!commitDataCandidate(candidate)){
+      if(staged && staged.created) dropTranscriptRecord(staged.ref);
+      return false;
+    }
+    ui.panelTab = 'activity';
+    showToast(flagged ? 'Activity logged and flagged as priority'
+      : isFirstValue ? 'Activity logged — first value evidence recorded'
+      : checklist.length ? 'Activity logged — Gainsight checklist ready' : 'Activity logged');
+    render();
+    return true;
+  } finally { _logSaving = false; }
 }
 
 function preserveFocus(sel){
@@ -19444,8 +19467,7 @@ function applyCallImport(confirmedRows){
       gong: normalizeGongLink(Object.assign({}, call, {matchedBy: r.matchedBy || 'manual'}))};
     const tr = typeof call.transcript === 'string' ? call.transcript : '';
     if(tr.trim()){
-      const cut = tr.length > DEBRIEF_TRANSCRIPT_CHAR_CAP;
-      act.transcript = {text: cut ? tr.slice(0, DEBRIEF_TRANSCRIPT_CHAR_CAP) : tr, truncated: cut};
+      act.transcript = {text: tr, truncated: false};
     }
     existing.add(call.callId);
     toAdd.push({customerId: r.customerId, act});
@@ -19457,6 +19479,7 @@ function applyCallImport(confirmedRows){
     DATA.activities[x.customerId].push(x.act);
   });
   saveData();
+  scheduleTranscriptMove();
   return {created: toAdd.length};
 }
 function callSinceISO(){

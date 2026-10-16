@@ -8836,7 +8836,7 @@ function _runSelfChecksInner(){
         {call: callRow.call, customerId: callRow.customerId, type: 'Call', sessionNumber: 3, matchedBy: callRow.matchedBy}]);
       const email = (DATA.activities.k2 || [])[0], call = (DATA.activities.k1 || [])[0];
       const emailOk = email && email.type === 'Email' && email.sessionNumber === null && email.gong && email.gong.callId === 'c-demo-006'
-        && email.transcript && email.transcript.text.length === DEBRIEF_TRANSCRIPT_CHAR_CAP && email.transcript.truncated === true
+        && email.transcript && email.transcript.text.length === 130000 && email.transcript.truncated === false
         && email.summary === 'Email: follow-up on checklist' && email.summary !== 'FAKE gong summary six' && email.gong.summary === 'FAKE gong summary six'
         && email.date === '2026-09-18' && email.checklist.length === ACTIVITY_TYPES.Email.length;
       const callOk = call && call.type === 'Call' && call.sessionNumber === 3 && call.gong.matchedBy === 'gainsightId';
@@ -8848,7 +8848,7 @@ function _runSelfChecksInner(){
       ['k1', 'k2', 'k3', 'k4', 'k5'].forEach(id => { delete DATA.activities[id]; });
       DATA.activities = savedActs;
     }
-    check('gong c3c: K7 Gong path: the email touch previews as Email with no session options, and applying it with sessionNumber 3 stores null; transcript clamped at 120,000; summary is the title, not the Gong summary; a Call keeps its session', ok, detail);
+    check('gong c3c: K7 Gong path: the email touch previews as Email with no session options, and applying it with sessionNumber 3 stores null; transcript stored whole (130,000); summary is the title, not the Gong summary; a Call keeps its session', ok, detail);
   })();
   (function(){                                   // c3d
     let ok = false, detail = '';
