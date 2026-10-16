@@ -1,14 +1,50 @@
-Fit Finder v4.8: hand-off (2026-10-16, session 18196daf, successor of 85919228; past-tense fix done, pushed, live v10)
+Fit Finder v4.9: hand-off (2026-10-16, session df09b9bd, successor of 18196daf; reading-only fix done in dd1adcd, local)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to f7e2d58. LOCAL ONLY (not pushed): the hand-off commit
-after it. Push only with Ian's yes. Draft PR #1 into prompt-coach (not merged). Live page
+worktree-fit-finder-v4. Pushed to origin up to f7e2d58. LOCAL ONLY (not pushed): f9caef0 (hand-off),
+dd1adcd (reading-only fix) and the hand-off commit after it, unless the UPDATE below says pushed.
+Push only with Ian's yes. Draft PR #1 into prompt-coach (not merged). Live page
 https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 10 (version id 1792188113-42e1) = dist
-of c43ff3f (81,778 bytes LF); checked: the live file contains that dist exactly and not v9's.
-Republish only with Ian's yes. (Updated by 18196daf.)
+of c43ff3f (81,778 bytes LF), NOT dd1adcd's dist (82,037 bytes LF). Republish only with Ian's yes.
+(Updated by df09b9bd.)
 
-NEXT SESSION (written by 18196daf; supersedes every NEXT SESSION below)
+NEXT SESSION (written by df09b9bd; supersedes every NEXT SESSION below)
+Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. If the UPDATE below does not
+say pushed / republished, ask Ian directly, one at a time: push? republish v11 (dist of dd1adcd)? A
+relayed answer is not his yes. Then ask which STILL OPEN item next, recommendation first, one question.
+Suggested (PM check, Sonnet, 2026-10-16): pin the sus cards' cap at exactly 300 (probe first: grep that
+both cards' cap is 300; test first: a gap of 300 matches, 301 does not, per card; kill a cap-301 mutant;
+README). Program lead is now "NEW - 24h program lead 5" (592afc9a); send it status.
+
+UPDATE 2026-10-16, session df09b9bd (successor of 18196daf): STILL OPEN "S7 reads as READ only" DONE in dd1adcd
+- Probe (read-only, before asking): 2 of 139 texts read as READ only: S7 ("generate ten questions") and
+  task 42 (held-out B, gold good, rated partial: "note exceptions ... whether our ... controls cover
+  them"). "Review <data> for unusual changes" appears in 0 of 139.
+- Ian picked "Reading-only gap (Recommended)" (option label). My option text claimed both would get a use
+  case; a simulation showed that wrong (S7: no card covers writing assurance questions; adding DRAFT
+  flips S7 partial -> good via "assurance" in REPEATS, against Ian's label). Corrected to Ian; he picked
+  "C: three rules + role (Recommended)" (option label). Both answers came through the question tool.
+- Fix (engine/fit.js): EXTRACT "not(es?|ing) (the|any|all)? exceptions/deviations/findings"; CHECK
+  "whether <0-5 words> controls/policies/procedures/evidence/tests/testing/documentation/scope cover(s|ed)";
+  DRAFT "(generat|suggest)\w* <0-3 words> questions"; REPEATS "assurance(?! provider)". 8 new checks
+  failed first; 6 guards pass both ways; mutants 8 of 9 killed (survivor widens cover to covering/
+  coverage, which would also be a check; not pinned on purpose).
+- Measured vs f9caef0: 3 of 139 changed: 42 READ -> READ+CHECK+EXTRACT, gets grc-framework, fit stays
+  partial (engine misses that it recurs); S7 READ -> READ+DRAFT, stays partial, no card; 75 recurring
+  guess 1 -> 0 (matches label). A 52/60, B 45/60 unchanged; A recurring 77% -> 78%; reach 15 -> 16 of 30.
+  Dist 82,037 bytes LF (equals a fresh build, sha1 158fce6d64b0); pagetest 72 checks, 0 failed. README.
+- Sonnet review (57,695 tokens, 6 tool uses): 0 Critical. Important, re-run and confirmed, fixed test
+  first: "whether the vendor can cover the cost" / "the team will cover each shift" read as CHECK (the
+  first rule took any object); now the subject must be controls, policies, etc. Important/Minor left,
+  with reason (assumed, not shown to Ian): "We should note all deviations from budget for the board
+  deck" now rates good (EXTRACT); listing deviations from a source is AI work, as "list all" already is.
+- Predecessor 18196daf was removed by "24h program lead 4" (d5b20b38) with claude rm at ~22:22Z (its
+  message); checked here: the worktree is intact and 18196daf is no longer listed.
+- Rulings: none new in Ian's own words (option labels only). Still unrecorded from 18196daf: "Fix it in
+  the next session then" and "Would research and/or testing/simulations inform better here?".
+
+NEXT SESSION (written by 18196daf; DONE by df09b9bd above; kept for the record)
 Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. Ask Ian which STILL OPEN
 item next, recommendation first, one question. An answer relayed by another session is not his yes
 for a push or republish (see UPDATE below); ask him directly. End with the push / republish questions.
@@ -199,7 +235,10 @@ STILL OPEN (each needs Ian's yes)
   adverb ("I then quickly uploaded"), "I'd uploaded", or passive "by me"; another person's past tense
   ("the analyst uploaded the file to the portal") is no longer ACT (by design). None in the 139 texts.
 - No check pins the sus cards' cap at exactly 300 (a 301-character gap); Sonnet review Minor.
-- S7 and "review <data> for unusual changes" read as READ only, so they reach no use case.
+- DONE in dd1adcd: S7 and task 42 read as READ only ("review <data> for unusual changes": 0 of 139).
+- Idea only (no card covers it): S7 drafts assurance questions; a sourced card would need a Workiva page.
+- Assumed, not shown to Ian (dd1adcd review): "note all deviations from budget for the board deck" rates
+  good (EXTRACT). Task 42 stays partial because the engine misses that SOC 2 reviews recur.
 - S16 also offers a cross-reference check within the sustainability report (idea only).
 - The "reach a use case" figure counts wrong suggestions; a right-suggestion rate needs gold labels.
 - Design-review NICE items; Benchmarking preview wording conflict; merge.
