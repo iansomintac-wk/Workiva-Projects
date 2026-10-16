@@ -63,6 +63,11 @@ for (const t of [
 // ...and the sustainability anomaly check needs sustainability data, not just the word "outliers"
 check('not sustainability: outliers in the trial balance', () => assert.notStrictEqual(
   top('Every quarter I flag outliers and unusual variances in the trial balance against last year.'), 'sus-anomalies'));
+// review of 9f0aa0c: unusual wording, carbon credit invoices and another clause's ESG are not sustainability data checks
+for (const t of ['Every quarter I check the sustainability report for typos and unusual wording.',
+  'Every month I check carbon credits invoices for unusual amounts.',
+  'Each quarter I flag outliers in the revenue by region report; ESG is another team'])
+  check('not sustainability anomalies: ' + t.slice(0, 40), () => assert.notStrictEqual(top(t), 'sus-anomalies'));
 check('left out: anomaly review is now a use case', () =>
   assert(!cat.leftOut.some((l) => /anomal/i.test(l.pattern)), 'still listed as left out'));
 
@@ -121,6 +126,14 @@ check('fit: drafting a roadmap from data is partial', () =>
 for (const t of ['Create the roadmap in Jira.', 'Build the plan in SAP and upload it.',
   'Build a plan to chase the sites for data.', 'Estimate the tax provision and book the journal.'])
   check('fit: stays not - ' + t, () => assert.strictEqual(rate(t).fit, 'not'));
+// review of 61cce43: only another system or chasing people blocks a plan; a table, a slide or "on how to" does not
+for (const t of ['Build a plan on how to reduce emissions.', 'Create a roadmap on emissions reduction from this data.',
+  'Build a plan to get our emissions down from this data.', 'Create a plan in a table from this data.', 'Build the roadmap into a slide.'])
+  check('fit: a drafted plan is partial - ' + t, () => assert.strictEqual(rate(t).fit, 'partial'));
+check('fit: an exact tax estimate stays not', () =>
+  assert.strictEqual(rate('Estimate the tax provision required for the quarter.').fit, 'not'));
+check('ops: estimating the yearly cut to reach a target is an estimate', () =>
+  assert(rate('Estimate how much we need to cut each year to reach the target.').ops.includes('ESTIMATE')));
 
 // coverage of the held-out half (option 4 check): how many fitting tasks reach a sourced use case
 const rows = fs.readFileSync(path.join(root, 'data/tasks.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
