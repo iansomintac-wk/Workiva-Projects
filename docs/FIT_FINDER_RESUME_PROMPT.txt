@@ -1,51 +1,60 @@
-Fit Finder v4.1: hand-off (2026-10-15 21:00 PDT, session 4583497d stopped at the 200k context line)
+Fit Finder v4.2: hand-off (2026-10-15 22:30 PDT, session ed322f71 stopped at the 200k context line)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to fca7320; this hand-off commit is local only (not pushed).
+worktree-fit-finder-v4. Pushed to origin up to fca7320. LOCAL ONLY (not pushed): fb86572 (old
+hand-off), a28bb69, 61cce43, 9f0aa0c (WIP), and this hand-off commit. Push only with Ian's yes.
 Draft PR #1 into prompt-coach: https://github.com/iansomintac/Workiva/pull/1 (not merged).
-Live page: https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE, artifact version 5 = dist of fca7320
-byte-for-byte (79,213 = 78,667 + 546-byte publisher wrapper), checked by reading it back.
+Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is still version 5 = dist of fca7320
+(not republished this session).
 
-DONE THIS SESSION (measured on fca7320)
-- v4 confirmed live; branch pushed; draft PR opened, then updated with the fix and new figures.
-- Rated 19 tasks from two Workiva Community posts Ian saved (5 Workiva financial prompts, 4 customer
-  comment lines with names removed, 10 Workiva sustainability prompts). Kept in
-  fit-finder/data/real/2026-10-15-community.jsonl, git-ignored through .git/info/exclude (never
-  committed or pushed; put no customer words in committed files).
-- Found and fixed (fca7320, test first): Sustainability disclosure agent matched the bare word
-  "draft" (W1-W3 financial tasks sent there); Tie-out matched any "10-Q"/"10-K" (peer benchmarking
-  sent there). 5 new catalogue checks were red before, green after.
-- Numbers: catalogue checks pass; held-out B 45/60 = 75.0%, A 52/60 = 86.7% (unchanged); pagetest
-  72 checks 0 failed; held-out fitting tasks reaching a use case 15 -> 14 of 30 (the old 15 counted
-  wrong suggestions; 10 of 120 labelled tasks changed suggestion, 8 of them wrong before in my
-  reading, 1 real loss: "proofreading the 10-K for inconsistent numbers" no longer -> Tie-out).
+IAN'S RULINGS (2026-10-15, his words)
+- On the engine's fit for the 19 Community tasks: "s4, s5, s6 should be partial." (16 of 19
+  agreed; marks saved as ianFit in the git-ignored fit-finder/data/real/2026-10-15-community.jsonl)
+- On how to fix it: "option 1" (narrow word fix, not a rubric rewrite or relabel)
+- On the sustainability anomaly job: "Build option 1." (a use case from S16, no Community post)
 
-IAN'S RULINGS (2026-10-15, his words, from the question options he picked)
-- "Push + draft PR (Recommended)"
-- "Yes, I'll paste some now (Recommended)" -> he sent the two saved Community pages
-- "Narrow the two" + the saved sustainability post
-- "Push + republish (Recommended)"
+DONE THIS SESSION (measured)
+- a28bb69 + 61cce43 (review fix): "rank" = sorting, "create/build a ... roadmap|plan" = drafting
+  (not "in/into/on <system>" or "to chase/collect/send ..."), new AI step ESTIMATE (trajectory;
+  "estimate the ... needed/required/to reach"). 7 new checks, red before, green after. Held-out B
+  45/60, A 52/60 unchanged; 0 of 120 labelled tasks changed; 19 of 19 real agree (tuned on them);
+  pagetest 72 checks 0 failed; dist 79,276 bytes. Sonnet code review: 4 false positives fixed;
+  "Create a project plan and send it to the team" kept partial (same as "Draft the memo and send it").
+- 9f0aa0c WIP: use case sus-anomalies in data/catalogue.json (named, refs S16, surfaces sheet+doc,
+  Workiva's own S16 prompt, 4th Sustainability win), removed from leftOut. Measured: all catalogue
+  checks pass; B 45/60; reach 14 of 30 unchanged.
+  S16 text (fetched from the public API, updated 2026-10-01): "you can prompt Workiva AI to help
+  draft narratives and identify anomalies, outliers, and other inconsistencies"; "This article is
+  for: Sustainability Reporting Advanced workspaces with Workiva AI enabled".
+- Ian's NotebookLM notebook: 44 Workiva Carbon support docs (uploaded .md copies), no Workiva AI
+  content. Not a source for AI claims. Its #35 "Review data issues": Carbon's Data reviewer flags
+  anomalies, gaps and duplicates by rule, NOT described as AI; never present it as Workiva AI.
+  #8 and #9 are Workiva-internal: never cite. (Inventory came from Ian's browser extension, read only.)
 
-OPEN (each needs Ian's yes before it is built)
-1. Ian marks where the engine's fit is wrong on the 19 community tasks (the real-task measure he
-   agreed to). Show him the table: id, short task, fit, suggested use case (run
-   node fit-finder/data/real/rate-real.js fit-finder fit-finder/data/real/2026-10-15-community.jsonl
-   from the worktree root; git-ignored like the tasks; prints id | fit | ops | blockers | match()).
-2. Sustainability prompts expose more matching gaps (not fixed): S1 emissions drivers -> financial
-   fr-yoy-narrative first; S2 anomaly check -> grc-rationalize via "duplicate"; S9/S10 Wdata query
-   prompts miss gen-wdata ("create a query" is not read as DRAFT). S4-S6 (forecast, rank, roadmap)
-   rate "not" although Workiva offers them as prompts: a rubric question for Ian.
-3. Source question for Ian: Workiva-authored Community posts as a catalogue source. Sustainability
-   prompt 2 ("Detect data anomalies before assurance") is the job the catalogue lists as left out.
-4. The "reach a use case" figure counts wrong suggestions; a right-suggestion rate needs gold
-   use-case labels.
-5. Still open from before: design-review NICE items; Benchmarking preview wording conflict; merge.
-6. Sessions 648f12e7 (COMPLETED) and 4583497d both own this worktree; `claude rm` deletes the
-   worktree too, so do not remove either while a session works here. Remove them after the last
-   session in this worktree ends and everything is pushed.
+FINISH 9f0aa0c FIRST (one commit, test-first already done)
+1. Docs in the same commit: fit-finder/README.md (25 -> 26 use cases, "named" 21 -> 22, left out
+   5 -> 4, drop "pre-assurance anomaly review of sustainability figures" from the left-out sentence,
+   dist byte count); fit-finder/data/capabilities-confirmed.md line ~65 (remove that left-out line;
+   say S16 names the job). Grep both for any other count the change makes wrong.
+2. Checks: eval A and B; 120-task diff vs fb86572 (fit, ops, match; list any match changes);
+   rate-real on the 19 (expect only S4-S6 different from fb86572; S2/S3 still miss sus-anomalies:
+   S2 has no sustainability word, S3's "explanations" is not read as EXPLAIN); mutant: drop the
+   sustainability words from the sus-anomalies match and confirm the trial-balance guard fails;
+   node tests/build.js; node tests/pagetest.js.
+3. Code review of a28bb69..HEAD (Sonnet reviewer), then ask Ian: push, and republish the live page?
+
+STILL OPEN (each needs Ian's yes)
+- Matching gaps: S1 -> fr-yoy-narrative first; S2 -> grc-rationalize via "duplicate"; S9/S10 miss
+  gen-wdata; S3 "explanations" not read as EXPLAIN.
+- S16 also offers "Perform a cross-reference check ... quantitative inconsistencies within your
+  sustainability report": a possible second use case (idea only, not raised with Ian).
+- The "reach a use case" figure counts wrong suggestions; a right-suggestion rate needs gold labels.
+- Design-review NICE items; Benchmarking preview wording conflict; merge.
+- Sessions 648f12e7, 4583497d and ed322f71 all own this worktree; `claude rm` deletes the worktree,
+  so remove none while a session works here.
 
 NEXT SESSION
-Read this file, CLAUDE.md and fit-finder/README.md. Then do item 1 with Ian (show the table, he
-marks the wrong ones, report agreement as a count). Then ask, one question at a time,
-recommendation first, about items 2 and 3. Push this hand-off commit only with Ian's yes.
+Read this file, CLAUDE.md and fit-finder/README.md. Do "FINISH 9f0aa0c FIRST", then report to Ian
+with the numbers and ask, one question at a time, recommendation first: push + republish, then
+which open item next.
