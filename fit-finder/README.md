@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (81,454 bytes)
+node tests/build.js                                               # -> dist/fit-finder.html (81,570 bytes)
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
 node tests/pagetest.js [capture-folder]                            # real Chrome at 1280 and 375 px; needs Chrome, no npm deps
@@ -78,6 +78,10 @@ writing, giving or generating explanations is explaining (not explanations other
 the prior reporting period is a comparison; and creating a query is drafting. S1 now leads with
 the sustainability executive narrative, S2 gets "ask Workiva AI chat about your file", S3 the
 sustainability anomaly check and S10 the Wdata card (S21: create, improve, explain or fix SQL).
+The sustainability anomaly check and the sustainability disclosure card, which also look for two
+words in one sentence, likewise step over a decimal point ("3.5 million tonnes ... anomalies") and
+look at most 300 characters between the two words (uncapped, a pasted 5,000-row emissions table
+took 4 to 8 s to rate).
 No fit changed on the 139 tasks; A and B are unchanged. Of the 120 labelled tasks only task 92
 (writing variance explanations for the year-over-year change in emissions) changed: it gains an
 "Explain it" step and its first use case is now the sustainability anomaly check instead of the

@@ -135,6 +135,11 @@ for (const [t, want] of [['Review the Scope 2 emissions data of 3.5 million tonn
 for (const [t, not] of [['Every quarter I flag outliers in the trial balance for 2025. Emissions are another team.', 'sus-anomalies'],
   ['Every month I draft the variance memo for 2025. Sustainability is another team.', 'sus-disclosure']])
   check('match: a full stop still ends a ' + not + ' sentence', () => assert(!matched(t).includes(not), matched(t).join(',')));
+// their look is capped at 300 characters for speed (below); a long sentence with the two words ~200 apart
+// still gets the card (a cap of 100 would lose it)
+for (const [t, want] of [['Review the Scope 1 and 2 emissions that each of our forty manufacturing sites entered through the quarterly collection template, covering the fleet, natural gas and purchased electricity lines for every site, and flag any anomalies.', 'sus-anomalies'],
+  ['Draft a first version of the section that explains how our forty sites collected their fuel, fleet and purchased electricity figures this year, which estimates we used and why, for the sustainability pages.', 'sus-disclosure']])
+  check('match: a long ' + want + ' sentence', () => assert(matched(t).includes(want), matched(t).join(',')));
 
 // sources say how they were read and, when read from the public API, when Workiva last updated them
 for (const [k, s] of Object.entries(cat.sources)) check('source ' + k, () => {
