@@ -94,6 +94,23 @@ select.mini, .seg button { font-size: 13px; font-weight: 700; border: 1px solid 
 .avail.entitlement, .avail.assumed { background: var(--better-bg); color: var(--orange); }
 .where .src { font-size: 13px; color: var(--muted); } .where .src a { color: inherit; }
 .where .also { font-size: 13.5px; color: var(--muted); }
+.roles { margin: 0 0 22px; }
+.roles .label { display: block; margin-bottom: 10px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.role-chip { font-size: 14px; font-weight: 800; border: 2px solid var(--faint); background: transparent; border-radius: 99px; padding: 8px 18px; cursor: pointer; text-align: left; }
+.role-chip[aria-pressed="true"] { background: var(--purple); border-color: var(--purple); color: var(--on-accent); }
+.wins { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 16px; }
+.win { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; min-width: 0; }
+.win-task { margin: 0; font-size: 16px; font-weight: 800; line-height: 1.35; }
+.win-feature { margin: 0; font-size: 13.5px; color: var(--muted); }
+.win .avail { cursor: help; }
+.win button.try { margin-top: auto; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); border-radius: 99px; padding: 6px 16px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.win button.try:hover { background: var(--purple); border-color: var(--purple); color: var(--on-accent); }
+.avail.preview { background: var(--tint-C); color: var(--purple); }
+#firstTry { margin-top: 20px; display: grid; gap: 10px; } #firstTry h3 { margin: 0; font-size: 19px; font-weight: 900; }
+#firstTry ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; font-size: 15px; }
+.coachline { margin: 12px 0 0; font-size: 14.5px; } .coachline a { color: var(--blue-deep); font-weight: 700; }
+#fullerPanel { margin-top: 20px; }
 .hint { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
 .counts { display: flex; gap: 8px; flex-wrap: wrap; }
 .count { font-size: 13px; font-weight: 800; border-radius: 99px; padding: 4px 12px; }
@@ -132,6 +149,10 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
   <section class="block" aria-labelledby="h-fit">
     <div class="wrap">
       <div class="head"><h2 id="h-fit">find the fit</h2><span class="label">rated as you type</span></div>
+      <div class="roles"><span class="label" id="roles-l">start from your role</span>
+        <div class="chips" role="group" aria-labelledby="roles-l" id="roleChips"></div>
+        <div class="wins" id="wins" aria-live="polite"></div>
+      </div>
       <div class="stages" role="tablist" aria-label="What to rate"><button class="stage" type="button" role="tab" id="tab-task" aria-selected="true" aria-controls="pane-task">One task</button><button class="stage" type="button" role="tab" id="tab-list" aria-selected="false" aria-controls="pane-list">A checklist</button></div>
 
       <div id="pane-task" role="tabpanel" aria-labelledby="tab-task">
@@ -149,9 +170,15 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
           </div>
         </div>
         <div class="card pad where" id="where" hidden aria-live="polite"></div>
+        <div class="card pad" id="firstTry" hidden></div>
         <div class="panel starter" id="starterPanel">
           <div class="panel-head"><span class="label">a prompt to start with</span><button class="copy" type="button" id="copy">copy</button></div>
           <p class="prompt-text" id="starter"></p>
+        </div>
+        <p class="coachline" id="coachLine">Paste it into Workiva AI chat, or improve it first in the <a id="coachLink" href="https://claude.ai/artifact/9Qk7uhNgri3uCSkUafsDQV" target="_blank" rel="noopener">Prompt Coach</a>.</p>
+        <div class="panel" id="fullerPanel" hidden>
+          <div class="panel-head"><span class="label">or start from the fuller prompt for this use case</span><button class="copy" type="button" id="copyFuller">copy</button></div>
+          <p class="prompt-text" id="fuller"></p>
         </div>
       </div>
 
@@ -171,7 +198,8 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
 
       <details class="how">
         <summary>How it rates</summary>
-        <p class="hint">Good fits come back every period and are mostly reading, comparing, checking, summarizing or drafting. Judgment, exact calculation, other systems and chasing people stay with you. Pattern-based, no AI; it matched careful labeling on 75% of 60 test tasks, not yet measured on real ones. Workiva AI features come from Workiva's support pages (checked 15 Oct 2026). Ones marked “check your entitlement” belong to named Workiva solutions your organization may not have.</p>
+        <p class="hint">Good fits come back every period and are mostly reading, comparing, checking, summarizing or drafting. Judgment, exact calculation, other systems and chasing people stay with you. It is pattern-based and uses no AI.</p>
+        <p class="hint" id="howRates">On 60 sample tasks written and labelled by AI it agreed 75% of the time; not yet measured on real tasks. Features come from 23 Workiva support pages read on 15 Oct 2026.</p>
       </details>
     </div>
   </section>
@@ -457,7 +485,7 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
 
   function render() {
     const text = $('task').value.trim(), fitEl = $('fit');
-    if (!text) { fitEl.className = 'fitbadge none'; fitEl.textContent = 'type a task'; for (const id of ['why', 'aiLine', 'youLine']) $(id).textContent = ''; $('starterPanel').hidden = true; return; }
+    if (!text) { fitEl.className = 'fitbadge none'; fitEl.textContent = 'type a task'; for (const id of ['why', 'aiLine', 'youLine']) $(id).textContent = ''; for (const id of ['starterPanel', 'coachLine', 'fullerPanel', 'firstTry', 'where']) $(id).hidden = true; return; }
     const r = FitEngine.rate(text, rep === 'auto' ? undefined : { repeats: rep === 'yes' });
     $('repeats').checked = !!r.repeats;
     fitEl.className = 'fitbadge ' + (r.ops.length ? r.fit : 'none'); fitEl.textContent = r.ops.length ? NAME[r.fit] : 'not sure yet';
@@ -466,8 +494,46 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
     line('aiLine', 'Workiva AI takes: ', ai); line('youLine', 'Stays with you: ', you);
     const uc = r.fit === 'not' ? [] : FitEngine.match(text, FitCatalogue);
     where(r, uc);
-    $('starterPanel').hidden = !r.prompt;
+    $('starterPanel').hidden = !r.prompt; $('coachLine').hidden = !r.prompt;
     $('starter').textContent = r.prompt ? '\u201c' + r.prompt + '\u201d' : '';
+    const fuller = r.fit === 'not' ? null : FitEngine.patternPrompt(text, uc[0]);
+    $('fullerPanel').hidden = !fuller; $('fuller').textContent = fuller ? '\u201c' + fuller + '\u201d' : '';
+    firstTry(r.fit === 'not' ? null : uc[0]);
+  }
+
+  const BADGE = { 'workiva-ai': 'included with Workiva AI', entitlement: 'check your entitlement', preview: 'preview: ask if it is on for you' };
+  function badge(u, s) {
+    const named = u.fitBasis !== 'assumed';
+    const b = el('span', 'avail ' + (named ? s.availability : 'assumed'), named ? BADGE[s.availability] : 'not a named feature: try it on one file first');
+    b.title = named ? FitCatalogue.availability[s.availability] : 'Workiva names no feature for this job. It is the general chat-with-files ability applied to it.';
+    return b;
+  }
+  function firstTry(u) {
+    const box = $('firstTry'); box.replaceChildren();
+    const steps = u && FitCatalogue.surfaces[u.surfaces[0]].steps;
+    if (!steps || !steps.length) { box.hidden = true; return; }
+    box.append(el('h3', '', 'Your first try'));
+    const ol = el('ol'); steps.forEach((x) => ol.append(el('li', '', x))); box.append(ol);
+    box.hidden = false;
+  }
+
+  // role chips: three sourced wins each; Try it puts the use case's own wording in the task box
+  function roles() {
+    const C = FitCatalogue, chips = $('roleChips'), wins = $('wins');
+    Object.values(C.roles).forEach((role) => {
+      const b = el('button', 'role-chip', role.name); b.type = 'button'; b.setAttribute('aria-pressed', 'false');
+      b.onclick = () => {
+        chips.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        wins.replaceChildren();
+        role.wins.slice(0, 3).map((w) => C.useCases.find((u) => u.id === w)).forEach((u) => {
+          const s = C.surfaces[u.surfaces[0]], card = el('div', 'card win'), t = el('button', 'try', 'Try it'); t.type = 'button';
+          t.onclick = () => { $('task').value = u.try; rep = 'auto'; render(); $('h-fit').scrollIntoView({ behavior: 'smooth' }); };
+          card.append(el('p', 'win-task', u.task), el('p', 'win-feature', s.name), badge(u, s), t);
+          wins.append(card);
+        });
+      };
+      chips.append(b);
+    });
   }
 
   // where in Workiva AI: only what data/catalogue.json sources, with links to the support pages
@@ -480,8 +546,7 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
     box.append(el('span', 'label', u ? 'closest sourced use case' : 'where in Workiva AI'));
     box.append(el('h3', '', u ? u.task : 'Ask Workiva AI chat about your file'));
     const use = el('p'); use.append(el('b', '', 'Use: '), s.name + '. ' + s.how); box.append(use);
-    const basis = u ? u.fitBasis : 'assumed';
-    box.append(el('span', 'avail ' + (basis === 'assumed' ? 'assumed' : s.availability), basis === 'assumed' ? 'not a named feature: try it on one file first' : s.availability === 'entitlement' ? 'check your entitlement' : 'included with Workiva AI'));
+    box.append(badge(u || { fitBasis: 'assumed' }, s));
     if (u) { const st = el('p'); st.append(el('b', '', 'Stays with you: '), u.stays); box.append(st); }
     const refs = [...new Set([...(u ? u.refs : []), ...sid.flatMap((x) => C.surfaces[x].sources)])];
     const src = el('p', 'src', 'Source: ');
@@ -518,7 +583,8 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
   let timer = 0;
   $('task').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(render, 150); });
   $('list').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => renderScan($('list').value), 200); });
-  $('copy').onclick = (e) => { const btn = e.currentTarget; const text = $('starter').textContent.replace(/^\u201c|\u201d$/g, ''); const done = () => { btn.textContent = 'copied'; setTimeout(() => { btn.textContent = 'copy'; }, 1400); }; try { navigator.clipboard.writeText(text).then(done, () => { btn.textContent = 'select and copy'; }); } catch (err) { btn.textContent = 'select and copy'; } };
+  const copier = (src) => (e) => { const btn = e.currentTarget; const text = $(src).textContent.replace(/^\u201c|\u201d$/g, ''); const done = () => { btn.textContent = 'copied'; setTimeout(() => { btn.textContent = 'copy'; }, 1400); }; try { navigator.clipboard.writeText(text).then(done, () => { btn.textContent = 'select and copy'; }); } catch (err) { btn.textContent = 'select and copy'; } };
+  $('copy').onclick = copier('starter'); $('copyFuller').onclick = copier('fuller');
   $('attach').onclick = () => $('fileInput').click();
   $('fileInput').onchange = () => {
     const file = $('fileInput').files[0]; $('fileInput').value = ''; if (!file) return;
@@ -526,6 +592,7 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
     ScopeFiles.readFile(file).then((r) => { $('fileMeta').textContent = file.name + (r.detail ? ' \u00b7 ' + r.detail : ''); renderScan(r.lines ? r.lines.join('\n') : r.text || '', file.name); })
       .catch((err) => { $('fileMeta').textContent = err.message || 'Could not read this file.'; });
   };
+  roles();
   render();
 })();
 </script>
