@@ -43,3 +43,7 @@ A hosted address has its own storage, so its tracker starts with no accounts. Wh
 4. AI key: The AI key is not in Export; enter it again after moving.
 
 `node tools/move-book.mjs` rehearses this with the test book only: it exports from a file copy, imports into a served copy in two throwaway browser profiles, and prints `C6 PASS` when the account, activity and transcript counts and a hash over the transcripts are equal on both sides.
+
+## Checking what you received
+
+`index.html` in this package is a byte-for-byte copy of the 1.1 tracker. Its sha256 is `b3f7bf8520421e60d7e73f7445c281840cac7724b9f218b95054dde1730fe36b`. Compare it with `sha256sum index.html` (or `Get-FileHash index.html` in PowerShell) before uploading. This line is updated in the same commit as any change to the tracker.

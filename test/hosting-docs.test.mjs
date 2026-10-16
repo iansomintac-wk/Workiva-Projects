@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 const read = f => (existsSync(f) ? readFileSync(f, 'utf8') : '');
 const hosting = () => read('docs/HOSTING.md');
@@ -62,4 +63,9 @@ test('HOSTING.md explains moving a book (Export, Import, transcripts); CHANGELOG
   const t = hosting();
   for (const re of [/Export/, /Import/, /transcripts/i, /Settings/]) assert.match(t, re);
   assert.match(firstSection(), /move-book/);
+});
+
+test('HOSTING.md carries the sha256 of the current 1.1 tracker (what the host compares index.html against)', () => {
+  const sha = createHash('sha256').update(readFileSync('osm-book-of-business-tracker-1.1.html')).digest('hex');
+  assert.ok(hosting().includes(sha), 'docs/HOSTING.md must contain ' + sha);
 });
