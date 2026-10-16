@@ -1,4 +1,4 @@
-Fit Finder v4.6: hand-off (2026-10-16, session db631e26; decimal-point gap fixed, b18ad11 local)
+Fit Finder v4.6: hand-off (2026-10-16, session db631e26, stopped at the 200k context line; WIP sus decimal fix local)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
@@ -7,7 +7,34 @@ commits after it. Push only with Ian's yes. Draft PR #1 into prompt-coach (not m
 https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 7 = dist of 2deb044; do not
 republish until the item below is finished and Ian says yes. (Updated by a316ccd1.)
 
-UPDATE 2026-10-16, session db631e26 (successor of a316ccd1): decimal-point gap FIXED in b18ad11 (local)
+NEXT SESSION (written by db631e26 at the 200k stop; supersedes every NEXT SESSION below)
+Read this file, CLAUDE.md and fit-finder/README.md. State: b18ad11 (year-over-year decimal fix) is pushed
+(origin = 4da5266) and LIVE as version 8 (version id 1792164810-98a1, checked: live file contains the dist).
+The WIP commit after it (local, not pushed) fixes the same gap in sus-anomalies and sus-disclosure, CAPPED.
+Ian's rulings 2026-10-16 (option labels he chose, not his words): "Push (Recommended)", "Republish v8
+(Recommended)", "Fix now, here (Recommended)" (the two sus cards), then he asked "Would research and/or
+testing/simulations inform better here?" (his words); after the simulation below: "Cap at 300 (Recommended)".
+Done in the WIP (measured): both patterns' sentence scans -> (?:[^.;]|(?<=\d)\.(?=\d)){0,300} (sus-disclosure
+[^.] instead of [^.;]). 4 decimal checks failed first, 2 full-stop guards pass both ways; new check
+'speed: a pasted 5,000-row emissions table rates under 2 s' failed uncapped (5,882 ms), passes capped; all
+catalogue checks pass (494 ms); reach 14 of 30. Mutants 8 of 10 killed; both survivors shrink the cap to 100.
+Simulation (rate+match, the page's path; before / uncapped / capped): table 1k rows 13/227/12 ms, 5k rows
+92/8,919/100 ms, 20k rows 261/73,740/184 ms; prose 5k sentences 103/88/82 ms; same cards in all. On the 139
+texts the two cards' hits span at most 121 chars (0 over 300). The uncapped version was never committed.
+NOT DONE, in order:
+1. Kill the cap-100 survivors: add one long-sentence check per card (keywords 100-300 chars apart). Candidate
+   for sus-disclosure measured: "Draft a first version of the section that explains how our forty sites
+   collected their fuel, fleet and purchased electricity figures this year, which estimates we used and
+   why, for the sustainability pages." spans 199, gets sus-disclosure. The sus-anomalies candidate (tmp
+   longsent.js, span 222) got NO card from match() though the keyword hits; find why (fit or ops) before
+   using it. Confirm both checks fail with cap 100 (mutants2.js in job db631e26 tmp, may be gone).
+2. 139-text old-vs-new diff vs b18ad11 (expect 0: no text has digit.digit), eval A/B (expect 52/60, 45/60),
+   node tests/build.js, node tests/pagetest.js, README (byte count; the "Use cases on real tasks"
+   paragraph: the two sus cards now also step over decimals and look at most 300 chars).
+3. Sonnet re-review of git diff b18ad11..HEAD -- fit-finder (excluding dist). Commit on top (amend nothing).
+4. Ask Ian, one at a time: push? republish (v9)? Then the STILL OPEN list.
+
+UPDATE 2026-10-16, session db631e26 (successor of a316ccd1): decimal-point gap FIXED in b18ad11 (pushed, live v8)
 - fr-yoy-narrative's two look-arounds: [^.;]{0,300} -> (?:[^.;]|(?<=\d)\.(?=\d)){0,300}. 6 new checks:
   2 sustainability ("of 3.5% in Scope 2 emissions", "emissions rose 3.5% year-over-year") failed first
   on a2c56f8's catalogue, pass now; 4 guards (2 revenue, 2 full stop incl. "for 2025. Scope 2") pass both.

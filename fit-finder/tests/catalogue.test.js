@@ -125,6 +125,16 @@ for (const t of ['Explain the year-over-year change of 3.5% in revenue.',
 for (const t of ['Write the year-over-year commentary on revenue. Emissions are covered in a separate report.',
   'Write the year-over-year commentary on revenue for 2025. Scope 2 emissions are in a separate report.'])
   check('match: a full stop still ends the sentence - ' + t.slice(-40), () => assert(matched(t).includes('fr-yoy-narrative'), matched(t).join(',')));
+// the same for the two sustainability cards that look for two words in one sentence (Ian chose to fix
+// them too, 2026-10-16), in both word orders
+for (const [t, want] of [['Review the Scope 2 emissions data of 3.5 million tonnes and flag any anomalies.', 'sus-anomalies'],
+  ['Flag any outliers above 2.5 times the average in our Scope 1 emissions data.', 'sus-anomalies'],
+  ['Draft a short summary of our 4.2% cut for the sustainability pages.', 'sus-disclosure'],
+  ['Use our sustainability data on the 4.2% cut to draft the disclosure.', 'sus-disclosure']])
+  check('match: decimal inside a ' + want + ' sentence - ' + t.slice(0, 40), () => assert(matched(t).includes(want), matched(t).join(',')));
+for (const [t, not] of [['Every quarter I flag outliers in the trial balance for 2025. Emissions are another team.', 'sus-anomalies'],
+  ['Every month I draft the variance memo for 2025. Sustainability is another team.', 'sus-disclosure']])
+  check('match: a full stop still ends a ' + not + ' sentence', () => assert(!matched(t).includes(not), matched(t).join(',')));
 
 // sources say how they were read and, when read from the public API, when Workiva last updated them
 for (const [k, s] of Object.entries(cat.sources)) check('source ' + k, () => {
@@ -194,6 +204,16 @@ check('speed: fr-yoy-narrative on 300k words with no full stops runs under 2 s',
   const words = []; for (let i = 0; i < 300000; i++) words.push(i % 50 === 0 ? 'year-over-year' : i % 97 === 0 ? 'carbon' : 'figures');
   const re = new RegExp('\\b(?:' + u.match + ')', 'g'), t0 = Date.now();
   words.join(' ').match(re);
+  const ms = Date.now() - t0;
+  assert(ms < 2000, ms + ' ms');
+});
+// ...and so do the two sustainability cards' (capped too, Ian 2026-10-16): a pasted 5,000-row emissions
+// table has decimals and no full stops; uncapped, the page took ~9 s to rate it at every typing pause
+check('speed: a pasted 5,000-row emissions table rates under 2 s', () => {
+  const out = ['Check this table for anomalies.', 'Site,Year,Scope,Datapoint,Value (tCO2e)'];
+  for (let i = 0; i < 5000; i++) out.push(`Plant ${i % 40},${2020 + (i % 6)},Scope ${1 + (i % 3)},ESRS E1-6,${(i * 7.3 % 997).toFixed(1)}`);
+  const text = out.join('\n'), t0 = Date.now();
+  rate(text); match(text, cat);
   const ms = Date.now() - t0;
   assert(ms < 2000, ms + ' ms');
 });
