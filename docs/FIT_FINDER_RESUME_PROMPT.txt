@@ -7,6 +7,19 @@ hand-off) and this WIP commit. Push only with Ian's yes. Draft PR #1 into prompt
 merged). Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 6 = dist of
 4545647; do not republish until the item below is finished and Ian says yes.
 
+UPDATE 2026-10-16, session a316ccd1 (successor of 927f0985)
+- Items 1-4 DONE in 2deb044 (on top of the WIP commit 0a7524d): fr-yoy-narrative look-arounds capped
+  at 300 chars. New check 'speed: ... 300k words with no full stops runs under 2 s' failed first
+  (11,652 ms), passes after (whole catalogue check 0.55 s). 139 texts old vs new: 0 changed (control
+  vs 0fb4187 shows the expected 5: 92, S1, S2, S3, S10). A 52/60, B 45/60. 6 of 6 cap mutants killed
+  (the WIP's original 10 mutants were not re-run; their script is gone). Dist rebuilt, 81,408 bytes
+  LF (81,651 CRLF on disk); pagetest 72 checks, 0 failed. README updated.
+- Sonnet re-review (65,161 tokens, 15 tool uses): 0 Important. Minor, confirmed by re-run: a decimal
+  point splits the sentence, so 'Explain the year-over-year change of 3.5% in Scope 2 emissions.'
+  still gets fr-yoy-narrative (same at 0fb4187 and 0a7524d, not caused by the cap). Open, needs Ian.
+- Predecessor 927f0985 kept (shares this worktree; rm would delete it; unpushed commits).
+- Remaining: item 5 questions (push? republish v7?), then the decimal-point gap if Ian wants it.
+
 IAN'S RULING THIS SESSION (2026-10-16)
 - Asked which open item next, he picked "Fix wrong pointers (Recommended)" (S1, S2, S3, S9/S10
   of the 19 Community prompts). That is an option label he chose, not his own words.
