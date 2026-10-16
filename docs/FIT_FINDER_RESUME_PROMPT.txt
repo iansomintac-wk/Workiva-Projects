@@ -1,4 +1,4 @@
-Fit Finder v4.4: hand-off (2026-10-16, session 927f0985, stopped at the 200k context line)
+Fit Finder v4.6: hand-off (2026-10-16, session db631e26; decimal-point gap fixed, b18ad11 local)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
@@ -7,7 +7,27 @@ commits after it. Push only with Ian's yes. Draft PR #1 into prompt-coach (not m
 https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 7 = dist of 2deb044; do not
 republish until the item below is finished and Ian says yes. (Updated by a316ccd1.)
 
-NEXT SESSION (written by a316ccd1, supersedes the NEXT SESSION paragraph at the end)
+UPDATE 2026-10-16, session db631e26 (successor of a316ccd1): decimal-point gap FIXED in b18ad11 (local)
+- fr-yoy-narrative's two look-arounds: [^.;]{0,300} -> (?:[^.;]|(?<=\d)\.(?=\d)){0,300}. 6 new checks:
+  2 sustainability ("of 3.5% in Scope 2 emissions", "emissions rose 3.5% year-over-year") failed first
+  on a2c56f8's catalogue, pass now; 4 guards (2 revenue, 2 full stop incl. "for 2025. Scope 2") pass both.
+- Measured: catalogue checks all pass (756 ms); 9 of 10 mutants killed (3 uncapped: 30-120 s, killed by
+  the speed check); survivor drops (?<=\d) (differs only on ".5%"). 139 texts: 0 contain digit.digit,
+  0 changed. A 52/60, B 45/60. Pattern on 300k words: no stops 89->88 ms, decimals everywhere 7->106 ms,
+  sentences 16->20 ms. Dist 81,454 bytes LF; pagetest 72 checks, 0 failed. README updated.
+- Sonnet review (53,087 tokens, 5 tool uses): 0 Important. Minor: ".5" or "3." (dot not between two
+  digits) still ends the sentence (by design, no check pins it).
+- MEASURED, NOT FIXED (needs Ian's yes): sus-anomalies and sus-disclosure share the gap. "Review the
+  Scope 2 emissions data of 3.5 million tonnes and flag any anomalies." gets no use case (with "for 2025":
+  sus-anomalies); "Draft a short summary of our 4.2% cut for the sustainability pages." loses
+  sus-disclosure. Probe: tmp othergap.js (job db631e26).
+- Gotcha (measured, cause assumed to be the Bash tool's transport): "\\" inside a quoted heredoc or
+  node -e came through as "\"; write regex-bearing scripts with the Write tool.
+- Predecessor a316ccd1 kept (shares this worktree; unpushed commits).
+- Next: ask Ian, one at a time: push b18ad11 and the hand-off commits? republish the live page (v8)?
+  fix the same gap in sus-anomalies and sus-disclosure? Then the STILL OPEN list.
+
+NEXT SESSION (written by a316ccd1, DONE by db631e26 above; kept for the record)
 Ian, 2026-10-16, verbatim: "Fix it in the next session then" (the decimal-point gap).
 Read this file, CLAUDE.md and fit-finder/README.md. Fix the decimal-point gap, test first:
 - Add catalogue checks: "Explain the year-over-year change of 3.5% in Scope 2 emissions." does NOT get
