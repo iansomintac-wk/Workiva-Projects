@@ -366,6 +366,113 @@
         });
       }
 
+      { // T8: files
+        const sha = s => sha1Hex(s);
+        // capture what Export writes, and drive the real Import handler
+        const exportCapture = () => {
+          const blobs = []; const realBlob = window.Blob, realURL = URL.createObjectURL, realClick = HTMLAnchorElement.prototype.click;
+          window.Blob = function(parts, opts){ blobs.push(parts.join('')); return new realBlob(parts, opts); };
+          URL.createObjectURL = () => 'blob:probe'; HTMLAnchorElement.prototype.click = function(){};
+          try{ exportData(); }finally{ window.Blob = realBlob; URL.createObjectURL = realURL; HTMLAnchorElement.prototype.click = realClick; }
+          return blobs[0] || '';
+        };
+        const driveImport = async fileText => {      // returns {cb, toasts}; cb = the real confirm callback (null if none was offered)
+          let cb = null; const toasts = [];
+          const rc = window.showConfirmModal, rt = window.showToast;
+          window.showConfirmModal = (msg, onConfirm) => { cb = onConfirm; }; window.showToast = m => toasts.push(m);
+          try{
+            handleImportFile({target: {files: [new File([fileText], 'export.json')], value: 'x'}});
+            await waitFor(() => cb !== null || toasts.length > 0, 15000);
+            await settle();
+          }finally{ window.showConfirmModal = rc; window.showToast = rt; }
+          return {cb, toasts};
+        };
+        await withBook(async book => {
+          // C1: 50 x 160K, load, REAL Export, fresh browser, REAL Import handler
+          const N = 50, texts = [], ids = [];
+          book.activities[cid] = (book.activities[cid] || []).filter(a => !a.id.startsWith('big'));
+          for(let i = 0; i < N; i++){
+            texts.push(fixtureText(i, 160000)); ids.push('big' + i);
+            const a = {id: 'big' + i, date: todayISO(), type: 'Call', summary: 'b' + i, checklist: []};
+            a.transcript = await saveTranscriptVerified(a.id, texts[i]);
+            book.activities[cid].push(a);
+          }
+          saveData();
+          await loadData();                                    // load: map rebuilt from IndexedDB
+          const bookJson = serializeBook(DATA);
+          const out = exportCapture();                         // what the Export button writes
+          const parsed = JSON.parse(out);
+          rec('T8 the Export file holds the book (refs only) plus a top-level transcripts object',
+            bookJson.length < 400000 && parsed.transcripts && Object.keys(parsed.transcripts).length >= N && !bookJson.includes(texts[0].slice(500, 700)), `bookJson=${bookJson.length}`);
+          await tsClearAll(); _transcriptMap.clear(); _tsVersion++;           // a fresh browser
+          const d = await driveImport(out);
+          const okCommit = d.cb ? d.cb() === true : false;      // the real confirm callback: prepareImportedData + commit
+          let same = 0;                                         // NO loadTranscriptMap here: the import itself must leave them readable
+          for(let i = 0; i < N; i++){ const a = DATA.activities[cid].find(x => x.id === ids[i]); const t = a && activityTranscript(a); if(t && await sha(t.text) === await sha(texts[i])) same++; }
+          const storedBook = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          rec('T8 C1: 50 x 160K transcripts survive load, the real Export, and the real Import handler, readable at once, identical by SHA-1, and the stored book carries no transcripts object',
+            okCommit === true && same === N && storedBook.transcripts === undefined && localStorage.getItem(STORAGE_KEY).length < 400000, `same=${same}/${N} stored=${localStorage.getItem(STORAGE_KEY).length}`);
+        });
+        await withBook(async book => {
+          // an import that would put a test book over a real one is refused BEFORE any record is written
+          const real = cloneData(DATA); delete real.synthetic; real.customers = real.customers.slice(0, 1);
+          realSet.call(localStorage, STORAGE_KEY, JSON.stringify(real));
+          const inc = cloneData(DATA); inc.synthetic = true;
+          inc.activities[cid] = [{id: 'syn1', date: todayISO(), type: 'Call', summary: 's', checklist: [], transcript: {text: 'synthetic text must not be stored', truncated: false}}];
+          await tsClearAll();
+          const d = await driveImport(JSON.stringify(inc));
+          rec('T8 a synthetic file over a stored real book is refused before any transcript is written',
+            d.cb === null && d.toasts.some(m => /test book/i.test(m)) && (await tsTx('transcripts', 'readonly', s => s.count())) === 0, JSON.stringify(d.toasts));
+        });
+        await withBook(async book => {
+          // old file shape (inline text) imports and moves on the way in
+          const old = cloneData(DATA); old.schemaVersion = 16;
+          old.activities[cid] = (old.activities[cid] || []).concat([{id: 'oldin', date: todayISO(), type: 'Call', summary: 's', checklist: [], transcript: {text: 'old shape text', truncated: true}}]);
+          const st = await stageImportedTranscripts(Object.values(old.activities), undefined);
+          const cand = prepareImportedData(old);
+          const a = cand.activities[cid].find(x => x.id === 'oldin');
+          rec('T8 an old-shape (inline) file is moved on the way in, keeping its truncated flag', a.transcript.ref && a.transcript.truncated === true && (await tsGet(a.transcript.ref)).text === 'old shape text');
+          // a ref whose text is not in the file
+          const miss = cloneData(DATA); miss.activities[cid] = [{id: 'nofile', date: todayISO(), type: 'Call', summary: 's', checklist: [], transcript: {ref: 'nofile:' + 'a'.repeat(12), chars: 3, sha1: 'a'.repeat(40), truncated: false}}];
+          const st2 = await stageImportedTranscripts([miss.activities[cid]], {});
+          const cand2 = prepareImportedData(miss);
+          rec('T8 a ref with no text in the file imports and shows as missing, not as a failed import', st2.missing === 1 && activityTranscriptState(cand2.activities[cid][0]) === 'missing');
+          // a record already in IndexedDB is reused AND put in the map
+          const t = await saveTranscriptVerified('reuse1', 'already here');
+          _transcriptMap.clear();
+          const ru = [{id: 'reuse1', date: todayISO(), type: 'Call', summary: 's', checklist: [], transcript: {ref: t.ref, chars: t.chars, sha1: t.sha1, truncated: false}}];
+          const st4 = await stageImportedTranscripts([ru], undefined);
+          rec('T8 a record already present is reused without a rewrite and is readable at once (map filled)', st4.written === 0 && st4.missing === 0 && activityTranscript(ru[0]) && activityTranscript(ru[0]).text === 'already here');
+          // IndexedDB down: the file's text stays usable inline
+          _tsForceDown = true; _tsDbP = null;
+          const dn = cloneData(DATA); dn.activities[cid] = [{id: 'dn1', date: todayISO(), type: 'Call', summary: 's', checklist: [], transcript: {ref: 'dn1:' + (await sha1Hex('down text')).slice(0, 12), chars: 9, sha1: await sha1Hex('down text'), truncated: false}}];
+          const st3 = await stageImportedTranscripts([dn.activities[cid]], {['dn1:' + (await sha1Hex('down text')).slice(0, 12)]: 'down text'});
+          _tsForceDown = false; _tsDbP = null;
+          rec('T8 with IndexedDB unavailable an imported transcript becomes inline text', st3.unavailable === true && dn.activities[cid][0].transcript.text === 'down text');
+        });
+        await withBook(async book => {
+          // cache: rebuilt only when a transcript is added, replaced or removed
+          const act = {id: 'cch1', date: todayISO(), type: 'Call', summary: 's', checklist: []};
+          book.activities[cid] = (book.activities[cid] || []).concat([act]);
+          await attachTranscript(cid, 'cch1', {text: fixtureText(1, 40000), truncated: false});
+          serializeBackup(DATA, serializeBook(DATA)); const b0 = _tsBackupBuilds;
+          serializeBackup(DATA, serializeBook(DATA)); serializeBackup(DATA, serializeBook(DATA));
+          const unchanged = _tsBackupBuilds - b0;
+          await attachTranscript(cid, 'cch1', {text: fixtureText(2, 40000), truncated: false});
+          serializeBackup(DATA, serializeBook(DATA)); const afterReplace = _tsBackupBuilds - b0;
+          removeTranscript(cid, 'cch1');
+          serializeBackup(DATA, serializeBook(DATA)); const afterRemove = _tsBackupBuilds - b0;
+          rec('T8 the transcripts part of the backup is rebuilt only when a transcript is added, replaced or removed', unchanged === 0 && afterReplace === 1 && afterRemove === 2, `unchanged=${unchanged} replace=${afterReplace} remove=${afterRemove}`);
+          // the backup file writer uses it
+          const f = fakeBackupFile(); const sv = {h: _fsHandle, s: _fsState, syn: DATA.synthetic};
+          await attachTranscript(cid, 'cch1', {text: 'in the backup file', truncated: false});
+          delete DATA.synthetic; _fsHandle = f; _fsState = 'ready';
+          const okFs = await fsWriteNow(true);
+          _fsHandle = sv.h; _fsState = sv.s; DATA.synthetic = sv.syn;
+          rec('T8 the backup file write contains the transcripts object', okFs === true && JSON.parse(f.last).transcripts && Object.values(JSON.parse(f.last).transcripts).includes('in the backup file'));
+        });
+      }
+
       rec('probe reached the end', true);
     }catch(e){
       rec('probe threw', false, String(e && e.stack || e));

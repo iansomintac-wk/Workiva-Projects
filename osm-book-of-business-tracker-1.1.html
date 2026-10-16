@@ -18052,6 +18052,76 @@ async function fsForget(){
 }
 // The one serializer for every book that leaves the app (export, file backup). Self-check A7 proves ids survive it.
 function serializeBook(data){ return JSON.stringify(data, null, 2); }
+/* 1.1 Step 1, Task 8: the book leaves the app as the book (refs only) plus a top-level "transcripts" object
+   {ref: text}. The JSON of that object is cached: rebuilt only when a transcript is added, replaced or removed
+   (key = _tsVersion + the sorted ref list), so the backup-file write does not re-stringify megabytes per edit. */
+let _tsBackupCache = null, _tsBackupBuilds = 0;
+function transcriptsForBook(data){
+  const out = {};
+  Object.values((data && data.activities) || {}).forEach(list => (list || []).forEach(a => {
+    const t = a && a.transcript;
+    if(t && typeof t.ref === 'string' && t.ref){ const hit = _transcriptMap.get(t.ref); if(hit) out[t.ref] = hit.text; }
+  }));
+  return out;
+}
+function serializeBackup(data, bookJson){
+  const tr = transcriptsForBook(data);
+  const key = _tsVersion + '|' + Object.keys(tr).sort().join(',');
+  if(!_tsBackupCache || _tsBackupCache.key !== key){ _tsBackupCache = {key, json: JSON.stringify(tr)}; _tsBackupBuilds++; }
+  if(!bookJson.endsWith('\n}')) return bookJson;
+  return bookJson.slice(0, -2) + ',' + '\n  "transcripts": ' + _tsBackupCache.json + '\n}';
+}
+/* Task 8: the import-side twin of syntheticWouldReplaceReal(): a test book in the file may not replace a real
+   stored book. Runs BEFORE any transcript record is written. */
+function importWouldBeRefused(parsed){
+  if(!(parsed && parsed.synthetic === true)) return false;
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const p = JSON.parse(raw);
+    return !(p && p.synthetic === true) && Array.isArray(p.customers) && p.customers.length > 0;
+  }catch(e){ return true; }
+}
+/* Task 8: put an incoming file's transcripts into the store BEFORE the confirm, in place on the activities.
+   A record already in IndexedDB that matches the activity's sha1 is reused (and put in the map). A ref whose text
+   is not in the file (or does not match its sha1) is left as it is and reads as "missing". Old inline text is moved
+   on the way in. IndexedDB down: file text becomes inline. Records staged for an import the user cancels stay as
+   unlinked records (spec item 14). */
+async function stageImportedTranscripts(activityLists, fileTranscripts){
+  const out = {written: 0, missing: 0, unavailable: false};
+  const ft = (fileTranscripts && typeof fileTranscripts === 'object') ? fileTranscripts : {};
+  const up = !!(await tsOpen());
+  if(!up) out.unavailable = true;
+  for(const list of (activityLists || [])){
+    for(const a of (Array.isArray(list) ? list : [])){
+      const t = a && a.transcript;
+      if(!t || typeof t !== 'object') continue;
+      if(typeof t.ref === 'string' && t.ref){
+        const fileText = typeof ft[t.ref] === 'string' ? ft[t.ref] : null;
+        const fileOk = fileText !== null && (await sha1Hex(fileText)) === t.sha1;
+        if(!up){
+          if(fileOk) a.transcript = {text: fileText, truncated: t.truncated === true};
+          else out.missing++;
+          continue;
+        }
+        let ex = null;
+        try{ ex = await tsGet(t.ref); }catch(e){}
+        if(ex && typeof ex.text === 'string' && (await sha1Hex(ex.text)) === t.sha1){
+          _transcriptMap.set(t.ref, {text: ex.text, chars: ex.text.length, sha1: t.sha1}); _tsVersion++;
+          continue;
+        }
+        if(!fileOk){ out.missing++; continue; }
+        const saved = await saveTranscriptVerified(a.id, fileText);
+        if(saved){ out.written++; if(saved.ref !== t.ref) a.transcript = Object.assign({}, t, {ref: saved.ref}); }
+        else out.missing++;
+      } else if(typeof t.text === 'string' && t.text.trim() && up){
+        const saved = await saveTranscriptVerified(a.id, t.text);
+        if(saved){ out.written++; a.transcript = {ref: saved.ref, chars: saved.chars, sha1: saved.sha1, truncated: t.truncated === true}; }
+      }
+    }
+  }
+  return out;
+}
 // Why the backup path is refusing right now, or '' when it is not.
 function fsBlockedReason(){
   if(_rejectedLoadPayload !== null) return 'the last load was rejected';
@@ -18074,7 +18144,7 @@ async function fsWriteNow(silent){
   _fsWriting = true;
   try{
     const w = await _fsHandle.createWritable();
-    await w.write(serializeBook(DATA));
+    await w.write(serializeBackup(DATA, serializeBook(DATA)));
     await w.close();
     _fsLastWriteAt = Date.now();
     _fsError = '';
@@ -18124,7 +18194,7 @@ function exportData(){
   const previousStamp = DATA.lastExportedAt;
   DATA.lastExportedAt = todayISO();
   if(!saveData()) DATA.lastExportedAt = previousStamp;
-  const blob = new Blob([serializeBook(DATA)], {type:'application/json'});
+  const blob = new Blob([serializeBackup(DATA, serializeBook(DATA))], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = 'book-of-business-export.json';
@@ -18858,12 +18928,20 @@ function handleImportFile(e){
   const file = e.target.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = evt => {
+  reader.onload = async evt => {
+    const unreadable = 'Could not read that file — make sure it is a JSON export from this tracker.';
+    let parsed;
+    try{ parsed = JSON.parse(evt.target.result); }
+    catch(err){ showToast(unreadable); return; }
+    if(importWouldBeRefused(parsed)){ showToast('Not saved - this is a test book and a real book is stored here.'); return; }
+    try{
+      await stageImportedTranscripts(Object.values((parsed && parsed.activities) || {}), parsed && parsed.transcripts);
+      if(parsed && typeof parsed === 'object') delete parsed.transcripts;
+    }catch(err){ showToast(unreadable); return; }
     showConfirmModal(
       `Import "${file.name}"? This replaces everything currently in the tracker — export a backup first if you're not sure.`,
       () => {
         try{
-          const parsed = JSON.parse(evt.target.result);
           const candidate = prepareImportedData(parsed);
           const repairs = repairReportSummary(_repairReport); // v48
           // v48: a candidate that passed the full validation boundary is a
