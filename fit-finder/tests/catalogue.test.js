@@ -48,7 +48,9 @@ const cases = [
   ['I draft audit findings from the testing workpapers for each failed control.', 'grc-issues'],
   // a 10-Q or 10-K named in passing is not a tie-out (2026-10-15 community prompts and comments)
   ["Each year I benchmark our 10-Q and 10-K disclosures against our peers' filings.", 'fr-peers'],
-  ['Every quarter I check that the narrative in the 10-Q agrees with the reported figures.', 'fr-narrative-tables']
+  ['Every quarter I check that the narrative in the 10-Q agrees with the reported figures.', 'fr-narrative-tables'],
+  // Workiva names this job on its sustainability page (S16, updated 2026-10-01)
+  ['Every quarter I check our emissions data against last year for outliers and unusual variances, and explain each one.', 'sus-anomalies']
 ];
 for (const [t, want] of cases) check('match: ' + t.slice(0, 40), () => assert.strictEqual(top(t), want));
 
@@ -58,6 +60,11 @@ for (const t of [
   'Every close I draft a memo to the regional finance leads about intercompany mismatches.',
   'Every month I draft an executive summary of the variances for the CFO.'
 ]) check('not sustainability: ' + t.slice(0, 40), () => assert.notStrictEqual(top(t), 'sus-disclosure'));
+// ...and the sustainability anomaly check needs sustainability data, not just the word "outliers"
+check('not sustainability: outliers in the trial balance', () => assert.notStrictEqual(
+  top('Every quarter I flag outliers and unusual variances in the trial balance against last year.'), 'sus-anomalies'));
+check('left out: anomaly review is now a use case', () =>
+  assert(!cat.leftOut.some((l) => /anomal/i.test(l.pattern)), 'still listed as left out'));
 
 // sources say how they were read and, when read from the public API, when Workiva last updated them
 for (const [k, s] of Object.entries(cat.sources)) check('source ' + k, () => {

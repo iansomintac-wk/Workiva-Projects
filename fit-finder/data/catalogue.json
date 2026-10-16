@@ -78,7 +78,7 @@
     "fr": { "name": "Financial and SEC reporting", "wins": ["fr-yoy-narrative", "fr-tie-out", "fr-xbrl-errors", "fr-peers", "fr-8k", "fr-narrative-tables", "fr-gaap-stat"] },
     "controls": { "name": "Internal controls and audit", "wins": ["grc-evidence", "grc-test-steps", "grc-issues", "grc-rationalize", "grc-framework", "grc-flowchart"] },
     "risk": { "name": "Risk management", "wins": ["grc-risk-summary", "grc-control-from-risk", "grc-remediation", "grc-framework"] },
-    "sus": { "name": "Sustainability reporting", "wins": ["sus-requirements", "sus-disclosure", "sus-exec-narrative"] },
+    "sus": { "name": "Sustainability reporting", "wins": ["sus-requirements", "sus-disclosure", "sus-exec-narrative", "sus-anomalies"] },
     "any": { "name": "Anyone using Workiva", "wins": ["gen-summarize-file", "gen-support", "gen-rewrite", "gen-formula", "gen-wdata", "gen-translate"] }
   },
   "useCases": [
@@ -306,10 +306,19 @@
       "prompt": "Rewrite the selected sustainability narrative for [the board] in under [number] words. Lead with what changed since [last period]. Keep every number and fact exactly as written.",
       "stays": "The message and every number.",
       "try": "I rewrite the sustainability section to be shorter for the board."
+    },
+    {
+      "id": "sus-anomalies", "area": "SUS", "role": "Sustainability reporting",
+      "task": "Check this period's sustainability data against the last for anomalies and outliers, and explain each one.",
+      "ops": ["CHECK", "COMPARE", "EXPLAIN"],
+      "match": "(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|carbon|energy (?:use|usage|consumption|data)|factbook)\\b[^.]*\\b(?:anomal\\w*|outliers?|unusual|variances?)|(?:anomal\\w*|outliers?|unusual|variances?)\\b[^.]*\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|carbon|energy (?:use|usage|consumption|data)|factbook)",
+      "surfaces": ["sheet", "doc"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S16"],
+      "prompt": "Analyze this data from [current period] against [previous period]. Identify anomalies or outliers that exceed a +/-20% variance. For each instance identified, provide a brief rationale — such as potential data entry error or operational shift — to help facilitate further investigation.",
+      "stays": "Deciding which items are real errors, and correcting the source data.",
+      "try": "Each period I look for outliers in our emissions data against last year and explain them."
     }
   ],
   "leftOut": [
-    { "pattern": "Pre-assurance anomaly review of sustainability figures", "why": "No Workiva AI feature for it is named in the support pages read on 15 Oct 2026; XBRL outlier detection covers SEC tagging, not sustainability data." },
     { "pattern": "Agent names from the 29 July 2026 press release (Tie-Out Agent, Benchmarking Agent, Sustainability Disclosure Agent, Workiva Knowledge)", "why": "The release itself could not be opened (seen only in a trade-press copy). The page uses the names in Workiva's support pages instead: Tie-out assistant, Benchmarking, Sustainability disclosure agent." },
     { "pattern": "Roll forward workflow", "why": "Listed once (S8) with a one-line description and no how-to or availability; it moves data into the next period rather than reading or writing text." },
     { "pattern": "Suggestions (proofread, clarity, tone across a document)", "why": "An early-access preview that ran until 14 September 2026; its current status is not stated." },
