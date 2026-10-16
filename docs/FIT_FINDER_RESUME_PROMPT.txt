@@ -1,60 +1,60 @@
-Fit Finder v4.2: hand-off (2026-10-15 22:30 PDT, session ed322f71 stopped at the 200k context line)
+Fit Finder v4.3: hand-off (2026-10-15 23:10 PDT, session 5127436a, at the task boundary)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to fca7320. LOCAL ONLY (not pushed): fb86572 (old
-hand-off), a28bb69, 61cce43, 9f0aa0c (WIP), and this hand-off commit. Push only with Ian's yes.
-Draft PR #1 into prompt-coach: https://github.com/iansomintac/Workiva/pull/1 (not merged).
-Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is still version 5 = dist of fca7320
-(not republished this session).
+worktree-fit-finder-v4. Pushed to origin up to fca7320. LOCAL ONLY (not pushed): fb86572, a28bb69,
+61cce43, 9f0aa0c, be12bcf, 5af64e0, 36ff399, 4545647 and this hand-off commit. Push only with
+Ian's yes. Draft PR #1 into prompt-coach: https://github.com/iansomintac/Workiva/pull/1 (not
+merged). Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is still version 5 = dist of
+fca7320 (not republished).
 
 IAN'S RULINGS (2026-10-15, his words)
 - On the engine's fit for the 19 Community tasks: "s4, s5, s6 should be partial." (16 of 19
   agreed; marks saved as ianFit in the git-ignored fit-finder/data/real/2026-10-15-community.jsonl)
 - On how to fix it: "option 1" (narrow word fix, not a rubric rewrite or relabel)
 - On the sustainability anomaly job: "Build option 1." (a use case from S16, no Community post)
+No new rulings in session 5127436a (no message from Ian after launch).
 
-DONE THIS SESSION (measured)
-- a28bb69 + 61cce43 (review fix): "rank" = sorting, "create/build a ... roadmap|plan" = drafting
-  (not "in/into/on <system>" or "to chase/collect/send ..."), new AI step ESTIMATE (trajectory;
-  "estimate the ... needed/required/to reach"). 7 new checks, red before, green after. Held-out B
-  45/60, A 52/60 unchanged; 0 of 120 labelled tasks changed; 19 of 19 real agree (tuned on them);
-  pagetest 72 checks 0 failed; dist 79,276 bytes. Sonnet code review: 4 false positives fixed;
-  "Create a project plan and send it to the team" kept partial (same as "Draft the memo and send it").
-- 9f0aa0c WIP: use case sus-anomalies in data/catalogue.json (named, refs S16, surfaces sheet+doc,
-  Workiva's own S16 prompt, 4th Sustainability win), removed from leftOut. Measured: all catalogue
-  checks pass; B 45/60; reach 14 of 30 unchanged.
-  S16 text (fetched from the public API, updated 2026-10-01): "you can prompt Workiva AI to help
-  draft narratives and identify anomalies, outliers, and other inconsistencies"; "This article is
-  for: Sustainability Reporting Advanced workspaces with Workiva AI enabled".
-- Ian's NotebookLM notebook: 44 Workiva Carbon support docs (uploaded .md copies), no Workiva AI
-  content. Not a source for AI claims. Its #35 "Review data issues": Carbon's Data reviewer flags
-  anomalies, gaps and duplicates by rule, NOT described as AI; never present it as Workiva AI.
-  #8 and #9 are Workiva-internal: never cite. (Inventory came from Ian's browser extension, read only.)
+DONE IN SESSION 5127436a (measured)
+- 5af64e0 finished 9f0aa0c: README (26 use cases, 22 named, 4 left out), capabilities-confirmed.md
+  (left-out line removed; note that S16 names the job), dist rebuilt.
+- Sonnet review of a28bb69..5af64e0 found 4 Important items, each re-run before fixing:
+  36ff399 fixed three (a plan "on how to", "in a table", "into a slide" or "to get our emissions
+  down" had become "not"; "Estimate the tax provision required" was rated good; sus-anomalies
+  matched "unusual wording", carbon credit invoices and an ESG word after ";").
+  Sonnet re-review of 36ff399: ready, minors only; 4545647 fixed two (a plan "in the Workiva
+  platform" or "in a slide tool" read as another system; "carbon numbers" not read as data).
+- Final numbers at 4545647: catalogue checks all pass (13 new checks, each failed first);
+  A 52/60, B 45/60; reach 14 of 30; vs 5af64e0 0 of 120 labelled and 0 of 19 real changed fit,
+  steps or top match; vs fb86572 only S4-S6 (not -> partial); 19 of 19 agree with Ian; mutant
+  without the sustainability words fails the trial-balance guard and 3 negatives; 300k-word input
+  402 ms; build 81,110 bytes; pagetest 72 checks 0 failed.
+- S16 re-read from the raw API (updated 2026-10-01): "Select the periods' data — such as in your
+  sustainability report or Factbook Spreadsheet — then enter this prompt: Analyze this data from
+  [current period] against [previous period]." and "This article is for: Sustainability Reporting
+  Advanced workspaces with Workiva AI enabled Note: Workiva AI is available for any customer who
+  signs the Workiva AI Terms of Use."
 
-FINISH 9f0aa0c FIRST (one commit, test-first already done)
-1. Docs in the same commit: fit-finder/README.md (25 -> 26 use cases, "named" 21 -> 22, left out
-   5 -> 4, drop "pre-assurance anomaly review of sustainability figures" from the left-out sentence,
-   dist byte count); fit-finder/data/capabilities-confirmed.md line ~65 (remove that left-out line;
-   say S16 names the job). Grep both for any other count the change makes wrong.
-2. Checks: eval A and B; 120-task diff vs fb86572 (fit, ops, match; list any match changes);
-   rate-real on the 19 (expect only S4-S6 different from fb86572; S2/S3 still miss sus-anomalies:
-   S2 has no sustainability word, S3's "explanations" is not read as EXPLAIN); mutant: drop the
-   sustainability words from the sus-anomalies match and confirm the trial-balance guard fails;
-   node tests/build.js; node tests/pagetest.js.
-3. Code review of a28bb69..HEAD (Sonnet reviewer), then ask Ian: push, and republish the live page?
+ASK IAN (one at a time, recommendation first)
+1. Push the branch and republish the live page? Recommend push yes (backup, draft PR only);
+   republish after question 2, since it is a customer-facing availability claim.
+2. sus-anomalies badge: its first surface is "sheet", so the card says "included with Workiva AI".
+   S16 is written for Sustainability Reporting Advanced workspaces but does not say the prompt
+   needs that solution. Options: keep "included"; or show "check your entitlement" (needs a new
+   surface or a per-use-case availability, since the badge comes from the surface).
+3. Which open item next.
 
 STILL OPEN (each needs Ian's yes)
 - Matching gaps: S1 -> fr-yoy-narrative first; S2 -> grc-rationalize via "duplicate"; S9/S10 miss
-  gen-wdata; S3 "explanations" not read as EXPLAIN.
+  gen-wdata; S3 "explanations" not read as EXPLAIN. "Review <data> for unusual changes" reads as
+  READ only, so it reaches no use case (match() needs a shared step beyond READ).
 - S16 also offers "Perform a cross-reference check ... quantitative inconsistencies within your
   sustainability report": a possible second use case (idea only, not raised with Ian).
 - The "reach a use case" figure counts wrong suggestions; a right-suggestion rate needs gold labels.
 - Design-review NICE items; Benchmarking preview wording conflict; merge.
-- Sessions 648f12e7, 4583497d and ed322f71 all own this worktree; `claude rm` deletes the worktree,
-  so remove none while a session works here.
+- Sessions 648f12e7 (done), 4583497d (blocked), ed322f71 (done) and 5127436a all own this
+  worktree; `claude rm` deletes the worktree, so remove none while a session works here.
 
 NEXT SESSION
-Read this file, CLAUDE.md and fit-finder/README.md. Do "FINISH 9f0aa0c FIRST", then report to Ian
-with the numbers and ask, one question at a time, recommendation first: push + republish, then
-which open item next.
+Read this file, CLAUDE.md and fit-finder/README.md. Ask Ian the three questions above, one at a
+time; do only what he says yes to.
