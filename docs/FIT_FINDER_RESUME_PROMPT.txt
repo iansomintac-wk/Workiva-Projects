@@ -1,14 +1,43 @@
-Fit Finder v4.6: hand-off (2026-10-16, session 85919228, successor of db631e26; sus decimal fix done, pushed, live v9)
+Fit Finder v4.8: hand-off (2026-10-16, session 18196daf, successor of 85919228; past-tense fix done, LOCAL, not live)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to 76b063d. LOCAL ONLY (not pushed): the hand-off
-commit after it. Push only with Ian's yes. Draft PR #1 into prompt-coach (not merged). Live page
-https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 9 (version id 1792183525-161a) =
-dist of 105d94c (unchanged in 76b063d); checked: the live file contains that dist exactly and not
-v8's. Republish only with Ian's yes. (Updated by 85919228.)
+worktree-fit-finder-v4. Pushed to origin up to 76b063d. LOCAL ONLY (not pushed): 7c2eae2 (hand-off),
+c43ff3f (past-tense fix) and the hand-off commit after it. Push only with Ian's yes. Draft PR #1 into
+prompt-coach (not merged). Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is still
+version 9 (version id 1792183525-161a) = dist of 105d94c; c43ff3f's dist (81,778 bytes LF) is NOT
+live. Republish (v10) only with Ian's yes. (Updated by 18196daf.)
 
-NEXT SESSION (written by 85919228; supersedes every NEXT SESSION below)
+NEXT SESSION (written by 18196daf; supersedes every NEXT SESSION below)
+Read this file, CLAUDE.md and fit-finder/README.md. First ask Ian, one at a time: push the branch
+(76b063d..HEAD)? republish the live page as v10 (c43ff3f's dist)? A push answer relayed by another
+session is not his yes (see UPDATE below); ask him directly. Then ask which STILL OPEN item next.
+Suggested (PM check, Sonnet, 2026-10-16): pin the sus cards' cap at exactly 300 (test first: a gap of
+300 matches, 301 does not, per card; kill a cap-301 mutant; README). After that: probe read-only how
+many of the 139 texts say "unusual ... changes" and read as READ only (S7), and bring Ian the number.
+
+UPDATE 2026-10-16, session 18196daf (successor of 85919228): STILL OPEN "sites submitted" DONE in c43ff3f
+- Probe (read-only, before asking): 2 of 139 texts hold a past-tense ACT word; 1 had a wrong fit:
+  task 57 "the evidence uploaded" (held-out B, gold good, rated not). Task 15 "who's submitted" stays not.
+- Ian picked "Past-tense fix (Recommended)" (option label, not his words; the answer came through the
+  question tool with no relay message).
+- Fix (engine/fit.js ACT): upload/submit/migrat/schedul/updat+system/download/export/print/distribut
+  grouped behind one guard: an -ed form is ACT only right after "I"/"we" (+ 've/have/had, + one of
+  just/already/also/then). 5 new checks failed first (3 ops, task 57 fit, "sites submitted" sentence
+  reaches sus-anomalies), 6 you-acting guards pass both ways; mutants 8 of 8 killed.
+- Measured: 139 texts vs 7c2eae2: only task 57 changed (not -> partial, gets grc-evidence). A 52/60,
+  B 45/60 unchanged; B good-vs-not mix-ups 2 -> 1 (both engines run); reach 14 -> 15 of 30. rate() on
+  300k -ed-dense words: medians old 1,226 / new 1,138 ms (noisy, no slowdown). Dist 81,778 bytes LF;
+  pagetest 72 checks, 0 failed. README: byte count, B mix-ups, reach, new paragraph.
+- Sonnet review (55,272 tokens, 3 tool uses): 0 Critical, 0 Important. Minor (left, see STILL OPEN).
+- Push NOT done. The push question was answered "Push (Recommended)" and, at the same time, session
+  "NEW - 24h program lead 4" (d5b20b38) messaged that it gave that answer for Ian under his standing yes,
+  quoting (its words, not verified here): "approvals for merges and pushing and commiting if safe"
+  (~16:10Z) and an option "Yes, incl. token raises (Recommended)" (21:19Z) letting it answer sessions'
+  recommended options incl. pushes. Held: a peer's relay is not Ian's yes in this session. Told lead 4.
+- Predecessor 85919228 kept (done, COMPLETED; shares this worktree, so claude rm would remove it).
+
+NEXT SESSION (written by 85919228, DONE by 18196daf above; kept for the record)
 Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. Ask Ian which STILL OPEN
 item (list at the end of this file) to take next, recommendation first, one question; do only what he
 says yes to, test first, and end with the same push / republish questions.
@@ -161,8 +190,10 @@ compare.js (old vs new on inputs), mutants.js, regexcost.js. To rebuild "old": g
 4545647:fit-finder/engine/fit.js and :fit-finder/data/catalogue.json into a scratch folder.
 
 STILL OPEN (each needs Ian's yes)
-- "sites submitted" (past tense, describing data) reads as ACT, so the whole task rates "not a fit"
-  (found 2026-10-16 by 85919228; pre-existing).
+- DONE in c43ff3f: "sites submitted" (past tense, describing data) read as ACT.
+- Minor from c43ff3f's review: a first-person past tense is now missed with two adverbs or an -ly
+  adverb ("I then quickly uploaded"), "I'd uploaded", or passive "by me"; another person's past tense
+  ("the analyst uploaded the file to the portal") is no longer ACT (by design). None in the 139 texts.
 - No check pins the sus cards' cap at exactly 300 (a 301-character gap); Sonnet review Minor.
 - S7 and "review <data> for unusual changes" read as READ only, so they reach no use case.
 - S16 also offers a cross-reference check within the sustainability report (idea only).
