@@ -50,7 +50,8 @@ const cases = [
   ["Each year I benchmark our 10-Q and 10-K disclosures against our peers' filings.", 'fr-peers'],
   ['Every quarter I check that the narrative in the 10-Q agrees with the reported figures.', 'fr-narrative-tables'],
   // Workiva names this job on its sustainability page (S16, updated 2026-10-01)
-  ['Every quarter I check our emissions data against last year for outliers and unusual variances, and explain each one.', 'sus-anomalies']
+  ['Every quarter I check our emissions data against last year for outliers and unusual variances, and explain each one.', 'sus-anomalies'],
+  ['Every quarter I check our carbon numbers for outliers.', 'sus-anomalies']
 ];
 for (const [t, want] of cases) check('match: ' + t.slice(0, 40), () => assert.strictEqual(top(t), want));
 
@@ -128,7 +129,8 @@ for (const t of ['Create the roadmap in Jira.', 'Build the plan in SAP and uploa
   check('fit: stays not - ' + t, () => assert.strictEqual(rate(t).fit, 'not'));
 // review of 61cce43: only another system or chasing people blocks a plan; a table, a slide or "on how to" does not
 for (const t of ['Build a plan on how to reduce emissions.', 'Create a roadmap on emissions reduction from this data.',
-  'Build a plan to get our emissions down from this data.', 'Create a plan in a table from this data.', 'Build the roadmap into a slide.'])
+  'Build a plan to get our emissions down from this data.', 'Create a plan in a table from this data.', 'Build the roadmap into a slide.',
+  'Build a plan in the Workiva platform from this data.', 'Create a roadmap in a slide tool from these notes.'])
   check('fit: a drafted plan is partial - ' + t, () => assert.strictEqual(rate(t).fit, 'partial'));
 check('fit: an exact tax estimate stays not', () =>
   assert.strictEqual(rate('Estimate the tax provision required for the quarter.').fit, 'not'));
