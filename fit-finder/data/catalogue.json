@@ -94,7 +94,7 @@
     {
       "id": "fr-tie-out", "area": "FR", "role": "SEC or external reporting",
       "task": "Check that the figures agree throughout a 10-K or 10-Q draft.",
-      "ops": ["CHECK", "COMPARE"], "match": "tie[- ]?outs?|ti(?:e|ing) (?:out|back)|tick(?:ing)? and ti\\w*|(?:figures?|numbers?|amounts?) (?:agree|match|tie)|10-?[qk]",
+      "ops": ["CHECK", "COMPARE"], "match": "tie[- ]?outs?|ti(?:e|ing) (?:out|back)|tick(?:ing)? and ti\\w*|(?:figures?|numbers?|amounts?) (?:agree|match|tie)",
       "surfaces": ["tie-out"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S7", "S10", "S11"],
       "prompt": null,
       "stays": "Investigating each difference, and the tie-out sign-off. In preview it covers 10-K and 10-Q documents only.",
@@ -292,7 +292,7 @@
     {
       "id": "sus-disclosure", "area": "SUS", "role": "Sustainability reporting",
       "task": "Draft a sustainability disclosure from the data we have collected.",
-      "ops": ["DRAFT"], "match": "disclosures?|sustainability report|esg report|narrative|draft",
+      "ops": ["DRAFT"], "match": "(?:sustainab\\w*|esg|esrs|issb|csrd|climate)\\b[^.]*\\b(?:disclosures?|narrative|draft\\w*|reports?)|(?:disclosures?|narrative|draft\\w*|reports?)\\b[^.]*\\b(?:sustainab\\w*|esg|esrs|issb|csrd|climate)",
       "surfaces": ["disclosure"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S7", "S16", "S17", "S18"],
       "prompt": null,
       "stays": "Checking every figure and the final wording before assurance.",

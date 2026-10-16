@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (78,536 bytes)
+node tests/build.js                                               # -> dist/fit-finder.html (78,667 bytes)
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
 node tests/pagetest.js [capture-folder]                            # real Chrome at 1280 and 375 px; needs Chrome, no npm deps
@@ -46,6 +46,10 @@ with reasons in the catalogue: pre-assurance anomaly review of sustainability fi
 names from the 29 July 2026 press release, the Roll forward workflow, Suggestions, and the
 Workiva MCP connection to Claude.
 
-Of the 30 held-out tasks that fit, 15 (50%) reach a specific use case; the rest get "ask Workiva
-AI chat about your file". So the page stays "describe your task" rather than "pick from a
-feature list". Not yet measured: real customers' tasks and real checklists.
+Of the 30 held-out tasks that fit, 14 (47%) reach a specific use case; the rest get "ask Workiva
+AI chat about your file". That count includes any suggestion, right or wrong. Before 2026-10-15 it
+was 15, but some of those sent financial drafting tasks to the Sustainability disclosure agent
+(it matched the bare word "draft") and peer benchmarking to the Tie-out assistant (any "10-Q").
+Both were found by rating 19 prompts and comments from two Workiva Community posts. So the page
+stays "describe your task" rather than "pick from a feature list". Not yet measured: whether
+real customers' tasks get the right fit and the right use case.

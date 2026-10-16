@@ -45,9 +45,19 @@ const cases = [
   ['Every quarter I fix the XBRL validation errors before we file.', 'fr-xbrl-errors'],
   ['Every week I answer questions from colleagues about how to do things in Workiva.', 'gen-support'],
   // "testing workpapers" is not writing test steps
-  ['I draft audit findings from the testing workpapers for each failed control.', 'grc-issues']
+  ['I draft audit findings from the testing workpapers for each failed control.', 'grc-issues'],
+  // a 10-Q or 10-K named in passing is not a tie-out (2026-10-15 community prompts and comments)
+  ["Each year I benchmark our 10-Q and 10-K disclosures against our peers' filings.", 'fr-peers'],
+  ['Every quarter I check that the narrative in the 10-Q agrees with the reported figures.', 'fr-narrative-tables']
 ];
 for (const [t, want] of cases) check('match: ' + t.slice(0, 40), () => assert.strictEqual(top(t), want));
+
+// the Sustainability disclosure agent needs sustainability work, not just the word "draft"
+for (const t of [
+  'Every quarter I draft the goodwill impairment footnote for the 10-Q.',
+  'Every close I draft a memo to the regional finance leads about intercompany mismatches.',
+  'Every month I draft an executive summary of the variances for the CFO.'
+]) check('not sustainability: ' + t.slice(0, 40), () => assert.notStrictEqual(top(t), 'sus-disclosure'));
 
 // sources say how they were read and, when read from the public API, when Workiva last updated them
 for (const [k, s] of Object.entries(cat.sources)) check('source ' + k, () => {
