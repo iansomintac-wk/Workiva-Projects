@@ -13,7 +13,12 @@ IAN'S RULINGS (2026-10-15, his words)
   agreed; marks saved as ianFit in the git-ignored fit-finder/data/real/2026-10-15-community.jsonl)
 - On how to fix it: "option 1" (narrow word fix, not a rubric rewrite or relabel)
 - On the sustainability anomaly job: "Build option 1." (a use case from S16, no Community post)
-No new rulings in session 5127436a (no message from Ian after launch).
+- Session 5127436a, asked "May I push the branch now?": "Yes" (pushed fca7320..c78b4d2).
+- On the sus-anomalies badge: "Most customers have a solution either sustainability, grc, or
+  financial reporting. They can request to enable workiva AI and it works on anything they have
+  in their workspace so if they are we using sustainability they should be able to use any
+  prompt." Then, asked "So keep 'included' and change nothing?": "Yes". The badge stays
+  "included with Workiva AI". (Ledger refused it: project workiva is not registered.)
 
 DONE IN SESSION 5127436a (measured)
 - 5af64e0 finished 9f0aa0c: README (26 use cases, 22 named, 4 left out), capabilities-confirmed.md
@@ -36,13 +41,9 @@ DONE IN SESSION 5127436a (measured)
   signs the Workiva AI Terms of Use."
 
 ASK IAN (one at a time, recommendation first)
-1. Push the branch and republish the live page? Recommend push yes (backup, draft PR only);
-   republish after question 2, since it is a customer-facing availability claim.
-2. sus-anomalies badge: its first surface is "sheet", so the card says "included with Workiva AI".
-   S16 is written for Sustainability Reporting Advanced workspaces but does not say the prompt
-   needs that solution. Options: keep "included"; or show "check your entitlement" (needs a new
-   surface or a per-use-case availability, since the badge comes from the surface).
-3. Which open item next.
+1. (answered: push yes) 2. (answered: keep "included")
+3. Republish the live page from the current dist? (asked after the badge ruling)
+4. Which open item next.
 
 STILL OPEN (each needs Ian's yes)
 - Matching gaps: S1 -> fr-yoy-narrative first; S2 -> grc-rationalize via "duplicate"; S9/S10 miss
