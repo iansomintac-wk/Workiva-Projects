@@ -140,6 +140,11 @@ for (const [t, not] of [['Every quarter I flag outliers in the trial balance for
 for (const [t, want] of [['Review the Scope 1 and 2 emissions that each of our forty manufacturing sites entered through the quarterly collection template, covering the fleet, natural gas and purchased electricity lines for every site, and flag any anomalies.', 'sus-anomalies'],
   ['Draft a first version of the section that explains how our forty sites collected their fuel, fleet and purchased electricity figures this year, which estimates we used and why, for the sustainability pages.', 'sus-disclosure']])
   check('match: a long ' + want + ' sentence', () => assert(matched(t).includes(want), matched(t).join(',')));
+// the same sentence with "submitted", as first written: it got no card while "submitted" read as acting
+check('match: figures the sites submitted reach sus-anomalies', () => {
+  const t = 'Review the Scope 1 and 2 emissions that each of our forty manufacturing sites submitted through the quarterly collection template, covering the fleet, natural gas and purchased electricity lines for every site, and flag any anomalies.';
+  assert(matched(t).includes('sus-anomalies'), matched(t).join(','));
+});
 
 // sources say how they were read and, when read from the public API, when Workiva last updated them
 for (const [k, s] of Object.entries(cat.sources)) check('source ' + k, () => {
@@ -203,6 +208,18 @@ for (const t of ['Build a plan on how to reduce emissions.', 'Create a roadmap o
   check('fit: a drafted plan is partial - ' + t, () => assert.strictEqual(rate(t).fit, 'partial'));
 check('fit: an exact tax estimate stays not', () =>
   assert.strictEqual(rate('Estimate the tax provision required for the quarter.').fit, 'not'));
+// Ian 2026-10-16 picked "Past-tense fix": a past tense that describes the data (someone else uploaded,
+// submitted or exported it) is not you acting in another system; task 57 (gold good) was rated "not"
+for (const t of ["Checking that the evidence uploaded actually covers the right period and the right system. A lot of it doesn't.",
+  'Every quarter I flag anomalies in the emissions figures the sites submitted.',
+  'Each month I review the exported trial balance for unusual balances.'])
+  check('ops: data someone else acted on is not acting - ' + t.slice(0, 40), () => assert(!rate(t).ops.includes('ACT'), String(rate(t).hits.ACT)));
+check('fit: task 57, evidence uploaded, is not "not"', () =>
+  assert.notStrictEqual(rate("Checking that the evidence uploaded actually covers the right period and the right system. A lot of it doesn't.").fit, 'not'));
+// ...but you uploading, submitting or exporting, in any tense, still is
+for (const t of ['I uploaded the evidence to the portal.', 'We submitted the 10-K last week.', "I've exported the trial balance.",
+  'We have already scheduled the review meetings.', 'I upload the evidence every quarter.', 'Submitting the 10-K is the last step.'])
+  check('ops: you acting stays acting - ' + t, () => assert(rate(t).ops.includes('ACT')));
 // speed: the sentence look-arounds in fr-yoy-narrative stay bounded on a long paste with no full stops
 check('speed: fr-yoy-narrative on 300k words with no full stops runs under 2 s', () => {
   const u = cat.useCases.find((x) => x.id === 'fr-yoy-narrative');
