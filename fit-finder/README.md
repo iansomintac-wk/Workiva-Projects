@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (81,778 bytes)
+node tests/build.js                                               # -> dist/fit-finder.html (82,037 bytes)
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
 node tests/pagetest.js [capture-folder]                            # real Chrome at 1280 and 375 px; needs Chrome, no npm deps
@@ -48,7 +48,8 @@ workflow, Suggestions, and the Workiva MCP connection to Claude. The sustainabil
 was left out until S16 was found to name the job ("identify anomalies, outliers, and other
 inconsistencies", with a prompt to run on the sustainability report or Factbook spreadsheet).
 
-Of the 30 held-out tasks that fit, 15 (50%; 14 before the past-tense fix below) reach a specific
+Of the 30 held-out tasks that fit, 16 (53%; 15 before the reading-only fix below, 14 before the
+past-tense fix) reach a specific
 use case; the rest get "ask Workiva
 AI chat about your file". That count includes any suggestion, right or wrong. Before 2026-10-15 it
 was 15, but some of those sent financial drafting tasks to the Sustainability disclosure agent
@@ -88,8 +89,7 @@ No fit changed on the 139 tasks; A and B are unchanged. Of the 120 labelled task
 (writing variance explanations for the year-over-year change in emissions) changed: it gains an
 "Explain it" step and its first use case is now the sustainability anomaly check instead of the
 financial narrative. S9 (an executive summary of a query's results) keeps "summarize a file": the
-Wdata card is for writing or fixing a query. Still open: S7 and "review <data> for unusual changes"
-read as reading only, so they reach no use case.
+Wdata card is for writing or fixing a query. S7 and task 42 read as reading only; see below.
 
 Past tense that describes the data (2026-10-16): "uploaded", "submitted", "exported", "scheduled" and
 the other work-in-another-system verbs count as you acting only after "I" or "we" ("I uploaded", "we
@@ -98,3 +98,14 @@ sites submitted", "the exported trial balance"). Of the 139 tasks, 2 hold such a
 task 57 ("checking that the evidence uploaded actually covers the right period"), labelled good, was
 rated "not a fit" and is now partial with the evidence card. It is in held-out half B and was found
 by probing all 139 tasks. Fit agreement is unchanged (A 52/60, B 45/60).
+
+Reading only (2026-10-16): of the 139 tasks, 2 read as reading only. Task 42 ("note exceptions" in
+vendor SOC 2 reports, "whether our ... controls cover them") now pulls out the exceptions and checks
+coverage (only controls, policies, procedures, evidence or tests "cover" in that sense: a vendor
+covering the cost or a team covering a shift is not a check), and gets the control-mapping card; its fit stays partial (labelled good: the engine misses
+that it comes back every year, which the page asks). S7 ("generate ten questions" as an assurance
+provider) now drafts; no card covers writing assurance questions, so it keeps "ask Workiva AI chat
+about your file". "Assurance provider" names who asks, not a recurring job, so S7 stays partial
+(Ian's label) and task 75's recurring guess now matches its label (A recurring 77% -> 78%). Only
+these 3 of 139 changed; fit agreement is unchanged (A 52/60, B 45/60). Task 42 is in held-out half B,
+so B has now been used for two fixes. "Review <data> for unusual changes" appears in none of the 139.

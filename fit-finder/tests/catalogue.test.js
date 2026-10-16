@@ -220,6 +220,29 @@ check('fit: task 57, evidence uploaded, is not "not"', () =>
 for (const t of ['I uploaded the evidence to the portal.', 'We submitted the 10-K last week.', "I've exported the trial balance.",
   'We have already scheduled the review meetings.', 'I upload the evidence every quarter.', 'Submitting the 10-K is the last step.'])
   check('ops: you acting stays acting - ' + t, () => assert(rate(t).ops.includes('ACT')));
+// Ian 2026-10-16 picked "C: three rules + role": two texts read as reading only. Task 42 notes exceptions
+// (pull out) and asks whether controls cover them (check); S7 generates questions (draft). "Assurance
+// provider" names who asks, not a recurring job, so S7 stays partial (Ian's label) and task 75 one-off
+const T42 = 'I read vendor SOC 2 reports and note exceptions plus whether our complementary user entity controls cover them.';
+const S7 = 'Act as an external sustainability assurance provider. Review this disclosure and generate ten questions related to data quality, controls, methodology, assumptions, and supporting evidence.';
+check('ops: task 42 pulls out exceptions and checks coverage', () => {
+  const r = rate(T42); assert(r.ops.includes('EXTRACT') && r.ops.includes('CHECK'), r.ops.join('+'));
+});
+check('match: task 42 reaches grc-framework', () => assert(match(T42, cat).some((u) => u.id === 'grc-framework')));
+for (const t of [S7, 'Generate a list of questions for the site leads about their fuel data.'])
+  check('ops: generating questions is drafting - ' + t.slice(0, 40), () => assert(rate(t).ops.includes('DRAFT'), rate(t).ops.join('+')));
+check('fit: S7 stays partial', () => assert.strictEqual(rate(S7).fit, 'partial'));
+for (const t of [S7, "Answering the assurance provider's follow-up questions about how we got the waste data. Usually means digging through old emails."])
+  check('repeats: an assurance provider is a role, not a recurrence - ' + t.slice(0, 40), () => assert.strictEqual(rate(t).repeats, 0));
+// ...but assurance itself still recurs, exceptions alone are not a list to pull out, and a cover letter is not a coverage check
+check('ops: deciding which exceptions to approve is not pulling items out', () => assert(!rate('Decide which exceptions to approve.').ops.includes('EXTRACT')));
+check('repeats: preparing for assurance still recurs', () => assert.strictEqual(rate('Preparing for assurance on the emissions data.').repeats, 1));
+check('ops: whether to send a cover letter is not a check', () => assert(!rate('Decide whether to send a cover letter.').ops.includes('CHECK')));
+// review of the fix: only controls, policies, procedures, evidence or tests "cover" in the checking sense
+for (const t of ['Ask whether the vendor can cover the cost of the rollout for all sites.', 'I need to decide whether the team will cover each shift.'])
+  check('ops: paying for or staffing is not a coverage check - ' + t.slice(0, 40), () => assert(!rate(t).ops.includes('CHECK'), String(rate(t).hits.CHECK)));
+check('ops: whether our controls cover the user entity controls is a check', () =>
+  assert(rate('Read the SOC 1 report and see whether our controls cover the complementary user entity controls.').ops.includes('CHECK')));
 // speed: the sentence look-arounds in fr-yoy-narrative stay bounded on a long paste with no full stops
 check('speed: fr-yoy-narrative on 300k words with no full stops runs under 2 s', () => {
   const u = cat.useCases.find((x) => x.id === 'fr-yoy-narrative');
