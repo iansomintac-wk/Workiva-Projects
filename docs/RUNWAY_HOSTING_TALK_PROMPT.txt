@@ -1,0 +1,29 @@
+Runway hosting talk (needs Ian; studio-harness:talk-and-run, "The talk"; superpowers:brainstorming first).
+
+Queued by the Step 1 talk (2026-10-15). Start only after Step 1 is merged, or say why not.
+
+Ian's words, 2026-10-15: "I want to be able to host this somewhere. my company uses github so could i host this on
+github pages or docker?" then "yes, A now and queue hosting next".
+
+What the Step 1 talk found (label each before reusing it; re-check anything a decision rests on):
+- GitHub Pages (read, docs.github.com, checked by a research helper 2026-10-15): a Pages site is public on the internet
+  even from a private repo, unless the organization uses GitHub Enterprise Cloud, which can make it visible only to
+  people with read access to the repo (changing-the-visibility-of-your-github-pages-site). Whether the Team plan can
+  is NOT confirmed. Private sites use a different subdomain (format not in the doc). github.io is HTTPS.
+  Cheapest check: Ian opens a private repo's Settings -> Pages and looks for a visibility choice.
+- Docker (reasoning only): a container still needs somewhere to run (company server or cloud); for one static file
+  it only makes sense if Ian's IT already runs internal apps behind a company login.
+- Customer data never goes to the host: the book lives in each user's browser (localStorage + IndexedDB after Step 1).
+- Storage is per web address (read): a book opened from file:// will not appear at a hosted address. Moving it =
+  export, then import (Step 1 makes export carry the transcripts).
+- Connector (read, connector/CONTRACT.md lines 17-27): CORS answers only origin null (file://), localhost and
+  127.0.0.1; a hosted https page would be refused unless that is changed deliberately.
+- Backup file (read, v99 comment in the tracker): write permission needs one click per session.
+- Possible upside (assumed, untested): Chrome may grant navigator.storage.persist() to a real https site; for
+  file:// it returned false (DESIGN 4.5). Check in a throwaway profile on a test origin before relying on it.
+
+First question for Ian: which GitHub plan his company has, and whether hosting is for him alone or for the team
+(memory: OSM team baseline, tracker awaiting approval).
+
+Safety: nothing is published, pushed to Pages or uploaded without Ian's yes for that exact action. Never edit
+osm-book-of-business-tracker-1.0.html; never open the app in Ian's normal Chrome; only tools/selfcheck.mjs runs it.

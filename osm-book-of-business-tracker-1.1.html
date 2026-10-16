@@ -35,6 +35,13 @@
   6. Preserve existing scoring/risk logic (computeRisk, healthScore, gates) unless objectively wrong.
 
   RELEASE NOTES:
+  1.1 — Step 1 (transcripts out of the book). Call transcripts now live in the
+        browser's IndexedDB (obm-transcripts-v1), are never cut when stored (the
+        first 120,000 characters of the note plus transcript are what the AI is
+        sent), and every export, backup file and archive carries them. Book
+        schema 17: once a book is opened here, 1.0 refuses it. Export from 1.0
+        BEFORE the first open.
+        Design: docs/superpowers/specs/2026-10-15-runway-1.1-step1-transcripts-design.md
   1.1 — Step 0 (safety). Writes the book only when something changed:
         - no backup (file or stored book) after a failed load;
         - bookkeeping saves skip an unchanged book;
@@ -2899,18 +2906,236 @@ function readTranscriptFile(file, onDone){
   reader.onload = evt => {
     const raw = String(evt.target.result || '');
     if(!raw.trim()){ showToast('That file appears to be empty.'); return; }
-    const truncated = raw.length > DEBRIEF_TRANSCRIPT_CHAR_CAP;
-    if(truncated) showToast('Transcript truncated to the first 120,000 characters');
-    onDone({text: truncated ? raw.slice(0, DEBRIEF_TRANSCRIPT_CHAR_CAP) : raw, truncated});
+    onDone({text: raw, truncated: false});
   };
   reader.onerror = ()=> showToast('Could not read that file.');
   reader.readAsText(file);
 }
+// 1.1 Step 1: the badge/buttons block of an activity card, with the visible "missing" state.
+function transcriptControlsHtml(c, act){
+  const state = activityTranscriptState(act);
+  const tr = activityTranscript(act);
+  const meta = (act && act.transcript) || {};
+  return `
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+          ${state === 'missing'
+            ? `<span class="badge badge-risk" title="The book points to a transcript that is not stored in this browser.">${icon('flag')} Transcript missing from this browser - restore from a backup</span>
+               <button class="btn btn-sm" data-attach-transcript="${act.id}">Attach</button>
+               <button class="btn btn-sm" data-remove-transcript="${c.id}|${act.id}">Remove</button>`
+            : tr
+            ? `<span class="badge badge-ontrack" title="Stored with this activity — included in exports and archives.">${icon('check')} Transcript attached (${tr.text.length.toLocaleString()} chars)</span>
+               ${tr.truncated ? `<span style="font-size:var(--text-xs); color:var(--accent-watch-text);">truncated to the first 120,000 characters</span>` : ((meta.chars || 0) > DEBRIEF_TRANSCRIPT_CHAR_CAP ? `<span style="font-size:var(--text-xs); color:var(--accent-watch-text);">the AI is sent the first 120,000 characters (note included)</span>` : '')}
+               <button class="btn btn-sm" data-view-transcript="${c.id}|${act.id}">View</button>
+               <button class="btn btn-sm" data-attach-transcript="${act.id}">Replace</button>
+               <button class="btn btn-sm" data-remove-transcript="${c.id}|${act.id}">Remove</button>`
+            : `<button class="btn btn-sm" data-attach-transcript="${act.id}">Attach call transcript</button>
+               <span style="font-size:var(--text-xs); color:var(--text-faint);">.txt/.md/.vtt/.srt — stored with this activity</span>`}
+          <input type="file" data-transcript-file-input="${act.id}" accept=".txt,.md,.vtt,.srt,.log,text/plain" style="display:none;">
+        </div>`;
+}
 // v51: the transcript now lives ON the activity record, not in transient UI
 // state — reads for the debrief go through here.
+function activityTranscriptState(activity){
+  const t = activity && activity.transcript;
+  if(!t || typeof t !== 'object') return 'none';
+  if(typeof t.ref === 'string' && t.ref) return _transcriptMap.has(t.ref) ? 'ok' : 'missing';
+  return (typeof t.text === 'string' && t.text.trim()) ? 'ok' : 'none';
+}
 function activityTranscript(activity){
   const t = activity && activity.transcript;
-  return (t && typeof t === 'object' && typeof t.text === 'string' && t.text.trim()) ? t : null;
+  if(!t || typeof t !== 'object') return null;
+  if(typeof t.ref === 'string' && t.ref){
+    const hit = _transcriptMap.get(t.ref);
+    return hit ? {text: hit.text, truncated: t.truncated === true} : null;
+  }
+  return (typeof t.text === 'string' && t.text.trim()) ? t : null;
+}
+/* ============ 1.1 Step 1: TRANSCRIPT STORE ============
+   Transcripts live in IndexedDB (obm-transcripts-v1), one record per transcript VERSION, keyed
+   <activityId>:<12 hex of sha1>. The book keeps only {ref, chars, sha1, truncated}.
+   RULE: a call never deletes a record it did not create. */
+const TS_DB = 'obm-transcripts-v1';
+let _tsForceDown = false, _tsDbP = null, _tsVersion = 0;
+const _transcriptMap = new Map();
+function loadTranscriptMap(){
+  const run = (async () => {
+    const t0 = performance.now(); let bad = 0;
+    _transcriptMap.clear();
+    try{
+      const refs = new Map();
+      Object.values((DATA && DATA.activities) || {}).forEach(list => (list || []).forEach(a => {
+        const t = a && a.transcript; if(t && typeof t.ref === 'string' && t.ref) refs.set(t.ref, t.sha1);
+      }));
+      if(refs.size && await tsOpen()){
+        const found = await tsGetMany(Array.from(refs.keys()));          // one transaction
+        for(const [ref, sha1] of refs){
+          const rec = found.get(ref);
+          if(rec && typeof rec.text === 'string' && (await sha1Hex(rec.text)) === sha1) _transcriptMap.set(ref, {text: rec.text, chars: rec.text.length, sha1});
+          else bad++;
+        }
+      } else bad = refs.size;
+    }catch(e){}
+    _tsVersion++;
+    window.__transcriptLoad = {count: _transcriptMap.size, bad, ms: Math.round((performance.now() - t0) * 10) / 10};
+  })();
+  window.__transcriptLoadDone = run;
+  return run;
+}
+function tsOpen(){
+  if(_tsForceDown) return Promise.resolve(null);
+  if(_tsDbP) return _tsDbP;
+  _tsDbP = new Promise(resolve => {
+    let req;
+    try{ req = indexedDB.open(TS_DB, 1); }catch(e){ resolve(null); return; }
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      db.createObjectStore('transcripts', {keyPath: 'ref'});
+      db.createObjectStore('premigration', {keyPath: 'date'});
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = req.onblocked = () => resolve(null);
+  });
+  return _tsDbP;
+}
+async function tsTx(store, mode, fn){
+  const db = await tsOpen();
+  if(!db) throw new Error('IndexedDB unavailable');
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, mode);
+    let out;
+    try{ out = fn(tx.objectStore(store)); }catch(e){ reject(e); return; }
+    tx.oncomplete = () => resolve(out && 'result' in out ? out.result : undefined);
+    tx.onerror = tx.onabort = () => reject(tx.error || new Error('IndexedDB transaction failed'));
+  });
+}
+const tsPut = rec => tsTx('transcripts', 'readwrite', s => s.put(rec));
+function tsGet(ref){ return tsTx('transcripts', 'readonly', s => s.get(ref)); }   // a function declaration: the probe swaps window.tsGet
+const tsDelete = ref => tsTx('transcripts', 'readwrite', s => s.delete(ref));
+async function tsGetMany(refs){
+  const out = new Map();
+  if(!refs.length) return out;
+  const db = await tsOpen();
+  if(!db) throw new Error('IndexedDB unavailable');
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('transcripts', 'readonly'), s = tx.objectStore('transcripts');
+    refs.forEach(r => { const q = s.get(r); q.onsuccess = () => { if(q.result) out.set(r, q.result); }; });
+    tx.oncomplete = () => resolve(out);
+    tx.onerror = tx.onabort = () => reject(tx.error || new Error('IndexedDB transaction failed'));
+  });
+}
+async function tsClearAll(){ await tsTx('transcripts', 'readwrite', s => s.clear()); await tsTx('premigration', 'readwrite', s => s.clear()); }
+async function sha1Hex(text){
+  const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf), b => b.toString(16).padStart(2, '0')).join('');
+}
+async function saveTranscriptVerified(activityId, text){
+  if(!(await tsOpen())) return null;
+  const sha1 = await sha1Hex(text);
+  const ref = activityId + ':' + sha1.slice(0, 12);
+  const out = {ref, chars: text.length, sha1, truncated: false};
+  let existing = null;
+  try{ existing = await tsGet(ref); }catch(e){}
+  const existingOk = !!(existing && typeof existing.text === 'string' && (await sha1Hex(existing.text)) === sha1);
+  if(!existingOk){
+    try{
+      await tsPut({ref, activityId, text, chars: text.length, sha1, savedAt: new Date().toISOString()});
+      const back = await tsGet(ref);
+      if(!back || back.text !== text || (await sha1Hex(back.text)) !== sha1) throw new Error('read-back check failed');
+    }catch(e){
+      if(!existing){ try{ await tsDelete(ref); }catch(e2){} }   // delete only what THIS call created
+      throw e;
+    }
+  }
+  Object.defineProperty(out, 'created', {value: !existing, enumerable: false});
+  _transcriptMap.set(ref, {text, chars: text.length, sha1});
+  _tsVersion++;
+  return out;
+}
+/* Task 6: the move on load. savePremigrationCopy is a function declaration (the probe swaps it). It THROWS on
+   failure; loadData moves nothing unless it succeeded. Key = date + first 12 hex of the original string's SHA-1. */
+async function savePremigrationCopy(raw){
+  const key = todayISO() + ':' + (await sha1Hex(raw)).slice(0, 12);
+  await tsTx('premigration', 'readwrite', s => s.put({date: key, raw}));
+}
+async function moveInlineTranscripts(data){
+  if(!(await tsOpen())) return {moved: 0, failed: 0, unavailable: true};
+  let moved = 0, failed = 0;
+  for(const list of Object.values((data && data.activities) || {})){
+    for(const a of (list || [])){
+      const old = a && a.transcript;
+      if(!old || typeof old.text !== 'string' || !old.text.trim()) continue;
+      try{
+        const t = await saveTranscriptVerified(a.id, old.text);
+        if(!t){ failed++; continue; }
+        a.transcript = {ref: t.ref, chars: t.chars, sha1: t.sha1, truncated: old.truncated === true};
+        moved++;
+      }catch(e){ failed++; }   // this one stays inline; the others still move
+    }
+  }
+  return {moved, failed, unavailable: false};
+}
+let _transcriptMovePending = Promise.resolve();
+function scheduleTranscriptMove(){
+  if(_suiteRunning) return;
+  _transcriptMovePending = moveInlineTranscripts(DATA).then(r => { if(r.moved) saveData({maintenance:true}); render(); return r; });
+  return _transcriptMovePending;
+}
+function hasInlineTranscript(data){
+  return Object.values((data && data.activities) || {}).some(list => (list || []).some(a => a && a.transcript && typeof a.transcript.text === 'string' && a.transcript.text.trim()));
+}
+/* Task 5: the safe saving order. Stage (write, read back, check) -> commit the book -> only then drop the
+   old record. A call drops only a record it created, and never one the book (any activity) still points to. */
+async function stageTranscript(activityId, text){
+  return (await saveTranscriptVerified(activityId, text)) || {text, truncated: false};   // inline fallback when IndexedDB is unavailable
+}
+function refIsReferenced(ref){
+  return Object.values((DATA && DATA.activities) || {}).some(list => (list || []).some(a => a && a.transcript && a.transcript.ref === ref));
+}
+function clearUndoSlot(){ _undoSnapshot = null; _lastActionWasUndo = false; }
+function dropTranscriptRecord(ref){
+  if(!ref || refIsReferenced(ref)) return;
+  _transcriptMap.delete(ref);
+  _tsVersion++;
+  try{ tsDelete(ref).catch(()=>{}); }catch(e){}
+}
+async function attachTranscript(customerId, activityId, t){
+  const old = ((DATA.activities || {})[customerId] || []).find(a => a.id === activityId);
+  const oldRef = old && old.transcript && old.transcript.ref;
+  const hadOld = !!(old && old.transcript);
+  let staged;
+  try{ staged = await stageTranscript(activityId, t.text); }
+  catch(e){ showToast('Could not save the transcript - nothing was changed'); return false; }
+  const candidate = cloneData(DATA);
+  const cAct = (candidate.activities[customerId] || []).find(a => a.id === activityId);
+  if(!cAct){ if(staged.created) dropTranscriptRecord(staged.ref); return false; }
+  cAct.transcript = staged;
+  if(!commitDataCandidate(candidate)){
+    if(staged.created) dropTranscriptRecord(staged.ref);
+    return false;
+  }
+  if(oldRef && oldRef !== staged.ref) dropTranscriptRecord(oldRef);
+  clearUndoSlot();
+  showToast(hadOld ? 'Transcript replaced' : 'Transcript attached');
+  render();
+  return true;
+}
+function removeTranscript(customerId, activityId){
+  const old = ((DATA.activities || {})[customerId] || []).find(a => a.id === activityId);
+  const oldRef = old && old.transcript && old.transcript.ref;
+  const candidate = cloneData(DATA);
+  const cAct = (candidate.activities[customerId] || []).find(a => a.id === activityId);
+  if(!cAct) return false;
+  delete cAct.transcript;
+  if(!commitDataCandidate(candidate)) return false;
+  dropTranscriptRecord(oldRef);
+  clearUndoSlot();
+  showToast('Transcript removed');
+  render();
+  return true;
+}
+async function wipeTranscriptStore(){
+  _transcriptMap.clear(); _tsVersion++;
+  try{ await tsClearAll(); }catch(e){}
 }
 function getDebriefInput(activityId){
   if(!ui.debriefInputs) ui.debriefInputs = {};
@@ -3069,14 +3294,18 @@ async function generateSessionDebrief(customerId, activityId){
     // v51: the transcript is read from the activity record (logged with the
     // call or attached after), not from transient upload state.
     const storedTranscript = activityTranscript(activity);
-    const transcript = storedTranscript ? storedTranscript.text : '';
-    const transcriptTruncated = !!(storedTranscript && storedTranscript.truncated);
+    const fullText = storedTranscript ? storedTranscript.text : '';
+    const noteSent = activity.summary || '';
+    // the cap applies only to what is SENT, and to the record as a whole: noteSent + newline + transcript <= CAP
+    const budget = Math.max(0, DEBRIEF_TRANSCRIPT_CHAR_CAP - noteSent.length - 1);
+    const overCap = fullText.length > budget;
+    const transcript = overCap ? fullText.slice(0, budget) : fullText;
+    const transcriptTruncated = !!(storedTranscript && storedTranscript.truncated) || overCap;
     if(!(activity.summary || '').trim() && !transcript.trim()) throw new Error('This activity has no notes and no transcript to debrief');
     // v44: snapshot the record AS SENT — quote verification runs against exactly
     // this text, so an audit-line append landing mid-flight can't cause false
     // discards (approved ruling). v50: the snapshot now covers note + transcript,
     // matching what the extraction prompt actually carries.
-    const noteSent = activity.summary || '';
     const recordSent = transcript.trim() ? noteSent + '\n' + transcript : noteSent;
     const parsedQ = parseOutstandingQuestions(input.questions);
     if(parsedQ.dropped > 0) showToast(`Only the first ${DEBRIEF_MAX_QUESTIONS} questions were sent — ${parsedQ.dropped} more were left off.`);
@@ -4916,7 +5145,7 @@ function requestStageChange(c, stageKey){
    explicit step in migrateData(). backfillCustomerRecord remains for per-record field
    defaults on legacy/imported records, but new-shape changes get a numbered migration —
    version-blind additive guessing is how backfill logic rots. */
-const CURRENT_SCHEMA_VERSION = 16; // 16: queue items carry status/fields/externalId/sentAt/error; optional gong/gainsight records; optional stakeholder email (C-1); 15: FR/GRC default gate lists filled where empty (M3); 14: + c.goals, c.exit, c.graduation, config.goalGates (13: curriculum identity)
+const CURRENT_SCHEMA_VERSION = 17; // 17: transcripts live in IndexedDB (obm-transcripts-v1); activity.transcript is {ref,chars,sha1,truncated}, inline {text,truncated} still read; 16: queue items carry status/fields/externalId/sentAt/error; optional gong/gainsight records; optional stakeholder email (C-1); 15: FR/GRC default gate lists filled where empty (M3); 14: + c.goals, c.exit, c.graduation, config.goalGates (13: curriculum identity)
 
 /* The single gate for clock times. Accepts "H:MM" and "HH:MM" on a 24h clock and
    returns a zero-padded "HH:MM"; everything else returns null and the field is
@@ -5361,6 +5590,11 @@ function migrateData(data){
     });
     v = 16;
   }
+  if(v === 16){
+    /* v16 -> v17 (Step 1). No shape change here: loadData() moves inline transcript text into IndexedDB
+       (after the pre-move copy is saved) and an inline {text,truncated} stays legal in 17. */
+    v = 17;
+  }
   data.schemaVersion = v;
   // Sanity: contradictory risk thresholds (watch >= alert) make the watch tier
   // unreachable and invert the risk ladder silently — reset both to defaults.
@@ -5515,10 +5749,14 @@ function markRejectedLoad(raw, reason){
 }
 
 async function loadData(){
+  const t0 = performance.now();
   let raw = null;
   try{
     raw = localStorage.getItem(STORAGE_KEY);
-    DATA = raw ? prepareBookData(JSON.parse(raw), 'Saved data') : defaultData();
+    let storedSchema = CURRENT_SCHEMA_VERSION;
+    let parsedRaw = null;
+    if(raw){ parsedRaw = JSON.parse(raw); storedSchema = parsedRaw && parsedRaw.schemaVersion; }   // read BEFORE prepareBookData migrates it in place
+    DATA = raw ? prepareBookData(parsedRaw, 'Saved data') : defaultData();
     if(raw){
       const repairs = repairReportSummary(_repairReport);
       if(repairs){
@@ -5526,6 +5764,17 @@ async function loadData(){
         // below — keep the pre-repair payload under a dated side key first.
         try{ localStorage.setItem(STORAGE_KEY + '-prerepair-' + todayISO(), raw); }catch(e){}
         showToast('Loaded with repairs: ' + repairs);
+      }
+      // 1.1 Step 1: move inline transcripts to IndexedDB, but ONLY after the pre-move copy of the original book is saved.
+      const needsMove = !(storedSchema >= 17) || hasInlineTranscript(DATA);
+      if(needsMove && await tsOpen()){
+        let copied = false;
+        try{ await savePremigrationCopy(raw); copied = true; }catch(e){ copied = false; }
+        if(copied) await moveInlineTranscripts(DATA);
+        else{
+          window.__moveSkipped = 'pre-move copy failed';   // nothing moved; transcripts stay inline; the next load tries again
+          showToast('Could not save the safety copy of your old book. Your data is safe; keep the Export you made before opening 1.1.');
+        }
       }
       // 1.1 Step 0: persist migrations/backfills/pause cleanup only when they changed the book.
       if(JSON.stringify(DATA) !== raw) saveData();
@@ -5539,6 +5788,8 @@ async function loadData(){
       markRejectedLoad(raw, e && e.message ? e.message : String(e));
     }
   }
+  try{ await loadTranscriptMap(); }catch(e){}
+  window.__loadDataMs = Math.round((performance.now() - t0) * 10) / 10;
 }
 
 /* ============ v66: SINGLE-LEVEL UNDO ============
@@ -14651,19 +14902,7 @@ function renderActivityTab(c, acts){
         // v51: transcript lives on the activity record. Manage it here for any
         // activity; the debrief below reads it from the record, not from
         // transient upload state.
-        const tr = activityTranscript(act);
-        return `
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
-          ${tr
-            ? `<span class="badge badge-ontrack" title="Stored with this activity — included in exports and archives.">${icon('check')} Transcript attached (${tr.text.length.toLocaleString()} chars)</span>
-               ${tr.truncated ? `<span style="font-size:var(--text-xs); color:var(--accent-watch-text);">truncated to the first 120,000 characters</span>` : ''}
-               <button class="btn btn-sm" data-view-transcript="${c.id}|${act.id}">View</button>
-               <button class="btn btn-sm" data-attach-transcript="${act.id}">Replace</button>
-               <button class="btn btn-sm" data-remove-transcript="${c.id}|${act.id}">Remove</button>`
-            : `<button class="btn btn-sm" data-attach-transcript="${act.id}">Attach call transcript</button>
-               <span style="font-size:var(--text-xs); color:var(--text-faint);">.txt/.md/.vtt/.srt — stored with this activity</span>`}
-          <input type="file" data-transcript-file-input="${act.id}" accept=".txt,.md,.vtt,.srt,.log,text/plain" style="display:none;">
-        </div>`;
+        return transcriptControlsHtml(c, act);
       })()}
       ${((act.summary||'').trim() || activityTranscript(act)) && (act.sessionNumber || activityTranscript(act)) ? (()=>{
         const dIn = peekDebriefInput(act.id);
@@ -14737,7 +14976,7 @@ function renderLogActivityTab(c){
       <div style="display:flex; align-items:center; gap:8px; margin-top:4px; flex-wrap:wrap;">
         <button class="btn btn-sm" id="btn-act-transcript-attach">Attach transcript file</button>
         <input type="file" id="act-transcript-file" accept=".txt,.md,.vtt,.srt,.log,text/plain" style="display:none;">
-        <span style="font-size:var(--text-xs); color:var(--text-faint);">.txt/.md/.vtt/.srt · stored with this activity (and in exports); capped at 120,000 characters. The Session Debrief can then answer outstanding questions and draft the recap email from it.</span>
+        <span style="font-size:var(--text-xs); color:var(--text-faint);">.txt/.md/.vtt/.srt · stored with this activity (and in exports); no size cap on what is stored; the first 120,000 characters go to the AI. The Session Debrief can then answer outstanding questions and draft the recap email from it.</span>
       </div>
     </div>
     <label class="checklist-item" style="margin-bottom:8px;">
@@ -16198,36 +16437,20 @@ The draft is discarded. The risk itself stays open.`)) return;
       const actId = inp.dataset.transcriptFileInput;
       const file = e.target.files[0];
       e.target.value = '';
-      readTranscriptFile(file, t => {
-        const candidate = cloneData(DATA);
-        const cAct = (candidate.activities[c.id] || []).find(a=>a.id===actId);
-        if(!cAct) return;
-        cAct.transcript = {text: t.text, truncated: t.truncated};
-        if(!commitDataCandidate(candidate)) return;
-        showToast('Transcript attached');
-        render();
-      });
+      readTranscriptFile(file, t => attachTranscript(c.id, actId, t));
     }));
     $$('[data-remove-transcript]').forEach(btn => btn.addEventListener('click', ()=>{
       const [custId, actId] = btn.dataset.removeTranscript.split('|');
       showConfirmModal(
         'Remove this transcript? It is stored only with this activity — removing it cannot be undone from within the app.',
-        ()=>{
-          const candidate = cloneData(DATA);
-          const cAct = (candidate.activities[custId] || []).find(a=>a.id===actId);
-          if(!cAct) return false;
-          delete cAct.transcript;
-          if(!commitDataCandidate(candidate)) return false;
-          showToast('Transcript removed');
-          render();
-          return true;
-        },
+        ()=> removeTranscript(custId, actId),
         'Remove transcript'
       );
     }));
     $$('[data-view-transcript]').forEach(btn => btn.addEventListener('click', ()=>{
       const [custId, actId] = btn.dataset.viewTranscript.split('|');
       const activity = (DATA.activities[custId] || []).find(a=>a.id===actId);
+      if(activityTranscriptState(activity) !== 'ok') return;
       const tr = activityTranscript(activity);
       if(!tr) return;
       const backdrop = document.createElement('div');
@@ -16428,7 +16651,7 @@ The draft is discarded. The risk itself stays open.`)) return;
       });
     });
     bindActTypeSessionLock(document);   // C-3 (G06)
-    $('#btn-save-activity') && $('#btn-save-activity').addEventListener('click', ()=>{
+    $('#btn-save-activity') && $('#btn-save-activity').addEventListener('click', async ()=>{
       const type = $('#act-type').value;
       const date = $('#act-date').value || todayISO();
       // Block future dates at the source, not just downstream: a future "touchpoint"
@@ -16442,33 +16665,50 @@ The draft is discarded. The risk itself stays open.`)) return;
       if(!summary){ showToast('Add a summary before logging'); return; }
       const checklist = (ACTIVITY_TYPES[type]||[]).map(label => ({label, done:false}));
       const activity = {id:uid(), date, type, summary, checklist, sessionNumber, flagged};
-      // v51: optional transcript, persisted ON the activity (rides exports and
-      // archives). Over-cap text is clamped with a stored, visible marker —
-      // never a silent truncation.
+      // Optional transcript: stored whole (no cut); the AI send is capped separately.
       const transcriptRaw = $('#act-transcript') ? $('#act-transcript').value : '';
-      if(transcriptRaw.trim()){
-        const tTrunc = transcriptRaw.length > DEBRIEF_TRANSCRIPT_CHAR_CAP;
-        activity.transcript = {text: tTrunc ? transcriptRaw.slice(0, DEBRIEF_TRANSCRIPT_CHAR_CAP) : transcriptRaw, truncated: tTrunc};
-        if(tTrunc) showToast('Transcript stored — truncated to the first 120,000 characters');
-      }
-      const candidate = cloneData(DATA);
-      const candidateCustomer = candidate.customers.find(x=>x.id===c.id);
-      if(!candidate.activities[c.id]) candidate.activities[c.id] = [];
-      candidate.activities[c.id].push(activity);
-      // v43 Spec 4: evidence entry linked to this activity; achievedOn recomputes
-      // to the earliest evidence date (handles backdated catch-up logs honestly).
-      if(isFirstValue){
-        const previous = DATA; DATA = candidate;
-        try{ addFirstValueEvidence(candidateCustomer, activity); } finally { DATA = previous; }
-      }
-      if(!commitDataCandidate(candidate)) return;
-      ui.panelTab = 'activity';
-      showToast(flagged ? 'Activity logged and flagged as priority'
-        : isFirstValue ? 'Activity logged — first value evidence recorded'
-        : checklist.length ? 'Activity logged — Gainsight checklist ready' : 'Activity logged');
-      render();
+      const saveBtn = $('#btn-save-activity');
+      if(saveBtn) saveBtn.disabled = true;
+      try{ await submitLoggedActivity(c, activity, transcriptRaw, isFirstValue); }
+      finally{ if(saveBtn) saveBtn.disabled = false; }
     });
   }
+}
+
+let _logSaving = false;
+async function submitLoggedActivity(c, activity, transcriptRaw, isFirstValue){
+  if(_logSaving) return false;
+  _logSaving = true;
+  try{
+    const flagged = activity.flagged;
+    const checklist = activity.checklist;
+    let staged = null;
+    if(transcriptRaw && transcriptRaw.trim()){
+      try{ staged = await stageTranscript(activity.id, transcriptRaw); }
+      catch(e){ showToast('Could not save the transcript - nothing was logged'); return false; }
+      activity.transcript = staged.ref ? {ref: staged.ref, chars: staged.chars, sha1: staged.sha1, truncated: false} : {text: transcriptRaw, truncated: false};
+    }
+    const candidate = cloneData(DATA);
+    const candidateCustomer = candidate.customers.find(x=>x.id===c.id);
+    if(!candidate.activities[c.id]) candidate.activities[c.id] = [];
+    candidate.activities[c.id].push(activity);
+    // v43 Spec 4: evidence entry linked to this activity; achievedOn recomputes
+    // to the earliest evidence date (handles backdated catch-up logs honestly).
+    if(isFirstValue){
+      const previous = DATA; DATA = candidate;
+      try{ addFirstValueEvidence(candidateCustomer, activity); } finally { DATA = previous; }
+    }
+    if(!commitDataCandidate(candidate)){
+      if(staged && staged.created) dropTranscriptRecord(staged.ref);
+      return false;
+    }
+    ui.panelTab = 'activity';
+    showToast(flagged ? 'Activity logged and flagged as priority'
+      : isFirstValue ? 'Activity logged — first value evidence recorded'
+      : checklist.length ? 'Activity logged — Gainsight checklist ready' : 'Activity logged');
+    render();
+    return true;
+  } finally { _logSaving = false; }
 }
 
 function preserveFocus(sel){
@@ -17597,13 +17837,15 @@ function openSettingsModal(){
     showToast('API key cleared');
   });
   backdrop.querySelector('#btn-clear-all').addEventListener('click', ()=>{
-    showConfirmModal('This deletes every account and activity. Continue?', ()=>{
+    showConfirmModal('This deletes every account, activity and stored call transcript, and the saved copy of the book from before the transcript move. Continue?', ()=>{
       // v48: an explicit, confirmed wipe is the one other action allowed to
       // proceed in the rejected-load state (the payload was already backed up
       // to the dated side key when the block was armed). Re-arm on failure.
       const armed = _rejectedLoadPayload;
       _rejectedLoadPayload = null;
       if(!commitDataCandidate(defaultData())){ _rejectedLoadPayload = armed; return false; }
+      wipeTranscriptStore();
+      clearUndoSlot();   // Undo must not bring back refs to the transcripts just erased
       backdrop.remove();
       ui.openCustomerId = null;
       render();
@@ -17672,7 +17914,8 @@ function archiveCustomer(customerId){
     archivedDate: todayISO(),
     customer: c,
     activities: DATA.activities[c.id] || [],
-    healthHistory: (DATA.healthHistory || {})[c.id] || [] // v39 — optional field, older restore code tolerates absence
+    healthHistory: (DATA.healthHistory || {})[c.id] || [], // v39 — optional field, older restore code tolerates absence
+    transcripts: transcriptsForBook({activities: {[c.id]: DATA.activities[c.id] || []}}) // Step 1: the records are kept in IndexedDB too (unlinked)
   };
   const candidate = cloneData(DATA);
   candidate.customers = candidate.customers.filter(x=>x.id!==customerId);
@@ -17821,10 +18064,82 @@ async function fsForget(){
 }
 // The one serializer for every book that leaves the app (export, file backup). Self-check A7 proves ids survive it.
 function serializeBook(data){ return JSON.stringify(data, null, 2); }
+/* 1.1 Step 1, Task 8: the book leaves the app as the book (refs only) plus a top-level "transcripts" object
+   {ref: text}. The JSON of that object is cached: rebuilt only when a transcript is added, replaced or removed
+   (key = _tsVersion + the sorted ref list), so the backup-file write does not re-stringify megabytes per edit. */
+let _tsBackupCache = null, _tsBackupBuilds = 0;
+function transcriptsForBook(data){
+  const out = {};
+  Object.values((data && data.activities) || {}).forEach(list => (list || []).forEach(a => {
+    const t = a && a.transcript;
+    if(t && typeof t.ref === 'string' && t.ref){ const hit = _transcriptMap.get(t.ref); if(hit) out[t.ref] = hit.text; }
+  }));
+  return out;
+}
+function serializeBackup(data, bookJson){
+  const tr = transcriptsForBook(data);
+  const key = _tsVersion + '|' + Object.keys(tr).sort().join(',');
+  if(!_tsBackupCache || _tsBackupCache.key !== key){ _tsBackupCache = {key, json: JSON.stringify(tr)}; _tsBackupBuilds++; }
+  if(!bookJson.endsWith('\n}')) return bookJson;
+  return bookJson.slice(0, -2) + ',' + '\n  "transcripts": ' + _tsBackupCache.json + '\n}';
+}
+/* Task 8: the import-side twin of syntheticWouldReplaceReal(): a test book in the file may not replace a real
+   stored book. Runs BEFORE any transcript record is written. */
+function importWouldBeRefused(parsed){
+  if(!(parsed && parsed.synthetic === true)) return false;
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const p = JSON.parse(raw);
+    return !(p && p.synthetic === true) && Array.isArray(p.customers) && p.customers.length > 0;
+  }catch(e){ return true; }
+}
+/* Task 8: put an incoming file's transcripts into the store BEFORE the confirm, in place on the activities.
+   A record already in IndexedDB that matches the activity's sha1 is reused (and put in the map). A ref whose text
+   is not in the file (or does not match its sha1) is left as it is and reads as "missing". Old inline text is moved
+   on the way in. IndexedDB down: file text becomes inline. Records staged for an import the user cancels stay as
+   unlinked records (spec item 14). */
+async function stageImportedTranscripts(activityLists, fileTranscripts){
+  const out = {written: 0, missing: 0, unavailable: false};
+  const ft = (fileTranscripts && typeof fileTranscripts === 'object') ? fileTranscripts : {};
+  const up = !!(await tsOpen());
+  if(!up) out.unavailable = true;
+  for(const list of (activityLists || [])){
+    for(const a of (Array.isArray(list) ? list : [])){
+      const t = a && a.transcript;
+      if(!t || typeof t !== 'object') continue;
+      if(typeof t.ref === 'string' && t.ref){
+        const fileText = typeof ft[t.ref] === 'string' ? ft[t.ref] : null;
+        const fileOk = fileText !== null && (await sha1Hex(fileText)) === t.sha1;
+        if(!up){
+          if(fileOk) a.transcript = {text: fileText, truncated: t.truncated === true};
+          else out.missing++;
+          continue;
+        }
+        let ex = null;
+        try{ ex = await tsGet(t.ref); }catch(e){}
+        if(ex && typeof ex.text === 'string' && (await sha1Hex(ex.text)) === t.sha1){
+          _transcriptMap.set(t.ref, {text: ex.text, chars: ex.text.length, sha1: t.sha1}); _tsVersion++;
+          continue;
+        }
+        if(!fileOk){ out.missing++; continue; }
+        const saved = await saveTranscriptVerified(a.id, fileText);
+        if(saved){ out.written++; if(saved.ref !== t.ref) a.transcript = Object.assign({}, t, {ref: saved.ref}); }
+        else out.missing++;
+      } else if(typeof t.text === 'string' && t.text.trim() && up){
+        const saved = await saveTranscriptVerified(a.id, t.text);
+        if(saved){ out.written++; a.transcript = {ref: saved.ref, chars: saved.chars, sha1: saved.sha1, truncated: t.truncated === true}; }
+      }
+    }
+  }
+  return out;
+}
 // Why the backup path is refusing right now, or '' when it is not.
 function fsBlockedReason(){
   if(_rejectedLoadPayload !== null) return 'the last load was rejected';
   if(DATA && DATA.synthetic === true) return 'this is a test book';
+  /* a transcript the book points to is not in this browser: the backup file may be the only copy left, so keep it */
+  if(DATA && Object.values(DATA.activities || {}).some(list => (list || []).some(a => a && a.transcript && typeof a.transcript.ref === 'string' && a.transcript.ref && !_transcriptMap.has(a.transcript.ref)))) return 'a transcript is missing from this browser';
   return '';
 }
 async function fsWriteNow(silent){
@@ -17843,7 +18158,7 @@ async function fsWriteNow(silent){
   _fsWriting = true;
   try{
     const w = await _fsHandle.createWritable();
-    await w.write(serializeBook(DATA));
+    await w.write(serializeBackup(DATA, serializeBook(DATA)));
     await w.close();
     _fsLastWriteAt = Date.now();
     _fsError = '';
@@ -17893,7 +18208,7 @@ function exportData(){
   const previousStamp = DATA.lastExportedAt;
   DATA.lastExportedAt = todayISO();
   if(!saveData()) DATA.lastExportedAt = previousStamp;
-  const blob = new Blob([serializeBook(DATA)], {type:'application/json'});
+  const blob = new Blob([serializeBackup(DATA, serializeBook(DATA))], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = 'book-of-business-export.json';
@@ -18199,11 +18514,17 @@ function normalizeActivityCollections(data){
       // the truncation marked, never silently), anything else dropped as a
       // micro-repair; the activity itself always survives.
       if(a.transcript !== undefined){
-        if(isRecordObject(a.transcript) && typeof a.transcript.text === 'string' && a.transcript.text.trim()){
-          const over = a.transcript.text.length > DEBRIEF_TRANSCRIPT_CHAR_CAP;
+        if(isRecordObject(a.transcript) && typeof a.transcript.ref === 'string' && a.transcript.ref){
+          const tt = a.transcript;
+          if(Number.isInteger(tt.chars) && tt.chars >= 0 && typeof tt.sha1 === 'string' && /^[0-9a-f]{40}$/.test(tt.sha1)){
+            a.transcript = {ref: tt.ref, chars: tt.chars, sha1: tt.sha1, truncated: tt.truncated === true};
+          } else {
+            delete a.transcript;
+          }
+        } else if(isRecordObject(a.transcript) && typeof a.transcript.text === 'string' && a.transcript.text.trim()){
           a.transcript = {
-            text: over ? a.transcript.text.slice(0, DEBRIEF_TRANSCRIPT_CHAR_CAP) : a.transcript.text,
-            truncated: a.transcript.truncated === true || over
+            text: a.transcript.text,
+            truncated: a.transcript.truncated === true
           };
         } else {
           delete a.transcript;
@@ -18621,12 +18942,20 @@ function handleImportFile(e){
   const file = e.target.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = evt => {
+  reader.onload = async evt => {
+    const unreadable = 'Could not read that file — make sure it is a JSON export from this tracker.';
+    let parsed;
+    try{ parsed = JSON.parse(evt.target.result); }
+    catch(err){ showToast(unreadable); return; }
+    if(importWouldBeRefused(parsed)){ showToast('Not saved - this is a test book and a real book is stored here.'); return; }
+    try{
+      await stageImportedTranscripts(Object.values((parsed && parsed.activities) || {}), parsed && parsed.transcripts);
+      if(parsed && typeof parsed === 'object') delete parsed.transcripts;
+    }catch(err){ showToast(unreadable); return; }
     showConfirmModal(
       `Import "${file.name}"? This replaces everything currently in the tracker — export a backup first if you're not sure.`,
       () => {
         try{
-          const parsed = JSON.parse(evt.target.result);
           const candidate = prepareImportedData(parsed);
           const repairs = repairReportSummary(_repairReport); // v48
           // v48: a candidate that passed the full validation boundary is a
@@ -18656,7 +18985,7 @@ function handleRestoreArchiveFile(e){
   const file = e.target.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = evt => {
+  reader.onload = async evt => {
     let parsed;
     try {
       parsed = JSON.parse(evt.target.result);
@@ -18670,6 +18999,12 @@ function handleRestoreArchiveFile(e){
       showToast(err.message || 'That does not look like a valid single-account archive.');
       return;
     }
+    if(syntheticWouldReplaceReal()){
+      showToast('Not saved - this is a test book and a real book is stored here.');
+      return;
+    }
+    try{ await stageImportedTranscripts([archive.activities], parsed.transcripts); }
+    catch(err){ showToast('Could not save the archive transcripts - nothing was restored.'); return; }
     const originalId = archive.customer.id;
     const idCollision = DATA.customers.some(c => c.id === originalId);
     const restoredId = idCollision ? uid() : originalId;
@@ -19230,8 +19565,7 @@ function applyCallImport(confirmedRows){
       gong: normalizeGongLink(Object.assign({}, call, {matchedBy: r.matchedBy || 'manual'}))};
     const tr = typeof call.transcript === 'string' ? call.transcript : '';
     if(tr.trim()){
-      const cut = tr.length > DEBRIEF_TRANSCRIPT_CHAR_CAP;
-      act.transcript = {text: cut ? tr.slice(0, DEBRIEF_TRANSCRIPT_CHAR_CAP) : tr, truncated: cut};
+      act.transcript = {text: tr, truncated: false};
     }
     existing.add(call.callId);
     toAdd.push({customerId: r.customerId, act});
@@ -19243,6 +19577,7 @@ function applyCallImport(confirmedRows){
     DATA.activities[x.customerId].push(x.act);
   });
   saveData();
+  scheduleTranscriptMove();
   return {created: toAdd.length};
 }
 function callSinceISO(){
@@ -19960,6 +20295,7 @@ function initCrossTabGuard(){
   });
 }
 
+window.__appReadyDone = false;
 (async function init(){
   cleanupRetiredSettingsKeys(); // A3: drop the retired Gainsight/Workiva settings keys once, before the first render
   await loadData();
@@ -19982,6 +20318,8 @@ function initCrossTabGuard(){
   initCrossTabGuard();
   // C-2: one health check on load, only when a connector is configured. Offline is quiet.
   if(connectorConfigured()) checkConnectorHealth().then(render);
+  window.__startupMs = Math.round(performance.now());
+  window.__appReadyDone = true;
 })();
 </script>
 </body>

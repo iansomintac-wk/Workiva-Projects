@@ -1,6 +1,35 @@
 OSM Runway — release notes
 ==========================
 
+1.1 — Step 1 (transcripts out of the book). Call transcripts move out of the book.
+
+    - Transcripts now live in the browser's IndexedDB (obm-transcripts-v1), one record
+      each; the book keeps only a small reference.
+    - A transcript is never cut when stored. Only what is sent to the AI is capped:
+      the first 120,000 characters of the note plus transcript together.
+    - Export, backup files and archives now carry the transcripts (a "transcripts"
+      object in the file); Import and Restore put them back.
+    - Gong import saves the transcript inline first, then moves it (approved).
+    - Clear all data also erases stored transcripts and the pre-move copy.
+    - A transcript that has gone missing from the browser shows "Transcript missing
+      from this browser - restore from a backup"; nothing from it is sent to the AI.
+    - One-way: book schema 17. Once a book is opened in 1.1, 1.0 refuses it. Click
+      Export in your current tracker BEFORE first opening 1.1. The first open takes a
+      pre-move copy of the book, then moves the transcripts.
+    - While a transcript the book points to is missing from this browser, the
+      automatic backup file is not rewritten (the status line says why), so the
+      file keeps its copy of that transcript. Export still works.
+    - Timing (recorded, not asserted; 30 ms floor): backup preparation, 500 calls x 40K,
+      median about 6-10 ms now vs about 110-190 ms before. Load step, same book, medians
+      271-427 ms over six runs (limit 500 ms; the spec's earlier reference was about
+      157 ms); one single start took 504 ms.
+    - Suite: tools/selfchecks-1.1.js is the 1.1 copy; three suite checks changed (v51
+      transcript normalization, c1e schema 17, gong c3c K7), same 475 checks.
+
+  Checks: 1.1 suite 475/475; step 0 probe 34/34; 1.0 suite 475/475 (1.0 file untouched);
+  step1Probe 65/65.
+  Design: docs/superpowers/specs/2026-10-15-runway-1.1-step1-transcripts-design.md
+
 1.1 — Step 0 (safety). The book is written only when something changed.
 
     - No backup (file or stored book) is written after a failed load.

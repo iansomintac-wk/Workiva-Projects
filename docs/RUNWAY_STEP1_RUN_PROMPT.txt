@@ -1,0 +1,76 @@
+Runway 1.1 Step 1 (transcripts out of the book): the run.
+
+Project: C:\Users\teasp\Documents\Runway Tracker. Work on branch runway-step1
+(worktree .claude\worktrees\runway-step1, based on master 38a53da), which holds the spec and this prompt.
+
+Spec (approved by Ian 2026-10-15, "spec approved, write the run prompt"):
+  docs/superpowers/specs/2026-10-15-runway-1.1-step1-transcripts-design.md
+Background only: design-work\DESIGN.md section 5 in the main checkout (untracked). Where they differ, the spec wins.
+
+Method: studio-harness:talk-and-run, "The run". First check: echo "$STUDIO_RUN_LEDGER" and test -f on its
+budget.json and slip.json; empty or missing is a stop. Lead coordinates only; one fresh helper per piece, in order,
+never in parallel.
+  1. Plan by studio-harness:plan-writer at docs/superpowers/plans/2026-10-15-runway-1.1-step1-transcripts.md
+     (tasks of at most 8 steps, exact files, check command and expected output per task; header carries
+     Suite: and Data: lines). Then update budget.json tasksLeft from the plan.
+  2. Plan review: frontier model and Codex, findings merged by the lead. Codex has no working shell on this PC
+     (gotcha 2026-10-14-codex-shell-blocked-on-windows, re-measured by the talk 2026-10-15: codex-cli 0.162.0,
+     exec_command fails "helper_unknown_error: setup refresh had errors"), so pipe the spec and plan TEXT into
+     `codex exec --skip-git-repo-check -s read-only` on stdin; never ask it to read files. Run Codex only if the
+     slip's spend answer covers it; otherwise record "Codex not run: <reason>" in the ledger.
+  3. STOP: Ian approves the plan.
+  4. Each task: studio-harness:implementer (tests first, red then green), fresh studio-harness:checker,
+     the lead re-runs the task's check itself, ledger row.
+  5. Final whole-branch review: studio-harness:final-reviewer and a Codex review of `git diff master...runway-step1`
+     piped in as text (same rule as step 2); Ian decides any must-fix disagreement. Fix round, re-check.
+  6. Evidence doc docs/evidence/2026-10-15-runway-step1.md: spec checks C1-C9 with before/after numbers,
+     each marked measured, plus the optional Ian check (spec section 4) as not yet run.
+  7. Merge under the slip's conditions (below), or stop for Ian if any is unmet. Copy the ledger to the main
+     checkout's .ledger/. Final message to Ian: what merged, the evidence doc, the backup step, and the next
+     objective (hosting talk, prompt docs/RUNWAY_HOSTING_TALK_PROMPT.txt); it needs Ian in the conversation, so
+     launch it only when he says so.
+
+Ledger: C:/Users/teasp/Documents/Runway Tracker/.claude/worktrees/runway-step1/.ledger/2026-10-15-runway-step1/
+(git-ignored): progress.md, budget.json, slip.json, role-checks.txt, reviews/. At the end, copy it to the main
+checkout's .ledger/ (as Step 0 did) before anyone removes the worktree; remove worktrees only with
+studio-harness bin/remove-worktree.mjs, never plain git worktree remove (it deletes ignored files).
+
+Checks the lead re-runs (from the worktree root):
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 475
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 34
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 475
+  plus the plan's Step 1 probe (new file, e.g. tools/step1-probe.js) at the count each task states.
+Baseline (Step 0.1 run, read from its ledger, re-measure before T1): 1.1 475/475, probe 34/34, 1.0 475/475.
+The 1.0 file must stay byte-identical: git diff --quiet master -- osm-book-of-business-tracker-1.0.html.
+
+Test data: synthetic only. Large-transcript fixtures come from the sim calls in the main checkout
+(design-work\sim\call1..3\call.txt, design-work\fixture\call.txt; 267,284 characters together, all synthetic),
+copied into tools/ by the task that needs them. Timing checks (C7, C8): medians of 3, alternating where
+there is a before and after; stop for Ian if the spread exceeds 15%.
+
+Safety rules (Ian's):
+- Never edit osm-book-of-business-tracker-1.0.html. All app edits go to the 1.1 copy.
+- Never open any HTML file from this folder in Ian's normal Chrome profile. Only tools/selfcheck.mjs
+  (headless, throwaway profile) runs the app. Do not run "chrome.exe" with no --user-data-dir: it opens
+  in Ian's running browser (the talk did this once by accident with --version).
+- Never write test or synthetic data where the real book lives.
+- Don't publish, upload or host anything from this folder without asking (hosting is the next objective, not this one).
+
+Slip (Ian, 2026-10-15, verbatim in .ledger/2026-10-15-runway-step1/slip.json):
+- Push: yes, this branch only ("yes, it can push its own branch"). Never push master.
+- Merge: yes, with conditions ("yes, option 1 plus the backup step"). Merge runway-step1 into master LOCALLY only when
+  all of: spec checks C1-C9 green on the lead's own re-run; the final review leaves no must-fix open; master tagged
+  pre-step1 first; one --no-ff merge commit. Keep the branch. Undo = git revert -m 1 <merge commit> (tested by the
+  talk in a throwaway repo: tree back to the tag exactly); to re-apply after an undo, revert that revert, because
+  re-merging the branch does nothing ("Already up to date", also tested). Any condition unmet: stop for Ian instead.
+- Backup step (Ian's): the run's final message tells Ian, in plain words, to click Export in his current tracker
+  BEFORE he first opens the new 1.1. Why: the first open moves his transcripts and marks the book schema 17, after
+  which 1.0 refuses it ("schema v17 is newer", 1.0 line 18071); a code revert does not undo that, the export does.
+- Spend: $0 ("yes, $0 and Codex on my ChatGPT plan"). Codex reviews only while `codex login status` says
+  "Logged in using ChatGPT"; if it asks for credits or an API key, skip and record why.
+- New sessions: Ian's standing yes (2026-10-15), only for a reason such as the context or budget limits.
+
+Stops: plan approval; a check failing twice (two strikes); push or merge the slip doesn't name; spend beyond
+the slip; any decision only Ian can make. At a stop: push notification, then ask.
+
+Talk to Ian in plain English, recommendation first, one question at a time.
