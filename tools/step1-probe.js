@@ -65,6 +65,48 @@
         await resetStore();
       }
 
+      { // T3: reading
+        rec('T3 the app marks itself ready and records the load interval and the time to ready',
+          window.__appReadyDone === true && typeof window.__loadDataMs === 'number' && typeof window.__startupMs === 'number', `ready=${window.__appReadyDone} load=${window.__loadDataMs} start=${window.__startupMs}`);
+        await withBook(async book => {
+          const a1 = {id: 'a1', date: todayISO(), type: 'Call', summary: 's', checklist: []};
+          const a2 = {id: 'a2', date: todayISO(), type: 'Call', summary: 's', checklist: [], transcript: {text: 'inline words', truncated: true}};
+          book.activities[cid] = (book.activities[cid] || []).concat([a1, a2]);
+          a1.transcript = await saveTranscriptVerified('a1', 'stored words');
+          rec('T3 activityTranscript reads the new (ref) form', activityTranscript(a1).text === 'stored words' && activityTranscript(a1).truncated === false && activityTranscriptState(a1) === 'ok');
+          rec('T3 activityTranscript still reads the old inline form', activityTranscript(a2).text === 'inline words' && activityTranscript(a2).truncated === true);
+          await loadTranscriptMap();
+          await window.__transcriptLoadDone;
+          rec('T3 loadTranscriptMap reads only referenced records and reports the count', _transcriptMap.size === 1 && window.__transcriptLoad.count === 1 && window.__transcriptLoad.bad === 0 && typeof window.__transcriptLoad.ms === 'number', JSON.stringify(window.__transcriptLoad));
+          await tsDelete(a1.transcript.ref); await loadTranscriptMap();
+          rec('T3 a deleted record reads as missing (null text, state missing) and the book still loads',
+            activityTranscript(a1) === null && activityTranscriptState(a1) === 'missing' && activityTranscript(a2) !== null && window.__transcriptLoad.bad === 1);
+          const html = transcriptControlsHtml({id: cid}, a1);
+          rec('T3 a missing record shows the exact notice and no View button',
+            html.includes('Transcript missing from this browser - restore from a backup') && !html.includes('data-view-transcript'), html.slice(0, 160));
+          await tsPut({ref: a1.transcript.ref, activityId: 'a1', text: 'TAMPERED', chars: 8, sha1: a1.transcript.sha1, savedAt: ''});
+          await loadTranscriptMap();
+          rec('T3 a record whose text fails its SHA-1 reads as missing', activityTranscriptState(a1) === 'missing');
+          { // long uncut transcript still says what the AI gets
+            const longRef = 'a3:0123456789ab';
+            _transcriptMap.set(longRef, {text: 't', chars: DEBRIEF_TRANSCRIPT_CHAR_CAP + 10, sha1: 'b'.repeat(40)});
+            const a3 = {id: 'a3', date: todayISO(), type: 'Call', summary: 's', checklist: [], transcript: {ref: longRef, chars: DEBRIEF_TRANSCRIPT_CHAR_CAP + 10, sha1: 'b'.repeat(40), truncated: false}};
+            const h3 = transcriptControlsHtml({id: cid}, a3);
+            rec('T3 a stored transcript longer than 120,000 chars shows the "first 120,000 characters" note even though it is not cut', /first 120,000 characters/.test(h3), h3.slice(0, 200));
+          }
+        });
+        const big = 'x'.repeat(DEBRIEF_TRANSCRIPT_CHAR_CAP + 5);
+        const nd = {customers: [{id: '__t3__'}], activities: {'__t3__': [
+          {id: 'n1', date: todayISO(), type: 'Call', summary: 'ok', checklist: [], transcript: {text: big, truncated: false}},
+          {id: 'n2', date: todayISO(), type: 'Call', summary: 'ok', checklist: [], transcript: {ref: 'n2:0123456789ab', chars: 5, sha1: 'a'.repeat(40), truncated: false}},
+          {id: 'n3', date: todayISO(), type: 'Call', summary: 'ok', checklist: [], transcript: {ref: 7, chars: 'x'}}]}};
+        normalizeActivityCollections(nd);
+        const [n1, n2, n3] = nd.activities['__t3__'];
+        rec('T3 the load-time cleanup no longer cuts inline text', n1.transcript.text.length === DEBRIEF_TRANSCRIPT_CHAR_CAP + 5 && n1.transcript.truncated === false);
+        rec('T3 the load-time cleanup keeps a valid ref form and drops a malformed one (activity survives)',
+          n2.transcript && n2.transcript.ref === 'n2:0123456789ab' && n3.transcript === undefined && nd.activities['__t3__'].length === 3);
+      }
+
       rec('probe reached the end', true);
     }catch(e){
       rec('probe threw', false, String(e && e.stack || e));

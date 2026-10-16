@@ -660,11 +660,11 @@ function _runSelfChecksInner(){
     ]}};
     normalizeActivityCollections(nd);
     const [t1, t2, t3] = nd.activities['__v51__'];
-    check('v51 transcript normalization: valid kept + flag coerced, invalid dropped (activity survives), oversize clamped with visible marker',
+    check('v51 transcript normalization: valid kept + flag coerced, invalid dropped (activity survives), oversize kept whole (Step 1: nothing stored is cut)',
       nd.activities['__v51__'].length === 3
       && t1.transcript && t1.transcript.text === 'hello there' && t1.transcript.truncated === false
       && t2.transcript === undefined
-      && t3.transcript && t3.transcript.text.length === DEBRIEF_TRANSCRIPT_CHAR_CAP && t3.transcript.truncated === true,
+      && t3.transcript && t3.transcript.text.length === DEBRIEF_TRANSCRIPT_CHAR_CAP + 5 && t3.transcript.truncated === false,
       `t1=${JSON.stringify(t1.transcript && t1.transcript.truncated)}, t2=${String(t2.transcript)}, t3len=${t3.transcript && t3.transcript.text.length}`);
     check('v51 activityTranscript guard: shape + non-blank text required',
       activityTranscript({transcript:{text:'hi', truncated:false}}).text === 'hi'

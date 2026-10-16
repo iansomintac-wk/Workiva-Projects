@@ -2906,11 +2906,44 @@ function readTranscriptFile(file, onDone){
   reader.onerror = ()=> showToast('Could not read that file.');
   reader.readAsText(file);
 }
+// 1.1 Step 1: the badge/buttons block of an activity card, with the visible "missing" state.
+function transcriptControlsHtml(c, act){
+  const state = activityTranscriptState(act);
+  const tr = activityTranscript(act);
+  const meta = (act && act.transcript) || {};
+  return `
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+          ${state === 'missing'
+            ? `<span class="badge badge-risk" title="The book points to a transcript that is not stored in this browser.">${icon('flag')} Transcript missing from this browser - restore from a backup</span>
+               <button class="btn btn-sm" data-attach-transcript="${act.id}">Attach</button>
+               <button class="btn btn-sm" data-remove-transcript="${c.id}|${act.id}">Remove</button>`
+            : tr
+            ? `<span class="badge badge-ontrack" title="Stored with this activity — included in exports and archives.">${icon('check')} Transcript attached (${tr.text.length.toLocaleString()} chars)</span>
+               ${(tr.truncated || (meta.chars || 0) > DEBRIEF_TRANSCRIPT_CHAR_CAP) ? `<span style="font-size:var(--text-xs); color:var(--accent-watch-text);">truncated to the first 120,000 characters</span>` : ''}
+               <button class="btn btn-sm" data-view-transcript="${c.id}|${act.id}">View</button>
+               <button class="btn btn-sm" data-attach-transcript="${act.id}">Replace</button>
+               <button class="btn btn-sm" data-remove-transcript="${c.id}|${act.id}">Remove</button>`
+            : `<button class="btn btn-sm" data-attach-transcript="${act.id}">Attach call transcript</button>
+               <span style="font-size:var(--text-xs); color:var(--text-faint);">.txt/.md/.vtt/.srt — stored with this activity</span>`}
+          <input type="file" data-transcript-file-input="${act.id}" accept=".txt,.md,.vtt,.srt,.log,text/plain" style="display:none;">
+        </div>`;
+}
 // v51: the transcript now lives ON the activity record, not in transient UI
 // state — reads for the debrief go through here.
+function activityTranscriptState(activity){
+  const t = activity && activity.transcript;
+  if(!t || typeof t !== 'object') return 'none';
+  if(typeof t.ref === 'string' && t.ref) return _transcriptMap.has(t.ref) ? 'ok' : 'missing';
+  return (typeof t.text === 'string' && t.text.trim()) ? 'ok' : 'none';
+}
 function activityTranscript(activity){
   const t = activity && activity.transcript;
-  return (t && typeof t === 'object' && typeof t.text === 'string' && t.text.trim()) ? t : null;
+  if(!t || typeof t !== 'object') return null;
+  if(typeof t.ref === 'string' && t.ref){
+    const hit = _transcriptMap.get(t.ref);
+    return hit ? {text: hit.text, truncated: t.truncated === true} : null;
+  }
+  return (typeof t.text === 'string' && t.text.trim()) ? t : null;
 }
 /* ============ 1.1 Step 1: TRANSCRIPT STORE ============
    Transcripts live in IndexedDB (obm-transcripts-v1), one record per transcript VERSION, keyed
@@ -2919,6 +2952,30 @@ function activityTranscript(activity){
 const TS_DB = 'obm-transcripts-v1';
 let _tsForceDown = false, _tsDbP = null, _tsVersion = 0;
 const _transcriptMap = new Map();
+function loadTranscriptMap(){
+  const run = (async () => {
+    const t0 = performance.now(); let bad = 0;
+    _transcriptMap.clear();
+    try{
+      const refs = new Map();
+      Object.values((DATA && DATA.activities) || {}).forEach(list => (list || []).forEach(a => {
+        const t = a && a.transcript; if(t && typeof t.ref === 'string' && t.ref) refs.set(t.ref, t.sha1);
+      }));
+      if(refs.size && await tsOpen()){
+        const found = await tsGetMany(Array.from(refs.keys()));          // one transaction
+        for(const [ref, sha1] of refs){
+          const rec = found.get(ref);
+          if(rec && typeof rec.text === 'string' && (await sha1Hex(rec.text)) === sha1) _transcriptMap.set(ref, {text: rec.text, chars: rec.text.length, sha1});
+          else bad++;
+        }
+      } else bad = refs.size;
+    }catch(e){}
+    _tsVersion++;
+    window.__transcriptLoad = {count: _transcriptMap.size, bad, ms: Math.round((performance.now() - t0) * 10) / 10};
+  })();
+  window.__transcriptLoadDone = run;
+  return run;
+}
 function tsOpen(){
   if(_tsForceDown) return Promise.resolve(null);
   if(_tsDbP) return _tsDbP;
@@ -5592,6 +5649,7 @@ function markRejectedLoad(raw, reason){
 }
 
 async function loadData(){
+  const t0 = performance.now();
   let raw = null;
   try{
     raw = localStorage.getItem(STORAGE_KEY);
@@ -5616,6 +5674,8 @@ async function loadData(){
       markRejectedLoad(raw, e && e.message ? e.message : String(e));
     }
   }
+  try{ await loadTranscriptMap(); }catch(e){}
+  window.__loadDataMs = Math.round((performance.now() - t0) * 10) / 10;
 }
 
 /* ============ v66: SINGLE-LEVEL UNDO ============
@@ -14728,19 +14788,7 @@ function renderActivityTab(c, acts){
         // v51: transcript lives on the activity record. Manage it here for any
         // activity; the debrief below reads it from the record, not from
         // transient upload state.
-        const tr = activityTranscript(act);
-        return `
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
-          ${tr
-            ? `<span class="badge badge-ontrack" title="Stored with this activity — included in exports and archives.">${icon('check')} Transcript attached (${tr.text.length.toLocaleString()} chars)</span>
-               ${tr.truncated ? `<span style="font-size:var(--text-xs); color:var(--accent-watch-text);">truncated to the first 120,000 characters</span>` : ''}
-               <button class="btn btn-sm" data-view-transcript="${c.id}|${act.id}">View</button>
-               <button class="btn btn-sm" data-attach-transcript="${act.id}">Replace</button>
-               <button class="btn btn-sm" data-remove-transcript="${c.id}|${act.id}">Remove</button>`
-            : `<button class="btn btn-sm" data-attach-transcript="${act.id}">Attach call transcript</button>
-               <span style="font-size:var(--text-xs); color:var(--text-faint);">.txt/.md/.vtt/.srt — stored with this activity</span>`}
-          <input type="file" data-transcript-file-input="${act.id}" accept=".txt,.md,.vtt,.srt,.log,text/plain" style="display:none;">
-        </div>`;
+        return transcriptControlsHtml(c, act);
       })()}
       ${((act.summary||'').trim() || activityTranscript(act)) && (act.sessionNumber || activityTranscript(act)) ? (()=>{
         const dIn = peekDebriefInput(act.id);
@@ -16305,6 +16353,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     $$('[data-view-transcript]').forEach(btn => btn.addEventListener('click', ()=>{
       const [custId, actId] = btn.dataset.viewTranscript.split('|');
       const activity = (DATA.activities[custId] || []).find(a=>a.id===actId);
+      if(activityTranscriptState(activity) !== 'ok') return;
       const tr = activityTranscript(activity);
       if(!tr) return;
       const backdrop = document.createElement('div');
@@ -18276,11 +18325,17 @@ function normalizeActivityCollections(data){
       // the truncation marked, never silently), anything else dropped as a
       // micro-repair; the activity itself always survives.
       if(a.transcript !== undefined){
-        if(isRecordObject(a.transcript) && typeof a.transcript.text === 'string' && a.transcript.text.trim()){
-          const over = a.transcript.text.length > DEBRIEF_TRANSCRIPT_CHAR_CAP;
+        if(isRecordObject(a.transcript) && typeof a.transcript.ref === 'string' && a.transcript.ref){
+          const tt = a.transcript;
+          if(Number.isInteger(tt.chars) && tt.chars >= 0 && typeof tt.sha1 === 'string' && /^[0-9a-f]{40}$/.test(tt.sha1)){
+            a.transcript = {ref: tt.ref, chars: tt.chars, sha1: tt.sha1, truncated: tt.truncated === true};
+          } else {
+            delete a.transcript;
+          }
+        } else if(isRecordObject(a.transcript) && typeof a.transcript.text === 'string' && a.transcript.text.trim()){
           a.transcript = {
-            text: over ? a.transcript.text.slice(0, DEBRIEF_TRANSCRIPT_CHAR_CAP) : a.transcript.text,
-            truncated: a.transcript.truncated === true || over
+            text: a.transcript.text,
+            truncated: a.transcript.truncated === true
           };
         } else {
           delete a.transcript;
@@ -20037,6 +20092,7 @@ function initCrossTabGuard(){
   });
 }
 
+window.__appReadyDone = false;
 (async function init(){
   cleanupRetiredSettingsKeys(); // A3: drop the retired Gainsight/Workiva settings keys once, before the first render
   await loadData();
@@ -20059,6 +20115,8 @@ function initCrossTabGuard(){
   initCrossTabGuard();
   // C-2: one health check on load, only when a connector is configured. Offline is quiet.
   if(connectorConfigured()) checkConnectorHealth().then(render);
+  window.__startupMs = Math.round(performance.now());
+  window.__appReadyDone = true;
 })();
 </script>
 </body>

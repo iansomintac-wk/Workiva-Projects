@@ -184,7 +184,7 @@ await send('Emulation.setDeviceMetricsOverride', {
 
 // For a page with an external suite, wait for the app, not for runSelfChecks.
 const readyExpr = suitePath
-  ? `document.readyState === 'complete' && typeof saveData === 'function'`
+  ? `document.readyState === 'complete' && typeof saveData === 'function' && window.__appReadyDone !== false`
   : `document.readyState === 'complete' && typeof window[${JSON.stringify(seedPaths.length ? 'runSelfChecks' : fnName)}] === 'function'`;
 const readyDeadline = Date.now() + 30000;
 let ready = false;
