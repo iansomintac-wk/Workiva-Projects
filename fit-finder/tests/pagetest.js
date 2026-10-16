@@ -47,8 +47,8 @@ async function main() {
         check(W, `chip ${i} shows exactly 3 cards`, r.length === 3, 'found ' + r.length);
         check(W, `chip ${i} cards each have task, feature, badge, Try it`, r.length === 3 && r.every((c) => c.badge && c.btn && c.task && c.feat));
       }
-      // Try it on role fr card 1
-      const fr = await ev(`(async () => { const roles = FitCatalogue.roles; const frIdx = Object.keys(roles).indexOf('fr'); q('.role-chip')[frIdx]?.click(); const uc = FitCatalogue.useCases.find((u) => u.id === roles.fr.wins[0]); q('#wins .win')[0]?.querySelector('button.try')?.click(); await new Promise((r) => setTimeout(r, 300)); return { want: uc.try, got: document.getElementById('task').value, task: uc.task, where: t('#where h3') }; })()`);
+      // Try it on role fr card 1, starting from a task that matches no use case so only Try it can change the result
+      const fr = await ev(`(async () => { await setTask('I approve the journal entries and post them in SAP.'); const roles = FitCatalogue.roles; const frIdx = Object.keys(roles).indexOf('fr'); q('.role-chip')[frIdx]?.click(); const uc = FitCatalogue.useCases.find((u) => u.id === roles.fr.wins[0]); q('#wins .win')[0]?.querySelector('button.try')?.click(); await new Promise((r) => setTimeout(r, 300)); return { want: uc.try, got: document.getElementById('task').value, task: uc.task, where: t('#where h3') }; })()`);
       check(W, 'Try it fills the task box with the use case try text', fr.got === fr.want, JSON.stringify(fr.got).slice(0, 60));
       check(W, 'Try it result names that use case', fr.where === fr.task, JSON.stringify(fr.where).slice(0, 60));
       // fuller prompt panel

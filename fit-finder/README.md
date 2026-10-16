@@ -22,6 +22,7 @@ node tests/pagetest.js [capture-folder]                            # real Chrome
 |---|---|
 | `engine/fit.js` | Rates a task: fit, recurring or not, steps (who keeps each), starter prompt; `scan()` rates every line of a checklist; `match()` finds the closest catalogue use cases; `lead()` names the first step the AI can take; `patternPrompt()` offers a use case's fuller prompt only when it starts with that same step |
 | `data/catalogue.json` | The only source of Workiva AI claims on the page: 23 support pages, 22 features, 25 use cases, 5 roles, 5 left out and why |
+| `data/capabilities-confirmed.md` | The catalogue's 22 features in one readable table (availability, source pages), with what was left out, what is not confirmed, and conflicts with earlier notes |
 | `web/template.html` | The page; `tests/build.js` inlines the catalogue, the engine and `../prompt-coach/engine/files.js` |
 | `data/LABELING.md` | The rubric: good / partial / not a fit, operations, blockers |
 | `data/tasks.jsonl` | 120 AI-written task descriptions, blind-labeled by an AI |
