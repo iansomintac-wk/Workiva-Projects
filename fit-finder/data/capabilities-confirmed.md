@@ -62,7 +62,6 @@ Availability: IN = included with Workiva AI; DEP = depends on your Workiva solut
 | Sustainability disclosure agent | Quick edits, Draft disclosure; scorecard, action items, draft narrative | DEP | S7, S16, S17, S18 |
 
 ## Left out and why
-- Pre-assurance anomaly review of sustainability figures: no feature named in pages read; XBRL outlier detection is SEC tagging (S1).
 - Agent names from the 29 Jul 2026 press release: release not opened; support-page names used.
 - Roll forward workflow: listed once (S8): "Moves data and project artifacts into the next reporting period"; no availability.
 - Suggestions (proofread, tone): early-access preview that ran until 14 Sep 2026; current status not stated.
@@ -78,4 +77,5 @@ Availability: IN = included with Workiva AI; DEP = depends on your Workiva solut
 ## Conflicts with earlier notes
 - Workflows: earlier notes knew two examples. S8 names four (adds Tie-outs, Roll forward); S7 names three; S15 adds Report generation.
 - Evidence analyzer: only S1 mentions it.
+- Sustainability anomaly review: once left out as no feature named; S16 names the job ("identify anomalies, outliers, and other inconsistencies") and gives a prompt to run on the sustainability report or Factbook spreadsheet, so it is now a use case. S16 is written "for: Sustainability Reporting Advanced workspaces"; it does not say the prompt itself needs that solution.
 - Up to 10 files, no direct upload, knowledge bases in chat, inline spreadsheet editor: confirmed (S3, S6, S9, S20).
