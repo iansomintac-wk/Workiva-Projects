@@ -104,6 +104,26 @@
         rec('T4 after the real Import handler puts accounts in: hint ' + (isFile ? 'still hidden' : 'was visible before and is hidden now'),
           afterImport === null && (isFile || emptyDom === TEXT), String(afterImport));
       }
+      { // FX5: an already-open Settings shows the answer when initStoragePersistence changes it
+        const spy = window.__storageSpy;
+        if(isFile || !spy){
+          rec('FX5 an open Settings line follows a changed storage answer (served pages only)', isFile, isFile ? 'file:// makes no call' : 'storage spy missing');
+        }else{
+          const keep = _storageKept; let before = null, after = null, err = null;
+          try{
+            _storageKept = 'no';
+            openSettingsModal();
+            const el = () => document.getElementById('storage-kept-line');
+            before = el() ? el().textContent.trim() : null;
+            spy.reset(); spy.force = {persisted: true};
+            await initStoragePersistence();
+            after = el() ? el().textContent.trim() : null;
+          }catch(e){ err = e.message; }
+          finally{ spy.force = {persisted: undefined, persist: undefined}; document.querySelectorAll('.modal-backdrop').forEach(b => b.remove()); _storageKept = keep; }
+          rec('FX5 an open Settings line follows a changed storage answer (no -> yes without reopening)',
+            !err && before === 'Kept by browser: no (export regularly)' && after === 'Kept by browser: yes', JSON.stringify({before, after, err}));
+        }
+      }
       // ===== end of hosting checks =====
       rec('probe reached the end', true);
     }catch(e){ rec('probe threw: ' + (e && e.message), false, String(e && e.stack || e).slice(0, 300)); }

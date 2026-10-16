@@ -69,3 +69,18 @@ test('HOSTING.md carries the sha256 of the current 1.1 tracker (what the host co
   const sha = createHash('sha256').update(readFileSync('osm-book-of-business-tracker-1.1.html')).digest('hex');
   assert.ok(hosting().includes(sha), 'docs/HOSTING.md must contain ' + sha);
 });
+
+test('HOSTING.md names every external https origin the 1.1 page loads or calls, and no longer says it works with no network', () => {
+  const html = readFileSync('osm-book-of-business-tracker-1.1.html', 'utf8');
+  const origins = new Set();
+  for (const m of html.matchAll(/<(?:script|link)\b[^>]*\b(?:src|href)="(https:\/\/[^/"]+)/g)) origins.add(m[1]);   // loaded
+  for (const m of html.matchAll(/\bfetch\(\s*[`'"](https:\/\/[^/`'"]+)/g)) origins.add(m[1]);                      // called
+  assert.ok(origins.size >= 5, 'expected at least 5 origins, found ' + [...origins].join(' '));
+  const doc = hosting();
+  for (const o of origins) assert.ok(doc.includes(o.replace('https://', '')), 'docs/HOSTING.md must name ' + o);
+  assert.ok(doc.includes('fonts.gstatic.com'), 'HOSTING.md must name fonts.gstatic.com');
+  assert.ok(/^## What the page loads$/m.test(doc), 'section "What the page loads" missing');
+  assert.ok(!/works with no network/i.test(doc), 'the "works with no network" sentence must be gone');
+  assert.ok(/inline script/i.test(doc) && /inline style/i.test(doc), 'must say the page needs inline script and inline style');
+  assert.ok(/integrity/i.test(doc), 'must say the xlsx script has no integrity attribute');
+});

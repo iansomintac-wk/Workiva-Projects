@@ -4,7 +4,7 @@ This page is written so it can go to whoever runs the host, unchanged. Nothing i
 
 ## What this is
 
-The tracker is one HTML file. It runs in the browser. The book (accounts, activities, call transcripts) lives in this browser's own storage for the address the page is opened from: a copy opened as a file and a copy opened from a web address each have their own, separate, empty-to-start book. The tracker does not send the book to a server. The AI features are the exception: when someone enters an AI key in Settings and uses an AI feature, the text they ask about is sent to the AI provider they configured (Anthropic, OpenAI or Gemini), and nowhere else. Everything else works with no network.
+The tracker is one HTML file. It runs in the browser. The book (accounts, activities, call transcripts) lives in this browser's own storage for the address the page is opened from: a copy opened as a file and a copy opened from a web address each have their own, separate, empty-to-start book. The tracker does not send the book to a server. The AI features are the exception: when someone enters an AI key in Settings and uses an AI feature, the text they ask about is sent to the AI provider they configured (Anthropic, OpenAI or Gemini), and nowhere else. The page itself needs network access to a few outside hosts to load its fonts and its spreadsheet-reading script (listed under "What the page loads"). The spreadsheet importers need that script (the page checks for it and does not import without it).
 
 ## What to upload
 
@@ -15,6 +15,15 @@ Exactly two files, made by `node tools/build-site.mjs` into the `site/` folder: 
 - Its own hostname: not a folder on a shared site, because everything served from one host can read the book and the AI key that the browser stores for that host.
 - https.
 - Company sign-in in front of the page.
+
+## What the page loads
+
+For whoever sets the host's network and security rules. This list comes from a search of the 1.1 file for https addresses; it is what the file shows, not a test of a live network.
+
+- `fonts.googleapis.com`: a stylesheet link (Plus Jakarta Sans, JetBrains Mono) and a preconnect to the same host. That stylesheet is Google's; the font files it points to are normally served from `fonts.gstatic.com`, which the tracker file itself does not name, so allow it as well or the fonts fall back.
+- `cdnjs.cloudflare.com`: one script, `xlsx/0.18.5/xlsx.full.min.js`, loaded with a plain script tag and **no integrity attribute**, so the host cannot tell if the file it receives is the one intended, and that script runs with full access to the page, the book and the stored AI key.
+- The AI provider endpoints, only when someone enters an AI key and uses an AI feature: `api.anthropic.com`, `api.openai.com` and `generativelanguage.googleapis.com`.
+- The page needs inline script and inline style: the tracker is one file with both in it. A Content-Security-Policy of `default-src 'self'` stops it from working; it needs at least `'unsafe-inline'` for script and style, plus the hosts above.
 
 ## Check a copy from an address before it goes up
 
@@ -46,4 +55,4 @@ A hosted address has its own storage, so its tracker starts with no accounts. Wh
 
 ## Checking what you received
 
-`index.html` in this package is a byte-for-byte copy of the 1.1 tracker. Its sha256 is `b3f7bf8520421e60d7e73f7445c281840cac7724b9f218b95054dde1730fe36b`. Compare it with `sha256sum index.html` (or `Get-FileHash index.html` in PowerShell) before uploading. This line is updated in the same commit as any change to the tracker.
+`index.html` in this package is a byte-for-byte copy of the 1.1 tracker. Its sha256 is `b247a93cd504416518077088e5092bad234ec5eb5a51491bc24f87e08edd22d2`. Compare it with `sha256sum index.html` (or `Get-FileHash index.html` in PowerShell) before uploading. This line is updated in the same commit as any change to the tracker.

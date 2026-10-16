@@ -17660,6 +17660,8 @@ async function initStoragePersistence(){
     if(!kept) kept = await navigator.storage.persist();
     _storageKept = kept ? 'yes' : 'no';
   }catch(e){ _storageKept = 'no'; }
+  const openLine = document.getElementById('storage-kept-line');   // FX5: an open Settings shows the new answer
+  if(openLine) openLine.textContent = storageKeptLine();
   return _storageKept;
 }
 function storageKeptLine(){

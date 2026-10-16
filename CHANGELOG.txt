@@ -18,6 +18,9 @@ OSM Runway — release notes
     - Hosting fixes: selfcheck exits 1 on any console error; build-site refuses a linked
       site/ and --check needs plain files and an empty .nojekyll; the static server
       answers 500 instead of crashing when a file cannot be read.
+    - Settings, if open, now updates its "Kept by browser" line when the answer arrives;
+      docs/HOSTING.md says what the page loads (outside hosts, no integrity attribute on the
+      xlsx script, inline script and style needed) instead of "works with no network".
 
 1.1 — Step 1 (transcripts out of the book). Call transcripts move out of the book.
 
