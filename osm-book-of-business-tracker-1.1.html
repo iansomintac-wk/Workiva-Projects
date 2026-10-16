@@ -3044,6 +3044,60 @@ async function saveTranscriptVerified(activityId, text){
   _tsVersion++;
   return out;
 }
+/* Task 5: the safe saving order. Stage (write, read back, check) -> commit the book -> only then drop the
+   old record. A call drops only a record it created, and never one the book (any activity) still points to. */
+async function stageTranscript(activityId, text){
+  return (await saveTranscriptVerified(activityId, text)) || {text, truncated: false};   // inline fallback when IndexedDB is unavailable
+}
+function refIsReferenced(ref){
+  return Object.values((DATA && DATA.activities) || {}).some(list => (list || []).some(a => a && a.transcript && a.transcript.ref === ref));
+}
+function clearUndoSlot(){ _undoSnapshot = null; _lastActionWasUndo = false; }
+function dropTranscriptRecord(ref){
+  if(!ref || refIsReferenced(ref)) return;
+  _transcriptMap.delete(ref);
+  _tsVersion++;
+  try{ tsDelete(ref).catch(()=>{}); }catch(e){}
+}
+async function attachTranscript(customerId, activityId, t){
+  const old = ((DATA.activities || {})[customerId] || []).find(a => a.id === activityId);
+  const oldRef = old && old.transcript && old.transcript.ref;
+  const hadOld = !!(old && old.transcript);
+  let staged;
+  try{ staged = await stageTranscript(activityId, t.text); }
+  catch(e){ showToast('Could not save the transcript - nothing was changed'); return false; }
+  const candidate = cloneData(DATA);
+  const cAct = (candidate.activities[customerId] || []).find(a => a.id === activityId);
+  if(!cAct){ if(staged.created) dropTranscriptRecord(staged.ref); return false; }
+  cAct.transcript = staged;
+  if(!commitDataCandidate(candidate)){
+    if(staged.created) dropTranscriptRecord(staged.ref);
+    return false;
+  }
+  if(oldRef && oldRef !== staged.ref) dropTranscriptRecord(oldRef);
+  clearUndoSlot();
+  showToast(hadOld ? 'Transcript replaced' : 'Transcript attached');
+  render();
+  return true;
+}
+function removeTranscript(customerId, activityId){
+  const old = ((DATA.activities || {})[customerId] || []).find(a => a.id === activityId);
+  const oldRef = old && old.transcript && old.transcript.ref;
+  const candidate = cloneData(DATA);
+  const cAct = (candidate.activities[customerId] || []).find(a => a.id === activityId);
+  if(!cAct) return false;
+  delete cAct.transcript;
+  if(!commitDataCandidate(candidate)) return false;
+  dropTranscriptRecord(oldRef);
+  clearUndoSlot();
+  showToast('Transcript removed');
+  render();
+  return true;
+}
+async function wipeTranscriptStore(){
+  _transcriptMap.clear(); _tsVersion++;
+  try{ await tsClearAll(); }catch(e){}
+}
 function getDebriefInput(activityId){
   if(!ui.debriefInputs) ui.debriefInputs = {};
   if(!ui.debriefInputs[activityId]) ui.debriefInputs[activityId] = {questions:''};
@@ -16325,30 +16379,13 @@ The draft is discarded. The risk itself stays open.`)) return;
       const actId = inp.dataset.transcriptFileInput;
       const file = e.target.files[0];
       e.target.value = '';
-      readTranscriptFile(file, t => {
-        const candidate = cloneData(DATA);
-        const cAct = (candidate.activities[c.id] || []).find(a=>a.id===actId);
-        if(!cAct) return;
-        cAct.transcript = {text: t.text, truncated: t.truncated};
-        if(!commitDataCandidate(candidate)) return;
-        showToast('Transcript attached');
-        render();
-      });
+      readTranscriptFile(file, t => attachTranscript(c.id, actId, t));
     }));
     $$('[data-remove-transcript]').forEach(btn => btn.addEventListener('click', ()=>{
       const [custId, actId] = btn.dataset.removeTranscript.split('|');
       showConfirmModal(
         'Remove this transcript? It is stored only with this activity — removing it cannot be undone from within the app.',
-        ()=>{
-          const candidate = cloneData(DATA);
-          const cAct = (candidate.activities[custId] || []).find(a=>a.id===actId);
-          if(!cAct) return false;
-          delete cAct.transcript;
-          if(!commitDataCandidate(candidate)) return false;
-          showToast('Transcript removed');
-          render();
-          return true;
-        },
+        ()=> removeTranscript(custId, actId),
         'Remove transcript'
       );
     }));
@@ -17725,13 +17762,14 @@ function openSettingsModal(){
     showToast('API key cleared');
   });
   backdrop.querySelector('#btn-clear-all').addEventListener('click', ()=>{
-    showConfirmModal('This deletes every account and activity. Continue?', ()=>{
+    showConfirmModal('This deletes every account, activity and stored call transcript, and the saved copy of the book from before the transcript move. Continue?', ()=>{
       // v48: an explicit, confirmed wipe is the one other action allowed to
       // proceed in the rejected-load state (the payload was already backed up
       // to the dated side key when the block was armed). Re-arm on failure.
       const armed = _rejectedLoadPayload;
       _rejectedLoadPayload = null;
       if(!commitDataCandidate(defaultData())){ _rejectedLoadPayload = armed; return false; }
+      wipeTranscriptStore();
       backdrop.remove();
       ui.openCustomerId = null;
       render();

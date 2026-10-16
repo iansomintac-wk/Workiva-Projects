@@ -175,6 +175,74 @@
         });
       }
 
+      { // T5: attach / replace / remove
+        await withBook(async book => {
+          const act = {id: 'att1', date: todayISO(), type: 'Call', summary: 'n', checklist: []};
+          book.activities[cid] = (book.activities[cid] || []).concat([act]);
+          const text = window.STEP1_CALLS[0];
+          const ok = await attachTranscript(cid, 'att1', {text, truncated: false});
+          const a = DATA.activities[cid].find(x => x.id === 'att1');
+          const rec1 = await tsGet(a.transcript.ref);
+          rec('T5 C3 (stored half): attaching the 157,060-char call stores all 157,060 chars, in IndexedDB, not in the book',
+            ok === true && a.transcript.chars === 157060 && rec1.text.length === 157060 && rec1.text === text && a.transcript.truncated === false &&
+            !localStorage.getItem(STORAGE_KEY).includes(text.slice(5000, 5100)), `chars=${a.transcript.chars}`);
+          { // C3 through ONE path: the activity just attached is the one the debrief reads
+            const realAi = window.callAiAPI, sent = [];
+            window.callAiAPI = async prompt => { sent.push(String(prompt)); return {text: '[]', truncated: false}; };
+            try{ await generateSessionDebrief(cid, 'att1'); }finally{ window.callAiAPI = realAi; }
+            const p = sent[0] || '', budget = DEBRIEF_TRANSCRIPT_CHAR_CAP - 'n'.length - 1, run = sentRun(p, text);
+            rec('T5 C3 (one path): the activity stored whole is the same one the debrief cuts for sending',
+              a.transcript.chars === 157060 && run.len >= budget && p.slice(run.start + budget, run.start + budget + 40) !== text.slice(budget, budget + 40) && p.includes('truncated to the first 120,000 characters'), `runLen=${run.len}`);
+          }
+          const oldRef = a.transcript.ref;
+          const ok2 = await attachTranscript(cid, 'att1', {text: text + ' more', truncated: false});
+          const a2 = DATA.activities[cid].find(x => x.id === 'att1');
+          rec('T5 Replace writes the new version under its own ref, then deletes the old record and clears the undo slot',
+            ok2 === true && a2.transcript.ref !== oldRef && (await tsGet(oldRef)) === undefined && (await tsGet(a2.transcript.ref)) && _undoSnapshot === null);
+          const keepRef = a2.transcript.ref;
+          const realCommit = window.commitDataCandidate; window.commitDataCandidate = () => false;
+          let ok3; try{ ok3 = await attachTranscript(cid, 'att1', {text: 'replacement that will fail to commit', truncated: false}); }finally{ window.commitDataCandidate = realCommit; }
+          const failedRef = 'att1:' + (await sha1Hex('replacement that will fail to commit')).slice(0, 12);
+          rec('T5 a failed book commit keeps the old record and deletes the new one',
+            ok3 === false && (await tsGet(keepRef)) && (await tsGet(failedRef)) === undefined && activityTranscript(a2).text.endsWith(' more'));
+          const realCommit2 = window.commitDataCandidate; window.commitDataCandidate = () => false;
+          const actB = {id: 'att2', date: todayISO(), type: 'Call', summary: 'n', checklist: []};
+          DATA.activities[cid].push(actB);
+          let ok4; try{ ok4 = await attachTranscript(cid, 'att2', {text: 'fresh attach that fails', truncated: false}); }finally{ window.commitDataCandidate = realCommit2; }
+          rec('T5 a failed first Attach leaves no record behind', ok4 === false && (await tsGet('att2:' + (await sha1Hex('fresh attach that fails')).slice(0, 12))) === undefined);
+          markUndoable('x'); saveData();   // gives the undo slot something to hold
+          const ok5 = removeTranscript(cid, 'att1');
+          await settle();
+          rec('T5 Remove deletes the record and clears the undo slot, so Undo cannot restore a deleted ref',
+            ok5 === true && (await tsGet(keepRef)) === undefined && !DATA.activities[cid].find(x => x.id === 'att1').transcript && _undoSnapshot === null && undoAvailable() === null);
+        });
+        await withBook(async book => {   // same text again + failed commit must NOT delete the record the book points to
+          book.activities[cid] = (book.activities[cid] || []).concat([{id: 'att3', date: todayISO(), type: 'Call', summary: 'n', checklist: []}]);
+          await attachTranscript(cid, 'att3', {text: 'same text kept', truncated: false});
+          const refS = DATA.activities[cid].find(x => x.id === 'att3').transcript.ref;
+          const rc = window.commitDataCandidate; window.commitDataCandidate = () => false;
+          let okS; try{ okS = await attachTranscript(cid, 'att3', {text: 'same text kept', truncated: false}); }finally{ window.commitDataCandidate = rc; }
+          rec('T5 a failed Replace with the SAME text keeps the record the book still points to',
+            okS === false && !!(await tsGet(refS)) && activityTranscriptState(DATA.activities[cid].find(x => x.id === 'att3')) === 'ok');
+        });
+        await withBook(async book => {   // two activities share a ref: Remove on one keeps the record for the other
+          book.activities[cid] = (book.activities[cid] || []).concat([{id: 'att4', date: todayISO(), type: 'Call', summary: 'n', checklist: []}]);
+          await attachTranscript(cid, 'att4', {text: 'shared words', truncated: false});
+          const t4 = DATA.activities[cid].find(x => x.id === 'att4').transcript;
+          const actC = {id: 'att5', date: todayISO(), type: 'Call', summary: 'n', checklist: [], transcript: Object.assign({}, t4)};
+          DATA.activities[cid].push(actC);
+          removeTranscript(cid, 'att4'); await settle();
+          rec('T5 Remove keeps a record another activity still points to (restored archives can share refs)', !!(await tsGet(t4.ref)) && activityTranscriptState(actC) === 'ok');
+        });
+        { // Clear all data (For Ian (c), recommended answer: wipe too)
+          const t = await saveTranscriptVerified('wipe1', 'to be wiped');
+          await tsTx('premigration', 'readwrite', s => s.put({date: todayISO() + ':wipe', raw: '{}'}));
+          await wipeTranscriptStore();
+          rec('T5 wipeTranscriptStore empties the transcripts, the pre-move copies and the map',
+            (await tsGet(t.ref)) === undefined && (await tsTx('premigration', 'readonly', s => s.count())) === 0 && _transcriptMap.size === 0);
+        }
+      }
+
       rec('probe reached the end', true);
     }catch(e){
       rec('probe threw', false, String(e && e.stack || e));
