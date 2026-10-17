@@ -188,8 +188,8 @@ mostly general work, unlike the reporting tasks the rules were tuned on: of the 
 gave a card, 12 get a general card (rewrite 7, summarize 3, formula 2). 7 of the 9 misses are
 rewording text or writing an email, memo or passage (the rewrite card) and 2 are writing a
 spreadsheet formula;
-the engine rates 3 of them "not a fit" because it reads no step in "create memos or professional
-emails", "wording:" or "Create an INDEX MATCH formula" (G4, G13, G19). 12 of the 17 fit
+the engine rates 3 of them "not a fit" because it reads no step in a request for memos or emails,
+a bare "wording" label, or a request for an INDEX MATCH formula (G4, G13, G19). 12 of the 17 fit
 differences are good against partial, mostly whether the job recurs, which the page asks. The
 comments are short, and the labeler marked 18 of 29 calls low confidence. One labeler, one run.
 
@@ -216,15 +216,19 @@ scored 8 of 23 before any rule, V2 12):
 - Blind held-out, 40 sentences (`docs/evidence/2026-10-17-rewrite-heldout.jsonl`, 20 rewrite asks and
   20 that are not; labels by the model; each rule scored once): rewrite card on 7 of 20 asks for
   rule C, 13 for V2, 3 for the live rule (383afd3); on the 20 that are not rewrites 1 of 20 for every
-  rule, the same row (H32, "tone at the top"). Rule C reaches fewer asks than V2 and is far
-  cleaner on the pool: `tests/rewrite-pool.jsonl` holds 86 sentences, 0 of 42 non-rewrites get the
+  rule, the same row (H32, "tone at the top"). So on blind sentences rule C is no cleaner than V2
+  and reaches fewer asks. Its precision edge shows only on the reviewers' pool (in-sample, written
+  while reviewing V2): `tests/rewrite-pool.jsonl` holds 86 sentences, 0 of 42 non-rewrites get the
   card (V2 19), and 6 of 44 asks reach it.
 - Unchanged: half A 12 of 29 wrong card 0, held-out B 13 of 30 wrong card 3, real prompts 15 of 19
   wrong card 2, eval A 52/60 and B 45/60, and the 139 older texts rate and match the same as at
   383afd3.
 
-Known limit: asks such as "make this memo more concise", "make this more diplomatic" and "revise
-this slide text" get no rewrite card. Rule C was chosen on the pool it is scored on; the held-out 40
-is the out-of-sample check. One pool label is the model's call ("Accrue more professional fees." =
-not a rewrite). Details: `docs/evidence/2026-10-17-rewrite-reach-round.md`.
+Known limits: asks such as "make this memo more concise", "make this more diplomatic" and "revise
+this slide text" get no rewrite card. An explain request that says "wording ... better" ("Help me
+understand the wording better.") gets the rewrite card first (V2 too; the live rule gives no card).
+Rule C was chosen on the pool it is scored on; on the blind held-out 40 it is no cleaner than V2 and
+reaches fewer asks, so choosing C trades reach for fewer wrong cards on the kind of finance wording
+reviewers found. One pool label is the model's call ("Accrue more professional fees." = not a
+rewrite). Details: `docs/evidence/2026-10-17-rewrite-reach-round.md`.
 The prediction above stays disproved as scored once, before the rule.

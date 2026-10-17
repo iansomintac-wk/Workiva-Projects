@@ -1,6 +1,7 @@
 # Rewrite-reach two-strikes round (2026-10-17, Fit Finder v4.20)
 
-Source: the round report `LED/round/report.md` (an Opus helper, 129,116 tokens, 32 tool uses; the lead
+Source: the round report `round/report.md` in the run's local ledger (git-ignored, outside this repo:
+`.ledger/2026-10-16-24h-program/fit-finder-v420/` in the studio-harness checkout) (an Opus helper, 129,116 tokens, 32 tool uses; the lead
 re-ran `bash run.sh`, exit 0, score.txt byte-identical, and scored the held-out). Figures here are
 copied from that report; the suite and eval figures were re-measured on the committed tree (see the
 commit). Repo at a313d12 (V2); live rule 383afd3. The pool in `fit-finder/tests/rewrite-pool.jsonl`
@@ -15,8 +16,8 @@ Verdict: rule C. 0 of 42 pool false positives get gen-rewrite, and no set gains 
 | C | 0 | 6 | 10, 6 | none none right right | same | same | same | 52/45 | 0/0 | 13 (10 V2-only, 3 V1) |
 
 Wrong first cards are the same on every rule: fresh G2, G14, G15, G22, G26, X1; B 67, 74, 91; real W1, S1.
-(The "asks" column counts the 45 pool asks with the row "Write it in a more professional manner."
-included; that row is not read by C, so the count of 6 is the same on the 44 kept.)
+(The "asks" column counts the round's 45 pool asks, including the one row that matches a real comment
+and is left out of the committed pool; C does not read that row, so the count of 6 is the same on the 44 kept.)
 
 ## Held-out (lead; `2026-10-17-rewrite-heldout.jsonl`, 40 blind sentences, labels by the model, scored once per rule)
 
@@ -43,7 +44,12 @@ V2 and U were scored before C existed; C once, after. The round helper never ope
 gen-rewrite `match`: `rewrit\w*|shorten\w*|tighten\w*|plain english|board|executives?|audience|tone|too long|re-?word\w*|rephras\w*|worded|wording`
 
 ## Limits
-- C was chosen on the pool it is scored on (in-sample); the held-out 40 is the out-of-sample check.
+- C was chosen on the pool it is scored on (in-sample). On the blind held-out 40 (out-of-sample) C is
+  no cleaner than V2 (1 of 20 non-rewrites with the card on both, the same row H32) and reaches fewer
+  asks (7 vs 13). So C's precision edge is shown only on the reviewers' pool, sentences written while
+  reviewing V2; the case for C is that it adds only words that sat on the asks side alone, and that
+  reviewers kept finding plausible finance wording ("Revise the budget draft before close.") that V2
+  gave the rewrite card.
 - C reaches fewer asks than V2 (held-out 7 vs 13; fresh 10 vs 12): "make this memo more concise", "more
   diplomatic", "revise this slide text" get no card.
 - One pool label is the helper's: "Accrue more professional fees." = none.
