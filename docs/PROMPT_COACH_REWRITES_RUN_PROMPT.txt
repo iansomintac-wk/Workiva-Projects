@@ -45,11 +45,15 @@ ORDER
 PERMISSIONS (slip.json, Ian 2026-10-16)
 - Push: yes, own branch only (worktree-prompt-coach-rewrites). Never push prompt-coach or main.
 - Merge: yes, into prompt-coach after the final review passes and every check above is green.
+- Commits: only on the tasks of the plan Ian approves (plus the step-6 evidence doc and step-7
+  live-test prompt the plan lists). Nothing else without his yes.
 - Spend: $0. Everything here is offline Node/Python.
 - New sessions: no. Ian starts the live-test session himself.
 
 SAFETY
-- No customer names or confidential data anywhere in the repo; synthetic data only.
+- No customer names or confidential data anywhere in the repo; synthetic data only. Ian's invoice
+  prompt (ian_case.txt) is generic (checked 2026-10-16: no names, companies or addresses); the
+  checker re-confirms every committed fixture holds no customer or identifying text.
 - Do not republish the artifact (https://claude.ai/artifact/9Qk7uhNgri3uCSkUafsDQV); Ian asks for that.
 - Do not change grading (rules.js, model.js, weights) except a Context cue the spec allows, and only
   with eval >= 85.6%.

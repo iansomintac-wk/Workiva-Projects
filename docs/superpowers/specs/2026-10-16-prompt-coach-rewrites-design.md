@@ -11,6 +11,8 @@ Source brief: Ian's session prompt `prompt-coach-improve-prompt.md` (Downloads, 
 - To "when should the live test happen?" (A = separate session after the fix): **"A, i also have
   access to Workiva AI in sandbox so you can run as many simulations as possible"**
 - To the five-section design: **"yes"**
+- To "please review the spec (including whether paragraph breaks should be in scope)": **"Yes"**
+  (paragraph breaks stay out of scope)
 
 ## Problem
 
