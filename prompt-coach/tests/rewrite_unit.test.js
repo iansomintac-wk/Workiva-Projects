@@ -114,7 +114,8 @@ test('direct voice: lead-ins, kept commas, mixed questions', () => {
     ['Plus, can you come up with a title?', 'Plus, come up with a title.'],
     ['Short please, no jargon.', 'Short, no jargon.'],
     ['Table please, top 20.', 'Table, top 20.'],
-    ['Can you hear me?', 'Can you hear me?']
+    ['Using only the selected data - and I mean only - please, for the CSRD report.', 'Using only the selected data - and I mean only - for the CSRD report.'],
+    ['list all the commitments please, plus can you tell me how to do a pivot table', 'List all the commitments, plus tell me how to do a pivot table']
   ];
   for (const [i, want] of cases) assert.equal(W.directVoice(i), want, i);
 });
