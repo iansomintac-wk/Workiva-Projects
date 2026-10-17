@@ -28,7 +28,7 @@ Helpers for the checks (committed with this file): `node docs/extension-checks/s
 - Files: tools/sim/osm-day/run.mjs, verify.mjs, steps-a.mjs (D10, about lines 200-216), steps-b.mjs (L10 Download .txt), test/osm-day-steps.test.mjs (add-only).
 - Check: `W && o=sim-runs/ext/x2-$(date +%s); for i in 1 2; do node tools/sim/osm-day/run.mjs --version 1.0 --part A --only D10 --no-breaks --out $o > /dev/null 2>&1; node docs/extension-checks/show.mjs $o/results-1.0.json | cut -c1-40; done; node tools/sim/osm-day/run.mjs --version 1.0 --part A --only D1 --out C:/Windows/Temp/ext-x2-nope > /dev/null 2>&1; echo outside-exit $?; test -e C:/Windows/Temp/ext-x2-nope && echo CREATED || echo not-created`
 - Expected: two lines `D10 PASS | break - |` (the resume prompt measured the second as FAIL today), `outside-exit 2`, `not-created`.
-- Status: done (commit COMMIT). Evidence: D10 PASS twice into same folder; outside-exit 2, not-created; suite 118 tests, fail 0; left 1.
+- Status: done (commit a4c6a29). Evidence: D10 PASS twice into same folder; outside-exit 2, not-created; suite 118 tests, fail 0; left 1.
 
 ### X3 Clipboard, permissions and field-test crash paths (Fix B1, B4; FR5, FR6)
 - Outcome: the clipboard steps (D5 recap, L10 packet, probe.mjs:133) put a known sentinel in the page first and judge what the click wrote, so stale OS-clipboard text cannot pass; a failed `Browser.grantPermissions` and a clipboard setup error are harness errors (exit 2), not swallowed and not counted as tracker FAILs; `run-field-test.mjs` crash paths call the same cleanup (wire to `fail()`); the stray blank line in `tools/sim/steps/99-measure.js` is gone.
