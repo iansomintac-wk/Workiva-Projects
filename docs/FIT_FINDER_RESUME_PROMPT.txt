@@ -7,7 +7,9 @@ Nothing is half-done in the repo; the code is as v4.21 left it (ccda404). Same r
    narrow rule. Applied in 41e69de (plan 2026-10-17-fit-finder-item71-labels.md; rows stay by: model, overturnable):
    fresh first card right 15 of 23, wrong 5 (G2,G14,G15,G22,X1). Proposal A's bar: right met, wrong NOT met (5 vs
    <= 3), so Fit Finder is not done by A; the honest test is the same bar once on a second untouched real set.
-   Proposal B (rewrite brain page fit-finder/product/product from the README): not yet written.
+   Proposal B: brain page fit-finder/product/product rewritten from the README (Sonnet helper; lead added the live
+   v13 line and the done-when). It is a tracked file in Ian's studio-harness main checkout, left uncommitted with
+   the other records (lead 15: on Ian's END list; equal to origin/main before the edit, so today's pull is unaffected).
 2. Still Ian's: republish v14 (the standing yes keeps the live-page republish his; lead 17's yes was not taken).
    Asked in the v4.22 chat. Otherwise no queued work: do not tune. Report to the program lead and stop.
 3. For the program lead, not this repo: Ian's 08:03:54Z and 07:59:11Z words have no ruling record (PM, read); they
