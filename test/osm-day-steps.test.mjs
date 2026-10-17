@@ -37,9 +37,11 @@ test('99-measure.js no longer reads the retired time-saved log (F2)', () => {
   assert.doesNotMatch(t, /impactMinutesFor/);
 });
 
-test('PART_A holds D1..D5, each with an async run (Task 7)', async () => {
+test('PART_A holds D1..D10 in order, each async and CHECKED (Task 8)', async () => {
   const { PART_A } = await import('../tools/sim/osm-day/steps-a.mjs');
-  assert.deepEqual(PART_A.map(s => s.id), ['D1', 'D2', 'D3', 'D4', 'D5']);
+  const { CHECKED } = await import('../tools/sim/osm-day/lib/results.mjs');
+  assert.deepEqual(PART_A.map(s => s.id), ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10']);
+  for (const s of PART_A) assert.ok(CHECKED.includes(s.id), s.id);
   for (const s of PART_A) assert.equal(s.run.constructor.name, 'AsyncFunction', s.id);
 });
 test('PART_A_DEPS says D5 needs D4 and nothing else depends', async () => {

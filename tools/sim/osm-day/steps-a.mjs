@@ -1,7 +1,7 @@
-// Part A of the OSM day sim: Ian's workday, steps D1-D5 (D6-D10 arrive in Task 8).
+// Part A of the OSM day sim: Ian's workday, steps D1-D10.
 // usage: node tools/sim/osm-day/steps-a.mjs --version 1.0|1.1 [--only D1,D2,...]
 // Each step is {id, run(ctx) -> {passed, evidence}}. A step that cannot pass reports FAIL; it never bends its condition.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { launch } from './lib/browser.mjs';
@@ -105,6 +105,117 @@ export const PART_A = [
     await ctx.ev(`window.__simConn && localStorage.setItem(CONNECTOR_SETTINGS_KEY, window.__simConn); true`);
     const s = ctx.aiStats();
     return { passed: !!recap && clip === recap, evidence: `recap ${recap.length} chars; clipboard ${clip === recap ? 'equals recap' : 'is ' + JSON.stringify(String(clip).slice(0, 60))}; fake AI calls ${s.fake}` };
+  } },
+  { id: 'D6', async run(ctx) {
+    await ctx.openOn(DAY);
+    const pre = JSON.parse(await ctx.ev(`(() => {
+      const c = DATA.customers.find(x => x.name === ${JSON.stringify(ORION)});
+      const mine = (c.commitments || []).find(x => /^SIM-D6 you owe/.test(x.text)), theirs = (c.commitments || []).find(x => /^SIM-D6 they owe/.test(x.text));
+      if (!mine || !theirs) return JSON.stringify({ missing: true });
+      ui.view = 'today'; ui.openCustomerId = c.id; ui.panelTab = 'coordination'; render();
+      return JSON.stringify({ mine: mine.id, theirs: theirs.id, mineDone: mine.doneOn, theirsDone: theirs.doneOn }); })()`));
+    if (pre.missing) throw new Error('D6 needs the SIM-D6 commitments setupA seeds on Orion');
+    await sleep(300);
+    await ctx.click(`[data-coord-toggle="commitment|${pre.mine}"]`);
+    await sleep(300);
+    const post = JSON.parse(await ctx.ev(`(() => {
+      const c = DATA.customers.find(x => x.name === ${JSON.stringify(ORION)});
+      const f = id => (c.commitments || []).find(x => x.id === id);
+      const open = (c.commitments || []).filter(x => !x.doneOn && /^SIM-D6 /.test(x.text)).map(x => x.text);
+      return JSON.stringify({ mineDone: f(${JSON.stringify(pre.mine)}).doneOn, theirsDone: f(${JSON.stringify(pre.theirs)}).doneOn, open, today: todayISO() }); })()`));
+    const passed = !pre.mineDone && !pre.theirsDone && post.mineDone === post.today && !post.theirsDone && post.open.length === 1 && /^SIM-D6 they owe/.test(post.open[0]);
+    return { passed, evidence: `"you owe" doneOn ${pre.mineDone || 'open'} -> ${post.mineDone || 'open'}; "they owe" ${post.theirsDone ? 'closed' : 'still open'}; open SIM-D6: ${post.open.join(' | ') || 'none'}` };
+  } },
+  { id: 'D7', async run(ctx) {
+    await ctx.openOn(DAY);
+    if (!(await ctx.ev(`connectorConfigured()`))) return { passed: false, evidence: 'connector not configured (D5 should have restored it)' };
+    const id = await ctx.ev(`DATA.customers.find(x => x.name === ${JSON.stringify(ORION)}).id`);
+    const ownRow = `(() => getGainsightQueue().find(q => q.kind === 'Pending items batch' && q.customerId === ${JSON.stringify(id)} && /Log call summary in Gainsight timeline/.test(q.payload || '')))()`;
+    if (await ctx.ev(`!!${ownRow}`)) throw new Error('D7: its own batch row already exists');
+    await ctx.ev(`ui.view = 'today'; ui.openCustomerId = ${JSON.stringify(id)}; ui.panelTab = 'gainsight'; render(); true`);
+    await sleep(300);
+    await ctx.click(`[data-gainsight-batch="${id}"]`);
+    await sleep(500);
+    const queuedRow = JSON.parse(await ctx.ev(`JSON.stringify((${ownRow}) || null)`));
+    if (!queuedRow) return { passed: false, evidence: `no queued "Pending items batch" row for ${ORION} containing "Log call summary in Gainsight timeline"` };
+    await ctx.ev(`ui.openCustomerId = null; ui.view = 'risk'; render(); true`);
+    await sleep(300);
+    await ctx.click('#btn-send-gainsight');
+    let row = queuedRow;
+    for (const end = Date.now() + 15000; Date.now() < end && row.status !== 'sent'; await sleep(300)) {
+      row = JSON.parse(await ctx.ev(`JSON.stringify(getGainsightQueue().find(q => q.id === ${JSON.stringify(queuedRow.id)}) || null)`)) || row;
+    }
+    await ctx.ev(`ui.view = 'risk'; render(); true`);
+    const shown = await ctx.ev(`[...document.querySelectorAll('.rk-queue-row')].some(r => r.textContent.includes(${JSON.stringify(ORION)}) && r.textContent.includes('Pending items batch') && r.textContent.includes('sent'))`);
+    return { passed: row.status === 'sent' && !!row.externalId && shown, evidence: `own row ${queuedRow.status} -> ${row.status}${row.externalId ? ' (' + row.externalId + ')' : ''}; ${shown ? 'shows sent' : 'not shown as sent'} on the Risk tab; GAP notes: close a CTA after an ordinary call, success plan task update, Renewal Forecast Scorecard` };
+  } },
+  { id: 'D8', async run(ctx) {
+    await ctx.openOn(DAY);
+    const id = await ctx.ev(`DATA.customers.find(x => x.name === 'Coastal Water Authority').id`);
+    const card = `(() => { const el = document.getElementById('rk-c-${id}'); return el ? el.className : null; })()`;
+    const lastActioned = `(() => { const k = buildRiskCases(buildRiskHubList()).find(k => k.c.id === ${JSON.stringify(id)}); return k ? k.items.map(it => (it.tracking && it.tracking.lastActioned) || null).join(',') : null; })()`;
+    await ctx.ev(`ui.view = 'risk'; ui.openCustomerId = null; render(); true`);
+    await sleep(300);
+    const before = await ctx.ev(card);
+    if (!before) return { passed: false, evidence: 'Coastal Water Authority has no case in the Risk tab before actioning' };
+    const lastBefore = await ctx.ev(lastActioned);
+    await ctx.click(`[data-risk-confirm="${id}"]`);
+    await sleep(500);
+    const after = await ctx.ev(card);
+    const lastAfter = await ctx.ev(lastActioned);
+    const inList = after !== null;
+    const cls = s => s.replace(/rk3-card|is-active|sev\d/g, '').trim();
+    return { passed: !inList, evidence: `case card ${cls(before)} -> ${inList ? cls(after) + ' (still listed)' : 'gone from the list'}; lastActioned ${lastBefore} -> ${lastAfter}` };
+  } },
+  { id: 'D9', async run(ctx) {
+    await ctx.openOn(DAY);
+    const impl = ctx.state.setup.implAccount;
+    const heads = name => ctx.ev(`(() => { const c = DATA.customers.find(x => x.name === ${JSON.stringify(name)});
+      ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = c.id; render();
+      const p = document.querySelector('.day-pane[data-day-holds="' + c.id + '"]');
+      return p ? JSON.stringify([...p.querySelectorAll('h5')].map(h => h.textContent.replace(/\\s+/g, ' ').trim())) : null; })()`);
+    const implHeads = JSON.parse(await heads(impl) || 'null');
+    if (!implHeads) return { passed: false, evidence: `${impl} has no beat panel on Today` };
+    const implOk = implHeads.some(h => h.includes('Gainsight gates start at Go-Live')) && !implHeads.some(h => h.startsWith('Sentiment'));
+    const live = JSON.parse(await heads(ORION) || 'null');
+    if (!live) return { passed: false, evidence: `${ORION} has no beat panel on Today` };
+    const isImpl = await ctx.ev(`inImplementation(DATA.customers.find(x => x.name === ${JSON.stringify(ORION)}))`);
+    const sent = h => h.find(x => x.startsWith('Sentiment'));
+    const before = sent(live);
+    const id = await ctx.ev(`DATA.customers.find(x => x.name === ${JSON.stringify(ORION)}).id`);
+    let after = null, done = null;
+    if (before) {
+      await ctx.ev(`(() => { const c = DATA.customers.find(x => x.name === ${JSON.stringify(ORION)}); ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = c.id; render();
+        const b = document.querySelector('.day-pane[data-day-holds="' + c.id + '"] [data-fp-toggle="sentiment|' + c.id + '"]'); if (!b) throw new Error('no sentiment toggle in the Orion pane'); b.click(); return true; })()`);
+      await sleep(400);
+      after = sent(JSON.parse(await heads(ORION) || '[]'));
+      done = await ctx.ev(`!!DATA.customers.find(x => x.name === ${JSON.stringify(ORION)}).compliance.sentiment.done`);
+    }
+    const passed = implOk && !isImpl && !!before && /not logged/.test(before) && /logged/.test(after || '') && !/not logged/.test(after || '') && done === true;
+    return { passed, evidence: `${impl}: ${implOk ? 'gates-start-at-Go-Live note, no Sentiment block' : 'headings ' + implHeads.join(' / ')}; ${ORION} (${isImpl ? 'in implementation' : 'post Go-Live'}): "${before || 'no Sentiment block'}" -> "${after || '-'}", stored done ${done}` };
+  } },
+  { id: 'D10', async run(ctx) {
+    await ctx.openOn(DAY);
+    await ctx.ev(`ui.view = 'today'; ui.openCustomerId = null; render(); true`);
+    await sleep(300);
+    if (await ctx.ev(`dayIsClosed()`)) throw new Error('D10: the day was already closed before wrap-up');
+    await ctx.click('[data-wrap-day]');
+    await sleep(500);
+    const closed = await ctx.ev(`dayIsClosed() && getDayClose().date === todayISO()`);
+    await ctx.click('#modal-cancel');
+    await sleep(300);
+    const known = new Set(readdirSync(ctx.downloads));
+    await ctx.click('[data-backup-now]');
+    let file = null;
+    for (const end = Date.now() + 20000; Date.now() < end && !file; await sleep(400)) {
+      const fresh = readdirSync(ctx.downloads).filter(f => !known.has(f) && f.endsWith('.json'));
+      if (fresh.length) file = fresh[0];
+    }
+    if (!file) return { passed: false, evidence: `day ${closed ? 'closed' : 'not closed'}; no backup file reached downloads-A` };
+    await sleep(300);
+    const parsed = JSON.parse(readFileSync(join(ctx.downloads, file), 'utf8'));
+    const n = (parsed.customers || (parsed.data && parsed.data.customers) || []).length;
+    return { passed: closed && n === 35, evidence: `day ${closed ? 'closed' : 'not closed'}; backup ${file} holds ${n} customers (want 35)` };
   } },
 ];
 
