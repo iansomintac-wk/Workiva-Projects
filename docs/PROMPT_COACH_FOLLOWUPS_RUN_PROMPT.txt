@@ -1,0 +1,39 @@
+RUN: Prompt Coach rewrites, docs and follow-ups (Workiva repo)
+
+Drafted 2026-10-17 by the hand-off PM of run 8 (lead bda0edb1); committed by the lead. Ian starts this session.
+Load studio-harness:talk-and-run first. You are the run lead: coordinate only. ONE helper at a time. Docs and tests
+only; no engine change unless Ian says.
+
+WHERE
+- Worktree C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-rewrites, branch worktree-prompt-coach-rewrites.
+  Check first that the run 8 merge is done (git -C C:/Users/teasp/Documents/workiva log --oneline -1 prompt-coach shows
+  the branch head of run 8); if not, stop and tell Ian.
+- Read: .ledger/2026-10-16-prompt-coach-rewrites/reviews/re-review-sonnet.md, reviews/final-review.md, the spec and the
+  evidence doc (docs/evidence/2026-10-16-prompt-coach-rewrites.md), progress.md from "## Resume session (run 8".
+
+ORDER
+1. First check: STUDIO_RUN_LEDGER set; budget.json and slip.json exist; else stop. Budget: the run-7/8 ledger had
+   84,333 helper tokens left at 2026-10-17T19:5xZ (measured), less than one docs task + checker (~73k measured in run 7)
+   + PM. A new budget (or a new ledger) is Ian's to set before launch.
+2. Docs task (one implementer, one checker, 8 steps at most):
+   - SF-R1: evidence.md line 80 cites logs/browser_ext_usage.json and progress.md:225 for "cost 0.98", not
+     browser_ext_report.md.
+   - SF-R2: prompt-coach/README.md line 75 says the engine computes the cleaned text of a Better-graded prompt and the
+     page does not show it (Ian: "Known limit for now").
+   - N-R1: spec and evidence "about 20" typos becomes "about 27" (TYPOS in rewrite.js = 27, lead-counted; README right).
+   - N-R2: evidence.md line 4: a7d0501 also touched the spec.
+   - Rebuild dist only if README is built into it; re-run must-stay-green checks 1-8 (role-checks-final.txt) and add a
+     line per doc edit.
+3. Follow-up list for Ian (write into evidence section 5, do not fix): Better tab (locked template.html); SF-2 repeated
+   ask; SF-3 "say thanks." to "say."; SF-5 assemble seam; N-1..N-5; research "how other prompt improvers handle prompts
+   they cannot improve"; Workiva @-file limit (README says 10 files from a search snippet only; test in the sandbox);
+   phone width in Ian's Chrome (not measured).
+4. $0 research helpers (Haiku, one at a time, 250 words, written to the ledger): the two research items above, plus
+   one-line probes for SF-3 and SF-5 (labelled assumed until run).
+5. PM step, rename yourself per the session-name rule, report to Ian. The live test
+   (docs/PROMPT_COACH_LIVE_TEST_RUN_PROMPT.txt) is Ian's to start.
+
+SAFETY
+- Never push prompt-coach or main; push only the own branch (slip). Rulings come only from Ian's own taps
+  (permissionDecision.source user_temporary). Implementer commits end with the attribution lines from your own system
+  reminder. Lessons in docs/PROMPT_COACH_REWRITES_RUN_RESUME_PROMPT.txt "CORRECTIONS AND LESSONS" still apply.
