@@ -1,3 +1,69 @@
+Fit Finder v4.19: hand-off (2026-10-17, session c4f8b112, successor of bc8a82fb; rewrite-reach rule V2 in 6f7090e)
+
+WHERE
+Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
+worktree-fit-finder-v4. Pushed by v4.19 under the slip (push of this branch only; merge no; spend
+none): 6f7090e, then this hand-off commit. Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is
+still version 13 (dist of 8050b07, 82,594 bytes LF); the branch dist is now 83,833 (rule V2), so a
+republish (v14) would change the live page: Ian's call, and not yet (see 1). Run ledger (git-ignored):
+C:/Users/teasp/Documents/studio-harness/.claude/worktrees/bedtime-slip/.ledger/2026-10-16-24h-program/fit-finder-v420/
+(slip.json, budget.json, progress.md, reviews/, v2probe.cjs, v3probe.cjs copied from fit-finder-v419).
+
+NEXT SESSION (written by c4f8b112 at the 200k stop; supersedes every NEXT SESSION below)
+Read this file, CLAUDE.md, fit-finder/README.md (last section) and the run ledger. Nothing is
+half-done in the repo. Order:
+1. Final review of V2 (607cf8a..6f7090e). Codex is done (reviews/2026-10-17-codex-v2.md): 3 must-fix
+   (a hyphen ends the noun: "Revise the note-payable interest rate monthly" and "Revise the
+   letter-of-credit amount" get the rewrite card again; the writing-noun window takes compounds:
+   "Make the customer email address more professional" gets the card; manner and pronoun need no
+   writing: "Process invoices in a more professional way", "The close process is informal; make it
+   more formal" get the card), 3 should-fix (recall lost against V1: "Revise the email please",
+   "Revise the paragraph about revenue", "Make my email more professional sounding"; the tests miss
+   all of these), 1 minor (README "only when it describes a piece of writing" overstates). The Opus
+   final-reviewer was still running at the stop; its findings come back in its reply, not a file
+   (its Write to this ledger was refused last run). If its result is not in progress.md, re-run it
+   on 607cf8a..6f7090e (packet: findings in the reply, at most 25 lines).
+2. FIRST JOB: fix round V3, test first. The lead already probed it (v3probe.cjs in the ledger; run
+   node v3probe.cjs <absolute fit-finder dir at V2> <scratch dir>): hyphen does not end the noun;
+   "please" and "about" may follow the noun; a tone word after a writing noun only with a
+   to/for/from/about/on/with phrase between; it/this/that/them only with writing context earlier in
+   the text (a JS lookbehind); manner/way/style/voice only after a writing verb; tone/wording/
+   language/register directly; "sounding" as a complement. Measured: 21 false-positive sentences
+   (14 V2 + 7 Codex) 0 bad, 25 positives 0 bad, fresh unchanged (12 of 23, wrong 6), 139 older texts
+   0 change, fresh G12 same fit/ops/first card. One deliberate narrowing: bare "Make it more
+   professional." no longer reads REWRITE (no writing context), so the V2 check "a tone word about
+   it, this or sound" needs a sentence with context (e.g. "I wrote an email to a client; make it
+   more professional."); the plan must say so. Merge in Opus's V2 findings first. Path: plan-writer
+   -> lead review (run the plan's Step 1 code on parent and V3 copies, dry-run its mutants from the
+   plan text; v4.19's tools for this: job tmp planstep1.js / mutdry.cjs, copy the idea) -> rehearse
+   (node C:/Users/teasp/Documents/studio-harness/bin/rehearse.mjs <plan> --ledger <v420 folder>,
+   from the repo root) -> implementer -> checker -> lead re-run -> one final review (Opus + Codex).
+   Stopping rule proposed (assumed, untested): after V3, findings that are only made-up edge
+   sentences (none from real prompts) go into the README as known limits instead of another round;
+   a must-fix on a realistic task still gets fixed.
+3. Ian's item 71 (5 checks, proposals A and B, republish v14): his. for-ian 71's republish line
+   says "not yet"; keep it so until V3 is clean, then say what changed in plain words.
+4. PM hand-off step and brain capture (skipped by v4.17, v4.18, v4.19). Capture candidates:
+   (a) role_boundary resolves a helper's Write path against the lead's shell cwd: never cd in the
+   lead's shell while a writing helper runs; use subshells (v4.19 slipped once, no harm);
+   (b) Codex on Windows works with -c windows.sandbox=unelevated (lead 12's form: codex exec -s
+   read-only -c windows.sandbox=unelevated --skip-git-repo-check -o <out> - < <prompt>); 2 runs
+   today exit 0, about 4 min each; recur gotcha 2026-10-14-codex-shell-blocked-on-windows with this
+   fix; (c) the bedtime-slip ledger sits under a package.json with "type": "module": scripts there
+   must be .cjs, and a scratch copy of fit-finder under it needs package.json {"type":"commonjs"};
+   (d) rehearse reads every non-empty line under "## Expected breaks" as a break, so none = empty.
+Program lead: "NEW - 24h program lead 13" (1cca7841) unless renamed; send it status.
+
+UPDATE 2026-10-17, session c4f8b112 (successor of bc8a82fb): rewrite-reach rule V2 built
+- 09:12Z start. Codex retry of the V1 review with lead 12's unelevated-sandbox form: done, exit 0;
+  agrees with Opus S1/S2 (calls them must-fix), adds 2 false positives, flags reply and plurals.
+- V2 probed by the lead; plan cdbffbc (plan-writer, Sonnet; lead fixes: absolute cd in every
+  block, .cjs scripts, probe's right count), rehearsed 0 mismatches.
+- 6f7090e (implementer, Sonnet): new checks 6 FAIL on the parent, 0 after; the 14 false positives
+  no longer read REWRITE; fresh 12 of 23, wrong 6 (unchanged); half A 12/29 w0; held-out 13/30 w3;
+  real 15/19 w2; eval A 52/60, B 45/60; pagetest 72 checks 0 failed; dist 83,833 = README;
+  mutants 7 killed 0 survivors. Checker PASS; lead re-ran all of it. Pushed 6f7090e.
+
 Fit Finder v4.18: hand-off (2026-10-17, session bc8a82fb, successor of a1b6f82c; rewrite-reach rule V1 in 0dd05ca + a1c94cb)
 
 WHERE
