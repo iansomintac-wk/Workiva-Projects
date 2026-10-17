@@ -1,7 +1,7 @@
 # Evidence: Prompt Coach Better / Strong rewrites (2026-10-16 run)
 
 Branch `worktree-prompt-coach-rewrites`, from `prompt-coach` at `73be350`. Code last changed at `f95ab85`
-(Task 7 fix 4); no code has changed since (`a7d0501` rebuilt dist and README only). Spec: `docs/superpowers/specs/2026-10-16-prompt-coach-rewrites-design.md`.
+(Task 7 fix 4); the only code change since is fix 2 in `rewrite.js` (`a552672`; `a7d0501` rebuilt dist and README only). Spec: `docs/superpowers/specs/2026-10-16-prompt-coach-rewrites-design.md`.
 Plan: `docs/superpowers/plans/2026-10-16-prompt-coach-rewrites.md`.
 
 Labels used in every row: **measured** = a command was run and its output read, command and commit named;
@@ -69,16 +69,17 @@ The "?" prediction was an assumption in the plan and is wrong: 89 became 69, not
 
 | Check | Required | Result | Label |
 |---|---|---|---|
-| Eval accuracy | at least 85.6% | acc=0.856, weak/strong flips 8 | measured: `node prompt-coach/tests/eval.js rulefeat prompt-coach/data/test.jsonl` at `a7d0501` |
-| Unit tests | all pass | 18 pass, 0 fail | measured: lead re-run, section 1 of the log, at `a7d0501` |
-| simulate, train only (2070 runs) | at most 8 strongNotStrong, at most 5 betterWeak | strongNotStrong 2, betterWeak 5, toggleNoEffect 0, dupSentence 0, badText 2, emptyFrag 0 | measured: `node prompt-coach/tests/simulate.js prompt-coach/data/train_*.jsonl` at `a7d0501` |
-| simulate, train plus test (2679 runs) | at most 8 strongNotStrong, at most 5 betterWeak | strongNotStrong 4, betterWeak 5, toggleNoEffect 0, dupSentence 2, badText 4, emptyFrag 0 | measured: `node prompt-coach/tests/simulate.js prompt-coach/data/train_*.jsonl prompt-coach/data/test.jsonl` at `a7d0501` |
-| customer_check, default | PASS | PASS 229 runs | measured: `node prompt-coach/tests/customer_check.js` at `a7d0501` |
-| customer_check, `data/test.jsonl` | PASS | PASS 609 runs after fix 2 (notStrong 0, filler, order, broken, blankMore, blankOnlyC, ianCase all 0/609). Before fix 2 (at `a7d0501`) it was FAIL with notStrong 2/609: the "assurance reviewer" prompt x2 (missing P). Ian ruled "Fix in the rewriter" on 2026-10-17 and fix 2 made a scope-limit-only Evaluate match still get the coach's Evaluate sentence; the parent `73be350` had notStrong 4/609 (that prompt x2 plus the "user-control assessment" prompt x2, fixed earlier). Resolved: Yes, met. Plan lines 51 and 60 carry the same wrong premise (one only-Context prompt, rule 6 turns it to PASS) | measured: `node prompt-coach/tests/customer_check.js prompt-coach/data/test.jsonl` at `3d8321a` plus the fix 2 working tree (committed as FIX2); pre-fix figure at `a7d0501`; parent figure measured 2026-10-17 on `73be350` (read: spec line 162-164) |
-| filetest | passes | 8 rows, errors [], exit 0 (via the npx-cache alias, VENDOR folder outside the repo) | measured: `node prompt-coach/tests/filetest.js` after the build, at `a7d0501` |
+| Eval accuracy | at least 85.6% | acc=0.856, weak/strong flips 8 (flips at `a7d0501`) | measured: `node prompt-coach/tests/eval.js rulefeat prompt-coach/data/test.jsonl`, accuracy at `a552672` (lead re-run, `fix2_lead_rerun.txt`) |
+| Unit tests | all pass | 19 pass, 0 fail | measured: lead re-run at `a552672` (`fix2_lead_rerun.txt`); 18/0 at `a7d0501` before fix 2 |
+| simulate, train only (2070 runs) | at most 8 strongNotStrong, at most 5 betterWeak | strongNotStrong 2, betterWeak 5, toggleNoEffect 0, dupSentence 0, badText 2, emptyFrag 0 | measured: `node prompt-coach/tests/simulate.js prompt-coach/data/train_*.jsonl` at `a552672` |
+| simulate, train plus test (2679 runs) | at most 8 strongNotStrong, at most 5 betterWeak | strongNotStrong 2, betterWeak 5, toggleNoEffect 0, dupSentence 2, badText 4, emptyFrag 0 (strongNotStrong was 4 at `a7d0501`; fix 2 removed the assurance prompt x2) | measured: `node prompt-coach/tests/simulate.js prompt-coach/data/train_*.jsonl prompt-coach/data/test.jsonl` at `a552672` |
+| customer_check, default | PASS | PASS 229 runs | measured: `node prompt-coach/tests/customer_check.js` at `a552672` |
+| customer_check, `data/test.jsonl` | PASS | PASS 609 runs after fix 2 (notStrong 0, filler, order, broken, blankMore, blankOnlyC, ianCase all 0/609). Before fix 2 (at `a7d0501`) it was FAIL with notStrong 2/609: the "assurance reviewer" prompt x2 (missing P). Ian ruled "Fix in the rewriter" on 2026-10-17 and fix 2 made a scope-limit-only Evaluate match still get the coach's Evaluate sentence; the parent `73be350` had notStrong 4/609 (that prompt x2 plus the "user-control assessment" prompt x2, fixed earlier). Resolved: Yes, met. Plan lines 51 and 60 carry the same wrong premise (one only-Context prompt, rule 6 turns it to PASS) | measured: `node prompt-coach/tests/customer_check.js prompt-coach/data/test.jsonl` at `a552672` (FIX2); pre-fix figure at `a7d0501`; parent figure measured 2026-10-17 on `73be350` (read: spec line 162-164) |
+| filetest | passes | 8 rows, errors [], exit 0 (via the npx-cache alias, VENDOR folder outside the repo) | measured: `node prompt-coach/tests/filetest.js` after the build; re-run at `a552672`: exit 0, 8 rows, errors [] (`fix2_filetest.txt`); first run at `a7d0501` |
 | Built page, rebuilt | build runs, dist unchanged on rebuild | build 314 KB (321,725 bytes); rebuild left dist unchanged | measured: `node prompt-coach/tests/build.js`, lead re-run at `a7d0501` |
-| Built page in a browser, by the Claude browser extension | no console errors, no sideways scroll, desktop and phone | NOT YET CHECKED by the extension. The one-shot `claude -p --chrome` helper was denied by the Claude Code auto-mode classifier before it ran, so no Chrome action happened. Pending Ian, who asked for it (2026-10-17T08:02:54Z) | read: ledger t12_addendum.txt |
+| Built page in a browser, by the Claude browser extension | no console errors, no sideways scroll, desktop and phone | Run by Ian himself (2026-10-17, started 15:34:59Z) with Claude in Chrome, in his Chrome, on the build before fix 2 (`3d8321a` dist): console 0 errors, 0 warnings (after one reload); desktop 1521 = 1521, no sideways scroll; typed input equal; STRONG text equal; BETTER NO TAB (the known limit, section 5). Phone width NOT measured there: the resize reported success but innerWidth stayed 1536. The phone width rests on the Playwright run below. The helper's tool-reported total_cost_usd was 0.98; whether it was billed is not known | measured: `.ledger/2026-10-16-prompt-coach-rewrites/logs/browser_ext_report.md` and `browser_ext_cmp.txt` (the earlier classifier denial of the one-shot helper is superseded) |
 | Built page, Playwright extra (not the extension test) | same | Headless Chromium (Playwright 1.62.1, npx cache), page served at 127.0.0.1:8765; Ian's case typed in; console 0 errors, 0 warnings; desktop 1280x800 scrollWidth 1280 equals clientWidth 1280; phone 390x844 scrollWidth 390 equals clientWidth 390; Strong tab text equals `tests/fixtures/rewrites/ian_strong.txt` exactly inside the page's quote marks. Three controls each made a check fail (injected console.error gave 1 error; injected 2000px div gave 2008 wider than 390; one word changed in Strong gave not equal) | measured by the run lead (run 7) with `.ledger/.../browser_pw.js` and `browser_cmp.js`, 2026-10-17 12:01Z, at `a7d0501` |
+| Built page, Playwright extra again at `a552672` (after fix 2) | same | dist 322,247 bytes; console 0 errors, 0 warnings; 1280 = 1280 and 390 = 390, no sideways scroll; STRONG text equal; BETTER NO TAB. This is the only phone-width measurement on the fix 2 build, and the extension run did not measure phone width | measured by the run lead, `fix2_pw_run.txt` and `fix2_pw_cmp.txt` in `.ledger/2026-10-16-prompt-coach-rewrites/logs/`, at `a552672` |
 
 Other measured probes (lead, at `f95ab85`, engine unchanged to `a7d0501`): ctx_probe 9 C turned ON; filler
 0 / 0 (sim / test); median blanks 2 / 2; prompts with at least 3 blanks 55 (sim) and 143 (test), against
@@ -102,9 +103,17 @@ Approved target: spec "Target for Ian's case" (read: spec lines 80-96), stored a
 
 ## 5. Not tested or open
 
-- Claude browser extension test of the built page: not run (classifier denial, pending Ian); only the
-  Playwright extra above.
-- Open finding for Ian to decide (read: ledger progress.md, root cause 2026-10-17 12:00Z, measured by the lead):
+- Claude browser extension test of the built page: run by Ian in his Chrome (Claude in Chrome) on the build
+  before fix 2 (section 3 row): console 0/0, desktop 1521 = 1521, typed input equal, STRONG equal, BETTER NO
+  TAB. Phone width was not measured there (resize did not take), so phone width rests on the Playwright runs
+  (390 = 390 at `a7d0501` and at `a552672`). Not repeated by the extension on the `a552672` build; the
+  `a552672` page was checked by Playwright only.
+- Better tab: known limit for now (Ian, 2026-10-17, "Known limit for now (Recommended)"). Not fixed; the
+  finding below stays as the record.
+- Follow-ups (Ian, 2026-10-17, "Carry as follow-ups (Recommended)"): SF-2, SF-3, SF-5 and N-1 to N-5 below.
+- Follow-up research idea (the lead's recommendation, not a ruling by Ian): how other prompt improvers handle
+  prompts they cannot improve.
+- Open finding (decided as a known limit, above; read: ledger progress.md, root cause 2026-10-17 12:00Z, measured by the lead):
   the page has no Better tab for Ian's case. `web/template.html` line 357 draws tabs only above the prompt's own
   grade; Ian's case grades Better, so the tabs are "Your prompt (BETTER)" and "Strong (suggested)". The engine's
   Better text (equal to `ian_better.txt`, checked by the unit test and by the `ianCase` line) is computed but
@@ -117,7 +126,7 @@ Approved target: spec "Target for Ian's case" (read: spec lines 80-96), stored a
 - The artifact has not been republished; the published artifact is probably an older build (assumed).
 - Codex review not available (it cannot start a shell on this PC), so `final-reviewer` alone.
 - Final review (final-reviewer only, Opus; read: ledger reviews/final-review.md, 2026-10-17): 1 must-fix, 5 should-fix, 6 notes.
-  - MF-1: the test.jsonl customer_check gate is unmet and three docs gave the wrong reason (spec, this file, plan lines 51 and 60); spec and this file fixed in the FIX1 commit, plan not edited. Resolved by fix 2 (Ian's ruling "Fix in the rewriter", 2026-10-17): customer_check on `test.jsonl` now PASS 609 (measured: `node prompt-coach/tests/customer_check.js prompt-coach/data/test.jsonl`, `3d8321a` plus the FIX2 change). Strong text changed for 1 of 1395 test and train prompts (no-file run, measured by a before/after dump of `coach()`): the assurance reviewer prompt. Other measured figures after fix 2: unit tests 19/0; eval acc 0.856; simulate train-only 2070 runs and train plus test 2679 runs with counters unchanged; customer_check default PASS 229; blank counts 55 and 143 at three or more blanks.
+  - MF-1: the test.jsonl customer_check gate is unmet and three docs gave the wrong reason (spec, this file, plan lines 51 and 60); spec and this file fixed in the FIX1 commit, plan not edited. Resolved by fix 2 (Ian's ruling "Fix in the rewriter", 2026-10-17): customer_check on `test.jsonl` now PASS 609 (measured: `node prompt-coach/tests/customer_check.js prompt-coach/data/test.jsonl`, `a552672`). Strong text changed for 1 of 1395 test and train prompts (no-file run, measured by a before/after dump of `coach()`): the assurance reviewer prompt. Other measured figures after fix 2: unit tests 19/0; eval acc 0.856; simulate train-only 2070 runs and train plus test 2679 runs with counters unchanged; customer_check default PASS 229; blank counts 55 and 143 at three or more blanks.
   - SF-1: no Better tab on the page (template.html:357 locked); known limit for Ian.
   - SF-2: the onlyC generic sentence can repeat and widen the ask (4 of 62 changed runs, a checker's reading).
   - SF-3 (reviewer's assumed item): directSentence trailing "thanks" removal can leave "to say."; cheapest check W.directVoice on that sentence.
@@ -144,10 +153,10 @@ Approved target: spec "Target for Ian's case" (read: spec lines 80-96), stored a
 
 ## 6. Measured vs read
 
-Measured (a command was run and read; all at `a7d0501` unless stated): eval acc 0.856; unit tests 19/0 after fix 2 (18/0 before); simulate
-train-only 2070 and train plus test 2679 counters; customer_check default PASS 229; customer_check test PASS 609 after fix 2 (FAIL with notStrong 2 before it); "?" 69 (24 + 45); median blanks 2/2; only-Context-missing runs 7 and
-18; filetest 8 rows, errors []; build 314 KB, dist unchanged on rebuild; the Playwright extra figures (console,
-widths, Strong text, three controls); ctx_probe, filler, blank probes at `f95ab85`; the parent's notStrong 4/609
+Measured (a command was run and read; figures that fix 2 could change are at `a552672`, the rest at `a7d0501` unless stated): eval acc 0.856 (`a552672`); unit tests 19/0 (`a552672`; 18/0 at `a7d0501`); simulate
+train-only 2070 and train plus test 2679 counters (`a552672`); customer_check default PASS 229 (`a552672`); customer_check test PASS 609 (`a552672`; FAIL with notStrong 2 at `a7d0501`); blank counts 55 and 143 (`a552672`); "?" 69 (24 + 45, `a7d0501`); median blanks 2/2; only-Context-missing runs 7 and
+18; filetest 8 rows, errors [] (`a552672` and `a7d0501`); dist 322,247 bytes at `a552672` (build 314 KB, 321,725 bytes, dist unchanged on rebuild at `a7d0501`); the Playwright extra figures (console,
+widths, Strong text, three controls at `a7d0501`; the repeat at `a552672`); Ian's extension run (console, desktop width, typed input, STRONG, no Better tab; phone not measured); ctx_probe, filler, blank probes at `f95ab85`; the parent's notStrong 4/609
 (measured 2026-10-17 on `73be350`); ianCase 4 failures at Task 2.
 
 Read (taken from a document, source named): spec rules, departures and the Ian rulings quotes (spec); the 2.2M

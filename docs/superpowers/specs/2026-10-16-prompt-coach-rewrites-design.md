@@ -31,6 +31,21 @@ Later in the run (token cap):
 - The raises to 2.6M and then 2.8M were made by program leads 13 and 14 under Ian's standing yes.
   These are not Ian's words.
 
+After the final review (2026-10-17, run 7):
+
+- Ian ran the browser extension test himself (2026-10-17T15:37:40Z: he ran
+  `bash .../browser_ext_run.sh` in his Chrome). This is an action, not words; it was his answer to the
+  question of who runs the extension test.
+- Two questions from Ian about the failing assurance-reviewer prompt. These are questions, not rulings:
+  - 2026-10-17T15:45:08Z: "would targeted deep research on how anything similar to this is being addressed?"
+  - 2026-10-17T16:23:13Z: "Do you believe that we could resolve that question on Max Effort?"
+- To decision 2, the failing assurance-reviewer prompt (2026-10-17T16:27:12Z): **"Fix in the rewriter
+  (Recommended)"** (when the only Evaluate match is a scope limit, still add the Evaluate sentence; grading
+  untouched).
+- To decision 3, the missing Better tab (2026-10-17T16:34:00Z): **"Known limit for now (Recommended)"**
+- To decision 4, the engine should-fixes SF-2, SF-3, SF-5 and notes N-1 to N-5 (2026-10-17T16:37:41Z):
+  **"Carry as follow-ups (Recommended)"**
+
 ## Problem
 
 Ian tested a utility-invoice extraction prompt (sustainability). The Strong rewrite kept "please",
