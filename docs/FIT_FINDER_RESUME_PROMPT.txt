@@ -52,10 +52,12 @@ UPDATE 2026-10-16, session b9821fb4 (successor of c9f81242): half A card labels 
   surface 'chat' instead of 'files' (0 of 19 -> 13 of 19; B's known 7 of 7 control exposed it).
 - Predecessor c9f81242 kept (state working when checked; shares this worktree, so claude rm would
   remove it).
-- Proposed, not recorded (Ian's yes needed): a ruling from his words above (the model labels gold
-  data; Ian checks only the score-deciding calls, count stated up front); bank facts: B's labelling
-  method was never written down as the default; Git Bash heredocs here drop a backslash in JS, so
-  write scripts with the Write tool.
+- Pushed 4efa749..35c9852 on Ian's "Push (Recommended)". On his "Record all three (Recommended)":
+  ruling 2026-10-16-the-model-labels-ian-checks-the-deciding-few (proposed) and brain rule pages
+  fit-finder/rule/the-model-labels-ian-checks-a-stated-few.md and write-scripts-with-the-write-tool.md,
+  all uncommitted in the studio-harness checkout. Corrected cause: not heredocs; any `\\` in a Bash
+  tool command arrives as `\`, even in single quotes (od -c, measured).
+- Stopped at the 200k context line after the records; this edit is local (commit after 35c9852).
 
 NEXT SESSION (written by c9f81242; DONE by b9821fb4 above; kept for the record)
 Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. If the launch note does not
