@@ -1,79 +1,94 @@
 RESUME: Prompt Coach Better/Strong rewrites run (Workiva repo)
 
-Written 2026-10-17 ~02:05 by run lead 591a52e4 (second lead), which stopped at the 200k context line
-(context-stop hook). Predecessors: 4756fc2d (first lead), a72ccc7d (talk). Load studio-harness:talk-and-run
-first and follow "The run" from where this leaves off. You are the run lead: coordinate only, never plan or
-build in your own context.
+Written 2026-10-17 ~10:20Z by run lead 6e3060f1 (third lead), which stopped at the 200k context line
+(context-stop hook). Predecessors: 591a52e4 (second lead), 4756fc2d (first lead), a72ccc7d (talk). Load
+studio-harness:talk-and-run first and follow "The run" from where this leaves off. You are the run lead:
+coordinate only, never plan or build in your own context. ONE helper at a time: never dispatch an
+implementer while a checker is running (this lead did once, 09:19Z, and had to stop it).
 
 READ FIRST
-- docs/PROMPT_COACH_REWRITES_RUN_PROMPT.txt: WHERE, ORDER steps 3-7, PERMISSIONS and SAFETY still apply,
-  with the updates below.
-- Ledger: .ledger/2026-10-16-prompt-coach-rewrites/progress.md (rows, Ian's rulings, corrections, forecasts),
-  helper-rows.md (token use), role-checks.txt (Task 5's 10 lines are in it now), logs/.
+- docs/PROMPT_COACH_REWRITES_RUN_PROMPT.txt: WHERE, ORDER steps 3-7, PERMISSIONS and SAFETY still apply.
+- Ledger: .ledger/2026-10-16-prompt-coach-rewrites/progress.md (rows, rulings, corrections, forecasts; the
+  section "Resume session 6e3060f1" is this lead's), helper-rows.md (token use), role-checks.txt (Task 7's
+  10 lines; line 1 must become # pass 15 after fix 2), logs/.
 - Plan (approved, commit 340c9c8): docs/superpowers/plans/2026-10-16-prompt-coach-rewrites.md.
   Spec with Ian's plan-stop rulings: docs/superpowers/specs/2026-10-16-prompt-coach-rewrites-design.md.
 
 STATE (branch worktree-prompt-coach-rewrites)
 - First check as usual: STUDIO_RUN_LEDGER set, budget.json and slip.json exist; else stop.
-- Tasks 1-4 done and checked (69bcebf; 540118c + df6f202; 1b93899 + adbf0f2; db4aa75).
-- Task 5 built: 883fb20 plus fix rounds 0e25270, 6f4caeb, 987d32f. The lead re-ran all checks at 987d32f
-  and they are green (unit 10/0; customer_check 0/229 and 0/609; simulate 8/5/4/2; parent export 7/3;
-  locked diff empty). Task 5's FINAL CHECKER HAS NOT RUN. First job: dispatch studio-harness:checker on
-  db4aa75..987d32f using the 10 lines already in role-checks.txt, plus a read of
-  logs/t5fix3_dv_changes.txt (lead probe, 138 of 2473 sentences changed) for any output worse than its
-  input. The first checker failed 883fb20 on output quality; fixes 1-3 are in progress.md.
-- Then Tasks 6-13 one at a time (implementer, checker, lead re-run, ledger row), then the final review.
-- Tokens: helper-rows total 1,014,061 of the 2.2M cap. Forecast 1.95M-2.08M (assumed from estimates, see
-  progress.md). Re-forecast after each task; stop for Ian if it passes 2.2M.
-- Time: Tasks 1-5 took about 45 minutes of wall time (01:20-02:05, measured), Task 5 alone about 25.
-  Tasks 6-13 plus the final review: assumed 1.5-2.5 hours.
+- Tasks 1-6 done and checked. Task 5 got a README fix (c86b65b). Task 6 = 61837f5.
+- Task 7: ef801bf (build + debug fixA) passed all 10 checks but FAILED output quality: fixA's blank-free
+  "List the specific items that answer this, one per line." reached 21 rewrite/explain/draft/summarize
+  requests (logs/t7_fixA_3way.txt). Fix 2 = c325ee5: a LIST_INTENT set (errors, gaps, consistency,
+  anomaly, map, questions, checklist, extract, compare) gates that objective; unit 14/1 -> 15/0; default
+  PASS 229; test notStrong 2/609; eval 0.856; simulate 4/5; 24 one-per-line runs (12 prompts). One
+  non-list hit is left: "these risk descriptions are inconsistent can u fix them" x2 (intent consistency).
+  TASK 7 CHECKER HAS NOT RUN ON c325ee5. First job: parent-t7 (Temp/.../parent-t7 = 61837f5 + the c325ee5
+  test file) is already rebuilt and measured # pass 12 / # fail 3: fix 2's new test passes on 61837f5
+  (no fixA there), so it is red only against ef801bf (implementer measured 14/1); add an ef801bf export
+  line for that red check. Change role-checks.txt line 7's expectation and lines 8-10 to the range
+  61837f5..c325ee5 (line 1 expects 15/0), dispatch a checker with the 10 lines plus
+  logs/t7fix2_onePerLine.txt (every "one per line" Strong must be a list task) and a fresh 3-way read
+  versus the parent (Temp/prompt-coach-rewrites-4756fc2d/probe/cmp3.js pattern; rewrite it to compare
+  parent-t7 against HEAD). The one known hit is a quality gap: a fix (a fix/rewrite verb outranks the
+  consistency intent) goes to a fresh implementer; a second failure of the output-quality check is two
+  strikes.
+- Debug round facts (proved by experiment, Opus helper): the locked example word "review" sets the shared
+  vague-verb tag (O lost); "Scope 2" adds a scope-n P hit that dilutes P (P lost); the shorter Context
+  text moves the length bucket so the self-check stops swapping in the blank-free ALT.O (blankMore).
+  rules.js cannot fix these (no cross-letter masking). Scratch copies: Temp/.../t7exp/.
+- On data/test.jsonl, notStrong 2/609 (the 2 "As an assurance reviewer" runs, failing on the parent too)
+  meets the plan's fallback bar; customer_check there prints FAIL 609 runs for that reason. Expected.
+- Plan count corrections: each later task's unit counts are higher than the plan says by the tests added
+  since (after Task 7 fix 2: 15 tests). Tell each implementer and checker the corrected numbers.
+- Then Tasks 8-13 one at a time (implementer, checker, lead re-run, ledger row), the no-login browser
+  test (below), then the final review.
+- Tokens: helper-rows total 1,437,063 at 10:15Z, before fix 2. Forecast ~2.25M-2.34M (assumed). Cap is now
+  2.6M: program lead 13 said yes under Ian's standing yes of 2026-10-16 21:19Z (progress.md "RAISE" line;
+  budget.json written). Only 200k more is available without Ian. Re-forecast after Task 8.
+- Time: Ian asleep until ~15:30Z. This lead ran 09:10-10:20Z (Task 5 checker + README fix, Task 6, Task 7
+  build, debug and fix). Tasks 8-13 + browser test + final review: assumed 2-3 hours.
 
-CORRECTIONS AND LESSONS (put the relevant ones in each packet; do not edit the approved plan)
-- jq is not installed: use node -p "Object.keys(require('<abs json>')).length" or similar.
-- Role-check lines must run from any folder: git -C <worktree> ..., absolute paths, one command per line.
-- README steps were skipped twice (Tasks 2 and 3). Quote the plan's README text in the packet and have the
-  checker compare it exactly. The lead can compare it with sed -n '<plan line>p' against grep on the README.
-- helperToolCallCap is 45 per helper, counted across resumes. A helper at the cap has its calls refused and
-  ends with no report (T5, 32+12+1 calls). Resume a helper only while it has room; else start a fresh one.
-- Red-before-green: the lead makes a parent export (git archive <parent> prompt-coach | tar -x into
-  C:/Users/teasp/AppData/Local/Temp/prompt-coach-rewrites-4756fc2d/parent-tN, then copy the new test file in)
-  and adds that line to role-checks.txt. When several new cases sit in one test, check each case alone on the
-  parent (a tiny script in the same Temp folder).
-- probe_dv.js (Temp folder above) lists every sentence directVoice changes. It takes 6 jsonl files
-  (sim_customers, test, train_fr, train_grc, train_hard, train_sus); test_relabel and test_unlabeled have no
-  prompt field.
-- "LEAD:" steps that only copy files or run a generator can go to the implementer; steps needing an env
-  var (filler_probe OUT=, filetest VENDOR=) stay with the lead.
-- Before Task 7, read reviews/plan-rereview.md: note 1 (replace both the `const genUsed = new Set();`
-  line and the `for` line), note 4 (Objective placement on the blank path), note 6 (onlyC and "["
-  prompts). Ian ruled yes on (A), so Task 7's fallback is not used.
-- VENDOR for filetest.js: C:/Users/teasp/AppData/Local/Temp/prompt-coach-rewrites-4756fc2d/vendor
-  (mammoth@1.6.0 xlsx@0.18.5 jszip@3.10.1 pdfjs-dist@3.11.174, verified).
-- Scratch files: not under ~/.claude/ (run prompt ban); use the Temp folder above.
-- Add Ian's 2.2M ruling to the spec's rulings list in the Task 12 evidence-doc commit.
+BROWSER TEST (program lead 13's yes, recorded in progress.md "PEER ANSWER")
+- One-shot `claude -p --chrome --model sonnet --allowedTools "mcp__claude-in-chrome" < prompt > out.md`
+  is a helper, not a new session. After Task 11 builds dist/prompt-coach.html: serve prompt-coach/dist with
+  Temp/prompt-coach-rewrites-4756fc2d/browser/serve.js (node serve.js <dir> <port>, 127.0.0.1 only; note its
+  PID, stop it by PID after). The helper opens a NEW tab only, localhost and public pages only, no login,
+  no typing into Ian's signed-in sites, closes only its own tabs; desktop and 390px phone width, no
+  sideways scroll, read_console_messages for errors, Ian's invoice case (tests/fixtures/rewrites/ian_case.txt)
+  typed into #prompt and the Better/Strong text in #stagePrompt copied out verbatim; the lead diffs it
+  against ian_better.txt / ian_strong.txt with node. Report says it ran in Ian's real Chrome; reports go in
+  the ledger. Do it before the final review. The 3-way sandbox test still needs Ian's login (for-ian 72).
+
+CORRECTIONS AND LESSONS (carry the relevant ones into each packet; do not edit the approved plan)
+- All of the previous resume prompt's lessons still hold (jq absent; role-check lines from any folder;
+  quote README text and compare it exactly with node; 45-call cap counted across resumes; parent export for
+  red-before-green; LEAD steps with env vars stay with the lead; VENDOR folder
+  C:/Users/teasp/AppData/Local/Temp/prompt-coach-rewrites-4756fc2d/vendor; scratch only in that Temp folder).
+- A helper from an earlier session cannot be resumed ("No transcript found"); start a fresh one.
+- Subagents cannot Write report files outside their role's folder; ask for the report in the reply and
+  diffs as files under Temp.
+- The previous resume prompt's "note 4 (Objective placement)" is note 5 in reviews/plan-rereview.md.
+- Add Ian's 2.2M ruling (and any raise lead 13 grants, marked as the lead's answer under Ian's standing
+  yes) to the spec's rulings list in the Task 12 evidence-doc commit. Also list as known limits: "can you
+  hear me" -> "Hear me" (Task 5) and the 2 assurance runs that are not Strong (parent too).
 - Implementer commits end with:
   Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
   Claude-Session: <the resuming session's link from its system reminder>
 
-WORKIVA @-FILE FACTS (from another session's browser probe; read, not re-run; ledger NOTE ~01:35 and ~01:40)
-- The support page "Reference specific files in chat with Workiva AI" says: "You can add a maximum of 10
-  files to a prompt."; types Word, Excel, images, CSV, PDF, Workiva Document; "You must upload files to your
-  workspace before they can be referenced by Workiva AI."; Word and Excel are read by AWS only.
-- No size or page limit appears on any of the 4 pages (the 1,000-page and 4.5 MB snippets stay unconfirmed).
-- Reports: C:/Users/teasp/Documents/studio-harness/.claude/worktrees/bedtime-slip/.ledger/2026-10-16-24h-program/prompt-coach-browser/report.md and report2.md.
-- Use: the Task 8 README line says what the page states and that size limits are unconfirmed; Tasks 12 and 13
-  carry the same facts with the source. The engine tip carries no limit numbers.
+WORKIVA @-FILE FACTS: unchanged from the previous resume prompt (ledger NOTE ~01:35 and ~01:40): "You can
+add a maximum of 10 files to a prompt."; types Word, Excel, images, CSV, PDF, Workiva Document; upload to
+the workspace first; Word and Excel read by AWS only; no size or page limit stated (1,000-page and 4.5 MB
+unconfirmed). Task 8 README line and Tasks 12-13 say what the page states; the engine tip carries no
+limit numbers.
 
-CODEX
-- Codex 0.162.0 cannot start a shell here (helper_unknown_error; probed 2026-10-17). The final review is
-  studio-harness:final-reviewer alone.
+CODEX: 0.162.0 cannot start a shell here; the final review is studio-harness:final-reviewer alone.
 
 SESSIONS
-- a72ccc7d (talk), 4756fc2d (first lead) and 591a52e4 (second lead) all ran in this worktree. `claude rm <id>`
-  deletes the session AND its worktree, which would delete this run's folder and the git-ignored ledger. Do
-  not rm any of them until the branch is merged and pushed and Ian has said what to keep; never pass force
-  flags.
-- Slip: new sessions no. Do not launch any session. The live-test prompt (Task 13) is drafted, not run; the
-  live test needs Ian's Workiva sandbox login (ask in plain text).
-- For Ian (proposal, not done): a brain/ledger record for "a helper at the 45-call cap fails silently on
-  resume" (brain capture "Missed fact" line).
+- a72ccc7d, 4756fc2d, 591a52e4 and 6e3060f1 all ran in this worktree. `claude rm <id>` deletes the session
+  AND its worktree (this run's folder and the git-ignored ledger). Do not rm any of them until the branch is
+  merged and pushed and Ian has said what to keep; never pass force flags.
+- Slip: new sessions no. Do not launch any session; Ian (or program lead 13 under his standing yes, which
+  covers "the next session") starts the resume. The live-test prompt (Task 13) is drafted, not run.
+- For Ian (proposals, not done): brain/ledger records for "a helper at the 45-call cap fails silently on
+  resume" and "lead dispatched an implementer while a checker ran on the same working tree".
