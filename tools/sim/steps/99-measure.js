@@ -32,12 +32,6 @@
   out.fix4_scheduleAdviceButBooked = sched.filter(b => { const c = byName(b[0]); return c && c.nextSessionScheduledOn && c.nextSessionScheduledOn >= T; }).length;
   out.fix4_rankedBeats = beats.length;
 
-  // FIX 5 — how much of today's "time saved" is setup work
-  const setupKeys = ['session_backfilled', 'value_imported'];
-  let total = 0, setup = 0;
-  getImpactLog().filter(x => x.date === T).forEach(x => { const m = x.n * impactMinutesFor(x.key); total += m; if (setupKeys.includes(x.key)) setup += m; });
-  out.fix5_timeSavedTodayMin = total;
-  out.fix5_setupShareOfTimeSaved = total ? Math.round(100 * setup / total) + '%' : 'n/a';
 
   // Context — the other findings in the field test
   const comp = pendingGainsightItems().filter(i => i.kind === 'compliance');

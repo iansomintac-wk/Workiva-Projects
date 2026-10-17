@@ -30,3 +30,9 @@ test('isGraduatingSoon uses days <= 30 in both trackers', () => {
     assert.match(html.slice(i, i + 600), /days <= 30/, v);
   }
 });
+
+test('99-measure.js no longer reads the retired time-saved log (F2)', () => {
+  const t = readFileSync(new URL('../tools/sim/steps/99-measure.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(t, /getImpactLog/);
+  assert.doesNotMatch(t, /impactMinutesFor/);
+});

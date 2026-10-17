@@ -60,3 +60,33 @@ test('cleanup keeps retrying the delete past 5 s when the folder frees at about 
     remove: () => { attempts++; if (Date.now() - t0 >= 6000) freed = true; }, exists: () => !freed });
   assert.ok(freed && Date.now() - t0 >= 6000 && attempts > 1);
 });
+
+// Task 6: field-test launch guard
+const FT = readFileSync(join(ROOT, 'tools/sim/run-field-test.mjs'), 'utf8');
+const HOSTS = ['api.anthropic.com', 'api.openai.com', 'generativelanguage.googleapis.com'];
+test('field test: --target flag, three resolver rules', () => {
+  assert.match(FT, /flag\('target'\)/);
+  for (const h of HOSTS) assert.ok(FT.includes(`MAP ${h} ~NOTFOUND`), h);
+  assert.match(FT, /--host-resolver-rules=/);
+});
+test('field test: cleanup is the shared cleanupProfile on Node child liveness, awaited, with exit(2) leftover branch', () => {
+  assert.match(FT, /import\s*\{[^}]*cleanupProfile[^}]*\}\s*from\s*'\.\/osm-day\/lib\/browser\.mjs'/);
+  assert.match(FT, /await cleanupProfile\(/);
+  assert.match(FT, /child\.exitCode === null && child\.signalCode === null/);
+  assert.match(FT, /catch[^]*process\.exit\(2\)/);
+  assert.doesNotMatch(FT, /const cleanup = \(\) =>/);
+});
+test('field test: every exit awaits cleanup first', () => {
+  for (const m of FT.matchAll(/process\.exit\((\d)\)/g)) {
+    const before = FT.slice(Math.max(0, m.index - 400), m.index);
+    if (m[1] === '0' || /fail = /.test(before)) assert.match(before, /await cleanup\(\)/, `exit at ${m.index}`);
+  }
+});
+test('outbound-call ban: no callAiAPI( or provider URL in field test or steps', () => {
+  const files = [join(ROOT, 'tools/sim/run-field-test.mjs'), ...readdirSync(join(ROOT, 'tools/sim/steps')).filter(f => f.endsWith('.js')).map(f => join(ROOT, 'tools/sim/steps', f))];
+  for (const f of files) {
+    const t = readFileSync(f, 'utf8');
+    assert.doesNotMatch(t, /callAiAPI\(/, f);
+    assert.doesNotMatch(t, /https?:\/\/[^\s'"`]*(anthropic|openai|googleapis)/i, f);
+  }
+});
