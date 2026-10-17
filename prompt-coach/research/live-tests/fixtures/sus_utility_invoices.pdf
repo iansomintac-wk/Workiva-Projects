@@ -1,0 +1,58 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 9 0 R >> >> >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 7 0 R /Resources << /Font << /F1 9 0 R >> >> >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 8 0 R /Resources << /Font << /F1 9 0 R >> >> >>
+endobj
+6 0 obj
+<< /Length 312 >>
+stream
+BT /F1 12 Tf 1 0 0 1 60 740 Tm (Example Power Co - Invoice) Tj 1 0 0 1 60 722 Tm (Account: 000-111) Tj 1 0 0 1 60 704 Tm (Service address: 100 Sample Street) Tj 1 0 0 1 60 686 Tm (Service period: 9/1/2018 - 9/30/2018) Tj 1 0 0 1 60 668 Tm (Usage: 12,400 kWh) Tj 1 0 0 1 60 650 Tm (Amount due: USD 1,488.00) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Length 299 >>
+stream
+BT /F1 12 Tf 1 0 0 1 60 740 Tm (Example Gas Co - Invoice) Tj 1 0 0 1 60 722 Tm (Account: 000-222) Tj 1 0 0 1 60 704 Tm (Service address: 100 Sample Street) Tj 1 0 0 1 60 686 Tm (Transaction date: 9/18/2018) Tj 1 0 0 1 60 668 Tm (Usage: 310 therms) Tj 1 0 0 1 60 650 Tm (Amount due: USD 372.50) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Length 309 >>
+stream
+BT /F1 12 Tf 1 0 0 1 60 740 Tm (Example Power Co - Invoice) Tj 1 0 0 1 60 722 Tm (Account: 000-333) Tj 1 0 0 1 60 704 Tm (Service address: 200 Sample Avenue) Tj 1 0 0 1 60 686 Tm (Service period: 9/1/2018 - 9/30/2018) Tj 1 0 0 1 60 668 Tm (Usage: 8,050 kWh) Tj 1 0 0 1 60 650 Tm (Amount due: USD 966.00) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+10 0 obj
+<< /Author (synthetic) /Creator (synthetic) >>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000253 00000 n 
+0000000379 00000 n 
+0000000505 00000 n 
+0000000868 00000 n 
+0000001218 00000 n 
+0000001578 00000 n 
+0000001648 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R /Info 10 0 R >>
+startxref
+1711
+%%EOF

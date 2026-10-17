@@ -1,0 +1,107 @@
+[
+  {
+    "id": "FR-1",
+    "area": "FR",
+    "files": [
+      "fr_flux_q3.xlsx"
+    ],
+    "prompt": "Can you please look at the attached flux file and tell me what drove the change in SG&A between Q2 and Q3? Thanks!"
+  },
+  {
+    "id": "FR-2",
+    "area": "FR",
+    "files": [
+      "fr_revenue_footnote.docx",
+      "fr_trial_balance.xlsx"
+    ],
+    "prompt": "pls check that the numbers in the attached revenue footnote tie to the attached trial balance, kindly list any that dont match"
+  },
+  {
+    "id": "FR-3",
+    "area": "FR",
+    "files": [
+      "fr_mdna_draft.docx"
+    ],
+    "prompt": "Could you rewrite the liquidity paragraph in the attached MD&A draft so its shorter? Please keep every number."
+  },
+  {
+    "id": "FR-4",
+    "area": "FR",
+    "files": [
+      "fr_accruals.xlsx"
+    ],
+    "prompt": "I was wondering if you could find any unusual accruals in the attached ledger extract, if possible."
+  },
+  {
+    "id": "GRC-1",
+    "area": "GRC",
+    "files": [
+      "grc_rcm.xlsx"
+    ],
+    "prompt": "Please list the key controls in the attached RCM that have no owner. Also, please make sure that if a frequency is missing you flag it."
+  },
+  {
+    "id": "GRC-2",
+    "area": "GRC",
+    "files": [
+      "grc_access_policy.docx"
+    ],
+    "prompt": "Can you review the attached access policy for gaps against SOX ITGC expectations?"
+  },
+  {
+    "id": "GRC-3",
+    "area": "GRC",
+    "files": [
+      "grc_test_results.xlsx"
+    ],
+    "prompt": "would you mind summarizing the deficiencies in the attached testing workbook for the audit committee?"
+  },
+  {
+    "id": "GRC-4",
+    "area": "GRC",
+    "files": [
+      "grc_walkthrough.docx"
+    ],
+    "prompt": "Turn the attached walkthrough narrative into numbered test steps. Please include the evidence to keep (seperately for each step)."
+  },
+  {
+    "id": "SUS-1",
+    "area": "SUS",
+    "files": [
+      "sus_utility_invoices.pdf"
+    ],
+    "prompt": "I have attached the following utility bill invoice(s). Please input the applicable dates (please use the first day of the month for each entry; for example, if the transaction was 9/18/2018, put 9/1/2018), location, emissions source, amount and amount unit in table format from each invoice. Additionally, ensure that if there are multiple addresses on an invoice, break those out seperately. The column headers should read as follows: Date, Location, Emissions Source, Amount, Amount Unit, Total Spend, Currency\n\nBefore finalizing your response, explicitly state how many documents/invoices you found in the knowledge base, then confirm that every single one is represented in the table. Do not stop at the first set of results — ensure all records are accounted for\n\nFor every row in the output table, include an inline citation indicating which invoice or document the data came from.\n"
+  },
+  {
+    "id": "SUS-2",
+    "area": "SUS",
+    "files": [
+      "sus_ghg_inventory.xlsx"
+    ],
+    "prompt": "Can you check the attached GHG inventory for outliers in Scope 3 and list them?"
+  },
+  {
+    "id": "SUS-3",
+    "area": "SUS",
+    "files": [
+      "sus_supplier_data.csv"
+    ],
+    "prompt": "Please extract every supplier with missing emissions data from the attached file into a table."
+  },
+  {
+    "id": "SUS-4",
+    "area": "SUS",
+    "files": [
+      "sus_climate_policy.docx"
+    ],
+    "prompt": "Could you map the attached climate policy to ESRS E1 requirements? Thanks."
+  },
+  {
+    "id": "SUS-5",
+    "area": "SUS",
+    "files": [
+      "sus_water_bills.pdf"
+    ],
+    "prompt": "Please input the applicable dates, location, usage and amount from each attached water bill (seperately for each address) in table format."
+  }
+]
