@@ -5,6 +5,7 @@ import { mkdirSync, writeFileSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { launch } from './lib/browser.mjs';
+import { filesSince } from './lib/outdir.mjs';
 import { setupB } from './lib/setup.mjs';
 import { classify } from './lib/results.mjs';
 import { summaryLine } from './lib/report.mjs';
@@ -367,7 +368,7 @@ export const PART_B = [
     await ctx.ev(`ui.quickFilter = null; render(); true`);
     await openPanel(ctx, id, 'handoff');
     await sleep(300);
-    const known = new Set(readdirSync(ctx.downloads));
+    const t0 = Date.now() - 50;
     await ctx.click(`[data-handoff-copy="${id}"]`);
     await sleep(500);
     let clip = '';
@@ -375,7 +376,7 @@ export const PART_B = [
     await ctx.click(`[data-handoff-download="${id}"]`);
     let file = null;
     for (const end = Date.now() + 15000; Date.now() < end && !file; await sleep(400)) {
-      const fresh = readdirSync(ctx.downloads).filter(f => !known.has(f) && f.endsWith('.txt'));
+      const fresh = filesSince(ctx.downloads, t0, '.txt');
       if (fresh.length) file = fresh[0];
     }
     await sleep(300);

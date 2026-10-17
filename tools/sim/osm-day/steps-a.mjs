@@ -5,6 +5,7 @@ import { mkdirSync, writeFileSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { launch } from './lib/browser.mjs';
+import { filesSince } from './lib/outdir.mjs';
 import { setupA } from './lib/setup.mjs';
 import { classify } from './lib/results.mjs';
 import { summaryLine } from './lib/report.mjs';
@@ -204,11 +205,11 @@ export const PART_A = [
     const closed = await ctx.ev(`dayIsClosed() && getDayClose().date === todayISO()`);
     await ctx.click('#modal-cancel');
     await sleep(300);
-    const known = new Set(readdirSync(ctx.downloads));
+    const t0 = Date.now() - 50;
     await ctx.click('[data-backup-now]');
     let file = null;
     for (const end = Date.now() + 20000; Date.now() < end && !file; await sleep(400)) {
-      const fresh = readdirSync(ctx.downloads).filter(f => !known.has(f) && f.endsWith('.json'));
+      const fresh = filesSince(ctx.downloads, t0, '.json');
       if (fresh.length) file = fresh[0];
     }
     if (!file) return { passed: false, evidence: `day ${closed ? 'closed' : 'not closed'}; no backup file reached downloads-A` };

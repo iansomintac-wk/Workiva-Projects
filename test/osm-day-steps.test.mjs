@@ -166,3 +166,31 @@ test('N and T recompute guard compares restored state with saved data (Task 11)'
   assert.match(ntMismatch({ N: 6, T: '2027-01-11' }, { N: 5, T: '2027-01-11' }), /N/);
   assert.match(ntMismatch({ N: 6, T: '2027-01-11' }, { N: 6, T: '2027-01-12' }), /T/);
 });
+
+import { mkdtempSync, writeFileSync, utimesSync, mkdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join as pjoin } from 'node:path';
+import { resolveUnderSimRuns, filesSince } from '../tools/sim/osm-day/lib/outdir.mjs';
+
+test('resolveUnderSimRuns accepts a folder under sim-runs and rejects outside, sibling and sim-runs itself', () => {
+  const root = pjoin(tmpdir(), 'rootx');
+  assert.ok(resolveUnderSimRuns(pjoin(root, 'sim-runs', 'a', 'b'), root).includes('sim-runs'));
+  assert.throws(() => resolveUnderSimRuns(pjoin(tmpdir(), 'elsewhere'), root));
+  assert.throws(() => resolveUnderSimRuns(pjoin(root, 'sim-runs-evil', 'x'), root));
+  assert.throws(() => resolveUnderSimRuns(pjoin(root, 'sim-runs'), root));
+  assert.throws(() => resolveUnderSimRuns(pjoin(root, 'sim-runs', '..', 'x'), root));
+});
+test('filesSince finds a pre-seeded same-name file only when its mtime is after the click', () => {
+  const d = mkdtempSync(pjoin(tmpdir(), 'dl-'));
+  try {
+    const f = pjoin(d, 'backup.json');
+    writeFileSync(f, '{}');
+    const old = new Date(Date.now() - 60000);
+    utimesSync(f, old, old);
+    const t0 = Date.now() - 1000;
+    assert.deepEqual(filesSince(d, t0, '.json'), []);
+    writeFileSync(f, '{"x":1}'); // same name rewritten by the new download
+    assert.deepEqual(filesSince(d, t0, '.json'), ['backup.json']);
+    assert.deepEqual(filesSince(d, t0, '.txt'), []);
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});

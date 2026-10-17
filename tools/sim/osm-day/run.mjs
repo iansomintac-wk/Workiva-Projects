@@ -5,6 +5,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { resolveUnderSimRuns } from './lib/outdir.mjs';
 import { launch } from './lib/browser.mjs';
 import { setupA, setupB } from './lib/setup.mjs';
 import { classify, breakVerdict, exitCode, CHECKED } from './lib/results.mjs';
@@ -196,7 +197,8 @@ async function runPart({ v, part, ids, prereq, breaksOn, runDir, log }) {
 export async function main(argv) {
   const args = parseArgs(argv);
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const outDir = args.out ? resolve(args.out) : join(ROOT, 'sim-runs', stamp);
+  let outDir;
+  try { outDir = args.out ? resolveUnderSimRuns(args.out, ROOT) : join(ROOT, 'sim-runs', stamp); } catch (e) { console.error('harness error: --out ' + e.message); return 2; }
   mkdirSync(outDir, { recursive: true });
   const log = [];
   const times = [];

@@ -9,6 +9,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveUnderSimRuns } from './lib/outdir.mjs';
 import { stripTimings } from './lib/report.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -195,11 +196,14 @@ function runAll(dir) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const di = args.indexOf('--dir');
-  const dir = resolve(di >= 0 ? args[di + 1] : join(ROOT, 'sim-runs', 'verify'));
+  let dir;
   try {
+    const fresh = join(ROOT, 'sim-runs', 'verify-' + new Date().toISOString().replace(/[:.]/g, '-'));
+    dir = di >= 0 ? resolveUnderSimRuns(args[di + 1], ROOT) : args.includes('--score-only') ? join(ROOT, 'sim-runs', 'verify') : fresh;
+    if (!args.includes('--score-only') && existsSync(join(dir, 'run1'))) throw new Error(`${dir} already holds a run; use a fresh folder`);
     if (!args.includes('--score-only')) runAll(dir);
     const { lines, code } = score(dir);
-    const outPath = join(dirname(dir), 'verify.txt');
+    const outPath = join(dir, 'verify.txt');
     writeFileSync(outPath, lines.join('\n') + `\nexit ${code}\n`);
     console.log(lines.join('\n'));
     process.exit(code);
