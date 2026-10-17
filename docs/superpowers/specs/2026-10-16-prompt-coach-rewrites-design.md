@@ -24,6 +24,13 @@ At the plan stop (2026-10-17, run lead's questions; Ian picked these options):
 - To approving the plan with four departures (below) and Opus as the only plan reviewer (Codex
   cannot start a shell on this PC): **"Approve (Recommended)"**
 
+Later in the run (token cap):
+
+- To "With the corrected projection of about 2.15M tokens, what should the run's limit be?"
+  (2026-10-17 about 01:12): **"Raise to 2.2M (Recommended)"**
+- The raises to 2.6M and then 2.8M were made by program leads 13 and 14 under Ian's standing yes.
+  These are not Ian's words.
+
 ## Problem
 
 Ian tested a utility-invoice extraction prompt (sustainability). The Strong rewrite kept "please",
