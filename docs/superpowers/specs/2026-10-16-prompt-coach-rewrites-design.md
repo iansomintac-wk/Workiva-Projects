@@ -143,8 +143,10 @@ weights) is not changed, except as allowed under Context wording below.
 Departures from the text above, approved with the plan (2026-10-17):
 
 - The `tidy()` mirror in `customer_check.js` also feeds `subjectLost` and applies the typo fixes.
-- A prompt already graded Better shows its cleaned text in the Better tab (Ian's invoice target
-  needs it), falling back to the raw prompt if the cleaned text grades weak.
+- For a prompt already graded Better, the engine computes the cleaned Better text (Ian's invoice
+  target needs it), falling back (rewrite.js:510) to the whole prompt cleaned but not reordered if
+  that grades weak. The page does not show it, because web/template.html:357 (locked) draws tabs
+  only above the prompt's grade. Open for Ian.
 - "if possible", "if you can" and mid-sentence "can / could you" are also removed.
 - General-area data intents say "This is for [what it feeds]." with no example.
 
@@ -167,8 +169,9 @@ Departures from the text above, approved with the plan (2026-10-17):
 - `node prompt-coach/tests/simulate.js prompt-coach/data/train_*.jsonl prompt-coach/data/test.jsonl`
   no worse than 8 strong-not-strong, 5 better-weak.
 - `node prompt-coach/tests/customer_check.js` and `... data/test.jsonl` pass. (Measured on the
-  parent 2026-10-17: default PASS 229; test.jsonl FAIL, notStrong 4/609, all from one only-Context
-  prompt; rule 6 as ruled above is what turns it to PASS.)
+  parent 73be350 2026-10-17: default PASS 229; test.jsonl FAIL, notStrong 4/609 = the "user-control
+  assessment" prompt x2 (fixed here) plus the "assurance reviewer" prompt x2 (missing P; still fails
+  at HEAD, 2/609). The test.jsonl gate is therefore unmet and waits for Ian's ruling.)
 - `tests/filetest.js` passes (`VENDOR=` an npm dir with mammoth, xlsx, jszip, pdfjs-dist).
 - Built page (`node prompt-coach/tests/build.js`) checked in a browser on desktop and phone: no
   console errors, no sideways scroll.

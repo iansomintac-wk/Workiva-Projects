@@ -1,7 +1,7 @@
 # Evidence: Prompt Coach Better / Strong rewrites (2026-10-16 run)
 
-Branch `worktree-prompt-coach-rewrites`, from `prompt-coach` at `73be350`. Code last changed at `a7d0501`
-(Task 11); no code has changed since. Spec: `docs/superpowers/specs/2026-10-16-prompt-coach-rewrites-design.md`.
+Branch `worktree-prompt-coach-rewrites`, from `prompt-coach` at `73be350`. Code last changed at `f95ab85`
+(Task 7 fix 4); no code has changed since (`a7d0501` rebuilt dist and README only). Spec: `docs/superpowers/specs/2026-10-16-prompt-coach-rewrites-design.md`.
 Plan: `docs/superpowers/plans/2026-10-16-prompt-coach-rewrites.md`.
 
 Labels used in every row: **measured** = a command was run and its output read, command and commit named;
@@ -74,7 +74,7 @@ The "?" prediction was an assumption in the plan and is wrong: 89 became 69, not
 | simulate, train only (2070 runs) | at most 8 strongNotStrong, at most 5 betterWeak | strongNotStrong 2, betterWeak 5, toggleNoEffect 0, dupSentence 0, badText 2, emptyFrag 0 | measured: `node prompt-coach/tests/simulate.js prompt-coach/data/train_*.jsonl` at `a7d0501` |
 | simulate, train plus test (2679 runs) | at most 8 strongNotStrong, at most 5 betterWeak | strongNotStrong 4, betterWeak 5, toggleNoEffect 0, dupSentence 2, badText 4, emptyFrag 0 | measured: `node prompt-coach/tests/simulate.js prompt-coach/data/train_*.jsonl prompt-coach/data/test.jsonl` at `a7d0501` |
 | customer_check, default | PASS | PASS 229 runs | measured: `node prompt-coach/tests/customer_check.js` at `a7d0501` |
-| customer_check, `data/test.jsonl` | PASS | FAIL 609 runs: notStrong 2/609, filler, order, broken, blankMore, blankOnlyC, ianCase all 0/609. Still a FAIL, but better than the parent, which already failed with notStrong 4/609 (all from one only-Context prompt) | measured: `node prompt-coach/tests/customer_check.js prompt-coach/data/test.jsonl` at `a7d0501`; parent figure measured 2026-10-17 on `73be350` (read: spec line 162-164) |
+| customer_check, `data/test.jsonl` | PASS | FAIL 609 runs: notStrong 2/609, filler, order, broken, blankMore, blankOnlyC, ianCase all 0/609. Still a FAIL, but better than the parent, which already failed with notStrong 4/609: the "user-control assessment" prompt x2 (fixed here) plus the "assurance reviewer" prompt x2 (missing P; still fails at HEAD, 2/609). The gate is unmet and waits for Ian's ruling. Plan lines 51 and 60 carry the same wrong premise (one only-Context prompt, rule 6 turns it to PASS) | measured: `node prompt-coach/tests/customer_check.js prompt-coach/data/test.jsonl` at `a7d0501`; parent figure measured 2026-10-17 on `73be350` (read: spec line 162-164) |
 | filetest | passes | 8 rows, errors [], exit 0 (via the npx-cache alias, VENDOR folder outside the repo) | measured: `node prompt-coach/tests/filetest.js` after the build, at `a7d0501` |
 | Built page, rebuilt | build runs, dist unchanged on rebuild | build 314 KB (321,725 bytes); rebuild left dist unchanged | measured: `node prompt-coach/tests/build.js`, lead re-run at `a7d0501` |
 | Built page in a browser, by the Claude browser extension | no console errors, no sideways scroll, desktop and phone | NOT YET CHECKED by the extension. The one-shot `claude -p --chrome` helper was denied by the Claude Code auto-mode classifier before it ran, so no Chrome action happened. Pending Ian, who asked for it (2026-10-17T08:02:54Z) | read: ledger t12_addendum.txt |
@@ -108,7 +108,7 @@ Approved target: spec "Target for Ian's case" (read: spec lines 80-96), stored a
   the page has no Better tab for Ian's case. `web/template.html` line 357 draws tabs only above the prompt's own
   grade; Ian's case grades Better, so the tabs are "Your prompt (BETTER)" and "Strong (suggested)". The engine's
   Better text (equal to `ian_better.txt`, checked by the unit test and by the `ianCase` line) is computed but
-  never shown. Plan departure 2 (plan line 53, spec line 139: "shows its cleaned text in the Better tab")
+  never shown. Plan departure 2 (plan line 53, spec departure 2, now reworded to say the page does not show it)
   therefore does not reach the page. `template.html` is a locked file in the same plan (line 30), unchanged since
   `73be350`. Showing it needs a locked-file edit, which is Ian's ruling. Class: seam-untested (engine checked,
   page join not).
@@ -116,6 +116,19 @@ Approved target: spec "Target for Ian's case" (read: spec lines 80-96), stored a
 - Workiva @-file limits unconfirmed.
 - The artifact has not been republished; the published artifact is probably an older build (assumed).
 - Codex review not available (it cannot start a shell on this PC), so `final-reviewer` alone.
+- Final review (final-reviewer only, Opus; read: ledger reviews/final-review.md, 2026-10-17): 1 must-fix, 5 should-fix, 6 notes.
+  - MF-1: the test.jsonl customer_check gate is unmet and three docs gave the wrong reason (spec, this file, plan lines 51 and 60); spec and this file fixed in the FIX1 commit, plan not edited. Waits for Ian's ruling.
+  - SF-1: no Better tab on the page (template.html:357 locked); known limit for Ian.
+  - SF-2: the onlyC generic sentence can repeat and widen the ask (4 of 62 changed runs, a checker's reading).
+  - SF-3 (reviewer's assumed item): directSentence trailing "thanks" removal can leave "to say."; cheapest check W.directVoice on that sentence.
+  - SF-4: README said the support page states 10 files while this file says unconfirmed; README fixed in the FIX1 commit (snippet only, page returned 403).
+  - SF-5 (reviewer's assumed item): an unclosed bracket makes the rest of the prompt one span for directVoice, so "Can you" can stay.
+  - N-1: no generated Context segment puts the objective ahead of the Source sentences (reachability uncertain).
+  - N-2: "Would you say X?" becomes "Say X." (spec rule 3 asks for it; 0 cases in the data).
+  - N-3 (reviewer's assumed item): unit tests 15 and 18 probably pass on the parent, so they guard against branch regressions only.
+  - N-4: the order check skips fully reworded sentences.
+  - N-5: TYPOS fixes "calender", a real word.
+  - N-6: line 3 here named the wrong commit for the last code change (fixed in the FIX1 commit).
 - Known limits carried from earlier runs (read: resume prompt): CHANGE_ASK word list; the "Scope 2 inventory"
   example shows on Scope 1 and 3 prompts; "one per line" sits beside "Format it as [...]" in 20 of 24 list runs;
   "can you hear me" becomes "Hear me"; 2 assurance runs are not Strong on `test.jsonl`; SUS-5 "Identify and list
