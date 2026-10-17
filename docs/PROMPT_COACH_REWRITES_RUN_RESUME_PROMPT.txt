@@ -1,104 +1,106 @@
 RESUME: Prompt Coach Better/Strong rewrites run (Workiva repo)
 
-Written 2026-10-17 ~11:25Z by run lead 8f68dfd4 (run 5), which stopped at the 200k context line
-(context-stop hook) right after reproducing the Task 11 blocker. Predecessors: 73a3f933 (run 4),
-6e3060f1, 591a52e4, 4756fc2d, a72ccc7d (talk). Load studio-harness:talk-and-run first and follow
-"The run" from where this leaves off. You are the run lead: coordinate only, never plan or build in
-your own context. ONE helper at a time, on any working tree.
+Written 2026-10-17 ~11:55Z by run lead b80d1b3d (run 6), which stopped at the 200k context line
+(context-stop hook) after Task 7 fix 4 and Task 11. Predecessors: 8f68dfd4 (run 5), 73a3f933,
+6e3060f1, 591a52e4 (those three removed by program lead 15 ~11:15Z), 4756fc2d, a72ccc7d (talk).
+Load studio-harness:talk-and-run first and follow "The run" from where this leaves off. You are the
+run lead: coordinate only, never plan or build in your own context. ONE helper at a time.
 
 READ FIRST
 - docs/PROMPT_COACH_REWRITES_RUN_PROMPT.txt: WHERE, ORDER steps 3-7, PERMISSIONS and SAFETY still apply.
 - Ledger: .ledger/2026-10-16-prompt-coach-rewrites/progress.md (this lead's section starts at
-  "## Resume session 8f68dfd4"), helper-rows.md (token use), logs/.
+  "## Resume session b80d1b3d"), helper-rows.md (token use), logs/.
 - Plan (approved, commit 340c9c8): docs/superpowers/plans/2026-10-16-prompt-coach-rewrites.md.
   Spec: docs/superpowers/specs/2026-10-16-prompt-coach-rewrites-design.md.
 
-STATE (branch worktree-prompt-coach-rewrites, HEAD = this prompt's commit, above 137a4d3; tree clean)
+STATE (branch worktree-prompt-coach-rewrites, HEAD = this prompt's commit; tree clean)
 - First check as usual: STUDIO_RUN_LEDGER set, budget.json and slip.json exist; else stop.
-- Tasks 1-10 done and checked. Task 9 = 6218d81 + ffdfb1f (Node generator make_live_fixtures.js, per
-  program lead 14's answer; ffdfb1f adds .gitattributes "fixtures/** -text" because core.autocrlf=true
-  wrote CRLF into the hand-written PDFs and broke their xref). Task 10 = 137a4d3 (cases.md; SUS-1 =
-  Ian's approved Strong/Better, checked by .ledger/.../t10_check.js; 0 of 13 Strong worse than 73be350).
-- Unit test count is 17.
-- TASK 11 IS BLOCKED (no commit). simulate train+test: toggleNoEffect 67, emptyFrag 67 (spec: 0).
-  Lead reproduced (logs/t11_sim_*.txt): 61837f5 0/0, ef801bf 67/67, HEAD 67/67. Cause commit: ef801bf
-  (Task 7 Context wording). Example run: "Using the attached Q3_Earnings_Release_draft.docx, give a
-  100-word summary..." -> letter O fragment empty, toggling O changes nothing. No check caught it:
-  Task 7-10 check lines never included toggleNoEffect/emptyFrag. First observed failure of this
-  check; two strikes counts from the next.
-- NEXT: Task 7 fix 4. Fresh implementer (systematic-debugging, test first): a unit test that fails on
-  HEAD for an affected prompt (O fragment non-empty / toggling O changes the Strong text), 17/1 ->
-  18/0; fix in prompt-coach/engine/rewrite.js; README line only if a stated rule changes. Acceptance:
-  simulate train+test toggleNoEffect 0, emptyFrag 0, sNS <= 8 (4 now), bW <= 5, dupSentence <= 2,
-  badText <= 4; train-only also 0/0; unit 18/0; eval GRADE acc >= 0.856; customer_check default PASS
-  229; on data/test.jsonl the fallback bar (FAIL 609, notStrong <= 4/609, every other category 0);
-  ctx_probe C ON lines unchanged (9); Strong text vs 137a4d3 changes only in the 67 affected runs and
-  none worse (compare as Temp/prompt-coach-rewrites-4756fc2d/t7s2/cmp4.js does). EVERY checker line
-  set from here includes all seven simulate counters. Parent export for red-before-green made by the
-  lead (git archive + the new test file). Backspace-byte check on the edited regex file.
-- THEN Task 11 again (fresh implementer). Packet as run 5's (ledger "T11 dispatched"): build FIRST,
-  then filetest (plan order would test the old dist); filetest.js stays unedited, run as
-  VENDOR=<vendor> node --require Temp/prompt-coach-rewrites-4756fc2d/t11/pw-alias.js tests/filetest.js
-  (maps /opt/node22/.../playwright to the npx-cache playwright 1.62.1 at
-  LOCALAPPDATA/npm-cache/_npx/705bc6b22212b352/node_modules/playwright; chromium-1234 on disk; no
-  install). Re-run the lead's Step 2 probes after the fix (OUT=.ledger/.../logs/filler_after.json for
-  filler_probe; blank_probe needs the absolute prompt-coach path). Run-5 values before the fix: filler
-  0/0; Strong "?" 24+45 = 69 (predicted <= 40 from 89: prediction disproved); median blanks 2; >=3
-  blanks sim 55 / test 143; test C 342 vs base 340, explained: 2 prompts gain a C blank, both
-  only-Context-missing (ruling A; t11/cdiff.js, measured by the helper, not re-run by the lead).
-  filetest on the 137a4d3 build: 8 rows correct, errors [].
-- Browser test: lead call recorded in the ledger: a Playwright script by a helper (headless Chromium
-  from the same npx-cache playwright), not a claude -p --chrome helper: desktop and 390px width,
-  console errors, no sideways scroll, Ian's case (tests/fixtures/rewrites/ian_case.txt) typed into
-  #prompt, Better/Strong from #stagePrompt diffed by the lead against ian_better.txt / ian_strong.txt
-  (flat() compare). Serve dist with Temp/.../browser/serve.js only if file:// fails. Before the final
-  review.
-- Then Task 12 (evidence doc), Task 13 (live-test prompt, not launched), final review
-  (studio-harness:final-reviewer; Codex cannot start a shell here), PM step, merge per slip.
-- Tokens: helper-rows 2,010,652 of 2,800,000 at ~11:25Z (46 rows). Cap raised 2.6M -> 2.8M this
-  session under program lead 14's pre-approval: standing-yes raises on this run are now +600k, the
-  most allowed; ANY further raise is Ian's. Forecast left (assumed): fix 4 ~90k, T11 ~100k, browser
-  ~50k, T12 ~90k, T13 ~65k, final ~200k, fix round ~100k, PM ~30k = ~725k -> ~2.74M.
+- Tasks 1-10 done. Task 7 fix 4 = f95ab85 (cause: ef801bf's onlyC shortcut left a letter found
+  inside another sentence with no segment; fix gives it its own blank-free sentence). Checker PASS
+  with 2 gaps; lead re-run matched (logs/t7fix4_lead_rerun.txt). Red: parent export 17/1.
+- Task 11 = a7d0501 (build 314 KB, filetest 8 rows errors [], spec Result column, README 99.9%
+  and two rule lines). TASK 11 DONE: checker PASS (lines 1-12; spec/README figures, blankOnlyC
+  derivation, rule line and dist all verified); lead re-run 11:53Z matched, filetest via the alias
+  8 rows errors [] exit 0, rebuild left dist unchanged (logs/t11r6_lead_rerun.txt). One gap for
+  Task 12: README "4 of the 62 runs" is a checker's reading of cmp_listing.txt, label it read.
+  role-checks.txt still holds the Task 11 lines: replace them for the next task.
+- Unit test count is 18. Values at a7d0501 (implementer, lead-measured for fix 4 at f95ab85):
+  simulate train+test 2679: sNS 4, bW 5, toggleNoEffect 0, dup 2, bad 4, emptyFrag 0; train-only
+  2070: 2/5/0/0/2/0; eval 0.856; cc default PASS 229; cc test FAIL 609, notStrong 2, others 0;
+  ctx_probe 9 C ON; probes (lead, f95ab85): filler 0/0, "?" 24+45 = 69, median blanks 2/2,
+  >=3 blanks 55/143.
+- NEXT: BROWSER TEST with the Claude browser extension (Ian, 2026-10-17T08:02:54Z, verbatim: "I want
+  the prompt coach completed but you havent even done the testing on the claude browser
+  extension"; lead correction in the ledger reverses run 5's Playwright-only call). Ready:
+  .ledger/.../browser_prompt_template.txt and browser_cmp.js (controls passed). Steps: start
+  node Temp/prompt-coach-rewrites-4756fc2d/browser/serve.js <abs>/prompt-coach/dist 8765 in the
+  background, note its PID; node .ledger/.../browser_cmp.js make
+  http://127.0.0.1:8765/prompt-coach.html Temp/.../browser/prompt.txt; then from cwd
+  Temp/.../browser: cat prompt.txt | claude -p --chrome --model sonnet --tools ""
+  --allowedTools "mcp__claude-in-chrome" --permission-mode dontAsk --no-session-persistence
+  --output-format json > report.json 2> err.txt (smoke test 11:48Z with text output: exit 0,
+  connected, resize_window and read_console_messages present). Extract .result to report.md and
+  record usage from the JSON (its tokens are not in helper-rows). node browser_cmp.js cmp
+  report.md -> expect BETTER and STRONG flatEqual true, CONSOLE 0 errors, no sideways scroll at
+  desktop and 390px. Stop the server by its PID. Playwright is an optional extra only.
+- THEN Task 12 (evidence doc; plan lines 1226-1263), Task 13 (live-test prompt, not launched;
+  plan 1267-1304), final review (studio-harness:final-reviewer; Codex cannot start a shell here),
+  fix round, PM step, merge per slip (merge yes after the review passes; push own branch yes).
+- Tokens: helper-rows 2,156,078 of 2,800,000 at 11:53:25Z (51 rows, measured). Standing-yes
+  raises are used up (+600k); ANY further raise is Ian's. Forecast left (assumed): browser ~40k,
+  T12 ~90k, T13 ~65k, final ~200k, fix ~100k, PM ~30k = ~525k -> ~2.68M. Keep packets short.
 - Time: Ian asleep until ~15:30Z.
 
-CARRY INTO THE TASK 12 EVIDENCE DOC
-- Plan departures: Node make_live_fixtures.js for the .py (no Python libs; program lead 14's answer
-  under Ian's standing yes); .gitattributes for byte-exact fixtures; README live-test line names the
-  Node command; build before filetest; filetest via the npx-cache alias; browser test by Playwright.
-- The "?" prediction disproved (89 -> 69, predicted <= 40); C +2 explained by ruling (A).
-- Known limits: CHANGE_ASK is a word list ("tidy these up" still gets the list sentence); Context
-  example "Scope 2 inventory" on Scope 1/3 prompts; "one per line" beside "Format it as [...]" in 20
-  of 24 list runs; "can you hear me" -> "Hear me"; 2 assurance runs not Strong on test.jsonl
-  (customer_check FAIL 609, fallback bar); SUS-5 Strong keeps "Identify and list [what you want
-  back...]"; FR-3 generic Context line; GRC-1 "If a frequency is missing you flag it." (awkward).
-- Add Ian's 2.2M ruling and the 2.6M and 2.8M raises (program leads 13 and 14 under Ian's standing
-  yes, not his words) to the spec's rulings list in the Task 12 commit.
+CARRY INTO THE TASK 12 EVIDENCE DOC (everything from run 5's list still holds)
+- Plan departures: Node make_live_fixtures.js for the .py; .gitattributes for byte-exact fixtures;
+  README live-test line names the Node command; build before filetest; filetest via the npx-cache
+  alias; Task 7 fix 4 (f95ab85) after the Task 11 blocker; fix 4's README rule line went into the
+  Task 11 commit, not f95ab85 (lead call 11:47Z, to save a fix round under the cap); browser test
+  by the Claude browser extension.
+- The "?" prediction disproved (89 -> 69, predicted at most 40); C +2 explained by ruling (A).
+- Spec "7 of 7" / "18 of 18" (only-Context-missing with exactly 1 blank) is derived from the info
+  line N plus blankOnlyC 0, not read from a k count.
+- Known limits: run 5's list (CHANGE_ASK word list; "Scope 2 inventory" example on Scope 1/3;
+  "one per line" beside "Format it as [...]" in 20 of 24 list runs; "can you hear me" -> "Hear me";
+  2 assurance runs not Strong on test.jsonl; SUS-5 "Identify and list [...]"; FR-3 generic Context;
+  GRC-1 "If a frequency is missing you flag it."), plus from fix 4: 4 of the 62 changed runs repeat
+  the ask ("Summarize the key points of the content." after "a 100-word summary" x3; "Use numbered
+  steps, each with the evidence to keep." on a checklist that already cites sections x1); 19
+  no-file runs get "Use only the selected content and nothing outside it."; "Do not correct any
+  values; flag anything you are unsure of." on the badge-printing prompt. Ask the final reviewer
+  whether the 4 repeated-ask texts are must-fix.
+- Lesson (seam-untested): Task 7-10 check lines omitted toggleNoEffect/emptyFrag, so a regression
+  rode 5 commits; every check set since run 6 carries all seven simulate counters.
+- Add to the spec's rulings list in the Task 12 commit: Ian's 2.2M ruling (ledger line 27, 2026-10-17
+  ~01:12, "Raise to 2.2M (Recommended)") and the 2.6M and 2.8M raises (program leads 13 and 14
+  under Ian's standing yes; not his words).
 
 CORRECTIONS AND LESSONS (carry the relevant ones into each packet; do not edit the approved plan)
-- All earlier lessons hold (jq absent: use node; role-check lines run from any folder, one per call;
-  quote README text in a file and compare with node; 45-call cap; parent export by the lead; LEAD
-  steps stay with the lead; VENDOR C:/Users/teasp/AppData/Local/Temp/prompt-coach-rewrites-4756fc2d/vendor;
-  scratch only in that Temp folder; hand-backs can be empty, verify from git and re-runs; absolute
-  paths, check pwd before dispatch; time stamps from date -u).
-- NEW: shell heredocs through the Bash tool are unreliable: one halved backslashes in a lead script
-  (regex [\s\S] became [sS]) and one failed to parse on an apostrophe. Write scripts and prompts with
-  the Write tool.
-- NEW: git with core.autocrlf=true treats NUL-free generated files as text; check byte-exact files
-  with git archive + a reader.
-- NEW: git checkout -- <path> is refused by guard_cmd; use git restore <path> after looking.
+- All earlier lessons hold (jq absent: node; role-check lines run from any folder, one per call;
+  45-call cap; parent export by the lead; LEAD steps stay with the lead; scratch only in
+  C:/Users/teasp/AppData/Local/Temp/prompt-coach-rewrites-4756fc2d; hand-backs can be empty, verify
+  from git and re-runs; absolute paths; Write tool, not heredocs, for scripts; autocrlf: check
+  byte-exact files with git archive; git restore, not git checkout --).
+- NEW: stamp ledger lines from date -u at the time of writing (run 6 stamped two lines 3 minutes
+  late and corrected them).
+- NEW: the Edit/Write tools refuse a file seen only through cat; Read it (a few lines) first.
+- NEW: role-checks.txt is swapped per task (role-checks-t11.txt holds the Task 11 copy); never
+  swap it while a checker is reading it.
+- Lead tools in the ledger: cmp_t7f4.js (Strong text per run, two engine copies; controls in the
+  ledger), browser_cmp.js, ctx_probe.js, blank_probe.js, filler_probe.js.
 - Implementer commits end with:
   Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
   Claude-Session: <the resuming session's link from its system reminder>
 
-WORKIVA @-FILE FACTS: unchanged (ledger NOTE ~01:35 and ~01:40).
-
 SESSIONS
-- a72ccc7d, 4756fc2d, 591a52e4, 6e3060f1, 73a3f933 and 8f68dfd4 all ran in this worktree. `claude rm`
-  deletes the session AND this worktree and ledger. Do not rm any until the branch is merged and
-  pushed and Ian has said what to keep; never pass force flags. 73a3f933 is "done" but still named
-  NEW (no successor was running at its stop); the rename exception covers only a session's own file.
-- Slip: new sessions no. Do not launch any session; Ian (or the program lead under his standing yes)
-  starts the resume.
+- a72ccc7d owns this worktree (worktreePath, measured by program lead 15): `claude rm a72ccc7d`
+  would delete the worktree and ledger. Keep a72ccc7d, 8f68dfd4 and b80d1b3d until the branch is
+  merged and pushed and Ian has said what to keep; never pass force flags.
+- Slip: new sessions no. Do not launch any session; Ian (or the program lead under his standing
+  yes) starts the resume. The one-shot claude -p --chrome browser helper is a helper, not a
+  session (program lead 13's answer under Ian's standing yes; ledger line 69).
 - For Ian (proposals, not done): ledger/brain records for "Task 7 checks omitted toggleNoEffect and
-  emptyFrag; a regression rode 5 commits" (seam-untested), "Bash-tool heredocs mangle backslashes and
-  quotes in lead scripts", "autocrlf corrupts hand-written PDF fixtures", plus run 4's three proposals.
+  emptyFrag; a regression rode 5 commits" (seam-untested), "Bash-tool heredocs mangle backslashes
+  and quotes in lead scripts", "autocrlf corrupts hand-written PDF fixtures", "Edit tool needs a
+  Read, not a cat", "one-shot claude -p --chrome --tools \"\" --allowedTools mcp__claude-in-chrome
+  --permission-mode dontAsk works on this PC (measured 11:48Z)", plus run 4's three proposals.
