@@ -1,0 +1,41 @@
+Fit Finder sandbox pilot (written 2026-10-16 by session d2e2611b; Ian picked "Labels, then pilot")
+
+WHAT IT IS FOR
+The right-card labels (fit-finder/data/card-gold.jsonl) say which card the page should show. This
+pilot asks the other question: does the advice work in Workiva AI? One task, made-up data, planted
+changes so the result is a count. Task 115 (and task 0) want "compare with last year's version and
+flag what changed"; the page sends them to chat with your file (Ian marked gen-summarize-file right
+for 115). Ian runs it in the Claude browser extension in his Workiva sandbox and pastes the reply.
+
+PASS BAR (fixed before the run): all 4 changes listed and 0 invented = chat with your file does
+this job, and gen-summarize-file stays right for tasks 0 and 115. Flag (a) is scored separately
+and does not decide the pass.
+
+PREDICTION (assumed, not tested): it lists at least 3 of the 4 changes but flags the stale "up 6%"
+less than half the time. A miss on (a) would mean chat checks wording, not arithmetic, which fits the
+page's "exact calculation stays with you". Limits: a sandbox may have previews or entitlements a
+customer lacks; one run is noisy (run twice if the first is borderline).
+
+PROMPT FOR THE BROWSER EXTENSION (copy everything between the lines)
+----------------------------------------------------------------------
+You are helping test Workiva AI in a Workiva sandbox. I am already logged in: never enter, change or ask for credentials. Work only in a new folder named "Fit Finder test (delete ok)" and use only the made-up text below. Do not open, edit, share or delete anything else, do not change settings, do not invite anyone. Report in text, not screenshots.
+
+PART 1 (look only): list every place Workiva AI is offered (button, panel, chat, assistant), with the exact label shown and where it appears. For each of these say "seen" (with its label) or "not seen": Workiva AI in a document; Workiva AI chat with workspace files; Prompt advisor; Tie-out assistant; Benchmarking.
+
+PART 2 (one test): create two documents in the folder.
+Doc A, title "MD&A 2025 (test)", text:
+"Northwind Components (test data). Results of operations. Revenue for 2025 was $4.2 billion, up 6% from 2024, driven by higher volumes in the industrial segment. Gross margin was 31%. We operate plants in Dayton and Reno. Foreign currency movements could reduce reported revenue, because about 20% of sales are in euros. We expect capital spending of $150 million in 2026."
+Doc B, title "MD&A 2026 draft (test)", text:
+"Northwind Components (test data). Results of operations. Revenue for 2026 was $4.5 billion, up 6% from 2025, driven by higher volumes in the industrial segment. Gross margin was 31%. We operate plants in Dayton and Reno, and opened a plant in Austin in March. We expect capital spending of $150 million in 2027."
+Open Doc B, open Workiva AI chat, reference Doc A (use @ if offered) and send exactly:
+"Compare this draft with MD&A 2025 (test). List every change, and flag any that look unintentional."
+If you cannot reference another document, say exactly what the AI offered instead, then send the same prompt with Doc A's text pasted after it.
+
+REPLY: Part 1 list. Part 2: the AI's full answer copied word for word. Then: which of these changes it listed: (1) years rolled forward, (2) revenue $4.2bn to $4.5bn, (3) Austin plant added, (4) currency-risk sentence removed; whether it flagged (a) "up 6%" no longer matching $4.2bn to $4.5bn (that is about 7%) and (b) the removed currency-risk sentence; and any change it listed that is not one of these.
+----------------------------------------------------------------------
+
+SCORING (the next session does this from Ian's pasted reply; text only, no screenshots)
+- changes listed: X of 4; flags: (a) yes/no, (b) yes/no; invented changes: N (quote them).
+- Part 1: which of the five features are seen, with labels; note any that the catalogue calls
+  available but the sandbox does not show (a claim to re-check, not a fix by itself).
+- Record the verbatim answer under docs/evidence/ with the date; nothing customer-specific.

@@ -1,15 +1,56 @@
-Fit Finder v4.10: hand-off (2026-10-16, session ef7552f6, successor of df09b9bd; cap-300 pin done in e9036b4, local)
+Fit Finder v4.11: hand-off (2026-10-16, session d2e2611b, successor of ef7552f6; right-card rate done in dd64db7, local)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to 8e764c5 (checked after fetch by ef7552f6). LOCAL ONLY
-(not pushed): e9036b4 (cap-300 checks) and the hand-off commit after it, unless the launch note says
+worktree-fit-finder-v4. Pushed to origin up to b468958 (checked after fetch by d2e2611b). LOCAL ONLY
+(not pushed): dd64db7 (right-card rate) and the hand-off commit after it, unless the launch note says
 pushed. Push only with Ian's yes. Draft PR #1 into prompt-coach (not merged). Live page
 https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 11 (version id 1792191655-4eb4) = dist
-of dd1adcd (82,037 bytes LF), per df09b9bd (not re-checked by ef7552f6). e9036b4 changes no dist
-(rebuilt byte-identical), so there is nothing to republish. (Updated by ef7552f6.)
+of dd1adcd (82,037 bytes LF), per df09b9bd (not re-checked since). e9036b4 and dd64db7 change no dist
+(rebuilt byte-identical), so there is nothing to republish. (Updated by d2e2611b.)
 
-NEXT SESSION (written by ef7552f6; supersedes every NEXT SESSION below)
+NEXT SESSION (written by d2e2611b; supersedes every NEXT SESSION below)
+Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. If the launch note does not
+say pushed, ask Ian directly: push dd64db7 and the hand-off commit? A relayed answer is not his yes.
+Next (Ian picked "Labels, then pilot"): the sandbox pilot in docs/FIT_FINDER_SANDBOX_PILOT_PROMPT.txt.
+Ian runs it in the Claude browser extension and pastes the reply; score it against the planted list
+and the pass bar written there (text only, no screenshots), save the verbatim answer under
+docs/evidence/, then bring Ian the score. If he has not run it, ask whether he wants to now. After
+that, ask which next, recommendation first: the 3 wrong cards (67, 74, 91) or the 7 no-card tasks
+whose right cards name another feature (30, 45, 50, 59, 80, 111, 119). Program lead: "NEW - 24h
+program lead 5" (592afc9a) unless renamed; send it status.
+
+UPDATE 2026-10-16, session d2e2611b (successor of ef7552f6): STILL OPEN "right-suggestion rate" DONE in dd64db7
+- Probe (read-only, before asking): 30 held-out tasks fit, 16 reach a card; 3 of the 16 first cards
+  are from another area (46, 67, 118).
+- Ian picked "Right-card rate (Recommended)", then "Top model + your 8 (Recommended)" (option labels,
+  question tool, no relay message); design approved, verbatim: "yes".
+- Blind Opus labeler (61,349 tokens, 4 tool uses, 94 s) on the 30 (task text + 26 cards, no engine
+  pick, no match words). Ian checked 8 picked by seed 20261016 before labelling (115, 105, 38, 74, 21,
+  55, 30, 60): agreed on 6, disagreed on 115 (he: gen-summarize-file; model: none) and 60 (he: also
+  sus-exec-narrative). 2 of 8 = the agreed limit, so Ian labelled all 30 (22 more, 1-3 offered cards +
+  "no card fits"; I added the nearest cards where a task had few). Model vs Ian: same 11, Ian accepts
+  more 18, model more 1. Ian marked no task "no card fits" (caveat: every question offered a card).
+- Result (Ian's labels, data/card-gold.jsonl): first card right 13 of 30; wrong card 3 (67, 74, 91);
+  no card where one fits 14; of those, 7 already land on a feature a right card names first, 7 do not
+  (30, 45, 50, 59, 80, 111, 119). My prediction was wrong: I said 10-12 of 16 right (13) and 2-5
+  missed (14).
+- Check (catalogue.test.js): one row per held-out fitting task, catalogue ids only; red with no file;
+  5 planted faults fail (drop, typo, extra, duplicate, no file), control passes. Dist byte-identical;
+  A 52/60, B 45/60. pagetest not run (no page change). README paragraph + file row.
+- Sonnet review (55,761 tokens, 5 tool uses): 0 Critical, 0 Important; re-ran the print and README
+  figures. Minor fixed: a duplicated row passed (confirmed by mutant, now fails); README now says
+  "names another feature first". Minor left: none.
+- Slip of mine, caught: I showed task 80 without "and targets"; re-asked with the exact text, same answer.
+- Ian on the sandbox, verbatim: "Why wouldn't sandbox access help here? It has Workiva AI so you can
+  test out these prompts. You can create test documents to be referenced and used in the prompts
+  within Workiva AI to see if the use cases are answered appropriately." I had said it would not help
+  the label (true only of the proxy); corrected to him. Saved as memory workiva-sandbox. Then he picked
+  "Labels, then pilot (Recommended)". Pilot prompt + pass bar: docs/FIT_FINDER_SANDBOX_PILOT_PROMPT.txt.
+- Predecessor ef7552f6 kept (done, COMPLETED; shares this worktree, so claude rm would remove it).
+- Rulings: the sandbox words above are worth a ruling record (PM check); ledger-add only on Ian's yes.
+
+NEXT SESSION (written by ef7552f6; DONE by d2e2611b above; kept for the record)
 Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. If the launch note does not
 say pushed, ask Ian directly: push e9036b4 and the hand-off commit? (No republish: dist unchanged.)
 A relayed answer is not his yes. Then ask which STILL OPEN item next, recommendation first, one question.
@@ -272,13 +313,21 @@ STILL OPEN (each needs Ian's yes)
   adverb ("I then quickly uploaded"), "I'd uploaded", or passive "by me"; another person's past tense
   ("the analyst uploaded the file to the portal") is no longer ACT (by design). None in the 139 texts.
 - DONE in e9036b4: no check pinned the sus cards' cap at exactly 300 (any cap from 200 to 500 passed).
-- Next suggested (PM check): the right-suggestion rate (the "reach a use case" item below).
+- DONE in dd64db7: the right-suggestion rate (first card right 13 of 30, Ian's labels).
+- Next (Ian's pick): the sandbox pilot, docs/FIT_FINDER_SANDBOX_PILOT_PROMPT.txt.
+- Wrong first card on 3 held-out tasks: 67 (ESRS mapping -> grc-framework; right sus-requirements),
+  74 (ISSB requirements into questions -> sus-exec-narrative; right sus-requirements/sus-disclosure),
+  91 (sustainability exec summary -> sus-disclosure; right sus-exec-narrative/gen-summarize-file).
+- No card on 7 held-out tasks whose right cards name another feature first: 30, 45, 50, 59, 80, 111,
+  119 (and 7 more where chat with your file is already a right card's feature: 6, 26, 86, 95, 99,
+  106, 115). Versions compare (0, 115) could get a card only with a Workiva source or Ian's ruling on
+  sandbox evidence.
 - DONE in dd1adcd: S7 and task 42 read as READ only ("review <data> for unusual changes": 0 of 139).
 - Idea only (no card covers it): S7 drafts assurance questions; a sourced card would need a Workiva page.
 - Assumed, not shown to Ian (dd1adcd review): "note all deviations from budget for the board deck" rates
   good (EXTRACT). Task 42 stays partial because the engine misses that SOC 2 reviews recur.
 - S16 also offers a cross-reference check within the sustainability report (idea only).
-- The "reach a use case" figure counts wrong suggestions; a right-suggestion rate needs gold labels.
+- DONE in dd64db7: the "reach a use case" figure counted wrong suggestions; card-gold.jsonl now gives a right-card rate.
 - Design-review NICE items; Benchmarking preview wording conflict; merge.
 - Sessions 648f12e7, 4583497d, ed322f71, 5127436a, 927f0985 all own this worktree; `claude rm`
   deletes the worktree, so remove none while a session works here.
