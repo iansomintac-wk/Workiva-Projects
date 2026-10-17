@@ -1,0 +1,22 @@
+Runway: after Ian's merge answer on branch runway-day-sim (pushed to origin, unmerged; run 6 ended 2026-10-17
+at the merge stop). Draft by the run's hand-off PM step; launch only on Ian's yes.
+
+Read docs/evidence/2026-10-16-osm-day-lifecycle-sim.md (the X10 section is current) and the findings list in
+docs/RUNWAY_DAY_SIM_RUN_RESUME_PROMPT.txt. Ledger: .ledger/2026-10-16-runway-day-sim/ (main checkout copy).
+
+1. Merge: only on Ian's yes typed in your own session, recorded in slip.json (mergeWords) before the command.
+   Merge without squash tricks, then run node --test --test-reporter=spec "test/*.test.mjs" on the merged
+   tree (expect tests 138, pass 136, fail 0, skipped 2). If he says no, park it: reason and the revive
+   condition "Ian rules on the findings".
+2. Take Ian's ruling, one question at a time, on each tracker finding: D2 (no call transcript in prep), D3
+   (no you-owe/they-owe), D8/L8 (a confirmed risk stays in the risk list), L7 (silence row returns after a
+   pause but hidden past the 15-row cap), L11 (OK graduates with no CSAT contact), C3 (is the Gainsight gate
+   card his "tap on the shoulder"), and the "Download backup" confirm on each day's first load.
+3. Only on his yes, shape one fix as a pitch (problem, appetite, no-gos) for tracker 1.1. Never edit a
+   tracker without that yes.
+4. Ruling candidates for Ian: (a) a slip field "token raises on the program lead's word, up to +600k";
+   (b) a session that finds another run's ledger messages that run's lead before writing in its worktree.
+5. Bank lessons (1)-(10) from the resume prompt (ledger-add / brain), with Ian's yes where a ruling is involved.
+
+Do not claude rm d83f27fa, a1ea90be, 1556e2fc, 6bd1e0f3, 6c4e428e or 7364c3eb (they share the worktree).
+Stop at the task boundary.
