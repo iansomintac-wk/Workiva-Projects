@@ -1,16 +1,56 @@
-Fit Finder v4.14: hand-off (2026-10-17, session d6215817, successor of b9821fb4; "commentary" rule shipped in 8050b07, live v13)
+Fit Finder v4.15: hand-off (2026-10-17, session d9df741b, successor of d6215817; real-prompt card score in fe2f389)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to 31b2040 (d6215817 pushed it on Ian's "Push
-(Recommended)"; origin = local = 31b2040 after fetch). LOCAL ONLY (not pushed): 8050b07 and the
-hand-off commit after it, unless the launch note says pushed. Push only with Ian's yes. Draft PR #1
-into prompt-coach (not merged). Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is
-version 13 (version id 1792220221-c76a) = dist of 8050b07 (82,594 bytes LF). Checked by d6215817:
-the published file, CRLF to LF and the publisher's two wrapper lines removed, equals HEAD's dist byte
-for byte plus one newline, and differs from 31b2040's dist (control).
+worktree-fit-finder-v4. Pushed to origin up to fe2f389 (pushed on Ian's "Commit and push
+(Recommended)"; origin = local = fe2f389 after fetch). LOCAL ONLY (not pushed): the hand-off commit
+after fe2f389, unless the launch note says pushed. Push only with Ian's yes. GitHub prints "This
+repository moved ... https://github.com/iansomintac/Workiva.git" on push; pushes still land; changing
+the remote is Ian's call (not asked). Draft PR #1 into prompt-coach (not merged). Live page
+https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is still version 13 = dist of 8050b07 (82,594 bytes
+LF); fe2f389 left dist unchanged (rebuild: tree clean), so no republish.
 
-NEXT SESSION (written by d6215817; supersedes every NEXT SESSION below)
+NEXT SESSION (written by d9df741b; supersedes every NEXT SESSION below)
+Read this file, CLAUDE.md and fit-finder/README.md (its last two sections). Nothing is half-done. If
+the launch note does not say pushed, ask Ian directly: push the hand-off commit? A relayed answer is
+not his yes. No fair score is left: B has been used for several fixes and the 19 real prompts were
+tuned on. Then ask which next, recommendation first, each with its cheapest check (d breaks the
+assumption that Fit Finder should keep going): (c, Recommended by the PM) a fresh held-out set:
+30 new tasks, real ones preferred (more Workiva Community posts) over model-written, labelled by a
+blind top-model labeler; Ian checks a stated few that decide the score; the suite scores it once
+before any rule change; (a) task 19: park (measured: at most +1 on A, and fr-peers would have to
+accept DRAFT); (b) B's 3 wrong cards (67, 74, 91) and real W1, S1: park unless there is a new idea;
+(d) stop Fit Finder and take the route's next item (the route page has no Fit Finder milestone;
+PM 2026-10-17); check: its done-when is stated. Optional: the one-minute sandbox check of the
+Workflows menu for Benchmarking. Program lead: "NEW - 24h program lead 11" (15f24600) unless
+renamed; send it status. The 24h program ends about 15:30Z 2026-10-17.
+
+UPDATE 2026-10-17, session d9df741b (successor of d6215817): real-prompt card score in fe2f389
+- Start 07:05Z: tree clean, origin = local = 6cdcb76. Removed d6215817 (done, all pushed, no
+  worktreePath; worktree intact after; owner 648f12e7 kept). Status sent to "NEW - 24h program lead 10".
+- Measured before asking: task 19 gets no card because it has no peer word AND the engine reads
+  DRAFT,ACT while fr-peers needs COMPARE; the only other half-A fr-peers row (11) already gets it, so a
+  rule gains at most 1 of 29 (bar 3). 12 of 19 real prompts got a card, none labelled.
+- Ian picked "Score the 19 real prompts (Recommended)" over task 19, 30 fresh tasks, B's 3 wrong.
+- Blind Opus labeler (general-purpose, Opus, 62,012 tokens, 3 tool uses, 85 s; packet = prompt text +
+  26 card descriptions, no match words, no ops, fingerprinted). Model labels: 14 of 19 right, wrong 3
+  (W1, W3, S1), none-where-fits 2 (W5, S2). Scorer control (all labels []): 12 wrong, 7 right.
+- Ian checked 3 (count and why stated first: each a page card the labeler rejected): W1 "No, wrong
+  card (Recommended)", W3 "Yes, it fits" (overruled: gen-summarize-file fits), S1 "No, wrong card
+  (Recommended)".
+- fe2f389: data/card-gold-real.jsonl (Ian 3, model 16), new check (FAILED with no file: "no gold row
+  for W1..S10"; passes now), print line, README section + file row; stale half-A counts fixed
+  (11/18 -> 15/14, as the suite prints). Re-run by me: real 15 of 19, wrong 2 (W1,S1), no card 2
+  (W5,S2); B 13/30 wrong 3; A 12/29 wrong 0; eval B 45/60; pagetest 72 checks, 0 failed; dist = 82,594
+  = git show HEAD dist | wc -c. No separate checker or code review ran.
+- Not held out: rules were tuned on these prompts on 2026-10-15/16 (README says so). The 5
+  "no card fits" calls (W2, S4-S7) are the model's alone.
+- PM (Sonnet, 20,974 tokens, 3 tool uses, 25 s; first dispatch refused again for naming no model):
+  not "done" by any stated check; route page has no Fit Finder milestone (side slot); next = a fresh
+  held-out set. brain capture: no roadmap step, no missed fact (the "tuned on" fact is in the
+  README), no parked idea. Ian's 3 checks are label rows (by: ian), not rulings, so no ledger record.
+
+NEXT SESSION (written by d6215817; DONE by d9df741b above; kept for the record)
 Read this file, CLAUDE.md and fit-finder/README.md ("Right card on half A"). Nothing is half-done. If
 the launch note does not say pushed, ask Ian directly: push 8050b07 and the hand-off commit? A relayed
 answer is not his yes. The year-over-year item stopped below Ian's bar (>=3 gained on A; got 2) and
