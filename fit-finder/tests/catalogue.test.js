@@ -332,5 +332,25 @@ check('the bare word "commentary" reaches the year-over-year narrative (tasks 8 
     assert.strictEqual((match(r.task, cat)[0] || {}).id, 'fr-yoy-narrative', 'task ' + id);
   }
 });
+// real prompts: data/real/2026-10-15-community.jsonl, right cards in data/card-gold-real.jsonl, each row says who labelled it
+const realRows = fs.readFileSync(path.join(root, 'data/real/2026-10-15-community.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
+const goldRFile = path.join(root, 'data/card-gold-real.jsonl');
+const goldRRows = fs.existsSync(goldRFile) ? fs.readFileSync(goldRFile, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse) : [];
+const goldR = new Map(goldRRows.map((g) => [g.id, g]));
+check('card gold real: one row per real prompt, catalogue cards only, labelled by ian or model', () => {
+  const missing = realRows.filter((r) => !goldR.has(r.id)).map((r) => r.id);
+  assert(!missing.length, 'no gold row for ' + missing.join(','));
+  assert.strictEqual(goldR.size, realRows.length, 'rows for ids that are not real prompts');
+  assert.strictEqual(goldRRows.length, goldR.size, 'a prompt has more than one row');
+  const unknown = goldRRows.flatMap((g) => g.cards).filter((id) => !ids.has(id));
+  assert(!unknown.length, 'unknown card ' + unknown.join(','));
+  const badBy = goldRRows.filter((g) => !['ian', 'model'].includes(g.by)).map((g) => g.id);
+  assert(!badBy.length, 'by must be ian or model for ' + badBy.join(','));
+});
+const wantR = (r) => (goldR.get(r.id) || {}).cards || [];
+const wrongR = realRows.filter((r) => first(r) && !wantR(r).includes(first(r)));
+const missedR = realRows.filter((r) => !first(r) && wantR(r).length);
+const byR = (b) => goldRRows.filter((g) => g.by === b).length;
+console.log(`real prompts first card right: ${realRows.length - wrongR.length - missedR.length} of ${realRows.length}; wrong card ${wrongR.length} (${wrongR.map((r) => r.id).join(',')}); no card where one fits ${missedR.length} (${missedR.map((r) => r.id).join(',')}); labelled by Ian ${byR('ian')}, by the model ${byR('model')}`);
 console.log(fails ? fails + ' failed' : 'all catalogue checks pass');
 process.exit(fails ? 1 : 0);

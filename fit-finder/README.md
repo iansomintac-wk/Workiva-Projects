@@ -27,7 +27,8 @@ node tests/pagetest.js [capture-folder]                            # real Chrome
 | `data/LABELING.md` | The rubric: good / partial / not a fit, operations, blockers |
 | `data/tasks.jsonl` | 120 AI-written task descriptions, blind-labeled by an AI |
 | `data/card-gold.jsonl` | For the 30 held-out tasks that fit: every card Ian marked right to show (2026-10-16) |
-| `data/card-gold-a.jsonl` | For the 29 half-A tasks that fit: every card right to show, each row labelled by Ian (11) or a blind top-model labeler (18) (2026-10-16) |
+| `data/card-gold-a.jsonl` | For the 29 half-A tasks that fit: every card right to show, each row labelled by Ian (15) or a blind top-model labeler (14) (2026-10-16) |
+| `data/card-gold-real.jsonl` | For the 19 real prompts in `data/real/2026-10-15-community.jsonl`: every card right to show, each row labelled by Ian (3) or a blind top-model labeler (16) (2026-10-17) |
 
 ## How good it is (2026-10-15)
 Half A (60 tasks) tuned the rules; half B is held out. Fit agreement: A 86.7%, **B 75.0%**
@@ -129,7 +130,7 @@ them chat with your file is already the feature a card he accepted names first; 
 than wrong cards. A top-model labeler, blind to the engine, matched Ian exactly on 11 of 30 and
 accepted fewer cards on 18; Ian disagreed with it on 2 of the 8 he checked first (the agreed limit),
 so he labelled all 30. Every question offered at least one card, which may lean toward picking one.
-These are AI-written tasks: whether real tasks get the right card is not yet measured. Whether a
+These are AI-written tasks; for real prompts see "Right card on real prompts" below. Whether a
 card's advice works in Workiva AI has one test so far (Ian's sandbox, 2026-10-16, made-up data,
 `docs/evidence/2026-10-16-sandbox-pilot.md`): asked to compare two versions of an MD&A, chat with
 workspace files listed all 4 planted changes, invented none and flagged the removed risk sentence,
@@ -152,3 +153,19 @@ model's labels, so it does not compare directly with B's 13 of 30. Held-out B, a
 Tried and not shipped: "commentary" or a period phrase (last month's/quarter's/year's, budget vs
 actual, latest results) got 13 of 29 on A but B's wrong cards went 3 -> 5 (80, 115, both from "last
 year's"); letting the card also take REWRITE gained 100 but sent gen-rewrite's own example to this card.
+
+Right card on real prompts (2026-10-17): `data/card-gold-real.jsonl` holds the same kind of labels
+for the 19 real prompts (Workiva and community posts, `data/real/2026-10-15-community.jsonl`; all
+19 fit, Ian 2026-10-15). A top-model labeler, blind to the engine (prompt text and card
+descriptions only, no match words), labelled all 19; Ian then checked the 3 calls that decided the
+wrong-card count, each a card the page shows that the labeler rejected: he agreed on W1 (a
+month-on-month variance write-up for the CFO is not "pull the key points") and S1 (emissions drivers
+for executives is not the executive-narrative rewrite card), and overruled it on W3 (the summarize
+card fits drafting a goodwill footnote from the valuation file). As the suite prints it:
+`real prompts first card right: 15 of 19; wrong card 2 (W1,S1); no card where one fits 2 (W5,S2); labelled by Ian 3, by the model 16`.
+Of the 15, 10 get a right card and 5 rightly get none (W2, S4 to S7: the labeler found no card for
+intercompany work, target trajectories, ranking or roadmapping reductions, or assurance questions;
+those 5 calls are the model's alone, unlike B, where Ian marked no task "no card fits"). Not a
+held-out score: rules were tuned on these same prompts on 2026-10-15 and 2026-10-16 (S1, S2, S3,
+S10 and the draft and 10-Q fixes above), so it says the page holds on real wording it was partly fitted
+to, not how it does on new real prompts. 19 prompts, one labeler.
