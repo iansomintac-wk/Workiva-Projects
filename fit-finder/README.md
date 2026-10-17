@@ -29,6 +29,7 @@ node tests/pagetest.js [capture-folder]                            # real Chrome
 | `data/card-gold.jsonl` | For the 30 held-out tasks that fit: every card Ian marked right to show (2026-10-16) |
 | `data/card-gold-a.jsonl` | For the 29 half-A tasks that fit: every card right to show, each row labelled by Ian (15) or a blind top-model labeler (14) (2026-10-16) |
 | `data/card-gold-real.jsonl` | For the 19 real prompts in `data/real/2026-10-15-community.jsonl`: every card right to show, each row labelled by Ian (3) or a blind top-model labeler (16) (2026-10-17) |
+| `data/card-gold-fresh.jsonl` | For the 29 fresh real prompts in `data/real/2026-10-17-fresh.jsonl`: fit and every card right to show, each row labelled by Ian (0) or a blind top-model labeler (29) (2026-10-17) |
 
 ## How good it is (2026-10-15)
 Half A (60 tasks) tuned the rules; half B is held out. Fit agreement: A 86.7%, **B 75.0%**
@@ -169,3 +170,25 @@ those 5 calls are the model's alone, unlike B, where Ian marked no task "no card
 held-out score: rules were tuned on these same prompts on 2026-10-15 and 2026-10-16 (S1, S2, S3,
 S10 and the draft and 10-Q fixes above), so it says the page holds on real wording it was partly fitted
 to, not how it does on new real prompts. 19 prompts, one labeler.
+
+Right card on fresh real prompts (2026-10-17): `data/card-gold-fresh.jsonl` labels 29 real prompts
+that no rule had been tuned on: 26 customer comments on the Community post "Amplify giveaway #3:
+AI FTW!" (2026-07-06; 11 personal or advice-only comments dropped), 2 from "Quarterly Financial
+Statement Roll Forwards Very Time Consuming" (2026-09-25) and 1 from "Workiva AI - XBRL"
+(2026-04-02). The prompts stay out of git (`data/real/2026-10-17-fresh.jsonl`, like the 19
+earlier ones). A top-model labeler, blind to the engine (the labelling guide, the 26 card
+descriptions and the prompt text; no match words), gave each a fit and every card right to show.
+All 29 rows are the model's until Ian checks the few calls that decide the score. The
+prediction, written before the engine ran on them: fit agreement 65-85%, first card right on
+50-75% of the prompts that fit, wrong card at most 4; disproved if first card right is under 40%
+or wrong card over 6. Scored once, before any rule change, as the suite prints it:
+`fresh prompts first card right: 8 of 23 that fit; wrong card 6 (G2,G14,G15,G22,G26,X1); no card where one fits 9 (G4,G10,G12,G13,G16,G17,G19,G20,G21); card on a not-a-fit prompt 1 (G5); fit agreement 12 of 29; labelled by Ian 0, by the model 29`.
+So the prediction is disproved: first card right 35%, fit agreement 41%. These prompts are
+mostly general work, unlike the reporting tasks the rules were tuned on: of the 15 the labeler
+gave a card, 12 get a general card (rewrite 7, summarize 3, formula 2). 7 of the 9 misses are
+rewording text or writing an email, memo or passage (the rewrite card) and 2 are writing a
+spreadsheet formula;
+the engine rates 3 of them "not a fit" because it reads no step in "create memos or professional
+emails", "wording:" or "Create an INDEX MATCH formula" (G4, G13, G19). 12 of the 17 fit
+differences are good against partial, mostly whether the job recurs, which the page asks. The
+comments are short, and the labeler marked 18 of 29 calls low confidence. One labeler, one run.
