@@ -340,6 +340,7 @@
     const tips = [];
     if (files.length) tips.push('In Workiva AI chat, type @ and pick ' + (files.length === 1 ? 'the file' : 'each file') + ' so the AI can read ' + (files.length === 1 ? 'it' : 'them') + ' (up to 10 per prompt).');
     else if (!on.S) tips.push('The document companion does not read your open file unless you reference it. Select the text or table first, or type @ in chat to reference a file.');
+    if (/\b(?:attached|uploaded)\b/i.test(ctx.prompt || '') && /\bknowledge base\b/i.test(ctx.prompt || '')) tips.push('Your prompt says both "attached" and "knowledge base". Use one: in chat, type @ and pick each file you want read.');
     const tip = {
       rewrite: 'For quick changes, select the text and use the companion’s quick edits: Shorten, Elaborate, Rephrase, or Change tone.',
       formula: 'In a spreadsheet, select the cell and use Fix this formula or Explain this formula from the companion.',
@@ -400,7 +401,7 @@
     const chosen = bestSheet(files, t);
     const headers = ((chosen && (chosen.named || (chosen.score > 0 && chosen.file.sheets.length === 1)) && chosen.sheet.headers) || []).filter((h) => h && h.length < 30).slice(0, 6);
     const ctx = {
-      t, files, domain: opts.domain || domainOf(t + ' ' + files.map((f) => (f.text || '').slice(0, 3000)).join(' ').toLowerCase()),
+      prompt, t, files, domain: opts.domain || domainOf(t + ' ' + files.map((f) => (f.text || '').slice(0, 3000)).join(' ').toLowerCase()),
       promptPeriods: [...new Set((prompt.match(/\b(?:FY|CY)\s?'?\d{2,4}\b|\bQ[1-4]\s?(?:FY\s?'?\d{2,4})?\b|\bH[12]\s?(?:FY\s?'?\d{2,4})?\b|\b20\d{2}\b/gi) || []).map((x) => x.replace(/\s+/g, ' ').toUpperCase()))],
       intent: null, object: restoreCase(prompt, objectOf(t)), periods: periodsIn(files), headers
     };

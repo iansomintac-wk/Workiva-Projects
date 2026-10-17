@@ -184,3 +184,12 @@ test('objective: a request to fix the text keeps the fill-in objective, not the 
   // a list task is unchanged: still the blank-free list objective
   assert.ok(run('walkthrough questions for AP payment approval pls').stages.strong.prompt.includes('List the specific items that answer this, one per line.'));
 });
+
+test('tip: "attached" plus "knowledge base" gets a use-one tip; either alone does not', () => {
+  const has = (o) => o.tips.some((t) => /both "attached" and "knowledge base"/.test(t) && /type @ and pick each file/.test(t));
+  assert.ok(has(run(IAN)));
+  assert.ok(has(run(IAN, [PDF])));
+  assert.ok(!has(run('Summarize the attached report in five bullets.')));
+  assert.ok(!has(run('Summarize what the knowledge base says about Scope 2 in five bullets.')));
+  assert.ok(has(run('Check the uploaded file against the Knowledge Base and list differences.')));
+});
