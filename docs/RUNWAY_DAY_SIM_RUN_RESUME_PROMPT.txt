@@ -1,0 +1,48 @@
+Runway: OSM day and customer lifecycle simulation, the run, RESUMED at Task 5 (predecessor 6c4e428e stopped at its
+200k context line, 2026-10-16 23:32 PDT).
+
+First read docs/RUNWAY_DAY_SIM_RUN_PROMPT.txt whole: its method, checks, safety rules, sessions rule and slip all still
+apply, unchanged. This file only says where the run stands.
+
+Method: studio-harness:talk-and-run, "The run", step 2 onward. First check: echo "$STUDIO_RUN_LEDGER" and test -f on
+its budget.json and slip.json; empty or missing is a stop.
+
+Where it stands (all measured by the lead unless marked):
+- Plan APPROVED by Ian 2026-10-16 23:0x PDT, verbatim "yes": docs/superpowers/plans/2026-10-16-osm-day-lifecycle-sim.md
+  (12 tasks), committed 169944f. Do not edit the plan.
+- Done, each built by studio-harness:implementer, PASSed by a fresh studio-harness:checker, and re-run by the lead:
+  T1 a35748c (results), T2 0bd4eac (fakes), T3 e446430 (report), T4 79990ee (browser layer).
+  Suite at 79990ee: node --test "test/*.test.mjs" -> 85 tests, 83 pass, 0 fail, 2 skipped.
+- Next: Task 5 (break table module, probe, negative controls), then Tasks 6-12 in order, then the final review
+  (step 5 of the run prompt), evidence doc, push per slip, STOP before merge with the findings for Ian.
+- Ledger: .ledger/2026-10-16-runway-day-sim/progress.md (rows per dispatch; "Fix-round list" lines FR1-FR4 collect the
+  checkers' minor test gaps for the fix round; do them after the final review, one fresh helper).
+- budget.json tasksLeft 20. Helper tokens used so far ~691k of the 2,000,000 cap (helper-rows.md raw column, summed by the
+  lead); T1-T4 averaged ~60k per build+check pair.
+- tracker sha256 (full) in .ledger/2026-10-16-runway-day-sim/tracker-sha256.txt (re-measured 22:29, equal the prompt).
+- C6 baseline (lead, 23:2x): %TEMP% osmsim-* 0, fieldtest-* 1, selfcheck-* 625.
+
+How the lead ran each task (keep doing it this way):
+- Packet per the skill (Outcome, Files, Acceptance, Budget, Brain entries, Reply-to), commit attribution lines in the packet.
+- Node 26's spec reporter prints "ℹ fail 0" where the plan writes "# fail 0"; checks pin --test-reporter=spec.
+- Before each checker: the lead makes .ledger/2026-10-16-runway-day-sim/exports/t<n>-parent (git archive <parent> -- test
+  tools | tar -x, then copy only the new test in) and one or two mutants of the new code (exports/t<n>-mut*), runs the
+  mutant itself first to see it fail, then writes role-checks.txt lines (each `cd "<abs path>" && bash -c '...'`), and
+  tells the checker to run each line alone. Replace role-checks.txt per task; empty it at the end of the run.
+- Never `cd` into an export in the lead's own shell without cd-ing back (it moves the session's cwd).
+- A fresh helper for every fix round: a resumed helper keeps its tool-call count, and the plan writer was refused at
+  60/60 (denied=5, nothing written).
+- Task 5 writes sim-runs/ before Task 11 git-ignores it: tell the T5 implementer not to git add sim-runs/ (or to add the
+  sim-runs/ ignore line in its own commit and say so).
+- Task 5's probe settles the plan's ASSUMED rows; if one is contradicted the implementer changes only lib/breaks.mjs and
+  the lead records it. A step that FAILs is a finding for Ian, never a tracker fix.
+
+Findings so far for Ian (into the evidence doc):
+- MEASURED: tools/selfcheck.mjs leaves its selfcheck-* profile in %TEMP% on every run (13 -> 14 for one run). Twelve more
+  appeared 23:15-23:31 while the unit suite ran (assumed source: the suite's selfcheck tests). Out of scope; not fixed.
+- READ, not yet run: graduation has no CSAT check (L11); prep panel "Pending deliverables" are Gainsight checklist items,
+  not commitments (D2/D3); actioning a risk may not leave the open list (D8/L8); L6 may miss day 7.
+
+Sessions: the predecessor 6c4e428e ("COMPLETED - Runway day and lifecycle sim run") shares this worktree: do NOT
+claude rm it, nor any session listed in the run prompt's Sessions line. Give Ian the time at start and each stop
+(run started 2026-10-16 22:27 PDT; 65 minutes used at this hand-off).
