@@ -68,6 +68,10 @@ prompt; no duplicate sentences, empty fragments, or broken punctuation.
 - Knowledge-base and agent names come from Workiva support pages as of Oct 2026; confirm
   before publishing externally.
 
+## Rewrite wording rules (2026-10-16)
+
+- Sentences: a `;` and anything inside `( )` or `[ ]` never ends a sentence, so a kept sentence is never cut in half. Unit tests: `node --test --test-reporter=tap tests/rewrite_unit.test.js`.
+
 ## Real files
 
 `tests/filetest.js` loads real Word, Excel, PowerPoint, PDF and CSV files (from
