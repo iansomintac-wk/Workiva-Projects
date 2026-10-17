@@ -367,7 +367,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       [/\bfor (?:the |our |a |an |my )?(?:audit committee|board|board of directors|executives?|executive team|exec team|leadership|leadership team|senior leadership|c-suite|cfo|ceo|coo|cio|ciso|controller|investors?|analysts?|auditors?|external auditors?|internal audit|regulators?|the sec|sec staff|management|assurance (?:provider|team)|non-?(?:experts?|specialists?|finance (?:people|readers|audience))|new (?:hires?|analysts?|team members?|staff)|stakeholders|steering committee|disclosure committee|process owners?|control owners?|business owners?|employees|staff|customers|suppliers|lenders|rating agencies|shareholders|readers)\b/, 1.1, 'audience'],
       [/\b(?:goes|going|go|headed|heading|will go|being sent|be sent|sent) to (?:the |our )?(?:audit committee|board|cfo|ceo|leadership|executives|auditors|regulators|investors|sec|committee|management)\b/, 1.1, 'goes-to'],
       [/\b(?:presenting|present|presented|sharing|share|send|sending|submit|submitting) (?:it |this )?to (?:the |our )?(?:audit committee|board|cfo|ceo|leadership|executives|auditors|regulators|investors|committee|management|team)\b/, 1.0, 'presenting-to'],
-      [/\b(?:audience|readers?|reader base) (?:is|are|will be)\b|\bwritten for\b|\baimed at\b|\btargeted at\b|\bintended for\b/, 1.1, 'audience-is'],
+      [/\b(?:audience|readers?|reader base) (?:is|are|will be)\b|\bwritten for\b|\baimed at\b|\btargeted at\b|\bintended for\b|\bthis (?:table|list|output|extract|summary|result) feeds\b|\bthis is for \[/, 1.1, 'audience-is'],
       [/\bfor (?:the |our |a |an |my )?(?!selected|attached|highlighted|open|current)(?:[\w&/-]+ ){0,3}(?:report|filing|10-k|10-q|8-k|20-f|md&a|mda|footnotes?|disclosures?|memo|email|newsletter|earnings (?:release|call|script)|press release|proxy|csrd|esrs|cdp|tcfd|issb|sustainability report|annual report|integrated report|board (?:pack|book|deck|meeting|update)|audit committee (?:deck|meeting|pre-?read|update)|submission|comment letter response|management letter|pre-?read|investor day|lender call|rating agency|deck|presentation|meeting|walkthrough|steering committee|committee)\b/, 1.0, 'destination'],
       [/\b(?:we are|i am|our team is|the team is|we have|we will be|i will be) (?:preparing|getting ready|going through|working (?:on|through)|in the middle of|new to|about to|facing|undergoing|starting|kicking off|a first-?year|first-?time|under)\b/, 1.0, 'background'],
       [/\b(?:ahead of|in preparation for|to prepare for|in advance of|before (?:the|our) (?:audit|assurance|filing|board|meeting|review|deadline|call))\b/, 0.9, 'ahead-of'],
@@ -675,6 +675,9 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     ['draft', /\b(draft|write|compose|create|prepare|generate|produce|put together|come up with)/],
     ['summarize', /\b(summar|overview|recap|tl;?dr|key (?:points|takeaways|themes)|highlights|brief)/]
   ];
+  const LIST_INTENT = new Set(['errors', 'gaps', 'consistency', 'anomaly', 'map', 'questions', 'checklist', 'extract', 'compare']);
+  // The user's own verb asks for changed text ("can u fix them"), so a list of found items is not what they want back.
+  const CHANGE_ASK = /\b(?:fix|correct|rewrite|reword|rephrase|revise|edit|update|standardi[sz]e|harmoni[sz]e|align|clean up)\b/;
   function intentOf(t, hasData, strict) {
     for (const [name, re] of INTENTS) if (re.test(t)) return name;
     if (strict) return null;
@@ -733,8 +736,13 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     return lead + '[the selected text, table, or file]. ';
   }
 
-  // Who it is for is the user's to say: offer it as a blank with examples, never assert a role.
+  // Context fits the task: a table feeds something; other data tasks are "for" something. Blank, never a guessed audience.
+  const CTX_EXAMPLE = { FR: 'the quarterly flux review', GRC: 'our SOX control testing', SUS: 'our Scope 2 inventory', GEN: null };
+  const DATA_CTX = new Set(['variance', 'anomaly', 'consistency', 'compare', 'map', 'formula']);
   function contextFragment(ctx) {
+    const ex = CTX_EXAMPLE[ctx.audDomain] ? ', such as ' + CTX_EXAMPLE[ctx.audDomain] : '';
+    if (ctx.intent === 'extract') return 'This table feeds [what it is for' + ex + ']. ';
+    if (DATA_CTX.has(ctx.intent)) return 'This is for [what it feeds' + ex + ']. ';
     return 'This is for ' + DEST[ctx.audDomain] + '. ';
   }
 
@@ -818,10 +826,28 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
   // phrases for other letters inside it become their own inline segments, so switching a letter
   // off removes exactly its words. `alt` is what an inline segment collapses to when off.
   const S_INLINE = /\b(?:selected|highlighted|attached|uploaded|pasted|open|opened|current|enclosed|provided|shared|linked)\b/i;
+  // A sentence ends at . ! ? outside ( ) and [ ], or at a line break. A ";" never ends one. A "." followed by a
+  // non-space ("14.2%", "A.8.x") is not an end. Brackets never carry across a line break.
+  function sentenceSpans(prompt) {
+    const spans = [], n = prompt.length; let i = 0;
+    while (i < n) {
+      while (i < n && prompt[i] === '\n') i++;
+      if (i >= n) break;
+      const start = i; let depth = 0, ended = false;
+      while (i < n && prompt[i] !== '\n') {
+        const c = prompt[i];
+        if (c === '(' || c === '[') depth++;
+        else if ((c === ')' || c === ']') && depth > 0) depth--;
+        else if (depth === 0 && /[.!?]/.test(c) && !(c === '.' && i + 1 < n && /[^\s.]/.test(prompt[i + 1]))) { ended = true; break; }
+        i++;
+      }
+      if (ended) while (i < n && /[.;!?]/.test(prompt[i])) i++;
+      if (prompt.slice(start, i).trim()) spans.push({ start, end: i });
+    }
+    return spans;
+  }
   function userSegments(prompt, d, on) {
-    const sentences = [];
-    const re = /(?:[^.;!?\n]|\.(?=[^\s.]))+[.;!?]*/g; let m; // a period inside "14.2%" or "A.8.x" is not a sentence end
-    while ((m = re.exec(prompt))) if (m[0].trim()) sentences.push({ start: m.index, end: m.index + m[0].length });
+    const sentences = sentenceSpans(prompt);
     const spans = [];
     const FIXED = /^(period|scope-n|number|region|scope-limit|structure|measures|format-word|here-is|work-off|wdata|on-screen|demonstrative|numbered-part|only-use-info)$/;
     for (const k of K) for (const h of d.el[k].hits) if (h.orig && h.orig[1] > h.orig[0] && !FIXED.test(h.tag)) {
@@ -857,9 +883,9 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       }
       if (cur < snt.end) segs.push({ text: prompt.slice(cur, snt.end), letter: host });
       const last = segs[segs.length - 1];
-      if (last && !/[.!?]\s*$/.test(last.text)) { if (last.inline) segs.push({ text: '.', letter: host }); else last.text = last.text.replace(/\s*$/, '.'); }
+      if (last && !/[.!?]\s*$/.test(last.text)) { if (last.inline) segs.push({ text: '.', letter: host }); else last.text = last.text.replace(/[\s;,:]*$/, '.'); }
       const vague = !inside.some((x) => x.k === 'O');
-      out.push({ host, segs, inside, text: sentText, vague, letters: new Set([host, ...inl.map((x) => x.k)]) });
+      out.push({ idx: out.length, host, segs, inside, text: sentText, vague, letters: new Set([host, ...inl.map((x) => x.k)]) });
     }
     return out;
   }
@@ -881,11 +907,57 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       .replace(/,?\s*(?:any )?thoughts\s*\?+/gi, '.').replace(/\.\./g, '.').trim();
   }
 
+  // Direct voice: polite openers become imperatives, filler words go. Questions that are not
+  // "can/could/would you + verb" stay questions; a "?" becomes "." only on a sentence we converted.
+  const GERUND = { summarizing: 'summarize', reviewing: 'review', checking: 'check', listing: 'list', extracting: 'extract', comparing: 'compare', writing: 'write', drafting: 'draft', explaining: 'explain', looking: 'look', pulling: 'pull', putting: 'put', sending: 'send', giving: 'give', making: 'make', taking: 'take', finding: 'find', creating: 'create', preparing: 'prepare', flagging: 'flag', mapping: 'map', rewriting: 'rewrite', identifying: 'identify', analyzing: 'analyze', analysing: 'analyse' };
+  function directSentence(s) {
+    const m = s.match(/^(\s*)([\s\S]*?)(\s*)$/); const lead = m[1], trail = m[3]; let b = m[2]; const orig = b; let converted = false;
+    b = b.replace(/^(?:additionally|also),?\s+(?:(?:please|kindly)\s+)?(?:ensure|make sure)(?: that)?\s+(?=if\b)/i, () => { converted = true; return ''; });
+    b = b.replace(/^(?:(?:please|kindly|pls|plz),?\s+)?would you mind\s+([a-z]+ing)\b\s*/i, (x, g) => (GERUND[g.toLowerCase()] ? (converted = true, GERUND[g.toLowerCase()] + ' ') : x));
+    b = b.replace(/^(?:(?:please|kindly|pls|plz),?\s+)?(?:(?:can|could|would) you(?!\s+mind\b)|i was wondering if you (?:could|can|would)|i wonder if you (?:could|can)|i(?:'d| would) (?:like|love) you to|i (?:need|want) you to)(?:,?\s+(?:please|kindly|pls|plz))?,?\s+(?=[a-z])/i, () => { converted = true; return ''; });
+    // declared extension of spec rule 3: a "can/could you + verb" in the middle of a sentence (not a question word first)
+    // a question-word sentence stays a question; only a ", and/then/so can you + verb" tail splits off as its own imperative
+    if (/^(?:what|which|who|whom|whose|when|where|why|how)\b/i.test(b)) {
+      b = b.replace(new RegExp('^([\\s\\S]*?),?\\s+(?:(?:and|then|so)\\s+(also|plus)|(also|plus)|and|then|so)\\s+(?:can|could|would) you(?:\\s+(?:please|kindly))?\\s+(?=[a-z])([\\s\\S]*)$', 'i'), (x, head, g1, g2, tail) => { converted = true; const w = g1 || g2; return head + '? ' + (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() + ' ' + tail : tail.replace(/^[a-z]/, (c) => c.toUpperCase())); });
+    }
+    // a bare lead-in (also/plus/and/but/so/then) stays; only the "can you" goes
+    b = b.replace(/^(also|plus|and|but|so|then)(,?)\s+(?:can|could|would) you(?:\s+(?:please|kindly))?\s+(?=[a-z])/i, (x, w, c) => { converted = true; return w + c + ' '; });
+    b = b.replace(/\b(and|then|so|also|plus)\s+(?:can|could|would) you(?:\s+(?:please|kindly))?\s+(?=[a-z])/gi, (x, w) => { converted = true; return w + ' '; });
+    if (!/^(?:what|which|who|whom|whose|when|where|why|how)\b/i.test(b)) {
+      // an "If ..." opener keeps its condition: "If X, do Y." rather than "If X. Do Y."
+      const cond = /^if\b/i.test(b);
+      b = b.replace(/([A-Za-z0-9)'"’”])(?:,|\s+[-–—])?\s+(?:can|could) you(?:\s+(?:please|kindly))?\s+([a-z])/gi, (x, p, c) => { converted = true; return cond ? p + ', ' + c : p + '. ' + c.toUpperCase(); });
+    }
+    b = b.replace(/([-–—,;:])\s+(?:please|pls|plz|kindly),/gi, '$1');
+    b = b.replace(/\s+(?:please|pls|plz|kindly)(?=,)/gi, '');
+    b = b.replace(/,?\s+(?:please|pls|plz|kindly|thanks|thank you)(?: so much| in advance| a lot)?\s*(?=[.!?]|$)/gi, '')
+      .replace(/,?\s+if (?:at all )?possible\s*(?=[.!?]|$)/gi, '').replace(/^if (?:at all )?possible,?\s+/i, '')
+      .replace(/^if you (?:can|could),\s+/i, '').replace(/,?\s+if you (?:can|could)\s*(?=[.!?]|$)/gi, '')
+      .replace(/\b(?:please|pls|plz|kindly),?\s+/gi, '')
+      .replace(/\b([A-Za-z]{3,})\(s\)/g, '$1s');
+    if (b !== orig) b = b.replace(/^[a-z]/, (c) => c.toUpperCase());
+    if (converted) b = b.replace(/\?+$/, '.');
+    return lead + b + trail;
+  }
+  function directVoice(text) {
+    let out = '', cur = 0;
+    for (const sp of sentenceSpans(text)) { out += text.slice(cur, sp.start) + directSentence(text.slice(sp.start, sp.end)); cur = sp.end; }
+    return out + text.slice(cur);
+  }
+  const TYPOS = { seperate: 'separate', seperately: 'separately', recieve: 'receive', recieved: 'received', occured: 'occurred', occurence: 'occurrence', occuring: 'occurring', definately: 'definitely', accomodate: 'accommodate', acheive: 'achieve', begining: 'beginning', beleive: 'believe', calender: 'calendar', wich: 'which', teh: 'the', adress: 'address', adresses: 'addresses', enviroment: 'environment', existance: 'existence', independant: 'independent', neccessary: 'necessary', necesary: 'necessary', refered: 'referred', succesful: 'successful', tommorow: 'tomorrow', untill: 'until', wierd: 'weird' };
+  const TYPO_RE = new RegExp('\\b(' + Object.keys(TYPOS).join('|') + ')\\b', 'gi');
+  function fixTypos(t) {
+    return t.replace(TYPO_RE, (m) => { const f = TYPOS[m.toLowerCase()];
+      if (m.length > 1 && m === m.toUpperCase()) return f.toUpperCase();
+      return m[0] === m[0].toUpperCase() ? f[0].toUpperCase() + f.slice(1) : f; });
+  }
+
   // Join segments, dropping letters that are off and tidying the spacing/punctuation left behind.
   function assemble(segs, onSet) {
     let t = segs.map((g) => (onSet.has(g.letter) ? g.text : g.inline ? g.alt || '' : '')).join('');
     t = t.replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/,\s*([.;!?])/g, '$1').replace(/\(\s*\)/g, '').replace(/\b(the|a|an) (the|a|an)\b/gi, '$1').replace(/^\s*[,;:]\s*/, '').trim();
     t = tidyChat(t).replace(/([.!?])[.!?]+/g, (m) => (m.includes('?') ? '?' : m[0])); // "...", "??" -> one mark
+    t = fixTypos(directVoice(t)).replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/\(\s*\)/g, '').trim();
     return t.replace(/(^|[.!?]\s+)([a-z])/g, (m0, p, c) => p + c.toUpperCase());
   }
 
@@ -909,6 +981,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     const tips = [];
     if (files.length) tips.push('In Workiva AI chat, type @ and pick ' + (files.length === 1 ? 'the file' : 'each file') + ' so the AI can read ' + (files.length === 1 ? 'it' : 'them') + ' (up to 10 per prompt).');
     else if (!on.S) tips.push('The document companion does not read your open file unless you reference it. Select the text or table first, or type @ in chat to reference a file.');
+    if (/\b(?:attached|uploaded)\b/i.test(ctx.prompt || '') && /\bknowledge base\b/i.test(ctx.prompt || '')) tips.push('Your prompt says both "attached" and "knowledge base". Use one: in chat, type @ and pick each file you want read.');
     const tip = {
       rewrite: 'For quick changes, select the text and use the companion’s quick edits: Shorten, Elaborate, Rephrase, or Change tone.',
       formula: 'In a spreadsheet, select the cell and use Fix this formula or Explain this formula from the companion.',
@@ -969,7 +1042,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     const chosen = bestSheet(files, t);
     const headers = ((chosen && (chosen.named || (chosen.score > 0 && chosen.file.sheets.length === 1)) && chosen.sheet.headers) || []).filter((h) => h && h.length < 30).slice(0, 6);
     const ctx = {
-      t, files, domain: opts.domain || domainOf(t + ' ' + files.map((f) => (f.text || '').slice(0, 3000)).join(' ').toLowerCase()),
+      prompt, t, files, domain: opts.domain || domainOf(t + ' ' + files.map((f) => (f.text || '').slice(0, 3000)).join(' ').toLowerCase()),
       promptPeriods: [...new Set((prompt.match(/\b(?:FY|CY)\s?'?\d{2,4}\b|\bQ[1-4]\s?(?:FY\s?'?\d{2,4})?\b|\bH[12]\s?(?:FY\s?'?\d{2,4})?\b|\b20\d{2}\b/gi) || []).map((x) => x.replace(/\s+/g, ' ').toUpperCase()))],
       intent: null, object: restoreCase(prompt, objectOf(t)), periods: periodsIn(files), headers
     };
@@ -983,7 +1056,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     // First try keeping every sentence of the user's own ask. If the strong version still has no
     // clear job, fall back to replacing the vague sentence (the user's other cues are kept).
     function build(broad) {
-      const g = { ...gen }; let folded = false;
+      const g = { ...gen }; let folded = false; let objAt = -1;
       // A vague objective sentence is replaced by the generated objective; keep its other cues.
       const kept = [];
       for (const snt of sentences) {
@@ -991,20 +1064,21 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
         // Only a bare "analyze/review/look at X" is replaced; any other wording is the user's ask and stays.
         // ...and a bare one only when the new objective still names what it was about (the fallback keeps its cues)
         if (!on.O && (covers(g.O, snt.text) && VAGUE_ONLY.test(snt.text) && snt.text.trim().split(/\s+/).length <= 8 || broad && (snt.host === 'O' || snt.vague && VAGUE_VERB.test(snt.text)))) {
+          if (objAt < 0) objAt = kept.length;
           const taken = [];
           for (const x of snt.inside.filter((y) => y.k === 'C' || y.k === 'P' || y.k === 'E').sort((p, q) => p.a - q.a)) {
             if (taken.some((y) => x.a < y.b && x.b > y.a)) continue; taken.push(x);
             const phrase = prompt.slice(x.a, x.b).replace(/^[\s,]+|[\s,]+$/g, '');
             const core = phrase.replace(/^(?:for|during|over|across|since|from|between|in)\s+/i, '').toLowerCase();
             if (core && gen[x.k === 'P' ? 'O' : x.k] && gen.O.toLowerCase().includes(core)) continue; // already stated by the new objective
-            kept.push({ host: x.k, segs: [{ text: asSentence(x.k, phrase) + ' ', letter: x.k }], letters: new Set([x.k]) });
+            kept.push({ host: x.k, idx: snt.idx, segs: [{ text: asSentence(x.k, phrase) + ' ', letter: x.k }], letters: new Set([x.k]) });
           }
           continue;
         }
         if (!on.O && !folded && VAGUE_ONLY.test(snt.text) && snt.text.trim().split(/\s+/).length <= 8) {
           const subject = snt.text.trim().replace(VAGUE_LEAD, '').replace(/[.!?\s]+$/, '');
           if (subject && !/^(?:it|this|that|them|these|those)$/i.test(subject)) {
-            g.O = 'For ' + subject + ': ' + g.O.charAt(0).toLowerCase() + g.O.slice(1); folded = true; continue;
+            g.O = 'For ' + subject + ': ' + g.O.charAt(0).toLowerCase() + g.O.slice(1); folded = true; if (objAt < 0) objAt = kept.length; continue;
           }
         }
         kept.push(snt);
@@ -1012,20 +1086,30 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       // The user's own question stays as the job; add only a finish line for them to fill in.
       if (!on.O && !folded && kept.some((x) => x.text && x.host === 'O')) Object.assign(g, { O: BLANK.O, P: BLANK.P, E: BLANK.E });
       const present = new Set(); for (const snt of kept) for (const l of snt.letters) present.add(l);
-      const genUsed = new Set();
+      // Only Context missing: add just that sentence. A letter the detector sees in a sentence that does not host it
+      // (e.g. the objective inside a Source sentence) still needs a segment of its own, written without a blank.
+      const onlyC = !on.C && K.every((k) => k === 'C' || on[k]);
+      const genUsed = new Set(onlyC ? ['C'] : []);
+      if (onlyC) { const BF = { S: 'Use only the selected content and nothing outside it. ', O: 'List the specific items that answer this, one per line. ', P: 'Keep it short. ', E: 'Do not guess or add facts that are not in the source; flag anything you are unsure of.' };
+        for (const k of K) if (k !== 'C' && !present.has(k)) { genUsed.add(k); if (g[k].includes('[')) g[k] = BF[k]; } }
+      else for (const k of K) if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) genUsed.add(k);
       const segments = [];
-      for (const k of K) {
-        for (const snt of kept.filter((x) => x.host === k)) { for (const g of snt.segs) segments.push(g); segments.push({ text: ' ', letter: k }); }
-        if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) { segments.push({ text: g[k], letter: k, generated: true }); genUsed.add(k); }
-      }
+      const emit = (list) => { for (const snt of list) { for (const x of snt.segs) segments.push({ ...x, src: snt.idx }); segments.push({ text: ' ', letter: snt.host, src: snt.idx }); } };
+      const pushGen = (k) => { if (genUsed.has(k)) segments.push({ text: g[k], letter: k, generated: true }); };
+      // opening Source sentences: leading kept Source sentences that come before any replaced vague sentence
+      let open = 0; while (open < kept.length && kept[open].host === 'S' && (objAt < 0 || open < objAt)) open++;
+      const cut = genUsed.has('O') ? Math.min(Math.max(objAt >= 0 ? objAt : open, open), kept.length) : kept.length;
+      emit(kept.slice(0, open)); pushGen('S'); pushGen('C');
+      emit(kept.slice(open, cut)); pushGen('O'); emit(kept.slice(cut));
+      pushGen('P'); pushGen('E');
       const allOn = new Set(K);
       // Self-check: re-grade the strong version; if a generated letter does not register,
       // swap in a more explicit wording for it (at most two passes).
       const ALT = {
         S: ['Use only the selected content and nothing outside it. '],
-        C: ['The audience is [who will read it, such as ' + AUDIENCE[ctx.audDomain] + ']. ', 'The reader is [such as ' + AUDIENCE[ctx.audDomain] + ']; it is for ' + DEST[ctx.audDomain] + '. '],
+        C: ['The audience is [who will read it, such as ' + AUDIENCE[ctx.audDomain] + ']. ', 'This is intended for [who will read it, such as ' + AUDIENCE[ctx.audDomain] + ']. '],
         O: ['List the specific items that answer this, one per line. ', 'Identify and list the specific items that answer this request. '],
-        P: ['Return a table with one row per item, under [length]. '],
+        P: ['Return a table with one row per item, under [length]. ', 'Return a table with one row per item and one line per row, under [length]. '],
         E: ['Do not guess or add facts that are not in the source; flag anything you are unsure of.']
       };
       for (let pass = 0; pass < 2; pass++) {
@@ -1038,6 +1122,17 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
           if (seg && alt) seg.text = alt;
         }
       }
+      // Generated text must not knock out a letter the user already had (an example word such as "review"
+      // reads as a vague verb): if the objective is lost, add a blank-free one after the Context sentence.
+      { const fin = detect(assemble(segments, allOn)).on;
+        if (!fin.O && !genUsed.has('O')) {
+          const at = segments.findIndex((x) => x.generated && x.letter === 'C');
+          segments.splice(at + 1, 0, { text: g.O.includes('[') ? ALT.O[0] : g.O, letter: 'O', generated: true }); genUsed.add('O');
+        } }
+      // Fewer blanks when it costs nothing: when the task is sure and a generated Context sentence already adds a blank,
+      // a blank-free objective replaces the fill-in one if the result stays strong. Only for tasks whose output is a list.
+      { const seg = segments.find((x) => x.generated && x.letter === 'O' && x.text.includes('['));
+        if (seg && taskSure && genUsed.has('C') && LIST_INTENT.has(ctx.intent) && !CHANGE_ASK.test(ctx.t)) { const was = seg.text; seg.text = ALT.O[0]; if (R.grade(detect(assemble(segments, allOn)).on) !== 'strong') seg.text = was; } }
       const betterOk = R.grade(detect(assemble(segments.filter((g) => !g.generated || g.letter === 'S' || g.letter === 'O'), allOn)).on) !== 'weak';
       return { segments, genUsed, ok: detect(assemble(segments, allOn)).on.O && betterOk };
     }
@@ -1053,7 +1148,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     const weakP = grade === 'weak' ? prompt.trim() : (vagueVerb ? vagueVerb : 'Look at').replace(/^./, (c) => c.toUpperCase()) + ' ' + (ctx.object ? 'our ' + ctx.object : 'this') + '.';
     const stages = {
       weak: { prompt: grade === 'weak' ? prompt.trim() : weakP, verdict: verdictFor('weak', grade === 'weak' ? on : { S: false, C: false, O: false, P: false, E: false }, { vague: grade === 'weak' && !on.O ? vagueVerb : (grade === 'weak' ? null : vagueVerb || 'look at') }) },
-      better: { prompt: grade === 'better' ? prompt.trim() : betterP, verdict: verdictFor('better', grade === 'better' ? on : { ...on, S: true, O: true }, {}) },
+      better: { prompt: grade !== 'better' || R.grade(detect(betterP).on) !== 'weak' ? betterP : assemble([{ text: prompt, letter: 'O' }], allOn), verdict: verdictFor('better', grade === 'better' ? on : { ...on, S: true, O: true }, {}) },
       strong: { prompt: grade === 'strong' ? prompt.trim() : strongP, verdict: verdictFor('strong', on, {}) }
     };
 
@@ -1086,7 +1181,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     return { grade, detected: on, headline, stages, scope, segments, notes, tips, intent: ctx.intent, domain: ctx.domain, placeholders, hits: d.el };
   }
 
-  const api = { coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
+  const api = { sentenceSpans, directVoice, fixTypos, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
   if (isNode) module.exports = api; else root.ScopeRewrite = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 

@@ -169,13 +169,13 @@ Departures from the text above, approved with the plan (2026-10-17):
 
 ## Success criteria and predictions
 
-| Measure | Now | Predicted | Disproved if |
-|---|---|---|---|
-| Better or Strong with filler (both sets) | 66 Strong | 0 | any remain |
-| Strong containing "?" (both sets) | 89 | <= 40 (assumed) | > 40 |
-| Strong blanks, median | 2 | <= 2 | > 2 |
-| Only-Context-missing prompts with exactly 1 blank | not measured | all | any with 0 or 2+ |
-| Grade accuracy, test.jsonl | 85.6% | 85.6% | lower |
+| Measure | Now | Predicted | Disproved if | Result (measured 2026-10-17) |
+|---|---|---|---|---|
+| Better or Strong with filler (both sets) | 66 Strong | 0 | any remain | 0 Better and 0 Strong with filler in both sets (sim_customers and test). Prediction held. |
+| Strong containing "?" (both sets) | 89 | <= 40 (assumed) | > 40 | 69 (24 + 45). The prediction of at most 40 is disproved: it is above 40. |
+| Strong blanks, median | 2 | <= 2 | > 2 | Median 2 in both sets. Prediction held. |
+| Only-Context-missing prompts with exactly 1 blank | not measured | all | any with 0 or 2+ | 7 of 7 (sim_customers) and 18 of 18 (test) have exactly 1 blank; blankOnlyC 0 in both. Prediction held. |
+| Grade accuracy, test.jsonl | 85.6% | 85.6% | lower | 85.6% (acc=0.856). Prediction held. |
 
 ## Scope
 
