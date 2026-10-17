@@ -265,14 +265,21 @@
     const m = s.match(/^(\s*)([\s\S]*?)(\s*)$/); const lead = m[1], trail = m[3]; let b = m[2]; const orig = b; let converted = false;
     b = b.replace(/^(?:additionally|also),?\s+(?:(?:please|kindly)\s+)?(?:ensure|make sure)(?: that)?\s+(?=if\b)/i, () => { converted = true; return ''; });
     b = b.replace(/^(?:(?:please|kindly|pls|plz),?\s+)?would you mind\s+([a-z]+ing)\b\s*/i, (x, g) => (GERUND[g.toLowerCase()] ? (converted = true, GERUND[g.toLowerCase()] + ' ') : x));
-    b = b.replace(/^(?:(?:please|kindly|pls|plz),?\s+)?(?:(?:can|could|would) you(?!\s+mind\b)|i was wondering if you (?:could|can|would)|i wonder if you (?:could|can)|i(?:'d| would) (?:like|love) you to|i (?:need|want) you to)(?:,?\s+(?:please|kindly|pls|plz))?,?\s+(?=[a-z])/i, () => { converted = true; return ''; });
+    b = b.replace(/^(?:(?:please|kindly|pls|plz),?\s+)?(?:(?:can|could|would) you(?!\s+mind\b)(?!\s+(?:hear|see)\b)|i was wondering if you (?:could|can|would)|i wonder if you (?:could|can)|i(?:'d| would) (?:like|love) you to|i (?:need|want) you to)(?:,?\s+(?:please|kindly|pls|plz))?,?\s+(?=[a-z])/i, () => { converted = true; return ''; });
     // declared extension of spec rule 3: a "can/could you + verb" in the middle of a sentence (not a question word first)
-    b = b.replace(/\b(and|then|so)\s+(?:can|could|would) you(?:\s+(?:please|kindly))?\s+(?=[a-z])/gi, (x, w) => { converted = true; return w + ' '; });
+    // a question-word sentence stays a question; only a ", and/then/so can you + verb" tail splits off as its own imperative
+    if (/^(?:what|which|who|whom|whose|when|where|why|how)\b/i.test(b)) {
+      b = b.replace(new RegExp('^([\\s\\S]*?),\\s+(?:and|then|so)\\s+(?:can|could|would) you(?:\\s+(?:please|kindly))?\\s+(?=(?!(?:hear|see)\\b)[a-z])([\\s\\S]*)$', 'i'), (x, head, tail) => { converted = true; return head + '? ' + tail.replace(/^[a-z]/, (c) => c.toUpperCase()); });
+    }
+    // a bare lead-in (also/plus/and/but/so/then) stays; only the "can you" goes
+    b = b.replace(/^(also|plus|and|but|so|then)(,?)\s+(?:can|could|would) you(?:\s+(?:please|kindly))?\s+(?=(?!(?:hear|see)\b)[a-z])/i, (x, w, c) => { converted = true; return w + c + ' '; });
+    b = b.replace(/\b(and|then|so)\s+(?:can|could|would) you(?:\s+(?:please|kindly))?\s+(?=(?!(?:hear|see)\b)[a-z])/gi, (x, w) => { converted = true; return w + ' '; });
     if (!/^(?:what|which|who|whom|whose|when|where|why|how)\b/i.test(b)) {
       // an "If ..." opener keeps its condition: "If X, do Y." rather than "If X. Do Y."
       const cond = /^if\b/i.test(b);
       b = b.replace(/([A-Za-z0-9)'"’”])(?:,|\s+[-–—])?\s+(?:can|could) you(?:\s+(?:please|kindly))?\s+([a-z])/gi, (x, p, c) => { converted = true; return cond ? p + ', ' + c : p + '. ' + c.toUpperCase(); });
     }
+    b = b.replace(/\s+(?:please|pls|plz|kindly)(?=,)/gi, '');
     b = b.replace(/,?\s+(?:please|pls|plz|kindly|thanks|thank you)(?: so much| in advance| a lot)?\s*(?=[.!?]|$)/gi, '')
       .replace(/,?\s+if (?:at all )?possible\s*(?=[.!?]|$)/gi, '').replace(/^if (?:at all )?possible,?\s+/i, '')
       .replace(/^if you (?:can|could),\s+/i, '').replace(/,?\s+if you (?:can|could)\s*(?=[.!?]|$)/gi, '')

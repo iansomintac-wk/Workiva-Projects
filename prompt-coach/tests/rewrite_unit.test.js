@@ -104,3 +104,17 @@ test('direct voice: no filler in Better or Strong (Ian case, with and without th
     assert.ok(o.stages.better.prompt.startsWith('I have attached the following utility bill invoices. Input the applicable dates'), o.stages.better.prompt);
   }
 });
+
+test('direct voice: lead-ins, kept commas, mixed questions', () => {
+  const cases = [
+    ['What units should I use, and can you convert them to kWh?', 'What units should I use? Convert them to kWh.'],
+    ['Which rows can you match, and can you list the rest?', 'Which rows can you match? List the rest.'],
+    ["What's the difference between a 10-K and a 20-F, and can you rewrite my LinkedIn bio", "What's the difference between a 10-K and a 20-F? Rewrite my LinkedIn bio"],
+    ['Also can you write the summary?', 'Also write the summary.'],
+    ['Plus, can you come up with a title?', 'Plus, come up with a title.'],
+    ['Short please, no jargon.', 'Short, no jargon.'],
+    ['Table please, top 20.', 'Table, top 20.'],
+    ['Can you hear me?', 'Can you hear me?']
+  ];
+  for (const [i, want] of cases) assert.equal(W.directVoice(i), want, i);
+});
