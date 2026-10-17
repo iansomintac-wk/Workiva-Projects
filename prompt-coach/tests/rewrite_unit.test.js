@@ -172,3 +172,15 @@ test('objective: the blank-free "one per line" objective is only for list tasks'
     assert.ok(!/one per line/.test(o.stages.strong.prompt), p + ': ' + o.stages.strong.prompt);
   }
 });
+
+test('objective: a request to fix the text keeps the fill-in objective, not the list one, with and without a file', () => {
+  const RCM = { name: 'RCM_FY26.xlsx', kind: 'Excel', sheets: [{ name: 'Controls', headers: ['Control ID', 'Description', 'Owner', 'Frequency'] }], periods: [], text: 'Control ID Description Owner Frequency' };
+  for (const files of [[], [RCM]]) {
+    const s = run('these risk descriptions are inconsistent can u fix them', files).stages.strong.prompt;
+    assert.ok(!s.includes('one per line'), 'list objective beside "Fix them": ' + s);
+    assert.ok(s.includes('Identify and list ['), 'fill-in objective kept: ' + s);
+    assert.ok(s.includes('Fix them.'), 'user ask kept: ' + s);
+  }
+  // a list task is unchanged: still the blank-free list objective
+  assert.ok(run('walkthrough questions for AP payment approval pls').stages.strong.prompt.includes('List the specific items that answer this, one per line.'));
+});

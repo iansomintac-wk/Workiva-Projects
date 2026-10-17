@@ -35,6 +35,8 @@
     ['summarize', /\b(summar|overview|recap|tl;?dr|key (?:points|takeaways|themes)|highlights|brief)/]
   ];
   const LIST_INTENT = new Set(['errors', 'gaps', 'consistency', 'anomaly', 'map', 'questions', 'checklist', 'extract', 'compare']);
+  // The user's own verb asks for changed text ("can u fix them"), so a list of found items is not what they want back.
+  const CHANGE_ASK = /\b(?:fix|correct|rewrite|reword|rephrase|revise|edit|update|standardi[sz]e|harmoni[sz]e|align|clean up)\b/;
   function intentOf(t, hasData, strict) {
     for (const [name, re] of INTENTS) if (re.test(t)) return name;
     if (strict) return null;
@@ -484,7 +486,7 @@
       // Fewer blanks when it costs nothing: when the task is sure and a generated Context sentence already adds a blank,
       // a blank-free objective replaces the fill-in one if the result stays strong. Only for tasks whose output is a list.
       { const seg = segments.find((x) => x.generated && x.letter === 'O' && x.text.includes('['));
-        if (seg && taskSure && genUsed.has('C') && LIST_INTENT.has(ctx.intent)) { const was = seg.text; seg.text = ALT.O[0]; if (R.grade(detect(assemble(segments, allOn)).on) !== 'strong') seg.text = was; } }
+        if (seg && taskSure && genUsed.has('C') && LIST_INTENT.has(ctx.intent) && !CHANGE_ASK.test(ctx.t)) { const was = seg.text; seg.text = ALT.O[0]; if (R.grade(detect(assemble(segments, allOn)).on) !== 'strong') seg.text = was; } }
       const betterOk = R.grade(detect(assemble(segments.filter((g) => !g.generated || g.letter === 'S' || g.letter === 'O'), allOn)).on) !== 'weak';
       return { segments, genUsed, ok: detect(assemble(segments, allOn)).on.O && betterOk };
     }
