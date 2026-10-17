@@ -126,3 +126,42 @@ test('typos: common misspellings are fixed as whole words, case kept', () => {
   assert.equal(W.fixTypos('The seperatelyx and Reciever words stay.'), 'The seperatelyx and Reciever words stay.');
   assert.ok(!/seperat/.test(run(IAN).stages.strong.prompt));
 });
+
+test('context: wording fits the task and registers as Context', () => {
+  const base = 'Extract every date from the attached file into a table. Do not guess.';
+  const want = [
+    ['extract', 'SUS', 'This table feeds [what it is for, such as our Scope 2 inventory].'],
+    ['extract', 'GEN', 'This table feeds [what it is for].'],
+    ['variance', 'FR', 'This is for [what it feeds, such as the quarterly flux review].'],
+    ['anomaly', 'GRC', 'This is for [what it feeds, such as our SOX control testing].'],
+    ['compare', 'GEN', 'This is for [what it feeds].']
+  ];
+  for (const [intent, domain, text] of want) {
+    const o = run(base, [], { intent, domain, taskSure: true, areaSure: true });
+    assert.equal(missing(o), 'C', 'base must be missing only Context; probe another base: ' + JSON.stringify(o.detected));
+    assert.ok(o.stages.strong.prompt.includes(text), intent + '/' + domain + ': ' + o.stages.strong.prompt);
+    assert.equal((o.stages.strong.prompt.match(/\[[^\]]*\]/g) || []).length, 1, o.stages.strong.prompt);
+  }
+  const o = run(base, [], { intent: 'summarize', domain: 'FR', taskSure: true, areaSure: true });
+  assert.ok(/10-Q MD&A|intended for \[who will read it/.test(o.stages.strong.prompt), 'other intents keep the destination wording or its one-blank fallback: ' + o.stages.strong.prompt);
+});
+
+test('context: only Context missing means exactly one blank, even when a kept sentence has a Context cue', () => {
+  const rows = fs.readFileSync(path.join(__dirname, '../data/test.jsonl'), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  const row = rows.find((r) => /user-control assessment/.test(r.prompt));
+  assert.ok(row, 'the "We need this for our user-control assessment" prompt is in data/test.jsonl');
+  const o = run(row.prompt);
+  assert.equal(missing(o), 'C', JSON.stringify(o.detected));
+  assert.equal((o.stages.strong.prompt.match(/\[[^\]]*\]/g) || []).length, 1, o.stages.strong.prompt);
+  assert.notEqual(o.stages.strong.prompt.trim(), row.prompt.trim());
+});
+
+test('context: Ian case gets the approved Strong and Better text, with and without the file', () => {
+  const flat = (x) => x.replace(/\s+/g, ' ').trim();
+  const rd = (f) => flat(fs.readFileSync(path.join(__dirname, 'fixtures/rewrites', f), 'utf8'));
+  for (const files of [[], [PDF]]) {
+    const o = run(IAN, files);
+    assert.equal(flat(o.stages.strong.prompt), rd('ian_strong.txt'));
+    assert.equal(flat(o.stages.better.prompt), rd('ian_better.txt'));
+  }
+});

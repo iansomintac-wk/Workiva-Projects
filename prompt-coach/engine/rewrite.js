@@ -92,8 +92,13 @@
     return lead + '[the selected text, table, or file]. ';
   }
 
-  // Who it is for is the user's to say: offer it as a blank with examples, never assert a role.
+  // Context fits the task: a table feeds something; other data tasks are "for" something. Blank, never a guessed audience.
+  const CTX_EXAMPLE = { FR: 'the quarterly flux review', GRC: 'our SOX control testing', SUS: 'our Scope 2 inventory', GEN: null };
+  const DATA_CTX = new Set(['variance', 'anomaly', 'consistency', 'compare', 'map', 'formula']);
   function contextFragment(ctx) {
+    const ex = CTX_EXAMPLE[ctx.audDomain] ? ', such as ' + CTX_EXAMPLE[ctx.audDomain] : '';
+    if (ctx.intent === 'extract') return 'This table feeds [what it is for' + ex + ']. ';
+    if (DATA_CTX.has(ctx.intent)) return 'This is for [what it feeds' + ex + ']. ';
     return 'This is for ' + DEST[ctx.audDomain] + '. ';
   }
 
@@ -436,8 +441,9 @@
       // The user's own question stays as the job; add only a finish line for them to fill in.
       if (!on.O && !folded && kept.some((x) => x.text && x.host === 'O')) Object.assign(g, { O: BLANK.O, P: BLANK.P, E: BLANK.E });
       const present = new Set(); for (const snt of kept) for (const l of snt.letters) present.add(l);
-      const genUsed = new Set();
-      for (const k of K) if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) genUsed.add(k);
+      const onlyC = !on.C && K.every((k) => k === 'C' || on[k]);
+      const genUsed = new Set(onlyC ? ['C'] : []);
+      if (!onlyC) for (const k of K) if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) genUsed.add(k);
       const segments = [];
       const emit = (list) => { for (const snt of list) { for (const x of snt.segs) segments.push({ ...x, src: snt.idx }); segments.push({ text: ' ', letter: snt.host, src: snt.idx }); } };
       const pushGen = (k) => { if (genUsed.has(k)) segments.push({ text: g[k], letter: k, generated: true }); };
@@ -452,9 +458,9 @@
       // swap in a more explicit wording for it (at most two passes).
       const ALT = {
         S: ['Use only the selected content and nothing outside it. '],
-        C: ['The audience is [who will read it, such as ' + AUDIENCE[ctx.audDomain] + ']. ', 'The reader is [such as ' + AUDIENCE[ctx.audDomain] + ']; it is for ' + DEST[ctx.audDomain] + '. '],
+        C: ['The audience is [who will read it, such as ' + AUDIENCE[ctx.audDomain] + ']. ', 'This is intended for [who will read it, such as ' + AUDIENCE[ctx.audDomain] + ']. '],
         O: ['List the specific items that answer this, one per line. ', 'Identify and list the specific items that answer this request. '],
-        P: ['Return a table with one row per item, under [length]. '],
+        P: ['Return a table with one row per item, under [length]. ', 'Return a table with one row per item and one line per row, under [length]. '],
         E: ['Do not guess or add facts that are not in the source; flag anything you are unsure of.']
       };
       for (let pass = 0; pass < 2; pass++) {
@@ -467,6 +473,17 @@
           if (seg && alt) seg.text = alt;
         }
       }
+      // Generated text must not knock out a letter the user already had (an example word such as "review"
+      // reads as a vague verb): if the objective is lost, add a blank-free one after the Context sentence.
+      { const fin = detect(assemble(segments, allOn)).on;
+        if (!fin.O && !genUsed.has('O')) {
+          const at = segments.findIndex((x) => x.generated && x.letter === 'C');
+          segments.splice(at + 1, 0, { text: g.O.includes('[') ? ALT.O[0] : g.O, letter: 'O', generated: true }); genUsed.add('O');
+        } }
+      // Fewer blanks when it costs nothing: when the task is sure and a generated Context sentence already adds a blank,
+      // a blank-free objective replaces the fill-in one if the result stays strong.
+      { const seg = segments.find((x) => x.generated && x.letter === 'O' && x.text.includes('['));
+        if (seg && taskSure && genUsed.has('C')) { const was = seg.text; seg.text = ALT.O[0]; if (R.grade(detect(assemble(segments, allOn)).on) !== 'strong') seg.text = was; } }
       const betterOk = R.grade(detect(assemble(segments.filter((g) => !g.generated || g.letter === 'S' || g.letter === 'O'), allOn)).on) !== 'weak';
       return { segments, genUsed, ok: detect(assemble(segments, allOn)).on.O && betterOk };
     }
