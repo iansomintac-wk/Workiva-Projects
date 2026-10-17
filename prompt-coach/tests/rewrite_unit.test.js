@@ -35,3 +35,35 @@ test('splitting: sentenceSpans keeps decimals and an unclosed bracket inside its
   const sp = W.sentenceSpans(t).map((x) => t.slice(x.start, x.end));
   assert.deepEqual(sp, ['Margin rose 14.2% (see A.8.x; note).', ' Next (unclosed bracket here.', 'Second paragraph.']);
 });
+
+test('order: kept sentences keep the user order (Ian case)', () => {
+  const s = run(IAN).stages.strong.prompt;
+  const at = (x) => { const i = s.indexOf(x); assert.ok(i >= 0, x + ' missing in: ' + s); return i; };
+  assert.ok(at('I have attached') < at('break those out') && at('break those out') < at('column headers') && at('column headers') < at('Before finalizing') && at('Before finalizing') < at('For every row'), s);
+});
+
+test('order: letters do not regroup the user sentences', () => {
+  const o = run('Keep it under five bullets. Summarize the attached report. This is for the audit committee.');
+  assert.notEqual(o.grade, 'strong');
+  const s = o.stages.strong.prompt;
+  assert.ok(s.indexOf('five bullets') < s.indexOf('Summarize the attached') && s.indexOf('Summarize the attached') < s.indexOf('audit committee'), s);
+  const us = o.segments.filter((g) => !g.generated);
+  assert.ok(us.every((g) => typeof g.src === 'number') && us.every((g, i) => !i || g.src >= us[i - 1].src));
+});
+
+test('order: generated Context sits right after the opening Source sentence, before the next user sentence', () => {
+  const o = run(IAN, [PDF]);
+  const segs = o.segments, gi = segs.findIndex((g) => g.generated && g.letter === 'C');
+  assert.ok(gi > 0, 'no generated Context segment');
+  assert.ok(segs.slice(0, gi).every((g) => g.src === 0 || /^\s*$/.test(g.text)), JSON.stringify(segs.slice(0, gi).map((g) => [g.letter, g.src, g.text])));
+  const next = segs.slice(gi + 1).find((g) => !/^\s*$/.test(g.text));
+  assert.ok(next && !next.generated && next.src === 1, 'the segment after Context must start sentence 1 ("Input the applicable dates"), got ' + JSON.stringify(next));
+});
+
+test('order: a generated Objective takes the place of the vague sentence it replaced', () => {
+  const o = run('Analyze the revenue changes. I attached the Q3 flux file.');
+  const segs = o.segments, oi = segs.findIndex((g) => g.generated && g.letter === 'O');
+  assert.ok(oi >= 0, 'this prompt did not take the replace-the-vague-sentence path: ' + o.stages.strong.prompt);
+  const si = segs.findIndex((g) => !g.generated && /attached/.test(g.text));
+  assert.ok(si > oi, 'user Source sentence must come after the Objective that replaced the vague sentence before it');
+});

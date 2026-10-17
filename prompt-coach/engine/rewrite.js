@@ -236,7 +236,7 @@
       const last = segs[segs.length - 1];
       if (last && !/[.!?]\s*$/.test(last.text)) { if (last.inline) segs.push({ text: '.', letter: host }); else last.text = last.text.replace(/[\s;,:]*$/, '.'); }
       const vague = !inside.some((x) => x.k === 'O');
-      out.push({ host, segs, inside, text: sentText, vague, letters: new Set([host, ...inl.map((x) => x.k)]) });
+      out.push({ idx: out.length, host, segs, inside, text: sentText, vague, letters: new Set([host, ...inl.map((x) => x.k)]) });
     }
     return out;
   }
@@ -360,7 +360,7 @@
     // First try keeping every sentence of the user's own ask. If the strong version still has no
     // clear job, fall back to replacing the vague sentence (the user's other cues are kept).
     function build(broad) {
-      const g = { ...gen }; let folded = false;
+      const g = { ...gen }; let folded = false; let objAt = -1;
       // A vague objective sentence is replaced by the generated objective; keep its other cues.
       const kept = [];
       for (const snt of sentences) {
@@ -368,20 +368,21 @@
         // Only a bare "analyze/review/look at X" is replaced; any other wording is the user's ask and stays.
         // ...and a bare one only when the new objective still names what it was about (the fallback keeps its cues)
         if (!on.O && (covers(g.O, snt.text) && VAGUE_ONLY.test(snt.text) && snt.text.trim().split(/\s+/).length <= 8 || broad && (snt.host === 'O' || snt.vague && VAGUE_VERB.test(snt.text)))) {
+          if (objAt < 0) objAt = kept.length;
           const taken = [];
           for (const x of snt.inside.filter((y) => y.k === 'C' || y.k === 'P' || y.k === 'E').sort((p, q) => p.a - q.a)) {
             if (taken.some((y) => x.a < y.b && x.b > y.a)) continue; taken.push(x);
             const phrase = prompt.slice(x.a, x.b).replace(/^[\s,]+|[\s,]+$/g, '');
             const core = phrase.replace(/^(?:for|during|over|across|since|from|between|in)\s+/i, '').toLowerCase();
             if (core && gen[x.k === 'P' ? 'O' : x.k] && gen.O.toLowerCase().includes(core)) continue; // already stated by the new objective
-            kept.push({ host: x.k, segs: [{ text: asSentence(x.k, phrase) + ' ', letter: x.k }], letters: new Set([x.k]) });
+            kept.push({ host: x.k, idx: snt.idx, segs: [{ text: asSentence(x.k, phrase) + ' ', letter: x.k }], letters: new Set([x.k]) });
           }
           continue;
         }
         if (!on.O && !folded && VAGUE_ONLY.test(snt.text) && snt.text.trim().split(/\s+/).length <= 8) {
           const subject = snt.text.trim().replace(VAGUE_LEAD, '').replace(/[.!?\s]+$/, '');
           if (subject && !/^(?:it|this|that|them|these|those)$/i.test(subject)) {
-            g.O = 'For ' + subject + ': ' + g.O.charAt(0).toLowerCase() + g.O.slice(1); folded = true; continue;
+            g.O = 'For ' + subject + ': ' + g.O.charAt(0).toLowerCase() + g.O.slice(1); folded = true; if (objAt < 0) objAt = kept.length; continue;
           }
         }
         kept.push(snt);
@@ -390,11 +391,16 @@
       if (!on.O && !folded && kept.some((x) => x.text && x.host === 'O')) Object.assign(g, { O: BLANK.O, P: BLANK.P, E: BLANK.E });
       const present = new Set(); for (const snt of kept) for (const l of snt.letters) present.add(l);
       const genUsed = new Set();
+      for (const k of K) if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) genUsed.add(k);
       const segments = [];
-      for (const k of K) {
-        for (const snt of kept.filter((x) => x.host === k)) { for (const g of snt.segs) segments.push(g); segments.push({ text: ' ', letter: k }); }
-        if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) { segments.push({ text: g[k], letter: k, generated: true }); genUsed.add(k); }
-      }
+      const emit = (list) => { for (const snt of list) { for (const x of snt.segs) segments.push({ ...x, src: snt.idx }); segments.push({ text: ' ', letter: snt.host, src: snt.idx }); } };
+      const pushGen = (k) => { if (genUsed.has(k)) segments.push({ text: g[k], letter: k, generated: true }); };
+      // opening Source sentences: leading kept Source sentences that come before any replaced vague sentence
+      let open = 0; while (open < kept.length && kept[open].host === 'S' && (objAt < 0 || open < objAt)) open++;
+      const cut = genUsed.has('O') ? Math.min(Math.max(objAt >= 0 ? objAt : open, open), kept.length) : kept.length;
+      emit(kept.slice(0, open)); pushGen('S'); pushGen('C');
+      emit(kept.slice(open, cut)); pushGen('O'); emit(kept.slice(cut));
+      pushGen('P'); pushGen('E');
       const allOn = new Set(K);
       // Self-check: re-grade the strong version; if a generated letter does not register,
       // swap in a more explicit wording for it (at most two passes).

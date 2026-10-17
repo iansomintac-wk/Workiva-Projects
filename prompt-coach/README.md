@@ -71,6 +71,7 @@ prompt; no duplicate sentences, empty fragments, or broken punctuation.
 ## Rewrite wording rules (2026-10-16)
 
 - Sentences: a `;` and anything inside `( )` or `[ ]` never ends a sentence, so a kept sentence is never cut in half. Unit tests: `node --test --test-reporter=tap tests/rewrite_unit.test.js`.
+- Order: kept sentences appear in the user's order. Generated Source and Context go right after the opening Source sentences; a generated Objective takes the place of the vague sentence it replaced; generated Parameters and Evaluate go last. Every piece keeps its letter, so the SCOPE toggles work as before.
 
 ## Real files
 
