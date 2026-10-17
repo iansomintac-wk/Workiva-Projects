@@ -24,7 +24,10 @@ const norm = (x) => x.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g,
 const info = { onlyC: 0, strongQ: 0, blanks: [] };
 const VAGUE_ONLY = /^\s*(?:(?:please|pls|can (?:you|u)|could you)\s+)*(?:analy[sz]e|review|look (?:at|over)|go over|check|help(?: me)?(?: with)?|work on|take a look at)\b[^?]*$/i;
 // the coach tidies chat shorthand in the user's words; compare against the tidied form
-const tidy = (x) => x.replace(/\bcan u\b/gi, 'can you').replace(/\bu\b/gi, 'you').replace(/\bur\b/gi, 'your').replace(/\b(?:pls|plz)\b/gi, 'please').replace(/^\s*(?:hi|hey|hello)\b[\s,!.]*/i, '').replace(/\b(?:any )?thoughts\s*\?+/gi, '').replace(/^\s*(?:thanks|thank you|thx|ty)\b[^.!?]*[.!?]*/i, '');
+const tidy0 = (x) => x.replace(/\bcan u\b/gi, 'can you').replace(/\bu\b/gi, 'you').replace(/\bur\b/gi, 'your').replace(/\b(?:pls|plz)\b/gi, 'please').replace(/^\s*(?:hi|hey|hello)\b[\s,!.]*/i, '').replace(/\b(?:any )?thoughts\s*\?+/gi, '').replace(/^\s*(?:thanks|thank you|thx|ty)\b[^.!?]*[.!?]*/i, '');
+// declared change (spec 2026-10-16, deviation for Ian's yes): the compared user sentence gets the same direct-voice and typo rewrite as the output.
+// It feeds askLost (named in the spec) and subjectLost and the new order check (not named).
+const tidy = (x) => (W.fixTypos || ((y) => y))(W.directVoice(tidy0(x)));
 const fail = { numbers: [], role: [], askLost: [], sheet: [], notStrong: [], fileHeadline: [], casual: [], unsureTask: [], unsureArea: [], splitNumber: [], assumedSource: [], writeOnly: [], subjectLost: [], filler: [], order: [], broken: [], blankMore: [], blankOnlyC: [], ianCase: [] };
 let n = 0;
 for (const r of rows) for (const withFile of [false, true]) {

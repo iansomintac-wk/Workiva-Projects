@@ -258,11 +258,42 @@
       .replace(/,?\s*(?:any )?thoughts\s*\?+/gi, '.').replace(/\.\./g, '.').trim();
   }
 
+  // Direct voice: polite openers become imperatives, filler words go. Questions that are not
+  // "can/could/would you + verb" stay questions; a "?" becomes "." only on a sentence we converted.
+  const GERUND = { summarizing: 'summarize', reviewing: 'review', checking: 'check', listing: 'list', extracting: 'extract', comparing: 'compare', writing: 'write', drafting: 'draft', explaining: 'explain', looking: 'look', pulling: 'pull', putting: 'put', sending: 'send', giving: 'give', making: 'make', taking: 'take', finding: 'find', creating: 'create', preparing: 'prepare', flagging: 'flag', mapping: 'map', rewriting: 'rewrite', identifying: 'identify', analyzing: 'analyze', analysing: 'analyse' };
+  function directSentence(s) {
+    const m = s.match(/^(\s*)([\s\S]*?)(\s*)$/); const lead = m[1], trail = m[3]; let b = m[2]; const orig = b; let converted = false;
+    b = b.replace(/^(?:additionally|also),?\s+(?:(?:please|kindly)\s+)?(?:ensure|make sure)(?: that)?\s+(?=if\b)/i, () => { converted = true; return ''; });
+    b = b.replace(/^(?:(?:please|kindly|pls|plz),?\s+)?would you mind\s+([a-z]+ing)\b\s*/i, (x, g) => (GERUND[g.toLowerCase()] ? (converted = true, GERUND[g.toLowerCase()] + ' ') : x));
+    b = b.replace(/^(?:(?:please|kindly|pls|plz),?\s+)?(?:(?:can|could|would) you(?!\s+mind\b)|i was wondering if you (?:could|can|would)|i wonder if you (?:could|can)|i(?:'d| would) (?:like|love) you to|i (?:need|want) you to)(?:,?\s+(?:please|kindly|pls|plz))?,?\s+(?=[a-z])/i, () => { converted = true; return ''; });
+    // declared extension of spec rule 3: a "can/could you + verb" in the middle of a sentence (not a question word first)
+    b = b.replace(/\b(and|then|so)\s+(?:can|could|would) you(?:\s+(?:please|kindly))?\s+(?=[a-z])/gi, (x, w) => { converted = true; return w + ' '; });
+    if (!/^(?:what|which|who|whom|whose|when|where|why|how)\b/i.test(b)) {
+      // an "If ..." opener keeps its condition: "If X, do Y." rather than "If X. Do Y."
+      const cond = /^if\b/i.test(b);
+      b = b.replace(/([A-Za-z0-9)'"’”])(?:,|\s+[-–—])?\s+(?:can|could) you(?:\s+(?:please|kindly))?\s+([a-z])/gi, (x, p, c) => { converted = true; return cond ? p + ', ' + c : p + '. ' + c.toUpperCase(); });
+    }
+    b = b.replace(/,?\s+(?:please|pls|plz|kindly|thanks|thank you)(?: so much| in advance| a lot)?\s*(?=[.!?]|$)/gi, '')
+      .replace(/,?\s+if (?:at all )?possible\s*(?=[.!?]|$)/gi, '').replace(/^if (?:at all )?possible,?\s+/i, '')
+      .replace(/^if you (?:can|could),\s+/i, '').replace(/,?\s+if you (?:can|could)\s*(?=[.!?]|$)/gi, '')
+      .replace(/\b(?:please|pls|plz|kindly),?\s+/gi, '')
+      .replace(/\b([A-Za-z]{3,})\(s\)/g, '$1s');
+    if (b !== orig) b = b.replace(/^[a-z]/, (c) => c.toUpperCase());
+    if (converted) b = b.replace(/\?+$/, '.');
+    return lead + b + trail;
+  }
+  function directVoice(text) {
+    let out = '', cur = 0;
+    for (const sp of sentenceSpans(text)) { out += text.slice(cur, sp.start) + directSentence(text.slice(sp.start, sp.end)); cur = sp.end; }
+    return out + text.slice(cur);
+  }
+
   // Join segments, dropping letters that are off and tidying the spacing/punctuation left behind.
   function assemble(segs, onSet) {
     let t = segs.map((g) => (onSet.has(g.letter) ? g.text : g.inline ? g.alt || '' : '')).join('');
     t = t.replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/,\s*([.;!?])/g, '$1').replace(/\(\s*\)/g, '').replace(/\b(the|a|an) (the|a|an)\b/gi, '$1').replace(/^\s*[,;:]\s*/, '').trim();
     t = tidyChat(t).replace(/([.!?])[.!?]+/g, (m) => (m.includes('?') ? '?' : m[0])); // "...", "??" -> one mark
+    t = directVoice(t).replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/\(\s*\)/g, '').trim();
     return t.replace(/(^|[.!?]\s+)([a-z])/g, (m0, p, c) => p + c.toUpperCase());
   }
 
@@ -436,7 +467,7 @@
     const weakP = grade === 'weak' ? prompt.trim() : (vagueVerb ? vagueVerb : 'Look at').replace(/^./, (c) => c.toUpperCase()) + ' ' + (ctx.object ? 'our ' + ctx.object : 'this') + '.';
     const stages = {
       weak: { prompt: grade === 'weak' ? prompt.trim() : weakP, verdict: verdictFor('weak', grade === 'weak' ? on : { S: false, C: false, O: false, P: false, E: false }, { vague: grade === 'weak' && !on.O ? vagueVerb : (grade === 'weak' ? null : vagueVerb || 'look at') }) },
-      better: { prompt: grade === 'better' ? prompt.trim() : betterP, verdict: verdictFor('better', grade === 'better' ? on : { ...on, S: true, O: true }, {}) },
+      better: { prompt: grade !== 'better' || R.grade(detect(betterP).on) !== 'weak' ? betterP : assemble([{ text: prompt, letter: 'O' }], allOn), verdict: verdictFor('better', grade === 'better' ? on : { ...on, S: true, O: true }, {}) },
       strong: { prompt: grade === 'strong' ? prompt.trim() : strongP, verdict: verdictFor('strong', on, {}) }
     };
 
@@ -469,6 +500,6 @@
     return { grade, detected: on, headline, stages, scope, segments, notes, tips, intent: ctx.intent, domain: ctx.domain, placeholders, hits: d.el };
   }
 
-  const api = { sentenceSpans, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
+  const api = { sentenceSpans, directVoice, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
   if (isNode) module.exports = api; else root.ScopeRewrite = api;
 })(typeof window !== 'undefined' ? window : globalThis);

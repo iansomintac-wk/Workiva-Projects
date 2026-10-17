@@ -72,6 +72,7 @@ prompt; no duplicate sentences, empty fragments, or broken punctuation.
 
 - Sentences: a `;` and anything inside `( )` or `[ ]` never ends a sentence, so a kept sentence is never cut in half. Unit tests: `node --test --test-reporter=tap tests/rewrite_unit.test.js`.
 - Order: kept sentences appear in the user's order. Generated Source and Context go right after the opening Source sentences; a generated Objective takes the place of the vague sentence it replaced; generated Parameters and Evaluate go last. Every piece keeps its letter, so the SCOPE toggles work as before.
+- Direct voice (Better and Strong): sentence-initial "please", "kindly", "can/could/would you", "would you mind", "I was wondering if you could", "I'd like/need/want you to" become an imperative; "please", "pls", "thanks", "if possible" and a mid-sentence "can/could you" before a verb are removed; "Additionally/Also, (please) ensure/make sure (that) if" becomes "If"; "word(s)" becomes "words"; a "?" becomes "." only on a converted sentence. Style only: the evidence on "please" is mixed (research/2026-10-16-prompting-evidence.md). A Better-graded prompt now shows its cleaned-up text in the Better tab, not the raw prompt.
 
 ## Real files
 

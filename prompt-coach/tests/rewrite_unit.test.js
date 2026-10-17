@@ -67,3 +67,40 @@ test('order: a generated Objective takes the place of the vague sentence it repl
   const si = segs.findIndex((g) => !g.generated && /attached/.test(g.text));
   assert.ok(si > oi, 'user Source sentence must come after the Objective that replaced the vague sentence before it');
 });
+
+test('direct voice: sentence-initial politeness becomes an imperative; other questions stay', () => {
+  const cases = [
+    ['Please input the dates.', 'Input the dates.'],
+    ['Kindly send the list.', 'Send the list.'],
+    ['Can you please summarize the attached report?', 'Summarize the attached report.'],
+    ['Could you list every control?', 'List every control.'],
+    ['Would you mind reviewing the memo?', 'Review the memo.'],
+    ['Would you mind reconciling the accounts?', 'Would you mind reconciling the accounts?'],
+    ['I was wondering if you could check the totals.', 'Check the totals.'],
+    ["I'd like you to extract the dates.", 'Extract the dates.'],
+    ['I need you to flag gaps.', 'Flag gaps.'],
+    ['Additionally, ensure that if a row is blank, flag it.', 'If a row is blank, flag it.'],
+    ['Also, please make sure if there are two addresses, split them.', 'If there are two addresses, split them.'],
+    ['Use it (please use column B) for the list.', 'Use it (use column B) for the list.'],
+    ['Send the table pls.', 'Send the table.'],
+    ['Summarize it, thanks.', 'Summarize it.'],
+    ['Do it, if possible.', 'Do it.'],
+    ["If you can't tell why a row moved, say so.", "If you can't tell why a row moved, say so."],
+    ['Q3 is due Friday can you draft the memo?', 'Q3 is due Friday. Draft the memo.'],
+    ['Pull the data, and can you rewrite the bio?', 'Pull the data, and rewrite the bio.'],
+    ['What can you tell me about SG&A?', 'What can you tell me about SG&A?'],
+    ['List the invoice(s) and word(s).', 'List the invoices and words.'],
+    ['What drove the change in SG&A?', 'What drove the change in SG&A?']
+  ];
+  for (const [i, want] of cases) assert.equal(W.directVoice(i), want, i);
+});
+
+test('direct voice: no filler in Better or Strong (Ian case, with and without the file)', () => {
+  const FILL = /\bplease\b|\bpls\b|\bkindly\b|\bcan you\b|\bcould you\b|\bwould you\b|\bi was wondering\b|\bif possible\b/i;
+  for (const files of [[], [PDF]]) {
+    const o = run(IAN, files);
+    assert.ok(!FILL.test(o.stages.better.prompt), o.stages.better.prompt);
+    assert.ok(!FILL.test(o.stages.strong.prompt), o.stages.strong.prompt);
+    assert.ok(o.stages.better.prompt.startsWith('I have attached the following utility bill invoices. Input the applicable dates'), o.stages.better.prompt);
+  }
+});
