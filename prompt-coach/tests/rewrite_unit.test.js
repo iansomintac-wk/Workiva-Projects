@@ -165,3 +165,10 @@ test('context: Ian case gets the approved Strong and Better text, with and witho
     assert.equal(flat(o.stages.better.prompt), rd('ian_better.txt'));
   }
 });
+
+test('objective: the blank-free "one per line" objective is only for list tasks', () => {
+  for (const p of ['make this sound less harsh', 'what is ITGC']) {
+    const o = run(p);
+    assert.ok(!/one per line/.test(o.stages.strong.prompt), p + ': ' + o.stages.strong.prompt);
+  }
+});

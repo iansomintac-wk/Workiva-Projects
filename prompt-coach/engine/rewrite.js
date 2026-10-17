@@ -34,6 +34,7 @@
     ['draft', /\b(draft|write|compose|create|prepare|generate|produce|put together|come up with)/],
     ['summarize', /\b(summar|overview|recap|tl;?dr|key (?:points|takeaways|themes)|highlights|brief)/]
   ];
+  const LIST_INTENT = new Set(['errors', 'gaps', 'consistency', 'anomaly', 'map', 'questions', 'checklist', 'extract', 'compare']);
   function intentOf(t, hasData, strict) {
     for (const [name, re] of INTENTS) if (re.test(t)) return name;
     if (strict) return null;
@@ -481,9 +482,9 @@
           segments.splice(at + 1, 0, { text: g.O.includes('[') ? ALT.O[0] : g.O, letter: 'O', generated: true }); genUsed.add('O');
         } }
       // Fewer blanks when it costs nothing: when the task is sure and a generated Context sentence already adds a blank,
-      // a blank-free objective replaces the fill-in one if the result stays strong.
+      // a blank-free objective replaces the fill-in one if the result stays strong. Only for tasks whose output is a list.
       { const seg = segments.find((x) => x.generated && x.letter === 'O' && x.text.includes('['));
-        if (seg && taskSure && genUsed.has('C')) { const was = seg.text; seg.text = ALT.O[0]; if (R.grade(detect(assemble(segments, allOn)).on) !== 'strong') seg.text = was; } }
+        if (seg && taskSure && genUsed.has('C') && LIST_INTENT.has(ctx.intent)) { const was = seg.text; seg.text = ALT.O[0]; if (R.grade(detect(assemble(segments, allOn)).on) !== 'strong') seg.text = was; } }
       const betterOk = R.grade(detect(assemble(segments.filter((g) => !g.generated || g.letter === 'S' || g.letter === 'O'), allOn)).on) !== 'weak';
       return { segments, genUsed, ok: detect(assemble(segments, allOn)).on.O && betterOk };
     }
