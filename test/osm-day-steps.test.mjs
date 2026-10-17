@@ -226,8 +226,44 @@ test('X3 D5 passes when the click really writes the recap, and a clipboard setup
   assert.equal((await d5.run(fakeClipCtx({ stale: 'old', copyWrites: true }))).passed, true);
   await assert.rejects(d5.run(fakeClipCtx({ stale: 'old', copyWrites: true, armFails: true })), /clipboard setup failed/);
 });
-test('X3 launch source: grantPermissions failure is thrown, not swallowed', () => {
+test('B1 launch source: no OS clipboard permission is requested', () => {
   const t = readFileSync(new URL('../tools/sim/osm-day/lib/browser.mjs', import.meta.url), 'utf8');
-  assert.doesNotMatch(t, /grantPermissions[^\n]*\}\); \} catch \{\}/);
-  assert.match(t, /grantPermissions failed/);
+  assert.doesNotMatch(t, /grantPermissions/);
+});
+
+// ---- B1 redo: the sim never touches the OS clipboard; a page hook records what the tracker copies ----
+test('B1 no sim source reads or writes the OS clipboard', async () => {
+  const { readdirSync, statSync } = await import('node:fs');
+  const dir = new URL('../tools/sim/osm-day/', import.meta.url);
+  const walk = u => readdirSync(u).flatMap(f => { const c = new URL(f, u); return statSync(c).isDirectory() ? walk(new URL(f + '/', u)) : [c]; });
+  const bad = walk(dir).filter(u => /readText|clipboardReadWrite/.test(readFileSync(u, 'utf8')));
+  assert.deepEqual(bad.map(String), []);
+});
+test('B1 clipboardShim records writeText, write and execCommand copy into a page variable seeded with the sentinel', async () => {
+  const { clipboardShim } = await import('../tools/sim/osm-day/lib/browser.mjs');
+  const { runInNewContext } = await import('node:vm');
+  const sel = { value: 'abcdef', selectionStart: 1, selectionEnd: 4 };
+  const win = { navigator: {}, document: { activeElement: sel, execCommand: () => false, getSelection: () => ({ toString: () => '' }) } };
+  win.window = win;
+  runInNewContext(clipboardShim('SIM-SENTINEL-t'), win);
+  assert.equal(win.__simClip, 'SIM-SENTINEL-t');
+  await win.navigator.clipboard.writeText('hello');
+  assert.equal(win.__simClip, 'hello');
+  win.__simClip = 'SIM-SENTINEL-t';
+  assert.equal(win.document.execCommand('copy'), true);
+  assert.equal(win.__simClip, 'bcd');
+  const blob = { text: async () => 'from-item' };
+  await win.navigator.clipboard.write([{ types: ['text/plain'], getType: async () => blob }]);
+  assert.equal(win.__simClip, 'from-item');
+});
+test('B1 D5 no-op Copy click leaves the sentinel, so D5 FAILs and the evidence shows it', async () => {
+  const { PART_A } = await import('../tools/sim/osm-day/steps-a.mjs');
+  const d5 = PART_A.find(s => s.id === 'D5');
+  let clip = null;
+  const ctx = fakeClipCtx({ stale: 'x', copyWrites: false });
+  ctx.armClipboard = async () => { clip = 'SIM-SENTINEL-z'; };
+  ctx.readClipboard = async () => clip;
+  const r = await d5.run(ctx);
+  assert.equal(r.passed, false);
+  assert.match(r.evidence, /SIM-SENTINEL-z/);
 });

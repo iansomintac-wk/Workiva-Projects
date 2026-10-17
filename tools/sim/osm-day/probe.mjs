@@ -130,7 +130,7 @@ async function runProbe() {
     const d1 = await ctx.ev('JSON.stringify(callsScheduledToday())'); add(d1 === '[]', `D1 override takes effect: callsScheduledToday() = ${d1}`);
     await ctx.setBreak(null); await ctx.openOn('2026-10-21');
     let clip;
-    try { await ctx.armClipboard(); clip = 'sentinel round trip ok'; } catch (e) { clip = 'error: ' + e.message.slice(0, 80); }
+    try { const sn = await ctx.armClipboard(); await ctx.ev("navigator.clipboard.writeText('SIM-PROBE')"); clip = (await ctx.readClipboard()) === 'SIM-PROBE' && sn ? 'sentinel round trip ok' : 'hook did not record'; } catch (e) { clip = 'error: ' + e.message.slice(0, 80); }
     add(clip === 'sentinel round trip ok', `clipboard write/read = ${clip}`);
     for (const v of ['1.0', '1.1']) {
       const h = html(v), i = h.indexOf('function isGraduatingSoon(');

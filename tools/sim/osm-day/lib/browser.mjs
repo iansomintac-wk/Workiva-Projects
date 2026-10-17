@@ -16,6 +16,28 @@ const CHROMES = ['C:/Program Files/Google/Chrome/Application/chrome.exe',
   '/usr/bin/google-chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+export function clipboardShim(sentinel) {
+  return `(() => {
+    window.__simClip = ${JSON.stringify(sentinel)};
+    const rec = t => { window.__simClip = String(t); };
+    const cb = {
+      writeText: t => { rec(t); return Promise.resolve(); },
+      write: async items => { for (const it of items) { if ((it.types || []).includes('text/plain')) { rec(await (await it.getType('text/plain')).text()); return; } } },
+    };
+    try { Object.defineProperty(navigator, 'clipboard', { value: cb, configurable: true }); } catch (e) {}
+    const ec = document.execCommand ? document.execCommand.bind(document) : null;
+    document.execCommand = (cmd, ...r) => {
+      if (String(cmd).toLowerCase() === 'copy') {
+        const a = document.activeElement;
+        let t = a && typeof a.selectionStart === 'number' && typeof a.value === 'string' ? a.value.slice(a.selectionStart, a.selectionEnd) : '';
+        if (!t) { try { t = String(document.getSelection()); } catch (e) {} }
+        rec(t); return true;
+      }
+      return ec ? ec(cmd, ...r) : false;
+    };
+  })();`;
+}
+
 export function assertMarker(read, expected) {
   if (read === undefined || read === null || read !== expected) {
     throw new Error(`break marker mismatch: expected ${expected}, read ${read}`);
@@ -127,6 +149,7 @@ export async function launch({ version, startDay, runDir, part, seed = null, chr
       }
     };
 
+    const sentinel = 'SIM-SENTINEL-' + Math.random().toString(36).slice(2, 10);
     const ev = async src => {
       const res = await send('Runtime.evaluate', { expression: src, awaitPromise: true, returnByValue: true });
       if (res.exceptionDetails) throw new Error(res.exceptionDetails.exception?.description || res.exceptionDetails.text);
@@ -142,25 +165,18 @@ export async function launch({ version, startDay, runDir, part, seed = null, chr
     await send('Runtime.enable'); await send('Page.enable'); await send('Network.enable');
     await send('Fetch.enable', { patterns: [...AI_HOSTS.map(h => ({ urlPattern: `https://${h}/*` })), { urlPattern: `${connector}/*` }] });
     await send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: downloads });
-    // Headless clipboard fails with "Document is not focused" without focus emulation (D5 needs it).
-    await send('Emulation.setFocusEmulationEnabled', { enabled: true });
-    try { await send('Browser.grantPermissions', { permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] }); }
-    catch (e) { throw new Error('Browser.grantPermissions failed (clipboard setup): ' + e.message); }
+    // The sim never reads or writes the OS clipboard (headless Chrome may share the user's). A page hook, installed before
+    // every load, records what the tracker copies into window.__simClip, which starts as a per-run sentinel.
+    await send('Page.addScriptToEvaluateOnNewDocument', { source: clipboardShim(sentinel) });
 
     ctx.ev = ev;
     ctx.send = send;
-    // Clipboard: write a known sentinel first, so text left on the OS clipboard by anything else cannot pass a copy check.
-    // A setup failure throws (harness error, exit 2); only the read after the click may come back as 'error: ...'.
     ctx.armClipboard = async () => {
-      const sentinel = 'SIM-CLIP-SENTINEL-' + Math.random().toString(36).slice(2, 10);
-      let back;
-      try { back = await ev(`(async () => { await navigator.clipboard.writeText(${JSON.stringify(sentinel)}); return await navigator.clipboard.readText(); })()`); }
-      catch (e) { throw new Error('clipboard setup failed: ' + e.message.slice(0, 120)); }
-      if (back !== sentinel) throw new Error('clipboard setup failed: sentinel read back as ' + JSON.stringify(String(back).slice(0, 40)));
+      await ev(`window.__simClip = ${JSON.stringify(sentinel)}; true`);
       return sentinel;
     };
     ctx.readClipboard = async () => {
-      try { return String(await ev('navigator.clipboard.readText()')).replace(/\r\n/g, '\n'); } catch (e) { return 'error: ' + e.message.slice(0, 80); }
+      try { return String(await ev('window.__simClip')).replace(/\r\n/g, '\n'); } catch (e) { return 'error: ' + e.message.slice(0, 80); }
     };
     ctx.aiStats = () => ({ ...stats });
     ctx.snapshot = async () => ({ ls: await ev(`JSON.stringify(Object.fromEntries(Object.entries(localStorage)))`), state: JSON.parse(JSON.stringify(ctx.state)) });
