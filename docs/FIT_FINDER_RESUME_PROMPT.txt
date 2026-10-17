@@ -19,11 +19,27 @@ half-done in the repo. Order:
    writing: "Process invoices in a more professional way", "The close process is informal; make it
    more formal" get the card), 3 should-fix (recall lost against V1: "Revise the email please",
    "Revise the paragraph about revenue", "Make my email more professional sounding"; the tests miss
-   all of these), 1 minor (README "only when it describes a piece of writing" overstates). The Opus
-   final-reviewer was still running at the stop; its findings come back in its reply, not a file
-   (its Write to this ledger was refused last run). If its result is not in progress.md, re-run it
-   on 607cf8a..6f7090e (packet: findings in the reply, at most 25 lines).
-2. FIRST JOB: fix round V3, test first. The lead already probed it (v3probe.cjs in the ledger; run
+   all of these), 1 minor (README "only when it describes a piece of writing" overstates). Opus
+   final-reviewer (done at the stop, findings in progress.md and reviews/2026-10-17-opus-v2.md):
+   2 must-fix, 5 should-fix, 3 nits: finance word before the noun ("Revise the budget draft before
+   close", "Revise the credit memo for the customer return"); plurals add false positives ("Revise
+   the credit memos every month"); "a more formal way/register"; "make it more formal" on process
+   work; and V2 LOSES everyday asks V1 read ("Revise the email below", "Make my writing more
+   professional", "Make my status update more concise"), so README's "V1 gains (all kept)" is
+   wrong beyond the plan's own list. Lead measured 09:55Z (job tmp opuscheck.cjs, copied to the
+   ledger): of Opus's 13 false positives V2 shows the rewrite card on 13, the V3 copy on 8; of
+   its 10 everyday asks V2 reads 0 as REWRITE, V3 1. So V3 as probed is NOT enough.
+2. FIRST JOB: choose the approach before building. Patching the regex sentence by sentence did
+   not converge (V1 -> V2 -> V3 each fixed the known list and the next review found more). Pool
+   every sentence found so far (V2 checks 14, Codex V2 7, Opus V2 13 + 10 asks, v3probe's 25
+   positives) as a fixed check set, then "recommend from a spread" (Ian's trial rule), each option
+   scored on that set, the fresh line and the 139 older texts: (a) revert engine line 16 and the
+   card to 383afd3 (the live page's rule: fresh 8 of 23, no wrong rewrite cards); (b) keep only the
+   safe V1 parts (e.g. "worded better", "reword" on the card) and drop revise/tone; (c) V3 plus the
+   Opus fixes; (d) one that breaks an assumption (e.g. the rewrite card shown only as a second card
+   when another op is present). Pick the survivor; it is a technical choice under the standing yes
+   unless it changes what Ian was told in item 71 (then say so there). README must be corrected in
+   the same commit (its V2 "all kept" claim is wrong). The V3 probe, for reference: the lead probed it (v3probe.cjs in the ledger; run
    node v3probe.cjs <absolute fit-finder dir at V2> <scratch dir>): hyphen does not end the noun;
    "please" and "about" may follow the noun; a tone word after a writing noun only with a
    to/for/from/about/on/with phrase between; it/this/that/them only with writing context earlier in
