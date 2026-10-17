@@ -1,15 +1,60 @@
-Fit Finder v4.13: hand-off (2026-10-16, session b9821fb4, successor of c9f81242; half A card labels done in 8fe2020, local)
+Fit Finder v4.14: hand-off (2026-10-17, session d6215817, successor of b9821fb4; "commentary" rule shipped in 8050b07, live v13)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to 4efa749 (origin = local = 4efa749 after fetch, checked
-by b9821fb4 at start). LOCAL ONLY (not pushed): 8fe2020 (half A card labels) and the hand-off commit
-after it, unless the launch note says pushed. Push only with Ian's yes. Draft PR #1 into prompt-coach
-(not merged). Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 12 (version id
-1792211894-2806) = dist of 7772b44 (82,583 bytes LF); 8fe2020 changes no page byte (rebuilt, tree
-clean), so v12 is current. (Updated by b9821fb4.)
+worktree-fit-finder-v4. Pushed to origin up to 31b2040 (d6215817 pushed it on Ian's "Push
+(Recommended)"; origin = local = 31b2040 after fetch). LOCAL ONLY (not pushed): 8050b07 and the
+hand-off commit after it, unless the launch note says pushed. Push only with Ian's yes. Draft PR #1
+into prompt-coach (not merged). Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is
+version 13 (version id 1792220221-c76a) = dist of 8050b07 (82,594 bytes LF). Checked by d6215817:
+the published file, CRLF to LF and the publisher's two wrapper lines removed, equals HEAD's dist byte
+for byte plus one newline, and differs from 31b2040's dist (control).
 
-NEXT SESSION (written by b9821fb4; supersedes every NEXT SESSION below)
+NEXT SESSION (written by d6215817; supersedes every NEXT SESSION below)
+Read this file, CLAUDE.md and fit-finder/README.md ("Right card on half A"). Nothing is half-done. If
+the launch note does not say pushed, ask Ian directly: push 8050b07 and the hand-off commit? A relayed
+answer is not his yes. The year-over-year item stopped below Ian's bar (>=3 gained on A; got 2) and
+shipped on his explicit pick; B is now used for that card, so park 100 and 108 until a rule exists
+that a fresh test could judge. Then ask which next, recommendation first, each with its cheapest check
+(c breaks the assumption that B is our only fair test): (a) task 19, peer benchmarking: fr-peers exists, so
+replay 19 through match() to find the missing word, keep a change only with 0 wrong on A, then score
+B once (B is unused for fr-peers); (b) B's 3 wrong cards (67, 74, 91): park unless there is a new idea,
+since 4 general rules fixed 0 of 3; (c) a fresh held-out set (Ian did not pick it on 2026-10-17): the
+model writes or sources 30 tasks and labels them, Ian checks a stated few. Optional: the one-minute
+sandbox check of the Workflows menu for Benchmarking. Program lead: "NEW - 24h program lead 9"
+(43417193) unless renamed; send it status.
+
+UPDATE 2026-10-17, session d6215817 (successor of b9821fb4): "commentary" rule shipped in 8050b07
+- Start: tree clean; origin = 35c9852 after fetch. Pushed 31b2040 on Ian's "Push (Recommended)".
+- Ian picked "Year-over-year rule (Recommended)" (question tool, a spread of 4 with cheapest checks),
+  then confirmed all 4 model labels: tasks 8, 100, 112 "Yes, it fits (Recommended)", 108 "Yes, it
+  fits" (I had called 108 my weakest).
+- Probe on half A only, B unseen (scratch copies in the job tmp; base reproduced 10/29, 0 wrong):
+  C1 "commentary" 12/29 (8, 112); C3 period phrase (last month's/quarter's/year's, budget vs actual,
+  latest results) 12/29 (108, 112); C4 = C1 or C3 13/29, 0 wrong, all catalogue checks pass,
+  community prompts unchanged (19 rows); C5 = C4 + card takes REWRITE 14/29 but failed "try routes
+  home: gen-rewrite" (its own example "rewrite the CFO's commentary to be shorter" went to this card).
+  Task 100 misses because the engine reads it as REWRITE only (gold also has DRAFT).
+- B scored once on C4, prediction stated first (wrong stays 3): disproved, right 13 -> 13, wrong 3 -> 5
+  (80 "reusing last year's wording" sustainability statement; 115 "comparing the new draft against
+  last year's version"), both from "last year's". Not shipped. Ian picked "Ship \"commentary\" only
+  (Recommended)" over "Test it on B first", "Ship nothing, move on" and "Get fresh test tasks".
+- 8050b07 (implementer@bf18c2a, Sonnet, 31,651 tokens, 14 tool uses, 125 s): catalogue
+  `|commentary`, 4 gold rows by:ian (Ian 15, model 14), new check, README, dist. Re-run by me: half A
+  12/29, wrong 0, no card 17; B 13/30, wrong 3 (67,74,91), so "B unchanged", which I had marked
+  assumed, is now measured (the suite prints B on every run); evals A 52/60, B 45/60 unchanged; new
+  check FAILs on 31b2040's catalogue (task 8), passes on HEAD; pagetest 72 checks, 0 failed; README
+  82,594 = git show HEAD dist | wc -c; rebuild leaves tree clean.
+- Republished v13 (Sonnet general-purpose helper, 108,322 tokens, 4 tool uses, 23 s); checked as in
+  WHERE. PM (Sonnet, 21,644 tokens, 4 tool uses; first dispatch refused by the hook for naming no
+  model): milestone not done by its check, shipped below the bar on Ian's pick; next = task 19.
+- My slips, caught by controls: a node -e with `\\` in a Bash command broke (the recorded rule, again),
+  so a "0 lines" community diff compared two unchanged copies; and I first ran data/real/rate-real.js
+  with one argument, so both runs crashed and the diff was empty. Both re-run correctly, with the
+  catalogue change fingerprinted (match tail printed).
+- Predecessor b9821fb4 kept (done, COMPLETED; shares this worktree, so claude rm would remove it).
+
+NEXT SESSION (written by b9821fb4; DONE by d6215817 above; kept for the record)
 Read this file, CLAUDE.md and fit-finder/README.md ("Right card on half A"). Nothing is half-done. If
 the launch note does not say pushed, ask Ian directly: push 8fe2020 and the hand-off commit? A relayed
 answer is not his yes. Labelling is the model's job: a top-model labeler labels, and Ian checks only
