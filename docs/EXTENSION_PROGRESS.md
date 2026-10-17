@@ -21,7 +21,7 @@ Helpers for the checks (committed with this file): `node docs/extension-checks/s
 - Files: tools/sim/osm-day/lib/browser.mjs, verify.mjs, probe.mjs, test/osm-day-safety.test.mjs (add-only).
 - Check: `W && node --test --test-reporter=spec test/osm-day-safety.test.mjs 2>&1 | grep -E "^ℹ (pass|fail)"; grep -c "remote-debugging-port=0" tools/sim/osm-day/lib/browser.mjs; grep -c "9400" tools/sim/osm-day/lib/browser.mjs; grep -c "no-proxy-server" tools/sim/osm-day/lib/browser.mjs; node tools/sim/osm-day/run.mjs --version 1.0 --part A --only D1 --no-breaks --out sim-runs/ext/x1 > sim-runs/ext/x1.log 2>&1; echo exit $?; grep -c "fake 0, escaped 0" sim-runs/ext/x1.log; node docs/extension-checks/left.mjs`. Also add a test (name contains "spawn error") that launches with an invalid Chrome path and sees exit 2 and its profile folder removed.
 - Expected: `ℹ fail 0` with a pass count above the current file's; greps print `1` or more, `0`, `1` or more; real run `exit 0` (or 1 if D1 is a finding, never 2); `1` for the escaped line; `left 1`.
-- Status: todo
+- Status: done (commit COMMIT). Evidence: safety tests pass 15 fail 0; 9400 count 0; no-proxy-server 1; D1 run exit 0, "fake 0, escaped 0" 1; left 1.
 
 ### X2 Output folders: fresh per run, inside sim-runs, mtime downloads (FR11 and Fix B7)
 - Outcome: `run.mjs --out` and `verify.mjs --dir` must resolve under `<repo>/sim-runs/` or exit 2 before creating anything; `verify.txt` is written inside `--dir`, not its parent; a download counts by file mtime after the click, so a re-run into the same folder, or a folder already holding a same-name file, still passes D10 and L10; verify makes fresh timestamped run folders each time. Write the pre-seeded same-name-file test first.

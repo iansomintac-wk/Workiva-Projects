@@ -179,13 +179,13 @@ function runAll(dir) {
   for (const n of ['run1', 'run2']) {
     const out = join(dir, n);
     mkdirSync(out, { recursive: true });
-    const r = spawnSync(process.execPath, [join(HERE, 'run.mjs'), '--out', out], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26 });
+    const r = spawnSync(process.execPath, [join(HERE, 'run.mjs'), '--out', out], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26, timeout: 25 * 60 * 1000 });
     writeFileSync(join(out, 'stdout.txt'), (r.stdout || '') + (r.stderr || ''));
     writeFileSync(join(out, 'run.exit'), String(r.status ?? 2));
   }
   for (const v of VERSIONS) {
     const r = spawnSync(process.execPath, [join(ROOT, 'tools', 'sim', 'run-field-test.mjs'), '--target', trackerFile(v), '--out', join(dir, 'ft', `${v}.json`)],
-      { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26 });
+      { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26, timeout: 10 * 60 * 1000 });
     writeFileSync(join(dir, 'ft', `${v}.log`), (r.stdout || '') + (r.stderr || ''));
     writeFileSync(join(dir, 'ft', `${v}.exit`), String(r.status ?? 2));
   }

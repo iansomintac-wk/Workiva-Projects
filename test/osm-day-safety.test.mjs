@@ -90,3 +90,43 @@ test('outbound-call ban: no callAiAPI( or provider URL in field test or steps', 
     assert.doesNotMatch(t, /https?:\/\/[^\s'"`]*(anthropic|openai|googleapis)/i, f);
   }
 });
+
+// X1: browser safety
+const BR = readFileSync(join(SIM, 'lib/browser.mjs'), 'utf8');
+test('X1 browser: own debugging port via DevToolsActivePort, no random 9400 port, no proxy', () => {
+  assert.match(BR, /--remote-debugging-port=0/);
+  assert.match(BR, /DevToolsActivePort/);
+  assert.ok(!BR.includes('9400'));
+  assert.match(BR, /--no-proxy-server/);
+});
+test('X1 browser: error, timeout, close, dialog and signal handling present', () => {
+  assert.match(BR, /child\.on\('error'/);
+  assert.match(BR, /CDP timeout/);
+  assert.match(BR, /ws\.onclose/);
+  assert.match(BR, /Page\.handleJavaScriptDialog/);
+  assert.match(BR, /SIGINT/);
+  assert.match(BR, /SIGTERM/);
+});
+test('X1 verify: spawnSync calls carry a timeout', () => {
+  const v = readFileSync(join(SIM, 'verify.mjs'), 'utf8');
+  const calls = [...v.matchAll(/spawnSync\(process\.execPath[^]*?\}\);/g)].map(m => m[0]);
+  assert.ok(calls.length >= 2);
+  for (const c of calls) assert.match(c, /timeout:/);
+});
+test('X1 spawn error: invalid Chrome path rejects, profile folder removed, run exits 2', async () => {
+  const { launch } = await import('../tools/sim/osm-day/lib/browser.mjs');
+  const before = countLeftovers(['osmsim-'], tmpdir());
+  const runDir = mkdtempSync(join(tmpdir(), 'x1run-'));
+  try {
+    await assert.rejects(launch({ version: '1.0', startDay: '2026-10-21', runDir, part: 'x1', chromePath: join(runDir, 'no-such-chrome.exe') }));
+    assert.equal(countLeftovers(['osmsim-'], tmpdir()), before);
+  } finally { rmSync(runDir, { recursive: true, force: true }); }
+  const { spawnSync } = await import('node:child_process');
+  const out = mkdtempSync(join(ROOT, 'sim-runs-x1-'));
+  try {
+    const r = spawnSync(process.execPath, [join(SIM, 'run.mjs'), '--version', '1.0', '--part', 'A', '--only', 'D1', '--no-breaks', '--out', join(ROOT, 'sim-runs', 'ext', 'x1-spawnerr')],
+      { env: { ...process.env, OSM_SIM_CHROME: join(out, 'nope.exe') }, encoding: 'utf8', timeout: 60000 });
+    assert.equal(r.status, 2);
+    assert.equal(countLeftovers(['osmsim-'], tmpdir()), before);
+  } finally { rmSync(out, { recursive: true, force: true }); }
+});

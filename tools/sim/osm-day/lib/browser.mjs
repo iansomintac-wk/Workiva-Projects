@@ -2,7 +2,7 @@
 // fake clock, fake AI and fake connector through CDP Fetch, escape counting, safe cleanup.
 // Built from the clock and AI spikes in .ledger/2026-10-16-runway-day-sim/spikes/.
 import { spawn, execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, existsSync, readdirSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
@@ -45,32 +45,41 @@ const pidKill = pid => {
   else process.kill(pid, 'SIGKILL');
 };
 
-export async function launch({ version, startDay, runDir, part, seed = null }) {
-  const chrome = CHROMES.find(existsSync);
+export async function launch({ version, startDay, runDir, part, seed = null, chromePath = process.env.OSM_SIM_CHROME }) {
+  const chrome = chromePath || CHROMES.find(existsSync);
   if (!chrome) throw new Error('Chrome not found');
   const target = join(ROOT, `osm-book-of-business-tracker-${version}.html`);
   if (!existsSync(target)) throw new Error(`tracker not found: ${target}`);
   const downloads = resolve(runDir, `downloads-${part}`);
   mkdirSync(downloads, { recursive: true });
-  const cdpPort = 9400 + Math.floor(Math.random() * 500);
   const connectorPort = 9900 + Math.floor(Math.random() * 100);
   const connector = connectorUrl(connectorPort);
   const profile = mkdtempSync(join(tmpdir(), 'osmsim-'));
-  const child = spawn(chrome, ['--headless=new', `--remote-debugging-port=${cdpPort}`, `--user-data-dir=${profile}`,
+  const child = spawn(chrome, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`,
     '--no-first-run', '--no-default-browser-check', '--disable-gpu', '--window-size=1440,900',
-    `--host-resolver-rules=${RESOLVER_RULES}`, 'about:blank'], { stdio: 'ignore', windowsHide: true });
+    `--host-resolver-rules=${RESOLVER_RULES}`, '--no-proxy-server', 'about:blank'], { stdio: 'ignore', windowsHide: true });
   const pid = child.pid;
+  let childErr = null; let dead = false;
+  child.on('error', e => { childErr = e; dead = true; });
+  child.on('exit', () => { dead = true; });
   // Alive = Node's own handle on the child has not seen it exit (no tasklist polling; immune to PID reuse).
-  const alive = () => child.exitCode === null && child.signalCode === null;
+  const alive = () => !dead && child.exitCode === null && child.signalCode === null;
   let ws = null; let stopped = false;
+  const onSig = sig => { stop().finally(() => process.exit(sig === 'SIGINT' ? 130 : 143)); };
+  process.once('SIGINT', onSig); process.once('SIGTERM', onSig);
   const stop = async () => {
     if (stopped) return; stopped = true;
+    process.removeListener('SIGINT', onSig); process.removeListener('SIGTERM', onSig);
     try { ws && ws.close(); } catch {}
     await cleanupProfile({ pid, profile, isAlive: alive, kill: pidKill, remove: p => rmSync(p, { recursive: true, force: true }), exists: existsSync });
   };
   try {
-    let page;
+    let page; let cdpPort = 0;
     for (const end = Date.now() + 20000; Date.now() < end && !page; await sleep(150)) {
+      if (childErr) throw new Error('Chrome failed to start: ' + childErr.message);
+      if (dead) throw new Error('Chrome exited before opening a debugging port');
+      if (!cdpPort) { try { cdpPort = Number(readFileSync(join(profile, 'DevToolsActivePort'), 'utf8').split(/\r?\n/)[0]) || 0; } catch {} }
+      if (!cdpPort) continue;
       try { page = (await (await fetch(`http://127.0.0.1:${cdpPort}/json/list`)).json()).find(t => t.type === 'page'); } catch {}
     }
     if (!page) throw new Error('no page target');
@@ -79,7 +88,13 @@ export async function launch({ version, startDay, runDir, part, seed = null }) {
 
     let id = 0; const pend = new Map(); const reqUrls = new Map();
     const stats = { fake: 0, escaped: 0 }; const pageErrors = [];
-    const send = (method, params = {}) => new Promise((r, j) => { const i = ++id; pend.set(i, { r, j }); ws.send(JSON.stringify({ id: i, method, params })); });
+    const send = (method, params = {}) => new Promise((r, j) => {
+      const i = ++id;
+      const t = setTimeout(() => { pend.delete(i); j(new Error('CDP timeout: ' + method)); }, 30000);
+      pend.set(i, { r: v => { clearTimeout(t); r(v); }, j: e => { clearTimeout(t); j(e); } });
+      try { ws.send(JSON.stringify({ id: i, method, params })); } catch (e) { pend.delete(i); clearTimeout(t); j(e); }
+    });
+    ws.onclose = () => { for (const [, p] of pend) p.j(new Error('CDP socket closed')); pend.clear(); };
     const ctx = { pid, profile, version, part, connectorUrl: connector, connectorPort, downloads, state: {}, pageErrors, noReinstall: false };
     let activeBreak = null; let breakDef = null; let scriptId = null;
 
@@ -88,7 +103,8 @@ export async function launch({ version, startDay, runDir, part, seed = null }) {
     ws.onmessage = async ev => {
       const m = JSON.parse(ev.data);
       if (m.id && pend.has(m.id)) { const p = pend.get(m.id); pend.delete(m.id); m.error ? p.j(new Error(m.error.message)) : p.r(m.result); return; }
-      if (m.method === 'Runtime.exceptionThrown') pageErrors.push(m.params.exceptionDetails?.exception?.description || m.params.exceptionDetails?.text);
+      if (m.method === 'Page.javascriptDialogOpening') { try { await send('Page.handleJavaScriptDialog', { accept: false }); } catch {} }
+      else if (m.method === 'Runtime.exceptionThrown') pageErrors.push(m.params.exceptionDetails?.exception?.description || m.params.exceptionDetails?.text);
       else if (m.method === 'Network.requestWillBeSent') reqUrls.set(m.params.requestId, m.params.request.url);
       else if (m.method === 'Network.loadingFailed') {
         const u = reqUrls.get(m.params.requestId) || '';
@@ -103,7 +119,11 @@ export async function launch({ version, startDay, runDir, part, seed = null }) {
             stats.fake++;
             await fulfill(requestId, JSON.stringify(aiBody(request.url, request.postData || '', { email: !(breakDef && breakDef.ai === 'noEmail') })));
           } else await fulfill(requestId, JSON.stringify(connectorReply(request.postData || '')));
-        } catch { try { await send('Fetch.failRequest', { requestId, errorReason: 'Failed' }); } catch {} }
+        } catch {
+          // An AI-host request we could not fulfil is not safe: count it as escaped.
+          try { if (AI_HOSTS.includes(new URL(request.url).host)) stats.escaped++; } catch {}
+          try { await send('Fetch.failRequest', { requestId, errorReason: 'Failed' }); } catch {}
+        }
       }
     };
 
