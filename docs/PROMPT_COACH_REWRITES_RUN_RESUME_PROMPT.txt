@@ -1,0 +1,52 @@
+RESUME: Prompt Coach Better/Strong rewrites run (Workiva repo)
+
+Written 2026-10-17 by run lead 4756fc2d, which stopped at the 200k context line (context-stop hook).
+Load studio-harness:talk-and-run first and follow "The run" from where this leaves off. You are the
+run lead: coordinate only, never plan or build in your own context.
+
+READ FIRST
+- docs/PROMPT_COACH_REWRITES_RUN_PROMPT.txt: WHERE, ORDER steps 3-7, PERMISSIONS and SAFETY still apply,
+  with the updates below.
+- Ledger: .ledger/2026-10-16-prompt-coach-rewrites/progress.md (rows, Ian's rulings, corrections),
+  helper-rows.md (token use), reviews/plan-review.md, reviews/plan-rereview.md, logs/base_*.txt
+  (parent baselines measured 2026-10-17).
+- Plan (approved, commit 340c9c8): docs/superpowers/plans/2026-10-16-prompt-coach-rewrites.md.
+  Spec with Ian's plan-stop rulings: docs/superpowers/specs/2026-10-16-prompt-coach-rewrites-design.md.
+
+STATE
+- First check as usual: STUDIO_RUN_LEDGER set, budget.json and slip.json exist; else stop.
+- Ian's rulings 2026-10-17 (verbatim in progress.md): cap raised to 2.2M (budget.json runTokenCap
+  2200000; the earlier 1.8M answer rested on the lead's wrong projection, corrected out loud);
+  exactly one Context blank for only-Context-missing prompts; filetest libraries installed in a
+  throwaway folder; plan approved with four departures and Opus as the only plan reviewer.
+- Task 1 built and committed (69bcebf; 657 baseline entries, measured); lead re-ran its 4 role-checks, all as
+  expected. Its checker has NOT run yet.
+- Next: Task 1 checker (lines in .ledger/2026-10-16-prompt-coach-rewrites/role-checks.txt), lead
+  re-runs them, ledger row; then Tasks 2-13 one at a time (implementer, checker, lead re-run, row).
+  After Tasks 1-2, compare their real tokens with the plan's estimates and stop for Ian if the
+  forecast passes 2.2M (Ian's condition for the 2.2M).
+
+CORRECTIONS TO THE PLAN TEXT (put them in each packet; do not edit the approved plan)
+- jq is not installed: use node -p "Object.keys(require('<abs json>')).length" or similar.
+- Role-check lines must run from any folder: git -C <worktree> ..., absolute paths, one command per line.
+- "LEAD:" steps that only copy files or run a generator can go to the implementer; steps needing an env
+  var (filler_probe OUT=, filetest VENDOR=) stay with the lead.
+- Before Task 7, read reviews/plan-rereview.md: note 1 (replace both the `const genUsed = new Set();`
+  line and the `for` line), note 4 (Objective placement on the blank path), note 6 (onlyC and "["
+  prompts). Ian ruled yes on (A), so the fallback in Task 7 is not used.
+- VENDOR for filetest.js: C:/Users/teasp/AppData/Local/Temp/prompt-coach-rewrites-4756fc2d/vendor
+  (mammoth@1.6.0 xlsx@0.18.5 jszip@3.10.1 pdfjs-dist@3.11.174, verified).
+- Scratch files: not under ~/.claude/ (run prompt ban); use the Temp folder above.
+- Add Ian's 2.2M ruling to the spec's rulings list in the Task 12 evidence-doc commit.
+
+CODEX
+- Codex 0.162.0 cannot start a shell here (helper_unknown_error: setup refresh had errors; probed
+  2026-10-17). Final review = studio-harness:final-reviewer alone. Ian may restart Windows after the run
+  and re-run the one-line probe; do not ask him to restart during the run.
+
+SESSIONS
+- a72ccc7d (talk, done) and 4756fc2d (this lead) both ran in this worktree. `claude rm <id>` deletes the
+  session AND its worktree (claude rm --help), which would delete this run's folder and the git-ignored
+  ledger. Do not rm either until the branch is merged and pushed and Ian has said what to keep; never
+  pass force flags.
+- Slip: new sessions no. Do not launch any session; the live-test prompt (Task 13) is drafted, not run.
