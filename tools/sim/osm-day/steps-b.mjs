@@ -120,8 +120,9 @@ export function l11Judge({ g0, m1, noContact, with: w }) {
 export function l7Judge(days, cal) {
   const paused = days.filter(x => x.d <= cal.until), last = days[days.length - 1];
   const leaks = paused.filter(x => x.silence.length);
-  const passed = !leaks.length && last.d === cal.to && !last.paused && last.silence.length > 0 && last.regulatory === 0;
-  const where = x => `rank ${x.rank == null ? 'none' : x.rank}, rendered ${x.rendered}, cap-hidden ${x.capHidden}`;
+  const onScreen = last.onScreen !== undefined ? last.onScreen : !last.capHidden; // the row itself in a day step or Below the day
+  const passed = !leaks.length && last.d === cal.to && !last.paused && last.silence.length > 0 && onScreen && last.regulatory === 0;
+  const where = x => `rank ${x.rank == null ? 'none' : x.rank}, rendered ${x.rendered}, on screen ${x.onScreen !== undefined ? x.onScreen : !x.capHidden}, cap-hidden ${x.capHidden}`;
   return { passed, evidence: `pause until ${cal.until}; paused days ${paused.length}, with a silence row: ${leaks.length}${leaks.length ? ' (' + leaks.slice(0, 3).map(x => x.d + ' ' + x.silence.join('+') + ', ' + where(x)).join('; ') + ')' : ''}; ${last.d}: paused ${last.paused}, silence sources [${last.silence.join(', ')}], ${where(last)}, Regulatory cases ${last.regulatory}` };
 }
 // L5: the session plan counts as shown only inside Fernhollow's open Sessions panel, with Session 1 card titles, and not as the pre-Go-Live PREVIEW.
@@ -348,7 +349,7 @@ export const PART_B = [
         const c = DATA.customers.find(x => x.name === ${JSON.stringify(FERN)}); const list = todayActionList(); const idx = list.findIndex(r => r.customerId === c.id);
         const inBeat = [...document.querySelectorAll('[data-day-step] h4')].some(h => h.textContent.includes(${JSON.stringify(FERN)}));
         const inBelow = [...document.querySelectorAll('[data-today-row] .todo-cust')].some(h => h.textContent.includes(${JSON.stringify(FERN)}));
-        return JSON.stringify({ rank: idx >= 0 ? idx + 1 : null, rendered: document.body.innerText.includes(${JSON.stringify(FERN)}), capHidden: idx >= 0 && !inBeat && !inBelow }); })()`)));
+        return JSON.stringify({ rank: idx >= 0 ? idx + 1 : null, rendered: document.body.innerText.includes(${JSON.stringify(FERN)}), onScreen: inBeat || inBelow, capHidden: idx >= 0 && !inBeat && !inBelow }); })()`)));
       days.push(r);
     }
     const j = l7Judge(days, CAL.L7);

@@ -368,3 +368,14 @@ test('X8 L5 planShown reads Fernhollow Sessions panel and ignores the implementa
   assert.equal(sessionsPlanShown({ ...live, cardTitles: [] }), false);
   assert.equal(sessionsPlanShown(null), false);
 });
+test('X7 L7 judge: the silence row must be on screen on the first day after the pause, not just named in body text', async () => {
+  const { l7Judge } = await import('../tools/sim/osm-day/steps-b.mjs');
+  const day = (d, o) => ({ d, silence: [], paused: true, regulatory: 0, rank: null, rendered: false, capHidden: false, onScreen: false, ...o });
+  const cal = { until: '2026-11-30', to: '2026-12-01' };
+  const mk = onScreen => [day('2026-11-30'), day('2026-12-01', { paused: false, silence: ['coverage_x'], rank: 28, rendered: true, capHidden: !onScreen, onScreen })];
+  const hidden = l7Judge(mk(false), cal);
+  assert.equal(hidden.passed, false, hidden.evidence);
+  assert.match(hidden.evidence, /on screen false/);
+  const shown = l7Judge(mk(true), cal);
+  assert.equal(shown.passed, true, shown.evidence);
+});

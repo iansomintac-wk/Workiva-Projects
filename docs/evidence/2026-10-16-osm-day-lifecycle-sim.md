@@ -18,6 +18,7 @@ The same five failed on 1.0 and on 1.1. All are measured, run 1 and run 2 agreed
 | D3 open items | 1.0, 1.1 | The panel shows the open checklist item and the last-meeting question, but not the "you owe" or "they owe" commitments (`SIM-OWE you owe`, `SIM-OWE they owe` absent). The meeting agenda is a listed GAP. | Wed 2026-10-21 |
 | D8 risk case actioned | 1.0, 1.1 | After a risk case is confirmed, it stays in the open risk list ("unreviewed -> confirmed (still listed)"; `lastActioned` is set to 2026-10-21 but the case does not leave). | Wed 2026-10-21 |
 | L8 same, in the customer's life | 1.0, 1.1 | The 12-02 note raised a Product signal (0 to 1) and made a risk case; confirming it set `lastActioned 2026-12-02`, but the case card is still on the open list. Same behaviour as D8. | 2026-12-02 |
+| L7 pause then silence returns | 1.0, 1.1 | After the pause ends (12-01) the silence reasons are back (stalled, neglected coverage, session due) and Fernhollow ranks 28th, but the row is not in a day step or Below the day: it is hidden past the 15-row cap. The name appears elsewhere on Today (gate deck), which the earlier check wrongly counted. (From --only L7 runs; verify re-run pending.) | 12-01 |
 | L11 graduation | 1.0, 1.1 | With no CSAT contact (read back `done:false, contactName:""`) the graduation confirm box has its OK button **enabled**; there is no refusal. With a contact added it graduates and queues 1 "Success Plan objective" item. So nothing stops graduation without the CSAT contact. | 2027-01-25 (T) |
 
 L12 is a GAP, not a fail: nothing in the tracker tracks a CSAT survey being sent, answered or followed up.
@@ -47,7 +48,7 @@ C3 as written in the plan predicted "session coming due" on exactly day 7. That 
 | Check | Result | Status |
 |---|---|---|
 | C1 Part A | (before the fix round) 1.0: PASS 7, FAIL 3 [D2, D3, D8], GAP 0. 1.1: PASS 6, FAIL 4 [D2, D3, D4, D8], GAP 0. (D3 and D7 carry GAP notes; D7 passes with three GAP notes.) | measured |
-| C2 Part B | Both versions: PASS 9, FAIL 2 [L8, L11], GAP 1 [L12]. L10 passes with its CSM-request GAP note. | measured |
+| C2 Part B | Both versions: PASS 8, FAIL 3 [L7, L8, L11], GAP 1 [L12] (L7 from --only L7 runs; verify re-run pending). L10 passes with its CSM-request GAP note. | measured |
 | C3 L6 drift | Both: Today day 1 (by 7: true), Watch day 10 (by 10: true), Off Track day 21 (by 21: true). See the two readings above. (After X9, verify prints C3 FAIL "disproved": the prediction was a coverage row by day 7 and L6 saw none.) | measured |
 | C4 breaks flip | 1.0: FLIPPED 16, VACUOUS 0, NOT-TESTED 5 of 21. 1.1: FLIPPED 15, VACUOUS 0, NOT-TESTED 6 of 21. No VACUOUS. | measured |
 | C5 same twice | **FAIL**, but only D7 on each version differs, and only in the evidence text. See below. | measured |
@@ -74,8 +75,8 @@ From `diff.md` of the run (measured):
 
 A NOT-TESTED break is never a pass: it sits beside a failed step.
 
-- 1.0 (5): D2 (base FAIL: transcript line absent), D3 (base FAIL: you-owe and they-owe absent), D8 (base FAIL: case stays listed), L8 (base FAIL: case stays listed), L11 (base FAIL: OK enabled without a CSAT contact).
-- 1.1 (6): the same five, plus D4 (base FAIL: "transcript.text missing", the sim's defect; pending FR8). After X4, D4 is no longer in this list.
+- 1.0 (6, L7 added from --only L7 runs; verify re-run pending): D2 (base FAIL: transcript line absent), D3 (base FAIL: you-owe and they-owe absent), D8 (base FAIL: case stays listed), L8 (base FAIL: case stays listed), L11 (base FAIL: OK enabled without a CSAT contact), L7 (base FAIL: silence row hidden past the cap).
+- 1.1 (7): the same six, plus D4 (base FAIL: "transcript.text missing", the sim's defect; pending FR8). After X4, D4 is no longer in this list.
 
 The mechanism for D3 is proven separately by `probe --control d3` (see Task 5 controls). After FR8 the D4 break must flip on both versions (pending).
 
@@ -130,9 +131,9 @@ verify exited **1** in the real run because C5 FAILED on the random id.
 Stability: the pre-fix numbers above reproduced on two fresh runs (latest 04:54 PDT). The post-fix numbers below come from this one run (10:17 to 10:54 PDT, about 37 minutes, longer than the 20 expected on a busy PC); the lead re-runs it.
 
 - C1 1.0 PASS 7 FAIL 3 [D2,D3,D8]; 1.1 PASS 7 FAIL 3 [D2,D3,D8] (D4 no longer fails on 1.1, X4).
-- C2 both PASS 9 FAIL 2 [L8,L11] GAP 1.
+- C2 both PASS 8 FAIL 3 [L7,L8,L11] GAP 1 (L7 from --only L7 runs; verify re-run pending).
 - C3 FAIL, both versions "disproved (no on-screen coverage row by day 7)": Today d1, Watch d10, OffTrack d21 (X9). The prediction of a coverage row is disproved; the Today day-1 gate cards are what shows.
-- C4 both FLIPPED 16, VACUOUS 0, NOT-TESTED 5 of 21 (D2, D3, D8, L8, L11). L6 is FLIPPED (the spec's own L6 break was VACUOUS, N2). L5 (X8) and L7 (X7) are FLIPPED on their stricter checks.
+- C4 both FLIPPED 16, VACUOUS 0, NOT-TESTED 6 of 21 (D2, D3, D8, L7, L8, L11; L7 base FAIL on the on-screen check, from --only L7 runs, verify re-run pending). L6 is FLIPPED (the spec's own L6 break was VACUOUS, N2). L5 (X8) is FLIPPED on its stricter check; L7 (X7) is now NOT-TESTED because its base step fails.
 - C5 PASS identical (X5, the random id is gone). C6 PASS. C7 PASS (exit 0 x2, 14/14 keys). C8 PASS (trackers untouched).
 - times.txt (seconds, steps + breaks): run1 1.0 A 148.6, 1.0 B 244.2, 1.1 A 272.4, 1.1 B 440.8; run2 1.0 A 266.1, 1.0 B 439.0, 1.1 A 132.8, 1.1 B 204.3. These differ from the earlier 325/295/291/279 s per version because the machine load differed; they are single measurements, not a benchmark (S12).
 - L11 (X6): the sim now clicks OK with no contact. Measured: the click graduates the account (stage graduated, 1 "Success Plan objective" queue item). The tracker has no CSAT check, so the break (a CSAT filter on `validateGraduationDraft`) is NOT-TESTED, not invented. Ian rules whether that is a defect.
