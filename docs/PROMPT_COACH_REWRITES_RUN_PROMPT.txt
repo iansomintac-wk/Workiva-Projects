@@ -1,0 +1,59 @@
+RUN: Prompt Coach Better/Strong rewrites (Workiva repo)
+
+Load studio-harness:talk-and-run first and follow "The run". You are the run lead: coordinate only,
+never plan or build in your own context.
+
+WHERE
+- Worktree: C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-rewrites
+  Branch: worktree-prompt-coach-rewrites (from prompt-coach at 73be350). Work only here.
+- Spec (approved by Ian 2026-10-16): docs/superpowers/specs/2026-10-16-prompt-coach-rewrites-design.md
+- Evidence note: prompt-coach/research/2026-10-16-prompting-evidence.md
+- Ledger (git-ignored): .ledger/2026-10-16-prompt-coach-rewrites/ with budget.json, slip.json,
+  talk-notes.md (rulings, probe numbers), ian_case.txt (Ian's invoice prompt), repro.js,
+  filler_probe.js, blank_probe.js (each: node <script> <abs path to prompt-coach> [data files]).
+  Launch with STUDIO_RUN_LEDGER set via --settings to the absolute path above + /.ledger/2026-10-16-prompt-coach-rewrites.
+- Project rules: CLAUDE.md (repo root) and prompt-coach/README.md.
+
+ORDER
+1. First check (talk-and-run): STUDIO_RUN_LEDGER set, budget.json and slip.json exist; else stop.
+2. Plan by studio-harness:plan-writer -> docs/superpowers/plans/2026-10-16-prompt-coach-rewrites.md.
+   Tasks <= 8 steps, exact files, check command + expected output. Header: Data: (none) unless a
+   task changes files under prompt-coach/data/. Suggested tasks: (a) fixtures: Ian's case + per-prompt
+   blank baseline at 73be350; (b) failing checks in tests/customer_check.js, incl. the declared askLost
+   change; (c) splitting; (d) order; (e) direct voice + typos; (f) Context wording (probe candidates
+   against current rules first) + blank rule + knowledge-base tip; (g) README + evidence; (h) 12+
+   synthetic live-test files under prompt-coach/research/live-tests/fixtures/ (FR, GRC, SUS, incl.
+   utility invoices) with a cases.md listing each case's original prompt, 73be350 Strong, new Strong.
+   Plan review: frontier model plus Codex (claudex-loop:codex-review). The Codex shell has been
+   blocked on Windows before (ledger 2026-10-14-codex-shell-blocked-on-windows); if it cannot run,
+   record that and tell Ian at the plan stop rather than retrying.
+   STOP: Ian approves the plan.
+3. Each task one at a time: implementer (test first: new check fails on parent, passes after),
+   checker, lead re-runs the check, ledger row.
+4. Must stay green at the end (spec "Must stay green"): eval.js rulefeat data/test.jsonl >= 85.6%;
+   simulate.js no worse than 8 strong-not-strong / 5 better-weak; customer_check default and on
+   data/test.jsonl; filetest.js (VENDOR= an existing npm dir with mammoth, xlsx, jszip, pdfjs-dist;
+   search for one; installing anything needs Ian's yes, so stop if none exists); built page in a
+   browser on desktop and phone width, no console errors, no sideways scroll.
+   Re-run filler_probe.js and blank_probe.js and fill the spec's success table with before/after.
+5. Final whole-branch review: studio-harness:final-reviewer plus a read-only Codex review; merge
+   findings; where they disagree on must-fix, Ian decides. Fix round, re-check.
+6. Evidence doc: docs/evidence/2026-10-16-prompt-coach-rewrites.md with numbers (measured vs read).
+7. Hand-off PM step: draft the live-test session prompt (spec "Next session"), commit it. Do not
+   launch it.
+
+PERMISSIONS (slip.json, Ian 2026-10-16)
+- Push: yes, own branch only (worktree-prompt-coach-rewrites). Never push prompt-coach or main.
+- Merge: yes, into prompt-coach after the final review passes and every check above is green.
+- Spend: $0. Everything here is offline Node/Python.
+- New sessions: no. Ian starts the live-test session himself.
+
+SAFETY
+- No customer names or confidential data anywhere in the repo; synthetic data only.
+- Do not republish the artifact (https://claude.ai/artifact/9Qk7uhNgri3uCSkUafsDQV); Ian asks for that.
+- Do not change grading (rules.js, model.js, weights) except a Context cue the spec allows, and only
+  with eval >= 85.6%.
+- Docs change in the same commit as the code they describe.
+- No writes under ~/.claude/ except the session-rename exception in talk-and-run.
+- Stops: plan approval; a decision only Ian can make; two strikes per talk-and-run. Push a
+  notification at each stop, then ask.
