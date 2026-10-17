@@ -9,8 +9,7 @@ server, no uploads. Built for customer-facing use where Claude access can't be p
 node tests/build.js                      # -> dist/prompt-coach.html (single file, ~300 KB)
 node tests/eval.js rulefeat data/test.jsonl          # accuracy on held-out prompts
 node tests/simulate.js data/train_*.jsonl            # rewrite invariants
-node tests/customer_check.js                         # strong version keeps the user's ask, adds blanks not facts
-# also checks rewrites: filler, order, broken, blankMore, blankOnlyC, ianCase (red until the rewrite rules land)
+node tests/customer_check.js                         # strong version keeps the user's ask, adds blanks not facts; no filler, original order, whole pieces, blank rule, Ian's invoice case
 node tests/train.js rulefeat --tune data/train_*.jsonl   # retrain engine/weights.json
 node tests/train_cls.js --eval data/test.jsonl data/train_*.jsonl   # retrain task/area classifier
 python3 tests/make_fixtures.py && VENDOR=<npm dir> node tests/filetest.js   # real-file test
