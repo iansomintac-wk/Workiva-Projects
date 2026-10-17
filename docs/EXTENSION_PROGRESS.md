@@ -85,7 +85,7 @@ Helpers for the checks (committed with this file): `node docs/extension-checks/s
 - Files: docs/evidence/2026-10-16-osm-day-lifecycle-sim.md and any figure its prose repeats.
 - Check: `W && node tools/sim/osm-day/verify.mjs > sim-runs/ext/x10.log 2>&1; echo exit $?; grep -E "^C[1-8] " sim-runs/ext/x10.log | cut -c1-110; node --test --test-reporter=spec test/*.test.mjs 2>&1 | grep -E "^ℹ (tests|pass|fail|skipped)"; git status --short | head -5; git diff master --stat -- osm-book-of-business-tracker-1.0.html osm-book-of-business-tracker-1.1.html osm-runway-onboarding-1.0.html | wc -l`
 - Expected: verify `exit 0`; eight lines C1..C8 with C5, C6, C7, C8 PASS, C3 FAIL disproved (X9), C1 and C2 still FAIL for tracker findings (D2, D3, D8, L8, L11; D4 no longer listed for 1.1), C4 with D4 FLIPPED on 1.1; suite `ℹ fail 0`; clean tree after commit; tracker diff line count `0`. Takes about 20 min; run it with the machine otherwise quiet.
-- Status: todo
+- Status: done (commit see git log). Evidence: verify exit 0 (log sim-runs/g2-verify.log); C5-C8 PASS, C3 FAIL disproved, C4 FLIPPED 16 NOT-TESTED 5; suite 137 tests, fail 0; left 1; trackers clean.
 
 ## Only Ian can do (never ask him; list these in the final report)
 

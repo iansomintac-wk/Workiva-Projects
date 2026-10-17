@@ -46,7 +46,7 @@ C3 as written in the plan predicted "session coming due" on exactly day 7. That 
 
 | Check | Result | Status |
 |---|---|---|
-| C1 Part A | 1.0: PASS 7, FAIL 3 [D2, D3, D8], GAP 0. 1.1: PASS 6, FAIL 4 [D2, D3, D4, D8], GAP 0. (D3 and D7 carry GAP notes; D7 passes with three GAP notes.) | measured |
+| C1 Part A | (before the fix round) 1.0: PASS 7, FAIL 3 [D2, D3, D8], GAP 0. 1.1: PASS 6, FAIL 4 [D2, D3, D4, D8], GAP 0. (D3 and D7 carry GAP notes; D7 passes with three GAP notes.) | measured |
 | C2 Part B | Both versions: PASS 9, FAIL 2 [L8, L11], GAP 1 [L12]. L10 passes with its CSM-request GAP note. | measured |
 | C3 L6 drift | Both: Today day 1 (by 7: true), Watch day 10 (by 10: true), Off Track day 21 (by 21: true). See the two readings above. (After X9, verify prints C3 FAIL "disproved": the prediction was a coverage row by day 7 and L6 saw none.) | measured |
 | C4 breaks flip | 1.0: FLIPPED 16, VACUOUS 0, NOT-TESTED 5 of 21. 1.1: FLIPPED 15, VACUOUS 0, NOT-TESTED 6 of 21. No VACUOUS. | measured |
@@ -124,3 +124,19 @@ Proved by running `verify.mjs --score-only` against doctored copies of the state
 - Exit: a run exit of 2 gave verify exit 1 (and a harness error gives 2). verify exits 0 only if C5 to C8 are PASS and no run exited 2.
 
 verify exited **1** in the real run because C5 FAILED on the random id.
+
+## X10: fix round outcome (measured now: one fresh verify run, log `sim-runs/g2-verify.log`, exit 0)
+
+Stability: the pre-fix numbers above reproduced on two fresh runs (latest 04:54 PDT). The post-fix numbers below come from this one run (10:17 to 10:54 PDT, about 37 minutes, longer than the 20 expected on a busy PC); the lead re-runs it.
+
+- C1 1.0 PASS 7 FAIL 3 [D2,D3,D8]; 1.1 PASS 7 FAIL 3 [D2,D3,D8] (D4 no longer fails on 1.1, X4).
+- C2 both PASS 9 FAIL 2 [L8,L11] GAP 1.
+- C3 FAIL, both versions "disproved (no on-screen coverage row by day 7)": Today d1, Watch d10, OffTrack d21 (X9). The prediction of a coverage row is disproved; the Today day-1 gate cards are what shows.
+- C4 both FLIPPED 16, VACUOUS 0, NOT-TESTED 5 of 21 (D2, D3, D8, L8, L11). L6 is FLIPPED (the spec's own L6 break was VACUOUS, N2). L5 (X8) and L7 (X7) are FLIPPED on their stricter checks.
+- C5 PASS identical (X5, the random id is gone). C6 PASS. C7 PASS (exit 0 x2, 14/14 keys). C8 PASS (trackers untouched).
+- times.txt (seconds, steps + breaks): run1 1.0 A 148.6, 1.0 B 244.2, 1.1 A 272.4, 1.1 B 440.8; run2 1.0 A 266.1, 1.0 B 439.0, 1.1 A 132.8, 1.1 B 204.3. These differ from the earlier 325/295/291/279 s per version because the machine load differed; they are single measurements, not a benchmark (S12).
+- L11 (X6): the sim now clicks OK with no contact. Measured: the click graduates the account (stage graduated, 1 "Success Plan objective" queue item). The tracker has no CSAT check, so the break (a CSAT filter on `validateGraduationDraft`) is NOT-TESTED, not invented. Ian rules whether that is a defect.
+- S11: the card is still rendered; the tracker's spine counts a confirmed case as decided (D8, L8). Ian rules.
+- N1: the ai-negative control exits 0 when escaped=1 in the selfcheck path (read, not re-run).
+
+Known weak coverage (deferred, not built): FR1, FR2, FR3, FR7, FR9 (L1 exampleOnly on an empty contact, L5 Call date 10-05), S10 fail-open seed restore, step dates, N3, N4, N5, N7.
