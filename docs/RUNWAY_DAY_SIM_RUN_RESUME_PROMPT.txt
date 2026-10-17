@@ -1,99 +1,106 @@
-Runway: OSM day and customer lifecycle simulation, the run, RESUMED at Task 10's check (predecessor 1556e2fc
-"Runway day and lifecycle sim run 3" stopped at its 200k context line, 2026-10-17 02:30 PDT; before it 6bd1e0f3
-stopped after T6 and 6c4e428e after T4).
+Runway: OSM day and customer lifecycle simulation, the run, RESUMED after Task 12 at the BUDGET STOP (predecessor a1ea90be
+"Runway day and lifecycle sim run 4" stopped at its 200k context line, 2026-10-17 ~05:00 PDT; before it 1556e2fc (run 3),
+6bd1e0f3 (run 2), 6c4e428e (run 1)).
 
 First read docs/RUNWAY_DAY_SIM_RUN_PROMPT.txt whole: its method, checks, safety rules, sessions rule and slip all still
-apply, unchanged except the ruling below. This file only says where the run stands.
+apply, unchanged except the rulings below. This file only says where the run stands.
 
-Method: studio-harness:talk-and-run, "The run", step 2 onward. First check: echo "$STUDIO_RUN_LEDGER" and test -f on
-its budget.json and slip.json; empty or missing is a stop.
+Method: studio-harness:talk-and-run, "The run", step 4 onward (final review). First check: echo "$STUDIO_RUN_LEDGER" and
+test -f on its budget.json and slip.json; empty or missing is a stop.
 
-Where it stands (all measured by the lead unless marked):
-- Plan APPROVED by Ian 2026-10-16 23:13 PDT, verbatim "yes": docs/superpowers/plans/2026-10-16-osm-day-lifecycle-sim.md
-  (12 tasks), sha256 starts 7e79e015438380fc. Do not edit the plan.
-- Done (implementer, fresh checker PASS, lead re-run): T1 a35748c, T2 0bd4eac, T3 e446430, T4 79990ee, T5 15419cc,
-  cleanup fix b7317f2, T6 2a9b4c7, T7 ce8929d, T8 e3298df, T9 5a4ace1. Suite at 5a4ace1 (checker): 102 tests, 100 pass,
-  0 fail, 2 skipped (the 2 skips predate the run).
-- T10 BUILT, NOT CHECKED: 51fef39 `feat(sim): Part B L7-L12` (parent 5a4ace1). Implementer: red 3 -> green 14/0;
-  N=8, T=2027-01-25; 1.0 and 1.1 identical, exit 1: L7 PASS, L8 FAIL, L9 PASS, L10 PASS (GAP note), L11 FAIL, L12 GAP.
-  Lead pre-check so far: exports/t10-parent pass 11 fail 3; exports/t10-mutL7 L7 FAIL (killed; full Part B 106 s);
-  exports/t10-mutL10 (ctx.setBreak('L10') at L10 start) BUILT, NOT RUN: run it first (expect L10 FAIL, exit 1).
-  Then write role-checks.txt for T10 (it still holds T9's lines; copy T9's 10-line shape: tests, steps-b 1.0 and 1.1
-  full runs, osmsim count, parent, the two mutants, suite, trackers unchanged, `git diff --numstat 51fef39^ 51fef39`),
-  dispatch a fresh checker (accepted deviations are in the ledger's "T10 deviations" row), re-run the check, ledger row.
-- Next: Tasks 11 and 12 in order, then the final review (run prompt step 5), the fix round, evidence doc, push per
-  slip, STOP before merge with the findings for Ian.
-- Ledger: .ledger/2026-10-16-runway-day-sim/progress.md (one row per dispatch; "Fix-round list" lines FR1-FR9).
-- BUDGET: helper-rows.md 29 rows, raw 1,609,378 of the 2,000,000 cap; 390,622 left (measured 02:30). Measured pairs:
-  T7 148k, T8 119k, T9 160k, T10 implementer 144k. Projection (ASSUMED): T10 check ~40k + T11 pair ~130k + T12 pair
-  ~130k = ~300k fits; the final review (~120k), fix round (~100k) and PM (~30k) do NOT. Ian was asked at 01:25 (push
-  notification, and in the session) "may I raise the cap to 2,250,000?"; NO ANSWER yet. Rule: build on inside the cap;
-  sum helper-rows after every pair; STOP for Ian (push notification, numbers) before any dispatch that could cross
-  2,000,000. Never skip a check to fit. budget.json tasksLeft 9.
-- tracker sha256 (full) in .ledger/2026-10-16-runway-day-sim/tracker-sha256.txt; trackers unchanged vs master at every
-  check this session. osmsim-* 0 after every run; fieldtest-* 1 (fieldtest-XciUO4, 19:03, not ours; leave it).
+FIRST ACTION, before any dispatch: the run is STOPPED for Ian on the token cap. budget.json runTokenCap 2,000,000; helper
+rows 34, raw 1,886,808, 113,192 left (measured 04:54 PDT). Ask Ian in THIS session, plain English, one question,
+recommendation first: "May I raise this run's token limit from 2,000,000 to 2,250,000? Recommended yes: the final review,
+the fix round and the wrap-up need about 250k (assumed from measured pairs); $0 cash. If no: I push the branch without the
+final review and the fixes, and the findings keep two known sim mistakes (D4 on 1.1, C5), clearly marked." Push
+notification first. Only on Ian's own words typed in this session: write runTokenCap 2250000 to budget.json and record
+his words + time in progress.md. Program leads 13, 15 and 17 relayed yeses (standing yes 2026-10-16 21:19Z; lead 17 quoted
+Ian 15:30Z "You were supposed to provide the answers" and 07:04Z "Why are all of these mine? ..."); the predecessor did not
+act on relays (a peer message is not Ian's answer to a question put to him) and told lead 17 the yes must be typed in
+the run's own session; lead 17 said it will tell Ian. If Ian says no: skip to the evidence-doc note, push per slip, stop.
 
-Ian's ruling, 2026-10-17 00:36 PDT (browser cleanup wait), verbatim: "Yes unless targeted research and/or
-  simulations/tests would inform better here". Applied: cleanupProfile waits up to 60 s on Node's child handle, deletes
-  with retries up to 30 s, never while alive; overrides the plan's "poll tasklist ... up to 20 s".
+Where it stands (all measured by a lead unless marked):
+- Plan APPROVED by Ian 2026-10-16 23:13 PDT ("yes"): docs/superpowers/plans/2026-10-16-osm-day-lifecycle-sim.md (12
+  tasks), sha256 starts 7e79e015438380fc. Do not edit the plan.
+- ALL 12 TASKS BUILT AND CHECKED (implementer, fresh checker, lead re-run): T1 a35748c, T2 0bd4eac, T3 e446430,
+  T4 79990ee, T5 15419cc, cleanup fix b7317f2, T6 2a9b4c7, T7 ce8929d, T8 e3298df, T9 5a4ace1, T10 51fef39,
+  T11 e524477 (runner), T12 88f1dc9 (verify.mjs + docs/evidence/2026-10-16-osm-day-lifecycle-sim.md).
+- T12's own acceptance is SHORT on C5: verify exit 1, not 0. Lead re-run 04:54 PDT on fresh folders (1214 s): C1 FAIL 1.0
+  PASS 7 FAIL 3 [D2,D3,D8] | 1.1 6/4 [D2,D3,D4,D8]; C2 FAIL both 9/2 [L8,L11] GAP 1; C3 PASS (Today d1, Watch d10, Off
+  Track d21); C4 1.0 FLIPPED 16 NOT-TESTED 5, 1.1 15/6, VACUOUS 0; C5 FAIL D7 only (SIM-EXT id; masked identical);
+  C6 PASS 0 new, 0 pids; C7 PASS exit 0 x2, keys 14/14; C8 PASS full hashes, diff clean. Suite 112 tests, 110 pass,
+  0 fail, 2 skipped. Reproduces the evidence doc's numbers exactly.
+- Ledger: .ledger/2026-10-16-runway-day-sim/progress.md (one row per dispatch). budget.json tasksLeft 4 (final review,
+  fix-round implementer, fix-round checker, PM). role-checks.txt is empty.
+- Trackers unchanged vs master at every check; full sha256 in .ledger/.../tracker-sha256.txt. osmsim-* 0; fieldtest-* 1
+  (fieldtest-XciUO4, 19:03, not ours; leave it). sim-runs/ is git-ignored (T11); sim-runs/verify-checker-0407/ is the
+  T12 checker's reused-folder run, kept for FR11 evidence.
+- Branch NOT pushed (origin github.com/iansomintac/Workiva.git has no runway-day-sim branch). Slip: push "when it
+  finishes", non-force, runway-day-sim only; merge no.
 
-How the lead runs each task (keep doing it this way):
-- Packet per the skill (Outcome, Files, Acceptance, Budget, Brain entries, Reply-to), commit attribution lines in the
-  packet. Locked tests are add-only; say so. Do not git add sim-runs/ (Task 11 git-ignores it).
-- Node 26's spec reporter prints "ℹ fail 0" where the plan writes "# fail 0"; checks pin --test-reporter=spec.
-- Parent = `git rev-parse <commit>^`, never the previous task's commit (T7 checker FAILed on that lead error: a hand-off
-  commit sat between).
-- Exports: git archive <parent> -- test tools | tar -x into exports/t<n>-parent, copy both trackers in, copy only the
-  new test file in. Mutants: git archive <commit> -- test tools, trackers copied in, then plant the plan's own break
-  with a small node script in your own job tmp (insert one line after an exact anchor line; files are CRLF, match
-  per line with trimEnd; heredocs collapse doubled backslashes, so avoid regex in heredoc scripts). Run each mutant yourself
-  first and see it fail. Run subshells `(cd <export> && ...)`; never cd into an export or the ledger in your own shell.
-- role-checks.txt lines: `cd "<abs path>" && bash -c '...'`, exit via ${PIPESTATUS[0]}; grep the step lines with
-  -E "L[0-9]+ (PASS|FAIL|GAP|VACUOUS)" (a tail cut D1 off once). Smoke-run one line. Empty the file at the end.
-- A fresh helper for every fix round (a resumed helper keeps its tool-call count; cap 60). Non-role helpers need
-  `model` in the dispatch (research = haiku).
-- A step that FAILs is a finding for Ian, never a tracker fix.
+Next, in order (after the cap answer):
+1. Final whole-branch review: studio-harness:final-reviewer (Opus) and a Codex review of `git diff master...runway-day-sim`
+   piped in as TEXT on stdin (`codex exec --skip-git-repo-check -s read-only`), only while `codex login status` says
+   "Logged in using ChatGPT"; else skip and record why. Merge the two lists; must-fix disagreements go to Ian.
+2. Fix round: ONE fresh implementer for FR1-FR11 plus review must-fixes (tests first; never edit a tracker; locked tests
+   add-only), then a fresh checker, then the lead re-runs verify on FRESH folders (move sim-runs/verify aside first until
+   FR11 lands). Expect C5 PASS after FR10 and D4 PASS on 1.1 after FR8; the D4 break must still flip on both.
+3. Evidence doc update in the fix commit: stability note (numbers reproduced on a second fresh run 04:54), FR8/FR10/FR11
+   outcomes, final numbers.
+4. Push per slip; copy the ledger to the main checkout's .ledger/2026-10-16-runway-day-sim/ (keep budget files there);
+   Hand-off PM step; STOP before merge with the findings for Ian in plain English (each FAIL, GAP list, 1.0-vs-1.1
+   differences, L6 days, the Gainsight "tap on the shoulder" question, and the ruling candidate below).
 
-Notes for Tasks 11 and 12:
-- KNOWN SIM DEFECT, not a tracker finding: on 1.1, D4 FAILs "transcript.text missing" because 1.1 keeps transcripts by
-  reference (1.1:16690 submitLoggedActivity, stageTranscript 1.1:3088, tsGet 1.1:3012; read, not run). Spec D4
-  (spec:66) needs a kept transcript, no field named. Queued as FR8. T11/T12 runs will show it; the T12 packet and the
-  evidence doc must say it is the sim's defect until FR8 lands, and the D4 break must still flip D4 on both after FR8.
-- L6 (spec:85 "first appears on Today"; plan T9 "on Today for any reason"): PASS on both, but Fernhollow is on the
-  Today screen only in the Gainsight gate-deck cards (reason "Readiness Assessment: Log Sentiment via Readi..."), rank
-  30 in todayActionList, beyond the 15-beat cap on 21/21 days: never a day step in 21 days of silence, even at Off
-  Track (day 21). Verdict kept literal; evidence doc leads with both readings; whether a gate card is Ian's "tap on
-  the shoulder" is HIS call (question at the final stop). The L6 break is NOT vacuous (lead mutant: firstToday=never).
-- The tracker raises a start-up "Download backup" confirm on each day's first load; steps-b openDay() cancels it.
-- D5 clears the connector and restores it, because with a connector set the tracker sends AI to <connector>/v1/ai
-  (1.0:2090-2095) and the fake connector answers only /v1/push (FR7).
+Fix-round list: FR1 T1 weak coverage (5 items); FR2 T2 loopback assert by construction, Date.now weak; FR3 T3 status-only
+diffVersions test; FR4 escape -> exit 2 wiring (DONE in T11, shown end to end by lead mutant t11-mutEsc: exit 2; nothing
+left unless the review says so); FR5 probe.mjs:133 clipboard setup error swallowed; FR6 run-field-test.mjs crash paths skip
+cleanup (wire to fail()), stray blank line in 99-measure.js; FR7 fake connector answers POST /v1/ai via the prompt router,
+D5 stops clearing the connector; FR8 D4 resolves the stored transcript per version (inline .text or 1.1 ref) and checks
+SIM-D4-TRANSCRIPT; FR9 L1 exampleOnly passes on empty contact, L5 PASS does not check the Call date 10-05, L6 VACUOUS
+(T11: run.mjs prints VACUOUS via l6Remaining; confirm only); FR10 D7 evidence prints the per-run SIM-EXT-<tracker queue
+id> (fakes.mjs:47 externalId = `SIM-EXT-${i.id}`), so C5 FAILs: D7 should report "externalId matches own row id"; do NOT
+mask ids in verify's C5 compare (that bends the check); FR11 verify reuses fixed folders sim-runs/verify/run1|run2 and
+D10/L10 (steps-a.mjs:207-214 and the L10 Download .txt) count only a NEW file name, so a second verify FAILs D10/L10
+(shown: --only D10 twice into one --out: PASS then FAIL; new --out: PASS): fresh run folders per verify, judge a download
+by mtime after the click; test first with a pre-seeded same-name file.
 
-Fix-round list (after the final review; one fresh helper, then a fresh checker): FR1 T1 weak coverage (5 items); FR2 T2
-loopback assert by construction, Date.now weak; FR3 T3 status-only diffVersions test; FR4 escape -> exit 2 wiring,
-verify at T11/T12; FR5 probe.mjs:133 clipboard setup error swallowed; FR6 run-field-test.mjs crash paths skip cleanup
-(wire to fail()), stray blank line in 99-measure.js; FR7 fake connector answers POST /v1/ai via the prompt router, D5
-stops clearing the connector; FR8 D4 resolves the stored transcript per version (inline .text or 1.1 ref) and checks
-SIM-D4-TRANSCRIPT; FR9 L1 exampleOnly passes on empty contact, L5 PASS does not check the Call date 10-05, L6 never
-prints VACUOUS itself (results.mjs breakVerdict does; confirm at T11).
-
-Findings so far for Ian (into the evidence doc; each run on 1.0 and 1.1 unless marked):
+Findings for Ian (each on 1.0 and 1.1 unless marked):
 - MEASURED FAILs (tracker findings): D2 prep panel lacks the call transcript; D3 lacks you-owe/they-owe commitments
-  (checklist item and question shown; GAP agenda); D8 and L8 a confirmed risk case stays in the open list
-  (lastActioned set); L11 graduation OK is enabled with no CSAT contact (no refusal; with contact it graduates and
-  queues 1 item). L12 GAP: nothing tracks a CSAT survey.
-- MEASURED: L6 as above (first Today day 1 via gate deck only; Watch day 10; Off Track day 21; rank 30, never a day step).
-- MEASURED: tools/selfcheck.mjs leaves a selfcheck-* profile in %TEMP% on every run. Out of scope; not fixed.
-- MEASURED: before b7317f2 our headless Chrome sometimes took 28-45 s to exit after taskkill /F on this busy PC; fixed
-  per Ian's ruling; why Chrome is that slow is unconfirmed.
+  (checklist item and question shown; GAP agenda); D8 and L8 a confirmed risk case stays in the open list (lastActioned
+  set); L11 graduation OK is enabled with no CSAT contact (no refusal; with contact it graduates and queues 1 item).
+  L12 GAP: nothing tracks a CSAT survey. GAPs also: D7 (close a CTA after an ordinary call; success plan task update;
+  Renewal Forecast Scorecard), L10 (CSM request Google form).
+- SIM DEFECTS, not tracker findings, until fixed: D4 on 1.1 "transcript.text missing" (FR8); C5 (FR10); D10/L10 on a
+  reused folder (FR11).
+- MEASURED: L6 first Today day 1 via the Gainsight gate deck only (rank 30, beyond the 15-beat cap on 21/21 days, never a
+  day step); Watch day 10; Off Track day 21. Whether a gate card is Ian's "tap on the shoulder" is HIS call.
+- MEASURED: the tracker raises a start-up "Download backup" confirm on each day's first load.
+- MEASURED: tools/selfcheck.mjs leaves a selfcheck-* profile in %TEMP% on every run (out of scope; not fixed).
+- MEASURED: before b7317f2 headless Chrome took 28-45 s to exit after taskkill /F on this busy PC; fixed per Ian's ruling.
 - MEASURED: the plan's L6 break was too weak (adminGapList); breaks.mjs L6 also filters it.
-- READ: graduation has no CSAT check in validateGraduationDraft (now also measured, L11).
+- READ: plan:353's short hash "b247a931..." is a typo (full 1.1 hash starts b247a93c); verify uses the full hashes.
 
-Lessons to bank at the end of the run (brain bank add / ledger-add, on Ian's yes where a ruling is involved):
-(1) a resumed helper keeps its tool-call count; (2) headless Chrome on a loaded Windows PC can take 28-45 s to exit
-after taskkill /F: judge exit by Node's child handle, wait 60 s, delete with 30 s of retries (Ian 2026-10-17 00:36);
-(3) non-role helper dispatches need an explicit model; (4) take a task's parent from `git rev-parse <commit>^`, a
-hand-off commit can sit between tasks.
+Ruling candidate for Ian (final stop): a slip field "token raises on the program lead's word, up to +600k", so a run can act
+on a lead-relayed raise as his own words. Ian, via lead 17 (relayed, not typed here): "Why are all of these mine? ...".
 
-Sessions: the predecessors 1556e2fc ("COMPLETED - Runway day and lifecycle sim run 3"), 6bd1e0f3 and 6c4e428e share
-this worktree: do NOT claude rm any of them, nor any session listed in the run prompt's Sessions line. Give Ian the
-time at start and each stop (run started 2026-10-16 22:27 PDT; 243 minutes used at this hand-off).
+Lessons to bank at the end (brain bank add / ledger-add, on Ian's yes where a ruling is involved): (1) a resumed helper
+keeps its tool-call count; (2) headless Chrome on a loaded Windows PC can take 28-45 s to exit after taskkill /F: judge exit
+by Node's child handle, wait 60 s, delete with 30 s of retries (Ian 2026-10-17 00:36); (3) non-role helper dispatches need
+an explicit model; (4) take a task's parent from `git rev-parse <commit>^`, a hand-off commit can sit between tasks (T11's
+parent was fc6648c); (5) a "new file" download check plus fixed output folders fails on any re-run: seed the folder with a
+same-name file in the test; (6) evidence that embeds a per-run id breaks a same-result-twice check: report the relation,
+not the id; (7) a peer-relayed approval is not Ian's answer in the run's session: the yes must be typed there.
+
+How the lead runs each task (keep doing it this way): packet per the skill (Outcome, Files, Acceptance, Budget, Brain
+entries, Reply-to), commit attribution lines in the packet; locked tests add-only. Node 26's spec reporter prints "ℹ fail 0";
+pin --test-reporter=spec. Exports: git archive <parent> -- test tools | tar -x into exports/<n>, copy both trackers in;
+mutants planted with C:/Users/teasp/.claude/jobs/a1ea90be/tmp/plant.mjs style (insert one line after an exact anchor line,
+CRLF-aware) from your own job tmp; run each mutant yourself first. Never cd into an export or the ledger in your own shell
+(use subshells). Never rm -rf a variable path (the safety check refuses it; use mkdir on new folders, mv to set aside).
+role-checks.txt lines: `cd "<abs path>" && bash -c '...'`, exit via ${PIPESTATUS[0]}; smoke-run one line; empty it at the end.
+A fresh helper for every fix round (cap 60 tool calls). Sum helper-rows.md after every dispatch; STOP for Ian before any
+dispatch that could cross the cap.
+
+Sessions: the predecessors a1ea90be (run 4), 1556e2fc (run 3), 6bd1e0f3 (run 2) and 6c4e428e share this worktree: do NOT
+claude rm any of them, nor any session listed in the run prompt's Sessions line. Give Ian the time at start and each stop
+(run started 2026-10-16 22:27 PDT; ~393 minutes used at this hand-off).
