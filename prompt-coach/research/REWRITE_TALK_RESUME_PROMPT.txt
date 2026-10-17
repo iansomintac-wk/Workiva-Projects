@@ -4,7 +4,7 @@ Run this session ON IAN'S COMPUTER, in his local clone of iansomintac/Workiva, w
 Claude in Chrome extension connected, so the live Workiva AI tests can run. A cloud session
 cannot reach the extension.
 
-0. git fetch origin && git checkout claude/modest-gates-yqsfw2 && git pull. Read CLAUDE.md,
+0. git fetch origin && git checkout harness/prompt-coach-rewrites && git pull. Read CLAUDE.md,
    prompt-coach/README.md, prompt-coach/research/2026-10-17-rewrite-talk.md (everything measured
    and agreed so far, Ian's rulings verbatim, the draft spec), prompt-coach/engine/rewrite.js and
    prompt-coach/tests/customer_check.js. Invoke talk-and-run and brainstorming first.

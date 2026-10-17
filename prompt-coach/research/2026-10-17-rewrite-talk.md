@@ -13,6 +13,9 @@ session resumes from `research/REWRITE_TALK_RESUME_PROMPT.txt`.
 - Asked: "Can't you run simulations using the claude browser extension when im logged into
   sandbox with Workiva AI enabled ?" Answer given: not from a cloud session (no Claude in Chrome
   tools there); yes from a session on his own computer with the extension connected.
+- Push: "yes" to pushing claude/modest-gates-yqsfw2; the studio-harness push guard refuses any
+  cloud push to a non-harness/ branch (no slip location), so asked again: "yes" to pushing to
+  harness/prompt-coach-rewrites instead. The hand-off lives on that branch.
 
 ## Ian's case
 
