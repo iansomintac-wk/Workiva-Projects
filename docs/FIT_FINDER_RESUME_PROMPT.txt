@@ -1,3 +1,31 @@
+Fit Finder v4.22: hand-off (2026-10-17, session 08fbee0d, successor of 08b76f43; PM step and brain capture done)
+
+NEXT SESSION (written by 08fbee0d at 11:1xZ; supersedes every NEXT SESSION below, including v4.21's step 1, now done)
+Nothing is half-done in the repo; the code is as v4.21 left it (ccda404). Same run ledger folder (fit-finder-v422).
+1. Item 71 in ../for-ian.md is Ian's (he sleeps until about 15:30Z and replies in the newest Fit Finder session's
+   chat). On his answers, apply only his words, as v4.21's step 2 below says: label changes go in
+   data/card-gold-fresh.jsonl with by: ian (one small plan task); "wider rule" means V2 back; republish v14 only on
+   his words. Proposal A's bar (>= 12 right, <= 3 wrong) is still missed on wrong (6 now; 5 to 7 after his checks,
+   by whatif.cjs), so "Fit Finder done" has no accepted check yet: say so, do not tune toward it.
+2. Otherwise no queued work: do not tune or republish. Report to the program lead and stop at the task boundary.
+3. For the program lead, not this repo: Ian's 08:03:54Z and 07:59:11Z words have no ruling record (PM, read); they
+   are program-wide expectations, so recording them is the lead's call. The new studio-harness records below are
+   uncommitted in Ian's studio-harness main checkout (status proposed); committing there needs a yes.
+
+UPDATE 2026-10-17, session 08fbee0d (successor of 08b76f43)
+- PM hand-off step (pm, Sonnet, 25,795 tokens, 6 tool uses, 50 s): rule C's milestone done by its checks; no route
+  milestone for Fit Finder (gate: no roadmap); next = item 71; no research missing.
+- brain capture: roadmap n/a, no missed fact, no parked idea. v4.17-v4.21's candidates (a)-(k) recorded in
+  studio-harness (uncommitted, proposed): ledger defect 2026-10-17-role-boundary-judges-paths-from-the-helper-cwd
+  ((a)+(i); role_boundary.mjs:17-20 judges the path relative to the payload cwd, read in the code); gotchas
+  2026-10-17-codex-unelevated-sandbox-runs-on-windows ((b), plus a recur of 2026-10-14-codex-shell-blocked-on-windows),
+  -git-bash-rewrites-double-slash-arguments ((e)), -ledger-scripts-under-type-module-must-be-cjs ((c)),
+  -rehearse-reads-every-line-under-expected-breaks ((d); read from hand-offs, not re-run),
+  -plan-writer-numbers-are-read-not-measured ((f)); brain rules in brain/fit-finder/rule/: check-overlap-with-real-
+  data-by-5-word-runs ((h)), outside-reviewers-do-not-open-real-data ((j)), a-what-if-score-reproduces-the-suite-
+  first ((k)), score-reviewer-false-positives-on-a-blind-set ((g)). brain check: 98 pages, 1 pre-existing error
+  (shared/research/claude-exe-not-on-path, not this session's).
+
 Fit Finder v4.21: hand-off (2026-10-17, session 08b76f43, successor of 50904aba; rule C built, reviewed, pushed)
 
 WHERE
