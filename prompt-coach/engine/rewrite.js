@@ -177,10 +177,28 @@
   // phrases for other letters inside it become their own inline segments, so switching a letter
   // off removes exactly its words. `alt` is what an inline segment collapses to when off.
   const S_INLINE = /\b(?:selected|highlighted|attached|uploaded|pasted|open|opened|current|enclosed|provided|shared|linked)\b/i;
+  // A sentence ends at . ! ? outside ( ) and [ ], or at a line break. A ";" never ends one. A "." followed by a
+  // non-space ("14.2%", "A.8.x") is not an end. Brackets never carry across a line break.
+  function sentenceSpans(prompt) {
+    const spans = [], n = prompt.length; let i = 0;
+    while (i < n) {
+      while (i < n && prompt[i] === '\n') i++;
+      if (i >= n) break;
+      const start = i; let depth = 0, ended = false;
+      while (i < n && prompt[i] !== '\n') {
+        const c = prompt[i];
+        if (c === '(' || c === '[') depth++;
+        else if ((c === ')' || c === ']') && depth > 0) depth--;
+        else if (depth === 0 && /[.!?]/.test(c) && !(c === '.' && i + 1 < n && /[^\s.]/.test(prompt[i + 1]))) { ended = true; break; }
+        i++;
+      }
+      if (ended) while (i < n && /[.;!?]/.test(prompt[i])) i++;
+      if (prompt.slice(start, i).trim()) spans.push({ start, end: i });
+    }
+    return spans;
+  }
   function userSegments(prompt, d, on) {
-    const sentences = [];
-    const re = /(?:[^.;!?\n]|\.(?=[^\s.]))+[.;!?]*/g; let m; // a period inside "14.2%" or "A.8.x" is not a sentence end
-    while ((m = re.exec(prompt))) if (m[0].trim()) sentences.push({ start: m.index, end: m.index + m[0].length });
+    const sentences = sentenceSpans(prompt);
     const spans = [];
     const FIXED = /^(period|scope-n|number|region|scope-limit|structure|measures|format-word|here-is|work-off|wdata|on-screen|demonstrative|numbered-part|only-use-info)$/;
     for (const k of K) for (const h of d.el[k].hits) if (h.orig && h.orig[1] > h.orig[0] && !FIXED.test(h.tag)) {
@@ -216,7 +234,7 @@
       }
       if (cur < snt.end) segs.push({ text: prompt.slice(cur, snt.end), letter: host });
       const last = segs[segs.length - 1];
-      if (last && !/[.!?]\s*$/.test(last.text)) { if (last.inline) segs.push({ text: '.', letter: host }); else last.text = last.text.replace(/\s*$/, '.'); }
+      if (last && !/[.!?]\s*$/.test(last.text)) { if (last.inline) segs.push({ text: '.', letter: host }); else last.text = last.text.replace(/[\s;,:]*$/, '.'); }
       const vague = !inside.some((x) => x.k === 'O');
       out.push({ host, segs, inside, text: sentText, vague, letters: new Set([host, ...inl.map((x) => x.k)]) });
     }
@@ -445,6 +463,6 @@
     return { grade, detected: on, headline, stages, scope, segments, notes, tips, intent: ctx.intent, domain: ctx.domain, placeholders, hits: d.el };
   }
 
-  const api = { coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
+  const api = { sentenceSpans, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
   if (isNode) module.exports = api; else root.ScopeRewrite = api;
 })(typeof window !== 'undefined' ? window : globalThis);
