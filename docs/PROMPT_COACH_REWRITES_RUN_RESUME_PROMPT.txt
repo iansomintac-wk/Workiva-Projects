@@ -1,106 +1,83 @@
 RESUME: Prompt Coach Better/Strong rewrites run (Workiva repo)
 
-Written 2026-10-17 ~11:55Z by run lead b80d1b3d (run 6), which stopped at the 200k context line
-(context-stop hook) after Task 7 fix 4 and Task 11. Predecessors: 8f68dfd4 (run 5), 73a3f933,
-6e3060f1, 591a52e4 (those three removed by program lead 15 ~11:15Z), 4756fc2d, a72ccc7d (talk).
-Load studio-harness:talk-and-run first and follow "The run" from where this leaves off. You are the
-run lead: coordinate only, never plan or build in your own context. ONE helper at a time.
+Written 2026-10-17T12:24Z by run lead 39dcb350 (run 7), which stopped for Ian's decisions (not at the context
+line). Predecessors: b80d1b3d (run 6), 8f68dfd4 (run 5), 4756fc2d, a72ccc7d (talk; owns this worktree); 73a3f933,
+6e3060f1, 591a52e4 removed by program lead 15. If run 7 (39dcb350) is still open when Ian answers, it continues
+itself; this file is for a fresh lead. Load studio-harness:talk-and-run first and follow "The run" from where this
+leaves off. You are the run lead: coordinate only, never plan or build in your own context. ONE helper at a time.
 
 READ FIRST
-- docs/PROMPT_COACH_REWRITES_RUN_PROMPT.txt: WHERE, ORDER steps 3-7, PERMISSIONS and SAFETY still apply.
-- Ledger: .ledger/2026-10-16-prompt-coach-rewrites/progress.md (this lead's section starts at
-  "## Resume session b80d1b3d"), helper-rows.md (token use), logs/.
-- Plan (approved, commit 340c9c8): docs/superpowers/plans/2026-10-16-prompt-coach-rewrites.md.
-  Spec: docs/superpowers/specs/2026-10-16-prompt-coach-rewrites-design.md.
+- docs/PROMPT_COACH_REWRITES_RUN_PROMPT.txt: WHERE, ORDER steps 4-7, PERMISSIONS and SAFETY still apply.
+- Ledger: .ledger/2026-10-16-prompt-coach-rewrites/progress.md (run 7 section starts "## Resume session (run 7"),
+  helper-rows.md (token use), reviews/final-review.md (MF-1, SF-1..SF-5, N-1..N-6), logs/.
+- Plan (approved, 340c9c8; do not edit): docs/superpowers/plans/2026-10-16-prompt-coach-rewrites.md.
+  Spec: docs/superpowers/specs/2026-10-16-prompt-coach-rewrites-design.md. Evidence: docs/evidence/2026-10-16-prompt-coach-rewrites.md.
 
-STATE (branch worktree-prompt-coach-rewrites, HEAD = this prompt's commit; tree clean)
+STATE (branch worktree-prompt-coach-rewrites; HEAD = this prompt's commit; tree clean)
 - First check as usual: STUDIO_RUN_LEDGER set, budget.json and slip.json exist; else stop.
-- Tasks 1-10 done. Task 7 fix 4 = f95ab85 (cause: ef801bf's onlyC shortcut left a letter found
-  inside another sentence with no segment; fix gives it its own blank-free sentence). Checker PASS
-  with 2 gaps; lead re-run matched (logs/t7fix4_lead_rerun.txt). Red: parent export 17/1.
-- Task 11 = a7d0501 (build 314 KB, filetest 8 rows errors [], spec Result column, README 99.9%
-  and two rule lines). TASK 11 DONE: checker PASS (lines 1-12; spec/README figures, blankOnlyC
-  derivation, rule line and dist all verified); lead re-run 11:53Z matched, filetest via the alias
-  8 rows errors [] exit 0, rebuild left dist unchanged (logs/t11r6_lead_rerun.txt). One gap for
-  Task 12: README "4 of the 62 runs" is a checker's reading of cmp_listing.txt, label it read.
-  role-checks.txt still holds the Task 11 lines: replace them for the next task.
-- Unit test count is 18. Values at a7d0501 (implementer, lead-measured for fix 4 at f95ab85):
-  simulate train+test 2679: sNS 4, bW 5, toggleNoEffect 0, dup 2, bad 4, emptyFrag 0; train-only
-  2070: 2/5/0/0/2/0; eval 0.856; cc default PASS 229; cc test FAIL 609, notStrong 2, others 0;
-  ctx_probe 9 C ON; probes (lead, f95ab85): filler 0/0, "?" 24+45 = 69, median blanks 2/2,
-  >=3 blanks 55/143.
-- NEXT: BROWSER TEST with the Claude browser extension (Ian, 2026-10-17T08:02:54Z, verbatim: "I want
-  the prompt coach completed but you havent even done the testing on the claude browser
-  extension"; lead correction in the ledger reverses run 5's Playwright-only call). Ready:
-  .ledger/.../browser_prompt_template.txt and browser_cmp.js (controls passed). Steps: start
-  node Temp/prompt-coach-rewrites-4756fc2d/browser/serve.js <abs>/prompt-coach/dist 8765 in the
-  background, note its PID; node .ledger/.../browser_cmp.js make
-  http://127.0.0.1:8765/prompt-coach.html Temp/.../browser/prompt.txt; then from cwd
-  Temp/.../browser: cat prompt.txt | claude -p --chrome --model sonnet --tools ""
-  --allowedTools "mcp__claude-in-chrome" --permission-mode dontAsk --no-session-persistence
-  --output-format json > report.json 2> err.txt (smoke test 11:48Z with text output: exit 0,
-  connected, resize_window and read_console_messages present). Extract .result to report.md and
-  record usage from the JSON (its tokens are not in helper-rows). node browser_cmp.js cmp
-  report.md -> expect BETTER and STRONG flatEqual true, CONSOLE 0 errors, no sideways scroll at
-  desktop and 390px. Stop the server by its PID. Playwright is an optional extra only.
-- THEN Task 12 (evidence doc; plan lines 1226-1263), Task 13 (live-test prompt, not launched;
-  plan 1267-1304), final review (studio-harness:final-reviewer; Codex cannot start a shell here),
-  fix round, PM step, merge per slip (merge yes after the review passes; push own branch yes).
-- Tokens: helper-rows 2,156,078 of 2,800,000 at 11:53:25Z (51 rows, measured). Standing-yes
-  raises are used up (+600k); ANY further raise is Ian's. Forecast left (assumed): browser ~40k,
-  T12 ~90k, T13 ~65k, final ~200k, fix ~100k, PM ~30k = ~525k -> ~2.68M. Keep packets short.
-- Time: Ian asleep until ~15:30Z.
+- All 13 plan tasks done: Task 12 = 186f426 (evidence doc), Task 13 = f62ae32 (live-test prompt, draft, not
+  launched). Each: implementer, checker PASS, lead re-run matched (logs/t12_lead_rerun.txt, t13_lead_rerun.txt).
+- Final review (final-reviewer, Opus, only reviewer; Codex shell blocked): NOT READY, 1 must-fix, 5 should-fix,
+  6 notes. Fix round 1 = 972cab5 (docs only: gate attribution, Better-tab wording, README 10-file claim, evidence
+  line 3 and section 5); checker PASS, lead re-run matched (logs/fix1_lead_rerun.txt). No re-review yet.
+- MF-1 measured by the lead (logs/r7_mf1_notstrong.txt, git archive exports in Temp/.../r7/): parent 73be350
+  test.jsonl notStrong 4/609 = "user-control assessment" x2 + "assurance reviewer" x2; HEAD 2/609 = assurance
+  reviewer x2 (missing P; fails at the parent too). Not a regression, but the PASS gate is unmet.
+- Browser: the extension helper (claude -p --chrome ... --permission-mode dontAsk) was DENIED by the Claude Code
+  auto-mode classifier ("Create Unsafe Agents") before it ran; not retried. Playwright extra (lead, measured):
+  console 0/0, 1280 = 1280, 390 = 390 no sideways scroll, Strong = ian_strong.txt exactly (inside the page's quote
+  marks), BETTER: NO TAB; controls failed as they should. Tools fixed: browser_pw.js, browser_cmp.js and
+  browser_prompt_template.txt read tabs by id (tab-better, tab-strong). browser_ext_run.sh runs the whole
+  extension test (server, helper, compare, stop by PID); DRY=1 plumbing run passed 12:23Z.
+- Better tab: the page draws tabs only above the prompt's grade (web/template.html:357, locked, unchanged since
+  73be350), so a Better-graded prompt (Ian's invoice case) never shows the cleaned Better text. Plan departure 2
+  does not reach the page.
+- Values (unchanged since a7d0501; code last changed f95ab85): unit 18/0; eval 0.856; simulate train+test 2679
+  sNS 4 bW 5 tNE 0 dup 2 bad 4 eF 0; train-only 2070 2/5/0/0/2/0; customer_check default PASS 229; test FAIL 609
+  notStrong 2; filler 0/0; "?" 69; >=3 blanks 55/143; build 314 KB (321,725 bytes served); filetest 8 rows errors [].
+- Tokens: helper-rows 2,508,693 of 2,800,000 at 12:23Z (59 rows, measured). Standing-yes raises are used up;
+  ANY further raise is Ian's. role-checks.txt holds the fix-round-1 set (copy role-checks-fix1.txt); replace it per
+  task; role-checks-final.txt is the 13-line whole-branch set for the re-review.
+- Pushed: origin/worktree-prompt-coach-rewrites = this prompt's commit (slip: push own branch yes).
 
-CARRY INTO THE TASK 12 EVIDENCE DOC (everything from run 5's list still holds)
-- Plan departures: Node make_live_fixtures.js for the .py; .gitattributes for byte-exact fixtures;
-  README live-test line names the Node command; build before filetest; filetest via the npx-cache
-  alias; Task 7 fix 4 (f95ab85) after the Task 11 blocker; fix 4's README rule line went into the
-  Task 11 commit, not f95ab85 (lead call 11:47Z, to save a fix round under the cap); browser test
-  by the Claude browser extension.
-- The "?" prediction disproved (89 -> 69, predicted at most 40); C +2 explained by ruling (A).
-- Spec "7 of 7" / "18 of 18" (only-Context-missing with exactly 1 blank) is derived from the info
-  line N plus blankOnlyC 0, not read from a k count.
-- Known limits: run 5's list (CHANGE_ASK word list; "Scope 2 inventory" example on Scope 1/3;
-  "one per line" beside "Format it as [...]" in 20 of 24 list runs; "can you hear me" -> "Hear me";
-  2 assurance runs not Strong on test.jsonl; SUS-5 "Identify and list [...]"; FR-3 generic Context;
-  GRC-1 "If a frequency is missing you flag it."), plus from fix 4: 4 of the 62 changed runs repeat
-  the ask ("Summarize the key points of the content." after "a 100-word summary" x3; "Use numbered
-  steps, each with the evidence to keep." on a checklist that already cites sections x1); 19
-  no-file runs get "Use only the selected content and nothing outside it."; "Do not correct any
-  values; flag anything you are unsure of." on the badge-printing prompt. Ask the final reviewer
-  whether the 4 repeated-ask texts are must-fix.
-- Lesson (seam-untested): Task 7-10 check lines omitted toggleNoEffect/emptyFrag, so a regression
-  rode 5 commits; every check set since run 6 carries all seven simulate counters.
-- Add to the spec's rulings list in the Task 12 commit: Ian's 2.2M ruling (ledger line 27, 2026-10-17
-  ~01:12, "Raise to 2.2M (Recommended)") and the 2.6M and 2.8M raises (program leads 13 and 14
-  under Ian's standing yes; not his words).
+IAN'S DECISIONS (asked by run 7 at its stop, one at a time; record his words verbatim in the ledger)
+1. Browser extension test: he runs `! bash <repo>/.ledger/2026-10-16-prompt-coach-rewrites/browser_ext_run.sh`
+   himself (recommended), or allows the helper, or another way. Pass = CONSOLE 0 errors, no sideways scroll at
+   desktop and 390 px, STRONG flatEqual true, BETTER NO TAB (or the Better text if decision 3 changes the page).
+2. MF-1 gate: accept the assurance-reviewer 2/609 as a known limit, or authorize a fix (a grading-adjacent change;
+   eval must stay at least 85.6%).
+3. Better tab: allow a locked-file edit of web/template.html (test first, rebuild, browser re-check) or keep it as
+   a known limit.
+4. Engine should-fixes SF-2 (repeated ask, 4 of 62 changed runs, read), SF-3 ("say thanks." -> "say.", assumed),
+   SF-5 (unclosed bracket, assumed), N-1..N-5: fix which, if any; the rest stay known limits.
+5. Ruling capture (PM proposal, lead not yet checked against the ledger records): progress.md lines 19, 20, 21, 22,
+   27 and 165 hold Ian's verbatim words with no ruling record; ledger-add / brain capture only on his yes. Also
+   run 6's and run 7's proposed facts (see progress.md "brain capture" lines).
 
-CORRECTIONS AND LESSONS (carry the relevant ones into each packet; do not edit the approved plan)
-- All earlier lessons hold (jq absent: node; role-check lines run from any folder, one per call;
-  45-call cap; parent export by the lead; LEAD steps stay with the lead; scratch only in
-  C:/Users/teasp/AppData/Local/Temp/prompt-coach-rewrites-4756fc2d; hand-backs can be empty, verify
-  from git and re-runs; absolute paths; Write tool, not heredocs, for scripts; autocrlf: check
-  byte-exact files with git archive; git restore, not git checkout --).
-- NEW: stamp ledger lines from date -u at the time of writing (run 6 stamped two lines 3 minutes
-  late and corrected them).
-- NEW: the Edit/Write tools refuse a file seen only through cat; Read it (a few lines) first.
-- NEW: role-checks.txt is swapped per task (role-checks-t11.txt holds the Task 11 copy); never
-  swap it while a checker is reading it.
-- Lead tools in the ledger: cmp_t7f4.js (Strong text per run, two engine copies; controls in the
-  ledger), browser_cmp.js, ctx_probe.js, blank_probe.js, filler_probe.js.
+AFTER HIS ANSWERS
+- One task per authorized fix: implementer (failing check first), checker, lead re-run, ledger row.
+- Then: the 13 lines of role-checks-final.txt + the browser test, a fresh final-reviewer pass, evidence doc
+  updated in the same commit as any figure it states.
+- If the review passes and every check is green: merge into prompt-coach (slip: "Yes, merge after review passes";
+  fast-forward from 73be350 is possible) and push the own branch. Otherwise stop and ask.
+- PM step, then stop. The live-test session (docs/PROMPT_COACH_LIVE_TEST_RUN_PROMPT.txt) is Ian's to start.
+
+CORRECTIONS AND LESSONS (carry the relevant ones into each packet)
+- All earlier lessons hold (jq absent: node; role-check lines run from any folder, one per call; 45-call cap;
+  parent export by the lead; scratch only in C:/Users/teasp/AppData/Local/Temp/prompt-coach-rewrites-4756fc2d;
+  absolute paths; Write tool, not heredocs; autocrlf: check byte-exact files with git archive; git restore).
+- Stamp ledger lines from date -u at the time of writing (run 7 estimated two times in t12_addendum.txt and
+  corrected them).
+- A role-check line with a pattern in quotes must keep its space before the path: grep with no file reads stdin
+  and, inside a while-read loop, eats the remaining lines (run 7, line 6 of the fix-round set).
+- Backticks in a role-check pattern need single quotes, or bash runs them.
+- studio-harness:pm is not a guard-registered role: dispatch it with model sonnet.
+- The Edit/Write tools refuse a file seen only through cat, or changed by an earlier session: Read it first.
 - Implementer commits end with:
   Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
   Claude-Session: <the resuming session's link from its system reminder>
 
 SESSIONS
-- a72ccc7d owns this worktree (worktreePath, measured by program lead 15): `claude rm a72ccc7d`
-  would delete the worktree and ledger. Keep a72ccc7d, 8f68dfd4 and b80d1b3d until the branch is
-  merged and pushed and Ian has said what to keep; never pass force flags.
-- Slip: new sessions no. Do not launch any session; Ian (or the program lead under his standing
-  yes) starts the resume. The one-shot claude -p --chrome browser helper is a helper, not a
-  session (program lead 13's answer under Ian's standing yes; ledger line 69).
-- For Ian (proposals, not done): ledger/brain records for "Task 7 checks omitted toggleNoEffect and
-  emptyFrag; a regression rode 5 commits" (seam-untested), "Bash-tool heredocs mangle backslashes
-  and quotes in lead scripts", "autocrlf corrupts hand-written PDF fixtures", "Edit tool needs a
-  Read, not a cat", "one-shot claude -p --chrome --tools \"\" --allowedTools mcp__claude-in-chrome
-  --permission-mode dontAsk works on this PC (measured 11:48Z)", plus run 4's three proposals.
+- Keep a72ccc7d (owns this worktree), 8f68dfd4, b80d1b3d and 39dcb350 until the branch is merged and pushed and
+  Ian has said what to keep; never pass force flags.
+- Slip: new sessions no. Do not launch any session.
