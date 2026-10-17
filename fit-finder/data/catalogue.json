@@ -321,7 +321,8 @@
   "leftOut": [
     { "pattern": "Agent names from the 29 July 2026 press release (Tie-Out Agent, Benchmarking Agent, Sustainability Disclosure Agent, Workiva Knowledge)", "why": "The release itself could not be opened (seen only in a trade-press copy). The page uses the names in Workiva's support pages instead: Tie-out assistant, Benchmarking, Sustainability disclosure agent." },
     { "pattern": "Roll forward workflow", "why": "Listed once (S8) with a one-line description and no how-to or availability; it moves data into the next period rather than reading or writing text." },
-    { "pattern": "Suggestions (proofread, clarity, tone across a document)", "why": "An early-access preview that ran until 14 September 2026; its current status is not stated." },
-    { "pattern": "Workiva MCP connection to Claude", "why": "A limited-availability preview for using Claude with Workiva content, not a Workiva AI feature inside the platform." }
+    { "pattern": "Suggestions (proofread, clarity, tone across a document)", "why": "An early-access preview that ran until 14 September 2026. Its only support page (last updated 14 September 2026) still says so, and no later page says it ended or became generally available (checked 2026-10-16), although a Workiva sandbox showed \"AI suggestions\" in a document's Tools menu that day." },
+    { "pattern": "Workiva MCP connection to Claude", "why": "A limited-availability preview for using Claude with Workiva content, not a Workiva AI feature inside the platform." },
+    { "pattern": "Agent Studio", "why": "Seen in a Workiva sandbox's left navigation (2026-10-16) and announced at Amplify (trade-press copy, 15 September 2026) as a way to build, customize and deploy your own AI agents without code. No Support Center page as of 2026-10-16. It builds agents rather than doing one of the jobs the page rates." }
   ]
 }

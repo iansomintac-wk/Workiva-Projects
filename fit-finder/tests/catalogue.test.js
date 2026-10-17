@@ -71,6 +71,11 @@ for (const t of ['Every quarter I check the sustainability report for typos and 
   check('not sustainability anomalies: ' + t.slice(0, 40), () => assert.notStrictEqual(top(t), 'sus-anomalies'));
 check('left out: anomaly review is now a use case', () =>
   assert(!cat.leftOut.some((l) => /anomal/i.test(l.pattern)), 'still listed as left out'));
+check('left out: Agent Studio, and Suggestions re-checked 2026-10-16', () => {
+  assert(cat.leftOut.some((l) => /Agent Studio/.test(l.pattern)), 'Agent Studio not listed as left out');
+  const s = cat.leftOut.find((l) => /^Suggestions/.test(l.pattern));
+  assert(s && /2026-10-16/.test(s.why), 'Suggestions reason lacks the 2026-10-16 re-check');
+});
 
 // Community sustainability prompts (S1, S2, S3, S10 of 2026-10-15) got wrong or no pointers; Ian chose
 // to fix them 2026-10-16. A bare "year-over-year", a "Wdata table" or "duplicate records" is not a

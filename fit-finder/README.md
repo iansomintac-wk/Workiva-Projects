@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (82,037 bytes)
+node tests/build.js                                               # -> dist/fit-finder.html (82,583 bytes)
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
 node tests/pagetest.js [capture-folder]                            # real Chrome at 1280 and 375 px; needs Chrome, no npm deps
@@ -21,7 +21,7 @@ node tests/pagetest.js [capture-folder]                            # real Chrome
 | File | What it is |
 |---|---|
 | `engine/fit.js` | Rates a task: fit, recurring or not, steps (who keeps each), starter prompt; `scan()` rates every line of a checklist; `match()` finds the closest catalogue use cases; `lead()` names the first step the AI can take; `patternPrompt()` offers a use case's fuller prompt only when it starts with that same step |
-| `data/catalogue.json` | The only source of Workiva AI claims on the page: 23 support pages, 22 features, 26 use cases, 5 roles, 4 left out and why |
+| `data/catalogue.json` | The only source of Workiva AI claims on the page: 23 support pages, 22 features, 26 use cases, 5 roles, 5 left out and why |
 | `data/capabilities-confirmed.md` | The catalogue's 22 features in one readable table (availability, source pages), with what was left out, what is not confirmed, and conflicts with earlier notes |
 | `web/template.html` | The page; `tests/build.js` inlines the catalogue, the engine and `../prompt-coach/engine/files.js` |
 | `data/LABELING.md` | The rubric: good / partial / not a fit, operations, blockers |
@@ -45,9 +45,10 @@ general chat-with-files ability applied to it ("assumed", 4, shown as "try it on
 first"), and whether the feature is included with Workiva AI (9), depends on the Workiva
 solutions an organization has (11) or is a preview offered to selected customers (2). Left out,
 with reasons in the catalogue: agent names from the 29 July 2026 press release, the Roll forward
-workflow, Suggestions, and the Workiva MCP connection to Claude. The sustainability anomaly check
+workflow, Suggestions, the Workiva MCP connection to Claude, and Agent Studio. The sustainability anomaly check
 was left out until S16 was found to name the job ("identify anomalies, outliers, and other
 inconsistencies", with a prompt to run on the sustainability report or Factbook spreadsheet).
+Re-checked 2026-10-16 after the sandbox pilot (`docs/evidence/2026-10-16-catalogue-recheck.md`): Benchmarking still holds, Suggestions is still a preview with no later page, and Agent Studio is now listed as left out.
 
 Of the 30 held-out tasks that fit, 16 (53%; 15 before the reading-only fix below, 14 before the
 past-tense fix) reach a specific

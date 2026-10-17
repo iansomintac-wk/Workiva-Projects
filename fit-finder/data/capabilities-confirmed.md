@@ -64,8 +64,9 @@ Availability: IN = included with Workiva AI; DEP = depends on your Workiva solut
 ## Left out and why
 - Agent names from the 29 Jul 2026 press release: release not opened; support-page names used.
 - Roll forward workflow: listed once (S8): "Moves data and project artifacts into the next reporting period"; no availability.
-- Suggestions (proofread, tone): early-access preview that ran until 14 Sep 2026; current status not stated.
+- Suggestions (proofread, tone): early-access preview that ran until 14 Sep 2026; still the only page as of 2026-10-16 (a sandbox shows it).
 - Workiva MCP connection to Claude: limited-availability preview, not a platform feature.
+- Agent Studio: build-your-own-agents tool (Amplify, trade press 15 Sep 2026); no support page as of 2026-10-16.
 
 ## Not confirmed (keep these labels)
 - Tie-out assistant after 14 Sep 2026 is unclear: the early-access page (S10) says "until September 14th, 2026", yet the workflows page (S7, updated 13 Oct) still lists it as Preview.
