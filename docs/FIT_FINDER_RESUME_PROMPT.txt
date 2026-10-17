@@ -1,3 +1,45 @@
+Fit Finder v4.21: hand-off (2026-10-17, session 08b76f43, successor of 50904aba; rule C built, reviewed, pushed)
+
+WHERE
+Same worktree and branch. Pushed by v4.21 under the slip (push of this branch only; merge no; spend none):
+dbfa197 (rule C; amends the unpushed 6c8c351, see below), ccda404 (final-review doc fixes), then this hand-off
+commit. Live page still v13 (dist of 8050b07); branch dist 82,673 bytes LF. Run ledger:
+C:/Users/teasp/Documents/studio-harness/.claude/worktrees/bedtime-slip/.ledger/2026-10-16-24h-program/fit-finder-v422/
+(slip.json, budget.json, progress.md; nearcopy.cjs, whatif.cjs, outcome.cjs). v4.21's ledger with reviews/ is fit-finder-v421/.
+
+NEXT SESSION (written by 08b76f43 at the 200k stop; supersedes every NEXT SESSION below)
+Nothing is half-done in the repo. Rule C is built (dbfa197), checked, reviewed by Opus and Codex, fixed (ccda404), pushed.
+1. PM hand-off step (studio-harness:pm, the four questions: milestone done by its check; next on the route; missing
+   research; draft of the next prompt) and brain capture (studio-harness:brain; `node <STUDIO>/bin/brain.mjs capture`),
+   skipped since v4.17. Capture candidates: v4.19's (a)-(d) below; v4.20's (e)-(g) below; plus v4.21's:
+   (h) an exact-match overlap check against data/real missed a near-copy of a customer comment (one word removed;
+   checker caught it; never pushed, amended): check overlap by shared 5-word runs (fit-finder-v422/nearcopy.cjs);
+   (i) the final-reviewer's Write to the run's reviews/ was refused because its cwd is the workiva worktree, same root
+   as (a); the lead writes the review file from its reply;
+   (j) an outside reviewer (Codex) sends what it reads to another company: tell it in the prompt not to open
+   fit-finder/data/real/ (it obeyed: it excluded the folder from its own git diff);
+   (k) a what-if score must reproduce the suite's own line before its numbers are used (v4.21's first script gave 6 of
+   23 vs the suite's 10: "no card" is right when the label lists no card).
+2. Item 71 in ../for-ian.md is Ian's (5 label checks re-measured on rule C; A, B; (a) keep the narrow rule or "wider
+   rule"; (b) republish v14). On his answers: label changes go in data/card-gold-fresh.jsonl with by: ian (one small
+   plan task); "wider rule" means V2 back (6f7090e's line 16 and card line 169) with its known slips in the README;
+   republish v14 only on his words.
+3. Otherwise Fit Finder has no queued work: do not start new tuning. Report to the program lead and stop at the task
+   boundary.
+
+UPDATE 2026-10-17, session 08b76f43 (successor of 50904aba): rule C
+- Dry run re-run (dry/dry.sh in fit-finder-v421): as planned (4 FAIL on parent, 0 on C, fresh 12 -> 10 of 23, older 0,
+  9 mutants killed). Rehearse exit 0.
+- Implementer (Sonnet role) 6c8c351: all plan numbers matched. Checker PASS + gap: pool row 68 was a real comment
+  (G12) minus one word. Replaced with a fresh sentence scored identical on live, V2 and C; amended before any push
+  (dbfa197).
+- Final review: Codex 0/0/0 ship (ran its own mutants); Opus 1 must-fix / 2 should / 5 nits, all docs: a quoted real
+  fragment in the evidence doc; README overstated C's precision (on the blind held-out V2 is no worse on wrong cards,
+  1 vs 1, and reaches more, 13 vs 7); README quoted 2 real prompts (older). Fixed in ccda404; known limit added
+  ("Help me understand the wording better." gets the rewrite card first, measured).
+- Still in pushed history (no force push): the 7-word fragment "Write it in a more professional manner." in the
+  plans of 6f7090e and f13090c; short, generic, from a public post.
+
 Fit Finder v4.20: hand-off (2026-10-17, session 50904aba, successor of c4f8b112; two-strikes round chose rule C)
 
 WHERE
