@@ -26,6 +26,7 @@ node tests/pagetest.js [capture-folder]                            # real Chrome
 | `web/template.html` | The page; `tests/build.js` inlines the catalogue, the engine and `../prompt-coach/engine/files.js` |
 | `data/LABELING.md` | The rubric: good / partial / not a fit, operations, blockers |
 | `data/tasks.jsonl` | 120 AI-written task descriptions, blind-labeled by an AI |
+| `data/card-gold.jsonl` | For the 30 held-out tasks that fit: every card Ian marked right to show (2026-10-16) |
 
 ## How good it is (2026-10-15)
 Half A (60 tasks) tuned the rules; half B is held out. Fit agreement: A 86.7%, **B 75.0%**
@@ -51,7 +52,8 @@ inconsistencies", with a prompt to run on the sustainability report or Factbook 
 Of the 30 held-out tasks that fit, 16 (53%; 15 before the reading-only fix below, 14 before the
 past-tense fix) reach a specific
 use case; the rest get "ask Workiva
-AI chat about your file". That count includes any suggestion, right or wrong. Before 2026-10-15 it
+AI chat about your file". That count includes any suggestion, right or wrong (13 of 30 get the
+right first card; see "Right card on the held-out half" below). Before 2026-10-15 it
 was 15, but some of those sent financial drafting tasks to the Sustainability disclosure agent
 (it matched the bare word "draft") and peer benchmarking to the Tie-out assistant (any "10-Q").
 Both were found by rating 19 prompts and comments from two Workiva Community posts. So the page
@@ -111,3 +113,19 @@ about your file". "Assurance provider" names who asks, not a recurring job, so S
 (Ian's label) and task 75's recurring guess now matches its label (A recurring 77% -> 78%). Only
 these 3 of 139 changed; fit agreement is unchanged (A 52/60, B 45/60). Task 42 is in held-out half B,
 so B has now been used for two fixes. "Review <data> for unusual changes" appears in none of the 139.
+
+Right card on the held-out half (2026-10-16): `data/card-gold.jsonl` holds, for each of the 30
+held-out tasks that fit, every card Ian ticked as right to show (offered 1 to 3 cards and "no card
+fits", or he could name another). The page shows only the first card, and `tests/catalogue.test.js`
+now prints how often it is right: 13 of 30. Of the 16 tasks that get a card, 13 get a right one; the
+3 wrong are task 67 (mapping disclosures to ESRS datapoints gets the controls-framework card), 74
+(turning ISSB requirements into questions gets the sustainability executive narrative) and 91 (an
+executive summary of the sustainability report gets the disclosure card). The other 14 get no card,
+and Ian accepted a card for every one of them (he marked none of the 30 "no card fits"): for 7 of
+them chat with your file is already the feature a card he accepted names first; for the other 7
+(tasks 30, 45, 50, 59, 80, 111, 119) every card he accepted names another feature first. So the gap is reach more
+than wrong cards. A top-model labeler, blind to the engine, matched Ian exactly on 11 of 30 and
+accepted fewer cards on 18; Ian disagreed with it on 2 of the 8 he checked first (the agreed limit),
+so he labelled all 30. Every question offered at least one card, which may lean toward picking one.
+These are AI-written tasks: whether real tasks get the right card, and whether a card's advice works
+in Workiva AI, is not yet measured.

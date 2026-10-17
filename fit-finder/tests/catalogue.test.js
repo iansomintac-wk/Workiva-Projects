@@ -284,5 +284,21 @@ const half = new Set(sh.slice(Math.floor(sh.length / 2))), B = rows.filter((r) =
 const fitting = B.filter((r) => r.fit !== 'not');
 const covered = fitting.filter((r) => match(r.task, cat).length);
 console.log(`held-out tasks that fit (gold good/partial): ${fitting.length}; reach a sourced use case: ${covered.length} (${(100 * covered.length / fitting.length).toFixed(0)}%)`);
+// is the first card (the one the page shows) right? data/card-gold.jsonl: acceptable first cards per task, [] = chat with your file
+const goldFile = path.join(root, 'data/card-gold.jsonl');
+const goldRows = fs.existsSync(goldFile) ? fs.readFileSync(goldFile, 'utf8').trim().split('\n').map(JSON.parse) : [];
+const gold = new Map(goldRows.map((g) => [g.id, g.cards]));
+check('card gold: one row per held-out task that fits, catalogue cards only', () => {
+  const missing = fitting.filter((r) => !gold.has(r.id)).map((r) => r.id);
+  assert(!missing.length, 'no gold row for ' + missing.join(','));
+  assert.strictEqual(gold.size, fitting.length, 'rows for tasks outside the held-out fitting set');
+  assert.strictEqual(goldRows.length, gold.size, 'a task has more than one row');
+  const unknown = [...gold.values()].flat().filter((id) => !ids.has(id));
+  assert(!unknown.length, 'unknown card ' + unknown.join(','));
+});
+const first = (r) => (match(r.task, cat)[0] || {}).id, want = (r) => gold.get(r.id) || [];
+const wrong = fitting.filter((r) => first(r) && !want(r).includes(first(r)));
+const missed = fitting.filter((r) => !first(r) && want(r).length);
+console.log(`first card right: ${fitting.length - wrong.length - missed.length} of ${fitting.length}; wrong card ${wrong.length} (${wrong.map((r) => r.id).join(',')}); no card where one fits ${missed.length} (${missed.map((r) => r.id).join(',')})`);
 console.log(fails ? fails + ' failed' : 'all catalogue checks pass');
 process.exit(fails ? 1 : 0);
