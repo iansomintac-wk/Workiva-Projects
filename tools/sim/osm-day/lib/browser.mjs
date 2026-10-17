@@ -144,10 +144,24 @@ export async function launch({ version, startDay, runDir, part, seed = null, chr
     await send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: downloads });
     // Headless clipboard fails with "Document is not focused" without focus emulation (D5 needs it).
     await send('Emulation.setFocusEmulationEnabled', { enabled: true });
-    try { await send('Browser.grantPermissions', { permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] }); } catch {}
+    try { await send('Browser.grantPermissions', { permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] }); }
+    catch (e) { throw new Error('Browser.grantPermissions failed (clipboard setup): ' + e.message); }
 
     ctx.ev = ev;
     ctx.send = send;
+    // Clipboard: write a known sentinel first, so text left on the OS clipboard by anything else cannot pass a copy check.
+    // A setup failure throws (harness error, exit 2); only the read after the click may come back as 'error: ...'.
+    ctx.armClipboard = async () => {
+      const sentinel = 'SIM-CLIP-SENTINEL-' + Math.random().toString(36).slice(2, 10);
+      let back;
+      try { back = await ev(`(async () => { await navigator.clipboard.writeText(${JSON.stringify(sentinel)}); return await navigator.clipboard.readText(); })()`); }
+      catch (e) { throw new Error('clipboard setup failed: ' + e.message.slice(0, 120)); }
+      if (back !== sentinel) throw new Error('clipboard setup failed: sentinel read back as ' + JSON.stringify(String(back).slice(0, 40)));
+      return sentinel;
+    };
+    ctx.readClipboard = async () => {
+      try { return String(await ev('navigator.clipboard.readText()')).replace(/\r\n/g, '\n'); } catch (e) { return 'error: ' + e.message.slice(0, 80); }
+    };
     ctx.aiStats = () => ({ ...stats });
     ctx.snapshot = async () => ({ ls: await ev(`JSON.stringify(Object.fromEntries(Object.entries(localStorage)))`), state: JSON.parse(JSON.stringify(ctx.state)) });
     ctx.openOn = async iso => {

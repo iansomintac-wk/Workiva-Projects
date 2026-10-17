@@ -97,11 +97,12 @@ export const PART_A = [
     }
     if (!area) return { passed: false, evidence: 'no "Draft email recap" appeared after generating the debrief' };
     const recap = await ctx.ev(`document.querySelector('[data-debrief-email-text="${d4.activityId}"]').value`);
+    await ctx.armClipboard();
     await ctx.click(`[data-copy-debrief-email="${d4.activityId}"]`);
     let clip = null;
     for (const end = Date.now() + 5000; Date.now() < end && clip !== recap; await sleep(300)) {
       // The Windows clipboard returns CRLF; the textarea value is LF. Same text, so compare on LF.
-      try { clip = (await ctx.ev(`navigator.clipboard.readText()`)).replace(/\r\n/g, '\n'); } catch (e) { clip = 'error: ' + e.message.slice(0, 80); }
+      clip = await ctx.readClipboard();
     }
     await ctx.ev(`window.__simConn && localStorage.setItem(CONNECTOR_SETTINGS_KEY, window.__simConn); true`);
     const s = ctx.aiStats();

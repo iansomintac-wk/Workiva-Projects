@@ -22,7 +22,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
 const flag = n => { const i = args.indexOf('--' + n); return i !== -1 ? (args[i + 1] || true) : null; };
 const TARGET = resolve(HERE, '../..', typeof flag('target') === 'string' ? flag('target') : 'osm-book-of-business-tracker-1.0.html');
-const CHROME = ['C:/Program Files/Google/Chrome/Application/chrome.exe',
+const CHROME = process.env.OSM_SIM_CHROME || ['C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
   '/usr/bin/google-chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].find(existsSync);
@@ -39,8 +39,13 @@ const cleanup = async () => {
   try { await cleanupProfile({ pid: child.pid, profile, isAlive: () => child.exitCode === null && child.signalCode === null, kill: pidKill, remove: p => rmSync(p, { recursive: true, force: true }), exists: existsSync }); }
   catch (e) { console.error('Cleanup failure: ' + e.message); process.exit(2); }
 };
-const fail = async m => { console.error('Harness failure: ' + m); await cleanup(); process.exit(2); };
+let failing = false, finished = false;
+const fail = async m => { if (failing) return; failing = true; console.error('Harness failure: ' + m); await cleanup(); process.exit(2); };
+// Every crash path goes through fail(): rejected promises, uncaught throws, Chrome failing to start, the CDP socket dying, Ctrl-C / kill.
 process.on('unhandledRejection', e => fail(e && e.message || e));
+process.on('uncaughtException', e => fail(e && e.message || e));
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => fail('interrupted by ' + sig));
+child.on('error', e => fail('Chrome failed to start: ' + e.message));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 let page;
@@ -54,6 +59,7 @@ if (!page) await fail('tracker page never appeared');
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r, j) => { ws.onopen = r; ws.onerror = () => j(new Error('CDP socket failed')); });
 let id = 0; const pend = new Map(); const pageErrors = [];
+ws.onclose = () => { for (const p of pend.values()) p.j(new Error('CDP socket closed')); pend.clear(); if (!finished) fail('CDP socket closed'); };
 ws.onmessage = ev => {
   const m = JSON.parse(ev.data);
   if (m.id && pend.has(m.id)) { const p = pend.get(m.id); pend.delete(m.id); m.error ? p.j(new Error(m.error.message)) : p.r(m.result); }
@@ -86,5 +92,6 @@ if (pageErrors.length) console.log('PAGE ERRORS:', pageErrors.length, '—', Str
 const outPath = flag('out');
 if (typeof outPath === 'string') writeFileSync(outPath, JSON.stringify(metrics, null, 2));
 console.log(JSON.stringify(metrics, null, 1));
+finished = true;
 if (!flag('keep')) await cleanup();
 process.exit(0);

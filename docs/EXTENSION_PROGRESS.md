@@ -35,7 +35,7 @@ Helpers for the checks (committed with this file): `node docs/extension-checks/s
 - Files: tools/sim/osm-day/lib/browser.mjs, steps-a.mjs, steps-b.mjs, probe.mjs, tools/sim/run-field-test.mjs, tools/sim/steps/99-measure.js, test/osm-day-steps.test.mjs, test/selfcheck-exit.test.mjs.
 - Check: `W && node --test --test-reporter=spec test/*.test.mjs 2>&1 | grep -E "^ℹ (tests|pass|fail)"; node tools/sim/osm-day/run.mjs --version 1.1 --part A --only D5 --out sim-runs/ext/x3 > sim-runs/ext/x3.log 2>&1; echo exit $?; node docs/extension-checks/show.mjs sim-runs/ext/x3/results-1.1.json | cut -c1-200; node docs/extension-checks/left.mjs`. Negative control that must fail first: a new test that pre-seeds the clipboard with the recap text and makes the click a no-op must see D5 FAIL, not PASS.
 - Expected: `ℹ fail 0`, pass above 110; `D5 PASS` on 1.1 with break FLIPPED or NOT-TESTED (not VACUOUS); exit 0 or 1, never 2; `left 1`.
-- Status: todo
+- Status: done (commit PENDING). Evidence: suite 122 tests, pass 120, fail 0, skipped 2; D5 1.1 PASS break FLIPPED exit 0; left 1; no-op-click control sees D5 FAIL (red before, green after); bogus-Chrome field test exits 2, no fieldtest- folder.
 
 ### X4 D4 resolves the stored transcript per version, and the 1.1 snapshot keeps it (FR8, Fix A4)
 - Outcome: D4 reads the transcript from the activity's inline `.text` (1.0) or the 1.1 IndexedDB `transcripts` reference and checks `SIM-D4-TRANSCRIPT`; the browser snapshot and seed restore copy the 1.1 `transcripts` IndexedDB store along with localStorage, so a break browser still has the transcript.

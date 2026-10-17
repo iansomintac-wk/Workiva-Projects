@@ -369,10 +369,11 @@ export const PART_B = [
     await openPanel(ctx, id, 'handoff');
     await sleep(300);
     const t0 = Date.now() - 50;
+    await ctx.armClipboard();
     await ctx.click(`[data-handoff-copy="${id}"]`);
     await sleep(500);
     let clip = '';
-    try { clip = await ctx.ev('navigator.clipboard.readText()'); } catch (e) { clip = 'error: ' + e.message.slice(0, 80); }
+    clip = await ctx.readClipboard();
     await ctx.click(`[data-handoff-download="${id}"]`);
     let file = null;
     for (const end = Date.now() + 15000; Date.now() < end && !file; await sleep(400)) {

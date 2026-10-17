@@ -194,3 +194,40 @@ test('filesSince finds a pre-seeded same-name file only when its mtime is after 
     assert.deepEqual(filesSince(d, t0, '.txt'), []);
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
+
+// ---- X3: clipboard sentinel, setup errors are harness errors ----------------------------------
+function fakeClipCtx({ stale, copyWrites, armFails }) {
+  let clip = stale;
+  const recap = 'SIM recap line one\nline two';
+  return {
+    state: { d4: { customerId: 'c1', activityId: 'a1' } },
+    aiStats: () => ({ fake: 1, escaped: 0 }),
+    openOn: async () => {},
+    click: async sel => { if (copyWrites && /copy-debrief-email/.test(sel)) clip = recap; },
+    armClipboard: async () => { if (armFails) throw new Error('clipboard setup failed: denied'); clip = 'SIM-CLIP-SENTINEL-x'; },
+    readClipboard: async () => clip,
+    ev: async src => {
+      if (/clipboard\.readText/.test(src)) return clip;
+      if (/data-debrief-email-text.*\.value/.test(src)) return recap;
+      if (/querySelector\('\[data-debrief-email-text/.test(src)) return true;
+      return true;
+    },
+  };
+}
+test('X3 D5 negative control: stale clipboard equal to the recap plus a no-op click is FAIL', async () => {
+  const { PART_A } = await import('../tools/sim/osm-day/steps-a.mjs');
+  const d5 = PART_A.find(s => s.id === 'D5');
+  const r = await d5.run(fakeClipCtx({ stale: 'SIM recap line one\nline two', copyWrites: false }));
+  assert.equal(r.passed, false, r.evidence);
+});
+test('X3 D5 passes when the click really writes the recap, and a clipboard setup error throws', async () => {
+  const { PART_A } = await import('../tools/sim/osm-day/steps-a.mjs');
+  const d5 = PART_A.find(s => s.id === 'D5');
+  assert.equal((await d5.run(fakeClipCtx({ stale: 'old', copyWrites: true }))).passed, true);
+  await assert.rejects(d5.run(fakeClipCtx({ stale: 'old', copyWrites: true, armFails: true })), /clipboard setup failed/);
+});
+test('X3 launch source: grantPermissions failure is thrown, not swallowed', () => {
+  const t = readFileSync(new URL('../tools/sim/osm-day/lib/browser.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(t, /grantPermissions[^\n]*\}\); \} catch \{\}/);
+  assert.match(t, /grantPermissions failed/);
+});

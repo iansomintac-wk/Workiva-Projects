@@ -32,7 +32,6 @@
   out.fix4_scheduleAdviceButBooked = sched.filter(b => { const c = byName(b[0]); return c && c.nextSessionScheduledOn && c.nextSessionScheduledOn >= T; }).length;
   out.fix4_rankedBeats = beats.length;
 
-
   // Context — the other findings in the field test
   const comp = pendingGainsightItems().filter(i => i.kind === 'compliance');
   out.ctx_gainsightPending = pendingGainsightItems().length;
