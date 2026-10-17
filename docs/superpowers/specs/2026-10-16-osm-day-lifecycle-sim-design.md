@@ -1,6 +1,6 @@
 # OSM day and customer lifecycle: an end-to-end simulation. Design
 
-Status: design sections 1 and 2 approved by Ian, 2026-10-16. The written spec awaits his review.
+Status: APPROVED by Ian, 2026-10-16 ~20:50 PDT. Design sections 1 and 2 approved earlier that evening; the written spec, asked "does the written spec look right?", approved in his words: "yes".
 Targets: `osm-book-of-business-tracker-1.0.html` AND `osm-book-of-business-tracker-1.1.html`, same script. Neither file is ever edited.
 Base: master f2ff9f8. Branch: `runway-day-sim` (worktree `.claude/worktrees/runway-day-sim`).
 Roadmap gate: not applicable (`brain gate ... --project runway`: "NO ROADMAP for runway: proceed as before", exit 0).
@@ -130,7 +130,7 @@ Exit: 0 when every step is PASS or a listed GAP and every break flipped; 1 on an
 | C6 No leftovers | 0 new profile folders in Temp, 0 browsers left running (by the PIDs the run started) | any leftover |
 | C7 F1 and F2 | Field test exits 0 with metrics on both versions; 0 new `fieldtest-*` folders | exit 2, or a leftover folder |
 | C8 Trackers untouched | sha256 of both tracker files equals the plan-time values after the run | any change |
-| C9 Unit tests | `node --test test/` passes; each new unit test failed before its code existed | a failing or never-red test |
+| C9 Unit tests | `node --test "test/*.test.mjs"` passes (baseline measured 2026-10-16 21:30 PDT: 44 tests, 42 pass, 0 fail, 2 skipped, 5 files; the folder form `node --test test/` exits 1 on Node 26, which loads `test` as one module); each new unit test failed before its code existed | a failing or never-red test |
 
 ## 9. Scope
 

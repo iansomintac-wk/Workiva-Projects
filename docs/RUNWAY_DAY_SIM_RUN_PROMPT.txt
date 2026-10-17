@@ -1,0 +1,94 @@
+Runway: OSM day and customer lifecycle simulation (one command walks Ian's day and a customer's life on 1.0 and
+1.1, nothing in either tracker changed): the run.
+
+Project: C:\Users\teasp\Documents\Runway Tracker. Work on branch runway-day-sim
+(worktree .claude\worktrees\runway-day-sim, based on master f2ff9f8), which holds the spec and this prompt.
+
+Spec (approved by Ian 2026-10-16 ~20:50 PDT, "yes"):
+  docs/superpowers/specs/2026-10-16-osm-day-lifecycle-sim-design.md
+Part A (D1-D10, Ian's Wednesday) and Part B (L1-L12, one customer's life on a jumping fake clock), both versions,
+one script, fake AI network every run, a break per checked step that must flip it to FAIL, fixed GAP list, fixes
+F1 (field-test profile cleanup) and F2 (stale step 99). A FAIL is a finding about the tracker, reported to Ian,
+never fixed in this run.
+
+Method: studio-harness:talk-and-run, "The run". First check: echo "$STUDIO_RUN_LEDGER" and test -f on its
+budget.json and slip.json; empty or missing is a stop. Lead coordinates only; one fresh helper per piece, in order,
+never in parallel.
+  1. Plan by studio-harness:plan-writer at docs/superpowers/plans/2026-10-16-osm-day-lifecycle-sim.md (tasks of at
+     most 8 steps, exact files, check command and expected output per task). Header: `Suite: node --test
+     "test/*.test.mjs"` and `Data: (none)` (the sim writes only to throwaway profiles and a git-ignored run folder;
+     no task changes stored data). This project has no bin/rehearse.mjs: skip the rehearsal. The plan must carry,
+     from read-only probes it runs or a probe task: the exact break override for each of the 21 checked steps
+     (spec section 4), the graduating-soon window that sets the L10/L11 dates, and the tracker fingerprints
+     re-measured at plan time. Then update budget.json tasksLeft from the plan.
+  2. Plan review: frontier model and Codex, findings merged by the lead. Codex has no working shell on this PC
+     (gotcha 2026-10-14-codex-shell-blocked-on-windows), so pipe the spec and plan TEXT into
+     `codex exec --skip-git-repo-check -s read-only` on stdin; never ask it to read files.
+  3. STOP: Ian approves the plan.
+  4. Each task: studio-harness:implementer (tests first, red then green), fresh studio-harness:checker,
+     the lead re-runs the task's check itself, ledger row. Checker lines go in role-checks.txt, one per line,
+     each runnable from anywhere (cd "<worktree>" && <command>).
+  5. Final whole-branch review: studio-harness:final-reviewer and a Codex review of `git diff master...runway-day-sim`
+     piped in as text; Ian decides any must-fix disagreement. Fix round, re-check.
+  6. Evidence doc docs/evidence/2026-10-16-osm-day-lifecycle-sim.md: spec checks C1-C9, each marked measured or
+     not run, with numbers; every FAIL as a finding for Ian (step, version, what the screen showed, the day); the
+     GAP list; the steps whose result or evidence differs between 1.0 and 1.1; the L6 first days (Today, Watch,
+     Off Track) against Ian's "Within a week of the hand-off call". README lines saying how to run it, in the
+     same commit as the runner.
+  7. Push and merge only as the slip below says; any condition unmet is a stop for Ian. Try to copy the ledger to
+     the main checkout's .ledger/2026-10-16-runway-day-sim/ (keep the budget files already there); if the copy is
+     refused, say so and leave it in the worktree. Hand-off PM step, then the next session per the slip. Final
+     message to Ian: what was pushed or merged, the evidence doc, the FAIL findings in plain English, the time used.
+
+Ledger: C:/Users/teasp/Documents/Runway Tracker/.claude/worktrees/runway-day-sim/.ledger/2026-10-16-runway-day-sim/
+(git-ignored): progress.md (the talk's rows and Ian's rulings verbatim are above the run's rows), budget.json,
+slip.json, role-checks.txt, reviews/, spikes/ (the talk's fake-clock, fake-AI and field-test spikes with logs;
+keep, the plan may reuse them), probe-1.0-map.md, probe-2-gaps.md. Remove worktrees only with studio-harness
+bin/remove-worktree.mjs, never plain git worktree remove (it deletes ignored files).
+
+Checks the lead re-runs (from the worktree root):
+  node --test "test/*.test.mjs"        baseline 44 tests, 42 pass, 0 fail, 2 skipped (measured 2026-10-16 21:30 PDT);
+                                       the folder form `node --test test/` exits 1 on Node 26, do not use it
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 475
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 475
+                                       475/475 read from the hosting evidence at 348e13a; re-measure before T1
+  git diff --quiet master -- osm-book-of-business-tracker-1.0.html osm-book-of-business-tracker-1.1.html
+  sha256 of the trackers (measured 2026-10-16 21:30 PDT): 1.0 1,256,628 bytes a21ca8c34c9c0859...;
+                                       1.1 1,281,558 bytes b247a93cd5044165...
+  the sim itself (spec C1-C6) and the field test (C7) at the counts the plan states. C5 is two full runs in a row.
+  Count Temp profile folders and the run's own browser PIDs before and after (C6).
+
+Test data: the field-test book (34 synthetic accounts), demo-seed.js, tools/step1-fixture.js, plus the spec's
+synthetic "Fernhollow Renewables". Test emails use example.com or .invalid, never a real customer domain.
+
+Safety rules (Ian's):
+- Never edit osm-book-of-business-tracker-1.0.html or osm-book-of-business-tracker-1.1.html in this objective.
+- Never open any HTML file from this folder in Ian's normal Chrome profile. Only headless Chrome with a throwaway
+  profile (--user-data-dir). Never run chrome.exe without --user-data-dir.
+- Never write test or synthetic data where the real book lives.
+- Never read, copy or upload book-of-business-RESTORE-POINT-*.json, exports, recordings, screenshots or zips.
+- Real AI providers are never called: the fake network answers the three provider hosts in every run. A real
+  model-name check happens only on Ian's say-so, in a later session.
+- Stop browsers and servers by their own PIDs, never by image name. Delete a profile only after its browser has
+  exited (wait and retry). Logs to files, never into context.
+- Nothing is published: no Pages, no new remote, no .github/ workflow.
+- The one write allowed under ~/.claude/: the session-rename exception (Ian, 2026-10-09): when the successor is
+  running, set the `name` field of your own ~/.claude/jobs/<your id>/state.json to `COMPLETED - <name>`. Nothing
+  else there.
+
+Sessions: do NOT claude rm e5c2a7de, a1bd5f15, 50d4c352 or 8e5707bc (they share the runway-hosting worktree), nor
+6afcca7a or the talk session that launched you (they share this runway-day-sim worktree). The successor removes a
+predecessor only when its state is done, everything is committed, and rm needs no force flags.
+
+Slip (Ian, 2026-10-16, verbatim in .ledger/2026-10-16-runway-day-sim/slip.json):
+- Push: yes ("yes"), runway-day-sim only, non-force, to origin iansomintac/Workiva, when the run finishes.
+  Never push master.
+- Merge: no ("Show me the findings", then "for question 2 then no"). STOP before any merge and show Ian the
+  evidence doc's findings in plain English: each FAIL, the GAP list, the 1.0-vs-1.1 differences, the L6 days.
+- Spend: $0 ("question 3 $0"). Fake AI network every run. Codex reviews only while `codex login status` says
+  "Logged in using ChatGPT"; if it asks for credits or an API key, skip and record why.
+- New sessions: yes ("yes"): a successor at the context stop and the next queued session at the end, each
+  launched with the same --settings STUDIO_RUN_LEDGER form and bound by this slip.
+
+Stops: plan approval; anything the slip does not name; a decision only Ian can make; two strikes per the skill.
+At every stop send a push notification, then ask in the session. Give Ian the time at start and at each stop.
