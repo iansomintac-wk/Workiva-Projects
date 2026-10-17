@@ -53,3 +53,10 @@ test('control e: no screenshots/recordings/port 8790; browser.mjs keeps its guar
   assert.ok(b.includes('--user-data-dir'));
   assert.ok(b.includes('setDownloadBehavior'));
 });
+
+test('cleanup keeps retrying the delete past 5 s when the folder frees at about 6 s', async () => {
+  const t0 = Date.now(); let attempts = 0; let freed = false;
+  await cleanupProfile({ pid: 9, profile: 'p', isAlive: () => false, kill: () => {},
+    remove: () => { attempts++; if (Date.now() - t0 >= 6000) freed = true; }, exists: () => !freed });
+  assert.ok(freed && Date.now() - t0 >= 6000 && attempts > 1);
+});

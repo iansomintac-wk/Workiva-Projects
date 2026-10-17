@@ -27,24 +27,19 @@ export function countLeftovers(prefixes, dir) {
 }
 
 // Kill by PID, wait for that PID to exit, only then remove the profile (with retries). Never removes while alive.
-export async function cleanupProfile({ pid, profile, isAlive, kill, remove, exists, timeoutMs = 20000 }) {
+export async function cleanupProfile({ pid, profile, isAlive, kill, remove, exists, timeoutMs = 60000, removeMs = timeoutMs / 2 }) {
   try { kill(pid); } catch {}
   for (const end = Date.now() + timeoutMs; isAlive(pid); await sleep(100)) {
     if (Date.now() > end) throw new Error(`process still alive: pid ${pid}`);
   }
-  for (let k = 0; k < 20; k++) {
+  for (const end = Date.now() + removeMs; ; await sleep(250)) {
     try { remove(profile); } catch {}
     if (!exists(profile)) return;
-    await sleep(250);
+    if (Date.now() > end) break;
   }
   throw new Error(`profile remains: ${profile}`);
 }
 
-const pidAlive = pid => {
-  try {
-    return execFileSync('tasklist', ['/FI', `PID eq ${pid}`, '/NH'], { encoding: 'utf8', windowsHide: true }).split(/\s+/).includes(String(pid));
-  } catch { return false; }
-};
 const pidKill = pid => {
   if (process.platform === 'win32') execFileSync('taskkill', ['/PID', String(pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true });
   else process.kill(pid, 'SIGKILL');
@@ -65,11 +60,13 @@ export async function launch({ version, startDay, runDir, part, seed = null }) {
     '--no-first-run', '--no-default-browser-check', '--disable-gpu', '--window-size=1440,900',
     `--host-resolver-rules=${RESOLVER_RULES}`, 'about:blank'], { stdio: 'ignore', windowsHide: true });
   const pid = child.pid;
+  // Alive = Node's own handle on the child has not seen it exit (no tasklist polling; immune to PID reuse).
+  const alive = () => child.exitCode === null && child.signalCode === null;
   let ws = null; let stopped = false;
   const stop = async () => {
     if (stopped) return; stopped = true;
     try { ws && ws.close(); } catch {}
-    await cleanupProfile({ pid, profile, isAlive: pidAlive, kill: pidKill, remove: p => rmSync(p, { recursive: true, force: true }), exists: existsSync });
+    await cleanupProfile({ pid, profile, isAlive: alive, kill: pidKill, remove: p => rmSync(p, { recursive: true, force: true }), exists: existsSync });
   };
   try {
     let page;
