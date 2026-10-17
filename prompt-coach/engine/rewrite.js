@@ -269,7 +269,7 @@
     // declared extension of spec rule 3: a "can/could you + verb" in the middle of a sentence (not a question word first)
     // a question-word sentence stays a question; only a ", and/then/so can you + verb" tail splits off as its own imperative
     if (/^(?:what|which|who|whom|whose|when|where|why|how)\b/i.test(b)) {
-      b = b.replace(new RegExp('^([\\s\\S]*?),\\s+(?:and|then|so)\\s+(?:can|could|would) you(?:\\s+(?:please|kindly))?\\s+(?=[a-z])([\\s\\S]*)$', 'i'), (x, head, tail) => { converted = true; return head + '? ' + tail.replace(/^[a-z]/, (c) => c.toUpperCase()); });
+      b = b.replace(new RegExp('^([\\s\\S]*?),?\\s+(?:(?:and|then|so)\\s+(also|plus)|(also|plus)|and|then|so)\\s+(?:can|could|would) you(?:\\s+(?:please|kindly))?\\s+(?=[a-z])([\\s\\S]*)$', 'i'), (x, head, g1, g2, tail) => { converted = true; const w = g1 || g2; return head + '? ' + (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() + ' ' + tail : tail.replace(/^[a-z]/, (c) => c.toUpperCase())); });
     }
     // a bare lead-in (also/plus/and/but/so/then) stays; only the "can you" goes
     b = b.replace(/^(also|plus|and|but|so|then)(,?)\s+(?:can|could|would) you(?:\s+(?:please|kindly))?\s+(?=[a-z])/i, (x, w, c) => { converted = true; return w + c + ' '; });
