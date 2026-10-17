@@ -1,0 +1,34 @@
+Resume: improve the Workiva AI Prompt Coach's Better / Strong rewrites (talk stage, continued).
+
+Run this session ON IAN'S COMPUTER, in his local clone of iansomintac/Workiva, with the
+Claude in Chrome extension connected, so the live Workiva AI tests can run. A cloud session
+cannot reach the extension.
+
+0. git fetch origin && git checkout claude/modest-gates-yqsfw2 && git pull. Read CLAUDE.md,
+   prompt-coach/README.md, prompt-coach/research/2026-10-17-rewrite-talk.md (everything measured
+   and agreed so far, Ian's rulings verbatim, the draft spec), prompt-coach/engine/rewrite.js and
+   prompt-coach/tests/customer_check.js. Invoke talk-and-run and brainstorming first.
+1. Research, on small helpers (Haiku, low effort, replies under 250 words, sources opened):
+   a. Workiva: fetch the 10 article ids in the talk notes via
+      https://support.workiva.com/api/v2/help_center/en-us/articles/<id>.json (HTML pages 403),
+      save as text in a scratch folder (not the repo), have a helper summarise: prompt tips (role,
+      politeness, format, examples), @-references (file types, per-prompt limit, surfaces), the
+      2026-09 "global companion" change and whether the coach's companion tip is still right,
+      the prompt advisor's [placeholders], knowledge bases. Spot-check 2 of its claims yourself.
+   b. Plain-language word lists (plainlanguage.gov, digital.gov, Microsoft and Google style
+      guides), plus what those guides say about "please" and imperatives. Then the cheap check:
+      a 20-entry list over the 657 rewrites; drop the idea if under ~5% change.
+2. Load the chrome-browser skill. Confirm the Claude in Chrome tools load; check Ian is logged
+   into his Workiva sandbox. Record what Workiva AI surfaces show (chat, companions, @, file
+   limits) without changing anything. Sandbox only, synthetic files only, stop and ask on any
+   dialog that asks for more than typing a prompt.
+3. Show Ian the plan with options and a recommendation (his trial rule: three usual options and
+   one that breaks a named assumption, each with its cheapest check). Write the spec in
+   docs/superpowers/specs/2026-10-17-rewrite-voice-design.md once he agrees, then the plan.
+   Build only after his yes on the plan: tests first in tests/customer_check.js (fail, then
+   pass), using research/rewrite_case_invoices.txt as Ian's case.
+4. Keep green: eval 85.6% or better; simulate no worse than 8 / 5; customer_check default PASS;
+   customer_check on data/test.jsonl no worse than today's 4 notStrong (it already fails, see
+   notes); filetest; desktop and phone browser check of the built page.
+5. Before/after numbers with research/rewrite_probe.js. Docs in the same commit. Never push or
+   update the published page without Ian's yes for that specific action.

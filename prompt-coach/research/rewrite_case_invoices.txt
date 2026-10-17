@@ -1,0 +1,7 @@
+I have attached the following water meter statements. Please list the reading dates (please use the last day of the month for each reading; for example, if the reading was 3/14/2025, put 3/31/2025), site, meter ID, volume and volume unit in table format from each statement. Additionally, if a statement covers more than one site, please list each site separately. The column headers should read as follows: Date, Site, Meter ID, Volume, Volume Unit, Cost, Currency
+
+I have attached the following water meter statements. Please list the reading dates (please use the last day of the month for each reading; for example, if the reading was 3/14/2025, put 3/31/2025), site, meter ID, volume and volume unit in table format from each statement. Additionally, please include the cost for each reading. The column headers should read as follows: Date, Site, Meter ID, Volume, Volume Unit, Cost, Currency
+
+Before finalizing your response, state how many statements you found in the knowledge base, then confirm that every one is represented in the table. Do not stop at the first set of results — make sure all records are accounted for
+
+For every row in the output table, include an inline citation naming the statement the data came from.
