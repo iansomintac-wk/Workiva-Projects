@@ -305,5 +305,26 @@ const first = (r) => (match(r.task, cat)[0] || {}).id, want = (r) => gold.get(r.
 const wrong = fitting.filter((r) => first(r) && !want(r).includes(first(r)));
 const missed = fitting.filter((r) => !first(r) && want(r).length);
 console.log(`first card right: ${fitting.length - wrong.length - missed.length} of ${fitting.length}; wrong card ${wrong.length} (${wrong.map((r) => r.id).join(',')}); no card where one fits ${missed.length} (${missed.map((r) => r.id).join(',')})`);
+// half A: the fitting tasks outside the held-out half; data/card-gold-a.jsonl, each row says who labelled it
+const fittingA = rows.filter((r) => !half.has(r.id) && r.fit !== 'not');
+const goldAFile = path.join(root, 'data/card-gold-a.jsonl');
+const goldARows = fs.existsSync(goldAFile) ? fs.readFileSync(goldAFile, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse) : [];
+const goldA = new Map(goldARows.map((g) => [g.id, g]));
+check('card gold A: one row per half-A task that fits, catalogue cards only, labelled by ian or model', () => {
+  const missing = fittingA.filter((r) => !goldA.has(r.id)).map((r) => r.id);
+  assert(!missing.length, 'no gold row for ' + missing.join(','));
+  const extra = [...goldA.keys()].filter((id) => !fittingA.some((r) => r.id === id));
+  assert(!extra.length, 'rows for tasks outside half A fitting set ' + extra.join(','));
+  assert.strictEqual(goldARows.length, goldA.size, 'a task has more than one row');
+  const unknown = goldARows.flatMap((g) => g.cards).filter((id) => !ids.has(id));
+  assert(!unknown.length, 'unknown card ' + unknown.join(','));
+  const badBy = goldARows.filter((g) => !['ian', 'model'].includes(g.by)).map((g) => g.id);
+  assert(!badBy.length, 'by must be ian or model for ' + badBy.join(','));
+});
+const wantA = (r) => (goldA.get(r.id) || {}).cards || [];
+const wrongA = fittingA.filter((r) => first(r) && !wantA(r).includes(first(r)));
+const missedA = fittingA.filter((r) => !first(r) && wantA(r).length);
+const byA = (b) => goldARows.filter((g) => g.by === b).length;
+console.log(`half A first card right: ${fittingA.length - wrongA.length - missedA.length} of ${fittingA.length}; wrong card ${wrongA.length} (${wrongA.map((r) => r.id).join(',')}); no card where one fits ${missedA.length} (${missedA.map((r) => r.id).join(',')}); labelled by Ian ${byA('ian')}, by the model ${byA('model')}`);
 console.log(fails ? fails + ' failed' : 'all catalogue checks pass');
 process.exit(fails ? 1 : 0);

@@ -27,6 +27,7 @@ node tests/pagetest.js [capture-folder]                            # real Chrome
 | `data/LABELING.md` | The rubric: good / partial / not a fit, operations, blockers |
 | `data/tasks.jsonl` | 120 AI-written task descriptions, blind-labeled by an AI |
 | `data/card-gold.jsonl` | For the 30 held-out tasks that fit: every card Ian marked right to show (2026-10-16) |
+| `data/card-gold-a.jsonl` | For the 29 half-A tasks that fit: every card right to show, each row labelled by Ian (11) or a blind top-model labeler (18) (2026-10-16) |
 
 ## How good it is (2026-10-15)
 Half A (60 tasks) tuned the rules; half B is held out. Fit agreement: A 86.7%, **B 75.0%**
@@ -134,3 +135,16 @@ card's advice works in Workiva AI has one test so far (Ian's sandbox, 2026-10-16
 workspace files listed all 4 planted changes, invented none and flagged the removed risk sentence,
 but passed "up 6%" as a year roll although revenue went from $4.2bn to $4.5bn (about 7%). One run
 of one task; it fits "exact calculation stays with you".
+
+Right card on half A (2026-10-16): `data/card-gold-a.jsonl` holds the same kind of labels for the 29
+half-A tasks that fit, so fixes can be found on A while B stays the score. A top-model labeler, blind to
+the engine, labelled all 29. Ian labelled 8 of them himself (picked by seed 20261016: 81, 22, 103, 16,
+94, 19, 58, 66) and matched it exactly on 5; each of the 3 differences was the model also accepting a
+general card. He then checked the 3 tasks where the model's call decides the score and is weakest (23,
+49, 65) and overruled it on 23. Each row says who labelled it: Ian 11, the model 18. The page's first
+card is right on 10 of 29 and wrong on none; 19 get no card. For 13 of those 19 a right card names chat
+with your file first, which is what the page suggests; for the other 6 every right card names another
+feature first: the year-over-year narrative for 4 (tasks 8, 100, 108, 112, all four labelled by the
+model, none by Ian), peer benchmarking for 19,
+and formula or query help for 29 (which the labeler called a weak fit). Half A's figure rests partly on
+the model's labels, so it does not compare directly with B's 13 of 30.
