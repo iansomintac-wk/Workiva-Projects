@@ -1,3 +1,58 @@
+Fit Finder v4.20: hand-off (2026-10-17, session 50904aba, successor of c4f8b112; two-strikes round chose rule C)
+
+WHERE
+Same worktree and branch. Pushed by v4.20 under the slip (push of this branch only; merge no; spend none):
+this hand-off commit (plan for rule C + this note). Live page still v13 (dist of 8050b07). Run ledger:
+C:/Users/teasp/Documents/studio-harness/.claude/worktrees/bedtime-slip/.ledger/2026-10-16-24h-program/fit-finder-v421/
+(slip.json, budget.json naming the plan, progress.md, round/ = the round's files, heldout.jsonl,
+heldscore.cjs, dry/ = the lead's dry run of the plan).
+
+NEXT SESSION (written by 50904aba at the 200k stop; supersedes every NEXT SESSION below)
+1. Re-run the lead's dry run: bash <v421>/dry/dry.sh > <v421>/dry/dry.log 2>&1 (it extracts the plan's
+   own blocks and runs Steps 1-4 and 8 on a scratch git copy of a313d12). Expect: Step 3 exit 1 with
+   exactly 4 FAIL (the plan lists them); Step 4 exit 0, 0 FAIL, only the fresh line 12 -> 10 of 23;
+   older texts 0 changed; 9 killed, 0 survivors. The previous run is not evidence for Steps 3 and 8:
+   the Step 2 splice had stopped (Git Bash turns a "//" argument into a path), now fixed with
+   MSYS_NO_PATHCONV=1. A failure here goes back to the plan (fix the sentence, never the rule).
+2. Rehearse: node C:/Users/teasp/Documents/studio-harness/bin/rehearse.mjs <plan> --ledger <v421>, from
+   the repo root (budget.json already names the plan). The plan's Expected breaks lists the 13 old
+   checks that Task 1 itself replaces; if rehearse calls them mismatches (no break happens after the
+   task), empty that section (gotcha: every non-empty line counts as a break) and re-rehearse.
+3. Implementer (shell cwd at the repo root), checker, your own re-run, then one final review (Opus
+   final-reviewer + Codex read-only with the diff in the prompt). Stopping rule (lead 13 and v4.19):
+   findings that are only sentences written against the rule go to the README as known limits; a
+   realistic must-fix still gets fixed.
+4. Then push (slip), item 71 in ../for-ian.md in plain words: rule C replaced V2; it reaches fewer
+   rewrite asks than V2 (7 vs 13 of 20 blind sentences; live 3) and gives no wrong rewrite card on the
+   42 reviewer sentences; Ian can ask for the wider rule. Republish v14 and his 5 checks stay his.
+5. PM hand-off step and brain capture (skipped since v4.17): candidates as in v4.19's list below,
+   plus (e) Git Bash rewrites "//..." arguments (MSYS path conversion): use MSYS_NO_PATHCONV=1;
+   (f) a plan-writer cannot run node -e, awk or sha1sum, so its numbers are read, not measured: the
+   lead dry-runs the plan's own blocks (dry/extract.cjs); (g) a two-strikes round can stop on
+   evidence: a blind held-out set (40 sentences, Sonnet, 20 s) showed the reviewers' false positives
+   came from sentences written against the regex (V2: 0 extra wrong cards on blind sentences).
+Program lead: "NEW - 24h program lead 13" (1cca7841) unless renamed; it agreed to the round and
+gets status by SendMessage.
+
+UPDATE 2026-10-17, session 50904aba (successor of c4f8b112): two-strikes round on rewrite reach
+- Program lead 13: "treat rewrite reach as two strikes ... no V3 by more word patches"; one round,
+  conventional fix vs the live rule. Done in about 25 minutes.
+- Blind held-out writer (Sonnet, low, 20 s): 40 sentences, 20 rewrite asks + 20 finance uses of the
+  same words, labels by: model (sha1 991b35ee). Kept from the round helper.
+- Round helper (Opus, 129,116 tokens, 32 tool uses, 606 s); I re-ran its run.sh byte-identical.
+  Pool of 87 reviewer and suite sentences (45 asks, 42 false positives). Causes shown by experiment:
+  "revise + noun" and the tone words sit on both sides; the added card words gate all 19 wrong
+  cards; dropping any single word leaves 12 or more.
+  Rule      reviewer FPs with card  fresh right/23 (wrong)  blind asks with card  blind finance with card
+  live      0 of 42                 8 (6)                   3 of 20               1 of 20 (H32)
+  C         0 of 42                 10 (6)                  7 of 20               1 of 20 (same H32)
+  V2        19 of 42                12 (6)                  13 of 20              1 of 20 (same H32)
+  A, B, real, evals and the 139 older texts are unchanged on all three. C clears both bars: chosen
+  (sent to lead 13 as a spread with the cheapest check of each).
+- Plan docs/superpowers/plans/2026-10-17-fit-finder-rewrite-reach-c.md (plan-writer, Sonnet, 98,956
+  tokens; it could run nothing). Lead dry run found two defects, fixed in the plan (see NEXT SESSION 1);
+  one was my error: I gave whole-file hashes where the plan checks line hashes.
+
 Fit Finder v4.19: hand-off (2026-10-17, session c4f8b112, successor of bc8a82fb; rewrite-reach rule V2 in 6f7090e)
 
 WHERE
