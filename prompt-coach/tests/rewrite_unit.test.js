@@ -120,3 +120,9 @@ test('direct voice: lead-ins, kept commas, mixed questions', () => {
   ];
   for (const [i, want] of cases) assert.equal(W.directVoice(i), want, i);
 });
+
+test('typos: common misspellings are fixed as whole words, case kept', () => {
+  assert.equal(W.fixTypos('Seperately, recieve it; occured untill tomorrow. Teh adress is definately wierd.'), 'Separately, receive it; occurred until tomorrow. The address is definitely weird.');
+  assert.equal(W.fixTypos('The seperatelyx and Reciever words stay.'), 'The seperatelyx and Reciever words stay.');
+  assert.ok(!/seperat/.test(run(IAN).stages.strong.prompt));
+});

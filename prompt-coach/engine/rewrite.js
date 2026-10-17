@@ -295,13 +295,20 @@
     for (const sp of sentenceSpans(text)) { out += text.slice(cur, sp.start) + directSentence(text.slice(sp.start, sp.end)); cur = sp.end; }
     return out + text.slice(cur);
   }
+  const TYPOS = { seperate: 'separate', seperately: 'separately', recieve: 'receive', recieved: 'received', occured: 'occurred', occurence: 'occurrence', occuring: 'occurring', definately: 'definitely', accomodate: 'accommodate', acheive: 'achieve', begining: 'beginning', beleive: 'believe', calender: 'calendar', wich: 'which', teh: 'the', adress: 'address', adresses: 'addresses', enviroment: 'environment', existance: 'existence', independant: 'independent', neccessary: 'necessary', necesary: 'necessary', refered: 'referred', succesful: 'successful', tommorow: 'tomorrow', untill: 'until', wierd: 'weird' };
+  const TYPO_RE = new RegExp('\\b(' + Object.keys(TYPOS).join('|') + ')\\b', 'gi');
+  function fixTypos(t) {
+    return t.replace(TYPO_RE, (m) => { const f = TYPOS[m.toLowerCase()];
+      if (m.length > 1 && m === m.toUpperCase()) return f.toUpperCase();
+      return m[0] === m[0].toUpperCase() ? f[0].toUpperCase() + f.slice(1) : f; });
+  }
 
   // Join segments, dropping letters that are off and tidying the spacing/punctuation left behind.
   function assemble(segs, onSet) {
     let t = segs.map((g) => (onSet.has(g.letter) ? g.text : g.inline ? g.alt || '' : '')).join('');
     t = t.replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/,\s*([.;!?])/g, '$1').replace(/\(\s*\)/g, '').replace(/\b(the|a|an) (the|a|an)\b/gi, '$1').replace(/^\s*[,;:]\s*/, '').trim();
     t = tidyChat(t).replace(/([.!?])[.!?]+/g, (m) => (m.includes('?') ? '?' : m[0])); // "...", "??" -> one mark
-    t = directVoice(t).replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/\(\s*\)/g, '').trim();
+    t = fixTypos(directVoice(t)).replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/\(\s*\)/g, '').trim();
     return t.replace(/(^|[.!?]\s+)([a-z])/g, (m0, p, c) => p + c.toUpperCase());
   }
 
@@ -508,6 +515,6 @@
     return { grade, detected: on, headline, stages, scope, segments, notes, tips, intent: ctx.intent, domain: ctx.domain, placeholders, hits: d.el };
   }
 
-  const api = { sentenceSpans, directVoice, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
+  const api = { sentenceSpans, directVoice, fixTypos, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
   if (isNode) module.exports = api; else root.ScopeRewrite = api;
 })(typeof window !== 'undefined' ? window : globalThis);
