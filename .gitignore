@@ -70,3 +70,6 @@ connector/*.lock
 
 # Hosting build output (tools/build-site.mjs rebuilds it)
 site/
+
+# Day+lifecycle sim run folders (tools/sim/osm-day/run.mjs)
+sim-runs/

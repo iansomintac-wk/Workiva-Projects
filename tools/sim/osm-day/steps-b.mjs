@@ -35,6 +35,19 @@ export const committedDate = (start, n) => addDays(start, 7 * (n - 1));
 export const l10Day = T => addDays(T, -7);
 
 const fernId = ctx => ctx.ev(`(DATA.customers.find(x => x.name === ${JSON.stringify(FERN)}) || {}).id || null`);
+// N (sessions) and T (committed date) as saved on the account; the second guard behind ctx.state (Task 11).
+export const ntFromCustomer = c => ({ N: c.totalSessions, T: c.targetGraduationDate });
+export const ntMismatch = (a, b) => (a.N !== b.N ? `N ${a.N} vs ${b.N}` : a.T !== b.T ? `T ${a.T} vs ${b.T}` : null);
+export async function recomputeNT(ctx) {
+  const c = await ctx.ev(`JSON.stringify(DATA.customers.find(x => x.name === ${JSON.stringify(FERN)}) || {})`);
+  return ntFromCustomer(JSON.parse(c));
+}
+// When a run is restored from a snapshot whose state lost N and T, take them from the saved data.
+async function ensureNT(ctx) {
+  if (ctx.state.N && ctx.state.T) return;
+  const nt = await recomputeNT(ctx);
+  ctx.state.N = nt.N; ctx.state.T = nt.T;
+}
 const marker = async ctx => (await ctx.ev('window.__simBreak')) || null;
 const withBreak = async (ctx, text) => { const m = await marker(ctx); return m ? `${text} [break ${m} active]` : text; };
 const openPanel = (ctx, id, tab) => ctx.ev(`ui.view = 'accounts'; ui.openCustomerId = ${JSON.stringify(id)}; ui.panelTab = ${JSON.stringify(tab)}; render(); true`);
@@ -138,6 +151,7 @@ async function l9phase1(ctx) {
 }
 // L9 phase 2 on T: session N, then the verdict over all four recordings.
 async function l9phase2(ctx) {
+  await ensureNT(ctx);
   const { N, T } = ctx.state;
   if (!N || !T || !ctx.state.l9 || !ctx.state.l9.phase1) throw new Error('L9 phase 2 needs L9 phase 1 first (ctx.state.N, T)');
   await openDay(ctx, T);
@@ -340,6 +354,7 @@ export const PART_B = [
   } },
   { id: 'L9', async run(ctx) { await l9phase1(ctx); return l9phase2(ctx); }, phase1: l9phase1, phase2: l9phase2 },
   { id: 'L10', async run(ctx) {
+    await ensureNT(ctx);
     const { N, T } = ctx.state;
     if (!N || !T || !ctx.state.l9 || !ctx.state.l9.phase1) throw new Error('L10 needs L9 phase 1 first (ctx.state.N, T)');
     const day = l10Day(T);
@@ -372,6 +387,7 @@ export const PART_B = [
     return { passed: soon && listed && clipOk && fileOk, evidence: await withBreak(ctx, `day ${day} (T ${T}): isGraduatingSoon ${soon}, listed under the graduating-soon filter ${listed}; Copy packet ${clipOk ? clip.length + ' chars' : 'no packet (' + clip.slice(0, 40) + ')'}; Download .txt ${fileOk ? file + ' ' + text.length + ' chars' : 'no packet file'}; secondary: graduating soon on ${early || 'no Part B day on or before T-31'}${early ? ' = ' + ctx.state.l9.gradSoon[early] : ''}; GAP: CSM request (Google form) is not in the tracker`) };
   } },
   { id: 'L11', async run(ctx) {
+    await ensureNT(ctx);
     const { N, T } = ctx.state;
     if (!N || !T || !ctx.state.l9 || !ctx.state.l9.phase1) throw new Error('L11 needs L9 first (ctx.state.N, T)');
     await openDay(ctx, T);

@@ -31,6 +31,18 @@ Hosted: the 1.1 tracker can also be served from a company-sign-in site. Running
 node tools/build-site.mjs makes site/ (two files); docs/HOSTING.md says what a
 host must provide. Nothing here publishes anything.
 
+Day and lifecycle sim (dev tooling, not part of the bundle): node
+tools/sim/osm-day/run.mjs [--version 1.0|1.1] [--part A|B] [--only D5,L7]
+[--no-breaks] [--out <dir>] drives a headless Chrome through one OSM workday
+(D1-D10) and one account's lifecycle (L1-L12) on a fake clock with fake AI
+replies, then breaks each checked step on purpose to prove the check can fail.
+Each run writes sim-runs/<stamp>/ (git-ignored): report-<v>.md, results-<v>.json,
+diff.md, run.log and times.txt. Exit 0 = every step passes (or is a listed
+gap) and every break flips it; 1 = a finding (FAIL, VACUOUS or NOT-TESTED);
+2 = the harness failed (missing step, a guard tripped, an AI request escaped
+the fake). A line marked PARTIAL comes from a run with --part, --only or
+--no-breaks, so it does not cover the whole inventory. It never edits a tracker.
+
 
 What the tracker does
 ---------------------
