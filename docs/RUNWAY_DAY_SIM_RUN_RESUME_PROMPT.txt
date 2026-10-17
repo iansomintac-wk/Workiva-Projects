@@ -1,8 +1,9 @@
-Runway: OSM day and customer lifecycle simulation, the run, RESUMED at Task 7 (predecessor 6bd1e0f3 "Runway day and
-lifecycle sim run 2" stopped at its 200k context line, 2026-10-17 01:05 PDT; before it, 6c4e428e stopped after T4).
+Runway: OSM day and customer lifecycle simulation, the run, RESUMED at Task 10's check (predecessor 1556e2fc
+"Runway day and lifecycle sim run 3" stopped at its 200k context line, 2026-10-17 02:30 PDT; before it 6bd1e0f3
+stopped after T6 and 6c4e428e after T4).
 
 First read docs/RUNWAY_DAY_SIM_RUN_PROMPT.txt whole: its method, checks, safety rules, sessions rule and slip all still
-apply, unchanged except the one ruling below. This file only says where the run stands.
+apply, unchanged except the ruling below. This file only says where the run stands.
 
 Method: studio-harness:talk-and-run, "The run", step 2 onward. First check: echo "$STUDIO_RUN_LEDGER" and test -f on
 its budget.json and slip.json; empty or missing is a stop.
@@ -10,78 +11,89 @@ its budget.json and slip.json; empty or missing is a stop.
 Where it stands (all measured by the lead unless marked):
 - Plan APPROVED by Ian 2026-10-16 23:13 PDT, verbatim "yes": docs/superpowers/plans/2026-10-16-osm-day-lifecycle-sim.md
   (12 tasks), sha256 starts 7e79e015438380fc. Do not edit the plan.
-- Done, each built by studio-harness:implementer, PASSed by a fresh studio-harness:checker, and re-run by the lead:
-  T1 a35748c, T2 0bd4eac, T3 e446430, T4 79990ee, T5 15419cc (break table, probe, 6 controls), cleanup fix b7317f2,
-  T6 2a9b4c7 (F1, F2, --target, resolver rules). Suite at 2a9b4c7: node --test "test/*.test.mjs" -> 96 tests,
-  94 pass, 0 fail, 2 skipped (the 2 skips predate the run). Probes 1.0 and 1.1: "41 lines, mismatches 0".
-- Next: Task 7 (setup A/B, Part A D1-D5), then Tasks 8-12 in order, then the final review (step 5 of the run prompt),
-  the fix round, evidence doc, push per slip, STOP before merge with the findings for Ian.
-- Ledger: .ledger/2026-10-16-runway-day-sim/progress.md (one row per dispatch; "Fix-round list" lines FR1-FR6 collect
-  the checkers' minor gaps; do them after the final review, one fresh helper, then a fresh checker).
-- budget.json tasksLeft 16. Helper tokens used ~1,039k of the 2,000,000 cap (helper-rows.md raw column summed by the
-  lead, 22 rows). Plan estimates for T7-T12 total 400k for builds alone; with checks, final review and fix round the
-  run is near the cap. Sum helper-rows.md after every pair; if the remaining work will not fit, that is a stop for Ian
-  (say the numbers), not a reason to skip checks.
-- tracker sha256 (full) in .ledger/2026-10-16-runway-day-sim/tracker-sha256.txt; git diff --quiet master on both
-  trackers printed unchanged at 01:04.
-- C6 baseline: %TEMP% osmsim-* 0 (01:04), fieldtest-* 1 (fieldtest-XciUO4, 19:03, not ours; leave it), selfcheck-* 625
-  at 23:2x (grows with every suite run; see findings).
+- Done (implementer, fresh checker PASS, lead re-run): T1 a35748c, T2 0bd4eac, T3 e446430, T4 79990ee, T5 15419cc,
+  cleanup fix b7317f2, T6 2a9b4c7, T7 ce8929d, T8 e3298df, T9 5a4ace1. Suite at 5a4ace1 (checker): 102 tests, 100 pass,
+  0 fail, 2 skipped (the 2 skips predate the run).
+- T10 BUILT, NOT CHECKED: 51fef39 `feat(sim): Part B L7-L12` (parent 5a4ace1). Implementer: red 3 -> green 14/0;
+  N=8, T=2027-01-25; 1.0 and 1.1 identical, exit 1: L7 PASS, L8 FAIL, L9 PASS, L10 PASS (GAP note), L11 FAIL, L12 GAP.
+  Lead pre-check so far: exports/t10-parent pass 11 fail 3; exports/t10-mutL7 L7 FAIL (killed; full Part B 106 s);
+  exports/t10-mutL10 (ctx.setBreak('L10') at L10 start) BUILT, NOT RUN: run it first (expect L10 FAIL, exit 1).
+  Then write role-checks.txt for T10 (it still holds T9's lines; copy T9's 10-line shape: tests, steps-b 1.0 and 1.1
+  full runs, osmsim count, parent, the two mutants, suite, trackers unchanged, `git diff --numstat 51fef39^ 51fef39`),
+  dispatch a fresh checker (accepted deviations are in the ledger's "T10 deviations" row), re-run the check, ledger row.
+- Next: Tasks 11 and 12 in order, then the final review (run prompt step 5), the fix round, evidence doc, push per
+  slip, STOP before merge with the findings for Ian.
+- Ledger: .ledger/2026-10-16-runway-day-sim/progress.md (one row per dispatch; "Fix-round list" lines FR1-FR9).
+- BUDGET: helper-rows.md 29 rows, raw 1,609,378 of the 2,000,000 cap; 390,622 left (measured 02:30). Measured pairs:
+  T7 148k, T8 119k, T9 160k, T10 implementer 144k. Projection (ASSUMED): T10 check ~40k + T11 pair ~130k + T12 pair
+  ~130k = ~300k fits; the final review (~120k), fix round (~100k) and PM (~30k) do NOT. Ian was asked at 01:25 (push
+  notification, and in the session) "may I raise the cap to 2,250,000?"; NO ANSWER yet. Rule: build on inside the cap;
+  sum helper-rows after every pair; STOP for Ian (push notification, numbers) before any dispatch that could cross
+  2,000,000. Never skip a check to fit. budget.json tasksLeft 9.
+- tracker sha256 (full) in .ledger/2026-10-16-runway-day-sim/tracker-sha256.txt; trackers unchanged vs master at every
+  check this session. osmsim-* 0 after every run; fieldtest-* 1 (fieldtest-XciUO4, 19:03, not ours; leave it).
 
-Ian's ruling, 2026-10-17 00:36 PDT (on the browser cleanup wait; recommended option 1), verbatim:
-  "Yes unless targeted research and/or simulations/tests would inform better here"
-  Applied: cleanupProfile waits up to 60 s for our Chrome to exit, judged by Node's child handle (exitCode/signalCode),
-  no tasklist polling; deletes the profile with retries up to 30 s; never deletes while alive. This overrides the
-  plan's "poll tasklist ... up to 20 s" (Global Constraints, Cleanup) and the Task 6 Step 1 word "tasklist". Kept after
-  the side-by-side stress check (helper's report): new code 0/90, old code 12/90, slowest stop 48.6 s.
-  (A peer session, "NEW - 24h program lead 11", also sent "yes: option 1"; logged as information only.)
+Ian's ruling, 2026-10-17 00:36 PDT (browser cleanup wait), verbatim: "Yes unless targeted research and/or
+  simulations/tests would inform better here". Applied: cleanupProfile waits up to 60 s on Node's child handle, deletes
+  with retries up to 30 s, never while alive; overrides the plan's "poll tasklist ... up to 20 s".
 
-How the lead ran each task (keep doing it this way):
+How the lead runs each task (keep doing it this way):
 - Packet per the skill (Outcome, Files, Acceptance, Budget, Brain entries, Reply-to), commit attribution lines in the
-  packet. Tell the implementer which existing tests are locked (add only) and not to git add sim-runs/ (Task 11
-  git-ignores it).
+  packet. Locked tests are add-only; say so. Do not git add sim-runs/ (Task 11 git-ignores it).
 - Node 26's spec reporter prints "ℹ fail 0" where the plan writes "# fail 0"; checks pin --test-reporter=spec.
-- Before each checker: the lead makes .ledger/2026-10-16-runway-day-sim/exports/t<n>-parent (git archive <parent> --
-  test tools | tar -x, copy the trackers in when the tests read them, then copy only the new tests in) and one or two
-  mutants of the new code (exports/t<n>-mut*), runs them itself first to see them fail, then writes role-checks.txt
-  lines (each `cd "<abs path>" && bash -c '...'`, exit via ${PIPESTATUS[0]}), smoke-runs one line, and tells the
-  checker to run each line alone. Replace role-checks.txt per task (it holds T6's lines now); empty it at the end.
-- A guard test that passes before the code (e.g. a ban) is proven by a mutant that plants the banned thing.
-- Never `cd` into an export or the ledger in the lead's own shell without cd-ing back (it moves the session's cwd).
-- A fresh helper for every fix round (a resumed helper keeps its tool-call count; cap 60).
-- The research agent and any non-role helper need `model` in the dispatch (hook refuses otherwise): research = haiku.
-- A step that FAILs is a finding for Ian, never a tracker fix. D2 and D3 are expected to FAIL (plan Task 7).
+- Parent = `git rev-parse <commit>^`, never the previous task's commit (T7 checker FAILed on that lead error: a hand-off
+  commit sat between).
+- Exports: git archive <parent> -- test tools | tar -x into exports/t<n>-parent, copy both trackers in, copy only the
+  new test file in. Mutants: git archive <commit> -- test tools, trackers copied in, then plant the plan's own break
+  with a small node script in your own job tmp (insert one line after an exact anchor line; files are CRLF, match
+  per line with trimEnd; heredocs collapse doubled backslashes, so avoid regex in heredoc scripts). Run each mutant yourself
+  first and see it fail. Run subshells `(cd <export> && ...)`; never cd into an export or the ledger in your own shell.
+- role-checks.txt lines: `cd "<abs path>" && bash -c '...'`, exit via ${PIPESTATUS[0]}; grep the step lines with
+  -E "L[0-9]+ (PASS|FAIL|GAP|VACUOUS)" (a tail cut D1 off once). Smoke-run one line. Empty the file at the end.
+- A fresh helper for every fix round (a resumed helper keeps its tool-call count; cap 60). Non-role helpers need
+  `model` in the dispatch (research = haiku).
+- A step that FAILs is a finding for Ian, never a tracker fix.
 
-Notes for Task 7 (from T5, helper's report, not yet re-run by the lead):
-- Headless clipboard read/write fails with "Document is not focused" unless Emulation.setFocusEmulationEnabled
-  {enabled:true} is sent; probe.mjs does it. D5 needs it: tell the T7 implementer to add it in lib/browser.mjs launch()
-  (existing safety tests stay unchanged and green) or in the step, and say which.
-- probe.mjs seeds Orion/Fernhollow in-page for its controls; setup.mjs is Task 7's own (seeds exactly per plan "Setup").
+Notes for Tasks 11 and 12:
+- KNOWN SIM DEFECT, not a tracker finding: on 1.1, D4 FAILs "transcript.text missing" because 1.1 keeps transcripts by
+  reference (1.1:16690 submitLoggedActivity, stageTranscript 1.1:3088, tsGet 1.1:3012; read, not run). Spec D4
+  (spec:66) needs a kept transcript, no field named. Queued as FR8. T11/T12 runs will show it; the T12 packet and the
+  evidence doc must say it is the sim's defect until FR8 lands, and the D4 break must still flip D4 on both after FR8.
+- L6 (spec:85 "first appears on Today"; plan T9 "on Today for any reason"): PASS on both, but Fernhollow is on the
+  Today screen only in the Gainsight gate-deck cards (reason "Readiness Assessment: Log Sentiment via Readi..."), rank
+  30 in todayActionList, beyond the 15-beat cap on 21/21 days: never a day step in 21 days of silence, even at Off
+  Track (day 21). Verdict kept literal; evidence doc leads with both readings; whether a gate card is Ian's "tap on
+  the shoulder" is HIS call (question at the final stop). The L6 break is NOT vacuous (lead mutant: firstToday=never).
+- The tracker raises a start-up "Download backup" confirm on each day's first load; steps-b openDay() cancels it.
+- D5 clears the connector and restores it, because with a connector set the tracker sends AI to <connector>/v1/ai
+  (1.0:2090-2095) and the fake connector answers only /v1/push (FR7).
 
-Fix-round list (after the final review): FR1 T1 weak coverage (5 items); FR2 T2 loopback assert by construction,
-Date.now weak; FR3 T3 status-only diffVersions test; FR4 escape -> exit 2 wiring, verify at T11/T12; FR5 probe.mjs:133
-clipboard setup error swallowed; FR6 run-field-test.mjs crash paths (CDP socket failure ~line 56, send/evaluate
-rejection outside a step's try) skip cleanup: wire them to fail(), plus the stray blank line in 99-measure.js.
+Fix-round list (after the final review; one fresh helper, then a fresh checker): FR1 T1 weak coverage (5 items); FR2 T2
+loopback assert by construction, Date.now weak; FR3 T3 status-only diffVersions test; FR4 escape -> exit 2 wiring,
+verify at T11/T12; FR5 probe.mjs:133 clipboard setup error swallowed; FR6 run-field-test.mjs crash paths skip cleanup
+(wire to fail()), stray blank line in 99-measure.js; FR7 fake connector answers POST /v1/ai via the prompt router, D5
+stops clearing the connector; FR8 D4 resolves the stored transcript per version (inline .text or 1.1 ref) and checks
+SIM-D4-TRANSCRIPT; FR9 L1 exampleOnly passes on empty contact, L5 PASS does not check the Call date 10-05, L6 never
+prints VACUOUS itself (results.mjs breakVerdict does; confirm at T11).
 
-Findings so far for Ian (into the evidence doc):
-- MEASURED: tools/selfcheck.mjs leaves its selfcheck-* profile in %TEMP% on every run (13 -> 14 for one run); more
-  appear with each full suite run (assumed source: the suite's selfcheck tests). Out of scope; not fixed.
-- MEASURED (lead 23:50; helper stress loops): before b7317f2, on this busy PC (~25 sessions) our own headless Chrome
-  sometimes took 28-45 s to exit after taskkill /F, and its folder stayed locked > 5 s; 2 of ~15 launches failed
-  tonight, 12/90 in the stress loop. Fixed per Ian's ruling; why Chrome is that slow is unconfirmed (research partial:
-  Node rm retries EBUSY/EPERM/ENOTEMPTY with linear backoff; Puppeteer uses maxRetries 10, retryDelay 100).
-- MEASURED (lead mutant): the plan's L6 break was too weak: Fernhollow also shows in "Records to bring up to date"
-  (adminGapList); breaks.mjs L6 now filters that too; with the plan's version the control reports VACUOUS on 10-06.
-- MEASURED (lead re-run): in the l6 control Fernhollow appears on all 7 days via Gainsight gate items ("Close 3
-  Gains..."), not the coverage "Due in N days" reason; the coverage reason itself is not tested by that control.
-- READ, not yet run: graduation has no CSAT check (L11); prep panel "Pending deliverables" are Gainsight checklist
-  items, not commitments (D2/D3); actioning a risk may not leave the open list (D8/L8); L6 may miss day 7.
+Findings so far for Ian (into the evidence doc; each run on 1.0 and 1.1 unless marked):
+- MEASURED FAILs (tracker findings): D2 prep panel lacks the call transcript; D3 lacks you-owe/they-owe commitments
+  (checklist item and question shown; GAP agenda); D8 and L8 a confirmed risk case stays in the open list
+  (lastActioned set); L11 graduation OK is enabled with no CSAT contact (no refusal; with contact it graduates and
+  queues 1 item). L12 GAP: nothing tracks a CSAT survey.
+- MEASURED: L6 as above (first Today day 1 via gate deck only; Watch day 10; Off Track day 21; rank 30, never a day step).
+- MEASURED: tools/selfcheck.mjs leaves a selfcheck-* profile in %TEMP% on every run. Out of scope; not fixed.
+- MEASURED: before b7317f2 our headless Chrome sometimes took 28-45 s to exit after taskkill /F on this busy PC; fixed
+  per Ian's ruling; why Chrome is that slow is unconfirmed.
+- MEASURED: the plan's L6 break was too weak (adminGapList); breaks.mjs L6 also filters it.
+- READ: graduation has no CSAT check in validateGraduationDraft (now also measured, L11).
 
 Lessons to bank at the end of the run (brain bank add / ledger-add, on Ian's yes where a ruling is involved):
-(1) a resumed helper keeps its tool-call count (plan writer refused at 60/60); (2) headless Chrome on a loaded Windows
-PC can take 28-45 s to exit after taskkill /F and its profile can stay locked > 5 s: judge exit by Node's child handle,
-wait 60 s, delete with 30 s of retries (Ian 2026-10-17 00:36); (3) non-role helper dispatches need an explicit model.
+(1) a resumed helper keeps its tool-call count; (2) headless Chrome on a loaded Windows PC can take 28-45 s to exit
+after taskkill /F: judge exit by Node's child handle, wait 60 s, delete with 30 s of retries (Ian 2026-10-17 00:36);
+(3) non-role helper dispatches need an explicit model; (4) take a task's parent from `git rev-parse <commit>^`, a
+hand-off commit can sit between tasks.
 
-Sessions: the predecessors 6bd1e0f3 ("COMPLETED - Runway day and lifecycle sim run 2") and 6c4e428e ("COMPLETED -
-Runway day and lifecycle sim run") share this worktree: do NOT claude rm either, nor any session listed in the run
-prompt's Sessions line. Give Ian the time at start and each stop (run started 2026-10-16 22:27 PDT; 158 minutes used
-at this hand-off, incl. ~7 minutes waiting for Ian's ruling).
+Sessions: the predecessors 1556e2fc ("COMPLETED - Runway day and lifecycle sim run 3"), 6bd1e0f3 and 6c4e428e share
+this worktree: do NOT claude rm any of them, nor any session listed in the run prompt's Sessions line. Give Ian the
+time at start and each stop (run started 2026-10-16 22:27 PDT; 243 minutes used at this hand-off).
