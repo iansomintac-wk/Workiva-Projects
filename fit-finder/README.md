@@ -209,10 +209,12 @@ formal 6, professional 3, concise 1, friendly 1), and dropping any single added 
 still left 12 or more. So the guards did not converge and rule C removes the alternatives instead.
 
 Numbers (the suite prints the fresh line first on its line:
-`fresh prompts first card right: 10 of 23 that fit; wrong card 6 (G2,G14,G15,G22,G26,X1)`; first
+`fresh prompts first card right: 15 of 23 that fit; wrong card 5 (G2,G14,G15,G22,X1); no card where one fits 3 (G10,G12,G20)`; first
 scored 8 of 23 before any rule, V2 12):
-- Fresh 29 prompts: first card right 10 of 23, wrong card 6, the same six wrong cards as before.
+- Fresh 29 prompts: first card right 15 of 23, wrong card 5 (was 10 and 6 before the item-71 labels below).
   The rule was chosen after seeing which of these missed, so this is a tuned-on figure.
+  Ian's 5 item-71 checks were answered by the program lead, a model (lead 17, 2026-10-17), on Ian's words "You were supposed to provide the answers" (15:30:18Z). The rows stay `by: model` and Ian can overturn any of them (1 no, 2 no, 3 yes, 4 yes, 5 no).
+  Done-when (proposal A, accepted the same way): first card right on at least 12 of 23 and wrong on at most 3 on this set, then the same bar scored once on a second untouched real set; now right is met (15), wrong is not (5).
 - Blind held-out, 40 sentences (`docs/evidence/2026-10-17-rewrite-heldout.jsonl`, 20 rewrite asks and
   20 that are not; labels by the model; each rule scored once): rewrite card on 7 of 20 asks for
   rule C, 13 for V2, 3 for the live rule (383afd3); on the 20 that are not rewrites 1 of 20 for every
