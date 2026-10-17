@@ -50,7 +50,7 @@ Helpers for the checks (committed with this file): `node docs/extension-checks/s
 - Files: tools/sim/osm-day/steps-a.mjs (D7), verify.mjs (mask removal), test/osm-day-steps.test.mjs.
 - Check: `W && for i in 1 2; do node tools/sim/osm-day/run.mjs --version 1.1 --part A --only D7 --no-breaks --out sim-runs/ext/x5-$i > /dev/null 2>&1; done; node -e "const e=i=>require('./sim-runs/ext/x5-'+i+'/results-1.1.json').steps[0].evidence;console.log('same',e(1)===e(2),'hasRandomId',/SIM-EXT-[a-z0-9]{6,}/.test(e(1)),'relation',/matches own row id/.test(e(1)))"; grep -c "SIM-EXT" tools/sim/osm-day/verify.mjs`
 - Expected: `same true hasRandomId false relation true`; last grep prints `0` (today it is 2).
-- Status: todo
+- Status: done (commit see git log). Evidence: Check line as written (D7 alone) prints "same true hasRandomId false relation false" because D7 needs the call D4 logs and so FAILs alone (existing precondition, unchanged); with --only D4,D7 it prints "same true hasRandomId false relation true"; verify.mjs SIM-EXT count 0; suite fail 0; left 1.
 
 ### X6 L11 clicks OK with no contact; break targets the CSAT check (Fix A2)
 - Outcome: in the no-contact case L11 clicks OK and judges refusal by stage and queue after the click; the break in `lib/breaks.mjs:27` removes the CSAT-contact requirement instead of disabling `confirmGraduation`. Report honestly: the scouted result is FAIL (no refusal), so the break may stay NOT-TESTED; that is a finding, not a defect.

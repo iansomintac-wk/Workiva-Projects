@@ -60,14 +60,14 @@ Both full runs exited 1 (findings), never 2. Every browser ended with 0 provider
 
 ### C5: what differed
 
-The two runs differ only in D7's evidence on each version: the text carries the connector id the tracker makes at random for the queued row (`SIM-EXT-...`, e.g. `SIM-EXT-rfq3ezfwmviasymn` in one run, another value in the other). With that id masked, the two runs are identical on both versions (verify prints this). So no step flipped between runs; the sim's D7 evidence line prints a random value. Under the plan's rule (any difference fails) C5 is FAIL. The fix is to leave the id out of D7's evidence in `steps-a.mjs`, outside this task's files; I did not change it. Pending: a later fix round may remove the id and turn C5 to PASS. Earlier runs I read before this task show the same single difference (1.0 at 10-09 against 10-25).
+The two runs differ only in D7's evidence on each version: the text carries the connector id the tracker makes at random for the queued row (`SIM-EXT-...`, e.g. `SIM-EXT-rfq3ezfwmviasymn` in one run, another value in the other). With that id masked, the two runs are identical on both versions (verify prints this). So no step flipped between runs; the sim's D7 evidence line prints a random value. Under the plan's rule (any difference fails) C5 is FAIL. The fix is to leave the id out of D7's evidence in `steps-a.mjs`, outside this task's files; I did not change it. Pending: a later fix round may remove the id and turn C5 to PASS. Earlier runs I read before this task show the same single difference (1.0 at 10-09 against 10-25). Fixed in the sim (X5): D7 evidence now says the externalId matches the sent row's own id and prints no random id, and verify no longer masks it; two D4+D7 runs gave identical D7 evidence. The measurements above predate that fix.
 
 ## 1.0 against 1.1
 
 From `diff.md` of the run (measured):
 
 - D4 differs: 1.0 PASS (transcript text stored), 1.1 FAIL with the break NOT-TESTED. This is the sim's defect described above, not a tracker difference. Superseded by X4: D4 is now PASS with the break FLIPPED on both versions.
-- D7 differs only by the random connector id above.
+- D7 differs only by the random connector id above. (Superseded by X5: the id is no longer printed.)
 - Every other step has the same result and the same evidence on both versions.
 
 ## NOT-TESTED breaks (the step failed first, so the break could not be judged)
@@ -105,7 +105,7 @@ The mechanism for D3 is proven separately by `probe --control d3` (see Task 5 co
 ## What a later fix round may change (pending)
 
 - FR8: D4 on 1.1 stops failing; the D4 1.1 break becomes testable; C1 1.1 changes to PASS 7 FAIL 3 and C4 1.1 to FLIPPED 16, NOT-TESTED 5.
-- D7 evidence without the random id: C5 turns PASS.
+- D7 evidence without the random id: C5 turns PASS. (Done in X5.)
 - FR9: L1 exampleOnly on an empty contact, L5 not checking the Call date 10-05, L6 never printing VACUOUS itself.
 - FR7: D5 stops clearing the connector.
 - L6: Ian's answer on the two readings.

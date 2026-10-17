@@ -120,10 +120,7 @@ function c5(runs) {
     }
     if (JSON.stringify({ ...sa, steps: 0, breaks: 0 }) !== JSON.stringify({ ...sb, steps: 0, breaks: 0 })) diffs.push(`${v} header`);
   }
-  // Information only: the same comparison with the tracker-made random connector id (SIM-EXT-...) masked.
-  const mask = r => JSON.stringify(stripTimings(r)).replace(/SIM-EXT-[a-z0-9]+/g, 'SIM-EXT-*');
-  const masked = VERSIONS.every(v => mask(runs[0].res[v]) === mask(runs[1].res[v]));
-  return { ok: diffs.length === 0, line: diffs.length ? `C5 FAIL differs: ${diffs.join(', ')} (random SIM-EXT id masked: ${masked ? 'identical' : 'still differs'})` : 'C5 PASS identical' };
+  return { ok: diffs.length === 0, line: diffs.length ? `C5 FAIL differs: ${diffs.join(', ')}` : 'C5 PASS identical' };
 }
 
 function c6(before, after) {

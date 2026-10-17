@@ -153,7 +153,8 @@ export const PART_A = [
     }
     await ctx.ev(`ui.view = 'risk'; render(); true`);
     const shown = await ctx.ev(`[...document.querySelectorAll('.rk-queue-row')].some(r => r.textContent.includes(${JSON.stringify(ORION)}) && r.textContent.includes('Pending items batch') && r.textContent.includes('sent'))`);
-    return { passed: row.status === 'sent' && !!row.externalId && shown, evidence: `own row ${queuedRow.status} -> ${row.status}${row.externalId ? ' (' + row.externalId + ')' : ''}; ${shown ? 'shows sent' : 'not shown as sent'} on the Risk tab; GAP notes: close a CTA after an ordinary call, success plan task update, Renewal Forecast Scorecard` };
+    const related = !!row.externalId && row.externalId === 'SIM-EXT-' + row.id;
+    return { passed: row.status === 'sent' && related && shown, evidence: `own row ${queuedRow.status} -> ${row.status}; externalId ${!row.externalId ? 'missing' : related ? 'matches own row id' : 'does not match own row id'}; ${shown ? 'shows sent' : 'not shown as sent'} on the Risk tab; GAP notes: close a CTA after an ordinary call, success plan task update, Renewal Forecast Scorecard` };
   } },
   { id: 'D8', async run(ctx) {
     await ctx.openOn(DAY);

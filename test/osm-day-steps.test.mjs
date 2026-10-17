@@ -292,3 +292,37 @@ test('X4 snapshot and seed restore carry the transcripts store', async () => {
   await runInNewContext(transcriptsRestoreJs(saved), { ...win, JSON });
   assert.deepEqual(store.map(r => r.ref).sort(), ['a1:abc', 'a2:def']);
 });
+
+// ---- X5: D7 reports the relation, not the tracker's random id ----
+function fakeD7Ctx(rowId, externalId) {
+  const queued = { id: rowId, status: 'queued', kind: 'Pending items batch' };
+  const sent = { ...queued, status: 'sent', externalId };
+  return {
+    openOn: async () => {}, click: async () => {},
+    ev: async src => {
+      if (/connectorConfigured/.test(src)) return true;
+      if (/^!!/.test(src)) return false;
+      if (/customers\.find.*\.id$/.test(src)) return 'c1';
+      if (/JSON\.stringify\(getGainsightQueue/.test(src)) return JSON.stringify(sent);
+      if (/JSON\.stringify\(\(\(\) =>/.test(src)) return JSON.stringify(queued);
+      return true;
+    },
+  };
+}
+test('X5 D7 evidence states the relation and carries no random id, whatever the id is', async () => {
+  const { PART_A } = await import('../tools/sim/osm-day/steps-a.mjs');
+  const d7 = PART_A.find(s => s.id === 'D7');
+  const a = await d7.run(fakeD7Ctx('q7k2m9x4pz', 'SIM-EXT-q7k2m9x4pz'));
+  const b = await d7.run(fakeD7Ctx('w1e8r5t3yu', 'SIM-EXT-w1e8r5t3yu'));
+  assert.equal(a.passed, true, a.evidence);
+  assert.equal(a.evidence, b.evidence);
+  assert.doesNotMatch(a.evidence, /SIM-EXT-[a-z0-9]{6,}/);
+  assert.match(a.evidence, /matches own row id/);
+  const bad = await d7.run(fakeD7Ctx('q7k2m9x4pz', 'SIM-EXT-other'));
+  assert.equal(bad.passed, false);
+  assert.match(bad.evidence, /does not match own row id/);
+});
+test('X5 verify C5 compares unmasked: no SIM-EXT mask remains', () => {
+  const t = readFileSync(new URL('../tools/sim/osm-day/verify.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(t, /SIM-EXT/);
+});
