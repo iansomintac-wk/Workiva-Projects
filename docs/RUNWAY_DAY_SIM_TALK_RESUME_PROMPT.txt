@@ -1,0 +1,57 @@
+Runway: OSM day and customer lifecycle simulation, the talk, RESUMED.
+
+Predecessor: talk session 6afcca7a, stopped 2026-10-16 20:44 PDT at the 200k context stop line.
+Method: studio-harness:talk-and-run, "The talk", from its step 7 (spec review) on. Plain English to Ian,
+one question at a time, recommendation first.
+
+Read first (all in this worktree unless marked):
+  - Spec: docs/superpowers/specs/2026-10-16-osm-day-lifecycle-sim-design.md (written, self-reviewed, committed;
+    NOT yet reviewed by Ian).
+  - Ledger: .ledger/2026-10-16-runway-day-sim/progress.md (git-ignored): every ruling verbatim, probe rows, spikes.
+  - Spikes (git-ignored, keep): .ledger/2026-10-16-runway-day-sim/spikes/ (fake clock, fake AI network, field test
+    on both versions, with logs). Probe maps: .ledger/2026-10-16-runway-day-sim/probe-1.0-map.md, probe-2-gaps.md.
+  - Original talk prompt (safety rules, do-not-rm list): C:/Users/teasp/Documents/Runway Tracker/docs/RUNWAY_DAY_SIM_TALK_PROMPT.txt
+    (main checkout, untracked).
+
+Where: worktree C:/Users/teasp/Documents/Runway Tracker/.claude/worktrees/runway-day-sim, branch runway-day-sim
+(from master f2ff9f8). Enter it with EnterWorktree path=<that path>. This session cannot write to the main
+checkout's .ledger; the talk ledger lives in the worktree's .ledger (above). The budget mod's ledger for this
+talk is the main checkout's .ledger/2026-10-16-runway-day-sim (budget.json there: 600k weighted cap, 2 helpers
+used 326,274 weighted); leave it to the mod.
+
+Done (do not redo): Ian's day, a customer's life, the drift line ("Within a week of the hand-off call"), both
+versions with one script, fake AI network every run, design sections 1 and 2 approved.
+
+Next, in order:
+  1. Ask Ian to review the written spec (one-line summary plus the path). Fix what he asks, re-run the spec
+     self-review, then record his approval verbatim in the spec's Status line and in the ledger.
+  2. Write docs/RUNWAY_DAY_SIM_RUN_PROMPT.txt (talk-and-run step 8): spec path, order of work, stops, the ledger as
+     the ABSOLUTE worktree path C:/Users/teasp/Documents/Runway Tracker/.claude/worktrees/runway-day-sim/.ledger/2026-10-16-runway-day-sim,
+     the safety rules below, and the session-rename exception.
+  3. Write budget.json in that worktree ledger: {"runTokenCap": 2000000, "helperToolCallCap": 60, "tasksLeft": <helpers
+     expected>, "ledger": ".ledger/2026-10-16-runway-day-sim/progress.md", "plan": "docs/superpowers/plans/2026-10-16-osm-day-lifecycle-sim.md"}.
+     Estimate (assumed; the run's plan sets it): plan-writer 1 + about 9 implementers + 9 checkers + final reviewer 1
+     + PM 1 = about 21 helpers. Earlier Runway runs used runTokenCap 1.5M-2M and helperToolCallCap 60 (read from their budget.json).
+  4. The slip: ask Ian the four questions one at a time, each with a recommendation, and write slip.json in the
+     worktree ledger with his words verbatim. Suggested recommendations: push = yes, its own branch runway-day-sim
+     to origin only (the hosting run's slip did the same); merge = no, stop for merge; spend = $0 (fake AI network;
+     Codex second reviewer on his ChatGPT plan, as the hosting run); new sessions = yes (his standing yes
+     2026-10-15, memory start-sessions-without-asking; still record his words for this run).
+  5. Hand-off PM step (studio-harness:pm, four questions plus ruling capture: propose ledger-add / brain capture
+     for the Q3 sentiment practice, the Q5 drift line, Q8 both versions, Q9 fake network). Commit the run prompt.
+     Launch the run with town-launch (--ledger = the ABSOLUTE worktree ledger path above), then tell Ian it is running.
+
+Safety (Ian's standing rules, unchanged):
+  - Never edit osm-book-of-business-tracker-1.0.html (nor 1.1 in this objective). Never open any HTML from this folder
+    in Ian's normal Chrome profile; only headless Chrome with a throwaway profile (--user-data-dir).
+  - Synthetic data only. Test emails on example.com or .invalid. Never read or copy book-of-business-RESTORE-POINT-*.json,
+    exports or zips.
+  - Stop browsers and servers by their own PID, never by image name. Delete a profile only after its browser exits.
+    Logs to files, never into context.
+  - No push, merge, paid tool or publish without Ian's yes for that step.
+  - Ian was reminded at 19:12 to export a fresh backup from 1.0 and turn on automatic backup; he has not said he did.
+    Ask once, at a natural stop.
+
+Sessions: do NOT claude rm e5c2a7de, a1bd5f15, 50d4c352 or 8e5707bc (they share the runway-hosting worktree), and do
+NOT claude rm 6afcca7a: it shares this runway-day-sim worktree with you. Remove worktrees only with studio-harness
+bin/remove-worktree.mjs.
