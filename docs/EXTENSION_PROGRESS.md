@@ -43,7 +43,7 @@ Helpers for the checks (committed with this file): `node docs/extension-checks/s
 - Files: tools/sim/osm-day/steps-a.mjs (D4, about lines 60-82), lib/browser.mjs (snapshot about 130, seed about 165), test/osm-day-steps.test.mjs.
 - Check: `W && for v in 1.0 1.1; do node tools/sim/osm-day/run.mjs --version $v --part A --only D4 --out sim-runs/ext/x4-$v > /dev/null 2>&1; node docs/extension-checks/show.mjs sim-runs/ext/x4-$v/results-$v.json | cut -c1-120; done`
 - Expected: `D4 PASS | break FLIPPED |` for both versions (today 1.1 prints `D4 FAIL | break NOT-TESTED`). FLIPPED on 1.1 proves the break still bites and the snapshot carries the transcript.
-- Status: todo
+- Status: done (commit see git log). Evidence: D4 PASS break FLIPPED on 1.0 and 1.1; suite fail 0; left 1.
 
 ### X5 D7 reports the relation, not the random id (FR10, Fix A5)
 - Outcome: D7 evidence says the externalId matches the sent row's own id and prints no `SIM-EXT-<random>`; verify's C5 compare stays unmasked (do not bend the check); remove the info-only mask line.

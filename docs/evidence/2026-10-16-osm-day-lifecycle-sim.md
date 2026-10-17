@@ -22,7 +22,7 @@ The same five failed on 1.0 and on 1.1. All are measured, run 1 and run 2 agreed
 
 L12 is a GAP, not a fail: nothing in the tracker tracks a CSAT survey being sent, answered or followed up.
 
-**On 1.1 there is a sixth FAIL, D4 ("transcript.text missing"). That is the sim's defect, not a tracker finding.** 1.1 keeps call transcripts by reference (read: `submitLoggedActivity` 1.1:16690, `stageTranscript` 1.1:3088, `tsGet` 1.1:3012), and the D4 check only looks for an inline `transcript.text`. The activity itself saved correctly on 1.1 (session 8/8, type Call, in history). Fix round FR8 will make D4 resolve the stored transcript per version; until it lands, D4 on 1.1 shows FAIL and its break shows NOT-TESTED. Pending: both change after FR8.
+**On 1.1 there is a sixth FAIL, D4 ("transcript.text missing"). That is the sim's defect, not a tracker finding.** 1.1 keeps call transcripts by reference (read: `submitLoggedActivity` 1.1:16690, `stageTranscript` 1.1:3088, `tsGet` 1.1:3012), and the D4 check only looks for an inline `transcript.text`. The activity itself saved correctly on 1.1 (session 8/8, type Call, in history). Fix round FR8 will make D4 resolve the stored transcript per version; until it lands, D4 on 1.1 shows FAIL and its break shows NOT-TESTED. Pending: both change after FR8. Fixed in the sim (X4): D4 now reads the transcript through the activity ref and passes on 1.1 with the break FLIPPED; the figures below were measured before that fix.
 
 ### L6 first days: two readings, and a question for Ian
 
@@ -66,7 +66,7 @@ The two runs differ only in D7's evidence on each version: the text carries the 
 
 From `diff.md` of the run (measured):
 
-- D4 differs: 1.0 PASS (transcript text stored), 1.1 FAIL with the break NOT-TESTED. This is the sim's defect described above, not a tracker difference.
+- D4 differs: 1.0 PASS (transcript text stored), 1.1 FAIL with the break NOT-TESTED. This is the sim's defect described above, not a tracker difference. Superseded by X4: D4 is now PASS with the break FLIPPED on both versions.
 - D7 differs only by the random connector id above.
 - Every other step has the same result and the same evidence on both versions.
 
@@ -75,7 +75,7 @@ From `diff.md` of the run (measured):
 A NOT-TESTED break is never a pass: it sits beside a failed step.
 
 - 1.0 (5): D2 (base FAIL: transcript line absent), D3 (base FAIL: you-owe and they-owe absent), D8 (base FAIL: case stays listed), L8 (base FAIL: case stays listed), L11 (base FAIL: OK enabled without a CSAT contact).
-- 1.1 (6): the same five, plus D4 (base FAIL: "transcript.text missing", the sim's defect; pending FR8).
+- 1.1 (6): the same five, plus D4 (base FAIL: "transcript.text missing", the sim's defect; pending FR8). After X4, D4 is no longer in this list.
 
 The mechanism for D3 is proven separately by `probe --control d3` (see Task 5 controls). After FR8 the D4 break must flip on both versions (pending).
 

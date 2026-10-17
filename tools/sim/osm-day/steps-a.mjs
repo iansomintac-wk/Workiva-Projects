@@ -31,6 +31,10 @@ async function orionPanel(ctx) {
   return text;
 }
 
+// The stored transcript text: inline .text (1.0) or the 1.1 IndexedDB record the activity's ref points to (page function tsGet).
+export const TRANSCRIPT_TEXT_JS = `(async a => { const t = a && a.transcript; if (!t) return ''; if (typeof t.text === 'string') return t.text;
+  if (t.ref && typeof tsGet === 'function') { const r = await tsGet(t.ref); return (r && r.text) || ''; } return ''; })`;
+
 export const PART_A = [
   { id: 'D1', async run(ctx) {
     await ctx.openOn(DAY);
@@ -76,10 +80,10 @@ export const PART_A = [
       await new Promise(r => setTimeout(r, 300));
       const shown = document.body.textContent.includes('SIM-D4 Session');
       return JSON.stringify({ n, found: !!a, id: a && a.id, session: a && a.sessionNumber, type: a && a.type,
-        transcript: !!(a && a.transcript && /SIM-D4-TRANSCRIPT/.test(a.transcript.text)), shown, customerId: c.id }); })()`));
+        transcript: /SIM-D4-TRANSCRIPT/.test(await (${TRANSCRIPT_TEXT_JS})(a)), shown, customerId: c.id }); })()`));
     ctx.state.d4 = { customerId: info.customerId, activityId: info.id };
     const passed = info.found && info.transcript && info.shown && info.session === info.n && info.type === 'Call';
-    return { passed, evidence: `activity ${info.found ? 'saved' : 'not saved'} (session ${info.session}/${info.n}, type ${info.type}), transcript.text ${info.transcript ? 'stored' : 'missing'}, ${info.shown ? 'in' : 'not in'} history` };
+    return { passed, evidence: `activity ${info.found ? 'saved' : 'not saved'} (session ${info.session}/${info.n}, type ${info.type}), transcript ${info.transcript ? 'stored' : 'missing'}, ${info.shown ? 'in' : 'not in'} history` };
   } },
   { id: 'D5', async run(ctx) {
     const d4 = ctx.state.d4;

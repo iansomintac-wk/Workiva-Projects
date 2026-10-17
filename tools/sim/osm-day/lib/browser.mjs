@@ -38,6 +38,10 @@ export function clipboardShim(sentinel) {
   })();`;
 }
 
+// 1.1 keeps call transcripts in IndexedDB (obm-transcripts-v1); a snapshot and a seed restore must carry them with localStorage.
+export const TRANSCRIPTS_DUMP_JS = `(async () => typeof tsTx === 'function' ? JSON.stringify(await tsTx('transcripts', 'readonly', s => s.getAll())) : '[]')()`;
+export const transcriptsRestoreJs = json => `(async () => { const recs = JSON.parse(${JSON.stringify(json)}); if (typeof tsTx !== 'function' || !recs.length) return true;
+  await tsTx('transcripts', 'readwrite', s => { s.clear(); for (const r of recs) s.put(r); }); return true; })()`;
 export function assertMarker(read, expected) {
   if (read === undefined || read === null || read !== expected) {
     throw new Error(`break marker mismatch: expected ${expected}, read ${read}`);
@@ -179,7 +183,7 @@ export async function launch({ version, startDay, runDir, part, seed = null, chr
       try { return String(await ev('window.__simClip')).replace(/\r\n/g, '\n'); } catch (e) { return 'error: ' + e.message.slice(0, 80); }
     };
     ctx.aiStats = () => ({ ...stats });
-    ctx.snapshot = async () => ({ ls: await ev(`JSON.stringify(Object.fromEntries(Object.entries(localStorage)))`), state: JSON.parse(JSON.stringify(ctx.state)) });
+    ctx.snapshot = async () => ({ ls: await ev(`JSON.stringify(Object.fromEntries(Object.entries(localStorage)))`), idb: await ev(TRANSCRIPTS_DUMP_JS), state: JSON.parse(JSON.stringify(ctx.state)) });
     ctx.openOn = async iso => {
       if (scriptId) await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: scriptId });
       scriptId = (await send('Page.addScriptToEvaluateOnNewDocument', { source: clockShim(iso) })).identifier;
@@ -213,6 +217,7 @@ export async function launch({ version, startDay, runDir, part, seed = null, chr
     if (seed) {
       await ctx.openOn(startDay);
       await ev(`(() => { const o = JSON.parse(${JSON.stringify(seed.ls)}); localStorage.clear(); for (const k in o) localStorage.setItem(k, o[k]); return true; })()`);
+      if (seed.idb) await ev(transcriptsRestoreJs(seed.idb));
       ctx.state = JSON.parse(JSON.stringify(seed.state || {}));
     }
     await ctx.openOn(startDay);

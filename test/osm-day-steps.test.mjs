@@ -267,3 +267,28 @@ test('B1 D5 no-op Copy click leaves the sentinel, so D5 FAILs and the evidence s
   assert.equal(r.passed, false);
   assert.match(r.evidence, /SIM-SENTINEL-z/);
 });
+
+// ---- X4: D4 resolves the stored transcript per version; the snapshot carries the 1.1 transcripts store ----
+test('X4 transcript resolver reads inline .text (1.0) and the IndexedDB record by ref (1.1)', async () => {
+  const { TRANSCRIPT_TEXT_JS } = await import('../tools/sim/osm-day/steps-a.mjs');
+  const { runInNewContext } = await import('node:vm');
+  const fn = runInNewContext(TRANSCRIPT_TEXT_JS, { tsGet: async ref => (ref === 'a1:abc' ? { ref, text: 'SIM-D4-TRANSCRIPT stored' } : undefined) });
+  assert.match(await fn({ transcript: { text: 'SIM-D4-TRANSCRIPT inline' } }), /inline/);
+  assert.match(await fn({ transcript: { ref: 'a1:abc', chars: 9 } }), /stored/);
+  assert.equal(await fn({ transcript: { ref: 'nope' } }), '');
+  assert.equal(await fn({}), '');
+});
+test('X4 snapshot and seed restore carry the transcripts store', async () => {
+  const { TRANSCRIPTS_DUMP_JS, transcriptsRestoreJs } = await import('../tools/sim/osm-day/lib/browser.mjs');
+  const { runInNewContext } = await import('node:vm');
+  const store = [{ ref: 'a1:abc', text: 'T1' }, { ref: 'a2:def', text: 'T2' }];
+  const win = { tsOpen: async () => ({}), tsTx: async (name, mode, f) => {
+    if (mode === 'readonly') return store.slice();
+    f({ clear: () => { store.length = 0; return {}; }, put: r => { store.push(r); return {}; } }); } };
+  // the dump reads through the page's own tsTx getAll; the restore clears and puts each record
+  const dump = JSON.parse(await runInNewContext(TRANSCRIPTS_DUMP_JS, { ...win, JSON, tsTx: async () => store.slice() }));
+  assert.deepEqual(dump, store.slice());
+  const saved = JSON.stringify(dump); store.length = 0;
+  await runInNewContext(transcriptsRestoreJs(saved), { ...win, JSON });
+  assert.deepEqual(store.map(r => r.ref).sort(), ['a1:abc', 'a2:def']);
+});
