@@ -122,6 +122,8 @@ export async function launch({ version, startDay, runDir, part, seed = null }) {
     await send('Runtime.enable'); await send('Page.enable'); await send('Network.enable');
     await send('Fetch.enable', { patterns: [...AI_HOSTS.map(h => ({ urlPattern: `https://${h}/*` })), { urlPattern: `${connector}/*` }] });
     await send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: downloads });
+    // Headless clipboard fails with "Document is not focused" without focus emulation (D5 needs it).
+    await send('Emulation.setFocusEmulationEnabled', { enabled: true });
     try { await send('Browser.grantPermissions', { permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] }); } catch {}
 
     ctx.ev = ev;

@@ -36,3 +36,20 @@ test('99-measure.js no longer reads the retired time-saved log (F2)', () => {
   assert.doesNotMatch(t, /getImpactLog/);
   assert.doesNotMatch(t, /impactMinutesFor/);
 });
+
+test('PART_A holds D1..D5, each with an async run (Task 7)', async () => {
+  const { PART_A } = await import('../tools/sim/osm-day/steps-a.mjs');
+  assert.deepEqual(PART_A.map(s => s.id), ['D1', 'D2', 'D3', 'D4', 'D5']);
+  for (const s of PART_A) assert.equal(s.run.constructor.name, 'AsyncFunction', s.id);
+});
+test('PART_A_DEPS says D5 needs D4 and nothing else depends', async () => {
+  const { PART_A_DEPS } = await import('../tools/sim/osm-day/steps-a.mjs');
+  assert.deepEqual(PART_A_DEPS, { D5: ['D4'] });
+});
+test('setupA and setupB are exported; setupB never mentions Fernhollow', async () => {
+  const { setupA, setupB } = await import('../tools/sim/osm-day/lib/setup.mjs');
+  assert.equal(typeof setupA, 'function');
+  assert.equal(typeof setupB, 'function');
+  assert.doesNotMatch(setupB.toString(), /Fernhollow/);
+  assert.match(setupA.toString(), /Fernhollow Renewables/);
+});
