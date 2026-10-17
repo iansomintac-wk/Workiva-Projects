@@ -332,6 +332,52 @@ check('the bare word "commentary" reaches the year-over-year narrative (tasks 8 
     assert.strictEqual((match(r.task, cat)[0] || {}).id, 'fr-yoy-narrative', 'task ' + id);
   }
 });
+// rewrite reach (rule V1, 2026-10-17): wording changes that name no "rewrite" verb still read as REWRITE
+const reads = (t) => rate(t).ops.includes('REWRITE');
+check('rewrite reach: "revise" plus a piece of writing reads as REWRITE', () => {
+  for (const t of ['Each week I revise the status email before it goes to the team.',
+    'Revising my cover letter takes an hour.', 'I revise the long draft twice a month.',
+    'Revise the opening paragraph of every memo.'])
+    assert(reads(t), 'no REWRITE in: ' + t);
+});
+check('rewrite reach: "worded better" reads as REWRITE', () => {
+  for (const t of ['Get the note worded better before it goes out.',
+    'I spend time wording these replies better.'])
+    assert(reads(t), 'no REWRITE in: ' + t);
+});
+check('rewrite reach: "more or less" plus a tone word reads as REWRITE', () => {
+  for (const t of ['Make the reply more professional.', 'Make my emails less formal.',
+    'Make the answer more polite.', 'Make the pushback more diplomatic.',
+    'Make the summary more concise.', 'Make the notice less friendly.'])
+    assert(reads(t), 'no REWRITE in: ' + t);
+});
+check('rewrite reach: guards, numbers and plain nouns do not read as REWRITE', () => {
+  for (const t of ['Revise the forecast every month.', 'Revise the budget numbers after close.',
+    'Revising the headcount plan is slow.', 'She is a professional accountant.',
+    'Review the formal approval steps.', 'The clause is worded by legal counsel.',
+    'We want a more accurate close calendar.'])
+    assert(!reads(t), 'REWRITE wrongly read in: ' + t);
+});
+// the card's new match words: each sentence has the REWRITE step and no other card word, so only the new word can pick gen-rewrite
+const newWords = {
+  'revis': 'Revise the email to my colleague before it goes out.',
+  're-?word': 'Reword the reply to my colleague before it goes out.',
+  'rephras': 'Rephrase the reply to my colleague before it goes out.',
+  'worded': 'Get the reply to my colleague worded better before it goes out.',
+  'wording': 'I keep wording the reply better before it goes out.',
+  'professional': 'Make the reply to my colleague more professional.',
+  'formal': 'Make the reply to my colleague less formal.',
+  'polite': 'Make the reply to my colleague more polite.',
+  'diplomatic': 'Make the reply to my colleague more diplomatic.',
+};
+for (const [word, t] of Object.entries(newWords)) check('rewrite reach: card match word ' + word, () => {
+  assert(reads(t), 'engine does not read REWRITE in: ' + t);
+  assert.strictEqual((match(t, cat)[0] || {}).id, 'gen-rewrite', 'first card for: ' + t);
+});
+check('rewrite reach: the card lists every new match word', () => {
+  const m = cat.useCases.find((u) => u.id === 'gen-rewrite').match;
+  for (const w of Object.keys(newWords)) assert(m.split('|').some((p) => p.startsWith(w)), 'missing ' + w);
+});
 // real prompts: data/real/2026-10-15-community.jsonl, right cards in data/card-gold-real.jsonl, each row says who labelled it
 const realRows = fs.readFileSync(path.join(root, 'data/real/2026-10-15-community.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
 const goldRFile = path.join(root, 'data/card-gold-real.jsonl');
