@@ -71,7 +71,7 @@ Helpers for the checks (committed with this file): `node docs/extension-checks/s
 - Files: tools/sim/osm-day/steps-b.mjs (about 263), test/osm-day-steps.test.mjs.
 - Check: `W && node tools/sim/osm-day/run.mjs --version 1.1 --part B --only L5 --out sim-runs/ext/x8 > /dev/null 2>&1; node -e "const r=require('./sim-runs/ext/x8/results-1.1.json');const b=r.breaks[0]||{};console.log(r.steps[0].status, b.verdict, /session plan shown/.test(r.steps[0].evidence), /session plan shown/.test(b.evidence||''))"`
 - Expected: `PASS FLIPPED true false` (today the break evidence also says "session plan shown", so the last value is `true`).
-- Status: todo
+- Status: done (commit see git log). Evidence: L5 1.1 prints 'PASS FLIPPED true false'; the Sessions panel read ignores the pre-Go-Live PREVIEW; L1 exampleOnly and L5 Call date 10-05 stay deferred (recorded as weak coverage in the evidence doc at X10); steps test red before, green after.
 
 ### X9 C3 reports a disproved coverage prediction (Fix A1)
 - Outcome: verify's c3 prints FAIL with the word `disproved` when L6 shows no on-screen coverage row by day 7 (`reasonIsCoverage=false`, or beyond the beat cap), and still prints the Today, Watch and Off Track days. Spec section 8, C3: "disproved if 'due soon' does not show on Today at all". Also stop cutting L6 evidence at 600 chars (run.mjs:144) so `capHiddenDays` and `remainingThroughDay7` reach results (review N5) if it fits in 8 steps.

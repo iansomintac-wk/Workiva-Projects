@@ -359,3 +359,12 @@ test('X7 L7 judge: leaks are silence sources only; rank and rendered are reporte
   const notPausedOnly = l7Judge([day('2026-11-30', { paused: false }), quiet[1]], { until: '2026-11-30', to: '2026-12-01' });
   assert.equal(notPausedOnly.passed, true);
 });
+test('X8 L5 planShown reads Fernhollow Sessions panel and ignores the implementation preview', async () => {
+  const { sessionsPlanShown } = await import('../tools/sim/osm-day/steps-b.mjs');
+  const live = { panelTitle: 'Fernhollow Renewables', cardTitles: ['Session 1: Kickoff', 'Session 2: Data'], text: 'Curriculum for CSRD' };
+  assert.equal(sessionsPlanShown(live), true);
+  assert.equal(sessionsPlanShown({ ...live, text: 'the curriculum below is a PREVIEW and starts at Go-Live' }), false);
+  assert.equal(sessionsPlanShown({ ...live, panelTitle: 'Other Co' }), false);
+  assert.equal(sessionsPlanShown({ ...live, cardTitles: [] }), false);
+  assert.equal(sessionsPlanShown(null), false);
+});

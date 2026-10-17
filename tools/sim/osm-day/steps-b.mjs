@@ -124,6 +124,10 @@ export function l7Judge(days, cal) {
   const where = x => `rank ${x.rank == null ? 'none' : x.rank}, rendered ${x.rendered}, cap-hidden ${x.capHidden}`;
   return { passed, evidence: `pause until ${cal.until}; paused days ${paused.length}, with a silence row: ${leaks.length}${leaks.length ? ' (' + leaks.slice(0, 3).map(x => x.d + ' ' + x.silence.join('+') + ', ' + where(x)).join('; ') + ')' : ''}; ${last.d}: paused ${last.paused}, silence sources [${last.silence.join(', ')}], ${where(last)}, Regulatory cases ${last.regulatory}` };
 }
+// L5: the session plan counts as shown only inside Fernhollow's open Sessions panel, with Session 1 card titles, and not as the pre-Go-Live PREVIEW.
+export function sessionsPlanShown(panel) {
+  return !!panel && panel.panelTitle.includes(FERN) && panel.cardTitles.some(t => /^Session 1\b/.test(t)) && !/curriculum below is a PREVIEW/i.test(panel.text || '');
+}
 // L9 phase 1: 12-07 .. T-7 (sessions 1..N-1), goal, committed date, the three gate recordings.
 async function l9phase1(ctx) {
   const start = CAL.L9.start;
@@ -275,11 +279,13 @@ export const PART_B = [
     await sleep(300);
     const r = JSON.parse(await ctx.ev(`(() => { const c = DATA.customers.find(x => x.id === ${JSON.stringify(id)});
       const a = (DATA.activities[c.id] || []).find(x => /^SIM-L5 /.test(x.summary || ''));
-      const txt = document.body.innerText; const next = getNextSessionInfo(c);
+      const pn = document.querySelector('.panel'); const next = getNextSessionInfo(c);
+      const panel = pn ? { panelTitle: (pn.querySelector('#panel-title') || {}).textContent || '', cardTitles: [...pn.querySelectorAll('.session-card-title')].map(e => e.textContent.trim()), text: pn.innerText } : null;
       return JSON.stringify({ phase: c.implementation && c.implementation.phase, wentLiveOn: c.implementation && c.implementation.wentLiveOn, today: todayISO(),
         live: !inImplementation(c), call: a ? { type: a.type, session: a.sessionNumber == null ? null : a.sessionNumber, date: a.date } : null,
-        planShown: /Session 1\\b/.test(txt), hasNext: !!next,
+        panel, hasNext: !!next,
         onboarding: pendingGainsightItems().some(p => p.customerId === c.id), risk: computeRisk(c) }); })()`));
+    r.planShown = sessionsPlanShown(r.panel);
     const passed = r.phase === 'golive' && r.wentLiveOn === r.today && r.live && !!r.call && r.call.type === 'Call' && r.call.session === null
       && r.planShown && r.hasNext && r.onboarding;
     return { passed, evidence: await withBreak(ctx, `phase ${r.phase}, wentLiveOn ${r.wentLiveOn}; hand-off ${r.call ? r.call.type + ' ' + r.call.date + ', session ' + (r.call.session === null ? 'not linked' : r.call.session) : 'call not logged'}; session plan ${r.planShown ? 'shown' : 'not shown'}; onboarding gates active ${r.onboarding}; risk ${r.risk}`) };
