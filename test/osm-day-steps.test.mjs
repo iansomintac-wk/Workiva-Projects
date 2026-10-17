@@ -344,3 +344,18 @@ test('X6 L11 break targets the CSAT check, not confirmGraduation', () => {
   assert.match(BREAKS.L11.js, /csat/i);
   assert.ok(OVERRIDE_NAMES.includes('validateGraduationDraft'));
 });
+test('X7 L7 judge: leaks are silence sources only; rank and rendered are reported for the last day', async () => {
+  const { l7Judge } = await import('../tools/sim/osm-day/steps-b.mjs');
+  const day = (d, o) => ({ d, silence: [], paused: true, regulatory: 0, rank: null, rendered: false, capHidden: false, ...o });
+  const quiet = [day('2026-11-30', { paused: false }), day('2026-12-01', { paused: false, silence: ['coverage_x'], rank: 4, rendered: true })];
+  const a = l7Judge(quiet, { until: '2026-11-30', to: '2026-12-01' });
+  assert.equal(a.passed, true, a.evidence);
+  assert.match(a.evidence, /rank 4/);
+  assert.match(a.evidence, /rendered true/);
+  assert.doesNotMatch(a.evidence, /paused=false/);
+  const leak = l7Judge([day('2026-11-30', { silence: ['session_due'] }), quiet[1]], { until: '2026-11-30', to: '2026-12-01' });
+  assert.equal(leak.passed, false);
+  assert.match(leak.evidence, /session_due/);
+  const notPausedOnly = l7Judge([day('2026-11-30', { paused: false }), quiet[1]], { until: '2026-11-30', to: '2026-12-01' });
+  assert.equal(notPausedOnly.passed, true);
+});

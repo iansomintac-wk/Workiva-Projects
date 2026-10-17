@@ -116,6 +116,14 @@ export function l11Judge({ g0, m1, noContact, with: w }) {
   return { passed: refused && graduated, evidence: `${first}; with contact "${w.g1.contact}" (done ${w.g1.csatDone}) OK ${w.m2.open ? (w.m2.disabled ? 'disabled' : 'enabled') : 'modal not open'}; stage ${w.stage}, queue items ${w.queued}` };
 }
 
+// L7 verdict: a leak is a silence-source row on a paused day (not the replaced isPaused flag); rank and rendered come from the rendered Today.
+export function l7Judge(days, cal) {
+  const paused = days.filter(x => x.d <= cal.until), last = days[days.length - 1];
+  const leaks = paused.filter(x => x.silence.length);
+  const passed = !leaks.length && last.d === cal.to && !last.paused && last.silence.length > 0 && last.regulatory === 0;
+  const where = x => `rank ${x.rank == null ? 'none' : x.rank}, rendered ${x.rendered}, cap-hidden ${x.capHidden}`;
+  return { passed, evidence: `pause until ${cal.until}; paused days ${paused.length}, with a silence row: ${leaks.length}${leaks.length ? ' (' + leaks.slice(0, 3).map(x => x.d + ' ' + x.silence.join('+') + ', ' + where(x)).join('; ') + ')' : ''}; ${last.d}: paused ${last.paused}, silence sources [${last.silence.join(', ')}], ${where(last)}, Regulatory cases ${last.regulatory}` };
+}
 // L9 phase 1: 12-07 .. T-7 (sessions 1..N-1), goal, committed date, the three gate recordings.
 async function l9phase1(ctx) {
   const start = CAL.L9.start;
@@ -330,12 +338,15 @@ export const PART_B = [
       const r = await candidateSources(ctx);
       if (r.missing) return { passed: false, evidence: 'Fernhollow does not exist for L7' };
       r.d = d; r.silence = r.sources.filter(s => SILENCE_SRC.test(s));
+      Object.assign(r, JSON.parse(await ctx.ev(`(() => { ui.view = 'today'; ui.openCustomerId = null; render();
+        const c = DATA.customers.find(x => x.name === ${JSON.stringify(FERN)}); const list = todayActionList(); const idx = list.findIndex(r => r.customerId === c.id);
+        const inBeat = [...document.querySelectorAll('[data-day-step] h4')].some(h => h.textContent.includes(${JSON.stringify(FERN)}));
+        const inBelow = [...document.querySelectorAll('[data-today-row] .todo-cust')].some(h => h.textContent.includes(${JSON.stringify(FERN)}));
+        return JSON.stringify({ rank: idx >= 0 ? idx + 1 : null, rendered: document.body.innerText.includes(${JSON.stringify(FERN)}), capHidden: idx >= 0 && !inBeat && !inBelow }); })()`)));
       days.push(r);
     }
-    const paused = days.filter(x => x.d <= CAL.L7.until), last = days[days.length - 1];
-    const leaks = paused.filter(x => x.silence.length || !x.paused);
-    const passed = !leaks.length && last.d === CAL.L7.to && !last.paused && last.silence.length > 0 && last.regulatory === 0;
-    return { passed, evidence: await withBreak(ctx, `pause until ${CAL.L7.until}; paused days ${paused.length}, with a silence row or not paused: ${leaks.length}${leaks.length ? ' (' + leaks.slice(0, 3).map(x => x.d + ' ' + x.silence.join('+') + ' paused=' + x.paused).join('; ') + ')' : ''}; ${last.d}: paused ${last.paused}, silence sources [${last.silence.join(', ')}], Regulatory cases ${last.regulatory}`) };
+    const j = l7Judge(days, CAL.L7);
+    return { passed: j.passed, evidence: await withBreak(ctx, j.evidence) };
   } },
   { id: 'L8', async run(ctx) {
     await openDay(ctx, CAL.L8);

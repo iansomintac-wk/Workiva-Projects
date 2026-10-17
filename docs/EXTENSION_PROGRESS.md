@@ -64,7 +64,7 @@ Helpers for the checks (committed with this file): `node docs/extension-checks/s
 - Files: tools/sim/osm-day/steps-b.mjs (about 316-335), lib/breaks.mjs, test/osm-day-steps.test.mjs.
 - Check: `W && node tools/sim/osm-day/run.mjs --version 1.1 --part B --only L7 --out sim-runs/ext/x7 > /dev/null 2>&1; node docs/extension-checks/show.mjs sim-runs/ext/x7/results-1.1.json | cut -c1-420; node -e "const r=require('./sim-runs/ext/x7/results-1.1.json');console.log(/rank/.test(r.steps[0].evidence), /paused=false/.test(JSON.stringify(r.breaks)))"`
 - Expected: evidence mentions rank and rendered or cap-hidden on 12-01 (`true` printed first); break evidence no longer reduces to `paused=false` (`false` printed second). The verdict is whatever is measured; if FLIPPED, the leak list names a silence source.
-- Status: todo
+- Status: done (commit see git log). Evidence: L7 1.1 PASS break FLIPPED; 12-01 evidence 'rank 28, rendered true, cap-hidden true'; break leak list names coverage_due_soon (29 paused days), no 'paused=false'; check prints true false; steps test red before, green after.
 
 ### X8 L5 plan-shown judged on Fernhollow's Sessions panel (Fix A7, extends FR9)
 - Outcome: `planShown` searches Fernhollow's Sessions panel, not the whole body, and is false in the break run. FR9's L1 `exampleOnly` on an empty contact and L5's Call date 10-05 were deferred in the merge: do them only if inside 8 steps, else record them in the evidence doc as known weak coverage.
