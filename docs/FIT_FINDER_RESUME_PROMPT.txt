@@ -1,15 +1,63 @@
-Fit Finder v4.12: hand-off (2026-10-16, session c9f81242, successor of d2e2611b; catalogue re-check done in 7772b44, local)
+Fit Finder v4.13: hand-off (2026-10-16, session b9821fb4, successor of c9f81242; half A card labels done in 8fe2020, local)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to cd409ea (origin = local = cd409ea after fetch, checked
-by c9f81242 at start). LOCAL ONLY (not pushed): 7772b44 (catalogue re-check) and the hand-off commit
+worktree-fit-finder-v4. Pushed to origin up to 4efa749 (origin = local = 4efa749 after fetch, checked
+by b9821fb4 at start). LOCAL ONLY (not pushed): 8fe2020 (half A card labels) and the hand-off commit
 after it, unless the launch note says pushed. Push only with Ian's yes. Draft PR #1 into prompt-coach
 (not merged). Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 12 (version id
-1792211894-2806) = dist of 7772b44 (82,583 bytes LF), checked by c9f81242 after publishing: the live
-file contains the new dist exactly and not v11's. (Updated by c9f81242.)
+1792211894-2806) = dist of 7772b44 (82,583 bytes LF); 8fe2020 changes no page byte (rebuilt, tree
+clean), so v12 is current. (Updated by b9821fb4.)
 
-NEXT SESSION (written by c9f81242; supersedes every NEXT SESSION below)
+NEXT SESSION (written by b9821fb4; supersedes every NEXT SESSION below)
+Read this file, CLAUDE.md and fit-finder/README.md ("Right card on half A"). Nothing is half-done. If
+the launch note does not say pushed, ask Ian directly: push 8fe2020 and the hand-off commit? A relayed
+answer is not his yes. Labelling is the model's job: a top-model labeler labels, and Ian checks only
+the few calls that decide the score, with the count said up front (his pick "Model, you check 3
+(Recommended)", after "Why am I labeling these, isn't that your job?"). Then ask which next,
+recommendation first, each with its cheapest check: (a) a rule (not a per-task word) for half A's 4
+year-over-year misses (8, 100, 108, 112): all four labels are the model's, so first Ian confirms them
+(4 yes/no), then target at least 3 gained and 0 wrong on A, then score B once; (b) B's 3 wrong cards
+(67, 74, 91): four general rules fixed 0 of 3 in memory; (c) peer benchmarking for task 19. Optional:
+the one-minute sandbox check of the Workflows menu for Benchmarking. Program lead: "NEW - 24h program
+lead 9" (43417193) unless renamed; send it status.
+
+UPDATE 2026-10-16, session b9821fb4 (successor of c9f81242): half A card labels DONE in 8fe2020
+- Push checked at start: origin = local = 4efa749 (the launch note's "both pushed" confirmed).
+- Probe (read-only, in memory, before asking): B baseline reproduced (13 right, 3 wrong, 14 none).
+  Four general rules fixed 0 of B's 3 wrong cards: a score cutoff (wrong cards score 6, 5, 3; right
+  ones 1.5 to 6); sus-requirements also doing SUMMARIZE (0 of 139 first cards change); a tie-break
+  toward the task's first step (0 change); first-step-only (right 13 -> 11, wrong still 3).
+- Ian picked "Label half A first (Recommended)" (question tool). Blind Opus labeler (64,016 tokens,
+  5 tool uses, 102 s; task text + 26 cards, no engine pick, no match words). Ian labelled 8 (seed
+  20261016: 81, 22, 103, 16, 94, 19, 58, 66): exact match with the model on 5; the 3 differences were
+  all the model also accepting a general card.
+- Ian, verbatim: "Why am I labeling these, isn't that your job?" My error: I framed the option as Ian
+  labelling all 29 and skipped B's agreed method (model labels, Ian checks 8, limit 2). I said so;
+  he then picked "Model, you check 3 (Recommended)": 23, 49, 65, where the model's call decides the
+  score and is weakest. He overruled it on 23 (the page's card is right). The model's specific picks:
+  accepted 6 of 7 (I first said 6 of 6, before 23; corrected to him).
+- 8fe2020 (Sonnet implementer, 29,167 tokens, 17 tool uses, 82 s; its report was empty, so I re-ran
+  everything): card-gold-a.jsonl (Ian 11, model 18) + a catalogue.test.js check + README. Measured by
+  me: green; red with no file (exit 1); 7 planted faults each FAIL, control passes; A 52/60, B 45/60;
+  dist rebuilt, tree clean. I amended the README to say the 4 year-over-year labels are the model's.
+- Result: half A first card right 10 of 29, wrong 0, no card 19; 13 of the 19 land on chat with your
+  file; 6 real misses: 8, 100, 108, 112 (year-over-year narrative), 19 (peer benchmarking, Ian's
+  label), 29 (formula or query help, weak). The 4 share no card keyword: "commentary on the key
+  drivers", "roll forward last month's commentary", "board paper ... latest results", "budget vs
+  actual commentary". PM (Sonnet, 22,725 tokens, 6 tool uses) picks (a); it wrongly listed 7772b44 as
+  unpushed.
+- My slips, caught by controls: Git Bash heredocs wrote '\\b' as '\b' in two probe scripts (every
+  keyword null; controls 0 and 14 exposed it; fixed with the Write and Edit tools); I filtered on
+  surface 'chat' instead of 'files' (0 of 19 -> 13 of 19; B's known 7 of 7 control exposed it).
+- Predecessor c9f81242 kept (state working when checked; shares this worktree, so claude rm would
+  remove it).
+- Proposed, not recorded (Ian's yes needed): a ruling from his words above (the model labels gold
+  data; Ian checks only the score-deciding calls, count stated up front); bank facts: B's labelling
+  method was never written down as the default; Git Bash heredocs here drop a backslash in JS, so
+  write scripts with the Write tool.
+
+NEXT SESSION (written by c9f81242; DONE by b9821fb4 above; kept for the record)
 Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. If the launch note does not
 say pushed, ask Ian directly: push 7772b44 and the hand-off commit? A relayed answer is not his yes.
 Then ask which next, recommendation first, each option with its cheapest check: fix the 3 wrong cards
