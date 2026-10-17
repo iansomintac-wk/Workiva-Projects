@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (82,583 bytes)
+node tests/build.js                                               # -> dist/fit-finder.html (82,594 bytes)
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
 node tests/pagetest.js [capture-folder]                            # real Chrome at 1280 and 375 px; needs Chrome, no npm deps
@@ -141,10 +141,14 @@ half-A tasks that fit, so fixes can be found on A while B stays the score. A top
 the engine, labelled all 29. Ian labelled 8 of them himself (picked by seed 20261016: 81, 22, 103, 16,
 94, 19, 58, 66) and matched it exactly on 5; each of the 3 differences was the model also accepting a
 general card. He then checked the 3 tasks where the model's call decides the score and is weakest (23,
-49, 65) and overruled it on 23. Each row says who labelled it: Ian 11, the model 18. The page's first
-card is right on 10 of 29 and wrong on none; 19 get no card. For 13 of those 19 a right card names chat
-with your file first, which is what the page suggests; for the other 6 every right card names another
-feature first: the year-over-year narrative for 4 (tasks 8, 100, 108, 112, all four labelled by the
-model, none by Ian), peer benchmarking for 19,
-and formula or query help for 29 (which the labeler called a weak fit). Half A's figure rests partly on
-the model's labels, so it does not compare directly with B's 13 of 30.
+49, 65) and overruled it on 23. Each row says who labelled it: Ian 15, the model 14. Ian confirmed the 4 year-over-year labels
+(tasks 8, 100, 108, 112) on 2026-10-16. The page's first card is right on 12 of 29 and wrong on none;
+17 get no card. "commentary" now reaches the change narrative (first card right 10 -> 12 of 29, tasks 8
+and 112). For 13 of those 17 a right card names chat with your file first, which is what the page
+suggests; the real misses are now 100 and 108 (year-over-year narrative), 19 (peer benchmarking) and 29
+(formula or query help, which the labeler called a weak fit). Half A's figure rests partly on the
+model's labels, so it does not compare directly with B's 13 of 30. Held-out B, as the suite prints it:
+`first card right: 13 of 30; wrong card 3 (67,74,91); no card where one fits 14 (6,26,30,45,50,59,80,86,95,99,106,111,115,119)`.
+Tried and not shipped: "commentary" or a period phrase (last month's/quarter's/year's, budget vs
+actual, latest results) got 13 of 29 on A but B's wrong cards went 3 -> 5 (80, 115, both from "last
+year's"); letting the card also take REWRITE gained 100 but sent gen-rewrite's own example to this card.

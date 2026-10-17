@@ -326,5 +326,11 @@ const wrongA = fittingA.filter((r) => first(r) && !wantA(r).includes(first(r)));
 const missedA = fittingA.filter((r) => !first(r) && wantA(r).length);
 const byA = (b) => goldARows.filter((g) => g.by === b).length;
 console.log(`half A first card right: ${fittingA.length - wrongA.length - missedA.length} of ${fittingA.length}; wrong card ${wrongA.length} (${wrongA.map((r) => r.id).join(',')}); no card where one fits ${missedA.length} (${missedA.map((r) => r.id).join(',')}); labelled by Ian ${byA('ian')}, by the model ${byA('model')}`);
+check('the bare word "commentary" reaches the year-over-year narrative (tasks 8 and 112)', () => {
+  for (const id of [8, 112]) {
+    const r = rows.find((x) => x.id === id);
+    assert.strictEqual((match(r.task, cat)[0] || {}).id, 'fr-yoy-narrative', 'task ' + id);
+  }
+});
 console.log(fails ? fails + ' failed' : 'all catalogue checks pass');
 process.exit(fails ? 1 : 0);

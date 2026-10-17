@@ -1,4 +1,4 @@
-{"id":8,"cards":["fr-yoy-narrative"],"by":"model"}
+{"id":8,"cards":["fr-yoy-narrative"],"by":"ian"}
 {"id":11,"cards":["fr-peers"],"by":"model"}
 {"id":14,"cards":["fr-yoy-narrative"],"by":"model"}
 {"id":16,"cards":["gen-rewrite","gen-summarize-file"],"by":"ian"}
@@ -23,7 +23,7 @@
 {"id":92,"cards":["sus-anomalies","fr-yoy-narrative"],"by":"model"}
 {"id":94,"cards":["gen-summarize-file"],"by":"ian"}
 {"id":96,"cards":["gen-rewrite","fr-narrative-tables"],"by":"model"}
-{"id":100,"cards":["fr-yoy-narrative"],"by":"model"}
+{"id":100,"cards":["fr-yoy-narrative"],"by":"ian"}
 {"id":103,"cards":["fr-narrative-tables"],"by":"ian"}
-{"id":108,"cards":["fr-yoy-narrative"],"by":"model"}
-{"id":112,"cards":["fr-yoy-narrative"],"by":"model"}
+{"id":108,"cards":["fr-yoy-narrative"],"by":"ian"}
+{"id":112,"cards":["fr-yoy-narrative"],"by":"ian"}
