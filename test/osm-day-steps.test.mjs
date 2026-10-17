@@ -55,3 +55,25 @@ test('setupA and setupB are exported; setupB never mentions Fernhollow', async (
   assert.doesNotMatch(setupB.toString(), /Fernhollow/);
   assert.match(setupA.toString(), /Fernhollow Renewables/);
 });
+
+test('daysBetween counts whole days between ISO dates (Task 9)', async () => {
+  const { daysBetween } = await import('../tools/sim/osm-day/steps-b.mjs');
+  assert.equal(daysBetween('2026-10-05', '2026-10-12'), 7);
+  assert.equal(daysBetween('2026-10-12', '2026-10-05'), -7);
+  assert.equal(daysBetween('2026-08-31', '2026-09-01'), 1);
+});
+test('CAL holds the Part B calendar for L1..L6', async () => {
+  const { CAL } = await import('../tools/sim/osm-day/steps-b.mjs');
+  assert.equal(CAL.L1, '2026-08-03');
+  assert.equal(CAL.L2, '2026-08-05');
+  assert.equal(CAL.L3, '2026-08-12');
+  assert.deepEqual([CAL.L4.build, CAL.L4.uat], ['2026-08-24', '2026-09-21']);
+  assert.equal(CAL.L5, '2026-10-05');
+  assert.deepEqual([CAL.L6.from, CAL.L6.to], ['2026-10-06', '2026-10-26']);
+});
+test('PART_B holds L1..L6 in order, each async and CHECKED', async () => {
+  const { PART_B } = await import('../tools/sim/osm-day/steps-b.mjs');
+  const { CHECKED } = await import('../tools/sim/osm-day/lib/results.mjs');
+  assert.deepEqual(PART_B.map(s => s.id), ['L1', 'L2', 'L3', 'L4', 'L5', 'L6']);
+  for (const s of PART_B) { assert.ok(CHECKED.includes(s.id), s.id); assert.equal(s.run.constructor.name, 'AsyncFunction', s.id); }
+});
