@@ -1,83 +1,69 @@
 RESUME: Prompt Coach Better/Strong rewrites run (Workiva repo)
 
-Written 2026-10-17T12:24Z by run lead 39dcb350 (run 7), which stopped for Ian's decisions (not at the context
-line). Predecessors: b80d1b3d (run 6), 8f68dfd4 (run 5), 4756fc2d, a72ccc7d (talk; owns this worktree); 73a3f933,
-6e3060f1, 591a52e4 removed by program lead 15. If run 7 (39dcb350) is still open when Ian answers, it continues
-itself; this file is for a fresh lead. Load studio-harness:talk-and-run first and follow "The run" from where this
-leaves off. You are the run lead: coordinate only, never plan or build in your own context. ONE helper at a time.
+Written 2026-10-17T16:55Z by run lead 39dcb350 (run 7), which stopped at the 200k context line (context-stop hook)
+after Ian's four decisions, fix 2 and fix 3. Predecessors: b80d1b3d (run 6), 8f68dfd4 (run 5), 4756fc2d, a72ccc7d
+(talk; owns this worktree). Load studio-harness:talk-and-run first and follow "The run" from where this leaves off.
+You are the run lead: coordinate only, never plan or build in your own context. ONE helper at a time.
 
 READ FIRST
-- docs/PROMPT_COACH_REWRITES_RUN_PROMPT.txt: WHERE, ORDER steps 4-7, PERMISSIONS and SAFETY still apply.
+- docs/PROMPT_COACH_REWRITES_RUN_PROMPT.txt: WHERE, ORDER 5-7, PERMISSIONS and SAFETY still apply.
 - Ledger: .ledger/2026-10-16-prompt-coach-rewrites/progress.md (run 7 section starts "## Resume session (run 7"),
-  helper-rows.md (token use), reviews/final-review.md (MF-1, SF-1..SF-5, N-1..N-6), logs/.
-- Plan (approved, 340c9c8; do not edit): docs/superpowers/plans/2026-10-16-prompt-coach-rewrites.md.
-  Spec: docs/superpowers/specs/2026-10-16-prompt-coach-rewrites-design.md. Evidence: docs/evidence/2026-10-16-prompt-coach-rewrites.md.
+  helper-rows.md, reviews/final-review.md, logs/.
+- Plan (approved, do not edit), spec and evidence doc: docs/superpowers/plans|specs/2026-10-16-prompt-coach-rewrites*,
+  docs/evidence/2026-10-16-prompt-coach-rewrites.md.
 
-STATE (branch worktree-prompt-coach-rewrites; HEAD = this prompt's commit; tree clean)
+STATE (branch worktree-prompt-coach-rewrites; HEAD = this prompt's commit; tree clean; pushed)
 - First check as usual: STUDIO_RUN_LEDGER set, budget.json and slip.json exist; else stop.
-- All 13 plan tasks done: Task 12 = 186f426 (evidence doc), Task 13 = f62ae32 (live-test prompt, draft, not
-  launched). Each: implementer, checker PASS, lead re-run matched (logs/t12_lead_rerun.txt, t13_lead_rerun.txt).
-- Final review (final-reviewer, Opus, only reviewer; Codex shell blocked): NOT READY, 1 must-fix, 5 should-fix,
-  6 notes. Fix round 1 = 972cab5 (docs only: gate attribution, Better-tab wording, README 10-file claim, evidence
-  line 3 and section 5); checker PASS, lead re-run matched (logs/fix1_lead_rerun.txt). No re-review yet.
-- MF-1 measured by the lead (logs/r7_mf1_notstrong.txt, git archive exports in Temp/.../r7/): parent 73be350
-  test.jsonl notStrong 4/609 = "user-control assessment" x2 + "assurance reviewer" x2; HEAD 2/609 = assurance
-  reviewer x2 (missing P; fails at the parent too). Not a regression, but the PASS gate is unmet.
-- Browser: the extension helper (claude -p --chrome ... --permission-mode dontAsk) was DENIED by the Claude Code
-  auto-mode classifier ("Create Unsafe Agents") before it ran; not retried. Playwright extra (lead, measured):
-  console 0/0, 1280 = 1280, 390 = 390 no sideways scroll, Strong = ian_strong.txt exactly (inside the page's quote
-  marks), BETTER: NO TAB; controls failed as they should. Tools fixed: browser_pw.js, browser_cmp.js and
-  browser_prompt_template.txt read tabs by id (tab-better, tab-strong). browser_ext_run.sh runs the whole
-  extension test (server, helper, compare, stop by PID); DRY=1 plumbing run passed 12:23Z.
-- Better tab: the page draws tabs only above the prompt's grade (web/template.html:357, locked, unchanged since
-  73be350), so a Better-graded prompt (Ian's invoice case) never shows the cleaned Better text. Plan departure 2
-  does not reach the page.
-- Values (unchanged since a7d0501; code last changed f95ab85): unit 18/0; eval 0.856; simulate train+test 2679
-  sNS 4 bW 5 tNE 0 dup 2 bad 4 eF 0; train-only 2070 2/5/0/0/2/0; customer_check default PASS 229; test FAIL 609
-  notStrong 2; filler 0/0; "?" 69; >=3 blanks 55/143; build 314 KB (321,725 bytes served); filetest 8 rows errors [].
-- Tokens: helper-rows 2,508,693 of 2,800,000 at 12:23Z (59 rows, measured). Standing-yes raises are used up;
-  ANY further raise is Ian's. role-checks.txt holds the fix-round-1 set (copy role-checks-fix1.txt); replace it per
-  task; role-checks-final.txt is the 13-line whole-branch set for the re-review.
-- Pushed: origin/worktree-prompt-coach-rewrites = this prompt's commit (slip: push own branch yes).
+- All 13 plan tasks done. Final review (Opus) at f62ae32: NOT READY, 1 must-fix (MF-1), 5 should-fix, 6 notes.
+  Fix round 1 = 972cab5 (docs). Fix 2 = a552672 (MF-1 fixed: a scope-limit-only Evaluate match no longer stops the
+  Strong rewrite adding the Evaluate sentence; only the assurance prompt's 2 runs changed, better -> strong).
+  Fix 3 = 41bc059 (docs: Ian's rulings, browser results, fix-2 figures). Each: implementer, checker PASS, lead re-run.
+- IAN'S RULINGS 2026-10-17 (tapped by Ian: permissionDecision.source user_temporary, verified): decision 2
+  "Fix in the rewriter (Recommended)"; decision 3 Better tab "Known limit for now (Recommended)"; decision 4 engine
+  should-fixes SF-2, SF-3, SF-5, N-1..N-5 "Carry as follow-ups (Recommended)". Decision 1: Ian ran
+  browser_ext_run.sh himself (his Chrome: console 0, desktop no sideways scroll, Strong equal, Better NO TAB; phone
+  width not measured there; tool-reported total_cost_usd 0.98, billing unknown).
+- Must-stay-green at a552672 (lead re-run, logs/fix2_lead_rerun.txt): unit 19/0; eval 0.856; train-only 2070 sNS 2
+  bW 5 tNE 0 dup 0 bad 2 eF 0; all 2679 sNS 2 bW 5 tNE 0 dup 2 bad 4 eF 0; customer_check default PASS 229; test.jsonl
+  PASS 609; blanks 55/143; Playwright on the a552672 build: console 0, 1280 and 390 no sideways scroll, Strong equal
+  (logs/fix2_pw_cmp.txt); filetest at 41bc059 EXIT 0, 8 rows, errors [] (logs/fix3_filetest.txt).
+- Tokens: helper-rows 2,669,351 of 2,800,000 at 16:54Z (63 rows, measured); 130,649 left. ANY raise is Ian's.
+- Main checkout C:/Users/teasp/Documents/workiva: prompt-coach at 73be350 (fast-forward possible), one untracked file
+  .ask-ian-only (empty, 16:23Z; the answer-recommended hook's marker: answers in this repo must be Ian's; not a
+  merge blocker). Re-check its status before merging.
 
-IAN'S DECISIONS (asked by run 7 at its stop, one at a time; record his words verbatim in the ledger)
-1. Browser extension test: he runs `! bash <repo>/.ledger/2026-10-16-prompt-coach-rewrites/browser_ext_run.sh`
-   himself (recommended), or allows the helper, or another way. Pass = CONSOLE 0 errors, no sideways scroll at
-   desktop and 390 px, STRONG flatEqual true, BETTER NO TAB (or the Better text if decision 3 changes the page).
-2. MF-1 gate: accept the assurance-reviewer 2/609 as a known limit, or authorize a fix (a grading-adjacent change;
-   eval must stay at least 85.6%).
-3. Better tab: allow a locked-file edit of web/template.html (test first, rebuild, browser re-check) or keep it as
-   a known limit.
-4. Engine should-fixes SF-2 (repeated ask, 4 of 62 changed runs, read), SF-3 ("say thanks." -> "say.", assumed),
-   SF-5 (unclosed bracket, assumed), N-1..N-5: fix which, if any; the rest stay known limits.
-5. Ruling capture (PM proposal, lead not yet checked against the ledger records): progress.md lines 19, 20, 21, 22,
-   27 and 165 hold Ian's verbatim words with no ruling record; ledger-add / brain capture only on his yes. Also
-   run 6's and run 7's proposed facts (see progress.md "brain capture" lines).
-
-AFTER HIS ANSWERS
-- One task per authorized fix: implementer (failing check first), checker, lead re-run, ledger row.
-- Then: the 13 lines of role-checks-final.txt + the browser test, a fresh final-reviewer pass, evidence doc
-  updated in the same commit as any figure it states.
-- If the review passes and every check is green: merge into prompt-coach (slip: "Yes, merge after review passes";
-  fast-forward from 73be350 is possible) and push the own branch. Otherwise stop and ask.
-- PM step, then stop. The live-test session (docs/PROMPT_COACH_LIVE_TEST_RUN_PROMPT.txt) is Ian's to start.
+NEXT (in order)
+1. Re-review on Sonnet: dispatch studio-harness:final-reviewer with a line "MODEL OVERRIDE: Sonnet re-review after
+   fix rounds (talk-and-run: re-reviews on the next tier down; Ian chose the option naming a Sonnet re-review)" and
+   model sonnet; budget about 60k/30. Swap role-checks.txt to role-checks-final.txt first (13 lines; expected values
+   now as in STATE). Ask: is MF-1 resolved; do fix rounds 1-3 add any must-fix; is the evidence doc accurate. Known
+   gap to give it: the evidence cites browser_ext_report.md for "cost 0.98", which is held in report.json
+   (lead copy logs/browser_ext_usage.json) and progress.md:225 - a citation fix, judge must-fix or not.
+2. If it reports a must-fix: a fix task only if the tokens left cover it with its checker; otherwise stop for Ian.
+3. If it passes and every check is green: merge per slip ("Yes, merge after review passes"):
+   git -C C:/Users/teasp/Documents/workiva merge --ff-only worktree-prompt-coach-rewrites (local only; never push
+   prompt-coach or main); push the own branch. Record in the ledger.
+4. PM step, rename yourself per the session-name rule, report to Ian. The live-test session
+   (docs/PROMPT_COACH_LIVE_TEST_RUN_PROMPT.txt) is Ian's to start. Follow-ups for Ian: Better tab, SF-2/3/5 and
+   N-1..N-5, research "how other prompt improvers handle prompts they cannot improve", Workiva @-file limit.
 
 CORRECTIONS AND LESSONS (carry the relevant ones into each packet)
-- All earlier lessons hold (jq absent: node; role-check lines run from any folder, one per call; 45-call cap;
-  parent export by the lead; scratch only in C:/Users/teasp/AppData/Local/Temp/prompt-coach-rewrites-4756fc2d;
-  absolute paths; Write tool, not heredocs; autocrlf: check byte-exact files with git archive; git restore).
-- Stamp ledger lines from date -u at the time of writing (run 7 estimated two times in t12_addendum.txt and
-  corrected them).
-- A role-check line with a pattern in quotes must keep its space before the path: grep with no file reads stdin
-  and, inside a while-read loop, eats the remaining lines (run 7, line 6 of the fix-round set).
-- Backticks in a role-check pattern need single quotes, or bash runs them.
+- All earlier lessons hold (jq absent: node; role-check lines one per call, from any folder; 45-call cap; parent
+  export by the lead; scratch only in C:/Users/teasp/AppData/Local/Temp/prompt-coach-rewrites-4756fc2d; Write tool,
+  not heredocs; git archive for byte-exact files; stamp ledger lines from date -u when written).
+- A role-check pattern must keep its space before the path (grep with no file eats a while-read loop); backticks in
+  a pattern need single quotes.
 - studio-harness:pm is not a guard-registered role: dispatch it with model sonnet.
-- The Edit/Write tools refuse a file seen only through cat, or changed by an earlier session: Read it first.
+- Before attributing an AskUserQuestion answer to Ian, check permissionDecision.source in the transcript
+  (user_temporary = Ian, hook = the answer-recommended hook) or ~/.claude/answered-for-ian.jsonl.
+- filetest: VENDOR=C:/Users/teasp/AppData/Local/Temp/prompt-coach-rewrites-4756fc2d/vendor node --require
+  <same Temp>/t11/pw-alias.js prompt-coach/tests/filetest.js; log the exit code.
 - Implementer commits end with:
   Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
   Claude-Session: <the resuming session's link from its system reminder>
 
 SESSIONS
-- Keep a72ccc7d (owns this worktree), 8f68dfd4, b80d1b3d and 39dcb350 until the branch is merged and pushed and
-  Ian has said what to keep; never pass force flags.
-- Slip: new sessions no. Do not launch any session.
+- Keep a72ccc7d (owns this worktree), 8f68dfd4, b80d1b3d and 39dcb350 until the branch is merged and pushed and Ian
+  has said what to keep; never pass force flags. 39dcb350 could not rename itself (no successor running when it
+  stopped); the exception covers only a session's own state.json.
+- Slip: new sessions no. Ian starts this resume himself.
