@@ -10,15 +10,29 @@ of dd1adcd (82,037 bytes LF), per df09b9bd (not re-checked since). e9036b4 and d
 (rebuilt byte-identical), so there is nothing to republish. (Updated by d2e2611b.)
 
 NEXT SESSION (written by d2e2611b; supersedes every NEXT SESSION below)
-Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. If the launch note does not
-say pushed, ask Ian directly: push dd64db7 and the hand-off commit? A relayed answer is not his yes.
-Next (Ian picked "Labels, then pilot"): the sandbox pilot in docs/FIT_FINDER_SANDBOX_PILOT_PROMPT.txt.
-Ian runs it in the Claude browser extension and pastes the reply; score it against the planted list
-and the pass bar written there (text only, no screenshots), save the verbatim answer under
-docs/evidence/, then bring Ian the score. If he has not run it, ask whether he wants to now. After
-that, ask which next, recommendation first: the 3 wrong cards (67, 74, 91) or the 7 no-card tasks
-whose right cards name another feature (30, 45, 50, 59, 80, 111, 119). Program lead: "NEW - 24h
-program lead 5" (592afc9a) unless renamed; send it status.
+Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. dd64db7 and f53af7f are
+pushed (Ian's "Push (Recommended)"); the pilot commit after them is local unless the launch note says
+pushed: ask Ian directly. A relayed answer is not his yes. The sandbox pilot is DONE (see UPDATE).
+Ask which next, recommendation first: the 3 wrong cards (67, 74, 91), the 7 no-card tasks whose right
+cards name another feature (30, 45, 50, 59, 80, 111, 119), or re-checking the catalogue claims the
+pilot's Part 1 raised (Benchmarking not shown under that name; "AI suggestions" and "Agent Studio"
+exist). A sandbox test is available for any "does this feature do the job" question: write the
+browser-extension prompt with planted items and a pass bar first (ruling
+2026-10-16-test-workiva-ai-claims-in-sandbox, proposed). Program lead: "NEW - 24h program lead 7"
+unless renamed; send it status.
+
+UPDATE 2026-10-16, session d2e2611b: sandbox pilot DONE (docs/evidence/2026-10-16-sandbox-pilot.md)
+- Ian ran docs/FIT_FINDER_SANDBOX_PILOT_PROMPT.txt in the browser extension and pasted its report;
+  scored here from the AI's verbatim table: 4 of 4 changes listed, 0 invented (pass bar met); flag
+  (b) removed risk sentence: flagged; flag (a) "up 6%" vs $4.2bn -> $4.5bn: missed ("Expected
+  year-roll"). One run. README sentence updated.
+- Part 1: all five features seen except Benchmarking (nearest: "Intelligent Finance" peer panel);
+  also "AI suggestions" (Tools menu) and "Agent Studio" (left nav). Claims to re-check, not fixes.
+- My error, corrected: the pass bar said gen-summarize-file is right for tasks 0 and 115; Ian's gold
+  has it for 115 only (task 0: fr-yoy-narrative).
+- Pushed b468958..f53af7f on Ian's "Push (Recommended)"; ruling 2026-10-16-test-workiva-ai-claims-
+  in-sandbox (proposed) and brain park fit-finder/objective/fit-finder-a-compare-a-draft-...md written
+  on his "Record it (Recommended)", both uncommitted in the studio-harness checkout.
 
 UPDATE 2026-10-16, session d2e2611b (successor of ef7552f6): STILL OPEN "right-suggestion rate" DONE in dd64db7
 - Probe (read-only, before asking): 30 held-out tasks fit, 16 reach a card; 3 of the 16 first cards

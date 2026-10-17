@@ -127,5 +127,9 @@ them chat with your file is already the feature a card he accepted names first; 
 than wrong cards. A top-model labeler, blind to the engine, matched Ian exactly on 11 of 30 and
 accepted fewer cards on 18; Ian disagreed with it on 2 of the 8 he checked first (the agreed limit),
 so he labelled all 30. Every question offered at least one card, which may lean toward picking one.
-These are AI-written tasks: whether real tasks get the right card, and whether a card's advice works
-in Workiva AI, is not yet measured.
+These are AI-written tasks: whether real tasks get the right card is not yet measured. Whether a
+card's advice works in Workiva AI has one test so far (Ian's sandbox, 2026-10-16, made-up data,
+`docs/evidence/2026-10-16-sandbox-pilot.md`): asked to compare two versions of an MD&A, chat with
+workspace files listed all 4 planted changes, invented none and flagged the removed risk sentence,
+but passed "up 6%" as a year roll although revenue went from $4.2bn to $4.5bn (about 7%). One run
+of one task; it fits "exact calculation stays with you".

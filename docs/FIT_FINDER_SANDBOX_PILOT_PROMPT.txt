@@ -9,7 +9,11 @@ for 115). Ian runs it in the Claude browser extension in his Workiva sandbox and
 
 PASS BAR (fixed before the run): all 4 changes listed and 0 invented = chat with your file does
 this job, and gen-summarize-file stays right for tasks 0 and 115. Flag (a) is scored separately
-and does not decide the pass.
+and does not decide the pass. (Corrected after the run: Ian's gold has gen-summarize-file for 115
+only; task 0's gold is fr-yoy-narrative.)
+
+RESULT (2026-10-16, docs/evidence/2026-10-16-sandbox-pilot.md): pass bar met, 4 of 4 listed, 0
+invented; flag (a) missed, flag (b) flagged. One run.
 
 PREDICTION (assumed, not tested): it lists at least 3 of the 4 changes but flags the stale "up 6%"
 less than half the time. A miss on (a) would mean chat checks wording, not arithmetic, which fits the
