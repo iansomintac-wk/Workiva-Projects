@@ -71,9 +71,21 @@ test('CAL holds the Part B calendar for L1..L6', async () => {
   assert.equal(CAL.L5, '2026-10-05');
   assert.deepEqual([CAL.L6.from, CAL.L6.to], ['2026-10-06', '2026-10-26']);
 });
-test('PART_B holds L1..L6 in order, each async and CHECKED', async () => {
+test('PART_B holds L1..L12 in order, each async, CHECKED except L12 (Task 10)', async () => {
   const { PART_B } = await import('../tools/sim/osm-day/steps-b.mjs');
   const { CHECKED } = await import('../tools/sim/osm-day/lib/results.mjs');
-  assert.deepEqual(PART_B.map(s => s.id), ['L1', 'L2', 'L3', 'L4', 'L5', 'L6']);
-  for (const s of PART_B) { assert.ok(CHECKED.includes(s.id), s.id); assert.equal(s.run.constructor.name, 'AsyncFunction', s.id); }
+  assert.deepEqual(PART_B.map(s => s.id), ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'L9', 'L10', 'L11', 'L12']);
+  for (const s of PART_B) { assert.equal(CHECKED.includes(s.id), s.id !== 'L12', s.id); assert.equal(s.run.constructor.name, 'AsyncFunction', s.id); }
+});
+test('committedDate and l10Day follow the Part B chronology (Task 10)', async () => {
+  const { committedDate, l10Day } = await import('../tools/sim/osm-day/steps-b.mjs');
+  assert.equal(committedDate('2026-12-07', 6), '2027-01-11');
+  assert.equal(committedDate('2026-12-07', 1), '2026-12-07');
+  assert.equal(l10Day('2027-01-11'), '2027-01-04');
+});
+test('PART_B_ORDER runs L9 phase 1, L10, L9 phase 2, L11 in date order after L8', async () => {
+  const { PART_B_ORDER, PART_B } = await import('../tools/sim/osm-day/steps-b.mjs');
+  const i = PART_B_ORDER.indexOf('L8');
+  assert.deepEqual(PART_B_ORDER.slice(i + 1, i + 5), ['L9.phase1', 'L10', 'L9.phase2', 'L11']);
+  assert.deepEqual(PART_B.map(s => s.id).filter(id => ['L9', 'L10', 'L11'].includes(id)), ['L9', 'L10', 'L11']);
 });
