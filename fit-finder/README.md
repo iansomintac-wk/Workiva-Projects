@@ -194,7 +194,8 @@ differences are good against partial, mostly whether the job recurs, which the p
 comments are short, and the labeler marked 18 of 29 calls low confidence. One labeler, one run.
 
 Rewrite-reach rule C (2026-10-17). It replaces rule V1 (0dd05ca) and rule V2 (6f7090e); both were
-reviewed and withdrawn. Rule C is the 383afd3 engine plus one alternative: "worded ... better"
+reviewed and withdrawn. The live page runs rule C since version 14 (2026-10-17, version id
+1792251986-190c); version 13 ran the 383afd3 rule. Rule C is the 383afd3 engine plus one alternative: "worded ... better"
 (word-ed or word-ing, up to two words, then better: "get the note worded better") reads as REWRITE.
 The rewrite card matches rewrit, shorten, tighten, plain english, board, executives, audience, tone,
 too long, plus four new words: re-word, rephras, worded and wording. "Revise" and the tone words
@@ -217,7 +218,7 @@ scored 8 of 23 before any rule, V2 12):
   Done-when (proposal A, accepted the same way): first card right on at least 12 of 23 and wrong on at most 3 on this set, then the same bar scored once on a second untouched real set; now right is met (15), wrong is not (5).
 - Blind held-out, 40 sentences (`docs/evidence/2026-10-17-rewrite-heldout.jsonl`, 20 rewrite asks and
   20 that are not; labels by the model; each rule scored once): rewrite card on 7 of 20 asks for
-  rule C, 13 for V2, 3 for the live rule (383afd3); on the 20 that are not rewrites 1 of 20 for every
+  rule C, 13 for V2, 3 for the v13 rule (383afd3); on the 20 that are not rewrites 1 of 20 for every
   rule, the same row (H32, "tone at the top"). So on blind sentences rule C is no cleaner than V2
   and reaches fewer asks. Its precision edge shows only on the reviewers' pool (in-sample, written
   while reviewing V2): `tests/rewrite-pool.jsonl` holds 86 sentences, 0 of 42 non-rewrites get the
@@ -228,7 +229,7 @@ scored 8 of 23 before any rule, V2 12):
 
 Known limits: asks such as "make this memo more concise", "make this more diplomatic" and "revise
 this slide text" get no rewrite card. An explain request that says "wording ... better" ("Help me
-understand the wording better.") gets the rewrite card first (V2 too; the live rule gives no card).
+understand the wording better.") gets the rewrite card first (V2 too; the v13 rule gives no card).
 Rule C was chosen on the pool it is scored on; on the blind held-out 40 it is no cleaner than V2 and
 reaches fewer asks, so choosing C trades reach for fewer wrong cards on the kind of finance wording
 reviewers found. One pool label is the model's call ("Accrue more professional fees." = not a

@@ -13,10 +13,17 @@ Nothing is half-done in the repo; the code is as v4.21 left it (ccda404). Same r
 2. DONE 15:4xZ: live page republished as version 14 (version id 1792251986-190c) on Ian's own "yes", typed in the
    v4.22 chat at 15:45Z (lead 17's earlier yes was not taken). Sonnet helper: before, the live page contained v13's
    dist (8050b07, 82,594 bytes) after CRLF->LF; after, it contains the branch dist (82,673 bytes LF, rule C) and not
-   v13's. v4.23 re-checks it read-only. Otherwise no queued work: do not tune. Report to the program lead and stop.
+   v13's. v4.23 (74b74df4) re-checked it read-only at 15:48Z: live index.html of version 1792251986-190c is 83,219
+   bytes, no CR; it contains the HEAD dist (82,673 bytes LF) exactly at offset 531 (the rest is the 546-byte publish
+   skeleton) and does not contain v13's dist. README now records version 14 and calls the 383afd3 rule "the v13
+   rule" (it said "the live rule"). Otherwise no queued work: do not tune. Report to the program lead and stop.
 3. For the program lead, not this repo: Ian's 08:03:54Z and 07:59:11Z words have no ruling record (PM, read); they
    are program-wide expectations, so recording them is the lead's call. The new studio-harness records below are
    uncommitted in Ian's studio-harness main checkout (status proposed); committing there needs a yes.
+4. Candidate (l), for the program lead, not recorded: v4.22 kept listening after launching v4.23 with the same ask,
+   so Ian's question was put in two chats, and v4.22's copy of progress.md into fit-finder-v423 overwrote v4.23's two
+   rows (re-added). A predecessor that hands an ask on should stop taking answers to it, and append, not copy, a ledger.
+   brain capture (v4.23): no roadmap, no missed fact, no parked idea.
 
 UPDATE 2026-10-17, session 08fbee0d (successor of 08b76f43)
 - PM hand-off step (pm, Sonnet, 25,795 tokens, 6 tool uses, 50 s): rule C's milestone done by its checks; no route
