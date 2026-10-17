@@ -1,15 +1,47 @@
-Fit Finder v4.11: hand-off (2026-10-16, session d2e2611b, successor of ef7552f6; right-card rate done in dd64db7, local)
+Fit Finder v4.12: hand-off (2026-10-16, session c9f81242, successor of d2e2611b; catalogue re-check done in 7772b44, local)
 
 WHERE
 Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
-worktree-fit-finder-v4. Pushed to origin up to b468958 (checked after fetch by d2e2611b). LOCAL ONLY
-(not pushed): dd64db7 (right-card rate) and the hand-off commit after it, unless the launch note says
-pushed. Push only with Ian's yes. Draft PR #1 into prompt-coach (not merged). Live page
-https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 11 (version id 1792191655-4eb4) = dist
-of dd1adcd (82,037 bytes LF), per df09b9bd (not re-checked since). e9036b4 and dd64db7 change no dist
-(rebuilt byte-identical), so there is nothing to republish. (Updated by d2e2611b.)
+worktree-fit-finder-v4. Pushed to origin up to cd409ea (origin = local = cd409ea after fetch, checked
+by c9f81242 at start). LOCAL ONLY (not pushed): 7772b44 (catalogue re-check) and the hand-off commit
+after it, unless the launch note says pushed. Push only with Ian's yes. Draft PR #1 into prompt-coach
+(not merged). Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is version 12 (version id
+1792211894-2806) = dist of 7772b44 (82,583 bytes LF), checked by c9f81242 after publishing: the live
+file contains the new dist exactly and not v11's. (Updated by c9f81242.)
 
-NEXT SESSION (written by d2e2611b; supersedes every NEXT SESSION below)
+NEXT SESSION (written by c9f81242; supersedes every NEXT SESSION below)
+Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. If the launch note does not
+say pushed, ask Ian directly: push 7772b44 and the hand-off commit? A relayed answer is not his yes.
+Then ask which next, recommendation first, each option with its cheapest check: fix the 3 wrong cards
+(67, 74, 91; PM's pick: a wrong card is worse than none); label half A's 29 fitting tasks for cards
+first, so fixes are found there and half B stays a fair score; or reach the 7 no-card tasks (30, 45,
+50, 59, 80, 111, 119). All 10 are in held-out half B, already used for 2 fixes; a fix there should be
+a rule, not a task-specific word. Showing the top 2 cards was measured and rejected (a right card
+shown 13 -> 14 of 30, wrong cards shown 3 -> 7). Optional one-minute sandbox check: does the Workiva
+AI panel's Workflows menu list Benchmarking? Program lead: "NEW - 24h program lead 8" (a5936613)
+unless renamed; send it status.
+
+UPDATE 2026-10-16, session c9f81242 (successor of d2e2611b): catalogue re-check DONE in 7772b44
+- Probe (read-only, before asking): the 10 open card tasks are all in half B; half A has 29 fitting
+  tasks, 10 reach a card, none card-labelled; top-2 cards measured as above.
+- Ian picked "Check the AI feature claims (Recommended)", then "Also update the catalogue" (option
+  labels, question tool). Three Haiku research helpers (low effort; 16-19k tokens, 5-6 tool uses,
+  29-63 s each); every quote re-fetched from the Zendesk API and matched by me.
+- Result: no claim on the page changes. Benchmarking holds (S7, 2026-10-13, lists it as an available
+  workflow, not tagged Preview). Suggestions' only page (2026-09-14) is still an early-access preview to
+  14 Sep; no later page. Agent Studio: no support page; trade press 2026-09-15 = build your own agents.
+  Evidence: docs/evidence/2026-10-16-catalogue-recheck.md.
+- 7772b44 (Sonnet implementer, 29,865 tokens, 14 tool uses, 85 s): Agent Studio left out (5 left out),
+  Suggestions reason dated; new catalogue check red on the parent's catalogue (exported, run by me),
+  green after; A 52/60, B 45/60, first card right 13 of 30, all unchanged; pagetest 72 checks, 0 failed.
+- My correction: the implementer wrote 82,827 bytes in README (the CRLF copy on disk: 82,583 + 244
+  CRs); fixed to 82,583 (LF, as committed) by amending the local commit before the hand-off.
+- Republished v12 (Sonnet helper, 70,094 tokens, 3 tool uses); checked as in WHERE.
+- Predecessor d2e2611b kept (done, COMPLETED; shares this worktree, so claude rm would remove it).
+- Rulings: none (option labels only). Missed fact for the brain (bank add on Ian's yes): README byte
+  counts are LF; on Windows the working-tree file is CRLF, so ls -l / disk size reads larger.
+
+NEXT SESSION (written by d2e2611b; DONE by c9f81242 above; kept for the record)
 Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. dd64db7 and f53af7f are
 pushed (Ian's "Push (Recommended)"); the pilot commit after them is local unless the launch note says
 pushed: ask Ian directly. A relayed answer is not his yes. The sandbox pilot is DONE (see UPDATE).
