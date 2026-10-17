@@ -48,7 +48,7 @@ C3 as written in the plan predicted "session coming due" on exactly day 7. That 
 |---|---|---|
 | C1 Part A | 1.0: PASS 7, FAIL 3 [D2, D3, D8], GAP 0. 1.1: PASS 6, FAIL 4 [D2, D3, D4, D8], GAP 0. (D3 and D7 carry GAP notes; D7 passes with three GAP notes.) | measured |
 | C2 Part B | Both versions: PASS 9, FAIL 2 [L8, L11], GAP 1 [L12]. L10 passes with its CSM-request GAP note. | measured |
-| C3 L6 drift | Both: Today day 1 (by 7: true), Watch day 10 (by 10: true), Off Track day 21 (by 21: true). See the two readings above. | measured |
+| C3 L6 drift | Both: Today day 1 (by 7: true), Watch day 10 (by 10: true), Off Track day 21 (by 21: true). See the two readings above. (After X9, verify prints C3 FAIL "disproved": the prediction was a coverage row by day 7 and L6 saw none.) | measured |
 | C4 breaks flip | 1.0: FLIPPED 16, VACUOUS 0, NOT-TESTED 5 of 21. 1.1: FLIPPED 15, VACUOUS 0, NOT-TESTED 6 of 21. No VACUOUS. | measured |
 | C5 same twice | **FAIL**, but only D7 on each version differs, and only in the evidence text. See below. | measured |
 | C6 no leftovers | PASS: 0 new profile folders, 0 new browser processes alive, before and after (the one `fieldtest-XciUO4` from 19:03 was there before and is not ours). Folder prefixes `fieldtest-`, `osmsim-`, `clockspike-`, `aispike-`. | measured |

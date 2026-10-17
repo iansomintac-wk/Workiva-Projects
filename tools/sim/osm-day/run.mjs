@@ -142,7 +142,7 @@ async function runPart({ v, part, ids, prereq, breaksOn, runDir, log }) {
       const r = await runStep(ctx, step, key);
       if (prereq.includes(key)) { log.push(`${key} (setup) | ${v} ran unchecked`); continue; }
       if (key === 'L9.phase1') continue;
-      const rec = { ...classify({ id, passed: r.passed }), evidence: cut(r.evidence, 600) };
+      const rec = { ...classify({ id, passed: r.passed }), evidence: cut(r.evidence, id === 'L6' ? 6000 : 600) };
       rec.ms = Date.now() - t;
       if (GUARD[id]) guards[id] = await GUARD[id].capture(ctx);
       recs.push(rec);

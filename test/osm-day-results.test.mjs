@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -106,4 +107,27 @@ test('exitCode: 1 on FAIL or VACUOUS', () => {
 test('exitCode: 0 when all PASS/GAP and all FLIPPED', () => {
   const s = steps(); s[21] = { id: 'L12', status: 'GAP' };
   assert.equal(exitCode({ steps: s, breaks: brks() }), 0);
+});
+
+// ---- X9: C3 reports a disproved coverage prediction ----
+const l6ev = (cov, cap) => `firstToday=2026-10-06 (day 1) firstWatch=2026-10-15 (day 10) firstOffTrack=2026-10-26 (day 21) rank=3 firstRanked=2026-10-06 where=day step beyondBeatCapDays=${cap} reasonIsCoverage=${cov} reason="x"`;
+const c3runs = (cov, cap) => [{ res: Object.fromEntries(['1.0', '1.1'].map(v => [v, { partial: false, steps: [{ id: 'L6', status: 'PASS', evidence: l6ev(cov, cap) }] }])) }];
+test('X9 C3 PASS when the coverage row shows and the timings hold', async () => {
+  const { c3 } = await import('../tools/sim/osm-day/verify.mjs');
+  const line = c3(c3runs(true, '3/21'));
+  assert.match(line, /^C3 PASS /); assert.doesNotMatch(line, /disproved/);
+});
+test('X9 C3 FAIL disproved when L6 shows no coverage row, still printing the Today, Watch and Off Track days', async () => {
+  const { c3 } = await import('../tools/sim/osm-day/verify.mjs');
+  const line = c3(c3runs(false, '3/21'));
+  assert.match(line, /^C3 FAIL .*disproved/);
+  assert.match(line, /Today d1<=7 true, Watch d10<=10 true, OffTrack d21<=21 true/);
+});
+test('X9 C3 FAIL disproved when Fernhollow is beyond the beat cap on every day', async () => {
+  const { c3 } = await import('../tools/sim/osm-day/verify.mjs');
+  assert.match(c3(c3runs(true, '21/21')), /^C3 FAIL .*disproved/);
+});
+test('X9 run.mjs does not cut L6 evidence at 600 characters', () => {
+  const t = readFileSync(new URL('../tools/sim/osm-day/run.mjs', import.meta.url), 'utf8');
+  assert.match(t, /cut[(]r[.]evidence, id === 'L6'/);
 });

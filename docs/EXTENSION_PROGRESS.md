@@ -78,7 +78,7 @@ Helpers for the checks (committed with this file): `node docs/extension-checks/s
 - Files: tools/sim/osm-day/verify.mjs, run.mjs, test/osm-day-results.test.mjs (add a doctored-state test).
 - Check: `W && node tools/sim/osm-day/verify.mjs --score-only --dir sim-runs/verify 2>&1 | grep -E "^C3" | cut -c1-300`
 - Expected: a line starting `C3 FAIL` that contains `disproved` (today `C3 PASS`); other C-lines unchanged apart from C5.
-- Status: todo
+- Status: done (commit see git log). Evidence: score-only C3 FAIL ... disproved on sim-runs/verify; suite fail 0; L6 evidence cut raised to 6000 chars in run.mjs.
 
 ### X10 Final: evidence doc, full verify on fresh folders, suite
 - Outcome: `docs/evidence/2026-10-16-osm-day-lifecycle-sim.md` updated in the same commit as the last fixes: stability note (numbers reproduced on a second fresh run), outcomes of FR8/FR10/FR11 and Fix A/B, S11 wording (the card is still rendered; the tracker's spine counts a confirmed case as decided; Ian rules), S12 times quoted from times.txt (1.0 325 s and 295 s, 1.1 291 s and 279 s), N1 (the ai-negative control exits 0 when escaped=1), N2 (cite C4 L6 FLIPPED, and that the spec's own L6 break was VACUOUS), the deferred list as known weak coverage (FR1, FR2, FR3, FR7, L1/L5-date, S10 fail-open seed restore, step dates, N3, N4, N5, N7). Then one full verify on fresh folders.

@@ -80,7 +80,7 @@ function partLine(tag, ch, runs) {
 }
 
 const L6RE = /firstToday=(\S+)(?: \(day (\d+)\))? firstWatch=(\S+)(?: \(day (\d+)\))? firstOffTrack=(\S+)(?: \(day (\d+)\))?/;
-function c3(runs) {
+export function c3(runs) {
   const parts = []; let ok = true;
   for (const v of VERSIONS) {
     const s = fullResult(runs, v).steps.find(x => x.id === 'L6');
@@ -88,9 +88,12 @@ function c3(runs) {
     if (!m) { ok = false; parts.push(`${v} L6 evidence unreadable`); continue; }
     const [t, w, o] = [m[2], m[4], m[6]].map(x => (x === undefined ? Infinity : Number(x)));
     const b = [t <= 7, w <= 10, o <= 21];
-    if (!b.every(Boolean)) ok = false;
+    // Spec 8, C3: "due soon" is disproved if it does not show on Today as a coverage row: L6 saw no coverage reason, or Fernhollow sat beyond the beat cap every day.
+    const cap = /beyondBeatCapDays=(\d+)\/(\d+)/.exec(s.evidence || '');
+    const disproved = /reasonIsCoverage=false/.test(s.evidence || '') || (!!cap && Number(cap[2]) > 0 && cap[1] === cap[2]);
+    if (!b.every(Boolean) || disproved) ok = false;
     const d = x => (x === Infinity ? 'never' : 'd' + x);
-    parts.push(`${v} Today ${d(t)}<=7 ${b[0]}, Watch ${d(w)}<=10 ${b[1]}, OffTrack ${d(o)}<=21 ${b[2]}`);
+    parts.push(`${v} ${disproved ? 'disproved (no on-screen coverage row by day 7): ' : ''}Today ${d(t)}<=7 ${b[0]}, Watch ${d(w)}<=10 ${b[1]}, OffTrack ${d(o)}<=21 ${b[2]}`);
   }
   return `C3 ${ok ? 'PASS' : 'FAIL'} ${parts.join(' | ')}`;
 }
