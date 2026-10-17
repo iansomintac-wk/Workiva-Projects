@@ -57,7 +57,7 @@ Helpers for the checks (committed with this file): `node docs/extension-checks/s
 - Files: tools/sim/osm-day/steps-b.mjs (about 398-410), lib/breaks.mjs, test/osm-day-steps.test.mjs.
 - Check: `W && node tools/sim/osm-day/run.mjs --version 1.1 --part B --only L11 --out sim-runs/ext/x6 > /dev/null 2>&1; node docs/extension-checks/show.mjs sim-runs/ext/x6/results-1.1.json | cut -c1-420; grep -c "confirmGraduation" tools/sim/osm-day/lib/breaks.mjs`
 - Expected: L11 evidence contains `clicked OK` and names the stage and queue count read after that click; status agrees with that evidence (FAIL while the tracker has no refusal); last grep prints `0`.
-- Status: todo
+- Status: done (commit see git log). Evidence: L11 1.1 FAIL break NOT-TESTED, evidence 'clicked OK with no contact: stage graduated, queue items 1'; the tracker has no CSAT check in validateGraduationDraft, so the break (CSAT filter on validateGraduationDraft) cannot be tested, a finding; confirmGraduation count in breaks.mjs 0; steps tests red before (4), green after.
 
 ### X7 L7 judged on the rendered Today screen; leaks on silence sources only (Fix A3)
 - Outcome: on pause days and on 12-01 L7 records rank and rendered or cap-hidden from the rendered Today; leaks count silence sources only (not `!x.paused` read from the replaced `isPaused`), so the break is not true by construction.

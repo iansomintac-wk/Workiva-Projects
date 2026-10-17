@@ -107,6 +107,15 @@ const candidateSources = ctx => ctx.ev(`(() => { const c = DATA.customers.find(x
   return JSON.stringify({ sources: todayAccountCandidates(c, { gainsightByCustomer: g }).map(x => x.source), paused: isPaused(c),
     regulatory: buildRiskHubList({ readOnly: true }).filter(it => it.c.id === c.id && it.category && it.category.key === 'regulatory').length }); })()`).then(JSON.parse);
 
+// L11 verdict. With no CSAT contact the tracker must refuse: stage and queue after the OK click decide (the tracker has no CSAT check today, so this FAILs).
+export function l11Judge({ g0, m1, noContact, with: w }) {
+  const refused = noContact.stage !== 'graduated' && noContact.queued === 0;
+  const first = `no-CSAT state read back done:${g0.csatDone}, contactName:"${g0.contact}"; graduation modal OK ${m1.disabled ? 'disabled (refused)' : 'ENABLED without a CSAT contact (no refusal)'}; ${noContact.clicked ? 'clicked OK' : 'did not click OK'} with no contact: stage ${noContact.stage}, "Success Plan objective" queue items ${noContact.queued}`;
+  if (!w) return { passed: false, evidence: first + (refused ? '; with-contact leg not run' : '; graduated with no contact, so the with-contact leg was skipped') };
+  const graduated = w.stage === 'graduated' && w.queued > 0;
+  return { passed: refused && graduated, evidence: `${first}; with contact "${w.g1.contact}" (done ${w.g1.csatDone}) OK ${w.m2.open ? (w.m2.disabled ? 'disabled' : 'enabled') : 'modal not open'}; stage ${w.stage}, queue items ${w.queued}` };
+}
+
 // L9 phase 1: 12-07 .. T-7 (sessions 1..N-1), goal, committed date, the three gate recordings.
 async function l9phase1(ctx) {
   const start = CAL.L9.start;
@@ -406,27 +415,33 @@ export const PART_B = [
     await fill();
     const m1 = await modalState();
     if (!m1.open) throw new Error('L11: the graduation modal did not open');
-    await ctx.click('#gc-cancel');
-    await sleep(300);
-    const refused = m1.disabled === true;
-    // With a CSAT contact (through the beat pane): reopen and confirm.
-    await bookAndFocus(ctx, id);
-    await paneType(ctx, id, `[data-fp-csat="${id}"]`, 'Dana Reyes');
-    await sleep(600);
-    await paneClick(ctx, id, `[data-fp-toggle="associatedPeopleCSAT|${id}"]`);
-    await sleep(300);
-    const g1 = await gates(ctx, id);
-    await openModal();
-    await sleep(400);
-    await fill();
-    const m2 = await modalState();
-    if (m2.open && !m2.disabled) await ctx.click('#gc-ok');
-    await sleep(600);
-    await dismissModals(ctx);
-    const r = JSON.parse(await ctx.ev(`(() => { const c = DATA.customers.find(x => x.id === ${JSON.stringify(id)});
+    // No contact: click OK if the tracker leaves it enabled, then judge refusal by the stage and queue read after the click.
+    let clicked = false;
+    if (!m1.disabled) { await ctx.click('#gc-ok'); clicked = true; await sleep(600); await dismissModals(ctx); }
+    const readState = async () => JSON.parse(await ctx.ev(`(() => { const c = DATA.customers.find(x => x.id === ${JSON.stringify(id)});
       return JSON.stringify({ stage: c.stage, queued: getGainsightQueue().filter(q => q.customerId === c.id && q.kind === 'Success Plan objective').length }); })()`));
-    const graduated = r.stage === 'graduated' && r.queued > 0;
-    return { passed: refused && graduated, evidence: await withBreak(ctx, `no-CSAT state read back done:${g0.csatDone}, contactName:"${g0.contact}"; graduation modal OK ${m1.disabled ? 'disabled (refused)' : 'ENABLED without a CSAT contact (no refusal)'}; with contact "${g1.contact}" (done ${g1.csatDone}) OK ${m2.open ? (m2.disabled ? 'disabled' : 'enabled') : 'modal not open'}; stage ${r.stage}, "Success Plan objective" queue items ${r.queued}`) };
+    const noContact = { clicked, ...(await readState()) };
+    if (!clicked) { await ctx.click('#gc-cancel'); await sleep(300); }
+    let withContact = null;
+    if (noContact.stage !== 'graduated') {
+      // With a CSAT contact (through the beat pane): reopen and confirm.
+      await bookAndFocus(ctx, id);
+      await paneType(ctx, id, `[data-fp-csat="${id}"]`, 'Dana Reyes');
+      await sleep(600);
+      await paneClick(ctx, id, `[data-fp-toggle="associatedPeopleCSAT|${id}"]`);
+      await sleep(300);
+      const g1 = await gates(ctx, id);
+      await openModal();
+      await sleep(400);
+      await fill();
+      const m2 = await modalState();
+      if (m2.open && !m2.disabled) await ctx.click('#gc-ok');
+      await sleep(600);
+      await dismissModals(ctx);
+      withContact = { g1, m2, ...(await readState()) };
+    }
+    const j = l11Judge({ g0, m1, noContact, with: withContact });
+    return { passed: j.passed, evidence: await withBreak(ctx, j.evidence) };
   } },
   { id: 'L12', async run() {
     return { passed: true, evidence: 'GAP: nothing in the tracker tracks a CSAT survey sent or answered, or its follow-up' };

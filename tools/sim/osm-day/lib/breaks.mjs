@@ -24,7 +24,7 @@ export const BREAKS = {
   L8: B('L8', `classifyRiskText = () => []`),
   L9: B('L9', `toggleComplianceGate = () => false`),
   L10: B('L10', `isGraduatingSoon = () => false`),
-  L11: B('L11', `confirmGraduation = () => false`),
+  L11: B('L11', `{const o=validateGraduationDraft; validateGraduationDraft=(c,d)=>{const r=o(c,d); r.missing=r.missing.filter(k=>!/csat/i.test(k)); r.ok=!r.missing.length; return r}}`),
 };
 
 // Every global the overrides replace or the probe relies on; each must be `function <name>(` in both trackers.
@@ -32,5 +32,5 @@ export const OVERRIDE_NAMES = [
   'callsScheduledToday', 'renderBeatPrep', 'renderBeatPanel', 'commitDataCandidate', 'saveData',
   'queueGainsightItem', 'markRiskActioned', 'inImplementation', 'exportData', 'setHandoffField',
   'markImplementationGoLive', 'computeCoverage', 'todayActionList', 'isPaused', 'classifyRiskText',
-  'toggleComplianceGate', 'adminGapList', 'isGraduatingSoon', 'confirmGraduation', 'parseOutstandingQuestions',
+  'toggleComplianceGate', 'adminGapList', 'isGraduatingSoon', 'validateGraduationDraft', 'parseOutstandingQuestions',
 ];

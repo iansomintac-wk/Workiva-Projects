@@ -326,3 +326,21 @@ test('X5 verify C5 compares unmasked: no SIM-EXT mask remains', () => {
   const t = readFileSync(new URL('../tools/sim/osm-day/verify.mjs', import.meta.url), 'utf8');
   assert.doesNotMatch(t, /SIM-EXT/);
 });
+
+// ---- X6/X7/X8: L11 clicks OK with no contact; L7 judged on the rendered Today; L5 plan on Fernhollow's Sessions panel ----
+test('X6 L11 judge: OK enabled with no contact is clicked and the state after the click decides; no refusal FAILs', async () => {
+  const { l11Judge } = await import('../tools/sim/osm-day/steps-b.mjs');
+  const j = l11Judge({ g0: { csatDone: false, contact: '' }, m1: { open: true, disabled: false }, noContact: { clicked: true, stage: 'graduated', queued: 2 }, with: null });
+  assert.equal(j.passed, false);
+  assert.match(j.evidence, /clicked OK/);
+  assert.match(j.evidence, /stage graduated/);
+  assert.match(j.evidence, /queue items 2/);
+  const ok = l11Judge({ g0: { csatDone: false, contact: '' }, m1: { open: true, disabled: true }, noContact: { clicked: false, stage: 'active', queued: 0 },
+    with: { g1: { contact: 'Dana Reyes', csatDone: true }, m2: { open: true, disabled: false }, stage: 'graduated', queued: 1 } });
+  assert.equal(ok.passed, true, ok.evidence);
+});
+test('X6 L11 break targets the CSAT check, not confirmGraduation', () => {
+  assert.doesNotMatch(BREAKS.L11.js, /confirmGraduation/);
+  assert.match(BREAKS.L11.js, /csat/i);
+  assert.ok(OVERRIDE_NAMES.includes('validateGraduationDraft'));
+});
