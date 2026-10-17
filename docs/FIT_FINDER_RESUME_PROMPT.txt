@@ -2,12 +2,14 @@ Fit Finder v4.22: hand-off (2026-10-17, session 08fbee0d, successor of 08b76f43;
 
 NEXT SESSION (written by 08fbee0d at 11:1xZ; supersedes every NEXT SESSION below, including v4.21's step 1, now done)
 Nothing is half-done in the repo; the code is as v4.21 left it (ccda404). Same run ledger folder (fit-finder-v422).
-1. Item 71 in ../for-ian.md is Ian's (he sleeps until about 15:30Z and replies in the newest Fit Finder session's
-   chat). On his answers, apply only his words, as v4.21's step 2 below says: label changes go in
-   data/card-gold-fresh.jsonl with by: ian (one small plan task); "wider rule" means V2 back; republish v14 only on
-   his words. Proposal A's bar (>= 12 right, <= 3 wrong) is still missed on wrong (6 now; 5 to 7 after his checks,
-   by whatif.cjs), so "Fit Finder done" has no accepted check yet: say so, do not tune toward it.
-2. Otherwise no queued work: do not tune or republish. Report to the program lead and stop at the task boundary.
+1. DONE 15:4xZ: item 71's 5 checks were answered by program lead 17 (a model) on Ian's 15:30:18Z words "You were
+   supposed to provide the answers" (ian-words.txt): 1 no, 2 no, 3 yes, 4 yes, 5 no; A yes, B yes, (a) keep the
+   narrow rule. Applied in 41e69de (plan 2026-10-17-fit-finder-item71-labels.md; rows stay by: model, overturnable):
+   fresh first card right 15 of 23, wrong 5 (G2,G14,G15,G22,X1). Proposal A's bar: right met, wrong NOT met (5 vs
+   <= 3), so Fit Finder is not done by A; the honest test is the same bar once on a second untouched real set.
+   Proposal B (rewrite brain page fit-finder/product/product from the README): not yet written.
+2. Still Ian's: republish v14 (the standing yes keeps the live-page republish his; lead 17's yes was not taken).
+   Asked in the v4.22 chat. Otherwise no queued work: do not tune. Report to the program lead and stop.
 3. For the program lead, not this repo: Ian's 08:03:54Z and 07:59:11Z words have no ruling record (PM, read); they
    are program-wide expectations, so recording them is the lead's call. The new studio-harness records below are
    uncommitted in Ian's studio-harness main checkout (status proposed); committing there needs a yes.
