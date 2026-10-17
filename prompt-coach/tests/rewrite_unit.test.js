@@ -193,3 +193,12 @@ test('tip: "attached" plus "knowledge base" gets a use-one tip; either alone doe
   assert.ok(!has(run('Summarize what the knowledge base says about Scope 2 in five bullets.')));
   assert.ok(has(run('Check the uploaded file against the Knowledge Base and list differences.')));
 });
+
+test('scope: every letter has a non-empty fragment and toggling it changes the text, even when only Context is missing', () => {
+  const o = run("Using the attached Q3_Earnings_Release_draft.docx, give a 100-word summary of segment results. If a number isn't in the file, leave it out.");
+  const all = W.assemble(o.segments, new Set(K));
+  for (const k of K) {
+    assert.ok(o.scope[k].frag.trim(), 'empty fragment for ' + k);
+    assert.notEqual(W.assemble(o.segments, new Set(K.filter((x) => x !== k))), all, 'toggling ' + k + ' off changes nothing');
+  }
+});

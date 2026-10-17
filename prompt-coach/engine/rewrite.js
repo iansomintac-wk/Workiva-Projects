@@ -445,9 +445,13 @@
       // The user's own question stays as the job; add only a finish line for them to fill in.
       if (!on.O && !folded && kept.some((x) => x.text && x.host === 'O')) Object.assign(g, { O: BLANK.O, P: BLANK.P, E: BLANK.E });
       const present = new Set(); for (const snt of kept) for (const l of snt.letters) present.add(l);
+      // Only Context missing: add just that sentence. A letter the detector sees in a sentence that does not host it
+      // (e.g. the objective inside a Source sentence) still needs a segment of its own, written without a blank.
       const onlyC = !on.C && K.every((k) => k === 'C' || on[k]);
       const genUsed = new Set(onlyC ? ['C'] : []);
-      if (!onlyC) for (const k of K) if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) genUsed.add(k);
+      if (onlyC) { const BF = { S: 'Use only the selected content and nothing outside it. ', O: 'List the specific items that answer this, one per line. ', P: 'Keep it short. ', E: 'Do not guess or add facts that are not in the source; flag anything you are unsure of.' };
+        for (const k of K) if (k !== 'C' && !present.has(k)) { genUsed.add(k); if (g[k].includes('[')) g[k] = BF[k]; } }
+      else for (const k of K) if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) genUsed.add(k);
       const segments = [];
       const emit = (list) => { for (const snt of list) { for (const x of snt.segs) segments.push({ ...x, src: snt.idx }); segments.push({ text: ' ', letter: snt.host, src: snt.idx }); } };
       const pushGen = (k) => { if (genUsed.has(k)) segments.push({ text: g[k], letter: k, generated: true }); };
