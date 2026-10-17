@@ -1,0 +1,58 @@
+RUN: Prompt Coach live test in the Workiva AI sandbox (Workiva repo)
+
+Load studio-harness:talk-and-run first and follow "The run". You are the run lead: coordinate only,
+never plan or build in your own context. Ian is present for this whole session.
+
+WHERE
+- Worktree: C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-rewrites
+  Branch: worktree-prompt-coach-rewrites. Work only here.
+- Cases: prompt-coach/research/live-tests/cases.md (13 cases: each one's original prompt, the 73be350
+  Strong, the new Strong), cases.json (same data), fixtures/ (14 synthetic files: xlsx, docx, csv, pdf).
+  Generators: make_cases.js and make_live_fixtures.js in the same folder.
+- Spec (section "Next session"): docs/superpowers/specs/2026-10-16-prompt-coach-rewrites-design.md
+- Evidence doc (section 5 lists what is open): docs/evidence/2026-10-16-prompt-coach-rewrites.md
+- Results go to: prompt-coach/research/live-tests/results-<date>.md (date of the run, one file).
+- Project rules: CLAUDE.md (repo root) and prompt-coach/README.md.
+
+ORDER
+1. First check (talk-and-run): STUDIO_RUN_LEDGER set, budget.json and slip.json exist; else stop.
+   Then stop for Ian to log in to the Workiva AI sandbox (browser extension). Do not continue until
+   he says he is in.
+2. Plan by studio-harness:plan-writer: tasks of at most 8 steps, exact files, check command and
+   expected output. STOP: Ian approves the plan.
+3. For each case, run three prompts in three fresh chats with the same file from fixtures/: the
+   user's original, the 73be350 Strong, the new Strong. 13 cases minimum, more as time allows
+   (Ian: "as many simulations as possible"). Upload each synthetic file to the sandbox workspace
+   first, as the @-file page requires. Record each answer verbatim in the ledger, not in context.
+4. Score each answer 0 or 1 on four items: right source; did the one job; usable format; invented
+   facts (1 = none). Record "asked for clarification" separately and do not score it as good or bad.
+   Ian spot-checks the scores; his call breaks ties.
+5. In the browser, open Workiva's support articles (the fetch returned 403 in the earlier run) and
+   confirm the @-file limits: files per prompt, file types, size or page limits if any. Mark each
+   figure as read from the page or not found.
+6. Write the dated results file: per-case table of the three prompts by the four scores plus the
+   clarification flag, totals per prompt, which source the figures came from (measured in this
+   session vs read), and what was not tested.
+7. Update the README tip bullet (the @ and "knowledge base" tip) with the confirmed limits in the
+   same commit as the results file.
+8. Evidence: add the live-test result and the @-file limits to the open items in
+   docs/evidence/2026-10-16-prompt-coach-rewrites.md section 5 in that same commit, so no count
+   or claim there goes stale.
+
+PERMISSIONS
+- Sandbox only, synthetic files only. No settings changes, sharing, deleting or publishing.
+- Commits: only the results file, the README tip bullet and the evidence-doc update from steps 6-8.
+- No push or merge unless Ian's slip.json says so.
+- Spend: $0 unless Ian approves a figure first.
+- New sessions: no.
+
+SAFETY
+- No customer data in the sandbox, the repo or the results; if a file or answer looks like it holds
+  any, stop and tell Ian.
+- Do not republish the artifact (https://claude.ai/artifact/9Qk7uhNgri3uCSkUafsDQV); Ian asks for that.
+- Do not change grading (rules.js, model.js, weights) in this session.
+- Stops: login; plan approval; any decision only Ian can make (for example the open Better-tab
+  finding in the evidence doc); two strikes per talk-and-run. Push a notification at each stop,
+  then ask.
+
+Draft only. Do not launch; Ian starts this session himself.
