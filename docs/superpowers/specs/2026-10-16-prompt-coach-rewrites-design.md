@@ -14,6 +14,16 @@ Source brief: Ian's session prompt `prompt-coach-improve-prompt.md` (Downloads, 
 - To "please review the spec (including whether paragraph breaks should be in scope)": **"Yes"**
   (paragraph breaks stay out of scope)
 
+At the plan stop (2026-10-17, run lead's questions; Ian picked these options):
+
+- To the token cap (600k, plan needs about 1.8M): **"Raise to 1.8M (Recommended)"**
+- To "when a prompt is missing only its 'what it's for' part, should the rewrite always add exactly
+  one blank for it, even where it adds none today?": **"Yes, always one (Recommended)"**
+- To installing mammoth, xlsx, jszip, pdfjs-dist for `filetest.js` in a throwaway folder outside the
+  repo: **"Yes, throwaway folder (Recommended)"**
+- To approving the plan with four departures (below) and Opus as the only plan reviewer (Codex
+  cannot start a shell on this PC): **"Approve (Recommended)"**
+
 ## Problem
 
 Ian tested a utility-invoice extraction prompt (sustainability). The Strong rewrite kept "please",
@@ -117,10 +127,19 @@ weights) is not changed, except as allowed under Context wording below.
    wording must register as C with the current rules: probe candidate wordings first; a new
    Context cue in `rules.js` is allowed only if `eval.js rulefeat data/test.jsonl` stays at
    85.6% or better.
-6. **Blank rule.** A prompt whose only missing letter is Context gets exactly one blank. No
-   prompt gets more blanks than it does today.
+6. **Blank rule.** A prompt whose only missing letter is Context gets exactly one blank, even
+   when it gets none today (Ian, 2026-10-17); this wins over the next sentence for those prompts.
+   No other prompt gets more blanks than it does today.
 7. **Tip.** When the prompt says "attached" (or "uploaded") and also "knowledge base", add a tip:
    use one; in chat, type @ and pick each file.
+
+Departures from the text above, approved with the plan (2026-10-17):
+
+- The `tidy()` mirror in `customer_check.js` also feeds `subjectLost` and applies the typo fixes.
+- A prompt already graded Better shows its cleaned text in the Better tab (Ian's invoice target
+  needs it), falling back to the raw prompt if the cleaned text grades weak.
+- "if possible", "if you can" and mid-sentence "can / could you" are also removed.
+- General-area data intents say "This is for [what it feeds]." with no example.
 
 ## Checks (fail first, then pass), in `prompt-coach/tests/customer_check.js`
 
@@ -140,7 +159,9 @@ weights) is not changed, except as allowed under Context wording below.
 - `node prompt-coach/tests/eval.js rulefeat prompt-coach/data/test.jsonl` >= 85.6%.
 - `node prompt-coach/tests/simulate.js prompt-coach/data/train_*.jsonl prompt-coach/data/test.jsonl`
   no worse than 8 strong-not-strong, 5 better-weak.
-- `node prompt-coach/tests/customer_check.js` and `... data/test.jsonl` pass.
+- `node prompt-coach/tests/customer_check.js` and `... data/test.jsonl` pass. (Measured on the
+  parent 2026-10-17: default PASS 229; test.jsonl FAIL, notStrong 4/609, all from one only-Context
+  prompt; rule 6 as ruled above is what turns it to PASS.)
 - `tests/filetest.js` passes (`VENDOR=` an npm dir with mammoth, xlsx, jszip, pdfjs-dist).
 - Built page (`node prompt-coach/tests/build.js`) checked in a browser on desktop and phone: no
   console errors, no sideways scroll.
