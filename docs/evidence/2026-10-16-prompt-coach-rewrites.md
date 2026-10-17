@@ -74,7 +74,7 @@ The "?" prediction was an assumption in the plan and is wrong: 89 became 69, not
 | simulate, train only (2070 runs) | at most 8 strongNotStrong, at most 5 betterWeak | strongNotStrong 2, betterWeak 5, toggleNoEffect 0, dupSentence 0, badText 2, emptyFrag 0 | measured: `node prompt-coach/tests/simulate.js prompt-coach/data/train_*.jsonl` at `a7d0501` |
 | simulate, train plus test (2679 runs) | at most 8 strongNotStrong, at most 5 betterWeak | strongNotStrong 4, betterWeak 5, toggleNoEffect 0, dupSentence 2, badText 4, emptyFrag 0 | measured: `node prompt-coach/tests/simulate.js prompt-coach/data/train_*.jsonl prompt-coach/data/test.jsonl` at `a7d0501` |
 | customer_check, default | PASS | PASS 229 runs | measured: `node prompt-coach/tests/customer_check.js` at `a7d0501` |
-| customer_check, `data/test.jsonl` | PASS | FAIL 609 runs: notStrong 2/609, filler, order, broken, blankMore, blankOnlyC, ianCase all 0/609. Still a FAIL, but better than the parent, which already failed with notStrong 4/609: the "user-control assessment" prompt x2 (fixed here) plus the "assurance reviewer" prompt x2 (missing P; still fails at HEAD, 2/609). The gate is unmet and waits for Ian's ruling. Plan lines 51 and 60 carry the same wrong premise (one only-Context prompt, rule 6 turns it to PASS) | measured: `node prompt-coach/tests/customer_check.js prompt-coach/data/test.jsonl` at `a7d0501`; parent figure measured 2026-10-17 on `73be350` (read: spec line 162-164) |
+| customer_check, `data/test.jsonl` | PASS | PASS 609 runs after fix 2 (notStrong 0, filler, order, broken, blankMore, blankOnlyC, ianCase all 0/609). Before fix 2 (at `a7d0501`) it was FAIL with notStrong 2/609: the "assurance reviewer" prompt x2 (missing P). Ian ruled "Fix in the rewriter" on 2026-10-17 and fix 2 made a scope-limit-only Evaluate match still get the coach's Evaluate sentence; the parent `73be350` had notStrong 4/609 (that prompt x2 plus the "user-control assessment" prompt x2, fixed earlier). Resolved: Yes, met. Plan lines 51 and 60 carry the same wrong premise (one only-Context prompt, rule 6 turns it to PASS) | measured: `node prompt-coach/tests/customer_check.js prompt-coach/data/test.jsonl` at `3d8321a` plus the fix 2 working tree (committed as FIX2); pre-fix figure at `a7d0501`; parent figure measured 2026-10-17 on `73be350` (read: spec line 162-164) |
 | filetest | passes | 8 rows, errors [], exit 0 (via the npx-cache alias, VENDOR folder outside the repo) | measured: `node prompt-coach/tests/filetest.js` after the build, at `a7d0501` |
 | Built page, rebuilt | build runs, dist unchanged on rebuild | build 314 KB (321,725 bytes); rebuild left dist unchanged | measured: `node prompt-coach/tests/build.js`, lead re-run at `a7d0501` |
 | Built page in a browser, by the Claude browser extension | no console errors, no sideways scroll, desktop and phone | NOT YET CHECKED by the extension. The one-shot `claude -p --chrome` helper was denied by the Claude Code auto-mode classifier before it ran, so no Chrome action happened. Pending Ian, who asked for it (2026-10-17T08:02:54Z) | read: ledger t12_addendum.txt |
@@ -117,7 +117,7 @@ Approved target: spec "Target for Ian's case" (read: spec lines 80-96), stored a
 - The artifact has not been republished; the published artifact is probably an older build (assumed).
 - Codex review not available (it cannot start a shell on this PC), so `final-reviewer` alone.
 - Final review (final-reviewer only, Opus; read: ledger reviews/final-review.md, 2026-10-17): 1 must-fix, 5 should-fix, 6 notes.
-  - MF-1: the test.jsonl customer_check gate is unmet and three docs gave the wrong reason (spec, this file, plan lines 51 and 60); spec and this file fixed in the FIX1 commit, plan not edited. Waits for Ian's ruling.
+  - MF-1: the test.jsonl customer_check gate is unmet and three docs gave the wrong reason (spec, this file, plan lines 51 and 60); spec and this file fixed in the FIX1 commit, plan not edited. Resolved by fix 2 (Ian's ruling "Fix in the rewriter", 2026-10-17): customer_check on `test.jsonl` now PASS 609 (measured: `node prompt-coach/tests/customer_check.js prompt-coach/data/test.jsonl`, `3d8321a` plus the FIX2 change). Strong text changed for 1 of 1395 test and train prompts (no-file run, measured by a before/after dump of `coach()`): the assurance reviewer prompt. Other measured figures after fix 2: unit tests 19/0; eval acc 0.856; simulate train-only 2070 runs and train plus test 2679 runs with counters unchanged; customer_check default PASS 229; blank counts 55 and 143 at three or more blanks.
   - SF-1: no Better tab on the page (template.html:357 locked); known limit for Ian.
   - SF-2: the onlyC generic sentence can repeat and widen the ask (4 of 62 changed runs, a checker's reading).
   - SF-3 (reviewer's assumed item): directSentence trailing "thanks" removal can leave "to say."; cheapest check W.directVoice on that sentence.
@@ -131,7 +131,7 @@ Approved target: spec "Target for Ian's case" (read: spec lines 80-96), stored a
   - N-6: line 3 here named the wrong commit for the last code change (fixed in the FIX1 commit).
 - Known limits carried from earlier runs (read: resume prompt): CHANGE_ASK word list; the "Scope 2 inventory"
   example shows on Scope 1 and 3 prompts; "one per line" sits beside "Format it as [...]" in 20 of 24 list runs;
-  "can you hear me" becomes "Hear me"; 2 assurance runs are not Strong on `test.jsonl`; SUS-5 "Identify and list
+  "can you hear me" becomes "Hear me"; SUS-5 "Identify and list
   [...]"; FR-3 generic Context; GRC-1 "If a frequency is missing you flag it."
 - Known limits from Task 7 fix 4 (read: resume prompt): 4 of the 62 changed runs repeat the ask ("Summarize the key
   points of the content." after "a 100-word summary" three times; "Use numbered steps, each with the evidence to
@@ -144,9 +144,8 @@ Approved target: spec "Target for Ian's case" (read: spec lines 80-96), stored a
 
 ## 6. Measured vs read
 
-Measured (a command was run and read; all at `a7d0501` unless stated): eval acc 0.856; unit tests 18/0; simulate
-train-only 2070 and train plus test 2679 counters; customer_check default PASS 229; customer_check test FAIL 609
-with notStrong 2 and every other counter 0; "?" 69 (24 + 45); median blanks 2/2; only-Context-missing runs 7 and
+Measured (a command was run and read; all at `a7d0501` unless stated): eval acc 0.856; unit tests 19/0 after fix 2 (18/0 before); simulate
+train-only 2070 and train plus test 2679 counters; customer_check default PASS 229; customer_check test PASS 609 after fix 2 (FAIL with notStrong 2 before it); "?" 69 (24 + 45); median blanks 2/2; only-Context-missing runs 7 and
 18; filetest 8 rows, errors []; build 314 KB, dist unchanged on rebuild; the Playwright extra figures (console,
 widths, Strong text, three controls); ctx_probe, filler, blank probes at `f95ab85`; the parent's notStrong 4/609
 (measured 2026-10-17 on `73be350`); ianCase 4 failures at Task 2.

@@ -202,3 +202,15 @@ test('scope: every letter has a non-empty fragment and toggling it changes the t
     assert.notEqual(W.assemble(o.segments, new Set(K.filter((x) => x !== k))), all, 'toggling ' + k + ' off changes nothing');
   }
 });
+
+test('evaluate: a scope limit is not an Evaluate rule, so Strong still adds the Evaluate sentence (assurance reviewer case)', () => {
+  const p = "As an assurance reviewer, read the selected Scope 3 Category 1 methodology and list the questions you'd ask before giving limited assurance. Max ten. Don't comment on anything outside Category 1.";
+  const o = run(p);
+  const s = o.stages.strong.prompt;
+  assert.ok(s.includes("Don't comment on anything outside Category 1."), s);
+  assert.ok(o.segments.some((x) => x.generated && x.letter === 'E'), s);
+  assert.equal(detect(s).on.E && K.every((k) => detect(s).on[k]), true, s);
+  // a real checking rule from the user is kept as theirs, with no extra Evaluate sentence
+  const q = run("As an assurance reviewer, read the selected Scope 3 Category 1 methodology and list the questions you'd ask. Max ten. Flag anything you are unsure of.");
+  assert.ok(!q.segments.some((x) => x.generated && x.letter === 'E'), q.stages.strong.prompt);
+});

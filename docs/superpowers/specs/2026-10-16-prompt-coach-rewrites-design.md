@@ -171,7 +171,10 @@ Departures from the text above, approved with the plan (2026-10-17):
 - `node prompt-coach/tests/customer_check.js` and `... data/test.jsonl` pass. (Measured on the
   parent 73be350 2026-10-17: default PASS 229; test.jsonl FAIL, notStrong 4/609 = the "user-control
   assessment" prompt x2 (fixed here) plus the "assurance reviewer" prompt x2 (missing P; still fails
-  at HEAD, 2/609). The test.jsonl gate is therefore unmet and waits for Ian's ruling.)
+  at HEAD, 2/609). The test.jsonl gate was unmet until Ian's ruling of 2026-10-17, "Fix in the rewriter":
+  a scope limit is a Parameter, not Evaluate (data/LABELING.md 38-50), so when it is the only Evaluate
+  match the Strong rewrite adds the coach's Evaluate sentence (fix 2, `rewrite.js`). Now met: customer_check
+  on `test.jsonl` PASS 609 runs, notStrong 0. Grading untouched.)
 - `tests/filetest.js` passes (`VENDOR=` an npm dir with mammoth, xlsx, jszip, pdfjs-dist).
 - Built page (`node prompt-coach/tests/build.js`) checked in a browser on desktop and phone: no
   console errors, no sideways scroll.

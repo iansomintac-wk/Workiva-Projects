@@ -1053,6 +1053,8 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     const BLANK = { O: 'Identify and list [what you want back, such as the issues and where they are, or the key points]. ', P: 'Format it as [a table, bullets, or a short paragraph]. ', E: evalFragment({ intent: null }) };
     if (!taskSure) Object.assign(gen, BLANK);
     const sentences = userSegments(prompt, d, on);
+    const eh = d.el.E.hits;
+    const scopeLimitOnlyE = eh.length > 0 && eh.every((h) => h.tag === 'do-not-touch' && h.orig && /^[^.!?\n]*\b(?:outside|beyond|other than|apart from|aside from|except)\b/i.test(prompt.slice(h.orig[0])));
     // First try keeping every sentence of the user's own ask. If the strong version still has no
     // clear job, fall back to replacing the vague sentence (the user's other cues are kept).
     function build(broad) {
@@ -1093,6 +1095,9 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       if (onlyC) { const BF = { S: 'Use only the selected content and nothing outside it. ', O: 'List the specific items that answer this, one per line. ', P: 'Keep it short. ', E: 'Do not guess or add facts that are not in the source; flag anything you are unsure of.' };
         for (const k of K) if (k !== 'C' && !present.has(k)) { genUsed.add(k); if (g[k].includes('[')) g[k] = BF[k]; } }
       else for (const k of K) if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) genUsed.add(k);
+      // A scope limit ("Don't comment on anything outside X") matches Evaluate but is a Parameter by the labeling rules (data/LABELING.md);
+      // when it is the only Evaluate match, the coach still adds its own checking sentence.
+      if (on.E && scopeLimitOnlyE) genUsed.add('E');
       const segments = [];
       const emit = (list) => { for (const snt of list) { for (const x of snt.segs) segments.push({ ...x, src: snt.idx }); segments.push({ text: ' ', letter: snt.host, src: snt.idx }); } };
       const pushGen = (k) => { if (genUsed.has(k)) segments.push({ text: g[k], letter: k, generated: true }); };
