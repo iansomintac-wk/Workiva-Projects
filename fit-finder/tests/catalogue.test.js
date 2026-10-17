@@ -358,6 +358,37 @@ check('rewrite reach: guards, numbers and plain nouns do not read as REWRITE', (
     'We want a more accurate close calendar.'])
     assert(!reads(t), 'REWRITE wrongly read in: ' + t);
 });
+// V2 precision (2026-10-17): the 14 false-positive sentences. Each must not read as REWRITE and must not put the rewrite card first.
+const notRewrite = (t) => {
+  assert(!reads(t), 'REWRITE wrongly read in: ' + t);
+  assert.notStrictEqual((match(t, cat)[0] || {}).id, 'gen-rewrite', 'rewrite card first for: ' + t);
+};
+check('rewrite reach: "revise" on a thing that only looks like writing is not REWRITE', () => {
+  for (const t of ['Revise the draft budget each quarter.', 'Revise the letter of credit amount.',
+    'Revise the note payable schedule every month.', 'Revise the note payable interest rate monthly.',
+    'Revise the email address in the customer database.', 'Revise the memo field in the vendor table.',
+    'Revise the draft forecast before close.'])
+    notRewrite(t);
+});
+check('rewrite reach: a tone word that is not about a piece of writing is not REWRITE', () => {
+  for (const t of ['Make the close process more formal.', 'Accrue more professional fees each quarter.',
+    'We need a more formal approval process.', 'Hire more professional staff for the audit.',
+    'The memo says we need a more formal approval process.', 'Make this process more formal.',
+    'We pay more professional fees than peers.'])
+    notRewrite(t);
+});
+check('rewrite reach: "revise" plus a plural noun or "reply" reads as REWRITE', () => {
+  for (const t of ['Revise my reply.', 'Revise these emails every week.',
+    'Revise the replies before they go out.'])
+    assert(reads(t), 'no REWRITE in: ' + t);
+});
+check('rewrite reach: a tone word about "it", "this" or "sound" reads as REWRITE', () => {
+  for (const t of ['Make it more professional.', 'Can you make this sound more polite?'])
+    assert(reads(t), 'no REWRITE in: ' + t);
+});
+check('rewrite reach: "more professional manner" reads as REWRITE', () => {
+  assert(reads('Write it in a more professional manner.'), 'no REWRITE in the manner sentence');
+});
 // the card's new match words: each sentence has the REWRITE step and no other card word, so only the new word can pick gen-rewrite
 const newWords = {
   'revis': 'Revise the email to my colleague before it goes out.',
@@ -369,6 +400,8 @@ const newWords = {
   'formal': 'Make the reply to my colleague less formal.',
   'polite': 'Make the reply to my colleague more polite.',
   'diplomatic': 'Make the reply to my colleague more diplomatic.',
+  'concise': 'Make my memo more concise every month.',
+  'friendly': 'Make the reply to my colleague more friendly.',
 };
 for (const [word, t] of Object.entries(newWords)) check('rewrite reach: card match word ' + word, () => {
   assert(reads(t), 'engine does not read REWRITE in: ' + t);

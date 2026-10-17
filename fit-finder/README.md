@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (82,907 bytes)
+node tests/build.js                                               # -> dist/fit-finder.html (83,833 bytes)
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
 node tests/pagetest.js [capture-folder]                            # real Chrome at 1280 and 375 px; needs Chrome, no npm deps
@@ -193,12 +193,31 @@ emails", "wording:" or "Create an INDEX MATCH formula" (G4, G13, G19). 12 of the
 differences are good against partial, mostly whether the job recurs, which the page asks. The
 comments are short, and the labeler marked 18 of 29 calls low confidence. One labeler, one run.
 
-Rewrite-reach rule V1 (2026-10-17, added after the first score above): the engine now reads
-"revise" plus a writing noun, "worded better", and "more" or "less" plus a tone word as
-REWRITE, and the rewrite card gains re-word, rephrase, revis, worded, wording, professional,
-formal, polite and diplomatic. The suite now prints
+Rewrite-reach rule (added 2026-10-17 as V1 after the first score above, narrowed the same day to V2
+after a review found V1 also fired on numbers and finance prompts). Beyond the older words, the
+engine reads three kinds of wording as REWRITE:
+
+- "revise" or "revising", up to two words, then email, letter, memo, message, draft, text, wording,
+  language, paragraph, section, note or reply (plural too), but only when that noun ends the phrase:
+  punctuation, the end of the text, or a joining word such as to, for, before, and, every.
+  "Revise the status email before it goes out" counts. "Revise the draft budget", "the letter of
+  credit", "the note payable schedule" and "the email address" no longer do.
+- "worded better" or "wording ... better" (up to two words between).
+- "more" or "less" with professional, formal, polite, diplomatic, concise or friendly, but only when
+  it describes a piece of writing: after a writing word (email, reply, memo, letter, message, note,
+  text, wording, language, tone, response, answer, summary, draft, pushback, notice, paragraph,
+  section, commentary, narrative; up to four words between), after "it", "this", "that" or "them",
+  or after sound, read or come across, and the phrase must end there ("make it more professional",
+  "make this sound more polite"); or followed by manner, tone, way, voice, style, register, wording
+  or language ("in a more professional manner"). It no longer reads "a more formal approval
+  process", "hire more professional staff", "more professional fees" or "make this process more
+  formal".
+
+The rewrite card matches re-word, rephrase, revis, worded, wording, professional, formal, polite,
+diplomatic, concise and friendly. The suite prints (unchanged by V2)
 `fresh prompts first card right: 12 of 23 that fit; wrong card 6 (G2,G14,G15,G22,G26,X1); no card where one fits 5 (G4,G16,G19,G20,G21); card on a not-a-fit prompt 1 (G5); fit agreement 12 of 29; labelled by Ian 0, by the model 29`.
-The rule was chosen after seeing which of these 29 prompts missed, so 12 of 23 is a tuned-on
-figure, not a new held-out test. 0 of the 139 older texts change in rate() or match() (measured
-by the lead on a V1 scratch copy; control: removing gen-rewrite changes 1), so there is no
-held-out evidence either way. The prediction above stays disproved as scored once, before the rule.
+V2 was checked on 14 sentences that V1 read as REWRITE and V2 does not (suite checks guard them),
+on the V1 gains (all kept), and on the 139 older texts: 0 change in rate() or match() (control:
+removing gen-rewrite changes 1). The rule was chosen after seeing which of these 29 prompts missed,
+so 12 of 23 is a tuned-on figure, not a held-out test, and there is no held-out evidence either way.
+The prediction above stays disproved as scored once, before the rule.
