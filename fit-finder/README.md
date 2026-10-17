@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (83,833 bytes)
+node tests/build.js                                               # -> dist/fit-finder.html (82,673 bytes)
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
 node tests/pagetest.js [capture-folder]                            # real Chrome at 1280 and 375 px; needs Chrome, no npm deps
@@ -193,31 +193,38 @@ emails", "wording:" or "Create an INDEX MATCH formula" (G4, G13, G19). 12 of the
 differences are good against partial, mostly whether the job recurs, which the page asks. The
 comments are short, and the labeler marked 18 of 29 calls low confidence. One labeler, one run.
 
-Rewrite-reach rule (added 2026-10-17 as V1 after the first score above, narrowed the same day to V2
-after a review found V1 also fired on numbers and finance prompts). Beyond the older words, the
-engine reads three kinds of wording as REWRITE:
+Rewrite-reach rule C (2026-10-17). It replaces rule V1 (0dd05ca) and rule V2 (6f7090e); both were
+reviewed and withdrawn. Rule C is the 383afd3 engine plus one alternative: "worded ... better"
+(word-ed or word-ing, up to two words, then better: "get the note worded better") reads as REWRITE.
+The rewrite card matches rewrit, shorten, tighten, plain english, board, executives, audience, tone,
+too long, plus four new words: re-word, rephras, worded and wording. "Revise" and the tone words
+(professional, formal, polite, diplomatic, concise, friendly) are not read as REWRITE and are not
+on the card.
 
-- "revise" or "revising", up to two words, then email, letter, memo, message, draft, text, wording,
-  language, paragraph, section, note or reply (plural too), but only when that noun ends the phrase:
-  punctuation, the end of the text, or a joining word such as to, for, before, and, every.
-  "Revise the status email before it goes out" counts. "Revise the draft budget", "the letter of
-  credit", "the note payable schedule" and "the email address" no longer do.
-- "worded better" or "wording ... better" (up to two words between).
-- "more" or "less" with professional, formal, polite, diplomatic, concise or friendly, but only when
-  it describes a piece of writing: after a writing word (email, reply, memo, letter, message, note,
-  text, wording, language, tone, response, answer, summary, draft, pushback, notice, paragraph,
-  section, commentary, narrative; up to four words between), after "it", "this", "that" or "them",
-  or after sound, read or come across, and the phrase must end there ("make it more professional",
-  "make this sound more polite"); or followed by manner, tone, way, voice, style, register, wording
-  or language ("in a more professional manner"). It no longer reads "a more formal approval
-  process", "hire more professional staff", "more professional fees" or "make this process more
-  formal".
+An earlier version of this section said V2 kept "all the V1 gains" and read a tone word "only when it
+describes a piece of writing". Neither held. On the round's pool of 42 sentences that are not
+rewrites ("Revise the budget draft before close.", "Make the notes payable schedule more formal."),
+V2 gave 19 the rewrite card; every one of the 19 hit a card word V1 and V2 had added (revis 8,
+formal 6, professional 3, concise 1, friendly 1), and dropping any single added engine alternative
+still left 12 or more. So the guards did not converge and rule C removes the alternatives instead.
 
-The rewrite card matches re-word, rephrase, revis, worded, wording, professional, formal, polite,
-diplomatic, concise and friendly. The suite prints (unchanged by V2)
-`fresh prompts first card right: 12 of 23 that fit; wrong card 6 (G2,G14,G15,G22,G26,X1); no card where one fits 5 (G4,G16,G19,G20,G21); card on a not-a-fit prompt 1 (G5); fit agreement 12 of 29; labelled by Ian 0, by the model 29`.
-V2 was checked on 14 sentences that V1 read as REWRITE and V2 does not (suite checks guard them),
-on the V1 gains (all kept), and on the 139 older texts: 0 change in rate() or match() (control:
-removing gen-rewrite changes 1). The rule was chosen after seeing which of these 29 prompts missed,
-so 12 of 23 is a tuned-on figure, not a held-out test, and there is no held-out evidence either way.
+Numbers (the suite prints the fresh line first on its line:
+`fresh prompts first card right: 10 of 23 that fit; wrong card 6 (G2,G14,G15,G22,G26,X1)`; first
+scored 8 of 23 before any rule, V2 12):
+- Fresh 29 prompts: first card right 10 of 23, wrong card 6, the same six wrong cards as before.
+  The rule was chosen after seeing which of these missed, so this is a tuned-on figure.
+- Blind held-out, 40 sentences (`docs/evidence/2026-10-17-rewrite-heldout.jsonl`, 20 rewrite asks and
+  20 that are not; labels by the model; each rule scored once): rewrite card on 7 of 20 asks for
+  rule C, 13 for V2, 3 for the live rule (383afd3); on the 20 that are not rewrites 1 of 20 for every
+  rule, the same row (H32, "tone at the top"). Rule C reaches fewer asks than V2 and is far
+  cleaner on the pool: `tests/rewrite-pool.jsonl` holds 86 sentences, 0 of 42 non-rewrites get the
+  card (V2 19), and 6 of 44 asks reach it.
+- Unchanged: half A 12 of 29 wrong card 0, held-out B 13 of 30 wrong card 3, real prompts 15 of 19
+  wrong card 2, eval A 52/60 and B 45/60, and the 139 older texts rate and match the same as at
+  383afd3.
+
+Known limit: asks such as "make this memo more concise", "make this more diplomatic" and "revise
+this slide text" get no rewrite card. Rule C was chosen on the pool it is scored on; the held-out 40
+is the out-of-sample check. One pool label is the model's call ("Accrue more professional fees." =
+not a rewrite). Details: `docs/evidence/2026-10-17-rewrite-reach-round.md`.
 The prediction above stays disproved as scored once, before the rule.

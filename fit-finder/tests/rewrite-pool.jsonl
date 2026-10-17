@@ -1,0 +1,86 @@
+{"text":"Revise the budget draft before close.","want":"none","source":"opuscheck"}
+{"text":"Revise the forecast draft every quarter.","want":"none","source":"opuscheck"}
+{"text":"Revise the first draft of the forecast.","want":"none","source":"opuscheck"}
+{"text":"Revise the credit memo for the customer return.","want":"none","source":"opuscheck"}
+{"text":"Revise the credit memos every month.","want":"none","source":"opuscheck"}
+{"text":"Revise the convertible notes to reflect the new rate.","want":"none","source":"opuscheck"}
+{"text":"We need a more formal way to track vendor changes.","want":"none","source":"opuscheck"}
+{"text":"Keep a more formal register of fixed assets.","want":"none","source":"opuscheck"}
+{"text":"Our close checklist is loose; make it more formal.","want":"none","source":"opuscheck"}
+{"text":"The incident response process needs to be more formal.","want":"none","source":"opuscheck"}
+{"text":"Make the notes payable schedule more formal.","want":"none","source":"opuscheck"}
+{"text":"The draft budget needs to be more concise.","want":"none","source":"opuscheck"}
+{"text":"Simplify the reconciliation template so it is more user-friendly.","want":"none","source":"opuscheck"}
+{"text":"Revise the email below.","want":"RW","source":"opuscheck"}
+{"text":"Revise the email about the late invoices.","want":"RW","source":"opuscheck"}
+{"text":"Revise the letter you drafted.","want":"RW","source":"opuscheck"}
+{"text":"Revise this memo into plain language.","want":"RW","source":"opuscheck"}
+{"text":"Make my writing more professional.","want":"RW","source":"opuscheck"}
+{"text":"Make this feedback more diplomatic.","want":"RW","source":"opuscheck"}
+{"text":"Make my status update more concise.","want":"RW","source":"opuscheck"}
+{"text":"Make it more professional sounding.","want":"RW","source":"opuscheck"}
+{"text":"Can you make the email more polite yet firm?","want":"RW","source":"opuscheck"}
+{"text":"Make the email I am sending to the auditors more professional.","want":"RW","source":"opuscheck"}
+{"text":"Revise the draft budget each quarter.","want":"none","source":"v3probe,v2probe,suite"}
+{"text":"Make the close process more formal.","want":"none","source":"v3probe,v2probe,suite"}
+{"text":"Accrue more professional fees each quarter.","want":"none","source":"v3probe,v2probe,suite"}
+{"text":"We need a more formal approval process.","want":"none","source":"v3probe,v2probe,suite"}
+{"text":"Revise the letter of credit amount.","want":"none","source":"v3probe,v2probe,suite"}
+{"text":"Hire more professional staff for the audit.","want":"none","source":"v3probe,v2probe,suite"}
+{"text":"Revise the note payable schedule every month.","want":"none","source":"v3probe,v2probe,suite"}
+{"text":"The memo says we need a more formal approval process.","want":"none","source":"v3probe,v2probe,suite"}
+{"text":"Make this process more formal.","want":"none","source":"v3probe,v2probe,suite"}
+{"text":"Revise the note payable interest rate monthly.","want":"none","source":"v3probe,v2probe,suite"}
+{"text":"Revise the email address in the customer database.","want":"none","source":"v3probe,v2probe,suite"}
+{"text":"Revise the memo field in the vendor table.","want":"none","source":"v3probe,v2probe,suite"}
+{"text":"Revise the draft forecast before close.","want":"none","source":"v3probe,v2probe,suite"}
+{"text":"We pay more professional fees than peers.","want":"none","source":"v3probe,v2probe,suite"}
+{"text":"Revise the note-payable interest rate monthly.","want":"none","source":"v3probe"}
+{"text":"Revise the letter-of-credit amount.","want":"none","source":"v3probe"}
+{"text":"Make the customer email address more professional.","want":"none","source":"v3probe"}
+{"text":"Make the email approval workflow more formal.","want":"none","source":"v3probe"}
+{"text":"Process invoices in a more professional way.","want":"none","source":"v3probe"}
+{"text":"The close process is informal; make it more formal.","want":"none","source":"v3probe"}
+{"text":"Accrue fees in a more professional manner.","want":"none","source":"v3probe"}
+{"text":"Each week I revise the status email before it goes to the team.","want":"RW","source":"v3probe,v2probe,suite"}
+{"text":"Revising my cover letter takes an hour.","want":"RW","source":"v3probe,v2probe,suite"}
+{"text":"I revise the long draft twice a month.","want":"RW","source":"v3probe,v2probe,suite"}
+{"text":"Revise the opening paragraph of every memo.","want":"RW","source":"v3probe,v2probe,suite"}
+{"text":"Get the note worded better before it goes out.","want":"RW","source":"v3probe,v2probe,suite","reach":true}
+{"text":"I spend time wording these replies better.","want":"RW","source":"v3probe,v2probe,suite","reach":true}
+{"text":"Make the reply more professional.","want":"RW","source":"v3probe,v2probe,suite"}
+{"text":"Make my emails less formal.","want":"RW","source":"v3probe,v2probe,suite"}
+{"text":"Make the answer more polite.","want":"RW","source":"v3probe,v2probe,suite"}
+{"text":"Make the pushback more diplomatic.","want":"RW","source":"v3probe,v2probe,suite"}
+{"text":"Make the summary more concise.","want":"RW","source":"v3probe,v2probe,suite"}
+{"text":"Make the notice less friendly.","want":"RW","source":"v3probe,v2probe,suite"}
+{"text":"Can you make this sound more polite?","want":"RW","source":"v3probe,v2probe,suite"}
+{"text":"Revise my reply.","want":"RW","source":"v3probe,v2probe,suite"}
+{"text":"Revise these emails every week.","want":"RW","source":"v3probe,v2probe,suite"}
+{"text":"Revise the replies before they go out.","want":"RW","source":"v3probe,v2probe,suite"}
+{"text":"Make the reply to my colleague more professional.","want":"RW","source":"v3probe,suite-newWords"}
+{"text":"Make my memo more concise every month.","want":"RW","source":"v3probe,suite-newWords"}
+{"text":"Revise the email please.","want":"RW","source":"v3probe"}
+{"text":"Revise the paragraph about revenue.","want":"RW","source":"v3probe"}
+{"text":"Make my email more professional sounding.","want":"RW","source":"v3probe"}
+{"text":"I wrote an email to a client; make it more professional.","want":"RW","source":"v3probe"}
+{"text":"I drafted a reply, can you make it more polite?","want":"RW","source":"v3probe"}
+{"text":"My reply to a vendor can sound curt, so I get help making it more professional before I send it.","want":"RW","source":"v4.21"}
+{"text":"Make it more professional.","want":"RW","source":"v2probe,suite"}
+{"text":"Revise the forecast every month.","want":"none","source":"suite"}
+{"text":"Revise the budget numbers after close.","want":"none","source":"suite"}
+{"text":"Revising the headcount plan is slow.","want":"none","source":"suite"}
+{"text":"She is a professional accountant.","want":"none","source":"suite"}
+{"text":"Review the formal approval steps.","want":"none","source":"suite"}
+{"text":"The clause is worded by legal counsel.","want":"none","source":"suite"}
+{"text":"We want a more accurate close calendar.","want":"none","source":"suite"}
+{"text":"Revise the email to my colleague before it goes out.","want":"RW","source":"suite-newWords"}
+{"text":"Reword the reply to my colleague before it goes out.","want":"RW","source":"suite-newWords","reach":true}
+{"text":"Rephrase the reply to my colleague before it goes out.","want":"RW","source":"suite-newWords","reach":true}
+{"text":"Get the reply to my colleague worded better before it goes out.","want":"RW","source":"suite-newWords","reach":true}
+{"text":"I keep wording the reply better before it goes out.","want":"RW","source":"suite-newWords","reach":true}
+{"text":"Make the reply to my colleague less formal.","want":"RW","source":"suite-newWords"}
+{"text":"Make the reply to my colleague more polite.","want":"RW","source":"suite-newWords"}
+{"text":"Make the reply to my colleague more diplomatic.","want":"RW","source":"suite-newWords"}
+{"text":"Make the reply to my colleague more friendly.","want":"RW","source":"suite-newWords"}
+{"text":"Accrue more professional fees.","want":"none","source":"review-codex-retry"}

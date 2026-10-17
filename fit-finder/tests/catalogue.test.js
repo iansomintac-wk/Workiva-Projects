@@ -332,24 +332,34 @@ check('the bare word "commentary" reaches the year-over-year narrative (tasks 8 
     assert.strictEqual((match(r.task, cat)[0] || {}).id, 'fr-yoy-narrative', 'task ' + id);
   }
 });
-// rewrite reach (rule V1, 2026-10-17): wording changes that name no "rewrite" verb still read as REWRITE
+// rewrite reach (rule C, 2026-10-17): only the "rewrite" family and "worded ... better" read as REWRITE; "revise" and tone words neither read nor bring the card
 const reads = (t) => rate(t).ops.includes('REWRITE');
-check('rewrite reach: "revise" plus a piece of writing reads as REWRITE', () => {
+const firstCard = (t) => (match(t, cat)[0] || {}).id;
+const anyRewriteCard = (t) => match(t, cat).some((u) => u.id === 'gen-rewrite');
+const notRewrite = (t) => {
+  assert(!reads(t), 'REWRITE wrongly read in: ' + t);
+  assert(!anyRewriteCard(t), 'rewrite card wrongly shown for: ' + t);
+};
+check('rewrite reach: "revise" plus a piece of writing neither reads as REWRITE nor brings the card', () => {
   for (const t of ['Each week I revise the status email before it goes to the team.',
     'Revising my cover letter takes an hour.', 'I revise the long draft twice a month.',
-    'Revise the opening paragraph of every memo.'])
-    assert(reads(t), 'no REWRITE in: ' + t);
+    'Revise the opening paragraph of every memo.', 'Revise my reply.',
+    'Revise these emails every week.', 'Revise the replies before they go out.'])
+    notRewrite(t);
 });
 check('rewrite reach: "worded better" reads as REWRITE', () => {
   for (const t of ['Get the note worded better before it goes out.',
-    'I spend time wording these replies better.'])
+    'I spend time wording these replies better.']) {
     assert(reads(t), 'no REWRITE in: ' + t);
+    assert.strictEqual(firstCard(t), 'gen-rewrite', 'rewrite card not first for: ' + t);
+  }
 });
-check('rewrite reach: "more or less" plus a tone word reads as REWRITE', () => {
+check('rewrite reach: a tone word neither reads as REWRITE nor brings the card', () => {
   for (const t of ['Make the reply more professional.', 'Make my emails less formal.',
     'Make the answer more polite.', 'Make the pushback more diplomatic.',
-    'Make the summary more concise.', 'Make the notice less friendly.'])
-    assert(reads(t), 'no REWRITE in: ' + t);
+    'Make the notice less friendly.', 'Make it more professional.',
+    'Can you make this sound more polite?', 'Make my memo more concise every month.'])
+    notRewrite(t);
 });
 check('rewrite reach: guards, numbers and plain nouns do not read as REWRITE', () => {
   for (const t of ['Revise the forecast every month.', 'Revise the budget numbers after close.',
@@ -358,11 +368,6 @@ check('rewrite reach: guards, numbers and plain nouns do not read as REWRITE', (
     'We want a more accurate close calendar.'])
     assert(!reads(t), 'REWRITE wrongly read in: ' + t);
 });
-// V2 precision (2026-10-17): the 14 false-positive sentences. Each must not read as REWRITE and must not put the rewrite card first.
-const notRewrite = (t) => {
-  assert(!reads(t), 'REWRITE wrongly read in: ' + t);
-  assert.notStrictEqual((match(t, cat)[0] || {}).id, 'gen-rewrite', 'rewrite card first for: ' + t);
-};
 check('rewrite reach: "revise" on a thing that only looks like writing is not REWRITE', () => {
   for (const t of ['Revise the draft budget each quarter.', 'Revise the letter of credit amount.',
     'Revise the note payable schedule every month.', 'Revise the note payable interest rate monthly.',
@@ -377,39 +382,42 @@ check('rewrite reach: a tone word that is not about a piece of writing is not RE
     'We pay more professional fees than peers.'])
     notRewrite(t);
 });
-check('rewrite reach: "revise" plus a plural noun or "reply" reads as REWRITE', () => {
-  for (const t of ['Revise my reply.', 'Revise these emails every week.',
-    'Revise the replies before they go out.'])
-    assert(reads(t), 'no REWRITE in: ' + t);
-});
-check('rewrite reach: a tone word about "it", "this" or "sound" reads as REWRITE', () => {
-  for (const t of ['Make it more professional.', 'Can you make this sound more polite?'])
-    assert(reads(t), 'no REWRITE in: ' + t);
-});
-check('rewrite reach: "more professional manner" reads as REWRITE', () => {
-  assert(reads('Write it in a more professional manner.'), 'no REWRITE in the manner sentence');
-});
 // the card's new match words: each sentence has the REWRITE step and no other card word, so only the new word can pick gen-rewrite
 const newWords = {
-  'revis': 'Revise the email to my colleague before it goes out.',
   're-?word': 'Reword the reply to my colleague before it goes out.',
   'rephras': 'Rephrase the reply to my colleague before it goes out.',
   'worded': 'Get the reply to my colleague worded better before it goes out.',
   'wording': 'I keep wording the reply better before it goes out.',
-  'professional': 'Make the reply to my colleague more professional.',
-  'formal': 'Make the reply to my colleague less formal.',
-  'polite': 'Make the reply to my colleague more polite.',
-  'diplomatic': 'Make the reply to my colleague more diplomatic.',
-  'concise': 'Make my memo more concise every month.',
-  'friendly': 'Make the reply to my colleague more friendly.',
 };
 for (const [word, t] of Object.entries(newWords)) check('rewrite reach: card match word ' + word, () => {
   assert(reads(t), 'engine does not read REWRITE in: ' + t);
-  assert.strictEqual((match(t, cat)[0] || {}).id, 'gen-rewrite', 'first card for: ' + t);
+  assert.strictEqual(firstCard(t), 'gen-rewrite', 'first card for: ' + t);
 });
 check('rewrite reach: the card lists every new match word', () => {
   const m = cat.useCases.find((u) => u.id === 'gen-rewrite').match;
   for (const w of Object.keys(newWords)) assert(m.split('|').some((p) => p.startsWith(w)), 'missing ' + w);
+});
+check('rewrite reach: the card does not list the dropped words', () => {
+  const m = cat.useCases.find((u) => u.id === 'gen-rewrite').match.split('|');
+  for (const w of ['revis', 'professional', 'formal', 'polite', 'diplomatic', 'concise', 'friendly'])
+    assert(!m.some((p) => p.startsWith(w)), 'the card still lists ' + w);
+});
+// the round's pool (tests/rewrite-pool.jsonl, 86 sentences from the 2026-10-17 reviews): "none" rows must not bring the rewrite card; "reach" marks the 6 asks rule C reads
+const poolRows = fs.readFileSync(path.join(root, 'tests/rewrite-pool.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
+check('rewrite pool: 86 rows, 42 none, 44 RW, 6 reach', () => {
+  const n = (f) => poolRows.filter(f).length;
+  assert.deepStrictEqual([poolRows.length, n((r) => r.want === 'none'), n((r) => r.want === 'RW'), n((r) => r.reach)], [86, 42, 44, 6]);
+  assert(poolRows.filter((r) => r.reach).every((r) => r.want === 'RW'), 'reach on a row that is not an ask');
+});
+check('rewrite pool: no "none" sentence gets the rewrite card', () => {
+  const bad = poolRows.filter((r) => r.want === 'none' && anyRewriteCard(r.text)).map((r) => r.text);
+  assert.strictEqual(bad.length, 0, bad.length + ' of 42 get gen-rewrite, e.g. ' + bad.slice(0, 2).join(' | '));
+});
+check('rewrite pool: every reach sentence reads REWRITE and gets the rewrite card first', () => {
+  for (const r of poolRows.filter((x) => x.reach)) {
+    assert(reads(r.text), 'no REWRITE in: ' + r.text);
+    assert.strictEqual(firstCard(r.text), 'gen-rewrite', 'rewrite card not first for: ' + r.text);
+  }
 });
 // real prompts: data/real/2026-10-15-community.jsonl, right cards in data/card-gold-real.jsonl, each row says who labelled it
 const realRows = fs.readFileSync(path.join(root, 'data/real/2026-10-15-community.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
