@@ -1,0 +1,41 @@
+RESUME: Prompt Coach live test in Ian's own Workiva sandbox (Workiva repo)
+
+Written 2026-10-18T06:1xZ by run lead bda0edb1 (run 8), stopped at the 200k context line after the FR-2 pilot ran.
+Load studio-harness:talk-and-run first. You are the run lead: coordinate only. ONE helper at a time.
+
+READ FIRST
+- Ledger: .ledger/2026-10-16-prompt-coach-rewrites/progress.md from "## Resume session (run 8" (git-ignored; holds the
+  sandbox details, which stay out of committed files).
+- docs/PROMPT_COACH_LIVE_TEST_RUN_PROMPT.txt (the original live-test design: 13 cases x 3 prompts, scores, results
+  file, README tip, evidence update) - still the target, with Ian's changes below.
+
+STATE (branch worktree-prompt-coach-rewrites; HEAD = this prompt's commit; pushed)
+- Rewrites run DONE: Sonnet re-review READY; prompt-coach fast-forwarded locally to 3dee1d7 (docs fixes); never pushed.
+- Budget: runTokenCap 3,800,000 (Ian: "increase the budget to whatever it needs to get the job done within reason.");
+  helper-rows 2,850,859 used at 06:1xZ (69 rows, measured).
+- Ian chose (2026-10-18): option A+D = a standing driver session + planted known answers. FR-2 fixtures hold 3 planted
+  mismatches + 1 tie, key in prompt-coach/research/live-tests/fixtures/answer_key.json (b4db9ae, checker PASS).
+- Driver: session "NEW - sandbox driver" (4a3e4556, claude --bg --chrome, launched by Ian). Message it by that name;
+  it replies by message. It uses the Windows Chrome ("Browser 2"), Ian's OWN sandbox (not the Workiva Org Sandbox,
+  which is shared with staff: never use it), private folder "Prompt coach test - Ian" (access: Ian only). Ian ran
+  /add-dir for the fixtures folder in the driver, so file_upload works from prompt-coach/research/live-tests/fixtures.
+- FR-2 pilot RAN 06:00-06:04Z: P1 original, P2 73be350 Strong, P3 Strong now (both blanks filled with "the quarterly
+  close review"); files referenced with Workiva AI's @ dropdown; answers verbatim in
+  .ledger/2026-10-16-prompt-coach-rewrites/logs/live_FR-2.md (96 lines). NOT YET SCORED.
+
+NEXT (in order)
+1. First check: STUDIO_RUN_LEDGER set; budget.json and slip.json exist; else stop.
+2. Score FR-2 on Opus (quality decides: labeling): per answer, keyed mismatches found 0-3 with both values right;
+   false mismatches reported (incl. calling the 790 tie a mismatch); table with both locations and both values (0/1);
+   invented facts (1 = none); asked for clarification (flag). Write logs/live_FR-2_scores.md. Then a Codex check of
+   the same scores (codex-cli 0.162.0 is installed; see ledger gotchas on Codex under Windows); disagreements to Ian.
+3. Show Ian the pilot result and ask: scale to the other 12 cases? Recommendation: plant a known answer in each
+   fixture first (as FR-2), run 2 repeats per prompt (answers vary), cases one at a time through the driver.
+4. Then steps 5-8 of the live-test run prompt (@-file limits from support pages, results file, README tip, evidence).
+
+PROPOSED FOR IAN (not banked): brain facts - (1) a --chrome session sees only its own tab group; tabs Ian opens in
+the extension are invisible to it; (2) two Chromes can be connected (Mac + Windows); the driver must use the one Ian
+is signed into; (3) file_upload accepts only files the session may read: /add-dir the folder first.
+
+SAFETY: own sandbox and private folder only; made-up files only; no settings, sharing or deleting; never push
+prompt-coach or main. Old sessions (a72ccc7d, 8f68dfd4, b80d1b3d, 39dcb350) kept: a72ccc7d owns this worktree.
