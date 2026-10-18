@@ -247,5 +247,6 @@ A new set of 104 model-written, model-labelled prompts was split with seed 20261
 
 Dist size 83016 bytes (LF, as committed). Measured after these rules (suite): B first card right 13 of 30, wrong 3; A 12 of 29, wrong 0;
 real 15 of 19, wrong 2; fresh 15 of 23, wrong 5, card on a not-a-fit prompt 1, fit agreement 12
-of 29. Eval fit agreement: A 52/60, B 45/60. The untouched-half result is added in a later commit.
-The live page is not republished.
+of 29. Eval fit agreement: A 52/60, B 45/60. The live page is not republished.
+
+Untouched half, scored once after the rules were locked (model-written, model-labelled; not real customer prompts): first card right: 25 of 42 that fit; wrong card 5 (N42,N48,N53,N56,N91); no card where one fits 12 (N17,N18,N24,N52,N63,N77,N79,N88,N93,N99,N100,N102); card on a not-a-fit prompt 1 (N34); fit agreement 19 of 50; score 24. Bar: wrong card <= 5; wrong card 5, so it passes (wrong_within_bar=yes).
