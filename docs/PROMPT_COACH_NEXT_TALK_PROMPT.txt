@@ -1,0 +1,18 @@
+TALK: Prompt Coach, what next after the live test (Workiva repo)
+
+Drafted 2026-10-18 by run 12's hand-off PM (lead f020f67c); corrected by the lead: the PM's draft re-ran the
+follow-ups run, which 3dee1d7 already did (SF-R1, SF-R2, N-R1, N-R2; follow-up list in evidence section 5).
+Load studio-harness:talk-and-run first. This is a talk with Ian, not a run: no helpers beyond $0 lookups, no build.
+
+STATE
+- Live test merged into prompt-coach (check: git log prompt-coach shows "fix round after final review"; else stop).
+- Result (prompt-coach/research/live-tests/results/2026-10-18-live-test-results.md, "Plain reading"): on means the
+  original prompt did as well or better than both Strong prompts; small sample (2 runs, 4 of 12 cases too easy);
+  scorers disagreed in 60 of 72 rows; the hard-plant lead rests on SUS-4 (E1-8 key from secondary sources).
+
+ASK IAN, one question at a time, recommendation first. What should the next step be:
+- verify the E1-8 key from the regulation text (Reg. 2023/2772) and re-score SUS-4 ($0);
+- a larger second sample before claiming "the original is as good";
+- change the coach's Strong rewrite in light of the table/format and invented results;
+- the PROPOSED FOR IAN items in docs/PROMPT_COACH_LIVE_TEST_RESUME_PROMPT.txt (driver permission check; Opus check).
+Then follow the talk steps. A new run needs a new budget and slip from Ian. No push of prompt-coach or main.

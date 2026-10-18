@@ -1,3 +1,5 @@
+DONE 2026-10-18 by run 12 (lead f020f67c): fix round f67cf6c, Sonnet re-review PASS, merged into prompt-coach. Do not re-run. Next: docs/PROMPT_COACH_NEXT_TALK_PROMPT.txt
+
 RESUME: Prompt Coach live test in Ian's own Workiva sandbox (Workiva repo) - run 12 (fix round + merge stop)
 
 Written 2026-10-18T19:40Z by run lead c7a7596e (run 11), stopped at the 200k context line during the final review.
