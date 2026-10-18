@@ -131,6 +131,7 @@
     const r = rate(text);
     if (r.fit === 'not' || !catalogue) return [];
     const t = normalize(text), ai = r.ops.filter((o) => AI_OPS.includes(o) && o !== 'READ');
+    if (/e-?mail/.test(t) && r.ops.length === 1 && r.ops[0] === 'DRAFT') return [];
     return catalogue.useCases.map((u) => {
       const kw = t.match(new RegExp('\\b(?:' + u.match + ')', 'g'));
       const shared = u.ops.filter((o) => ai.includes(o)).length;
