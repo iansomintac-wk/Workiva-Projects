@@ -121,7 +121,7 @@ Approved target: spec "Target for Ian's case" (read: spec lines 80-96), stored a
   therefore does not reach the page. `template.html` is a locked file in the same plan (line 30), unchanged since
   `73be350`. Showing it needs a locked-file edit, which is Ian's ruling. Class: seam-untested (engine checked,
   page join not).
-- Live test in Workiva AI run 2026-10-18: results in prompt-coach/research/live-tests/results/2026-10-18-live-test-results.md (12 planted cases plus FR-2 pilot, 3 prompts, 2 runs each; the original prompt did as well or better than both Strong prompts on keyed findings).
+- Live test in Workiva AI run 2026-10-18: results in prompt-coach/research/live-tests/results/2026-10-18-live-test-results.md (12 planted cases at 2 runs per prompt plus the FR-2 pilot at 1 run per prompt, 3 prompts, 75 answers; on means the original prompt did as well or better than both Strong prompts on keyed findings, but not in every case: P1 was worse on invented, and the hard-plant lead rests on SUS-4, without which P1 21/22, P2 21/22, P3 22/22).
 - Workiva @-file limits confirmed 2026-10-18 from the support page (max 10 files per prompt; Word and Excel on AWS only; no size limit stated); see the results file above and prompt-coach/README.md.
 - The artifact has not been republished; the published artifact is probably an older build (assumed).
 - Codex review not available (it cannot start a shell on this PC), so `final-reviewer` alone.

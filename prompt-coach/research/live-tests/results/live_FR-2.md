@@ -1,7 +1,7 @@
 # Live test FR-2 (Workiva AI, Ian's own sandbox)
 
-- Workspace: "Ian Sandbox" (account w_ce824c6e…), Windows Chrome (Browser 2), driven via Claude in Chrome.
-- Files: Files / Prompt coach test - Ian / fr_revenue_footnote.docx and fr_trial_balance.xlsx (stored with Upload, not Import; folder access: Ian Somintac only, Owner).
+- Workspace: Ian's own sandbox, Windows Chrome (Browser 2), driven via Claude in Chrome.
+- Files: Files / Prompt coach test - Ian / fr_revenue_footnote.docx and fr_trial_balance.xlsx (stored with Upload, not Import; folder access: Ian only, Owner).
 - Each prompt in a fresh chat: Workiva AI panel (top-bar "Workiva AI" button) > "New chat" button.
 - Answers copied from the chat panel's page text (innerText); tables are tab-separated as the page renders them. The UI's collapsed "Thought" section was not expanded.
 
