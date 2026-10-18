@@ -1,41 +1,42 @@
-RESUME: Prompt Coach live test in Ian's own Workiva sandbox (Workiva repo)
+RESUME: Prompt Coach live test in Ian's own Workiva sandbox (Workiva repo) - run 10
 
-Written 2026-10-18T06:1xZ by run lead bda0edb1 (run 8), stopped at the 200k context line after the FR-2 pilot ran.
+Written 2026-10-18T07:15Z by run lead 79e349bf (run 9), stopped at the 200k context line after the plant build.
 Load studio-harness:talk-and-run first. You are the run lead: coordinate only. ONE helper at a time.
 
 READ FIRST
-- Ledger: .ledger/2026-10-16-prompt-coach-rewrites/progress.md from "## Resume session (run 8" (git-ignored; holds the
-  sandbox details, which stay out of committed files).
-- docs/PROMPT_COACH_LIVE_TEST_RUN_PROMPT.txt (the original live-test design: 13 cases x 3 prompts, scores, results
-  file, README tip, evidence update) - still the target, with Ian's changes below.
+- Ledger: .ledger/2026-10-16-prompt-coach-rewrites/progress.md from "## Resume session (run 9" (git-ignored).
+- Plan (Ian approved 2026-10-18, "Approve, Codex-first (Recommended)"):
+  docs/superpowers/plans/2026-10-18-prompt-coach-live-test-plants.md - "## Run protocol" and Tasks 6-12.
+- docs/PROMPT_COACH_LIVE_TEST_RUN_PROMPT.txt steps 5-8 (after the cases).
 
-STATE (branch worktree-prompt-coach-rewrites; HEAD = this prompt's commit; pushed)
-- Rewrites run DONE: Sonnet re-review READY; prompt-coach fast-forwarded locally to 3dee1d7 (docs fixes); never pushed.
-- Budget: runTokenCap 3,800,000 (Ian: "increase the budget to whatever it needs to get the job done within reason.");
-  helper-rows 2,850,859 used at 06:1xZ (69 rows, measured).
-- Ian chose (2026-10-18): option A+D = a standing driver session + planted known answers. FR-2 fixtures hold 3 planted
-  mismatches + 1 tie, key in prompt-coach/research/live-tests/fixtures/answer_key.json (b4db9ae, checker PASS).
-- Driver: session "NEW - sandbox driver" (4a3e4556, claude --bg --chrome, launched by Ian). Message it by that name;
-  it replies by message. It uses the Windows Chrome ("Browser 2"), Ian's OWN sandbox (not the Workiva Org Sandbox,
-  which is shared with staff: never use it), private folder "Prompt coach test - Ian" (access: Ian only). Ian ran
-  /add-dir for the fixtures folder in the driver, so file_upload works from prompt-coach/research/live-tests/fixtures.
-- FR-2 pilot RAN 06:00-06:04Z: P1 original, P2 73be350 Strong, P3 Strong now (both blanks filled with "the quarterly
-  close review"); files referenced with Workiva AI's @ dropdown; answers verbatim in
-  .ledger/2026-10-16-prompt-coach-rewrites/logs/live_FR-2.md (96 lines). NOT YET SCORED.
+STATE (branch worktree-prompt-coach-rewrites; HEAD = this prompt's commit; pushed, slip "Yes, own branch only")
+- FR-2 pilot scored: P1, P2, P3 each 3/3 planted mismatches, 0 false, table yes; P3 invented a cause ("timing or
+  allocation issue", "AR subledger"). Opus and Codex agree on every item. logs/live_FR-2_scores.md.
+- Build DONE (Tasks 1-5, each implementer + checker PASS + lead re-run): plants in all 12 other cases, commits
+  bff9643, a43e9c5, a23d818, 83fb4d8; full gate plants_gate.sh 0 14 0 -> pass=14 fail=0 GATE_OK.
+  Fixture text dumps for all 12: logs/<CASE>_fixture_text.txt. Task 6 Step 1-2 checks passed.
+- Budget (measured 07:13Z): helper-rows 85 rows, 3,659,219 of 3,800,000; 140,781 left. NOT enough for Tasks 7-12.
+  The FR-4 Opus scorer cap is 135k. Codex runs outside the cap (codex exec read-only, no shell, works).
+- Ian's ruling: on FR-4 both Opus and Codex score in full; if they agree, Codex scores Tasks 7-12 and Opus checks
+  only the hard plant and disagreements; if they disagree, fall back to raising the cap (his yes needed for the amount).
+- Driver: session "NEW - sandbox driver" (4a3e4556), Windows Chrome, Ian's OWN sandbox, private folder
+  "Prompt coach test - Ian". New fixtures are not yet uploaded there.
 
 NEXT (in order)
 1. First check: STUDIO_RUN_LEDGER set; budget.json and slip.json exist; else stop.
-2. Score FR-2 on Opus (quality decides: labeling): per answer, keyed mismatches found 0-3 with both values right;
-   false mismatches reported (incl. calling the 790 tie a mismatch); table with both locations and both values (0/1);
-   invented facts (1 = none); asked for clarification (flag). Write logs/live_FR-2_scores.md. Then a Codex check of
-   the same scores (codex-cli 0.162.0 is installed; see ledger gotchas on Codex under Windows); disagreements to Ian.
-3. Show Ian the pilot result and ask: scale to the other 12 cases? Recommendation: plant a known answer in each
-   fixture first (as FR-2), run 2 repeats per prompt (answers vary), cases one at a time through the driver.
-4. Then steps 5-8 of the live-test run prompt (@-file limits from support pages, results file, README tip, evidence).
+2. Fix .ledger/.../make_prompts.cjs (writes logs/prompts_<CASE>.md: P1 original, P2 Strong@73be350, P3 Strong now,
+   blanks filled per the plan's run protocol). It prints MISSING for every case: block() regex matches nothing.
+   NOT a CRLF problem (cases.md has 0 CR, measured). Debug before trusting; check prompts_FR-4.md by eye.
+3. Ask Ian for budget BEFORE the FR-4 Opus scorer: 140k left covers only that one dispatch. Recommend a raise sized
+   from the Codex-first model (Opus for FR-4 135k + small Opus checks per case), measured after FR-4.
+4. Task 6: driver uploads fr_accruals.xlsx (Upload, not Import; versioned name if a same-named file is there),
+   sends 6 chats (P1 P2 P3 run 1, then run 2) in the plan's log format to logs/live_FR-4.md; Opus + Codex score;
+   apply the gate table (rows checked in order, first match decides). Then Tasks 7-12 per Ian's Codex-first rule.
+5. Then live-test run prompt steps 5-8 (results file, README tip, evidence doc).
 
-PROPOSED FOR IAN (not banked): brain facts - (1) a --chrome session sees only its own tab group; tabs Ian opens in
-the extension are invisible to it; (2) two Chromes can be connected (Mac + Windows); the driver must use the one Ian
-is signed into; (3) file_upload accepts only files the session may read: /add-dir the folder first.
+PROPOSED FOR IAN (not banked): brain facts from run 8 (--chrome tab groups, two Chromes, /add-dir before upload),
+plus: implementer role has no WebSearch (lookups go to a research helper); claude rm deletes the session's worktree,
+so predecessors sharing this worktree (bda0edb1, a72ccc7d, 8f68dfd4, b80d1b3d, 39dcb350) are kept.
 
 SAFETY: own sandbox and private folder only; made-up files only; no settings, sharing or deleting; never push
-prompt-coach or main. Old sessions (a72ccc7d, 8f68dfd4, b80d1b3d, 39dcb350) kept: a72ccc7d owns this worktree.
+prompt-coach or main. Starting a new session needs Ian's yes (slip: newSessions no).
