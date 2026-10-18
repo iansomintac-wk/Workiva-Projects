@@ -166,7 +166,7 @@
     {
       "id": "gen-rewrite", "area": "GEN", "role": "Anyone",
       "task": "Rewrite a section to be shorter or clearer for a different audience.",
-      "ops": ["REWRITE"], "match": "rewrit\\w*|shorten\\w*|tighten\\w*|plain english|board|executives?|audience|tone|too long|re-?word\\w*|rephras\\w*|worded|wording",
+      "ops": ["REWRITE"], "match": "proofread\\w*|bullet\\w*|capitali[sz]\\w*|synonyms?|better word|rewrit\\w*|shorten\\w*|tighten\\w*|plain english|board|executives?|audience|tone|too long|re-?word\\w*|rephras\\w*|worded|wording",
       "surfaces": ["doc"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S2", "S22", "S6"],
       "prompt": "Rewrite the selected section for [audience] in under [number] words. Keep every number and fact exactly as written.",
       "stays": "The final wording and every number.",

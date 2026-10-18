@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (82,673 bytes)
+node tests/build.js                                               # -> dist/fit-finder.html (83,016 bytes)
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
 node tests/pagetest.js [capture-folder]                            # real Chrome at 1280 and 375 px; needs Chrome, no npm deps
@@ -77,7 +77,7 @@ Use cases on real tasks (2026-10-16): four of the Community sustainability promp
 case or none. A bare "year-over-year" sent an emissions analysis (S1), a data check (S2) and a
 Wdata query (S10) to the financial year-over-year narrative; "duplicate records" sent S2 to finding
 duplicate controls; a "Wdata table" sent S10 to the narrative-and-tables check; and S3 ("generate
-potential explanations ... from the prior reporting period") read as reading only. Now a bare
+potential explanations ... from the prior ... period") read as reading only. Now a bare
 "year-over-year" points to the financial narrative only when its sentence (looking at most 300
 characters either side, so a long paste with no full stops stays fast; a decimal point, as in
 "3.5% in Scope 2 emissions", does not end the sentence) names no sustainability data and no
@@ -94,7 +94,7 @@ took 9 to 15 s to rate; capped, about 0.1 s). Checks hold that limit at exactly 
 orders (300 characters apart gets the card, 301 does not); before them, a limit moved anywhere from
 200 to 500 passed every check.
 No fit changed on the 139 tasks; A and B are unchanged. Of the 120 labelled tasks only task 92
-(writing variance explanations for the year-over-year change in emissions) changed: it gains an
+(writing variance explanations for the year-over-year ... in emissions) changed: it gains an
 "Explain it" step and its first use case is now the sustainability anomaly check instead of the
 financial narrative. S9 (an executive summary of a query's results) keeps "summarize a file": the
 Wdata card is for writing or fixing a query. S7 and task 42 read as reading only; see below.
@@ -235,3 +235,17 @@ reaches fewer asks, so choosing C trades reach for fewer wrong cards on the kind
 reviewers found. One pool label is the model's call ("Accrue more professional fees." = not a
 rewrite). Details: `docs/evidence/2026-10-17-rewrite-reach-round.md`.
 The prediction above stays disproved as scored once, before the rule.
+
+## 2026-10-18 fair test (kept rules)
+
+A new set of 104 model-written, model-labelled prompts was split with seed 20261018: 52 tuning,
+52 untouched. Two tune attempts were kept, both on the tuning half only:
+
+- `engine/fit.js`: the rewrite word list gained capitalisation, synonym and "better/different
+  word" forms (attempt 3); an ask whose only job is drafting an email now gets no card (attempt 5).
+- `data/catalogue.json`: the `gen-rewrite` match no longer includes "paragraph" (attempt 5).
+
+Dist size 83016 bytes (LF, as committed). Measured after these rules (suite): B first card right 13 of 30, wrong 3; A 12 of 29, wrong 0;
+real 15 of 19, wrong 2; fresh 15 of 23, wrong 5, card on a not-a-fit prompt 1, fit agreement 12
+of 29. Eval fit agreement: A 52/60, B 45/60. The untouched-half result is added in a later commit.
+The live page is not republished.
