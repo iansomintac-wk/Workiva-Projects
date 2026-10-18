@@ -1,42 +1,47 @@
-RESUME: Prompt Coach live test in Ian's own Workiva sandbox (Workiva repo) - run 10
+RESUME: Prompt Coach live test in Ian's own Workiva sandbox (Workiva repo) - run 11
 
-Written 2026-10-18T07:15Z by run lead 79e349bf (run 9), stopped at the 200k context line after the plant build.
+Written 2026-10-18T16:00Z by run lead 0921dc0e (run 10), stopped at the 200k context line after Task 8.
 Load studio-harness:talk-and-run first. You are the run lead: coordinate only. ONE helper at a time.
 
 READ FIRST
-- Ledger: .ledger/2026-10-16-prompt-coach-rewrites/progress.md from "## Resume session (run 9" (git-ignored).
-- Plan (Ian approved 2026-10-18, "Approve, Codex-first (Recommended)"):
-  docs/superpowers/plans/2026-10-18-prompt-coach-live-test-plants.md - "## Run protocol" and Tasks 6-12.
+- Ledger: .ledger/2026-10-16-prompt-coach-rewrites/progress.md from "## Resume session (run 10" (git-ignored).
+- Plan (Ian approved 2026-10-18): docs/superpowers/plans/2026-10-18-prompt-coach-live-test-plants.md,
+  "## Run protocol", Task 6 Step 6 gate table, Tasks 9-12.
 - docs/PROMPT_COACH_LIVE_TEST_RUN_PROMPT.txt steps 5-8 (after the cases).
 
-STATE (branch worktree-prompt-coach-rewrites; HEAD = this prompt's commit; pushed, slip "Yes, own branch only")
-- FR-2 pilot scored: P1, P2, P3 each 3/3 planted mismatches, 0 false, table yes; P3 invented a cause ("timing or
-  allocation issue", "AR subledger"). Opus and Codex agree on every item. logs/live_FR-2_scores.md.
-- Build DONE (Tasks 1-5, each implementer + checker PASS + lead re-run): plants in all 12 other cases, commits
-  bff9643, a43e9c5, a23d818, 83fb4d8; full gate plants_gate.sh 0 14 0 -> pass=14 fail=0 GATE_OK.
-  Fixture text dumps for all 12: logs/<CASE>_fixture_text.txt. Task 6 Step 1-2 checks passed.
-- Budget (measured 07:13Z): helper-rows 85 rows, 3,659,219 of 3,800,000; 140,781 left. NOT enough for Tasks 7-12.
-  The FR-4 Opus scorer cap is 135k. Codex runs outside the cap (codex exec read-only, no shell, works).
-- Ian's ruling: on FR-4 both Opus and Codex score in full; if they agree, Codex scores Tasks 7-12 and Opus checks
-  only the hard plant and disagreements; if they disagree, fall back to raising the cap (his yes needed for the amount).
-- Driver: session "NEW - sandbox driver" (4a3e4556), Windows Chrome, Ian's OWN sandbox, private folder
-  "Prompt coach test - Ian". New fixtures are not yet uploaded there.
+STATE (branch worktree-prompt-coach-rewrites; slip push "Yes, own branch only")
+- Scored and gated: FR-2 pilot; FR-4 PASS (Task 6); FR-1 PASS, FR-3 too easy (Task 7); GRC-1 PASS (H=4/6),
+  GRC-3 PASS (Task 8). Score files: logs/live_<CASE>_scores.md (Opus-final rows, "vs Codex" column).
+- Ian's rulings this run (verbatim in the ledger): budget "+500k now", then "+150k" (cap 4,450,000 in budget.json);
+  FR-4 scorers "Count as agree" = Codex scores, Opus checks the hard plant and disagreements; come back if one Opus
+  check > 90k; FR-3 "Record it, move on" (kept as "no difference between prompts on numbers"); drivers "Yes, up to 4"
+  = the lead may start up to 4 fresh drivers for the rest of this test (1 used: driver 3, 8f8739b1); Ian: "Yes" =
+  the lead starts every driver itself, Ian tells the lead first if he starts one (a duplicate happened once).
+- Budget (measured 15:58Z): 88 helper rows, 3,886,904 of 4,450,000; 563,096 left. Opus checks cost 80,924 (T7) and
+  80,744 (T8) per two-case task. Left: T9-T11 (2 cases) + T12 (1 case) ~ 280k, write-up ~65k, final review ~100k.
+- Per task the method that worked: driver sends -> lead checks counts and that each sent prompt equals
+  logs/prompts_<CASE>.md -> node .ledger/.../make_codex_prompt.cjs <CASE> <logs> <answer_key.json> (refuses an
+  existing file) -> codex exec -s read-only - < prompt > codex_<CASE>_out.txt -> one Opus check per task
+  (general-purpose, opus, 90k/15) that confirms or corrects every Codex row (Codex misreads: "$" as invented,
+  found above the key's item count, general audit statements as false; precedent in live_FR-1_scores.md) ->
+  lead greps the hard plant per answer -> gate table rows in order.
 
 NEXT (in order)
 1. First check: STUDIO_RUN_LEDGER set; budget.json and slip.json exist; else stop.
-2. Fix .ledger/.../make_prompts.cjs (writes logs/prompts_<CASE>.md: P1 original, P2 Strong@73be350, P3 Strong now,
-   blanks filled per the plan's run protocol). It prints MISSING for every case: block() regex matches nothing.
-   NOT a CRLF problem (cases.md has 0 CR, measured). Debug before trusting; check prompts_FR-4.md by eye.
-3. Ask Ian for budget BEFORE the FR-4 Opus scorer: 140k left covers only that one dispatch. Recommend a raise sized
-   from the Codex-first model (Opus for FR-4 135k + small Opus checks per case), measured after FR-4.
-4. Task 6: driver uploads fr_accruals.xlsx (Upload, not Import; versioned name if a same-named file is there),
-   sends 6 chats (P1 P2 P3 run 1, then run 2) in the plan's log format to logs/live_FR-4.md; Opus + Codex score;
-   apply the gate table (rows checked in order, first match decides). Then Tasks 7-12 per Ian's Codex-first rule.
-5. Then live-test run prompt steps 5-8 (results file, README tip, evidence doc).
+2. Task 9 is prepared, not started: Step 1 check passed; grc_access_policy.docx and grc_walkthrough.docx copied to
+   logs/upload/ (sha256 equal); brief logs/driver_brief_T9.txt. Driver 3 (8f8739b1, "NEW - sandbox driver 3") is
+   idle after 11 chats (drivers last about 19 chats per 200k): SendMessage it the brief; if it stops at its line,
+   start a fresh driver yourself (standing yes, 3 left), pointing it at the hand-off file it writes.
+   Drivers reply to the session named "NEW - prompt coach live test run 10": tell the driver your own name first.
+3. Tasks 10-12 the same way (briefs: copy the T9 brief, swap case ids, files, hand-off name; check 0 leftovers).
+4. Then live-test run prompt steps 5-8 (results file, README tip, evidence doc), final review (Opus + Codex), stop
+   for merge (slip "Yes, merge after review passes").
 
-PROPOSED FOR IAN (not banked): brain facts from run 8 (--chrome tab groups, two Chromes, /add-dir before upload),
-plus: implementer role has no WebSearch (lookups go to a research helper); claude rm deletes the session's worktree,
-so predecessors sharing this worktree (bda0edb1, a72ccc7d, 8f68dfd4, b80d1b3d, 39dcb350) are kept.
+PROPOSED FOR IAN (not banked): a driver lasts about 19 chats per 200k context (measured: driver 2); resuming a
+session near its context line wastes the restart (run 10 did it once); Codex as sole scorer misreads rubric edges
+(currency symbol, found above max) so an Opus check per task stays; plus run 9's list (--chrome tab groups, two
+Chromes, /add-dir before upload, implementer has no WebSearch, claude rm deletes the session's worktree so
+predecessors sharing this worktree are kept).
 
 SAFETY: own sandbox and private folder only; made-up files only; no settings, sharing or deleting; never push
-prompt-coach or main. Starting a new session needs Ian's yes (slip: newSessions no).
+prompt-coach or main. Starting a new run session needs Ian's yes (slip: newSessions no; the driver yes covers drivers only).
