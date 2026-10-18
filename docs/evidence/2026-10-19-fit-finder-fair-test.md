@@ -31,25 +31,35 @@ That is a pass, exactly at the bar. One more wrong card would have failed it.
 | Rows written | 104 (ids N1 to N104) | read: L/progress.md, T4.2 |
 | Dropped by the dedupe check (D) | 4: N8, N10, N16 (shared a 5-word run with a reference set) and N95 (shared one with another new row) | read: L/progress.md, "Task 4 (steps 3-8)" |
 | Kept (K) | 100 (exactly the floor of 100) | read: same |
-| Split | seed 20261018, 50 tuning, 50 untouched (5 rows moved by the split; the plan's word is MOVED 5) | read: L/progress.md, T6 row |
+| Split | seed 20261018, 50 tuning, 50 untouched (the plan's "MOVED 5" is 5 files moved to the sealed folder, not rows) | read: L/progress.md, T6 row |
 | Fitting rows (F) | tuning half 35; untouched half 42; both 77 | read: L/progress.md (T5 line F 77; pre-tune and untouched lines) |
 | Label mix, all 100 | fit good 71, partial 6, not 23 | read: L/progress.md, "Task 5 steps 3-5" |
 | Low-confidence labels | `conf: low` on 37 of 100 | read: same |
-| Fit rows with no card in the gold | 16 | read: L/progress.md, T5 lead re-run. By design: the labeller marked these as a fit but named no catalogue card. Under the scorer a card shown on one of them counts as wrong. |
+| Fit rows with no card in the gold | 16: 6 of the 35 tuning fit rows, 10 of the 42 untouched fit rows | read: L/progress.md, T5 lead re-run; the 6/10 split read from the lead's count of the gold files (reviews/merged-final.md). By design: the labeller marked these as a fit but named no catalogue card. Under the scorer a card shown on one of them counts as wrong, and no card counts as right. |
+| First gold card by area (all 100) | general (gen) 31, financial reporting (fr) 11, sustainability (sus) 10, governance, risk and compliance (grc) 9, no card 39 | read: lead's count of the gold files, reviews/merged-final.md |
+
+The set is not the mix the brief aimed for: the brief targeted about a fifth financial reporting
+and the first gold card is financial reporting on 11 of 100 (read, above), with general cards on 31.
+Both halves were drawn by the same random split, but they differ in the two places that matter
+for the second "disproved if" test (section 5): not-a-fit rows are 15 in the tuning half against 8
+in the untouched half, and fit rows with no gold card are 6 of 35 against 10 of 42.
 
 Note on the labeller: it said it read "it recurs" loosely, treating each prompt as one instance of
 a recurring task. N55 and N58 were marked partial (N55 by the ranking rule, N58 for its judgement
-core). The 37 low-confidence labels show how soft some labels are (assumed, not tested: that the good count of 71 is generous).
+core). The 37 low-confidence labels show how soft some labels are.
 
 The blind check: the lead searched the writer's and labeller's tool-call inputs for engine, data,
 tests, catalogue, real, card-gold and LABELING. Hits were 0 and 0, and the same search on the
 lead's own files gave 5 and 6, so the search can find things. (read: L/progress.md, T5.2 row.)
+The same kind of search on the tune helper's tool-call inputs (lead, measured 2026-10-18, read
+from L/progress.md T10 lead row): `data/real` mentioned 0 times (control: the helper's tuning file,
+4 times) and no other `data/` path.
 
 ## 3. Scores and the bar
 
 All three lines are the `synth-score.js` format. The first two are read from
 L/tune-pre.txt and L/tune-post.txt. The third is copied verbatim from `fit-finder/README.md`
-line 252, which equals the sealed score file (the lead compared them, L/progress.md T9 re-run).
+line 262, which equals the sealed score file (the lead compared them, L/progress.md T9 re-run).
 
 - Pre-tune, tuning half (read, L/tune-pre.txt):
   `first card right: 19 of 35 that fit; wrong card 5 (N14,N15,N27,N60,N69); no card where one fits 11 (N5,N7,N9,N20,N29,N35,N40,N66,N70,N72,N83); card on a not-a-fit prompt 0 (); fit agreement 16 of 50; score 21`
@@ -65,13 +75,39 @@ now, node arithmetic). Wrong card is 5.
 N48, N53, N56, N91, and a card was also shown on one not-a-fit prompt (N34), which the bar does
 not count but the score does.
 
+**What "first card right" counts.** Right = fits - wrong - missed (the scorer's definition, equal to
+the suite's fresh line, proven equal in plan Task 1). A fit row whose gold has no card therefore
+counts as right when no card is shown. So "right" includes correct silences.
+
+**Card-hit-only view** (a card shown and in the gold; fit rows with no gold card left out):
+
+- Tuning half, measured now: 14 of 29 fit rows with a gold card before the tune, 17 of 29 after
+  (6 of the 35 tuning fit rows have no gold card). Command: an ad-hoc node script in
+  `C:/Users/teasp/.claude/jobs/b2758e3d/tmp/hits.cjs`, run on the tuning prompt and tuning gold
+  files only, with the engine and catalogue from `git show aea7461:` for before and from HEAD for
+  after. (The reviewer's figure of 14 to 17 of 35 uses 35 as the denominator; same hits.)
+- Untouched half, not re-scored: 32 of 42 fit rows have a gold card and 10 do not (read: lead's
+  count of the gold files). The single score line gives right 25, so card hits are between 15 and
+  20 (25 minus at most 10 correct silences). The read-only Codex review re-ran the committed copy
+  and reports 15 (35.7% of 42; 15 of 32 card rows): read from the reviewer, not measured by the run.
+
+**Bar sensitivity.** By the spec's definition F is all fitting rows (42): bar floor(3 x 42 / 23) = 5,
+and 5 wrong passes at the bar. If F counted only fit rows with a gold card (32), the bar would be
+floor(3 x 32 / 23) = 4 (node arithmetic, measured now) and 5 wrong would fail. The verdict stays
+the spec's. Which reading counts is Ian's (section 8).
+
+Fit agreement in plain words: the engine's fit rating matched the gold fit label on 16 of 50
+tuning rows both before and after the tune, and on 19 of 50 untouched rows. The tune did not move
+it, and it is low on both halves.
+
 One more fact to hold against the pass: the bar is a count, and about 42 fits means a single card
 moves the rate by about 2 to 3 points. I did not compute a confidence interval.
 
 ## 4. The pins (measured now)
 
-Command (step 2), run from `fit-finder/` at HEAD 0b0707f, guard compared with BASE
-`aea74611bf1cec86aae2a58c7f5cb12102418f25` and `--lock-base HEAD`:
+Command (step 2), run from `fit-finder/` (first at HEAD 0b0707f, re-run for the review fixes at
+HEAD 95835d6; same figures both times; output of the re-run in L/step2-fixes.log), guard compared
+with BASE `aea74611bf1cec86aae2a58c7f5cb12102418f25` and `--lock-base HEAD`:
 
 ```
 node tests/catalogue.test.js | grep "first card right"
@@ -90,6 +126,12 @@ node tests/fair-guard.js --base <BASE> --lock-base HEAD ; echo "exit $?"
 | eval B | >= 45 of 60 | 45/60 = 75.0% | yes, at the pin |
 | fair-guard | PASS, exit 0 | `fair-guard PASS`, `exit 0` | yes |
 
+The guard's PASS used `--lock-base HEAD`, which compares the locked paths with the current commit,
+so it does not by itself show "unchanged since BASE". That is shown by `git diff aea7461 HEAD --
+fit-finder/tests fit-finder/data` (measured now): it lists only the catalogue match line and the
+two holdout files (`card-gold-synth-holdout.jsonl`, `synth/2026-10-18-holdout.jsonl`), which the
+split added.
+
 The pins (read: spec, "Scoring script and guard") were the pre-tune figures, so "held" means
 "no worse than before", and every one sits exactly on its pin. The tuning moved none of them in
 either direction. (Pre-tune values read from L/progress.md, "Talk" 20:02Z line; they match.)
@@ -103,15 +145,23 @@ Written before any new prompt existed (spec, "Prediction").
 | Pre-tune tuning half: right 40-65% of fits | 19 of 35 = 54.3% | inside |
 | Pre-tune tuning half: wrong 10-25% of fits | 5 of 35 = 14.3% | inside |
 | Untouched half after tuning: wrong 3 to 5 per 23 fits | 5 of 42 = 2.74 per 23 | a little better than predicted, below the range |
-| Untouched half: right 50-70% | 25 of 42 = 59.5% | inside |
+| Untouched half: right 50-70% | 25 of 42 = 59.5% (right as defined in section 3, correct silences included) | inside |
+| Same, card hits only | 15 of 42 = 35.7% (read from the Codex re-run, not measured by the run) | outside (below 50%) |
 | About an even chance of passing | passed, at the bar | consistent |
 
-(Rates are measured now by node arithmetic from the read lines in section 3.)
+(Rates are measured now by node arithmetic from the read lines in section 3.) The prediction is
+inside under the spec's definition of right and outside under the card-hit-only reading.
+
+Against the rate the README already held for the real fresh set (the 12-of-23 done-when, 52.2%,
+node arithmetic), the untouched half's right rate is 25 of 42 = 59.5%, a little higher. The two
+sets and the labellers differ, so this is a reference point, not a like-for-like comparison.
 
 ### The two "disproved if" tests
 
 Improvement is post minus pre-tune rate. The untouched half has no pre-tune score of its own; its
-"before" is the tuning half's pre-tune rate (same random split, same mix), per the spec.
+"before" is the tuning half's pre-tune rate, per the spec. The halves are not the same mix: the
+split is random, but not-a-fit rows are 15 against 8 and fit rows with no gold card 6 of 35
+against 10 of 42, so this test rests on halves that differ there.
 
 1. Untouched wrong above 6 per 23? Result 2.74 per 23 (5 of 42). Not disproved.
 2. Untouched half improves as much as or more than the tuning half?
@@ -138,9 +188,16 @@ Source: L/tune/results.tsv and L/progress.md (read).
   against a cap of 90. Total time well inside the 3-hour cap (the helper's two rounds took 1m54s
   and 0m37s by the notification).
 - Kept, in order: `5604d6b` (rewrite-family words in `fit.js` plus a change to the gen-rewrite
-  match; right 21, score 20) and `6ae0943` (the gen-rewrite match drops the word paragraph, and no card when
-  the only job is drafting an email; right 23, wrong 4, score 16). Both touched only
-  `fit-finder/engine/fit.js` and the `match` fields of `catalogue.json`.
+  match; right 21, wrong 6, score 20) and `6ae0943` (the gen-rewrite match drops the word
+  paragraph, and no card when the only job is drafting an email; right 23, wrong 4, score 16).
+  The first keep raised tuning wrong from 5 to 6 before the second brought it to 4. Both touched
+  only `fit-finder/engine/fit.js` and the `match` fields of `catalogue.json`.
+- Net change from BASE (read: `git diff aea7461 HEAD -- fit-finder/engine fit-finder/data/catalogue.json`):
+  the gen-rewrite match gained proofread, bullet, capitali[sz]e, synonym(s) and "better word";
+  `fit.js` gained REWRITE words (capitali[sz]e, synonyms, better/different/another/simpler
+  word|phrase|term, and "turn ... into paragraphs/bullets/table/list/summary/prose/sentences")
+  and the no-card rule for an ask whose only operation is DRAFT and that mentions e-mail.
+  "paragraph" was added by 5604d6b and removed again by 6ae0943; BASE never had it.
 - Discarded: `727dd68` and `1193efd` (the catalogue edit did not apply because of escaping, no
   effect, score stayed 21).
 - Dropped by the lead: `cb71c14`. It reached score 16 but one added alternative in the email
@@ -153,7 +210,8 @@ Source: L/tune/results.tsv and L/progress.md (read).
 - Memorisation (added lines, regex syntax turned into spaces): 0 shared 4-word runs with a tuning
   prompt, 0 added alternatives over 3 words.
 - Untouched-half hash: sha256 matched the one recorded at the split, "OK OK" for both files, and
-  the lead's verify-sealed scan found 0 holdout rows elsewhere (read: T9 rows).
+  the hash is from the T9 rows; the verify-sealed scan (found 0 holdout rows elsewhere, control 50 of 50)
+  is from the T6 row (read: L/progress.md).
 - Last engine commit `5616b3a`, before the scoring commit `0b0707f`: no rule change after the
   untouched half was scored (read: T9 lead re-run, ORDER-OK; I did not re-run `git log`).
 
@@ -179,8 +237,16 @@ got no card; the engine may pass partly by staying silent (assumed; the gold has
   about risk, not a measurement.
 - The token cap ruling: the run used up its 1.3M helper token cap at the Task 9 checker, and Ian
   raised it to 1.7M (read: L/progress.md, 22:06Z). Task 10 and the reviews ran under that ruling.
-- Reviews still to come at the time of writing: Opus final-reviewer and a read-only Codex review
-  (plan Task 10 steps 4 and 5). Nothing in this document has been reviewed yet.
+- Which bar reading counts for Monday: F as all fitting rows (42, bar 5, pass at the bar) or as fit
+  rows with a gold card (32, bar 4, fail). Section 3.
+- The e-mail rule (Opus S1, not fixed because the engine is locked after the scoring):
+  `fit-finder/engine/fit.js` line 134 returns no card for any ask whose only operation is DRAFT and
+  that mentions e-mail. At least five DRAFT-only cards exist (8-K, test steps, findings, new
+  controls, remediation), so such asks lose a fitting card and no pin catches it.
+- Reviews: the Opus final-reviewer and a read-only Codex review ran (plan Task 10 steps 4 and 5);
+  their findings are fixed in this document and the README except the two items above, which are
+  Ian's. Reviews: L/reviews/opus-final-review.md, L/reviews/codex-final-review.log,
+  L/reviews/merged-final.md.
 
 ## 9. Process notes and plan-level fixes found in the run
 
@@ -200,8 +266,8 @@ got no card; the engine may pass partly by staying silent (assumed; the gold has
   amended commit `5616b3a`. No claim changed (checker's reading), and the near-copy check of the
   README against the real set is 0. This is a pre-existing overlap the earlier README had,
   flagged for Ian.
-- Two tune attempts (727dd68, 1193efd) failed on escaping in the catalogue edit. Separately, the lead measured that this machine's Bash tool doubles a backslash in command text, and the plan now says code files go through the Write tool only (I did not test whether that caused the two failures). Proposed for the ledger.
+- Two tune attempts (727dd68, 1193efd) failed on escaping in the catalogue edit. Separately, the lead measured that this machine's Bash tool turns two backslashes into one in command text (plan line 27), and the plan now says code files go through the Write tool only (I did not test whether that caused the two failures). Proposed for the ledger.
 - Plan expectations that were off: Task 2's lead packet said line 1 exits 0 (the plan's exit 1 was
   right); Task 3 step 6 expected exit 0 where `grep -v` of nothing exits 1 under pipefail (the
   count 0 was the evidence).
-- This document's own check: `nearcopy.cjs` with N=5 against `fit-finder/data/real` (measured now): "real grams 2729 lines with a shared run of 5 words: 0". The document quotes no prompt text.
+- This document's own check: `nearcopy.cjs` with N=5 against `fit-finder/data/real`, over the README and this document (measured now, after the review fixes): see the line recorded in the commit report; the run is the acceptance command and its last line must end in ": 0". The document quotes no prompt text.

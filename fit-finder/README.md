@@ -238,15 +238,34 @@ The prediction above stays disproved as scored once, before the rule.
 
 ## 2026-10-18 fair test (kept rules)
 
-A new set of 104 model-written, model-labelled prompts was split with seed 20261018: 52 tuning,
-52 untouched. Two tune attempts were kept, both on the tuning half only:
+A new set of 104 model-written, model-labelled prompts was written; 4 were dropped by the dedupe
+check, and the 100 kept were split with seed 20261018: 50 tuning, 50 untouched. Two tune attempts
+were kept, both on the tuning half only. Net change from the base commit (read from
+`git diff aea7461 HEAD -- fit-finder/engine fit-finder/data/catalogue.json`):
 
-- `engine/fit.js`: the rewrite word list gained capitalisation, synonym and "better/different
-  word" forms (attempt 3); an ask whose only job is drafting an email now gets no card (attempt 5).
-- `data/catalogue.json`: the `gen-rewrite` match no longer includes "paragraph" (attempt 5).
+- `engine/fit.js`: the rewrite word list gained capitalise/capitalize, synonym(s),
+  better/different/another/simpler word|phrase|term, and "turn ... into
+  paragraphs/bullets/table/list/summary/prose/sentences"; an ask whose only job is drafting
+  (the DRAFT operation alone) and that mentions e-mail now gets no card.
+- `data/catalogue.json`: the `gen-rewrite` match gained proofread, bullet, capitalise/capitalize,
+  synonym(s) and "better word". ("paragraph" was added by the first kept commit and removed by
+  the second; the base never had it, so the net diff has no "paragraph".)
+
+"First card right" in the line below counts a fit row as right when no wrong card and no missed
+card was shown: right = fits - wrong - missed. A fit row whose gold names no card therefore counts
+as right when no card is shown (the same definition as the suite's fresh line).
 
 Dist size 83016 bytes (LF, as committed). Measured after these rules (suite): B first card right 13 of 30, wrong 3; A 12 of 29, wrong 0;
 real 15 of 19, wrong 2; fresh 15 of 23, wrong 5, card on a not-a-fit prompt 1, fit agreement 12
 of 29. Eval fit agreement: A 52/60, B 45/60. The live page is not republished.
 
 Untouched half, scored once after the rules were locked (model-written, model-labelled; not real customer prompts): first card right: 25 of 42 that fit; wrong card 5 (N42,N48,N53,N56,N91); no card where one fits 12 (N17,N18,N24,N52,N63,N77,N79,N88,N93,N99,N100,N102); card on a not-a-fit prompt 1 (N34); fit agreement 19 of 50; score 24. Bar: wrong card <= 5; wrong card 5, so it passes (wrong_within_bar=yes).
+
+Card-hit-only view (a card shown and in the gold; rows with no gold card excluded). Tuning half,
+measured with an ad-hoc script on the tuning files only: 14 of 29 fit rows with a gold card before
+the tune, 17 of 29 after (6 of the 35 tuning fit rows have no gold card). Untouched half: 32 of 42
+fit rows have a gold card and 10 do not (counted from the gold files), so card hits are between 15
+and 20; a read-only reviewer's re-run reports 15 (35.7% of 42; 15 of 32 card rows), read from the
+reviewer, not measured here. Bar reading: by the spec's definition F is all fitting rows (42), so
+the bar is 5 and 5 wrong passes at the bar. If F counted only fit rows with a gold card (32), the
+bar would be 4 and 5 wrong would fail. The verdict stays the spec's; which reading counts is Ian's.
