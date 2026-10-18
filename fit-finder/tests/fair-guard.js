@@ -41,7 +41,7 @@ for (const [h, key] of [['A', 'evalA'], ['B', 'evalB']]) {
     if (+m[1] < pins[key]) bad.push(`eval ${h}: agreement ${m[1]} < ${pins[key]}`);
   }
 }
-const locked = ['fit-finder/tests', 'fit-finder/data/LABELING.md', 'fit-finder/data/synth', ':(glob)fit-finder/data/*.jsonl'];
+const locked = [':(top)fit-finder/tests', ':(top)fit-finder/data/LABELING.md', ':(top)fit-finder/data/synth', ':(top,glob)fit-finder/data/*.jsonl'];
 if (!base) bad.push('no --base given');
 else {
   const d = git(['diff', '--quiet', lockBase, '--', ...locked]);
