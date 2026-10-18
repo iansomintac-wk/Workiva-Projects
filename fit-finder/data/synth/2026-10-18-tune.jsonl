@@ -1,0 +1,50 @@
+{"id":"N1","task":"can you tighten up this paragraph so it doesn't sound so defensive? it's the intro to our board update and the CFO thinks it reads like we're apologizing for the quarter"}
+{"id":"N4","task":"summarize this doc in 5 bullets"}
+{"id":"N5","task":"We need a short narrative for the Scope 2 emissions section of the sustainability report. Use the figures in the @Energy Data 2025 sheet and explain the shift to market-based reporting in plain language for investors."}
+{"id":"N6","task":"What's the exact sum of all the intercompany eliminations across the 14 entity tabs? I need it to the penny for the consolidation tie-out."}
+{"id":"N7","task":"Write a control description for our quarterly user access review over the ERP: who does it, what evidence they keep, and what happens when they find someone who shouldn't have access."}
+{"id":"N9","task":"how do I reset my password for workiva"}
+{"id":"N12","task":"Send the draft 10-Q to our outside auditors at the address in the distribution list and set a reminder for Friday so I remember to chase them if they haven't replied."}
+{"id":"N13","task":"rewrite this so a non-finance person can understand it: 'The Company recognized an impairment charge on goodwill related to the EMEA reporting unit as the carrying amount exceeded its fair value.'"}
+{"id":"N14","task":"Our CSRD double materiality assessment results are in the attached workbook, one tab per topic with impact and financial scores. Can you draft a two-paragraph summary of which topics came out material and why, for the ESG steering committee? They're not technical so skip the scoring mechanics."}
+{"id":"N15","task":"Based on the walkthrough notes in this doc, draft the narrative for the procure-to-pay process and point out any spots where a control seems to be missing."}
+{"id":"N19","task":"What's the stock price of our biggest competitor right now?"}
+{"id":"N20","task":"Could you proofread this section for typos and inconsistent capitalization? We keep switching between 'Company' and 'company' and between 'fiscal 2025' and 'FY25', and I want one style throughout."}
+{"id":"N21","task":"Recalculate the effective tax rate reconciliation with the new state apportionment factors and give me the final rate to two decimals so I can put it in the filing."}
+{"id":"N22","task":"draft a short paragraph for our sustainability report about the employee volunteering program, 3,200 hours logged this year, up from 2,100. upbeat but not greenwashy"}
+{"id":"N27","task":"draft a polite email pushing back on a deadline. the controller wants the flux analysis by wed but we're still waiting on the FP&A numbers and won't have them untill thursday"}
+{"id":"N28","task":"is workiva AI going to replace my job lol"}
+{"id":"N29","task":"What's the difference between XLOOKUP and INDEX MATCH and which should I use in this sheet? It's about 5,000 rows and other people on the team will have to maintain it after me."}
+{"id":"N31","task":"File our 8-K with the SEC"}
+{"id":"N35","task":"Generate a starting risk and control matrix for our new digital asset custody business line. We don't have anything yet, just want something to react to."}
+{"id":"N36","task":"translate this paragraph into French for our Montreal office, keep the accounting terms accurate and use the Canadian French terms if they're different"}
+{"id":"N37","task":"Mark all the review comments in this doc as resolved, I've addressed them all and the open ones are cluttering up the margin."}
+{"id":"N39","task":"explain what this formula is doing =SUMPRODUCT((B2:B200=\"East\")*(MONTH(C2:C200)=3)*D2:D200)"}
+{"id":"N40","task":"can you help me write a formula to count unique vendor names in column C, ignoring blanks"}
+{"id":"N43","task":"Convert all the amounts in this table from USD to EUR using today's ECB rate and round to the nearest thousand. It's for the German statutory pack due this afternoon."}
+{"id":"N46","task":"Summarize the SOX deficiencies in the attached tracker by process area and severity, and give me three sentences I can use in the update to the audit committee."}
+{"id":"N49","task":"how much does the workiva AI add-on cost per seat"}
+{"id":"N50","task":"Give me a checklist for reviewing a press release before it goes out. Things like tying numbers, checking the safe harbor language, consistent tense, that kind of thing."}
+{"id":"N51","task":"Draft a non-GAAP reconciliation narrative explaining each adjustment from net income to adjusted EBITDA: stock comp, restructuring, acquisition costs. The numbers are in the table I selected."}
+{"id":"N54","task":"Pull the latest trial balance from NetSuite into this spreadsheet and overwrite the June columns, the connection was set up by IT last year."}
+{"id":"N55","task":"We're doing our annual enterprise risk assessment. Here are the survey responses from 30 department heads (attached). Group them into themes and draft a summary of the top 10 risks with a sentence each, and call out any risk that only one or two people raised but sounds serious."}
+{"id":"N59","task":"Draft an agenda for next week's disclosure committee meeting, 60 min, topics: new segment, cyber incident disclosure, risk factor refresh. Leave 10 minutes at the end for open items and give each topic an owner placeholder."}
+{"id":"N60","task":"Summarize the key differences between ISSB S2 and ESRS E1 in a table, using the guidance docs in our knowledge base."}
+{"id":"N64","task":"Check this risk factors section and suggest where we should add language about AI regulation, using the peer risk factors I put in the knowledge base."}
+{"id":"N65","task":"Our goodwill impairment test had headroom of only 8% for the Retail reporting unit. Draft the critical accounting estimate disclosure about that sensitivity using the assumptions in the valuation memo."}
+{"id":"N66","task":"turn this bulleted list into a paragraph"}
+{"id":"N67","task":"Lock the financial statements section so nobody can edit after 5pm today, we're sending it to the printer tonight and I don't want any last minute changes slipping in."}
+{"id":"N69","task":"Summarize what changed between the draft 10-Q v3 and v4 so I can send reviewers a heads-up. Mostly care about anything in MD&A and the footnotes, ignore formatting."}
+{"id":"N70","task":"The water usage numbers in our ESG data sheet went up 18% at the Monterrey plant. Write a short explanation for the report, the plant added a second production line in April and water intensity per unit actually went down."}
+{"id":"N71","task":"Run the tie-out check and tell me which numbers in the document don't match the source spreadsheet."}
+{"id":"N72","task":"what's a better word than 'leverage' here, i've used it 4 times on this page"}
+{"id":"N73","task":"Write the scope and objectives section for our internal audit of the vendor master file process, about half a page. Scope covers vendor setup, changes to bank details and dormant vendor cleanup."}
+{"id":"N74","task":"Can you schedule a meeting with the audit committee for next Thursday at 2? Invite the CFO and the controller too and attach the draft minutes from last time."}
+{"id":"N75","task":"Summarize the comments left on this document, who's asking for what, so I know what I still need to address."}
+{"id":"N78","task":"What's my remaining PTO balance?"}
+{"id":"N80","task":"Create an outline for a training deck on how to use our new close checklist, about 10 slides. Audience is staff accountants, some of them joined this month."}
+{"id":"N83","task":"Can you turn my messy testing notes into proper test procedures and results for control FIN-07 (monthly bank recs)? Sample size was 3 of 12, no exceptions."}
+{"id":"N85","task":"Export this document to PDF and upload it to the board portal so the directors have it before the meeting on Monday."}
+{"id":"N86","task":"Draft the related party transactions footnote using the details in the attached schedule. Two leases with an entity owned by our founder and one consulting agreement."}
+{"id":"N89","task":"Get the limited assurance sign-off from our assurance provider on the GHG numbers."}
+{"id":"N103","task":"write a one-paragraph summary of this contract for the accounting team - what we're buying, term, payment schedule, any termination clauses"}
