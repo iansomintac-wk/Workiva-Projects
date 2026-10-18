@@ -82,10 +82,13 @@ counts as right when no card is shown. So "right" includes correct silences.
 **Card-hit-only view** (a card shown and in the gold; fit rows with no gold card left out):
 
 - Tuning half, measured now: 14 of 29 fit rows with a gold card before the tune, 17 of 29 after
-  (6 of the 35 tuning fit rows have no gold card). Command: an ad-hoc node script in
-  `C:/Users/teasp/.claude/jobs/b2758e3d/tmp/hits.cjs`, run on the tuning prompt and tuning gold
-  files only, with the engine and catalogue from `git show aea7461:` for before and from HEAD for
-  after. (The reviewer's figure of 14 to 17 of 35 uses 35 as the denominator; same hits.)
+  (6 of the 35 tuning fit rows have no gold card). Command: the node script
+  `.ledger/2026-10-18-fit-finder-fair-test/hits.cjs` (ledger, not committed), run on the tuning
+  prompt and tuning gold files only: `node .ledger/2026-10-18-fit-finder-fair-test/hits.cjs
+  <abs root> fit-finder/data/synth/2026-10-18-tune.jsonl fit-finder/data/card-gold-synth-tune.jsonl`
+  with `<abs root>` the absolute path of `fit-finder` at HEAD for after (prints cardHits 17), and
+  for before a directory holding `engine/fit.js` and `data/catalogue.json` from
+  `git show aea7461:fit-finder/...` (prints cardHits 14). (The reviewer's figure of 14 to 17 of 35 uses 35 as the denominator; same hits.)
 - Untouched half, not re-scored: 32 of 42 fit rows have a gold card and 10 do not (read: lead's
   count of the gold files). The single score line gives right 25, so card hits are between 15 and
   20 (25 minus at most 10 correct silences). The read-only Codex review re-ran the committed copy
@@ -270,4 +273,4 @@ got no card; the engine may pass partly by staying silent (assumed; the gold has
 - Plan expectations that were off: Task 2's lead packet said line 1 exits 0 (the plan's exit 1 was
   right); Task 3 step 6 expected exit 0 where `grep -v` of nothing exits 1 under pipefail (the
   count 0 was the evidence).
-- This document's own check: `nearcopy.cjs` with N=5 against `fit-finder/data/real`, over the README and this document (measured now, after the review fixes): see the line recorded in the commit report; the run is the acceptance command and its last line must end in ": 0". The document quotes no prompt text.
+- This document's own check: `nearcopy.cjs` with N=5 against `fit-finder/data/real`, over the README and this document (measured now, after the review fixes): last line measured: `real grams 2729 lines with a shared run of 5 words: 0`. Command: `N=5 node .ledger/2026-10-18-fit-finder-fair-test/nearcopy.cjs fit-finder/data/real fit-finder/README.md docs/evidence/2026-10-19-fit-finder-fair-test.md | tail -1`, run from the worktree root; its last line must end in ": 0". The document quotes no prompt text.
