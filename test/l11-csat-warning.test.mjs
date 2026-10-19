@@ -52,7 +52,7 @@ test('L11 modal: no contact shows #gc-csat right under the title, before the goa
     const h = modalHtml({ csat: { done: false, date: null, contactName: '' }, goal });
     const iTitle = h.indexOf('</h3>'), iLine = h.indexOf('id="gc-csat"'), iGoal = h.search(/Primary goal:|No hand-off goal is set/), iWrap = h.indexOf('id="gc-verdict-wrap"');
     assert.ok(iTitle >= 0 && iLine > iTitle && iLine < iGoal && iGoal < iWrap, `order, goal=${goal}`);
-    assert.match(h, /<p id="gc-csat" class="gp-meta" style="margin:0 0 10px; color:var\(--warn, var\(--text-dim\)\);">No CSAT contact is marked added, so nobody will receive the survey\. You can still graduate\.<\/p>/);
+    assert.match(h, /<p id="gc-csat" class="gp-meta" style="margin:0 0 10px; color:var\(--status-watch-text, var\(--text-dim\)\);">No CSAT contact is marked added, so nobody will receive the survey\. You can still graduate\.<\/p>/);
   }
 });
 test('L11 modal: contact marked added renders no #gc-csat at all', () => {
