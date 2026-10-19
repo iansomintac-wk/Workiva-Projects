@@ -234,7 +234,14 @@ got no card; the engine may pass partly by staying silent (assumed; the gold has
 ## 8. What is Ian's
 
 - Republishing the live page. The rebuilt page (83016 bytes, read from the README; 72 page checks,
-  0 failed, read from L/progress.md T8) is committed in `5616b3a`, but not published.
+  0 failed, read from L/progress.md T8) is committed in `5616b3a`, but not published. Ruled
+  2026-10-19: "Not yet (Recommended)": republish only after a pass on a second untouched real set.
+- Merging: ruled 2026-10-19: "Merge, safe way (Recommended)". The branch was merged into
+  prompt-coach as `a96a1f1` and pushed; the target's old tip is kept at
+  `backup/prompt-coach-before-fit-finder-fair-test-2026-10-19` (`79cd855`). Suite measured on the
+  target 8 of 8 exit 0, on the merge 10 of 10 (fair-guard locked to the branch tip, `c5ff55c`).
+- Ledger records: ruled 2026-10-19: "Yes, all three (Recommended)": the guard pathspec defect,
+  the Bash backslash gotcha and the 1.7M cap ruling are ratified in studio-harness (`27b3f0a`).
 - The real-set check: the bar on a second untouched real set, which this round does not replace.
 - Whether a pass at the bar, on model-written prompts, is enough to publish. That is a judgement
   about risk, not a measurement.
