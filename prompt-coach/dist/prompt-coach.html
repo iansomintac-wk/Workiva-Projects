@@ -777,6 +777,18 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     }
   }
 
+  /* Missing-data ask (spec 2026-10-19): the user asks what is missing or blank, not what is wrong.
+     Rule and condition clauses are cut out before looking for the missing word, so "if X is missing" and
+     "don't guess missing dates" do not count; the condition clause ends at its comma, so "If possible, list
+     missing data" keeps its request. Wrong-value words are looked for in the whole prompt (mixed ask). */
+  const MISS_WORD = /\b(?:missing|blank|empty|no (?:data|values?|figures?)|without (?:a |any )?(?:values?|data))\b/;
+  const MISS_RULE = /\bif\b[^,.;!?\n]*|\b(?:don'?t|do not|never|not)\s+(?:\w+\s+){0,3}?(?:guess|assume|estimate|fill|make up|chase|plug|infer)\b[^.;!?\n]*|\bleave\b[^.;!?\n]*\bblank\b|\b(?:a|an|new|the)\s+(?:\w+\s+){0,2}?blank (?:tab|sheet|page|template|row|line|space)\b/g;
+  const MISS_WRONG = /\b(?:zero|duplicat\w*|exceptions?|wrong|incorrect|outliers?|anomal\w*|unusual|mismatch\w*|suspicious|spikes?|out of place|inconsisten\w*|typos?)\b/;
+  function missingAsk(prompt) {
+    const s = String(prompt || '').toLowerCase().replace(/[\u2018\u2019]/g, "'");
+    return MISS_WORD.test(s.replace(MISS_RULE, ' ')) && !MISS_WRONG.test(s);
+  }
+
   function paramsFragment(ctx) {
     const h = ctx.headers.slice(0, 4);
     const cols = h.length >= 2 ? h.join(', ') : null;
@@ -784,7 +796,9 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       case 'errors': return 'Return a table: location, what is wrong, suggested fix. ';
       case 'gaps': return 'Return a table: item, what is missing, why it matters. ';
       case 'variance': return 'Return a table: ' + (cols ? cols + ', ' : 'item, both values, ') + 'change in amount and percent. Include only changes over [your threshold]. ';
-      case 'anomaly': return 'Return a table: ' + (cols ? cols + ', ' : 'item, value, ') + 'why it looks wrong, what to check. ';
+      case 'anomaly': return ctx.missingAsk
+        ? 'Return a table: ' + (cols ? cols + ', ' : 'item, ') + 'what is missing, where it should be. '
+        : 'Return a table: ' + (cols ? cols + ', ' : 'item, value, ') + 'why it looks wrong, what to check. ';
       case 'consistency': return 'For each mismatch, give both locations and both values in a table. ';
       case 'rewrite': return 'Keep it to [target length], in the same voice. ';
       case 'summarize': return 'Use [number] bullets. ';
@@ -805,7 +819,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       case 'errors': return 'Do not change anything yourself, and flag anything you are not sure is an error.';
       case 'gaps': return 'Only flag gaps you can point to in the source, and mark judgment calls for my review.';
       case 'variance': return 'Do not speculate beyond the data; phrase explanations as hypotheses and list open questions for the data owner separately.';
-      case 'anomaly': return 'Do not correct any values; flag anything you are unsure of.';
+      case 'anomaly': return ctx.missingAsk ? 'Do not fill in or estimate missing values.' : 'Do not correct any values; flag anything you are unsure of.';
       case 'consistency': return 'Do not decide which value is correct.';
       case 'rewrite': return 'Preserve every number, date, and factual claim, and do not introduce new facts.';
       case 'summarize': return 'Do not add anything that is not in the source, and keep every figure exactly as written.';
@@ -1048,6 +1062,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     };
     ctx.audDomain = opts.areaSure === false ? 'GEN' : ctx.domain;
     ctx.intent = opts.intent || intentOf(t, files.some((f) => f.kind === 'Excel') || /\b(data|table|numbers|figures|emissions|revenue|metrics?)\b/.test(t));
+    ctx.missingAsk = ctx.intent === 'anomaly' && missingAsk(prompt);
     const taskSure = opts.taskSure !== false;
     const gen = { S: sourceFragment(ctx), C: contextFragment(ctx), O: objectiveFragment(ctx), P: paramsFragment(ctx), E: evalFragment(ctx) };
     const BLANK = { O: 'Identify and list [what you want back, such as the issues and where they are, or the key points]. ', P: 'Format it as [a table, bullets, or a short paragraph]. ', E: evalFragment({ intent: null }) };
@@ -1230,7 +1245,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     return r.grade === 'strong' && r.hits && r.stacked ? 'better' : r.grade;
   }
 
-  const api = { displayGrade, listStacked, sentenceSpans, directVoice, fixTypos, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
+  const api = { displayGrade, listStacked, sentenceSpans, missingAsk, directVoice, fixTypos, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
   if (isNode) module.exports = api; else root.ScopeRewrite = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
