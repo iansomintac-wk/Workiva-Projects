@@ -50,7 +50,12 @@ for (const [name, rs] of taskSets) for (const t of rs) {
   const tag = name + ' ' + String(t.id).slice(0, 12) + ' ' + whole.slice(0, 40);
   if (kept === null) { shape.push('no task text found: ' + tag); continue; }
   if (!whole.includes(kept)) shape.push('task not kept as written: ' + tag);
-  else if (kept !== whole && !BOUNDARY.test(whole.slice(whole.indexOf(kept) + kept.length)) && !/(?:^|;|then|and) *$/.test(whole.slice(0, whole.indexOf(kept)).replace(/ +$/, ''))) shape.push('cut mid-phrase: ' + tag + ' -> ' + kept.slice(-30));
+  else if (kept !== whole) {
+    // a cut is clean only at a clause or sentence end on BOTH sides (a cut at the very start or end of the task has nothing on that side)
+    const at = whole.indexOf(kept), after = whole.slice(at + kept.length), before = whole.slice(0, at).replace(/ +$/, '');
+    const afterOK = after === '' || BOUNDARY.test(after) || /^[.!?] /.test(after), beforeOK = before === '' || /(?:;|then|and|[.!?])$/.test(before);
+    if (!afterOK || !beforeOK) shape.push('cut mid-phrase: ' + tag + ' -> ' + kept.slice(-30));
+  }
   const lead = F.lead(t.task);
   if (lead && !F.OPS[lead].test(F.normalize(kept))) shape.push('lead clause lost (' + lead + '): ' + tag);
   const ph = r.prompt.match(/\[[^\]]+\]/g) || [];
