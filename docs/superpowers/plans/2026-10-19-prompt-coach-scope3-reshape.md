@@ -7,21 +7,22 @@ Data: (none)
 
 **Goal:** The Scope 3 "category not in the file" warning stops misreading Word tables, stops skipping real "explain with figures" asks, and counts short row labels as listed, with zero wrong warnings.
 
-**Architecture:** Three small edits inside `cannotSupport` and `categoryHit` in `prompt-coach/engine/rewrite.js` on base 59b09c1 (Word `lines` joined by newline for the Scope 3 part only; explain skip decided per sentence with a change-word veto; short-form regexes added to the category matcher), then README and `dist` in one commit. A fresh sealed held-out set is written, built into real files and frozen BEFORE any code change, and scored once at the end.
+**Architecture:** Three small edits inside `cannotSupport` and `categoryHit` in `prompt-coach/engine/rewrite.js` on base 59b09c1 (Word `lines` joined by newline for the Scope 3 part only; the explain exception decided per category mention's own sentence with a change-word veto; short-form regexes added to the category matcher and kept out of the generic leased-assets fallback), then README and `dist` in one commit. A fresh sealed held-out set is written, built into real files and frozen BEFORE any code change, and scored once at the end.
 
 **Tech Stack:** Plain Node (CommonJS), `node:test` (tap reporter), headless Chrome from `C:/Program Files/Google/Chrome/Application` for the real `engine/files.js` reader (no installs; libraries from cdnjs as in production). Bash check scripts in the git-ignored ledger.
 
-**Spec:** `docs/superpowers/specs/2026-10-19-prompt-coach-scope3-reshape-design.md` (approved by Ian 2026-10-19). Run prompt: `docs/PROMPT_COACH_SCOPE3_RESHAPE_RUN_PROMPT.txt`. Plan review Opus R1 folded in (see "Review dispositions").
+**Spec:** `docs/superpowers/specs/2026-10-19-prompt-coach-scope3-reshape-design.md` (approved by Ian 2026-10-19). Run prompt: `docs/PROMPT_COACH_SCOPE3_RESHAPE_RUN_PROMPT.txt`. Plan reviews folded in: Opus R1, Codex R1b, Codex R2 (see the three "Review dispositions" sections).
 
 ## Global Constraints
 
 - `ROOT` = `C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape`; project `ROOT/prompt-coach`; ledger `L` = `ROOT/.ledger/2026-10-19-prompt-coach-scope3-reshape` (git-ignored); predecessor ledger `PL` = `L/predecessor-scope3-structure-ledger`; reader harness `L/probe/p1/` (`make_fixtures.js`, `run_reader.js`).
+- **Git working directory (Codex R2 R5).** Every git pathspec in this plan is relative to `ROOT` (e.g. `prompt-coach/engine/files.js`). Every plan step that runs git runs it from `ROOT` (the step text says `cd "ROOT" && git ...`), and every git command inside `chk.sh` uses `git -C "$ROOT"` (not the script's own cwd, which is `ROOT/prompt-coach`). `git show 59b09c1:prompt-coach/engine/rewrite.js` is repo-root-relative and works from any cwd.
 - Base = commit 59b09c1. The base gate stays: ask says "Scope 3" AND file says "Scope 3", and at least 2 categories listed.
 - **How warnings are read (measured by the Opus reviewer: `coach()` has no `.unsupported` field).** The warning is a note: `o.notes.filter((n) => n.kind === 'unsupported')` (engine/rewrite.js:609; tests/rewrite_unit.test.js:375 defines `unsupported(o)`; `run(prompt, files, extra)` at line 12 calls `W.coach(prompt, { files, detect, ...C.pick(prompt, CLS), ...extra })`). Every new unit test uses the existing `run(...)` and `unsupported(...)` helpers and asserts on the note TEXT: the category note reads `Your file lists Scope 3 categories, but not category <n> (<name>), ...`, so assert `unsupported(o).length === 1` and `unsupported(o)[0].text.includes('category ' + n + ' (')`. A quiet assertion is `unsupported(o).length === 0`, never `!o.unsupported`. `L/scripts/lib.js` (Task 1b) exports the same `run`/`unsupported` (copied from the test file, classifier pick included) for `score.js` and `quiet`.
 - **Definition of "warn".** Held-out scoring counts the category note only (note of kind `unsupported` whose text starts `Your file lists Scope 3 categories`), because these items test the category check; a forecast note on a finance near-miss is reported separately as "forecast note" and does not count. `quiet` rows count ANY `unsupported` note that the branch emits and base does not (stricter). The final verdict prints held-out AND quiet.
 - Spec rule 1 (Word clean lines): in the Scope 3 part of `cannotSupport` only, a Word file's text is `f.lines.join('\n')` when `lines` is present. The 4 other readers of `f.text` in `rewrite.js` (empty-file test, forecast check, area detection, grounding) and the page are unchanged.
-- Spec rule 2 (explain middle rule): skip the check only when an explain word (`CAT_EXPLAIN`) is in the same sentence (`sentenceSpans`) as the "Scope 3" or category mention AND that sentence has no change word. The change-word list is exactly the spec's: why, rose, rise, jumped, increase(d), decrease(d), fell, drop(ped), change(d), `%`, vs, versus, compared. No widening without Ian's yes. The classifier's `intent === 'explain'` alone no longer skips.
-- Spec rule 3 (short labels count as listed): `categoryHit` also accepts `purch. goods`, `waste in op(s)`, `upstr.` / `downstr.` (transport, T&D, leased), `EOL`. A category shown in short form is not reported missing.
+- Spec rule 2 (explain middle rule), applied PER CATEGORY MENTION (Codex R1): for each category mention in the ask (each `CAT_ASK` match), the mention is exempt only when an explain word (`CAT_EXPLAIN`) is in the SAME sentence (`sentenceSpans`) as that mention and that sentence has no change word. An exempt mention is skipped and the scan continues with the other mentions; a non-exempt mention is checked. The early `return null` for the whole prompt is removed. The change-word list is exactly the spec's: why, rose, rise, jumped, increase(d), decrease(d), fell, drop(ped), change(d), `%`, vs, versus, compared. No widening without Ian's yes. The classifier's `intent === 'explain'` alone no longer skips. (The spec's "or the Scope 3 mention" clause is covered because a category mention in a sentence is what the check scans; a sentence with "Scope 3" but no category mention has nothing to check.)
+- Spec rule 3 (short labels count as listed): `categoryHit` also accepts `purch. goods`, `waste in op(s)`, `upstr.` / `downstr.` (transport, T&D, leased), `EOL`. A category shown in short form is not reported missing. The abbreviated directional leased phrases are also removed before the generic "leased assets" fallback (Codex R3), so one short row is never counted as both an exact category and a generic one.
 - Pass bar (Ian: "Zero wrong + beat base by 2"): 0 of 12 near-misses warn; 0 new warnings vs base on E1-E18, the P1 real-shape files x listed / listed-num / finance asks, the two ERPNext charts as sheets with a figure per account, and the 1,516 stored asks with train files; branch warns on at least base + 2 of the 12 should-warn items. A miss is reported, never tuned.
 - Guards identical to base: existing unit tests pass unchanged (new ones appended only), 0 warnings on train files (`dump_runs.js`), no-file Strong rewrites byte-identical, 19 fixtures, `simulate.js`, `customer_check.js`, `eval.js rulefeat`. Counts are re-measured at base in Task 1b.
 - Out of scope / locked (do not edit): `prompt-coach/engine/files.js`, forecast / share-price / LE detection, grades, weights (`engine/weights*.json`, `engine/cls-weights.json`), `engine/rules.js`, `engine/model.js`, `engine/classify.js`, `data/`, existing tests in `tests/rewrite_unit.test.js`, `tests/eval.js`, `tests/simulate.js`, `tests/customer_check.js`, `tests/pagetest.js`, `tests/filetest.js`, HEAD fc40f5c's figure rule (not built on), option D. `chk.sh guards` enforces this with commands (see the table).
@@ -36,23 +37,24 @@ Data: (none)
 ## Run settings
 
 - helperToolCallCap: **30** per helper dispatch (matches budget.json; unchanged).
-- tasksLeft (helper dispatches expected, after plan approval): **16**. T1a: 1 (blind held-out writer); T1b: 1 (base counts, chk.sh, quiet inputs); T2-T5: 2 each = 8 (implementer, checker); T6: 2 (scoring and probe rows run by the lead's helper, evidence-doc writer); T7: 4 (Opus review, Codex review, fix-round implementer, re-check). The lead builds the held-out fixtures and runs each check itself. budget.json currently says 14 (assumed); update it to 16 at plan approval.
-- Plan tasks: 8. Helper-token estimate (assumed, sized on the predecessor run): T1a 60k, T1b 100k, T2 80k, T3 100k, T4 80k, T5 40k, T6 130k, T7 220k; run total about **810k** against the 1.0M runTokenCap.
+- tasksLeft (helper dispatches expected, after plan approval): **16**. T1a: 1 (blind held-out writer); T1b: 1 (base counts, chk.sh, quiet inputs); T2-T5: 2 each = 8 (implementer, checker); T6: 2 (scoring and probe rows run by the lead's helper, evidence-doc writer); T7: 4 (Opus review, Codex review, fix-round implementer, re-check). The lead builds the held-out fixtures and runs each check itself. budget.json currently says 14 (assumed); update it to 16 at plan approval. (Unchanged by the Codex reviews: no task added.)
+- Plan tasks: 8. Helper-token estimate (assumed, sized on the predecessor run): T1a 60k, T1b 100k, T2 80k, T3 110k, T4 90k, T5 40k, T6 130k, T7 220k; run total about **830k** against the 1.0M runTokenCap.
 - Groups: all 8 tasks are strictly sequential, one helper at a time, never parallel (T2-T4 edit the same function; T6 needs T5's dist). No TUNE tasks: the single scoring pass in T6 is a measurement, not a loop.
 - Paid calls: none. Opus/Codex/Sonnet helpers run on usage only (slip: spend nothing). No live Workiva AI; headless Chrome fetches the public cdnjs libraries free, as in probe P1.
 
 ## Check script (created in Task 1b, reused by every later task)
 
-`CHK` = `L/scripts/chk.sh` (bash, `set -o pipefail`, `cd` to `ROOT/prompt-coach`). Any mismatch prints `..._BAD` and exits non-zero.
+`CHK` = `L/scripts/chk.sh` (bash, `set -o pipefail`, `ROOT` set at the top, runs node commands from `ROOT/prompt-coach`, runs every git command as `git -C "$ROOT"`). Any mismatch prints `..._BAD` and exits non-zero.
 
 | Subcommand | Prints on success |
 |---|---|
 | `heldout` | `HELDOUT_OK items=24 warn=12 near=12 sha_ok=3` (items, frozen reader output and scoring script match `L/heldout_sha256.txt`) |
 | `baseline` | `BASE_OK unit=57 fixtures=19 trainwarn=0 simulate=<n> customer=<n> rulefeat=<n>` with the 3 `<n>` re-measured at base and stored in `L/logs/base/counts.txt` |
 | `unit <pass> <fail>` | `UNIT_OK pass=<pass> fail=<fail>` |
-| `guards` | `GUARDS_OK` when ALL hold: train-file dump has 0 warnings; no-file Strong rewrites are byte-identical to `L/logs/base/`; fixtures (19) identical except lines the task names; simulate / customer_check / eval rulefeat equal `L/logs/base/counts.txt`; `git diff --name-only 59b09c1 -- prompt-coach/engine/files.js prompt-coach/engine/classify.js prompt-coach/engine/model.js prompt-coach/engine/rules.js 'prompt-coach/engine/*weights*.json' prompt-coach/data prompt-coach/tests/eval.js prompt-coach/tests/simulate.js prompt-coach/tests/customer_check.js prompt-coach/tests/pagetest.js prompt-coach/tests/filetest.js` is empty; `git diff 59b09c1 -- prompt-coach/tests/rewrite_unit.test.js \| grep -c '^-[^-]'` is 0 |
+| `guards` | `GUARDS_OK` when ALL hold: (1) PRECONDITION: each guarded pathspec resolves to at least one tracked file, checked per pathspec with `git -C "$ROOT" ls-files -- <spec> \| wc -l` >= 1 for `prompt-coach/engine/files.js`, `prompt-coach/engine/classify.js`, `prompt-coach/engine/model.js`, `prompt-coach/engine/rules.js`, `'prompt-coach/engine/*weights*.json'`, `prompt-coach/data`, `prompt-coach/tests/eval.js`, `prompt-coach/tests/simulate.js`, `prompt-coach/tests/customer_check.js`, `prompt-coach/tests/pagetest.js`, `prompt-coach/tests/filetest.js`, `prompt-coach/tests/rewrite_unit.test.js`; any spec with 0 prints `GUARDS_BAD pathspec=<spec> tracked=0` and exits non-zero (a pathspec that matches nothing would make the next check pass vacuously); (2) `git -C "$ROOT" diff --name-only 59b09c1 -- prompt-coach/engine/files.js prompt-coach/engine/classify.js prompt-coach/engine/model.js prompt-coach/engine/rules.js 'prompt-coach/engine/*weights*.json' prompt-coach/data prompt-coach/tests/eval.js prompt-coach/tests/simulate.js prompt-coach/tests/customer_check.js prompt-coach/tests/pagetest.js prompt-coach/tests/filetest.js` is empty; (3) `git -C "$ROOT" diff 59b09c1 -- prompt-coach/tests/rewrite_unit.test.js \| grep -c '^-[^-]'` is 0; (4) train-file dump has 0 warnings; no-file Strong rewrites are byte-identical to `L/logs/base/`; fixtures (19) identical except lines the task names; simulate / customer_check / eval rulefeat equal `L/logs/base/counts.txt` |
 | `quiet` | `QUIET_OK new_warn=0 sets=5 e=18 p1=<a> charts=<b> stored=1516 ...` printing one row count PER set (E1-E18 = 18; P1 files x 3 asks; two ERPNext charts as sheets; 1,516 stored asks paired with train files; plus the set sizes recorded in `L/logs/base/quiet_counts.txt`). Fails (`QUIET_BAD short=<set>`) if any set has fewer rows than the base-recorded count |
 | `quiet --selftest` | `QUIET_SELFTEST_OK` : runs `quiet` with a stub branch engine that always warns and requires `QUIET_BAD`; also runs it with a stub engine equal to base and requires `QUIET_OK` (proves the check can fail and can pass) |
+| `guards --selftest` | `GUARDS_SELFTEST_OK`: runs the pathspec precondition against a deliberately wrong spec (`engine/files.js` relative to `prompt-coach/`, which matches 0 tracked files from the repo root) and requires `GUARDS_BAD`; then against the real specs and requires the precondition to pass |
 | `dist <fixed-string> <min-count>` | `DIST_OK count=<n>` |
 
 Model the script on `PL/scripts/chk.sh`, `PL/scripts/dump_runs.js`, `PL/scripts/cmp_fixture.js`.
@@ -102,14 +104,14 @@ Group: sequential. Tokens (assumed): 100k.
 - [ ] **Step 1: Write `lib.js` and `score.js`** as above. `--verify-log` and the refuse-twice guard are built now, before the seal.
 - [ ] **Step 2: Dry run before sealing.** Run `score.js --dry-run` (does not write the log): it feeds one known-warning row, ask `Give me Scope 3 category 4 emissions.` with a file whose text is `## Summary\nScope 3 summary\n6, 1,240\n7, 890`, through `run`+`unsupported` on base, and must print `DRY_OK warnings=1`; and a known-quiet row (same file, ask for category 6) must print `warnings=0`. A reader of `r.unsupported` would read 0 for both and fail this step.
 - [ ] **Step 3: Build quiet inputs** into `L/quiet/` with a fixed row count per set, recorded in `L/logs/base/quiet_counts.txt`: E1-E18 (from `PL/reviews/test/final_opus_probe.test.js`, 18 rows), the P1 real-shape files (`L/probe/p1/fx`, reader output `reader_out.json`) x the listed / listed-num / finance asks (3 asks per file), the two ERPNext charts (from `L/probe/p2`) laid out as sheets with a figure per account, and the 1,516 stored asks (from `data/*.jsonl`, unique) paired with the train files.
-- [ ] **Step 4: Write `chk.sh` and `quiet.js`** (table above), including the guards git commands and `quiet --selftest` (stub always-warn must give `QUIET_BAD`, stub = base must give `QUIET_OK`).
+- [ ] **Step 4: Write `chk.sh` and `quiet.js`** (table above), including the guards git commands run as `git -C "$ROOT"`, the per-pathspec tracked-file precondition, `quiet --selftest` (stub always-warn must give `QUIET_BAD`, stub = base must give `QUIET_OK`) and `guards --selftest`.
 - [ ] **Step 5: Measure base counts** on the unchanged tree and write `L/logs/base/counts.txt`: unit 57, fixtures 19, train warnings 0, simulate, customer_check, eval rulefeat numbers; per-fixture and no-file Strong baselines under `L/logs/base/`.
 - [ ] **Step 6: Seal.** `sha256sum` of `items.json`, `reader_out.json`, `score.js` into `L/heldout_sha256.txt` (3 lines). No item has been scored.
-- [ ] **Step 7: Self-test.** `chk.sh quiet --selftest`, then `chk.sh heldout`, `chk.sh baseline`.
+- [ ] **Step 7: Self-test.** `chk.sh quiet --selftest`, `chk.sh guards --selftest`, then `chk.sh heldout`, `chk.sh baseline`.
 - [ ] **Step 8: Nothing to commit (ledger git-ignored).**
 
-Check: `cd "C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape" && node ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/score.js" --dry-run | tail -n 2 && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" quiet --selftest && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" heldout && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" baseline`
-Expected: `DRY_OK warnings=1` and `DRY_OK warnings=0`, `QUIET_SELFTEST_OK`, `HELDOUT_OK items=24 warn=12 near=12 sha_ok=3`, `BASE_OK unit=57 fixtures=19 trainwarn=0 simulate=<n> customer=<n> rulefeat=<n>`.
+Check: `cd "C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape" && node ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/score.js" --dry-run | tail -n 2 && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" quiet --selftest && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" guards --selftest && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" heldout && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" baseline`
+Expected: `DRY_OK warnings=1` and `DRY_OK warnings=0`, `QUIET_SELFTEST_OK`, `GUARDS_SELFTEST_OK`, `HELDOUT_OK items=24 warn=12 near=12 sha_ok=3`, `BASE_OK unit=57 fixtures=19 trainwarn=0 simulate=<n> customer=<n> rulefeat=<n>`.
 
 ---
 
@@ -134,7 +136,7 @@ Group: sequential. Tokens (assumed): 80k.
 - [ ] **Step 4: Run new tests.** Check A. Expected `# pass 3`, `# fail 0`.
 - [ ] **Step 5: Full unit file, guards and quiet.** Check B. Expected all OK. A new quiet warning stops the task: report it, do not tune.
 - [ ] **Step 6: Diff scope.** `cd "ROOT" && git diff --stat HEAD -- prompt-coach/engine` Expected: `rewrite.js` only, a few lines.
-- [ ] **Step 7: Commit.** `git add prompt-coach/engine/rewrite.js prompt-coach/tests/rewrite_unit.test.js && git commit -m "Prompt coach Scope 3 reshape: Word clean lines in the category check"` + trailers.
+- [ ] **Step 7: Commit (from ROOT).** `cd "ROOT" && git add prompt-coach/engine/rewrite.js prompt-coach/tests/rewrite_unit.test.js && git commit -m "Prompt coach Scope 3 reshape: Word clean lines in the category check"` + trailers.
 - [ ] **Step 8: Checker helper re-reads the diff against rule 1 (no other `f.text` reader changed) and diffs the new test strings against `items.json` (count only); lead re-runs Check B.**
 
 Check A: `cd "C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape/prompt-coach" && node --test --test-reporter=tap --test-name-pattern="clean lines|D1 guard|non-Word" tests/rewrite_unit.test.js 2>&1 | grep -E "^# (pass|fail)"`
@@ -145,18 +147,18 @@ Expected: `UNIT_OK pass=60 fail=0`, `GUARDS_OK`, `QUIET_OK new_warn=0 ...`.
 
 ---
 
-### Task 3: Explain middle rule (rule 2)
+### Task 3: Explain middle rule (rule 2), per category mention
 
-Group: sequential. Tokens (assumed): 100k.
+Group: sequential. Tokens (assumed): 110k.
 
 **Files:**
-- Modify: `prompt-coach/engine/rewrite.js` (`cannotSupport`, the `if (intent === 'explain' || CAT_EXPLAIN.test(prompt)) return null;` line ~438; add `CAT_CHANGE` and `explainSkips` beside `CAT_EXPLAIN`)
+- Modify: `prompt-coach/engine/rewrite.js` (`cannotSupport`: delete the `if (intent === 'explain' || CAT_EXPLAIN.test(prompt)) return null;` line ~438 and add a `continue` inside the `for (const m of prompt.matchAll(CAT_ASK))` loop ~444; add `CAT_CHANGE` and `explainExempt` beside `CAT_EXPLAIN`)
 - Test: `prompt-coach/tests/rewrite_unit.test.js` (append)
 - Create (ledger): `L/scripts/explain9.js`, `L/logs/final/explain9.log`
 
 **Interfaces:**
-- Consumes: `sentenceSpans(prompt)` returns `[{start,end}]` (rewrite.js ~204); `CAT_EXPLAIN`; `CAT_ASK` (a `/gi` regex: never call `.test`/`.exec` on it directly).
-- Produces: `CAT_CHANGE = /\b(?:why|rose|rise|jumped|increased?|decreased?|fell|dropped?|changed?|vs|versus|compared)\b|%/i` (the spec's list exactly); `explainSkips(prompt)` returns true when some sentence has a `CAT_EXPLAIN` match, a `scope\s*3` or category mention (tested with non-global copies: `new RegExp(CAT_ASK.source,'i')` and `/\bcategory\b/i`), and no `CAT_CHANGE`. `cannotSupport` returns `null` at that line only when `explainSkips(prompt)`; the `intent` parameter stays in the signature.
+- Consumes: `sentenceSpans(prompt)` returns `[{start,end}]` (rewrite.js ~204); `CAT_EXPLAIN`; `CAT_ASK` (a `/gi` regex: `prompt.matchAll(CAT_ASK)` is the existing loop, never call `.test`/`.exec` on `CAT_ASK` itself); `m.index` of each match.
+- Produces: `CAT_CHANGE = /\b(?:why|rose|rise|jumped|increased?|decreased?|fell|drop(?:ped)?|changed?|vs|versus|compared)\b|%/i` (the spec's list exactly; `drop(?:ped)?` matches both "drop" and "dropped", Codex R2); `explainExempt(prompt, index)` returns true when the sentence of `sentenceSpans(prompt)` that contains character `index` has a `CAT_EXPLAIN` match and no `CAT_CHANGE` match. In `cannotSupport` the category loop does `if (explainExempt(prompt, m.index)) continue;` before checking the mention. Everything else in the loop and the `intent` parameter in the signature stay. With the early return gone, the Scope 3 gate (ask and file say "Scope 3", at least 2 categories listed) still runs first for every prompt.
 
 - [ ] **Step 1: Write the failing tests** (append; every title contains `explain`). File `f3 = {name:'s3.xlsx', kind:'Excel', sheets:[{name:'Summary',headers:[]}], periods:[], text:'## Summary\nScope 3 summary\n6, 1,240\n7, 890'}` (lists 6 and 7). Use `run` and `unsupported`.
   (a) `unsupported: explain a definition stays quiet`: `Explain what Scope 3 category 4 covers.` -> length 0 (guard, passes on base).
@@ -164,53 +166,57 @@ Group: sequential. Tokens (assumed): 100k.
   (c) `unsupported: explain in another sentence is checked`: `Explain the method used in this report. Then give me Scope 3 category 4 emissions.` -> length 1. Fails on base.
   (d) `unsupported: explain in the same sentence stays quiet`: `Summarise the file and explain Scope 3 category 4.` -> length 0 (guard).
   (e) `unsupported: explain with a percent is checked`: `Explain Scope 3 category 4 as a % of total.` -> length 1. Fails on base.
-  (f) `unsupported: explain sentence that also names the category number still reaches the number check` (the `/gi` lastIndex trap): `Explain what Scope 3 category 4 covers. Then give me Scope 3 category 5 emissions.` -> the second sentence is not an explain sentence, so length 1 and text includes `category 5 (` (fails on base: base skips everything).
-- [ ] **Step 2: Measure the 9 stored explain asks (do not guess).** Write `L/scripts/explain9.js`: it extracts the 60 stored Scope 3 asks from `data/*.jsonl`, keeps the 9 that match `CAT_EXPLAIN`, runs each through the IMPLEMENTED rule against `f3` extended with two other listed categories, and prints per ask `skipped|checked` and whether it names a category number; write the full output to `L/logs/final/explain9.log` with the script (reading, not shell redirection). Only asks that name a number can assert a warning. The reviewer's approximation (assumed) is 7 skipped / 2 checked with 1 numbered; the spec said 4 / 3 / 2 (read). Record the measured split as constants in a test `unsupported: the 9 stored explain asks split as measured (explain9)` asserting skipped-versus-checked for each numbered ask; if the split is not what the spec said, REPORT it in the evidence doc; never adjust the rule to hit it.
-- [ ] **Step 3: Run to verify fail on base.** Check A with the tests from Step 1. Expected on base: `# pass 2` `# fail 4` ((b), (c), (e), (f) fail; (a), (d) pass).
-- [ ] **Step 4: Implement** `CAT_CHANGE` and `explainSkips` as above and change the skip line to `if (explainSkips(prompt)) return null;`.
-- [ ] **Step 5: Run new tests.** Check A. Expected `# pass 6` `# fail 0` for the six; add the `explain9` test and expect `# pass 7`.
+  (f) `unsupported: explain on one category does not hide a second category (per mention)`: `Explain what Scope 3 category 4 covers. Then give me Scope 3 category 5 emissions.` -> length 1 and text includes `category 5 (` and not `category 4 (`. Fails on base (base skips the whole prompt). It also cannot pass by merely deleting the early return, because category 4 is scanned first and must be skipped by `explainExempt`.
+  (g) `unsupported: explain the drop is checked`: `Explain the drop in Scope 3 category 4 emissions.` -> length 1, text includes `category 4 (`. Fails on base.
+  (h) `unsupported: explain the dropped figure is checked`: `Explain how Scope 3 category 4 dropped.` -> length 1. Fails on base. (With the wrong regex `dropped?`, (g) would stay quiet.)
+- [ ] **Step 2: Measure the 9 stored explain asks (do not guess).** Write `L/scripts/explain9.js`: it extracts the 60 stored Scope 3 asks from `data/*.jsonl`, keeps the 9 that match `CAT_EXPLAIN`, runs each through the IMPLEMENTED rule against `f3` extended with two other listed categories, and prints per ask `exempt|checked` per category mention and whether it names a category number; write the full output to `L/logs/final/explain9.log` with the script (reading, not shell redirection). Only asks that name a number can assert a warning. The Opus approximation (assumed) is 7 skipped / 2 checked with 1 numbered; the spec said 4 / 3 / 2 (read). Record the measured split as constants in a test `unsupported: the 9 stored explain asks split as measured (explain9)` asserting exempt-versus-checked for each numbered ask; if the split differs from the spec, REPORT it in the evidence doc; never adjust the rule to hit it.
+- [ ] **Step 3: Run to verify fail on base.** Check A with the tests from Step 1 ((a)-(h)). Expected on base: `# pass 2` `# fail 6` ((b), (c), (e), (f), (g), (h) fail; (a), (d) pass).
+- [ ] **Step 4: Implement** `CAT_CHANGE`, `explainExempt`, delete the early-return line and add the per-mention `continue` as above.
+- [ ] **Step 5: Run new tests.** Check A. Expected `# pass 8` `# fail 0` for (a)-(h); with the `explain9` test added, `# pass 9`.
 - [ ] **Step 6: Full unit file, guards and quiet.** Check B. New quiet warning stops the task: report, do not tune. Diff scope: `cd "ROOT" && git diff --stat HEAD -- prompt-coach` Expected: `rewrite.js` and `rewrite_unit.test.js` only (uncommitted changes of this task).
-- [ ] **Step 7: Commit** `Prompt coach Scope 3 reshape: explain only skips in the same sentence, no change word` + trailers.
-- [ ] **Step 8: Checker re-reads the diff against rule 2 (change-word list exactly as the spec; classifier untouched; non-global copies used for `CAT_ASK`) and diffs test strings against `items.json`; lead re-runs Check B.**
+- [ ] **Step 7: Commit (from ROOT)** `cd "ROOT" && git add prompt-coach/engine/rewrite.js prompt-coach/tests/rewrite_unit.test.js && git commit -m "Prompt coach Scope 3 reshape: explain exception applies per category mention, same sentence, no change word"` + trailers.
+- [ ] **Step 8: Checker re-reads the diff against rule 2 (change-word list exactly as the spec including `drop(?:ped)?`; classifier untouched; `CAT_ASK` only used through the existing `matchAll`) and diffs test strings against `items.json`; lead re-runs Check B.**
 
 Check A: `cd "C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape/prompt-coach" && node --test --test-reporter=tap --test-name-pattern="explain" tests/rewrite_unit.test.js 2>&1 | grep -E "^# (pass|fail)"`
-Expected after Step 5: `# pass 7` and `# fail 0` (requires both counts; the pattern also selects any existing test with "explain" in its title, so the implementer first runs the pattern on base, records that count k as `L/logs/base/explain_pattern.txt`, and the expected pass is `7 + k`).
+Expected after Step 5: `# pass 9` and `# fail 0` (requires both counts; the pattern also selects any existing test with "explain" in its title, so the implementer first runs the pattern on base, records that count k in `L/logs/base/explain_pattern.txt`, and the expected pass is `9 + k`).
 
-Check B: `cd "C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape" && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" unit 67 0 && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" guards && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" quiet`
-Expected: `UNIT_OK pass=67 fail=0` (57 base + 3 from Task 2 + 7 new), `GUARDS_OK`, `QUIET_OK new_warn=0 ...`.
+Check B: `cd "C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape" && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" unit 69 0 && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" guards && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" quiet`
+Expected: `UNIT_OK pass=69 fail=0` (57 base + 3 from Task 2 + 9 new), `GUARDS_OK`, `QUIET_OK new_warn=0 ...`.
 
 ---
 
 ### Task 4: Short labels count as listed (rule 3)
 
-Group: sequential. Tokens (assumed): 80k.
+Group: sequential. Tokens (assumed): 90k.
 
 **Files:**
-- Modify: `prompt-coach/engine/rewrite.js` (`CAT_RE` / `categoryHit`, lines ~415-421)
+- Modify: `prompt-coach/engine/rewrite.js` (`CAT_RE` / `categoryHit`, lines ~415-421, including the generic fallback at line 419)
 - Test: `prompt-coach/tests/rewrite_unit.test.js` (append)
 
 **Interfaces:**
-- Consumes: `categoryHit(n, lower)` returns `'exact'`, `'generic'` or `null` (lower-cased text).
-- Produces: `categoryHit` also returns `'exact'` for short forms: cat 1 `purch\.? goods`; cat 5 `waste in ops?\b`; cat 4 `upstr\.? (?:transport|t ?& ?d|t and d)`; cat 9 `downstr\.? (?:transport|t ?& ?d|t and d)`; cat 8 `upstr\.? leased`; cat 13 `downstr\.? leased`; cat 12 `\beol\b`. Long-form behaviour unchanged.
+- Consumes: `categoryHit(n, lower)` returns `'exact'`, `'generic'` or `null` (lower-cased text). Line 419 today: `if ((n === 8 || n === 13) && /leased assets/.test(lower.replace(/(?:upstream|downstream) leased/g, ''))) return 'generic';`.
+- Produces: `categoryHit` also returns `'exact'` for short forms: cat 1 `purch\.? goods`; cat 5 `waste in ops?\b`; cat 4 `upstr\.? (?:transport|t ?& ?d|t and d)`; cat 9 `downstr\.? (?:transport|t ?& ?d|t and d)`; cat 8 `upstr\.? leased`; cat 13 `downstr\.? leased`; cat 12 `\beol\b`. The generic-fallback `replace` becomes `lower.replace(/(?:upstream|downstream|upstr\.?|downstr\.?) leased/g, '')` so "Upstr. leased assets" is exact for 8 only and never also generic for 13 (Codex R3). Long-form behaviour unchanged.
 
 - [ ] **Step 1: Write the failing tests** (append; every title contains `short label`). File `f4 = {name:'summary.xlsx', kind:'Excel', sheets:[{name:'Summary',headers:[]}], periods:[], text:'## Summary\nScope 3 summary\nPurch. goods, 1,200\nWaste in ops, 300'}`.
   (a) `unsupported: short label rows count as listed (category 6 missing)`: `Calculate Scope 3 category 6 business travel emissions.` -> length 1, text includes `category 6 (`. Fails on base (the two short rows list 0, so the check never runs).
   (b) `unsupported: short label shows category 5 as listed`: `Calculate Scope 3 category 5 waste emissions.` -> length 0 (guard).
-  (c) `unsupported: short label sheet with Upstr. T&D, Downstr. T&D, EOL`: text `## S\nScope 3 summary\nUpstr. T&D, 400\nDownstr. T&D, 500\nEOL, 80` (it carries a "Scope 3 summary" line so the base gate passes); ask for category 12 -> length 0; category 4 -> length 0; category 6 -> length 1 with `category 6 (`. The category 6 assertion fails on base.
-  (d) `unsupported: short label EOL needs a word boundary`: text `## S\nScope 3 summary\nGeology survey, 1\nPurch. goods, 2\nBusiness travel, 3` (the word "geology" contains "eol"; measured by the reviewer that "protocol" does not), ask `Calculate Scope 3 category 12 emissions.` -> length 1 with `category 12 (` (a regex without `\b` would read "geology" as category 12 and stay quiet). Passes on base and on a correct branch: a guard against a missing `\b`.
-- [ ] **Step 2: Run to verify fail on base.** Check A. Expected on base: `# pass 2` `# fail 2` ((a) and (c) fail; (b) and (d) pass).
-- [ ] **Step 3: Implement** the short forms (add `CAT_SHORT = [null, ...]` and OR it in beside `CAT_RE[n]`).
-- [ ] **Step 4: Run new tests.** Check A. Expected `# pass 4` `# fail 0`.
+  (c) `unsupported: short label sheet with Upstr. T&D, Downstr. T&D, EOL`: text `## S\nScope 3 summary\nUpstr. T&D, 400\nDownstr. T&D, 500\nEOL, 80` (carries a "Scope 3 summary" line so the base gate passes); ask for category 12 -> length 0; category 4 -> length 0; category 6 -> length 1 with `category 6 (`. The category 6 assertion fails on base.
+  (d) `unsupported: short label EOL needs a word boundary`: text `## S\nScope 3 summary\nGeology survey, 1\nPurchased goods, 2\nBusiness travel, 3` ("Purchased goods" and "Business travel" are recognised on BASE, so the two-category gate passes on base independent of the new code; "geology" contains "eol"), ask `Calculate Scope 3 category 12 emissions.` -> length 1 with `category 12 (` (a regex without `\b` would read "geology" as category 12 and stay quiet). Passes on base and on a correct branch: a guard against a missing `\b`.
+  (e) `unsupported: short label one leased row is counted once`: text `## S\nScope 3 summary\nUpstr. leased assets, 60`, ask `Calculate Scope 3 category 6 emissions.` -> length 0 (a single row is one category, below the two-category gate; without the fallback fix it would count as exact 8 plus generic 13 and warn). Passes on base (guard: base has no short labels) and must pass on the branch.
+  (f) `unsupported: short label upstream and downstream leased are distinguished`: text `## S\nScope 3 summary\nPurchased goods, 1\nUpstr. leased assets, 60`, ask for category 13 -> length 1 with `category 13 (`; text `## S\nScope 3 summary\nPurchased goods, 1\nDownstr. leased assets, 60`, ask for category 8 -> length 1 with `category 8 (`. Fails on base (base reads the abbreviated row as generic, which counts for both 8 and 13, so the ask stays quiet).
+- [ ] **Step 2: Run to verify fail on base.** Check A. Expected on base: `# pass 3` `# fail 3` ((a), (c), (f) fail; (b), (d), (e) pass).
+- [ ] **Step 3: Implement** the short forms (add `CAT_SHORT = [null, ...]` and OR it in beside `CAT_RE[n]`) and the extended `replace` in the generic fallback.
+- [ ] **Step 4: Run new tests.** Check A. Expected `# pass 6` `# fail 0`.
 - [ ] **Step 5: Full unit file, guards and quiet.** Check B. A new quiet warning is a fail: report it; do not widen or tune the regexes. Fixtures: if a fixture's note changes, stop and report.
 - [ ] **Step 6: Diff scope.** `cd "ROOT" && git diff --stat HEAD -- prompt-coach` Expected: `rewrite.js` and `rewrite_unit.test.js` only.
-- [ ] **Step 7: Commit** `Prompt coach Scope 3 reshape: short row labels count as listed` + trailers.
-- [ ] **Step 8: Checker re-reads the diff against rule 3 (only the listed short forms; direction = fewer missing) and diffs test strings against `items.json`; lead re-runs Check B.**
+- [ ] **Step 7: Commit (from ROOT)** `cd "ROOT" && git add prompt-coach/engine/rewrite.js prompt-coach/tests/rewrite_unit.test.js && git commit -m "Prompt coach Scope 3 reshape: short row labels count as listed"` + trailers.
+- [ ] **Step 8: Checker re-reads the diff against rule 3 (only the listed short forms; direction = fewer missing; generic fallback excludes the abbreviated forms) and diffs test strings against `items.json`; lead re-runs Check B.**
 
 Check A: `cd "C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape/prompt-coach" && node --test --test-reporter=tap --test-name-pattern="short label" tests/rewrite_unit.test.js 2>&1 | grep -E "^# (pass|fail)"`
-Expected after Step 4: `# pass 4` and `# fail 0`.
+Expected after Step 4: `# pass 6` and `# fail 0`.
 
-Check B: `cd "C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape" && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" unit 71 0 && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" guards && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" quiet`
-Expected: `UNIT_OK pass=71 fail=0` (57 + 3 + 7 + 4), `GUARDS_OK`, `QUIET_OK new_warn=0 ...`.
+Check B: `cd "C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape" && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" unit 75 0 && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" guards && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" quiet`
+Expected: `UNIT_OK pass=75 fail=0` (57 + 3 + 9 + 6), `GUARDS_OK`, `QUIET_OK new_warn=0 ...`.
 
 ---
 
@@ -220,22 +226,22 @@ Group: sequential. Tokens (assumed): 40k.
 
 **Files:**
 - Modify: `prompt-coach/README.md` (line 9 byte count 334435 is stale: base dist measured 336173; the known-limits list; the unsupported-note paragraph near line 90)
-- Modify: `prompt-coach/dist/prompt-coach.html` (rebuilt by `node tests/build.js`; build does not minify, so `explainSkips` appears in it)
+- Modify: `prompt-coach/dist/prompt-coach.html` (rebuilt by `node tests/build.js`; build does not minify, so `explainExempt` appears in it)
 
 **Interfaces:**
 - Consumes: Tasks 2-4 engine changes.
-- Produces: dist containing `explainSkips` and `CAT_CHANGE`; README stating the exact new byte count.
+- Produces: dist containing `explainExempt` and `CAT_CHANGE`; README stating the exact new byte count.
 
-- [ ] **Step 1: Failing check first.** `chk.sh dist "explainSkips" 1` on the unbuilt dist. Expected on base dist: `DIST_BAD count=0`.
+- [ ] **Step 1: Failing check first.** `chk.sh dist "explainExempt" 1` on the unbuilt dist. Expected on base dist: `DIST_BAD count=0`.
 - [ ] **Step 2: Rebuild.** `cd "ROOT/prompt-coach" && node tests/build.js`.
 - [ ] **Step 3: Measure bytes.** `wc -c dist/prompt-coach.html` -> N (base was 336173; do not guess).
-- [ ] **Step 4: Edit README.** Line 9 byte count -> N. Known-limits list: what is still not caught (a file or ask without "Scope 3" text; abbreviations such as FERA; the explain cases the middle rule still skips, e.g. stacked asks joined by commas in one sentence; PowerPoint mid-word run splits, a slide run split reads "Busi ness"); say Word is read by its clean lines for this check (capped at 2,000 entries); describe the middle rule and short labels in the unsupported-note paragraph. Grep the README for any nearby count the changes make wrong.
-- [ ] **Step 5: Re-run dist check.** Expected `DIST_OK count=1` or more for `explainSkips` and for `CAT_CHANGE`.
+- [ ] **Step 4: Edit README.** Line 9 byte count -> N. Known-limits list: what is still not caught (a file or ask without "Scope 3" text; abbreviations such as FERA; the explain cases the middle rule still skips, e.g. stacked asks joined by commas in one sentence; PowerPoint mid-word run splits, a slide run split reads "Busi ness"); say Word is read by its clean lines for this check (capped at 2,000 entries); describe the per-mention middle rule and short labels in the unsupported-note paragraph. Grep the README for any nearby count the changes make wrong.
+- [ ] **Step 5: Re-run dist check.** Expected `DIST_OK count=1` or more for `explainExempt` and for `CAT_CHANGE`.
 - [ ] **Step 6: Guards.** `chk.sh guards`. Expected `GUARDS_OK`.
-- [ ] **Step 7: Commit** `Prompt coach Scope 3 reshape: README known limits and dist rebuild` + trailers (README and dist together).
+- [ ] **Step 7: Commit (from ROOT)** `cd "ROOT" && git add prompt-coach/README.md prompt-coach/dist/prompt-coach.html && git commit -m "Prompt coach Scope 3 reshape: README known limits and dist rebuild"` + trailers (README and dist together).
 - [ ] **Step 8: Checker confirms the README byte count equals `wc -c` of the committed dist.**
 
-Check: `cd "C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape" && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" dist "explainSkips" 1 && N=$(wc -c < prompt-coach/dist/prompt-coach.html | tr -d ' ') && grep -c "$N bytes" prompt-coach/README.md`
+Check: `cd "C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape" && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" dist "explainExempt" 1 && N=$(wc -c < prompt-coach/dist/prompt-coach.html | tr -d ' ') && grep -c "$N bytes" prompt-coach/README.md`
 Expected: `DIST_OK count=1` (or more) then `1`.
 
 ---
@@ -255,11 +261,11 @@ Group: sequential. Tokens (assumed): 130k.
 
 - [ ] **Step 1: Confirm the seal.** `chk.sh heldout`. Expected `HELDOUT_OK ... sha_ok=3`. If not, stop and report.
 - [ ] **Step 2: Score once.** `node "L/scripts/score.js"`. It scores base and branch on the same frozen `reader_out.json`, writes `L/logs/final/score.log` (line, scored git SHA, timestamp) and refuses to run again once the log exists. No second run after any edit.
-- [ ] **Step 3: Hard rows and guards.** `chk.sh quiet`, `chk.sh guards`, `chk.sh unit 71 0`. Report `pagetest.js` and `filetest.js` as "not run".
+- [ ] **Step 3: Hard rows and guards.** `chk.sh quiet`, `chk.sh guards`, `chk.sh unit 75 0`. Report `pagetest.js` and `filetest.js` as "not run".
 - [ ] **Step 4: Record, do not tune.** A miss (any near-miss warning, any new quiet-row warning, gain < 2) is reported with item ids; no code, rule, set or threshold is changed afterwards. Prediction to compare: met with +2 or +3 (assumed).
 - [ ] **Step 5: Write the evidence doc**: scores (a, b, c, gain, forecast notes), base vs branch per item id, hard-row counts per set, guard counts vs `L/logs/base/counts.txt`, the `explain9` measured split vs the spec's 4/3/2, limits (no real customer asks or sheets; PowerPoint mid-word splits; held-out is 24 items), the scored git SHA from `score.log`. Item ids and verdicts; near-miss asks may be quoted, S/K items never.
 - [ ] **Step 6: Mark every number** `**measured**`, `**read**` or `**assumed**` on the same line.
-- [ ] **Step 7: Commit** `git add docs/evidence && git commit -m "Prompt coach Scope 3 reshape: evidence (scored once)"` + trailers.
+- [ ] **Step 7: Commit (from ROOT)** `cd "ROOT" && git add docs/evidence && git commit -m "Prompt coach Scope 3 reshape: evidence (scored once)"` + trailers.
 - [ ] **Step 8: Lead re-runs the Check and compares the doc numbers to `score.log` and `L/logs/final/*`.**
 
 Check: `cd "C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape" && node ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/score.js" --verify-log | tail -n 2 && grep -c -E "\*\*(measured|read|assumed)\*\*" docs/evidence/*-prompt-coach-scope3-reshape.md`
@@ -279,16 +285,16 @@ Group: sequential. Tokens (assumed): 220k.
 - Consumes: the whole branch (Tasks 2-6) against base 59b09c1; `score.log` scored SHA.
 - Produces: merged finding list, fixes with tests, final guard rerun, hand-off.
 
-- [ ] **Step 1: Opus review** (`studio-harness:final-reviewer`) of `git diff 59b09c1...HEAD` against spec rules 1-4 and the locked-files list. Reply at most 10 lines; full text to `L/reviews/opus.md`.
+- [ ] **Step 1: Opus review** (`studio-harness:final-reviewer`) of `cd "ROOT" && git diff 59b09c1...HEAD` against spec rules 1-4 and the locked-files list. Reply at most 10 lines; full text to `L/reviews/opus.md`.
 - [ ] **Step 2: Codex review** (`claudex-loop:codex-review`) of the same diff; full text to `L/reviews/codex.md`.
 - [ ] **Step 3: Lead merges the lists** into `L/reviews/merged.md`, dropping duplicates and out-of-scope items (held-out tuning, option D, files.js, figure rule).
 - [ ] **Step 4: Fix round.** Per accepted finding: a test that fails first, the fix, rerun. Nothing is tuned against the fresh held-out.
 - [ ] **Step 5: Unscored changes.** Any engine change made after the scored SHA is listed as "unscored" in the evidence doc, in the same commit as the fix; held-out is not re-scored (`score.js` refuses).
 - [ ] **Step 6: If the engine changed, rebuild dist and update the README byte count in the same commit** (as Task 5).
-- [ ] **Step 7: Commit** fixes (`Prompt coach Scope 3 reshape: review fixes`) + trailers; push only the branch `worktree-prompt-coach-scope3-reshape` (slip allows), never merge. Re-run the Check.
+- [ ] **Step 7: Commit (from ROOT)** fixes (`cd "ROOT" && git add <named files> && git commit -m "Prompt coach Scope 3 reshape: review fixes"`) + trailers; push only the branch `worktree-prompt-coach-scope3-reshape` (slip allows), never merge. Re-run the Check.
 - [ ] **Step 8: Hand-off PM step, then STOP for merge** (PushNotification, notify.mjs, ask in the session).
 
-Check: `cd "C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape" && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" unit <71 + review-fix tests> 0 && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" guards && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" quiet && git status --short -- prompt-coach docs | wc -l`
+Check: `cd "C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-reshape" && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" unit <75 + review-fix tests> 0 && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" guards && bash ".ledger/2026-10-19-prompt-coach-scope3-reshape/scripts/chk.sh" quiet && git status --short -- prompt-coach docs | wc -l`
 Expected: `UNIT_OK pass=<total> fail=0`, `GUARDS_OK`, `QUIET_OK new_warn=0 ...`, `0`.
 
 ---
@@ -298,17 +304,17 @@ Expected: `UNIT_OK pass=<total> fail=0`, `GUARDS_OK`, `QUIET_OK new_warn=0 ...`,
 - M1 (`coach().unsupported` does not exist): fixed. Global Constraints "How warnings are read"; every test in T2-T4 uses `run` + `unsupported` and asserts note text; `lib.js` in T1b; T1b Step 2 dry run proves a known warning row counts 1 and a known quiet row counts 0.
 - M2 (`--verify-log` not built, retyped log, second run possible): fixed. T1b Interfaces: `score.js` writes its own log with SHA and timestamp, refuses a second run, `--verify-log` only prints; built before the seal (T1b Steps 1, 6).
 - M3 (quiet rows have no build step and cannot fail): fixed. T1b Step 3 builds each set with recorded row counts; `quiet` prints a count per set and fails on shortfall; `quiet --selftest` with always-warn and base stubs (check table, T1b Steps 4, 7).
-- M4 (T3 (f) was a guess): fixed. T3 Step 2: `explain9.js` extracts the 9 asks from `data/*.jsonl`, measures with the implemented rule, asserts skipped vs checked for numbered asks only, reports a differing split, never adjusts the rule.
-- M5 (T4 (d) "protocol" proves nothing): fixed. T4 (d) uses "Geology survey" and expects a warning for category 12.
+- M4 (T3 (f) was a guess): fixed. T3 Step 2: `explain9.js` extracts the 9 asks from `data/*.jsonl`, measures with the implemented rule, asserts exempt vs checked for numbered asks only, reports a differing split, never adjusts the rule.
+- M5 (T4 (d) "protocol" proves nothing): fixed. T4 (d) uses "Geology survey" (and, per Codex R4, "Purchased goods" so the base gate passes) and expects a warning for category 12.
 - M6 (blind writer can read the spec): fixed. T1a Steps 1-2: Write-only helper, one output path, tool calls audited into `writer_audit.md`.
 - S1 (`CAT_CHANGE` wider than spec): fixed. T3 Interfaces and Global Constraints use the spec list exactly.
-- S2 (`CAT_ASK` `/gi` lastIndex): fixed. T3 uses non-global copies; test (f) covers it.
+- S2 (`CAT_ASK` `/gi` lastIndex): fixed. T3 now never calls `.test` on `CAT_ASK`; it only uses the existing `matchAll` and `m.index`.
 - S3 (coach called without classifier pick): fixed. `lib.js` copies `run` including `C.pick` (same as the unit test and the page).
 - S4 (T2 third test name): fixed. Exact names given; pattern matches all three.
 - S5 (`# fail 0` also passes on 0 tests): fixed. Every Check A states exact pass and fail counts (T3 adds the base-pattern count k).
 - S6 (T4 (c) lacked "Scope 3"): fixed. The sheet carries a "Scope 3 summary" line.
 - S7 (reuse check only S/K): fixed. T1a Step 3 compares against all banned sets with a 20% shingle threshold set before running.
-- S8 (locked files only reviewed): fixed. `guards` runs the `git diff --name-only` and removed-test-line commands.
+- S8 (locked files only reviewed): fixed. `guards` runs the `git diff --name-only` and removed-test-line commands (now with the Codex R2 pathspec precondition).
 - S9 (quiet only in T4): fixed. `quiet` runs in T2, T3, T4 Check B.
 - S10 (post-score fixes make evidence stale): fixed. Scored SHA in `score.log`; T7 Step 5 lists "unscored" changes.
 - S11 (`git status` count with untracked plan): fixed. Plan committed at approval (Global Constraints); T7 check narrows to `prompt-coach docs`.
@@ -318,5 +324,17 @@ Expected: `UNIT_OK pass=<total> fail=0`, `GUARDS_OK`, `QUIET_OK new_warn=0 ...`,
 - N1 (T1 too big): fixed. Split into T1a and T1b.
 - N2 (`HEAD~1` diff scope): fixed. `git diff --stat HEAD` (uncommitted changes of the task).
 - N3 (grep matches "already"): fixed. Greps `\*\*(measured|read|assumed)\*\*` with a per-number-line count.
-- N4 (fixed trailer model): fixed. Trailer uses the model that made the commit.
+- N4 (fixed trailer model): fixed. Trailer uses the model that actually made the commit.
 - N5 (fixed evidence date): fixed. Date of the run.
+
+## Review dispositions (Codex R1b)
+
+- R1 (high, whole-prompt skip makes test (f) impossible): fixed, after checking the code. In rewrite.js the early `return null` at line 438 runs before the category loop at 444, so one explain sentence skipped every mention; Codex is right, and deleting only the return would also fail because category 4 is scanned first. Fix: Global Constraints rule 2 and T3 Interfaces/Steps 1, 4: `explainExempt(prompt, m.index)` is evaluated per `CAT_ASK` match and `continue`s past exempt mentions; test (f) asserts category 5 warns and category 4 does not. Unit totals updated (T3 69, T4 75).
+- R2 (medium, `dropped?` misses "drop"): fixed. My regex `dropped?` matched only "droppe"/"dropped"; now `drop(?:ped)?` in T3 Interfaces, with tests (g) "drop" and (h) "dropped".
+- R3 (medium, leased-assets generic fallback at rewrite.js:419 double counts a short row): fixed after checking. Line 419 strips only `(?:upstream|downstream) leased`, so "upstr. leased assets" is exact for 8 and generic for 13, and line 443 counts both. T4 Interfaces and Step 3 extend the `replace` to `(?:upstream|downstream|upstr\.?|downstr\.?) leased`; tests (e) single row counted once and (f) upstream/downstream distinguished in both directions.
+- R4 (medium, T4 (d) fixture does not pass on base): fixed after checking. On base "Purch. goods" is unrecognised and "Geology survey" matches nothing, so the two-category gate returned null. T4 (d) now uses "Purchased goods" + "Business travel" (both recognised on base); base pass/fail counts in T4 Step 2 recomputed (3 pass / 3 fail).
+
+## Review dispositions (Codex R2)
+
+- R5 (guard pathspecs resolve against the wrong directory): fixed, verified by the lead (measured: from `prompt-coach/`, `git ls-files prompt-coach/engine/files.js` prints nothing, so the `git diff --name-only` guard matched 0 files and passed vacuously). Fix in the check table (`guards`) and "Check script": all git in `chk.sh` runs as `git -C "$ROOT"` with ROOT-relative pathspecs; a new precondition requires each guarded pathspec (twelve, including the weights glob and `rewrite_unit.test.js`) to resolve to at least one tracked file via `git -C "$ROOT" ls-files -- <spec> | wc -l`, else `GUARDS_BAD pathspec=<spec> tracked=0`; `guards --selftest` (T1b Steps 4, 7 and Check) proves the precondition fails on a wrong spec and passes on the real ones.
+- R5 sweep of the other git pathspecs: checked, no further cwd bug. Steps with `git diff --stat HEAD -- prompt-coach...` (T2 Step 6, T3 Step 6, T4 Step 6), `git status --short -- prompt-coach docs` (T7 Check) and the Task 1b `git show 59b09c1:prompt-coach/engine/rewrite.js` already run after `cd "ROOT"` or are repo-root-relative. The commit steps (T2 Step 7, T3 Step 7, T4 Step 7, T5 Step 7, T6 Step 7, T7 Step 7) now say `cd "ROOT" && git add ...` explicitly, and Global Constraints "Git working directory" states the rule.
