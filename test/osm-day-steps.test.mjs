@@ -330,19 +330,36 @@ test('X5 verify C5 compares unmasked: no SIM-EXT mask remains', () => {
 // ---- X6/X7/X8: L11 clicks OK with no contact; L7 judged on the rendered Today; L5 plan on Fernhollow's Sessions panel ----
 test('X6 L11 judge: OK enabled with no contact is clicked and the state after the click decides; no refusal FAILs', async () => {
   const { l11Judge } = await import('../tools/sim/osm-day/steps-b.mjs');
-  const j = l11Judge({ g0: { csatDone: false, contact: '' }, m1: { open: true, disabled: false }, noContact: { clicked: true, stage: 'graduated', queued: 2 }, with: null });
-  assert.equal(j.passed, false);
-  assert.match(j.evidence, /clicked OK/);
-  assert.match(j.evidence, /stage graduated/);
-  assert.match(j.evidence, /queue items 2/);
-  const ok = l11Judge({ g0: { csatDone: false, contact: '' }, m1: { open: true, disabled: true }, noContact: { clicked: false, stage: 'active', queued: 0 },
-    with: { g1: { contact: 'Dana Reyes', csatDone: true }, m2: { open: true, disabled: false }, stage: 'graduated', queued: 1 } });
+  const line = 'No CSAT contact is marked added, so nobody will receive the survey. You can still graduate.';
+  const nc = { g0: { csatDone: false, contact: '' }, hasLine: true, text: line, okDisabled: false, clicked: true, stage: 'graduated', queued: 2 };
+  const wc = { g1: { csatDone: true, contact: 'Dana Reyes' }, hasLine: false, text: '' };
+  const ok = l11Judge({ withContact: wc, noContact: nc });
   assert.equal(ok.passed, true, ok.evidence);
+  assert.match(ok.evidence, /with contact/i); assert.match(ok.evidence, /no contact/i); assert.match(ok.evidence, /#gc-csat/);
+  assert.match(ok.evidence, /stage graduated/); assert.match(ok.evidence, /queue items 2/);
+  // the judge reads the line by id and non-empty text, never the exact words
+  assert.equal(l11Judge({ withContact: wc, noContact: { ...nc, text: 'x' } }).passed, true);
+  // one property changed per case; every other value stays at the passing value
+  const fails = (label, w, n) => assert.equal(l11Judge({ withContact: w, noContact: n }).passed, false, label);
+  fails('no line (hasLine only)', wc, { ...nc, hasLine: false });
+  fails('blank text only', wc, { ...nc, text: '   ' });
+  fails('okDisabled only', wc, { ...nc, okDisabled: true });
+  fails('clicked only', wc, { ...nc, clicked: false });
+  fails('stage only', wc, { ...nc, stage: 'active' });
+  fails('queued only', wc, { ...nc, queued: 0 });
+  fails('no-contact readback says done:true', wc, { ...nc, g0: { csatDone: true, contact: '' } });
+  fails('no-contact readback has a name', wc, { ...nc, g0: { csatDone: false, contact: 'Dana Reyes' } });
+  fails('line shown with a contact (w.hasLine only)', { ...wc, hasLine: true }, nc);
+  fails('with-contact leg not really with a contact (w.g1.csatDone only)', { ...wc, g1: { csatDone: false, contact: 'Dana Reyes' } }, nc);
+  fails('leg 1 missing', null, nc);
+  fails('both legs done:true (the setup write never happened)', wc, { ...nc, g0: { csatDone: true, contact: 'Dana Reyes' } });
 });
 test('X6 L11 break targets the CSAT check, not confirmGraduation', () => {
   assert.doesNotMatch(BREAKS.L11.js, /confirmGraduation/);
-  assert.match(BREAKS.L11.js, /csat/i);
-  assert.ok(OVERRIDE_NAMES.includes('validateGraduationDraft'));
+  assert.match(BREAKS.L11.js, /openGraduationConfirmModal/);
+  assert.match(BREAKS.L11.js, /gc-csat/);
+  assert.doesNotMatch(BREAKS.L11.js, /validateGraduationDraft/);
+  assert.ok(OVERRIDE_NAMES.includes('openGraduationConfirmModal'));
 });
 test('X7 L7 judge: leaks are silence sources only; rank and rendered are reported for the last day', async () => {
   const { l7Judge } = await import('../tools/sim/osm-day/steps-b.mjs');

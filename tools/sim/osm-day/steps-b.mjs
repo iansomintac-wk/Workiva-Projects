@@ -107,13 +107,18 @@ const candidateSources = ctx => ctx.ev(`(() => { const c = DATA.customers.find(x
   return JSON.stringify({ sources: todayAccountCandidates(c, { gainsightByCustomer: g }).map(x => x.source), paused: isPaused(c),
     regulatory: buildRiskHubList({ readOnly: true }).filter(it => it.c.id === c.id && it.category && it.category.key === 'regulatory').length }); })()`).then(JSON.parse);
 
-// L11 verdict. With no CSAT contact the tracker must refuse: stage and queue after the OK click decide (the tracker has no CSAT check today, so this FAILs).
-export function l11Judge({ g0, m1, noContact, with: w }) {
-  const refused = noContact.stage !== 'graduated' && noContact.queued === 0;
-  const first = `no-CSAT state read back done:${g0.csatDone}, contactName:"${g0.contact}"; graduation modal OK ${m1.disabled ? 'disabled (refused)' : 'ENABLED without a CSAT contact (no refusal)'}; ${noContact.clicked ? 'clicked OK' : 'did not click OK'} with no contact: stage ${noContact.stage}, "Success Plan objective" queue items ${noContact.queued}`;
-  if (!w) return { passed: false, evidence: first + (refused ? '; with-contact leg not run' : '; graduated with no contact, so the with-contact leg was skipped') };
-  const graduated = w.stage === 'graduated' && w.queued > 0;
-  return { passed: refused && graduated, evidence: `${first}; with contact "${w.g1.contact}" (done ${w.g1.csatDone}) OK ${w.m2.open ? (w.m2.disabled ? 'disabled' : 'enabled') : 'modal not open'}; stage ${w.stage}, queue items ${w.queued}` };
+// L11 verdict (ruling 2026-10-19-runway-sim-findings-ruled: "Warn, but allow"). Leg 2, no contact: the setup readback is done:false with an empty name,
+// a non-empty #gc-csat line, OK enabled, and after the click stage graduated with >= 1 "Success Plan objective" queue item. Leg 1, with contact:
+// the readback is done:true and there is no #gc-csat. The line is read by its id and non-empty text, never its exact words.
+export function l11Judge({ withContact: w, noContact: n }) {
+  const nonEmpty = t => typeof t === 'string' && t.trim().length > 0;
+  const setup = n.g0.csatDone === false && n.g0.contact === '';
+  const warned = !!n.hasLine && nonEmpty(n.text);
+  const allowed = n.okDisabled === false && !!n.clicked && n.stage === 'graduated' && n.queued >= 1;
+  const quiet = !!w && w.g1.csatDone === true && !w.hasLine;
+  const withTxt = w ? `with contact "${w.g1.contact}" (done ${w.g1.csatDone}): #gc-csat ${w.hasLine ? 'shown "' + String(w.text).slice(0, 60) + '"' : 'absent'}` : 'with contact: leg not run';
+  const noTxt = `no contact (read back done:${n.g0.csatDone}, contactName:"${n.g0.contact}"): #gc-csat ${n.hasLine ? 'shown "' + String(n.text).slice(0, 60) + '"' : 'absent'}, OK ${n.okDisabled ? 'disabled' : 'enabled'}, ${n.clicked ? 'clicked OK' : 'did not click OK'}, stage ${n.stage}, "Success Plan objective" queue items ${n.queued}`;
+  return { passed: setup && warned && allowed && quiet, evidence: `${withTxt}; ${noTxt}` };
 }
 
 // L7 verdict: a leak is a silence-source row on a paused day (not the replaced isPaused flag); rank and rendered come from the rendered Today.
@@ -421,44 +426,42 @@ export const PART_B = [
     if (!N || !T || !ctx.state.l9 || !ctx.state.l9.phase1) throw new Error('L11 needs L9 first (ctx.state.N, T)');
     await openDay(ctx, T);
     const id = await fernId(ctx);
-    // Exact no-CSAT state (setup, direct write): every other prerequisite stays as L9 left it.
-    await ctx.ev(`(() => { const a = DATA.customers.find(x => x.id === ${JSON.stringify(id)}).compliance.associatedPeopleCSAT; a.done = false; a.date = null; a.contactName = ''; saveData(); return true; })()`);
-    const g0 = await gates(ctx, id);
+    const readBox = () => ctx.ev(`(() => { const ok = document.getElementById('gc-ok'); const e = document.getElementById('gc-csat');
+      return JSON.stringify({ open: !!ok, okDisabled: ok ? ok.disabled : null, hasLine: !!e, text: e ? e.textContent : '' }); })()`).then(JSON.parse);
+    const clearCsat = () => ctx.ev(`(() => { const a = DATA.customers.find(x => x.id === ${JSON.stringify(id)}).compliance.associatedPeopleCSAT; a.done = false; a.date = null; a.contactName = ''; saveData(); return true; })()`);
     const fill = () => ctx.ev(`(() => { const r = document.querySelector('input[name="gc-verdict"][value="met"]'); if (!r) throw new Error('no verdict radio in the graduation modal'); r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true }));
       const n = document.getElementById('gc-note'); n.value = 'SIM-L11 the first report went out.'; n.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
-    const modalState = () => ctx.ev(`(() => { const ok = document.getElementById('gc-ok'); return JSON.stringify({ open: !!ok, disabled: ok ? ok.disabled : null }); })()`).then(JSON.parse);
     const openModal = () => ctx.ev(`(() => { const c = DATA.customers.find(x => x.id === ${JSON.stringify(id)}); ui.view = 'accounts'; ui.openCustomerId = c.id; render(); requestStageChange(c, 'graduated'); return true; })()`);
+    // Leg 1, with a contact. Start cleared (L9 left it marked), then add and mark it added through the beat pane. The box must show no #gc-csat. Cancel.
+    await clearCsat();
+    await bookAndFocus(ctx, id);
+    await paneType(ctx, id, `[data-fp-csat="${id}"]`, 'Dana Reyes');
+    await sleep(600);
+    await paneClick(ctx, id, `[data-fp-toggle="associatedPeopleCSAT|${id}"]`);
+    await sleep(300);
+    const g1 = await gates(ctx, id);
+    await openModal();
+    await sleep(400);
+    const m1 = await readBox();
+    if (!m1.open) throw new Error('L11: the graduation modal did not open (with contact)');
+    await ctx.click('#gc-cancel');
+    await sleep(300);
+    const withContact = { g1, hasLine: m1.hasLine, text: m1.text };
+    // Leg 2, no contact (setup, direct write): warning line present, OK enabled, click OK, read stage and queue.
+    await clearCsat();
+    const g0 = await gates(ctx, id);
     await openModal();
     await sleep(400);
     await fill();
-    const m1 = await modalState();
-    if (!m1.open) throw new Error('L11: the graduation modal did not open');
-    // No contact: click OK if the tracker leaves it enabled, then judge refusal by the stage and queue read after the click.
+    const m2 = await readBox();
+    if (!m2.open) throw new Error('L11: the graduation modal did not open (no contact)');
     let clicked = false;
-    if (!m1.disabled) { await ctx.click('#gc-ok'); clicked = true; await sleep(600); await dismissModals(ctx); }
-    const readState = async () => JSON.parse(await ctx.ev(`(() => { const c = DATA.customers.find(x => x.id === ${JSON.stringify(id)});
+    if (!m2.okDisabled) { await ctx.click('#gc-ok'); clicked = true; await sleep(600); await dismissModals(ctx); }
+    const after = JSON.parse(await ctx.ev(`(() => { const c = DATA.customers.find(x => x.id === ${JSON.stringify(id)});
       return JSON.stringify({ stage: c.stage, queued: getGainsightQueue().filter(q => q.customerId === c.id && q.kind === 'Success Plan objective').length }); })()`));
-    const noContact = { clicked, ...(await readState()) };
     if (!clicked) { await ctx.click('#gc-cancel'); await sleep(300); }
-    let withContact = null;
-    if (noContact.stage !== 'graduated') {
-      // With a CSAT contact (through the beat pane): reopen and confirm.
-      await bookAndFocus(ctx, id);
-      await paneType(ctx, id, `[data-fp-csat="${id}"]`, 'Dana Reyes');
-      await sleep(600);
-      await paneClick(ctx, id, `[data-fp-toggle="associatedPeopleCSAT|${id}"]`);
-      await sleep(300);
-      const g1 = await gates(ctx, id);
-      await openModal();
-      await sleep(400);
-      await fill();
-      const m2 = await modalState();
-      if (m2.open && !m2.disabled) await ctx.click('#gc-ok');
-      await sleep(600);
-      await dismissModals(ctx);
-      withContact = { g1, m2, ...(await readState()) };
-    }
-    const j = l11Judge({ g0, m1, noContact, with: withContact });
+    const noContact = { g0, hasLine: m2.hasLine, text: m2.text, okDisabled: m2.okDisabled, clicked, ...after };
+    const j = l11Judge({ withContact, noContact });
     return { passed: j.passed, evidence: await withBreak(ctx, j.evidence) };
   } },
   { id: 'L12', async run() {
