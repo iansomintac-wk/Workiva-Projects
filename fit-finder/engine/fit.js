@@ -37,13 +37,13 @@
 
   // rough language check: English stopwords vs. common French/Spanish/German/Italian/Portuguese ones
   const EN_STOP = new Set('the a an of to and in for is are on with that this it be as at by from or we i you my our your each every all not'.split(' '));
-  const OTHER_STOP = new Set('le la les de des du et un une ce ces pour sur dans avec est sont que qui der die das und ist nicht mit ein eine zu el los las del y para por con una es se che il di per non um uma os as dos e em'.split(' '));
+  const OTHER_STOP = new Set('le la les de des du et un une ce ces pour sur dans avec est sont que qui der das und ist nicht mit ein eine zu sie den dem von auf del los las una con por informe revisar resumir che il em dos'.split(' '));
   function language(text) {
     const w = String(text).toLowerCase().match(/[a-zÀ-ɏ]+/g) || [];
     if (w.length < 2) return 'en';
     const en = w.filter((x) => EN_STOP.has(x)).length, other = w.filter((x) => OTHER_STOP.has(x)).length;
     const accents = (String(text).match(/[À-ɏ]/g) || []).length;
-    return other > en || (en === 0 && accents > 0) ? 'other' : 'en';
+    return other > en && (other >= 2 || (other >= 1 && accents > 0)) ? 'other' : 'en';
   }
 
   function rate(text, opts) {

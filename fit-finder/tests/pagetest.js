@@ -99,6 +99,11 @@ async function main() {
       check(W, 'no-step input says could not tell, with an example, not "not a fit"', /Couldn.t tell which step of your work this is/.test(msgs.help) && /for example/i.test(msgs.help) && !/not a fit/i.test(msgs.help), msgs.help.slice(0, 80));
       check(W, 'French input says English only, not "not a fit"', /reads English only for now/.test(msgs.fr) && !/not a fit/i.test(msgs.fr), msgs.fr.slice(0, 80));
       check(W, 'a real not-a-fit sample still shows not a fit', /not a fit/.test(msgs.not) && !/Couldn.t tell/.test(msgs.not), msgs.not.slice(0, 80));
+      const langs = await ev(`(() => { const L = (x) => FitEngine.rate(x).lang; return { en: ['Reconcile per-diem accruals', 'Non-GAAP variance per entity', 'Roll forward PP&E per asset class', 'Q3 MD&A variance commentary, FX impact, EBITDA bridge', 'Review the caf\u00e9 expense report'].map(L), other: ['R\u00e9sumez ce rapport trimestriel', 'Pr\u00fcfen Sie den Bericht', 'Revisar el informe anual y resumir'].map(L), withOps: FitEngine.rate('Compare the report \u00e9 et le budget pour les sites').ops.length > 0 }; })()`);
+      check(W, 'English finance text is lang en', langs.en.every((x) => x === 'en'), JSON.stringify(langs.en));
+      check(W, 'French, German, Spanish text is lang other', langs.other.every((x) => x === 'other'), JSON.stringify(langs.other));
+      const eo = await ev(`(async () => { await setTask('Compare the report \u00e9 et le budget pour les sites'); return t('#why') + ' | ' + t('#fit'); })()`);
+      check(W, 'English-only message never shown when a step was found', !/English only/i.test(eo), eo.slice(0, 80));
       const link = await ev(`(() => { const a = document.getElementById('coachLink'); return a ? { href: a.getAttribute('href'), target: a.target, rel: a.rel, text: a.textContent, para: a.parentElement.textContent } : null; })()`);
       check(W, 'Prompt Coach link is the same-folder file under file:', !!link && link.href === 'prompt-coach.html', link && link.href);
       check(W, 'Prompt Coach link opens safely in a new tab', !!link && link.target === '_blank' && /noopener/.test(link.rel) && link.text === 'Prompt Coach');

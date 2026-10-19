@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (87,876 bytes)
+node tests/build.js                                               # -> dist/fit-finder.html (87,809 bytes)
 # Offline Coach link: keep dist/fit-finder.html and prompt-coach.html in one folder; opened from a file, the link uses prompt-coach.html, online it uses the artifact URL.
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching

@@ -238,7 +238,7 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
       if (!b.length && !r.repeats) return 'Workiva AI can take a first pass at this. It pays off most on work you repeat, so it is a better fit if this comes back every period.';
       return 'Workiva AI can take part of it' + (ai.length ? ' (' + list(ai) + ')' : '') + '. ' + (b.length ? 'The ' + list(b) + ' stays with you.' : 'The rest stays with you.');
     }
-    if (r.lang === 'other') return 'Fit Finder reads English only for now. Try the task in English.';
+    if (!r.ops.length && r.lang === 'other') return 'Fit Finder reads English only for now. Try the task in English.';
     if (!r.ops.length) return 'Couldn’t tell which step of your work this is. Try describing what you do, for example: “Every month I compare the draft board pack to last month’s and list what changed.”';
     return 'The core of this is ' + (b.length ? list(b) : 'work without a text or table to start from') + ', which stays with you.' + (ai.length ? ' Workiva AI can still help with the ' + list(ai) + '.' : r.ops.includes('COLLECT') ? ' Workiva AI can draft the request for you.' : '');
   }
