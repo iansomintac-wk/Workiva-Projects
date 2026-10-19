@@ -64,6 +64,9 @@ Keeps an OSM's book of business in one place and turns it into a day's work.
               The field set here is PROVISIONAL — a product open question.
   Settings    Thresholds, Gainsight CSV import, export/import, and automatic
               backup to a file you choose.
+              In 1.1, Today also shows a "gone quiet" row at the top band: 7 days after the hand-off
+              call with nothing logged since, or on the day a customer returns from a pause with
+              nothing logged since. Any logged activity stops it.
 
 
 Where your data lives
@@ -165,11 +168,11 @@ Running the graduation checks headlessly (needs Chrome or Edge):
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
-  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 475
+  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 480
   step 0 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 34
   step 1 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 65
   step 1 cold start (C8): node tools/step1-coldstart.mjs
-  tools/selfchecks-1.1.js is the 1.1 copy of the suite (same 475 checks; three edited, see CHANGELOG).
+  tools/selfchecks-1.1.js is the 1.1 copy of the suite (475 checks plus 5 gone-quiet checks; three edited, see CHANGELOG).
 
 The second runs six end-to-end scenarios (A3-A8) and prints the measured value
 for each. --seed takes a comma-separated list, run in order; --verbose also
@@ -262,11 +265,11 @@ tools/selfchecks.js (it is not in the shipped file); the guide's is in the page.
 
   tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 475
             must be 475/475 (the suite lives in tools/selfchecks.js and is not shipped)
-  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 475
+  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 480
   step 0 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 34
   step 1 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 65
   step 1 cold start (C8): node tools/step1-coldstart.mjs
-  tools/selfchecks-1.1.js is the 1.1 copy of the suite (same 475 checks; three edited, see CHANGELOG).
+  tools/selfchecks-1.1.js is the 1.1 copy of the suite (475 checks plus 5 gone-quiet checks; three edited, see CHANGELOG).
   guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
             must be 18/18 (window.runGuideSelfChecks() also works in the console)
 

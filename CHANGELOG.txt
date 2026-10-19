@@ -22,6 +22,16 @@ OSM Runway — release notes
       docs/HOSTING.md says what the page loads (outside hosts, no integrity attribute on the
       xlsx script, inline script and style needed) instead of "works with no network".
 
+1.1 — Gone quiet. Today sees a new customer nobody has spoken to.
+
+    - Today gains a "gone quiet" reason at the top band (severity 4): 7 days after the
+      hand-off call if nobody has logged anything since, and on the day a customer
+      returns from a pause if nobody has logged anything since.
+    - Any logged activity stops it. A manual resume gets no row (no new stored field).
+    - GONE_QUIET_DAYS = 7, a constant, no setting. An account that fires shows as
+      Off Track in the book (severity 4) until contact is logged.
+    - Checks: 1.1 suite 480/480 (5 new), 1.0 suite 475/475 (1.0 file untouched).
+
 1.1 — Step 1 (transcripts out of the book). Call transcripts move out of the book.
 
     - Transcripts now live in the browser's IndexedDB (obm-transcripts-v1), one record

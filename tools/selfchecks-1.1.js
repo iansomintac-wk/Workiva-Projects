@@ -6564,6 +6564,75 @@ function _runSelfChecksInner(){
       && String(repairAuxiliaryCollections).indexOf('normalizeGradReview') !== -1);
   })();
 
+  /* ---- gone quiet (1.1): no contact since hand-off, or since a pause ended ---- */
+  (function(){
+    const realC = DATA.customers, realA = DATA.activities, realP = DATA.pauseReturns;
+    const t = todayISO(), ago = n => isoAddDays(t, -n);
+    const mk = (id, extra) => Object.assign({id, name:id, stage:'ttfv1', implementationDate: ago(200),
+      totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[], compliance: defaultCompliance()}, extra || {});
+    const live = n => ({phase:'golive', wentLiveOn: ago(n), phaseHistory:[{phase:'golive', date: ago(n)}]});
+    const act = (d, type) => ({id:'a-' + d + '-' + type, date:d, type:type || 'Call', summary:'x', sessionNumber:null});
+    const quiet = c => todayAccountCandidates(c, {gainsightByCustomer:{}}).filter(x => x.source === 'gone_quiet');
+    const r = {};
+    try{
+      // 1. hand-off: day 6 no, day 7 yes, severity 4, and it heads the account's candidates
+      const h6 = mk('__gq6__', {implementation: live(6)}), h7 = mk('__gq7__', {implementation: live(7)});
+      DATA.customers = [h6, h7]; DATA.pauseReturns = [];
+      DATA.activities = {__gq6__:[act(ago(6))], __gq7__:[act(ago(7))]};   // the hand-off call on the Go-Live day
+      r.d6 = quiet(h6).length;
+      r.d7 = quiet(h7).length;
+      r.sev = quiet(h7)[0] && quiet(h7)[0].severity;
+      r.top = (todayAccountCandidates(h7, {gainsightByCustomer:{}})[0] || {}).source;
+      // 2. any activity after the hand-off day stops it, whatever its type; the hand-off-day call does not
+      r.stops = ['Call','Email','Other','Implementation Note','Partner Sync'].map(type => {
+        DATA.activities = {__gq7__:[act(ago(7)), act(ago(1), type)]};
+        return quiet(h7).length;
+      });
+      // 3. pause return: fires the day it is recorded, stops on activity on or after that day, not before;
+      //    an account still in implementation fires too (hand-off cannot apply there, the pause return can)
+      const p = mk('__gqp__');
+      DATA.customers = [p];
+      DATA.pauseReturns = [{id:'__gqp__', name:'__gqp__', date: t}];
+      DATA.activities = {__gqp__:[]};
+      r.pTodayNoWait = quiet(p).length;
+      DATA.pauseReturns = [{id:'__gqp__', name:'__gqp__', date: ago(3)}];
+      DATA.activities = {__gqp__:[act(ago(4), 'Email')]};
+      r.pBefore = quiet(p).length;
+      DATA.activities = {__gqp__:[act(ago(3), 'Email')]};
+      r.pOnDay = quiet(p).length;
+      DATA.activities = {__gqp__:[act(ago(1), 'Call')]};
+      r.pAfter = quiet(p).length;
+      const pi = mk('__gqi__', {implementation:{phase:'align', phaseHistory:[{phase:'align', date: ago(30)}]}});
+      DATA.customers = [pi];
+      DATA.pauseReturns = [{id:'__gqi__', name:'__gqi__', date: t}];
+      DATA.activities = {__gqi__:[]};
+      r.pImpl = inImplementation(pi) ? quiet(pi).length : -1;
+      // 4. a paused account never fires: the same account fires unpaused (positive control) and not paused
+      const pz = mk('__gqz__', {implementation: live(10), pause:{until: isoAddDays(t, 10), reason:'x', setOn: ago(8)}});
+      const un = mk('__gqu__', {implementation: live(10)});
+      DATA.customers = [pz, un];
+      DATA.pauseReturns = [{id:'__gqz__', name:'__gqz__', date: ago(2)}, {id:'__gqu__', name:'__gqu__', date: ago(2)}];
+      DATA.activities = {__gqz__:[act(ago(10))], __gqu__:[act(ago(10))]};
+      r.pausedFlag = isPaused(pz);
+      r.pausedFires = quiet(pz).length;
+      r.unpausedFires = quiet(un).length;
+    } finally {
+      DATA.customers = realC; DATA.activities = realA; DATA.pauseReturns = realP;
+    }
+    check('gone quiet: a hand-off fires on day 7 (not day 6) at severity 4 and heads the account\'s candidates',
+      r.d6 === 0 && r.d7 === 1 && r.sev === 4 && r.top === 'gone_quiet', JSON.stringify(r));
+    check('gone quiet: any activity type after the hand-off day stops it; the hand-off call itself does not',
+      JSON.stringify(r.stops) === '[0,0,0,0,0]' && r.d7 === 1, JSON.stringify(r.stops));
+    check('gone quiet: a pause return fires the day it is recorded (also while still in implementation) and stops on activity on or after that day',
+      r.pTodayNoWait === 1 && r.pBefore === 1 && r.pOnDay === 0 && r.pAfter === 0 && r.pImpl === 1, JSON.stringify(r));
+    check('gone quiet: a paused account never fires, while the identical unpaused account does',
+      r.pausedFlag === true && r.pausedFires === 0 && r.unpausedFires === 1, JSON.stringify(r));
+    check('gone quiet: GONE_QUIET_DAYS is 7 and gone_quiet is declared at severity 4',
+      typeof GONE_QUIET_DAYS === 'number' && GONE_QUIET_DAYS === 7
+      && !!TODAY_SOURCE_MAP.gone_quiet && TODAY_SOURCE_MAP.gone_quiet.severity === 4,
+      typeof GONE_QUIET_DAYS === 'undefined' ? 'GONE_QUIET_DAYS missing' : String(GONE_QUIET_DAYS));
+  })();
+
   /* ---- v89 CSV import, value and renewal ---- */
   (function(){
     const NL = String.fromCharCode(10), CR = String.fromCharCode(13);

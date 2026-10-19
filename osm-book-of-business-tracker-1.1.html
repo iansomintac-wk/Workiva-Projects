@@ -11703,6 +11703,7 @@ function getDomainImbalanceClusters(){
    A self-check asserts every source key todayActionList() produces has an entry
    here, so adding a source without declaring its band fails the suite instead
    of silently defaulting to something arbitrary. */
+const GONE_QUIET_DAYS = 7; // days after the hand-off call with no contact before an account counts as "gone quiet"
 const TODAY_SOURCE_DEFS = [
   {source:'coverage_neglected', severity:3,
    why:'No touchpoint past the neglect threshold and nothing on the calendar — the same band as a long stall, because it is one.'},
@@ -11731,7 +11732,9 @@ const TODAY_SOURCE_DEFS = [
   {source:'playbook_step_overdue', severity:3,
    why:'A step in a play you started has passed its date. You chose this sequence; the sequence only works if it moves.'},
   {source:'grad_review_due', severity:2,
-   why:'A graduated account has reached its check-back date. One question, asked once, and it is the only thing here that measures whether the onboarding actually held.'}
+   why:'A graduated account has reached its check-back date. One question, asked once, and it is the only thing here that measures whether the onboarding actually held.'},
+  {source:'gone_quiet', severity:4,
+   why:'Nobody has been in touch since the hand-off call, or since the pause ended. A new or returning customer who hears nothing assumes nobody is looking after them.'}
 ];
 const TODAY_SOURCE_MAP = TODAY_SOURCE_DEFS.reduce((m,d)=>{ m[d.source] = d; return m; }, {});
 
@@ -11859,6 +11862,32 @@ function todayCoordinationCandidates(c){
   return out;
 }
 
+/* "Gone quiet": the one gap Today could not see. Two triggers, no setting.
+   Hand-off: Go-Live set wentLiveOn, GONE_QUIET_DAYS have passed, and nothing was logged AFTER that day
+   (the hand-off call is logged ON it). Pause return: clearExpiredPauses wrote a pauseReturns entry, and
+   nothing was logged on or after the entry's date. Any activity type counts; the tracker has no direction field. */
+function goneQuietTrigger(c){
+  if(isPaused(c)) return null;
+  const last = lastActivityDate(c.id);
+  const back = (DATA.pauseReturns || []).filter(e => e.id === c.id && isRealISODate(e.date))
+    .reduce((m, e) => (!m || e.date > m ? e.date : m), null);
+  if(back && !(last && last >= back)) return {kind:'pause', date: back};
+  const impl = getImplementationState(c);
+  const live = impl && isRealISODate(impl.wentLiveOn) ? impl.wentLiveOn : null;
+  if(live && daysSince(live) >= GONE_QUIET_DAYS && !(last && last > live)) return {kind:'handoff', date: live};
+  return null;
+}
+function pushGoneQuiet(c, out){
+  const quiet = goneQuietTrigger(c);
+  if(!quiet) return;
+  const d = TODAY_SOURCE_MAP.gone_quiet;
+  const back = quiet.kind === 'pause';
+  out.push({source:'gone_quiet', severity:d.severity,
+    headline: back ? `${c.name} is back from pause and nobody has been in touch` : `No contact with ${c.name} since hand-off`,
+    reasons: [back ? `Back from pause on ${fmtDate(quiet.date)}, no contact yet.`
+                   : `No contact since hand-off on ${fmtDate(quiet.date)} (${daysSince(quiet.date)} days).`],
+    panelTab:'log', chipLabel:'Log contact', why:d.why});
+}
 function todayAccountCandidates(c, ctx){
   const out = [];
   /* v88: the ONE thing a graduated account can still ask of you. It sits above
@@ -11906,7 +11935,9 @@ function todayAccountCandidates(c, ctx){
      candidates above run first and this gate comes after them, which means an
      in-implementation account can now appear as a Today row for those two
      reasons and no others. */
-  if(inImplementation(c)) return out;
+  /* 1.1: a pause-return account still in implementation also gets a gone-quiet row
+     (the hand-off trigger cannot apply there: it needs wentLiveOn). */
+  if(inImplementation(c)){ pushGoneQuiet(c, out); return out; }
 
   const rec = getRecommendedAction(c);
   if(SIGNAL_KEY_SET.has(rec.key)){
@@ -11965,6 +11996,7 @@ function todayAccountCandidates(c, ctx){
       panelTab:'gainsight', chipLabel:`Gainsight to-do (${chores.length})`, why:d.why});
   }
 
+  pushGoneQuiet(c, out);
   out.sort((a,b)=> b.severity - a.severity);
   return out;
 }
