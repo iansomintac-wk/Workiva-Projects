@@ -287,3 +287,192 @@ test('displayGrade: off-topic is weak, strong with stacked is better, else the g
   assert.equal(W.displayGrade({ grade: 'strong', hits: {}, stacked: true, offtopic: false }, ''), 'better');
   assert.equal(W.displayGrade({ grade: 'strong', hits: {}, stacked: false, offtopic: false }, ''), 'strong');
 });
+
+// ---- T5: missing-data version of the anomaly template (spec 2026-10-19) ----
+test('missing-data: T5 typed with @sus_supplier_data.csv gets the missing-data table and rule', () => {
+  const o = run('Which suppliers are missing emissions data?', [{ name: 'sus_supplier_data.csv' }]);
+  const s = o.stages.strong.prompt;
+  assert.equal(o.intent, 'anomaly');
+  assert.ok(s.includes('what is missing'), s);
+  assert.ok(s.includes('Do not fill in or estimate missing values'), s);
+  assert.ok(!s.includes('why it looks wrong'), s);
+  assert.ok(!s.includes('Do not correct any values'), s);
+});
+
+test('missing-data: missingAsk fires on train ask rows 25 27 30 33 36 37 38 and on no mixed or mention row (ids 16-38)', () => {
+  const rows = fs.readFileSync(path.join(__dirname, '../research/2026-10-19-missing-ask-labels.tsv'), 'utf8').replace(/\r/g, '').trim().split('\n').slice(1).map((l) => l.split('\t'));
+  const train = rows.filter((r) => Number(r[0]) >= 16);
+  assert.equal(train.length, 23);
+  for (const r of train) {
+    const fired = W.missingAsk(r[3]);
+    if (r[2] === 'mixed' || r[2] === 'mention') assert.equal(fired, false, r[0] + ' ' + r[2] + ': ' + r[3]);
+    if (['25', '27', '30', '33', '36', '37', '38'].includes(r[0])) assert.equal(fired, true, r[0] + ': ' + r[3]);
+  }
+});
+
+test('missing-data: a truly mixed request does not take the missing-only template', () => {
+  assert.equal(W.missingAsk('List missing values and, if a zero is found, report it too.'), false);
+  assert.equal(W.missingAsk('Which suppliers have duplicate or missing emissions data?'), false);
+  assert.equal(W.missingAsk('List any outliers. If a value is missing, say so.'), false);
+  assert.equal(W.missingAsk('Which suppliers are missing emissions data?'), true);
+});
+
+test('missing-data: a request that a condition introduces still counts as a missing-data ask', () => {
+  assert.equal(W.missingAsk('If possible, list missing emissions data.'), true);
+  assert.equal(W.missingAsk('List the suppliers. If the file has a blank tab, ignore it.'), false);
+});
+
+test('missing-data: a mixed ask keeps its anomaly lines, and another intent never gets the missing-data rule', () => {
+  const mixed = run('Which suppliers have duplicate or missing emissions data?', [{ name: 'sus_supplier_data.csv' }], { intent: 'anomaly', taskSure: true }).stages.strong.prompt;
+  assert.ok(mixed.includes('why it looks wrong'), mixed);
+  assert.ok(mixed.includes('Do not correct any values'), mixed);
+  assert.ok(!mixed.includes('Do not fill in or estimate missing values'), mixed);
+  const q = 'Which suppliers are missing emissions data?';
+  assert.equal(W.missingAsk(q), true);
+  const gaps = run(q, [], { intent: 'gaps', taskSure: true }).stages.strong.prompt;
+  assert.ok(gaps.includes('Only flag gaps you can point to in the source'), gaps);
+  assert.ok(!gaps.includes('Do not fill in or estimate missing values'), gaps);
+});
+
+test('missing-data: detected sheet headers lead the missing-data table', () => {
+  const f = { name: 'sus_supplier_data.csv', kind: 'CSV', periods: [], text: '', sheets: [{ name: 'Suppliers', headers: ['Supplier', 'Country', 'Emissions tCO2e'] }] };
+  const s = run('Which suppliers are missing emissions data?', [f]).stages.strong.prompt;
+  assert.ok(s.includes('Return a table: Supplier, Country, Emissions tCO2e, what is missing, where it should be.'), s);
+});
+
+test('missing-data: an indirect question after check/tell me/see/find out is a missing-data ask, a conditional clause is not', () => {
+  assert.equal(W.missingAsk('Check if any suppliers are missing emissions data'), true);
+  assert.equal(W.missingAsk('Tell me if any suppliers are missing emissions data'), true);
+  assert.equal(W.missingAsk('See whether any suppliers are missing emissions data'), true);
+  assert.equal(W.missingAsk('If a value is missing, say so.'), false);
+  assert.equal(W.missingAsk('If possible, list missing emissions data.'), true);
+});
+
+test('missing-data: invalid, negative and error words make the ask mixed', () => {
+  assert.equal(W.missingAsk('Find missing or invalid emissions values'), false);
+  assert.equal(W.missingAsk('Flag negative emissions and missing values'), false);
+  assert.equal(W.missingAsk('Find errors and missing values in the supplier file'), false);
+});
+
+// ---- T3/T6: the file cannot support the ask (spec 2026-10-19) ----
+const RULES = require('../engine/rules.js');
+const { SPECS } = require('../research/live-tests/make_live_fixtures.js');
+require('../engine/files.js');
+const FX_HEADER = (rows) => { for (const r of rows.slice(0, 12)) { const cells = (r || []).map((c) => (c == null ? '' : String(c).trim())).filter(Boolean); if (cells.filter((c) => /[A-Za-z]/.test(c) && c.length < 40).length >= 2) return cells.slice(0, 10); } return []; };
+// Built the way engine/files.js reads a file and the way the ledger file_probe.js builds it: xlsx = "## sheet" + rows as text.
+function fx(name) {
+  const { periodsOf } = globalThis.ScopeFiles;
+  const s = SPECS.find((x) => x.name === name); assert.ok(s, 'no fixture ' + name);
+  if (s.kind === 'xlsx') { const rows = s.rows.filter((r) => r.length); const headers = FX_HEADER(rows), text = '## ' + s.sheet + '\n' + rows.map((r) => r.join(', ')).join('\n'); return { name, kind: 'Excel', text, sheets: [{ name: s.sheet, headers }], periods: periodsOf(headers.join(' ') + ' ' + text) }; }
+  if (s.kind === 'docx') { const text = [s.title, ...s.paras].join(' '); return { name, kind: 'Word', text, headings: [s.title], periods: periodsOf(text) }; }
+  if (s.kind === 'pdf') { const text = s.pages.map((p) => p.join(' ')).join('\n'); return { name, kind: 'PDF', text, periods: periodsOf(text) }; }
+  return { name, kind: 'Text', text: s.text || '', periods: periodsOf(s.text || '') };
+}
+const mk = (name, sheet, body, headers = []) => ({ name, kind: 'Excel', sheets: [{ name: sheet, headers }], periods: [], text: '## ' + sheet + '\n' + body });
+const DECLINE = 'If the file does not contain what this needs, say so instead of estimating.';
+const T3 = 'what will our stock price do next quarter based on this';
+const T6 = 'As a sustainability analyst, using only @sus_ghg_inventory.xlsx, calculate our Scope 3 category 11 (use of sold products) emissions for FY25. Show the method and every input with its source row in a short table (item, value, source row), then give the total in tCO2e. Keep it to one page, in a formal tone.';
+const unsupported = (o) => o.notes.filter((n) => n.kind === 'unsupported');
+const askCat = (n, scope3 = true) => 'Using only @s3.xlsx, calculate our ' + (scope3 ? 'Scope 3 ' : '') + 'category ' + n + ' emissions in a table with item, value and source row. Do not guess.';
+
+test('unsupported: T3 forecast ask on the flux file gets the note and a Strong with the decline line that still grades strong', () => {
+  const o = run(T3, [fx('fr_flux_q3.xlsx')]);
+  assert.equal(unsupported(o).length, 1, JSON.stringify(o.notes));
+  assert.match(unsupported(o)[0].text, /forecast/i);
+  const s = o.stages.strong.prompt;
+  assert.ok(s.endsWith(DECLINE), s);
+  assert.equal(RULES.grade(detect(s).on), 'strong', s);
+});
+
+test('unsupported: T6 asks for Scope 3 category 11 the file does not list: note names it, Strong is the typed prompt', () => {
+  const o = run(T6, [fx('sus_ghg_inventory.xlsx')]);
+  assert.equal(unsupported(o).length, 1, JSON.stringify(o.notes));
+  assert.match(unsupported(o)[0].text, /category 11/);
+  assert.equal(o.stages.strong.prompt, T6);
+});
+
+test('unsupported: no file text means no note and no decline line (T3 with a bare file name)', () => {
+  const o = run(T3, [{ name: 'fr_flux_q3.xlsx' }]);
+  assert.equal(unsupported(o).length, 0);
+  assert.ok(!o.stages.strong.prompt.includes(DECLINE));
+});
+
+test('unsupported: forecast basis is looked for in the file text only, not in a sheet named Forecast (C3)', () => {
+  const hist = mk('hist.xlsx', 'Forecast', 'Account, Q1, Q2\nRevenue, 100, 120', ['Account', 'Q1']); // same shape engine/files.js builds: text starts '## Forecast'
+  assert.equal(unsupported(run(T3, [hist])).length, 1);
+  assert.equal(unsupported(run(T3, [mk('fc.xlsx', 'Plan', 'Account, FY26 forecast\nRevenue, 130')])).length, 0);
+});
+
+test('unsupported: a category ask needs Scope 3 in the ask and in the file (C1)', () => {
+  const sales = mk('s3.xlsx', 'Sales', 'Category 1 Domestic, 500\nCategory 2 Export, 300');
+  assert.equal(unsupported(run(askCat(11, false), [sales])).length, 0, 'not a Scope 3 ask');
+  assert.equal(unsupported(run(askCat(11, true), [sales])).length, 0, 'file has no Scope 3 list');
+  assert.equal(unsupported(run(askCat(11, false), [fx('sus_ghg_inventory.xlsx')])).length, 0, 'ask does not say Scope 3');
+});
+
+test('unsupported: leased assets fits both category 8 and 13, so it counts once and is not a fire (C2)', () => {
+  const one = mk('s3.xlsx', 'Scope 3', 'Leased assets, 60');
+  assert.equal(unsupported(run(askCat(13), [one])).length, 0, 'one recognised name is below the minimum of 2');
+  const two = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nLeased assets, 60');
+  assert.equal(unsupported(run(askCat(13), [two])).length, 0, 'generic leased assets may be 13');
+  assert.equal(unsupported(run(askCat(11), [two])).length, 1, 'category 11 is absent');
+  const up = mk('s3.xlsx', 'Scope 3', 'Waste, 90\nUpstream leased assets, 60');
+  assert.equal(unsupported(run(askCat(13), [up])).length, 1, 'only the upstream kind is listed, so 13 is absent');
+});
+
+test('unsupported: no train-labelled row fires against any of the three area fixtures (tuning guard, train rows only)', () => {
+  const rows = fs.readFileSync(path.join(__dirname, '../research/2026-10-19-cannot-support-labels.tsv'), 'utf8').split('\n').slice(1).filter(Boolean).map((l) => l.split('\t'));
+  const train = rows.filter((r) => r[1] === 'train');
+  assert.ok(train.length >= 40, 'train rows: ' + train.length);
+  const files = ['fr_flux_q3.xlsx', 'sus_ghg_inventory.xlsx', 'grc_rcm.xlsx'].map(fx);
+  const fired = [];
+  for (const r of train) for (const f of files) if (unsupported(run(r[6], [f])).length) fired.push(r[2] + ' x ' + f.name);
+  assert.deepEqual(fired, []);
+});
+
+test('unsupported: the page template renders the unsupported kind', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../web/template.html'), 'utf8');
+  assert.ok(html.includes("'grounding', 'unsupported'"), 'template.html list of warning kinds');
+});
+
+test('grounding: FY25 counts as present when the file has FY2025; FY26 against the same file is still flagged', () => {
+  const sus = fx('sus_ghg_inventory.xlsx');
+  const g = (o) => o.notes.filter((n) => n.kind === 'grounding').map((n) => n.text).join(' ');
+  assert.ok(!/FY25/.test(g(run(T6, [sus]))), g(run(T6, [sus])));
+  assert.match(g(run('Using only @sus_ghg_inventory.xlsx, list the Scope 3 totals for FY26 in a table with each source row. Do not guess.', [sus])), /FY26/);
+});
+
+// ---- final-review fixes (C1-C4, S1, S3, S4, S5) ----
+const sheetOf = (sheet, body) => mk('f.xlsx', sheet, body);
+test('unsupported: a historical stock price summary is not a forecast ask (C1)', () => {
+  const px = sheetOf('Prices', 'Date, Stock price\n2025-01-02, 10\n2025-01-03, 11');
+  assert.equal(unsupported(run('Summarize the stock price movements in this file', [px])).length, 0);
+  assert.equal(unsupported(run(T3, [px])).length, 1, 'T3 still fires');
+});
+test('unsupported: "what will the documents ..." is not a forecast ask: do/be need a word boundary (S1)', () => {
+  const f = sheetOf('Controls', 'Control ID, Owner\nC1, Ann');
+  assert.equal(unsupported(run('What will the documents need to show for SOX, using @f.xlsx', [f])).length, 0);
+  assert.equal(unsupported(run('What will the beginning of the report need, using @f.xlsx', [f])).length, 0);
+});
+test('unsupported: "Forecast Q4 revenue using this file" against historical-only text fires (C2)', () => {
+  const h = sheetOf('Actuals', 'Account, Q1, Q2\nRevenue, 100, 120');
+  assert.equal(unsupported(run('Forecast Q4 revenue using this file', [h])).length, 1);
+  assert.equal(unsupported(run('Forecast revenue using this file', [h])).length, 1);
+});
+test('unsupported: forecast-basis words are bounded: "Plant output" is no basis (C3)', () => {
+  const f = sheetOf('Actuals', 'Plant output and historical revenue');
+  assert.equal(unsupported(run('Predict revenue next quarter', [f])).length, 1);
+});
+test('unsupported: Fcst, Bgt and FY26E headers count as a forecast basis (S3)', () => {
+  for (const body of ['Account, FY25A, FY26E\nRevenue, 100, 130', 'Account, Fcst\nRevenue, 130', 'Account, Bgt\nRevenue, 130'])
+    assert.equal(unsupported(run('Predict next quarter revenue from this', [sheetOf('Model', body)])).length, 0, body);
+});
+test('unsupported: incidental words do not make a Scope 3 category list (C4)', () => {
+  const f = sheetOf('Notes', 'Scope 3 inventory preparation notes\nFuel for Scope 1 boilers\nWaste water discharged');
+  assert.equal(unsupported(run(askCat(11), [f])).length, 0);
+});
+test('grounding: FY2020 is not satisfied by a file that only has FY2024 and FY2025 (S4)', () => {
+  const f = sheetOf('Inv', 'Item, FY2024, FY2025\nElectricity, 1, 2');
+  const g = (o) => o.notes.filter((n) => n.kind === 'grounding').map((n) => n.text).join(' ');
+  assert.match(g(run('Using only @f.xlsx, compare our FY2020 baseline to FY2025 in a table with each source row. Do not guess.', [f])), /FY2020/);
+});

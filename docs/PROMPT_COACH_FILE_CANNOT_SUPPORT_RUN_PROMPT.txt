@@ -1,0 +1,69 @@
+RUN: Prompt coach T3/T6, "the file cannot support this ask" (Workiva repo)
+
+Written 2026-10-19 by talk 70f99f21. Load studio-harness:talk-and-run first and follow "The run". You are the
+run lead: coordinate only, never plan or build in your own context.
+
+WHERE
+- Worktree: C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-file-cannot-support
+  Branch: worktree-prompt-coach-file-cannot-support (from origin/prompt-coach a7ba13f). Work only here.
+- Spec (approved 2026-10-19T08:24Z by the PM proxy for Ian, proxy decided):
+  docs/superpowers/specs/2026-10-19-prompt-coach-file-cannot-support-design.md
+- Labels (Opus, 76 rows, 0 positives; train_* = train, the rest held-out):
+  prompt-coach/research/2026-10-19-cannot-support-labels.tsv
+- Ledger (git-ignored): .ledger/2026-10-19-prompt-coach-file-cannot-support/ with budget.json, slip.json,
+  progress.md, logs/ (baselines b_*.log on a7ba13f, fixture_runs.json, guard_fires.tsv), scripts/
+  (file_probe.js, guard_probe.js, standin_probe.js, make_labels.js; each takes the ABSOLUTE path of
+  prompt-coach first), heldout_sealed.json (SEALED: see ORDER 4).
+- Project rules: CLAUDE.md (repo root), prompt-coach/README.md ("Rewrite wording rules", "Coach notes").
+
+ORDER
+1. First check (talk-and-run): STUDIO_RUN_LEDGER set, budget.json and slip.json exist; else stop.
+2. Plan by studio-harness:plan-writer -> docs/superpowers/plans/2026-10-19-prompt-coach-file-cannot-support.md.
+   Header: Data: (none). Suggested tasks: (a) failing unit tests for T3 and T6 (spec checks 1-2) with the
+   fixture text built as file_probe.js builds it; (b) the cannot-support test, the `unsupported` note and the
+   decline line in engine/rewrite.js, patterns tuned on train label rows only, plus `unsupported` in the
+   web/template.html list of rendered kinds; (c) the FY item (spec check 3, red first) as its own task;
+   (d) R14(c) text in research/live-tests/SCORING_RULES.md and open question 1 of
+   research/live-tests/results/2026-10-19-tricky-batch-results.md, marked proxy decided; (e) rebuild
+   dist/prompt-coach.html, README notes section, wording rules and dist byte count in the same commit;
+   (f) evidence doc docs/evidence/2026-10-19-prompt-coach-file-cannot-support.md filling the spec's table.
+   Plan review: frontier model plus Codex (claudex-loop:codex-review; ledger gotcha
+   2026-10-17-codex-unelevated-sandbox-runs-on-windows); if Codex cannot run, record it at the plan stop.
+   Plan approval: SendMessage to the newest running "NEW - PM proxy overnight*" session (claude agents --json),
+   recommendation + evidence; wait; check its line in
+   C:/Users/teasp/Documents/studio-harness/.ledger/proxy/decisions.md before acting. Never AskUserQuestion.
+3. Each task one at a time: implementer (test first: fails on the parent, passes after), checker, lead
+   re-runs the check, ledger row.
+4. After task (b) is committed, the lead (not a helper) runs the coach on heldout_sealed.json once (build each
+   file as file_probe.js does), records fires per item in progress.md, and scores spec check 8. No pattern
+   change may follow from it; a miss is reported, not tuned.
+5. Must stay green (spec check 9, measured on a7ba13f): node --test --test-reporter=tap
+   tests/rewrite_unit.test.js 37/0 + new; simulate.js data/train_*.jsonl runs 2070, strongNotStrong 2,
+   betterWeak 5, badText 2; customer_check.js PASS 229; eval.js rulefeat data/test.jsonl GRADE acc 0.856,
+   flips 8. Spec checks 4-7 by dumping Strong (no files, all 1,841) and the fixture runs before/after.
+   pagetest.js/filetest.js: report "not run" unless a working Playwright path is found; install nothing.
+6. Final whole-branch review: studio-harness:final-reviewer plus a read-only Codex review; merge findings;
+   where they disagree on must-fix, the PM proxy decides. Fix round, re-check.
+7. Evidence doc with numbers (measured vs read).
+8. Push and merge (slip.json, standing slip + proxy yes 08:24Z): push the branch; merge into prompt-coach only
+   after checks and the final review pass with no must-fix open: first push origin/prompt-coach's tip to
+   backup/prompt-coach-before-worktree-prompt-coach-file-cannot-support-<date>, keep both sides on conflict,
+   full checks green on the result, never force. The main checkout's local prompt-coach is not touched.
+9. Hand-off PM step (it was NOT run in the talk: the talk hit its 200k stop); notify; next queued item per PM.
+
+PARKED (report, do not gate; for Ian in the morning)
+- Q2 "[number]" placeholder (recommend yes), Q3 extras (report, don't gate), Q5 scorer agreement (no third read).
+- The other grounding false alarms: "SOX ITGC" (GRC-2) and output column names (SUS-1).
+- T5 known limits (ignore duplicates / Exceptions tab; lookbehind browser support; ask id 26 silent).
+- Discrepancy to settle in the evidence of the earlier run: the T5 evidence says "missing net zero targets"
+  fires; the T5 hand-off says it does not. Run missingAsk on it and record the measured answer.
+
+PERMISSIONS (slip.json): push own branch yes; merge as in step 8 yes; spend none (offline Node only, no live
+Workiva AI); new sessions yes, only a successor at the context stop. Commits: plan tasks, evidence, hand-off.
+
+SAFETY
+- No engine change beyond the spec (grades, weights, classifier, other notes and rewrites untouched).
+- No customer data. Do not republish any artifact. Docs change in the same commit as the code.
+- No writes under ~/.claude/ except the session-rename exception in talk-and-run.
+- Stops: plan approval; a decision only Ian can make; two strikes. At each stop: PushNotification and
+  bin/notify.mjs, then SendMessage the PM proxy.

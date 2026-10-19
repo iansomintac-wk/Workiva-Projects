@@ -1,0 +1,50 @@
+RUN: Prompt coach scoring rulebook, then the tricky live batch (Workiva repo)
+
+Written 2026-10-19 by the talk "NEW - Prompt Coach next talk". Load studio-harness:talk-and-run first and follow
+"The run". You are the run lead: coordinate only, never plan or build in your own context. Every question goes to
+Ian (or a PM proxy session, per the global rules).
+
+WHERE
+- Worktree: C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-rewrites, branch
+  worktree-prompt-coach-rewrites. Work only here.
+- Spec (approved by Ian, "Approve (Rec.)"): docs/superpowers/specs/2026-10-18-prompt-coach-tricky-batch-design.md
+- Ledger: C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-rewrites/.ledger/2026-10-18-prompt-coach-next
+  (progress.md has the talk's rulings and probes; budget.json; slip.json).
+- Old score files (rulings to draw the rulebook from, Opus-final rows, "vs Codex" column):
+  .ledger/2026-10-16-prompt-coach-rewrites/logs/live_<CASE>_scores.md; answers: logs/live_<CASE>.md.
+- Talk scripts (saved in the ledger folder scripts/: grade.js, grade_tricky.js, grade_one.js, rewrite_tricky.js,
+  count.js; vs_codex.tsv and tricky_strong.txt are their outputs). The grade and rewrite scripts take the prompt-coach folder as first argument:
+  grading = engine/model.js predict + engine/weights.json + rules.grade; rewrite = rewrite.coach(prompt,
+  {files:[{name}], detect, ...classify.pick(prompt, CLS)}).stages.strong.prompt (files must be objects with name).
+
+ORDER (spec "Scope" 1-5)
+1. First check: STUDIO_RUN_LEDGER set, budget.json and slip.json exist; else stop.
+2. Plan by studio-harness:plan-writer at docs/superpowers/plans/2026-10-18-prompt-coach-tricky-batch.md (the path
+   budget.json names). Data: prompt-coach/research/live-tests. Review it (frontier + Codex). STOP: Ian approves it.
+3. Rulebook SCORING_RULES.md, then the Codex re-score of 6 old answers (2 each SUS-4, GRC-4, FR-1), blind to the
+   Opus rows. GATE: 3 or more of 6 rows differing in any field = stop for Ian before any live run.
+4. Tricky keys T1-T6 in fixtures/answer_key.json after confirming each file's contents (T3, T6: key = says the file
+   does not support it, gives no figure); record each prompt's coach grade and Strong rewrite. Check: at least 2
+   typed prompts grade weak (talk measured 5 weak, 1 better; T6 typed is the polished one, graded strong).
+5. STOP for Ian to sign in to his Workiva sandbox in Chrome. Then 24 answers: T1-T6 x (typed, Strong unfilled) x 2
+   runs, fresh chats, files uploaded to his workspace first, answers verbatim to the ledger logs, not context.
+6. Score all 24 with the rulebook (Opus final, Codex second); report agreement.
+7. Results file prompt-coach/research/live-tests/results/<date>-tricky-batch-results.md with the spec's success
+   criteria, each prediction against its result, measured vs read, sample size stated; README live-test line in
+   the same commit.
+8. Final whole-branch review (Opus + Codex), fix round, then merge per the slip.
+
+SLIP (slip.json, Ian 2026-10-19T00:41Z, "Keep them (Rec.)"): may push its own work branch (never main or
+prompt-coach); may merge into prompt-coach after tests pass and the final review has no must-fix; may start new
+sessions if needed; spend: none. Codex and Workiva AI usage only, no paid tools.
+
+SAFETY
+- Ian's own sandbox, made-up files only; no settings, sharing or deleting; no customer data anywhere.
+- Do not change the coach (engine/, weights, rewrite) in this run; coach findings go in the results file.
+- Do not republish the artifact. ~/.claude writes: none, except the session-rename exception in talk-and-run.
+- No force flags.
+- Before the first Codex call read the ledger gotchas 2026-10-14-codex-shell-blocked-on-windows and
+  2026-10-17-codex-unelevated-sandbox-runs-on-windows; before any node --test with a folder argument read
+  2026-10-16-node26-test-folder-arg-runs-nothing.
+- Stops: plan approval; the step-3 gate; sandbox sign-in; push or merge the slip doesn't name; any spend; Ian's
+  decisions; two strikes. Push a notification at each stop, then ask.

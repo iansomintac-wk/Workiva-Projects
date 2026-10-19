@@ -1,0 +1,39 @@
+RUN (DRAFT, not launched): Prompt coach known-limits sweep (Workiva repo)
+
+Drafted 2026-10-19 by the hand-off PM step of run 6978b4b5 (T3/T6, the file cannot support the ask). Launch only on
+Ian's or the PM proxy's yes. If the proxy treats this as needing a talk first (spec + labels), run it as a talk.
+Load studio-harness:talk-and-run first; you are the run lead, coordinate only.
+
+WHERE
+- New worktree from prompt-coach after the T3/T6 merge (check: git log origin/prompt-coach contains d7dde04 or its
+  hand-off commit, else stop).
+- Evidence: docs/evidence/2026-10-19-prompt-coach-file-cannot-support.md ("Known limits / parked follow-ups").
+- Rules: CLAUDE.md (repo root), prompt-coach/README.md.
+
+OUTCOME
+The unsupported-ask note misses or false-fires less on the parked items, with no regression and no overfit.
+
+ORDER
+1. First check: STUDIO_RUN_LEDGER set; budget.json (cap 600k) and slip.json exist; else stop.
+2. $0 research first: Scope 3 category names 1-15 checked against the GHG Protocol Corporate Value Chain Standard
+   (Table 5.3) vs the engine's names (today they come from a search summary); record sources. Recheck the E1-8 key
+   (Reg. 2023/2772) against the SUS-4 scoring; report only.
+3. New held-out: Opus labels 24 fresh fixture-backed prompts (12 should fire, 12 near misses), sealed before any
+   pattern change. The T3/T6 sealed 16 are now seen and may not be used as held-out. Tune only on train labels.
+4. Plan via studio-harness:plan-writer, reviewed by a frontier model and Codex; plan approval to the PM proxy.
+5. Tasks (test first, one at a time, checker after each): C2 "Forecast product revenue using this file" missed;
+   C4 incidental category words ("Business travel", "Investments") make a category list; S3 "LE" not a forecast
+   basis; C5 "Q1 FY25" compound term in the grounding note; S6 "Upstream T&D" name; H4 / "Estimate where the stock
+   price goes next quarter" (stock/share price with a future cue, no will-be/do verb); optional, cut first:
+   "Summarize Scope" grounding flag, SOX ITGC and SUS-1 output-column grounding flags.
+6. Must stay green: unit 53/0 + new; no-file Strong identical on all 1,841; simulate 2070/2/5/2; customer_check
+   PASS 229; eval acc 0.856 flips 8; dist rebuilt with README byte count in the same commit.
+7. The lead scores the new sealed set once; report, do not tune after.
+8. Final review (final-reviewer + read-only Codex); the PM proxy rules on disagreements. Evidence doc, then push
+   and merge per slip.json (backup branch of origin/prompt-coach first, never force).
+
+NO-GOS: grades, weights, classifier, other notes; installs; live Workiva AI spend; Codex's "Compare forecast Q4
+revenue with Q3 actuals" warning (Ian's call, report only).
+STOPS: plan approval, two strikes, cap.
+PARKED: Q2 "[number]" placeholder, Q3 extras, Q5 scorer agreement, T5 known limits; browser tests (pagetest.js,
+filetest.js) until a working Playwright path exists. For Ian: one Workiva AI sandbox check of the T3 decline line.

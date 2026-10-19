@@ -1,0 +1,39 @@
+id	file	label	prompt
+1	sim_customers	ask	can u look at this and tell me which controls are missing
+2	sim_customers	ask	can u check which ESRS datapoints we are missing
+3	sim_customers	ask	missing data for scope 3 cat 4? the logistics tab is half empty. list what's blank and what u need to fill it
+4	test	mention	I'm the controller prepping for our quarterly close review with the CFO. From the Flux_Q3 sheet, give me a one-page summary of fluctuations over 10% and $100K, grouped by P&L section. Where the commentary column is blank, say 'no explanation provided' rather than writing one.
+5	test	mixed	Using the 'Q3 Testing' tab, list every test with a status of 'Exception' or blank, with tester name and test ID, as bullets.
+6	test	mixed	Check the attached supplier emissions file for missing values and suppliers reporting zero emissions. List them by supplier name.
+7	test	ask	From our controls, list missing evidence for the SOX audit next month as a checklist; cite every source and don't make anything up.
+8	test	ask	For the assurance team, list missing evidence in the 'Testing' tab. Quality matters. No mistakes please.
+9	test	ask	Using the attached supplier file, for our CSRD assurance, list suppliers with missing Scope 3 data in a table, and flag anything you're unsure of.
+10	test_unlabeled	mention	I'm the controller prepping for our quarterly close review with the CFO. From the Flux_Q3 sheet, give me a one-page summary of fluctuations over 10% and $100K, grouped by P&L section. Where the commentary column is blank, say 'no explanation provided' rather than writing one.
+11	test_unlabeled	mixed	Using the 'Q3 Testing' tab, list every test with a status of 'Exception' or blank, with tester name and test ID, as bullets.
+12	test_unlabeled	mixed	Check the attached supplier emissions file for missing values and suppliers reporting zero emissions. List them by supplier name.
+13	test_unlabeled	ask	From our controls, list missing evidence for the SOX audit next month as a checklist; cite every source and don't make anything up.
+14	test_unlabeled	ask	For the assurance team, list missing evidence in the 'Testing' tab. Quality matters. No mistakes please.
+15	test_unlabeled	ask	Using the attached supplier file, for our CSRD assurance, list suppliers with missing Scope 3 data in a table, and flag anything you're unsure of.
+16	train_fr	ask	As an internal reviewer for the 10-K, list missing values in a table and flag anything you're unsure of
+17	train_fr	ask	Flag blank cells in column H of the Disclosure Checklist sheet — we file the 10-Q Friday so I need gaps fast. Don't fill anything in.
+18	train_fr	ask	pls find the missing period-end accruals in the accruals tab, for my close review, top 10 only, dont make up amounts
+19	train_fr	mixed	Context: first-year filer, so our close process is new. Task: find duplicate or missing entries in the selected bank rec rows. Format: table. Rule: no assumptions — list open questions instead.
+20	train_fr	mention	please set up the column headers for a new roll-forward template on a blank tab modeled on the 'AR RF' tab, for our new international entity, Q4 FY26, and list any columns you weren't sure to include
+21	train_grc	ask	Find missing evidence for the controls in the Testing tab — top 10 by risk rating — and tell me if the tab doesn't have enough info to tell.
+22	train_grc	mention	In the JE population I attached, find entries posted by the same person who approved them. List entry ID, preparer, approver. If the approver field is blank, list those separately instead of treating them as conflicts.
+23	train_grc	mention	Role: SOX IT tester. Audience: external audit (they'll reperform). Look in the selected change log for emergency changes that never got a retroactive approval within 2 business days. Output: bullet list with change ID and dates. Rule: if the approval timestamp is missing entirely, list it under 'cannot determine' instead of calling it a failure.
+24	train_hard	mention	From the 'Findings FY26' tab: which open audit findings are past their remediation date? Just the high and critical ones, oldest first. If a date is missing, don't assume, mark it 'no date'.
+25	train_hard	ask	Lean on the evidence folder index I pasted. For the user access review control, what's missing that a tester would expect to see?
+26	train_hard	ask	From the supplier survey file I attached, figure out which suppliers didn't give us a Scope 3 number at all and which gave one without a methodology. Two lists. Don't chase or estimate any missing numbers.
+27	train_hard	ask	Using the selected control rows, as a SOX auditor, list missing evidence. Format: whatever. Evaluation: whatever.
+28	train_hard	mention	from the findngs tab list overdue hi-risk ones oldest frst for audit committee dont guess missing dates just say no date
+29	train_hard	ask	As a SOX auditor: from the selected rows, list missing evidence per control in a table and don't assume anything is on file; on top of that, draft an email reminding control owners about the deadline.
+30	train_hard	ask	For our assurance provider: using the GHG inventory workbook, list emission factors missing a source year without guessing; and on another topic, fix the chart colors on slide 4.
+31	train_sus	mixed	Act as a GHG Protocol specialist. Look at the highlighted Scope 3 rows in FY2025_Emissions.xlsx and flag any category reported as zero or blank; return a two-column list (category, issue). If you're not sure whether a zero is real, say so rather than guessing.
+32	train_sus	mention	Turn the attached ESRS datapoint list into a RACI table: for each datapoint, propose an owner team from the org chart on the 'Owners' tab. It's for our CSRD steering group. If no team obviously fits, leave owner blank.
+33	train_sus	ask	In FY2025_Emissions.xlsx, which Scope 3 categories have blank values for Q3? Give me a bullet list and the cell refs.
+34	train_sus	ask	We're getting limited assurance on Scope 3 next quarter, and last year the auditors found that a lot of supplier rows had emission factors but no activity data behind them, which created a mess. Identify any supplier rows in the attached Supplier_Data_2025.csv that are missing activity data (quantity, spend, or distance), and don't fill anything in yourself. I need to send these back to procurement before the end of the month so they can chase the suppliers, so it matters that you only flag rows that are actually empty rather than ones that just look low compared to the others in the file.
+35	train_sus	ask	Hey, quick one before I hand this to the auditors: could you go through the Scope 2 tab and list every site where the supplier-specific emission factor is missing? Put them in a table with site and country, and please don't plug in residual mix factors yourself.
+36	train_sus	ask	list missing data
+37	train_sus	ask	Find blank cells in the 'Contacts' tab and list their row numbers
+38	train_sus	ask	anything missing in the attendee list on the RSVP tab?

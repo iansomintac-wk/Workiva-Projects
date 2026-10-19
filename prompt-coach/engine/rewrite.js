@@ -136,6 +136,18 @@
     }
   }
 
+  /* Missing-data ask (spec 2026-10-19): the user asks what is missing or blank, not what is wrong.
+     Rule and condition clauses are cut out before looking for the missing word, so "if X is missing" and
+     "don't guess missing dates" do not count; the condition clause ends at its comma, so "If possible, list
+     missing data" keeps its request. Wrong-value words are looked for in the whole prompt (mixed ask). */
+  const MISS_WORD = /\b(?:missing|blank|empty|no (?:data|values?|figures?)|without (?:a |any )?(?:values?|data))\b/;
+  const MISS_RULE = /(?<!\b(?:check|see|ask|confirm|find out|tell (?:me|us))\s)\bif\b[^,.;!?\n]*|\b(?:don'?t|do not|never|not)\s+(?:\w+\s+){0,3}?(?:guess|assume|estimate|fill|make up|chase|plug|infer)\b[^.;!?\n]*|\bleave\b[^.;!?\n]*\bblank\b|\b(?:a|an|new|the)\s+(?:\w+\s+){0,2}?blank (?:tab|sheet|page|template|row|line|space)\b/g;
+  const MISS_WRONG = /\b(?:zero|invalid|negative|error\w*|duplicat\w*|exceptions?|wrong|incorrect|outliers?|anomal\w*|unusual|mismatch\w*|suspicious|spikes?|out of place|inconsisten\w*|typos?)\b/;
+  function missingAsk(prompt) {
+    const s = String(prompt || '').toLowerCase().replace(/[\u2018\u2019]/g, "'");
+    return MISS_WORD.test(s.replace(MISS_RULE, ' ')) && !MISS_WRONG.test(s);
+  }
+
   function paramsFragment(ctx) {
     const h = ctx.headers.slice(0, 4);
     const cols = h.length >= 2 ? h.join(', ') : null;
@@ -143,7 +155,9 @@
       case 'errors': return 'Return a table: location, what is wrong, suggested fix. ';
       case 'gaps': return 'Return a table: item, what is missing, why it matters. ';
       case 'variance': return 'Return a table: ' + (cols ? cols + ', ' : 'item, both values, ') + 'change in amount and percent. Include only changes over [your threshold]. ';
-      case 'anomaly': return 'Return a table: ' + (cols ? cols + ', ' : 'item, value, ') + 'why it looks wrong, what to check. ';
+      case 'anomaly': return ctx.missingAsk
+        ? 'Return a table: ' + (cols ? cols + ', ' : 'item, ') + 'what is missing, where it should be. '
+        : 'Return a table: ' + (cols ? cols + ', ' : 'item, value, ') + 'why it looks wrong, what to check. ';
       case 'consistency': return 'For each mismatch, give both locations and both values in a table. ';
       case 'rewrite': return 'Keep it to [target length], in the same voice. ';
       case 'summarize': return 'Use [number] bullets. ';
@@ -164,7 +178,7 @@
       case 'errors': return 'Do not change anything yourself, and flag anything you are not sure is an error.';
       case 'gaps': return 'Only flag gaps you can point to in the source, and mark judgment calls for my review.';
       case 'variance': return 'Do not speculate beyond the data; phrase explanations as hypotheses and list open questions for the data owner separately.';
-      case 'anomaly': return 'Do not correct any values; flag anything you are unsure of.';
+      case 'anomaly': return ctx.missingAsk ? 'Do not fill in or estimate missing values.' : 'Do not correct any values; flag anything you are unsure of.';
       case 'consistency': return 'Do not decide which value is correct.';
       case 'rewrite': return 'Preserve every number, date, and factual claim, and do not introduce new facts.';
       case 'summarize': return 'Do not add anything that is not in the source, and keep every figure exactly as written.';
@@ -390,6 +404,50 @@
   const VAGUE_VERB = /\b(?:analy[sz]e|look at|look over|go over|review|check|help|assist|work on|handle|thoughts|improve|clean up|take a look|have a look|figure out|investigate|examine|evaluate|assess|tell me about)\b/i;
   const VAGUE_ONLY = /^\s*(?:(?:please|pls|can (?:you|u)|could you)\s+)*(?:analy[sz]e|review|look (?:at|over)|go over|check|help(?: me)?(?: with)?|work on|take a look at)\b[^?]*$/i;
 
+  /* ---------------- the file cannot support the ask (T3 / T6) ---------------- */
+  const DECLINE = 'If the file does not contain what this needs, say so instead of estimating.';
+  // A prediction ask. "forecast" counts as a verb, "forecast for", or the thing to produce; "the forecast table on this slide" is a noun use about the file and does not.
+  const FORECAST_ASK = /\b(?:predict\w*|projections?|forecast(?:ing)?\s+(?:for|our|my|next|what|how|whether)\b|forecast(?:ing)?\s+(?:(?:Q[1-4]|(?:FY|CY)\s?'?\d{2,4}|(?:19|20)\d{2}|next|the|this|our|my|each|every|full[- ]year|annual|quarterly|monthly)\s+)*(?:revenue|sales|earnings|income|costs?|expenses?|demand|cash|margins?|growth|spend|profit|ebitda)\b|(?:give|make|produce|build|create|run|need|want)\s+(?:me\s+)?(?:a|an|the)?\s*(?:\w+\s+)?forecast\b(?!\s+(?:table|tab|sheet|slide|file|column|row))|what will (?:our|the|it|this)\s+(?:[\w&-]+\s+){0,3}(?:do|be|look like|end up|land|come in)\b)/i;
+  const FORECAST_BASIS = /\b(?:forecast(?:s|ed|ing)?|budget(?:s|ed|ing)?|plan(?:s|ned|ning)?|guidance|outlook|projections?|projected|targets?|estimat(?:e|es|ed|ion)|fcst|bgt|latest estimate|(?:(?:FY|CY)\s?'?\d{2,4}|(?:19|20)\d{2})E)\b/i;
+  const CAT_ASK = /\b(?:category|cat\.?)\s*(\d{1,2})\b(?:\s*\(([^)]{3,60})\))?/gi;
+  const CAT_EXPLAIN = /\b(?:explain|what counts|what does\b[^?.]*\bmean|walk me through|define|definition|what is)\b/i;
+  const CAT_NAME = [null, 'purchased goods and services', 'capital goods', 'fuel- and energy-related activities', 'upstream transportation and distribution', 'waste generated in operations', 'business travel', 'employee commuting', 'upstream leased assets', 'downstream transportation and distribution', 'processing of sold products', 'use of sold products', 'end-of-life treatment of sold products', 'downstream leased assets', 'franchises', 'investments'];
+  const CAT_RE = [null, /purchased goods/, /capital goods/, /fuel[- ]and[- ]energy|energy-related/, /upstream transport/, /waste generated|(?:^|\n)\s*waste\s*[,\t:]/, /business travel/, /commut/, /upstream leased/, /downstream transport/, /processing of sold/, /use of sold/, /end[- ]of[- ]life/, /downstream leased/, /franchis/, /investment/];
+  // 'exact' = listed by number or by its own name; 'generic' = a plain "leased assets" row, which may be category 8 or 13; null = not listed.
+  function categoryHit(n, lower) {
+    if (new RegExp('\\b(?:category|cat\\.?)\\s*' + n + '\\b').test(lower) || new RegExp('(?:^|\\n)\\s*' + n + '\\s*[,\\t:.-]').test(lower) || CAT_RE[n].test(lower)) return 'exact';
+    if ((n === 8 || n === 13) && /leased assets/.test(lower.replace(/(?:upstream|downstream) leased/g, ''))) return 'generic';
+    return null;
+  }
+  // "FY25" is present when the file says FY2025 (or FY 2025, FY'25), and the same for CY; FY26 against FY2024/FY2025 is still absent.
+  function yearForms(term) {
+    const m = /^(FY|CY)\s?'?(\d{2}|\d{4})$/i.exec(term); if (!m) return [term];
+    const y = m[2].length === 2 ? '20' + m[2] : m[2], p = m[1];
+    return [p + y, p + y.slice(2), p + ' ' + y, p + ' ' + y.slice(2), p + "'" + y.slice(2)];
+  }
+  function cannotSupport(prompt, files, intent) {
+    if (!files.some((f) => (f.text || '').trim())) return null;
+    const text = files.map((f) => (f.text || '').replace(/^## .*$/gm, '')).join('\n'); // file text only: a sheet NAME (the '## name' line engine/files.js writes) is not a forecast; a header cell or a cell value is
+    if (FORECAST_ASK.test(prompt) && !FORECAST_BASIS.test(text)) return { kind: 'forecast' };
+    if (intent === 'explain' || CAT_EXPLAIN.test(prompt)) return null;
+    const lower = files.map((f) => f.text || '').join('\n').toLowerCase(); // the sheet name still counts as Scope 3 context here
+    if (!/scope\s*3/i.test(prompt) || !/scope\s*3/.test(lower)) return null; // Scope 3 context in the ask AND in the file
+    let exact = 0, generic = false;
+    for (let n = 1; n <= 15; n++) { const h = categoryHit(n, lower); if (h === 'exact') exact++; else if (h === 'generic') generic = true; }
+    if (exact + (generic ? 1 : 0) < 2) return null; // one name that fits two categories counts once
+    for (const m of prompt.matchAll(CAT_ASK)) {
+      const n = Number(m[1]); if (n < 1 || n > 15) continue;
+      const given = (m[2] || '').toLowerCase().trim();
+      if (categoryHit(n, lower) === null && !(given && lower.includes(given))) return { kind: 'category', n, name: given || CAT_NAME[n] };
+    }
+    return null;
+  }
+  function unsupportedNote(u) {
+    return u.kind === 'forecast'
+      ? 'You are asking for a forecast, but nothing in the attached file looks like a forecast, budget or plan, so Workiva AI can only guess. Ask what the file shows, or attach the forecast.'
+      : 'Your file lists Scope 3 categories, but not category ' + u.n + ' (' + u.name + '), so Workiva AI cannot work it out from this file.';
+  }
+
   /* ---------------- main ---------------- */
   function coach(prompt, opts) {
     opts = opts || {};
@@ -407,6 +465,8 @@
     };
     ctx.audDomain = opts.areaSure === false ? 'GEN' : ctx.domain;
     ctx.intent = opts.intent || intentOf(t, files.some((f) => f.kind === 'Excel') || /\b(data|table|numbers|figures|emissions|revenue|metrics?)\b/.test(t));
+    ctx.missingAsk = ctx.intent === 'anomaly' && missingAsk(prompt);
+    ctx.unsupported = cannotSupport(prompt, files, ctx.intent);
     const taskSure = opts.taskSure !== false;
     const gen = { S: sourceFragment(ctx), C: contextFragment(ctx), O: objectiveFragment(ctx), P: paramsFragment(ctx), E: evalFragment(ctx) };
     const BLANK = { O: 'Identify and list [what you want back, such as the issues and where they are, or the key points]. ', P: 'Format it as [a table, bullets, or a short paragraph]. ', E: evalFragment({ intent: null }) };
@@ -504,6 +564,8 @@
     // with no confident task there is nothing better to put in its place, so never drop their words
     if (!built.ok && !on.O && taskSure) { const alt = build(true); if (alt.ok) built = alt; }
     const { segments, genUsed } = built;
+    // T3: when the file cannot support the ask, the generated Evaluate sentence also tells the AI to decline (a strong prompt is returned as typed, so it never gets this).
+    if (ctx.unsupported && grade !== 'strong') { const ev = segments.find((x) => x.generated && x.letter === 'E'); if (ev && !ev.text.includes(DECLINE)) ev.text = ev.text.replace(/\s*$/, ' ') + DECLINE; }
     const allOn = new Set(K);
     const strongP = assemble(segments, allOn);
     const betterSegs = segments.filter((g) => !g.generated || g.letter === 'S' || g.letter === 'O');
@@ -536,8 +598,9 @@
     if (files.length) {
       const fileText = files.map((f) => (f.text || '') + ' ' + (f.sheets || []).map((s) => s.name + ' ' + (s.headers || []).join(' ')).join(' ')).join(' ').toLowerCase();
       const terms = (prompt.match(/\bQ[1-4]\s?FY\s?'?\d{2,4}\b|\b(?:FY|CY)\s?'?\d{2,4}\b|\bQ[1-4]\b|\b(?:19|20)\d{2}\b|\bScope [123]\b|\b[A-Z][A-Za-z]+(?: [A-Z][A-Za-z]+)+\b/g) || []).filter((x) => !/^(You|The|Use|Do|Please)\b/.test(x));
-      const missingTerms = [...new Set(terms)].filter((x) => !fileText.includes(x.toLowerCase()));
+      const missingTerms = [...new Set(terms)].filter((x) => !yearForms(x).some((v) => new RegExp(v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?!\\d)', 'i').test(fileText)));
       if (missingTerms.length) notes.push({ kind: 'grounding', text: 'Your prompt mentions ' + listify(missingTerms.map((x) => '"' + x + '"')) + ', which does not appear in the attached ' + (files.length === 1 ? 'file' : 'files') + '. Check you attached the right source.' });
+      if (ctx.unsupported) notes.push({ kind: 'unsupported', text: unsupportedNote(ctx.unsupported) });
       if (ctx.periods.length) notes.push({ kind: 'periods', text: 'Periods found in your files: ' + ctx.periods.join(', ') + '.' });
     }
     const tips = workivaTips(ctx, on, files);
@@ -589,6 +652,6 @@
     return r.grade === 'strong' && r.hits && r.stacked ? 'better' : r.grade;
   }
 
-  const api = { displayGrade, listStacked, sentenceSpans, directVoice, fixTypos, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
+  const api = { displayGrade, listStacked, sentenceSpans, missingAsk, directVoice, fixTypos, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
   if (isNode) module.exports = api; else root.ScopeRewrite = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,0 +1,75 @@
+RUN: Prompt coach T5, a missing-data version of the anomaly template (Workiva repo)
+
+Written 2026-10-19 by talk d505d863. Load studio-harness:talk-and-run first and follow "The run". You are
+the run lead: coordinate only, never plan or build in your own context.
+
+WHERE
+- Worktree: C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-findings-fix
+  Branch: worktree-prompt-coach-findings-fix (from origin/prompt-coach 6154fae). Work only here.
+- Spec (approved 2026-10-19T07:07Z by the PM proxy for Ian, proxy decided):
+  docs/superpowers/specs/2026-10-19-prompt-coach-missing-data-template-design.md
+- Labels (Opus, accepted as proxy decided): prompt-coach/research/2026-10-19-missing-ask-labels.tsv
+- Ledger (git-ignored): .ledger/2026-10-19-prompt-coach-missing-data/ with budget.json, slip.json,
+  progress.md (talk rows, rulings, probe numbers), logs/ (baselines b_*.log, before snapshot
+  strong_before_1630a36.tsv, tricky rewrites at 0ec11fa and 6154fae), scripts/ (strong_dump.js,
+  tricky_all.js, notes_probe.js, missing_probe.js; each takes the ABSOLUTE path of prompt-coach first).
+- Project rules: CLAUDE.md (repo root) and prompt-coach/README.md ("Rewrite wording rules").
+
+ORDER
+1. First check (talk-and-run): STUDIO_RUN_LEDGER set, budget.json and slip.json exist; else stop.
+2. Plan by studio-harness:plan-writer -> docs/superpowers/plans/2026-10-19-prompt-coach-missing-data-template.md.
+   Header: Data: (none). Suggested tasks: (a) failing unit test for T5 (typed, with @sus_supplier_data.csv;
+   spec check 1) in tests/rewrite_unit.test.js; (b) the missing-data test and the two fragments in
+   engine/rewrite.js, pattern tuned on label ids 16-38 only; (c) rebuild dist/prompt-coach.html, README
+   wording-rules line and dist byte count in the same commit; (d) evidence doc
+   docs/evidence/2026-10-19-prompt-coach-missing-data.md filling the spec's success table before/after.
+   Plan review: frontier model plus Codex (claudex-loop:codex-review). The tricky-batch run ran Codex
+   read-only unelevated from an empty folder (ledger gotcha 2026-10-17-codex-unelevated-sandbox-runs-on-windows);
+   if it still cannot run, record it and say so at the plan stop. Plan approval: send the plan to the PM proxy
+   (SendMessage to "NEW - PM proxy overnight", recommendation + evidence) and wait for its reply; check
+   its line in C:/Users/teasp/Documents/studio-harness/.claude/worktrees/pm-proxy/.ledger/proxy/decisions.md
+   before acting on it. Do not use AskUserQuestion tonight (nobody answers it).
+3. Each task one at a time: implementer (test first: the new check fails on the parent, passes after),
+   checker, lead re-runs the check, ledger row.
+4. Must stay green (spec check 8): node --test --test-reporter=tap tests/rewrite_unit.test.js all pass;
+   simulate.js data/train_*.jsonl strongNotStrong <= 2, betterWeak <= 5, badText <= 2;
+   customer_check.js PASS 229; eval.js rulefeat data/test.jsonl acc 0.856. Spec checks 2-7 from
+   scripts/strong_dump.js after vs logs/strong_before_1630a36.tsv (diff of the Strong column: only the
+   predicted ids may change) and tricky_all.js vs logs/tricky_strong_6154fae.txt (only T5 changes).
+   pagetest.js/filetest.js: report "not run" unless a working Playwright/vendor path is found; install
+   nothing.
+5. Final whole-branch review: studio-harness:final-reviewer plus a read-only Codex review; merge the
+   findings; where they disagree on must-fix, the PM proxy decides for Ian. Fix round, re-check.
+6. Evidence doc with numbers (measured vs read).
+7. STOP for push and merge: slip.json names neither (the standing-slip write was refused by auto mode in
+   the talk). Ask the PM proxy by SendMessage; record its yes verbatim under laterYes in slip.json, with
+   its decisions.md line checked, before the command. Merge rule (global CLAUDE.md): push the target's
+   remote tip to backup/prompt-coach-before-worktree-prompt-coach-findings-fix-<date> first, keep both
+   sides on conflict, full checks green on the result. Never force.
+8. Hand-off PM step; then the next talk prompt (T3/T6 "the file cannot support this ask", per the PM's
+   order) and notify.
+
+PARKED (tricky-batch open questions; report, do not gate; recommendation each, for Ian in the morning)
+- Q1 refusal when declining is right: change R14(c) so a clear decline scores job 1 when the key says the
+  file cannot support the ask (settles 6 of Opus's 14 unruled items). Recommend yes.
+- Q2 "[number]" placeholder: score table/format N/A when the prompt left the count blank; log as a coach
+  finding. Recommend yes.
+- Q3 extra: keep reporting Opus/Codex totals; do not gate (Ian: "Report extras, don't gate (Rec.)").
+- Q5 scorer agreement: keep Opus as final; a third read on the 10 split rows only if a later batch
+  decision hangs on them. Recommend no third read now.
+- New small finding: T6 grounding note flags "FY25" when the file says "FY2025" (false alarm).
+
+PERMISSIONS (slip.json)
+- Push: no, until a recorded yes (step 7). Merge: no, until a recorded yes (step 7).
+- Spend: none. Everything here is offline Node. No live Workiva AI run.
+- New sessions: yes, only a successor at the context stop.
+- Commits: only the approved plan's tasks, the evidence doc and the hand-off prompt.
+
+SAFETY
+- No engine change beyond the spec (grades, weights, classifier, notes, tips untouched).
+- No customer data; the labels file holds only stored synthetic prompts.
+- Do not republish any artifact.
+- Docs change in the same commit as the code they describe.
+- No writes under ~/.claude/ except the session-rename exception in talk-and-run.
+- Stops: plan approval; push/merge; a decision only Ian can make; two strikes. At each stop: notify
+  (PushNotification and bin/notify.mjs), then ask the PM proxy by SendMessage.
