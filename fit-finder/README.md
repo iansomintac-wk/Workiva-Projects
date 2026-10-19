@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (87,809 bytes)
+node tests/build.js                                               # -> dist/fit-finder.html (88,205 bytes)
 # Offline Coach link: keep dist/fit-finder.html and prompt-coach.html in one folder; opened from a file, the link uses prompt-coach.html, online it uses the artifact URL.
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
@@ -272,3 +272,9 @@ reviewer, not measured here. Bar reading: by the spec's definition F is all fitt
 the bar is 5 and 5 wrong passes at the bar. If F counted only fit rows with a gold card (32), the
 bar would be 4 and 5 wrong would fail. The verdict stays the spec's: Ian ruled 2026-10-18 "All 42
 count (Recommended)", with the 32-row fail reported beside it.
+
+Share-ready T5b (targeted card fixes): the sustainability requirements card needs a sustainability cue; a translate ask
+leads with the translate card; an op word after "do not / don't / no need to / never / without" does not count; "list the
+exceptions/findings" reads as EXTRACT, so a SOC or assurance report review reaches the file-summary card. Tone and length
+words ("more concise", "more professional") are left out of REWRITE on purpose: rule C (2026-10-17) and its tests say so.
+Cases: tests/edge-cards.test.js. Dist size 88205 bytes (LF, as committed).

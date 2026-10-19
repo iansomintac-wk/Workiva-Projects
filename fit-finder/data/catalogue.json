@@ -148,7 +148,7 @@
     {
       "id": "gen-summarize-file", "area": "GEN", "role": "Anyone",
       "task": "Pull the key points out of a long document before a meeting.",
-      "ops": ["SUMMARIZE", "READ", "EXTRACT"], "match": "summar\\w*|key points|recap|long (?:document|file|report|memo)|before (?:a|the) meeting|brief(?:ing)?",
+      "ops": ["SUMMARIZE", "READ", "EXTRACT"], "match": "summar\\w*|key points|recap|long (?:document|file|report|memo)|before (?:a|the) meeting|brief(?:ing)?|(?:soc [12]|assurance|audit) reports?",
       "surfaces": ["files", "chat"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S3", "S6"],
       "prompt": "Use only the attached document. Context: the summary is for [who will read it], who will not read the full file. Summarize it in five bullets, then list the three points that need a decision. Do not add facts that are not in the document; I will review it.",
       "stays": "What to act on. Check each Sources link Workiva AI lists under its answer.",
@@ -283,7 +283,7 @@
     {
       "id": "sus-requirements", "area": "SUS", "role": "Sustainability reporting",
       "task": "Understand what a new ESRS or ISSB requirement asks us to disclose.",
-      "ops": ["EXPLAIN", "READ"], "match": "esrs|issb|csrd|ifrs s[12]|requirements?|datapoints?|disclosure requirements?|standards?",
+      "ops": ["EXPLAIN", "READ"], "match": "(?=.*\\b(?:csrd|esrs|issb|ifrs s[12]|climate|emissions?|sustainab\\w*|esg|ghg|carbon|scope [123])\\b)(?:esrs|issb|csrd|ifrs s[12]|requirements?|datapoints?|disclosure requirements?|standards?)",
       "surfaces": ["esrs-issb", "chat"], "fitBasis": "named", "evidence": ["pattern"], "refs": ["S16", "S17", "S18"],
       "prompt": "Use only the [ESRS or ISSB] knowledge base. Context: the answer is for the data owners who must supply the data. Explain what [requirement] asks us to disclose, in plain terms, as a bulleted list of the data we would need. If the knowledge base does not say, tell me rather than guess.",
       "stays": "Deciding what is material and who owns each data point.",
@@ -301,7 +301,7 @@
     {
       "id": "sus-exec-narrative", "area": "SUS", "role": "Sustainability reporting",
       "task": "Rewrite the sustainability narrative for executives or the board.",
-      "ops": ["REWRITE", "SUMMARIZE"], "match": "sustainab\\w*|esg|climate|carbon|emissions",
+      "ops": ["REWRITE", "SUMMARIZE"], "match": "(?<!\\btranslat\\w*(?: [\\w-]+){0,6} )(?:sustainab\\w*|esg|climate|carbon|emissions)",
       "surfaces": ["doc"], "fitBasis": "named", "evidence": ["heard"], "refs": ["S2", "S22", "S6"],
       "prompt": "Use only the selected sustainability narrative. Context: it goes to [the board]. Rewrite it in under [number] words, as a short paragraph that leads with what changed since [last period]. Keep every number and fact exactly as written, and do not add anything new.",
       "stays": "The message and every number.",
