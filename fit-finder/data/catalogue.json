@@ -87,7 +87,7 @@
       "task": "Write the first draft of the year-over-year change narrative.",
       "ops": ["DRAFT", "COMPARE"], "match": "(?<!\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|co2e?|carbon|energy (?:use|usage|consumption|data)|factbook|anomal\\w*|outliers?|unusual)\\b(?:[^.;]|(?<=\\d)\\.(?=\\d)){0,300})(?:year[- ]over[- ]year|yoy)\\b(?!(?:[^.;]|(?<=\\d)\\.(?=\\d)){0,300}\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|co2e?|carbon|energy (?:use|usage|consumption|data)|factbook|anomal\\w*|outliers?|unusual)\\b)|variance (?:narrative|commentary|explanations?)|md&a|flux|change narrative|commentary",
       "surfaces": ["advisor", "doc", "files"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S2", "S23"],
-      "prompt": "Using @[this year's file] and @[last year's file], draft the year-over-year change narrative for [section]. Explain each change of more than [threshold] in one or two sentences, using only figures in the files. Mark anything I need to confirm as [to confirm].",
+      "prompt": "Use only the attached current-year file and the attached prior-year file. Context: this narrative goes to [who will read it] in the [section] of our report. Draft the year-over-year change narrative for [section], explaining each change of more than [threshold] in one or two sentences, as a short list. Use only figures in the files, and mark anything I need to confirm as [to confirm].",
       "stays": "Checking every figure, and deciding what is worth explaining.",
       "try": "Every quarter I draft the year-over-year change narrative for the MD&A."
     },
@@ -105,7 +105,7 @@
       "task": "Check that the narrative, the tables and related documents such as the earnings release say the same thing.",
       "ops": ["CHECK", "COMPARE"], "match": "narrative|(?<!wdata )tables?|footnotes?|earnings release|press release|financial statements|consisten\\w*|don'?t (?:agree|match)",
       "surfaces": ["files", "doc"], "fitBasis": "assumed", "evidence": ["heard"], "refs": ["S3", "S5"],
-      "prompt": "You are reviewing @[the draft] against @[the other document] before it goes to review. List every place where a number or statement does not match, with the section and both values. Do not fix anything; I will check each one.",
+      "prompt": "Use only the attached draft and the attached other document. Context: the draft goes to review soon, so I need to catch mismatches first. Check them against each other and list every place where a number or statement does not match, as a table with the section and both values. Do not fix anything or guess; I will check each one.",
       "stays": "The tie-out itself and every correction. Keep to one section at a time for long filings.",
       "try": "Every close I tie out the numbers in the earnings release to the financial statements."
     },
@@ -114,7 +114,7 @@
       "task": "Explain the GAAP-to-statutory differences for each entity.",
       "ops": ["EXPLAIN", "COMPARE"], "match": "statutory|stat\\b|gaap|local gaap|entit(?:y|ies)|reconcil\\w*",
       "surfaces": ["files", "sheet"], "fitBasis": "assumed", "evidence": ["heard"], "refs": ["S3"],
-      "prompt": "Using @[the reconciliation file] for [entity], list each GAAP-to-statutory adjustment with a one-line plain-English explanation of why it exists. Use only what is in the file and mark anything unclear as [to confirm].",
+      "prompt": "Use only the attached reconciliation file for [entity]. Context: the explanations are for [who will read it], who is not an accountant. List each GAAP-to-statutory adjustment as a table with a one-line plain-English explanation of why it exists. Do not add facts that are not in the file; mark anything unclear as [to confirm].",
       "stays": "The math and the adjustments themselves. Excel files need your organization's AWS model provider turned on.",
       "try": "Every year I explain the GAAP-to-statutory differences for each entity."
     },
@@ -123,7 +123,7 @@
       "task": "See how our disclosures compare with peers' filings.",
       "ops": ["COMPARE", "READ"], "match": "peers?|competitors?|benchmark\\w*|other companies|industry",
       "surfaces": ["benchmarking", "sec-intel"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S7", "S12", "S13"],
-      "prompt": "Compare our [disclosure topic] disclosure in @[our filing] with how [peer companies] describe it in their latest filings. List what they cover that we do not, with where each appears.",
+      "prompt": "Use only the attached filing and the peer filings I name: [peer companies]. Context: I am preparing our [disclosure topic] disclosure for [who will read it]. Compare how they describe it with our wording, and list what they cover that we do not, as a table with where each appears. Do not add anything that is not in those filings.",
       "stays": "Deciding what, if anything, to change.",
       "try": "Each year I compare our risk factor disclosures with our peers' filings."
     },
@@ -150,7 +150,7 @@
       "task": "Pull the key points out of a long document before a meeting.",
       "ops": ["SUMMARIZE", "READ", "EXTRACT"], "match": "summar\\w*|key points|recap|long (?:document|file|report|memo)|before (?:a|the) meeting|brief(?:ing)?",
       "surfaces": ["files", "chat"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S3", "S6"],
-      "prompt": "Summarize @[the document] in [number] bullets for [who will read it]. Then list the [three] points that need a decision. Use only what is in the file.",
+      "prompt": "Use only the attached document. Context: the summary is for [who will read it], who will not read the full file. Summarize it in five bullets, then list the three points that need a decision. Do not add facts that are not in the document; I will review it.",
       "stays": "What to act on. Check each Sources link Workiva AI lists under its answer.",
       "try": "Before each audit committee meeting I summarize the long memos into key points."
     },
@@ -159,7 +159,7 @@
       "task": "Answer questions about how to do something in Workiva.",
       "ops": ["EXPLAIN"], "match": "(?:in|with|use|using) workiva|how (?:do|to)|support (?:center|articles?)|workiva (?:features?|help)",
       "surfaces": ["support-kb"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S9"],
-      "prompt": "How do I [the task] in Workiva? Give the steps, and link the Support Center articles you used.",
+      "prompt": "Use only the Workiva support knowledge base. Context: I am helping a colleague who is new to [the task]. Explain how to [the task] in Workiva, as a numbered list of steps with a link to each Support Center article you used. If the articles do not cover it, say so rather than guess.",
       "stays": "Trying the steps in your own workspace; your setup and permissions may differ.",
       "try": "Every week I answer questions from colleagues about how to do things in Workiva."
     },
@@ -168,7 +168,7 @@
       "task": "Rewrite a section to be shorter or clearer for a different audience.",
       "ops": ["REWRITE"], "match": "proofread\\w*|bullet\\w*|capitali[sz]\\w*|synonyms?|better word|rewrit\\w*|shorten\\w*|tighten\\w*|plain english|board|executives?|audience|tone|too long|re-?word\\w*|rephras\\w*|worded|wording",
       "surfaces": ["doc"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S2", "S22", "S6"],
-      "prompt": "Rewrite the selected section for [audience] in under [number] words. Keep every number and fact exactly as written.",
+      "prompt": "Use only the selected section. Context: it is going to [audience]. Rewrite it in under [number] words, as one short paragraph. Keep every number and fact exactly as written, and do not add anything new.",
       "stays": "The final wording and every number.",
       "try": "Every quarter I rewrite the CFO's commentary to be shorter for the board."
     },
@@ -204,7 +204,7 @@
       "task": "Find controls that overlap or duplicate each other.",
       "ops": ["CLASSIFY", "COMPARE", "READ"], "match": "rationali[sz]\\w*|overlap\\w*|duplicat\\w*\\b(?! (?:records?|rows?|entries|values?|data|transactions?|invoices?|payments?|lines?)\\b)|redundan\\w*|too many controls|control descriptions?",
       "surfaces": ["grc-chat", "files"], "fitBasis": "assumed", "evidence": ["heard"], "refs": ["S1", "S3"],
-      "prompt": "You are an internal controls analyst. Using @[the control list], group controls whose descriptions cover the same risk or activity. For each group give the control IDs and one line on why they look alike. Do not recommend removing any.",
+      "prompt": "You are an internal controls analyst. Use only the attached control list. Context: we are looking for overlapping controls to simplify our testing. Group controls whose descriptions cover the same risk or activity, as a table with the control IDs and one line on why they look alike. Do not recommend removing any; I will decide.",
       "stays": "Which controls to merge or retire. Work through one process at a time for long lists.",
       "try": "We need to rationalize our controls, there are too many overlapping ones."
     },
@@ -213,7 +213,7 @@
       "task": "Map our existing controls to a new framework and see what is missing.",
       "ops": ["MAP", "CHECK"], "match": "framework|nist|iso|soc ?2|coso|crosswalk|map\\w*|gaps?",
       "surfaces": ["grc-chat", "files"], "fitBasis": "assumed", "evidence": ["heard"], "refs": ["S1", "S3"],
-      "prompt": "Map each control in @[our control list] to the [framework] requirements in @[the framework file]. Give a one-line reason for each match, mark weak matches as [unsure], and list requirements with no matching control.",
+      "prompt": "Use only the attached control list and the attached framework file. Context: I am preparing a mapping to [framework] for [who will read it]. Map each control to the [framework] requirements as a table with a one-line reason for each match, mark weak matches as [unsure], and list requirements with no matching control. Do not invent matches.",
       "stays": "Accepting each mapping and deciding how to close gaps.",
       "try": "Each year we map our controls to NIST and look for gaps."
     },
@@ -222,7 +222,7 @@
       "task": "Check each control's evidence for missing attributes.",
       "ops": ["CHECK", "READ"], "match": "evidence|screenshots?|support(?:ing)? documents?|workpapers?",
       "surfaces": ["evidence", "files"], "fitBasis": "named", "evidence": ["heard"], "refs": ["S1", "S3"],
-      "prompt": "Check @[the evidence file] against this control: [control description]. List which attributes it shows, which it does not, and anything unclear, with where you found each.",
+      "prompt": "Use only the attached evidence file. Context: I am testing this control and need to know whether the evidence is enough: [control description]. List as a table which attributes it shows, which it does not, and anything unclear, with where you found each. If the file does not show it, say so rather than guess.",
       "stays": "Concluding whether the evidence is enough.",
       "try": "I review the evidence screenshots every control owner uploads each quarter."
     },
@@ -258,7 +258,7 @@
       "task": "Write a remediation plan for a control failure.",
       "ops": ["DRAFT"], "match": "remediat\\w*|control (?:failures?|deficienc\\w*)|action plans?",
       "surfaces": ["files", "issues"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S4", "S1"],
-      "prompt": "You are a GRC analyst. Write a detailed remediation plan for the [process] control failure described in @[the file], with steps to reduce the risk until it is fixed.",
+      "prompt": "You are a GRC analyst. Use only the attached file describing the [process] control failure. Context: the plan goes to [who will read it]. Write a remediation plan as a numbered list of steps, no more than ten, that reduce the risk until it is fixed. Do not add facts that are not in the file; mark anything I need to confirm as [to confirm].",
       "stays": "Agreeing the plan with the owner and the dates.",
       "try": "For each control failure I write a remediation plan."
     },
@@ -267,7 +267,7 @@
       "task": "Summarize risk interviews and risk activity for the risk committee.",
       "ops": ["SUMMARIZE"], "match": "risk (?:interviews?|assessments?|activity|committee|register)|interview notes",
       "surfaces": ["risk-summary", "files"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S1"],
-      "prompt": "Summarize @[the interview notes] in [number] bullets for the risk committee: the risks raised, who raised them, and anything that changed since [last period].",
+      "prompt": "Use only the attached interview notes. Context: the summary is for the risk committee. Summarize them in five bullets: the risks raised, who raised them, and anything that changed since [last period]. Do not add facts that are not in the notes; say so if something is unclear.",
       "stays": "Rating the risks and deciding what goes to the committee.",
       "try": "Each quarter I summarize the risk interviews for the risk committee."
     },
@@ -285,7 +285,7 @@
       "task": "Understand what a new ESRS or ISSB requirement asks us to disclose.",
       "ops": ["EXPLAIN", "READ"], "match": "esrs|issb|csrd|ifrs s[12]|requirements?|datapoints?|disclosure requirements?|standards?",
       "surfaces": ["esrs-issb", "chat"], "fitBasis": "named", "evidence": ["pattern"], "refs": ["S16", "S17", "S18"],
-      "prompt": "Using the [ESRS or ISSB] knowledge base, explain what [requirement] asks us to disclose, in plain terms, as a list of the data we would need.",
+      "prompt": "Use only the [ESRS or ISSB] knowledge base. Context: the answer is for the data owners who must supply the data. Explain what [requirement] asks us to disclose, in plain terms, as a bulleted list of the data we would need. If the knowledge base does not say, tell me rather than guess.",
       "stays": "Deciding what is material and who owns each data point.",
       "try": "I read through what ESRS E1 requires and explain it to the data owners."
     },
@@ -303,7 +303,7 @@
       "task": "Rewrite the sustainability narrative for executives or the board.",
       "ops": ["REWRITE", "SUMMARIZE"], "match": "sustainab\\w*|esg|climate|carbon|emissions",
       "surfaces": ["doc"], "fitBasis": "named", "evidence": ["heard"], "refs": ["S2", "S22", "S6"],
-      "prompt": "Rewrite the selected sustainability narrative for [the board] in under [number] words. Lead with what changed since [last period]. Keep every number and fact exactly as written.",
+      "prompt": "Use only the selected sustainability narrative. Context: it goes to [the board]. Rewrite it in under [number] words, as a short paragraph that leads with what changed since [last period]. Keep every number and fact exactly as written, and do not add anything new.",
       "stays": "The message and every number.",
       "try": "I rewrite the sustainability section to be shorter for the board."
     },
@@ -313,7 +313,7 @@
       "ops": ["CHECK", "COMPARE", "EXPLAIN"],
       "match": "(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|carbon (?:footprint|data|numbers|figures|accounting|inventory)|energy (?:use|usage|consumption|data)|factbook)\\b(?:[^.;]|(?<=\\d)\\.(?=\\d)){0,300}\\b(?:anomal\\w*|outliers?|unusual (?:[\\w-]+ )?(?:values?|figures?|numbers?|amounts?|changes?|movements?|spikes?|drops?|readings?|swings?|variances?|data|trends?|results?)|variances?)|(?:anomal\\w*|outliers?|unusual (?:[\\w-]+ )?(?:values?|figures?|numbers?|amounts?|changes?|movements?|spikes?|drops?|readings?|swings?|variances?|data|trends?|results?)|variances?)\\b(?:[^.;]|(?<=\\d)\\.(?=\\d)){0,300}\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|carbon (?:footprint|data|numbers|figures|accounting|inventory)|energy (?:use|usage|consumption|data)|factbook)",
       "surfaces": ["sheet", "doc"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S16"],
-      "prompt": "Analyze this data from [current period] against [previous period]. Identify anomalies or outliers that exceed a +/-20% variance. For each instance identified, provide a brief rationale — such as potential data entry error or operational shift — to help facilitate further investigation.",
+      "prompt": "Use only the attached data from [current period] and [previous period]. Context: I am reviewing it before the report goes out. Check the current period against the previous and list as a table every anomaly or outlier that exceeds a +/-20% variance, with a brief rationale for each, such as a possible data entry error or operational shift. If you are unsure, say so rather than guess.",
       "stays": "Deciding which items are real errors, and correcting the source data.",
       "try": "Each period I look for outliers in our emissions data against last year and explain them."
     }

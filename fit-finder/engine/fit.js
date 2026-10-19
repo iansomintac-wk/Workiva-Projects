@@ -83,7 +83,7 @@
   const ASK = {
     CHECK: 'Check it for errors, gaps and mismatches. List each issue with where it is and why it looks wrong.',
     COMPARE: 'Compare the two versions or periods and list what changed, with where each change is.',
-    SUMMARIZE: 'Summarize the key points in [number] bullets for [who will read it].',
+    SUMMARIZE: 'Summarize the key points in no more than five bullets for [who will read it].',
     DRAFT: 'Draft a first version for [who will read it]. Mark anything I need to confirm as [to confirm].',
     REWRITE: 'Rewrite it to be [shorter, clearer, or up to date], keeping every number and fact.',
     EXTRACT: 'Pull every [item] into a table, with where each one appears.',
@@ -91,7 +91,7 @@
     MAP: 'Map each item to [the framework], with a one-line reason. Mark any you are unsure of.',
     CLASSIFY: 'Sort the items into [the groups you use], one line each with the reason.',
     ESTIMATE: 'Estimate [what] from the data. Show each step of the working and mark every assumption as [to confirm].',
-    READ: 'Read it and list the points I should look at first.'
+    READ: 'Read it and list the points I should look at first, as [number] bullets.'
   };
   // the first thing the task does that the AI can take (reading only when nothing else is there)
   function lead(text) {
@@ -101,12 +101,18 @@
   }
   function starter(text, ops, fit) {
     const first = lead(text);
-    const task = String(text || '').trim().replace(/\s+/g, ' ').replace(/[.!?]*$/, '.');
+    let task = String(text || '').trim().replace(/\s+/g, ' ').replace(/[.!?]*$/, '.');
+    // a task with several jobs: the starter takes the first one, which the Coach reads as one job
+    const cut = first && task.match(/,?\s+(?:and then|then|and)\s+|;\s+/);
+    if (cut) {
+      const rest = normalize(task.slice(cut.index + cut[0].length));
+      if (Object.keys(OPS).some((o) => o !== first && OPS[o].test(rest))) task = task.slice(0, cut.index).replace(/[.!?]*$/, '.');
+    }
     if (!first) {
-      if (ops.includes('COLLECT')) return 'Draft a short, polite request to [who] asking for [what you need] by [date]. Context: ' + task;
+      if (ops.includes('COLLECT')) return 'Use only the text below. Context: ' + task + ' Draft a short, polite request to [who] asking for [what you need] by [date], as an e-mail of no more than five sentences. Do not invent deadlines or facts; I will review it and decide what to send.';
       return null;
     }
-    return 'Use only [the selected file or table]. My task: ' + task + ' ' + ASK[first] + ' Do not add facts that are not in the source; I will review and decide.';
+    return 'Use only [the selected file or table]. My task: ' + task + ' ' + ASK[first] + ' This is a first pass for [who will read it], so I can decide what to change before it goes out. Do not add facts that are not in the source; I will review and decide.';
   }
   // a use case's fuller prompt fits only when it starts where the person's task starts
   function patternPrompt(text, u) {
