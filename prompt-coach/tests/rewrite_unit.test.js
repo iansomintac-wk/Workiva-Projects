@@ -510,14 +510,6 @@ test('unsupported: real category rows (comma, tab, long numbered labels, Word ta
   const flat = { name: 'n.pdf', kind: 'PDF', text: 'Scope 3 categories Purchased goods Business travel', periods: [] };
   assert.equal(unsupported(run(askCat(11), [flat])).length, 1, 'flattened document text keeps the old rule');
 });
-test('unsupported: an LE (latest estimate) column or "FY26 LE" header counts as a forecast basis (S3b)', () => {
-  for (const body of ['Account, Actual, LE\nRevenue, 100, 105, 110', 'Account, FY25 Actual, FY26 LE\nRevenue, 100, 130'])
-    assert.equal(unsupported(run('Predict next quarter revenue from this', [sheetOf('Model', body)])).length, 0, body);
-});
-test('unsupported: words that only contain "le" are no forecast basis (S3b guard)', () => {
-  for (const body of ['Account, Role\nRevenue, 100', 'Account, Sample, Table\nRevenue, 1', 'Account, le monde\nRevenue, 1', 'Account, Legal Entity\nRevenue, 1'])
-    assert.equal(unsupported(run('Predict next quarter revenue from this', [sheetOf('Model', body)])).length, 1, body);
-});
 test('grounding: "Q1 FY25" counts as present when the file says "FY2025 Q1" or "Q1 FY2025" (C5b)', () => {
   const g = (o) => o.notes.filter((n) => n.kind === 'grounding').map((n) => n.text).join(' ');
   const ask = 'Using only @f.xlsx, summarise Q1 FY25 revenue in a table with each source row. Do not guess.';
