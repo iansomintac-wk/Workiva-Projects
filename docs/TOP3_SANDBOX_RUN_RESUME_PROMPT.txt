@@ -1,16 +1,40 @@
-TOP-3 + SANDBOX RUN, RESUME PROMPT. Written 2026-10-19 07:30Z by run lead d3d833fc at the Task 5 stop (only if d3d833fc
-is gone; otherwise Ian answers in d3d833fc). Load studio-harness:talk-and-run first; you are the run lead.
+TOP-3 + SANDBOX RUN, RESUME PROMPT 2. Written 2026-10-19 ~15:55Z by run lead d3d833fc at its 300k context stop, after
+Tasks 5-6 (commit 108add6). Load studio-harness:talk-and-run first; you are the run lead (coordinate; helpers build).
 
 WHERE: C:/Users/teasp/Documents/workiva/.claude/worktrees/fit-finder-fair-test, branch fit-finder-top3 (pushed).
-Plan rev 2: docs/superpowers/plans/2026-10-19-fit-finder-top3-sandbox.md (approved by PM proxy 51656567, 07:15Z).
-Ledger: .ledger/2026-10-19-top3-sandbox/progress.md (git-ignored; IAN-MORNING.md there is Ian's step). Launch with
-STUDIO_RUN_LEDGER set to that folder (absolute) via --settings, with CLAUDE_STOP_AT_TOKENS 300000.
+Plan rev 2: docs/superpowers/plans/2026-10-19-fit-finder-top3-sandbox.md (approved by PM proxy 51656567).
+Ledger: .ledger/2026-10-19-top3-sandbox/progress.md (git-ignored; read its last 40 lines, and live/score-lead.md).
+Launch with STUDIO_RUN_LEDGER = that folder (absolute, forward slashes) and CLAUDE_STOP_AT_TOKENS 300000 via --settings.
 
-DONE: T1 blind set c93c1e4 (BASE); T2 scorer a70bea8 + one-time parent score (parent-score.txt: first card right
-9 of 32, no card 22, gain 0 -> prediction disproved); T3 SKIPPED (proxy decided, option 1: page unchanged; Ian may
-overturn); T4 sandbox kit 44be21d + 18e99e5 (names fixed), checker PASS.
-NEXT: T5 waits for Ian's 8 Workiva AI replies (fit-finder/sandbox/built/batch-message.md). Then T5 steps 2-7, T6,
-T7 (HOW sentence must report the first-card result, since the page does not list three; pagetest stays at its
-current check count plus the HOW check), T8 final review (Opus + Codex read-only, unelevated sandbox), T9 evidence
-+ merge per slip.json (backup branch first). Never re-score data/top3 except T7 step 1 (once). Data care as in
-docs/TOP3_SANDBOX_RUN_PROMPT.txt.
+DONE
+- T1 blind set c93c1e4 (BASE). T2 scorer a70bea8 + one-time parent score (.ledger/.../parent-score.txt): first card right
+  9 of 32, wrong 1, no card 22, card on not-a-fit 0; top 3 gain 0 -> the spec's prediction (gain >= 3) is DISPROVED.
+- T3 SKIPPED (PM proxy, option 1, Ian may overturn): the page does not list three cards.
+- T4 sandbox kit 44be21d + 18e99e5. T5+T6 108add6: 8 cards run in Ian's sandbox by Claude in Chrome driver sessions
+  (no paste by Ian). First run: 6 pass, 2 fail (added currency). Fixed prompts; re-runs pass (fr-yoy 5/0; gen-summarize-file
+  rerun2 5/0). In place: sus-anomalies pass in the sheet; gen-rewrite fails in the document ("close to the budget" ->
+  "within budget", 74 words vs < 70); 3 of 4 rewrite runs over the word limit -> both rewrite cards' "stays" now say count
+  the words. GRC features (Evidence analyzer, Risk & Control KB) are NOT in this sandbox: report to Ian, cards kept.
+  Ian, verbatim: "I don't understand why I would use the prompt advisor? This should replace that" -> advisor dropped from
+  fr-yoy-narrative surfaces.
+- Sandbox state: 10 ff_ files + "Untitled Document (4)" + "ff_inplace_sheet" in Ian's folder "Prompt coach test - Ian".
+
+OPEN, in order
+1. T6 step 7 second scorer: the re-runs (live/rerun/, live/rerun2/) and in-place answers (live/inplace/) were scored by the
+   lead only; dispatch one Sonnet scorer as for live/score-sonnet.md and reconcile.
+2. T6 checker (fresh, read-only) over 108add6: catalogue diff touches only prompt/surfaces/stays of 4 cards; suites green.
+3. T7: end score ONCE (plan Task 7 step 1; must equal parent-score.txt). The HOW sentence must report the first-card result
+   and the no-card count (the page does NOT list three); pagetest is at 98 checks, plus the HOW check. README section
+   "Top-3 and sandbox check (2026-10-19)", dist LF byte count from git show :fit-finder/dist/fit-finder.html | wc -c.
+4. T8 final review: Opus final-reviewer + Codex read-only (codex exec -s read-only -c windows.sandbox=unelevated
+   --skip-git-repo-check -o <out> - < <prompt>; forbid data/real/, data/top3/, synth-score.js; audit its log). Fix round.
+   Also run the 5-word overlap check with the fit-finder-v422 ledger nearcopy.cjs (the T6 helper used its own method).
+5. T9 evidence doc docs/evidence/2026-10-19-top3-sandbox.md; then merge per slip.json (backup branch
+   backup/prompt-coach-before-fit-finder-top3-<date> first; origin/prompt-coach is ahead with prompt-coach work).
+6. Hand-off PM step; notify Ian with notify.mjs; tell PM proxy "NEW - PM proxy overnight" if still running.
+
+TRAPS: Bash tool halves double backslashes (use the Write tool for any script with \\); git checkout -- <path> is blocked
+(use git restore <path>); a sandbox driver needs claude --bg --chrome; before launching a driver check claude agents for one
+already launched by a predecessor (twice this run two drivers raced). Never re-score data/top3 except T7 step 1.
+SESSION NAMES: do not claude rm 52d5b479, d3d833fc, 37de9aea, 78afae90, 245aeac6, 708b3b54, 306ea670 (they share this
+worktree or its .ledger/).
