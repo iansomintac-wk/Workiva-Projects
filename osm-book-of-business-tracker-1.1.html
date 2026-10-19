@@ -11726,6 +11726,15 @@ function normalizeCsatBlock(ap){
     surveySentOn: isRealISODate(a.surveySentOn) ? a.surveySentOn : null,
     surveyAnsweredOn: isRealISODate(a.surveyAnsweredOn) ? a.surveyAnsweredOn : null});
 }
+/* L12: the two survey dates, printed in the CSAT block. Empty value = not set. */
+function csatDatesHtml(ap, id){
+  const e = escapeAttr(id);
+  return `<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:6px;">
+        <label for="fp-csat-sent-${e}">Survey sent <input type="date" class="dk-in" id="fp-csat-sent-${e}" data-fp-csat-sent="${e}" value="${escapeAttr(ap.surveySentOn || '')}"></label>
+        <label for="fp-csat-ans-${e}">Answered <input type="date" class="dk-in" id="fp-csat-ans-${e}" data-fp-csat-answered="${e}" value="${escapeAttr(ap.surveyAnsweredOn || '')}"></label>
+      </div>`;
+}
+
 function csatSurveyOverdue(c){
   const ap = c && c.compliance && c.compliance.associatedPeopleCSAT;
   if(!ap || !isRealISODate(ap.surveySentOn) || isRealISODate(ap.surveyAnsweredOn)) return null;
@@ -12628,6 +12637,7 @@ function renderBeatPanel(beat, dispatchChips){
         <input type="text" id="fp-csat-${escapeAttr(c.id)}" data-fp-csat="${escapeAttr(c.id)}" maxlength="120" placeholder="Contact name for the CSAT survey" value="${escapeAttr(ap.contactName || '')}" style="flex:1; min-width:180px;">
         <button class="btn btn-sm ${ap.done ? '' : 'btn-primary'}" data-fp-toggle="associatedPeopleCSAT|${escapeAttr(c.id)}">${ap.done ? 'Undo' : 'Mark added'}</button>
       </div>
+      ${csatDatesHtml(ap, c.id)}
     </div>
 
     <div class="focus-act">
@@ -15232,6 +15242,17 @@ function bindBeatPane(root){
     };
     inp.addEventListener('input', ()=> commitLater(write));
     inp.addEventListener('change', write);
+  });
+  [['fpCsatSent', 'surveySentOn'], ['fpCsatAnswered', 'surveyAnsweredOn']].forEach(([ds, key]) => {
+    q('[data-' + ds.replace(/[A-Z]/g, m => '-' + m.toLowerCase()) + ']').forEach(inp => {
+      inp.addEventListener('change', ()=>{
+        const c = fpCustomer(inp.dataset[ds]);
+        if(!c || !c.compliance || !c.compliance.associatedPeopleCSAT) return;
+        markUndoable('CSAT survey date');
+        c.compliance.associatedPeopleCSAT[key] = isRealISODate(inp.value) ? inp.value : null;
+        saveData(); render();
+      });
+    });
   });
   q('[data-fp-sentiment]').forEach(ta => {
     const write = ()=>{

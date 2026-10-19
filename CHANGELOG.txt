@@ -24,6 +24,7 @@ OSM Runway — release notes
 
 1.1 — L12. Today chases a CSAT survey nobody answered.
     - The CSAT block holds two optional dates, surveySentOn and surveyAnsweredOn (old books load with both empty).
+    - The CSAT block in the call panel now has "Survey sent" and "Answered" date fields (change saves them; clearing one empties it).
     - Today shows a "CSAT follow-up" row when a survey was sent 7 or more days ago with no answer date.
       N = 7 is an ASSUMPTION, one named constant (CSAT_FOLLOWUP_DAYS). Graduated accounts are included.
     - Nothing new in the Gainsight export or queue. Data and Today row only; the date inputs come in the next step.

@@ -60,3 +60,13 @@ test('L12 pushCsatFollowUp: one csat_unanswered row, severity from the map, and 
 test('L12 invariant: nothing new in the Gainsight export or queue (passes on the parent already; guards against drift)', () => {
   for (const n of ['gainsightItemText', 'getGainsightQueue', 'queueGainsightItem']) assert.ok(!/survey(Sent|Answered)/.test(grab(n)), n);
 });
+
+test('L12 csatDatesHtml: two labelled date inputs, values and ids escaped', () => {
+  const ctx = ctxFor('2026-10-21', ['escapeHtml', 'escapeAttr', 'csatDatesHtml']);
+  const h = ctx.csatDatesHtml({ surveySentOn: '2026-10-14', surveyAnsweredOn: null }, 'a"b');
+  assert.ok(h.includes('Survey sent') && h.includes('Answered'));
+  assert.ok(h.includes('type="date"') && h.includes('data-fp-csat-sent="a&quot;b"') && h.includes('data-fp-csat-answered="a&quot;b"'));
+  assert.ok(h.includes('value="2026-10-14"'));
+  assert.equal((h.match(/value=""/g) || []).length, 1);
+  assert.ok(lf.includes('${csatDatesHtml(ap, c.id)}'), 'the CSAT block must print it');
+});
