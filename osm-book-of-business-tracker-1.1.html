@@ -12630,6 +12630,19 @@ function renderBeatPanel(beat, dispatchChips){
   </div>`;
 }
 
+/* D3 prep: which open promises the call-prep panel shows. Every open commitment (both directions) is
+   ranked by urgency across directions: overdue (oldest due first), then dated (due ascending), then
+   undated; equal keys keep stored order. The first `cap` are kept, the rest are counted in `more`. */
+function rankedPromises(c, cap){
+  const keep = cap > 0 ? cap : 5;
+  const open = openCommitments(c).filter(x => x && (x.direction === 'i_owe' || x.direction === 'they_owe'));
+  if(!open.length) return {kept: [], more: 0};
+  const tier = x => commitmentIsOverdue(x) ? 0 : isRealISODate(x.due) ? 1 : 2;
+  const ranked = open.map((x, i) => ({x, i, t: tier(x)})).sort((a, b) =>
+    a.t - b.t || (a.t < 2 && a.x.due !== b.x.due ? (a.x.due < b.x.due ? -1 : 1) : 0) || a.i - b.i).map(r => r.x);
+  return {kept: ranked.slice(0, keep), more: Math.max(0, ranked.length - keep)};
+}
+
 /* D2 prep: last call's closing stretch on the call-prep panel. Same eligibility and order as "Last touch"
    (logged, not future-dated, newest first, ties keep array order). Hidden when no such activity has a transcript. */
 function beatTranscriptSection(c){
