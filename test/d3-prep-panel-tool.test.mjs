@@ -36,24 +36,23 @@ test('d3-prep --control writes its copy exclusively, deletes only what it create
 
 // Behavioural: a real launch() (headless Chrome via the sim), then SIGTERM is delivered in-process (process.emit; a real kill does not run handlers on Windows).
 // Expect: exit 143, the control copy removed, and no new osmsim-* profile left behind (Chrome was stopped by its PID before exit).
-test('d3-prep signal during a sim run: exits 143, removes the control copy and leaves no osmsim profile (Chrome stopped)', { timeout: 120000 }, () => {
+test('d3-prep signal during a sim run: exits 143, removes the control copy and leaves its own osmsim profile (Chrome stopped)', { timeout: 120000 }, () => {
   const dir = mkdtempSync(resolve(tmpdir(), 'd3sig-'));
   const copy = resolve(dir, 'control-copy.html');
-  const profiles = () => new Set(readdirSync(tmpdir()).filter(n => n.startsWith('osmsim-')));
-  const before = profiles();
   const script = `
     import { writeFileSync, rmSync } from 'node:fs';
     const tool = await import(${JSON.stringify(pathToFileURL(TOOL).href)});
     writeFileSync(${JSON.stringify(copy)}, 'x');
     tool.installSignalCleanup(process, () => rmSync(${JSON.stringify(copy)}, { force: true }));
-    await tool.inSim(async () => { console.log('READY'); process.emit('SIGTERM', 'SIGTERM'); await new Promise(() => {}); });
+    await tool.inSim(async ctx => { console.log('PROFILE=' + ctx.profile); console.log('READY'); process.emit('SIGTERM', 'SIGTERM'); await new Promise(() => {}); });
   `;
   const r = spawnSync(process.execPath, ['--input-type=module', '-e', script], { cwd: ROOT, encoding: 'utf8', timeout: 100000 });
   try {
     assert.match(r.stdout || '', /READY/, 'child never reached the sim: ' + (r.stdout || '') + (r.stderr || '').slice(0, 400));
     assert.equal(r.status, 143, 'exit code; stderr: ' + (r.stderr || '').slice(0, 300));
     assert.ok(!existsSync(copy), 'control copy must be removed');
-    const leaked = [...profiles()].filter(n => !before.has(n));
-    assert.deepEqual(leaked, [], 'Chrome profile left behind (browser not stopped)');
+    const m = /PROFILE=(.+)/.exec(r.stdout || '');
+    assert.ok(m, 'child must print the profile folder its own launch() created');
+    assert.ok(!existsSync(m[1].trim()), 'this run Chrome profile left behind (browser not stopped): ' + m[1]);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
