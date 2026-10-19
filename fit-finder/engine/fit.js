@@ -114,8 +114,13 @@
     const ai = AI_OPS.filter((o) => OPS[o].test(t));
     return ai.filter((o) => o !== 'READ').sort((a, b) => at(a) - at(b))[0] || (ai.includes('READ') ? 'READ' : null);
   }
+  // a translate verb with "into/to <language>" asks for a translation, not a rewrite
+  const LANG = 'english|french|german|spanish|japanese|chinese|portuguese|italian|dutch|korean|arabic|russian|mandarin|swedish|polish|turkish|hindi';
+  const TRANSLATE = new RegExp('\\btranslat\\w*\\b.*?\\b(?:into|to)\\s+(' + LANG + ')\\b', 'i');
   function starter(text, ops, fit) {
     const first = lead(text);
+    const tm = String(text || '').match(TRANSLATE);
+    const ask = tm && first === 'REWRITE' ? 'Translate it into ' + tm[1][0].toUpperCase() + tm[1].slice(1).toLowerCase() + ', keeping figures, names and defined terms unchanged, and list any term you were unsure how to translate.' : ASK[first];
     let task = String(text || '').trim().replace(/\s+/g, ' ').replace(/[.!?]*$/, '.');
     // a task with several jobs: keep the clause with the first job the AI can take, which the Coach reads as one job.
     // Clauses end at ";", "then", or "and" plus make/create/build/prepare; the rest is the person's other steps.
@@ -139,7 +144,7 @@
       if (ops.includes('COLLECT')) return 'Use only the text below. Context: ' + task + ' Draft a short, polite request to [who] asking for [what you need] by [date], as an e-mail of no more than five sentences. Do not invent deadlines or facts; I will review it and decide what to send.';
       return null;
     }
-    return 'Use only [the selected file or table]. My task: ' + task + ' ' + ASK[first] + ' This is a first pass' + (ASK[first].includes('[who will read it]') ? '' : ' for [who will read it]') + ', so I can decide what to change before it goes out. Do not add facts that are not in the source; I will review and decide.';
+    return 'Use only [the selected file or table]. My task: ' + task + ' ' + ask + ' This is a first pass' + (ask.includes('[who will read it]') ? '' : ' for [who will read it]') + ', so I can decide what to change before it goes out. Do not add facts that are not in the source; I will review and decide.';
   }
   // a use case's fuller prompt fits only when it starts where the person's task starts
   function patternPrompt(text, u) {

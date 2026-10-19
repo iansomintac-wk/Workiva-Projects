@@ -44,7 +44,7 @@ for (const [name, rs] of taskSets) for (const t of rs) {
   let kept = null;
   if (head) {
     const rest = r.prompt.slice(head.index + head[0].length), cands = [];
-    for (let m, re = / (?:Draft a|Summarize|Compare|Check|Rewrite|Pull|Explain|Map|Sort|Estimate|Read) /g; (m = re.exec(rest)); re.lastIndex = m.index + 1) cands.push(norm(rest.slice(0, m.index)));
+    for (let m, re = / (?:Draft a|Summarize|Compare|Check|Rewrite|Translate|Pull|Explain|Map|Sort|Estimate|Read) /g; (m = re.exec(rest)); re.lastIndex = m.index + 1) cands.push(norm(rest.slice(0, m.index)));
     kept = cands.filter((c) => whole.includes(c)).sort((a, b) => b.length - a.length)[0] ?? (cands[0] ?? null);
   }
   const tag = name + ' ' + String(t.id).slice(0, 12) + ' ' + whole.slice(0, 40);
@@ -75,6 +75,12 @@ const KEEP = [
 for (const [t, words] of KEEP) {
   const p = F.rate(t).prompt || '', task = p.slice(p.indexOf('My task: ')).toLowerCase();
   for (const w of words) if (!task.includes(w.toLowerCase())) shape.push('starter dropped "' + w + '": ' + t.slice(0, 50));
+}
+// a translation gets a translate ask, not "Rewrite it" (fix B2), and the target language is filled in
+for (const [t, lang] of [['Translate the entire annual report for all our international investors including sustainability disclosures into Spanish', 'Spanish'], ['Every quarter I translate the board pack to German for the Frankfurt team', 'German'], ['Translate the policy manual into French and German', 'French']]) {
+  const p = F.rate(t).prompt || '';
+  if (!/ Translate it into /.test(p) || /Rewrite it/.test(p) || !p.includes('Translate it into ' + lang)) shape.push('translate starter wrong: ' + t.slice(0, 50));
+  sets.push(['translate starter', [p]]);
 }
 const sh = [...new Set(shape)];
 console.log('starter shape: ' + sh.length + ' problems');
