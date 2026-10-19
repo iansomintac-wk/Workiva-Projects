@@ -109,10 +109,13 @@ const candidateSources = ctx => ctx.ev(`(() => { const c = DATA.customers.find(x
 
 // Must equal CSAT_FOLLOWUP_DAYS in the tracker.
 const CSAT_N = 7;
-export function l12Judge({ atDay6 = [], atDay7 = [], afterAnswer = [] }) {
+// onScreen: whether the CSAT follow-up row is rendered on Today (day step or Below the day), not only ranked; { d6, d7, answered } booleans, `where` = { d7 } text.
+export function l12Judge({ atDay6 = [], atDay7 = [], afterAnswer = [], onScreen = {} }) {
   const S = 'csat_unanswered';
-  const passed = !atDay6.includes(S) && atDay7.includes(S) && !afterAnswer.includes(S);
-  return { passed, evidence: `CSAT survey sent ${CSAT_N} days before: Today row at day 6 ${atDay6.includes(S)}, at day 7 ${atDay7.includes(S)}, after an Answered date ${afterAnswer.includes(S)}` };
+  const on = { d6: onScreen.d6 === true, d7: onScreen.d7 === true, answered: onScreen.answered === true };
+  const passed = !atDay6.includes(S) && atDay7.includes(S) && !afterAnswer.includes(S) && !on.d6 && on.d7 && !on.answered;
+  const w = onScreen.where || {};
+  return { passed, evidence: `CSAT survey sent ${CSAT_N} days before: Today row ranked at day 6 ${atDay6.includes(S)}, at day 7 ${atDay7.includes(S)}, after an Answered date ${afterAnswer.includes(S)}; on screen at day 6 ${on.d6}, day 7 ${on.d7} (${w.d7 || 'nowhere'}), after Answered ${on.answered}${onScreen.rank ? `; day 7 rank ${onScreen.rank.pos} of ${onScreen.rank.of}, top source ${onScreen.rank.source}` : ''}` };
 }
 
 // L11 verdict (ruling 2026-10-19-runway-sim-findings-ruled: "Warn, but allow"). Leg 2, no contact: the setup readback is done:false with an empty name,
@@ -481,12 +484,19 @@ export const PART_B = [
     const setCsat = (sent, answered) => ctx.ev(`(() => { const a = DATA.customers.find(x => x.id === ${JSON.stringify(id)}).compliance.associatedPeopleCSAT;
       a.surveySentOn = ${JSON.stringify(sent)}; a.surveyAnsweredOn = ${JSON.stringify(answered)}; saveData(); return true; })()`);
     await setCsat(T, null);
-    const sourcesOn = async iso => { await openDay(ctx, iso); const r = await candidateSources(ctx); return r.sources || []; };
-    const atDay6 = await sourcesOn(addDays(T, 6));
-    const atDay7 = await sourcesOn(addDays(T, 7));
+    // The Fernhollow CSAT follow-up row on screen: a day step (h4 names the account) or a Below-the-day row (.todo-cust), with the CSAT follow-up text.
+    const screenNow = () => ctx.ev(`(() => { ui.view = 'today'; ui.openCustomerId = null; render();
+      const F = ${JSON.stringify(FERN)}; const c = DATA.customers.find(x => x.name === F); const list = todayActionList(); const idx = list.findIndex(r => r.customerId === c.id);
+      const step = [...document.querySelectorAll('[data-day-step]')].find(e => { const h = e.querySelector('h4'); return h && h.textContent.includes(F) && /CSAT survey sent/.test(e.textContent); });
+      const below = [...document.querySelectorAll('[data-today-row]')].find(e => { const h = e.querySelector('.todo-cust'); return h && h.textContent.includes(F) && /CSAT survey sent/.test(e.textContent); });
+      return JSON.stringify({ on: !!(step || below), where: step ? 'day step' : below ? 'Below the day' : null, pos: idx >= 0 ? idx + 1 : null, of: list.length, source: idx >= 0 ? list[idx].source : null }); })()`).then(JSON.parse);
+    const sourcesOn = async iso => { await openDay(ctx, iso); const r = await candidateSources(ctx); return { sources: r.sources || [], scr: await screenNow() }; };
+    const d6 = await sourcesOn(addDays(T, 6));
+    const d7 = await sourcesOn(addDays(T, 7));
     await setCsat(T, addDays(T, 7));
-    const afterAnswer = (await candidateSources(ctx)).sources || [];
-    const j = l12Judge({ atDay6, atDay7, afterAnswer });
+    const ans = { sources: (await candidateSources(ctx)).sources || [], scr: await screenNow() };
+    const j = l12Judge({ atDay6: d6.sources, atDay7: d7.sources, afterAnswer: ans.sources,
+      onScreen: { d6: d6.scr.on, d7: d7.scr.on, answered: ans.scr.on, where: { d7: d7.scr.where }, rank: { pos: d7.scr.pos, of: d7.scr.of, source: d7.scr.source } } });
     return { passed: j.passed, evidence: await withBreak(ctx, j.evidence) };
   } },
 ];

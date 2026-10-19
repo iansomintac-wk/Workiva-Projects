@@ -6,7 +6,13 @@ import { BREAKS, OVERRIDE_NAMES_1_1_ONLY } from '../tools/sim/osm-day/lib/breaks
 import { STEP_IDS, CHECKED, GAPS, classify } from '../tools/sim/osm-day/lib/results.mjs';
 const S = 'csat_unanswered';
 test('L12 judge: absent at 6 days, present at 7, gone once answered => pass', () => {
-  assert.equal(l12Judge({ atDay6: ['session_due'], atDay7: [S], afterAnswer: [] }).passed, true);
+  assert.equal(l12Judge({ atDay6: ['session_due'], atDay7: [S], afterAnswer: [], onScreen: { d6: false, d7: true, answered: false } }).passed, true);
+});
+test('L12 judge: row ranked but NOT on screen at day 7 => fail; on screen at day 6 or after answer => fail', () => {
+  assert.equal(l12Judge({ atDay6: [], atDay7: [S], afterAnswer: [], onScreen: { d6: false, d7: false, answered: false } }).passed, false);
+  assert.equal(l12Judge({ atDay6: [], atDay7: [S], afterAnswer: [], onScreen: { d6: true, d7: true, answered: false } }).passed, false);
+  assert.equal(l12Judge({ atDay6: [], atDay7: [S], afterAnswer: [], onScreen: { d6: false, d7: true, answered: true } }).passed, false);
+  assert.equal(l12Judge({ atDay6: [], atDay7: [S], afterAnswer: [] }).passed, false);
 });
 test('L12 judge: each wrong leg fails (early row, no row, row after answer)', () => {
   assert.equal(l12Judge({ atDay6: [S], atDay7: [S], afterAnswer: [] }).passed, false);
