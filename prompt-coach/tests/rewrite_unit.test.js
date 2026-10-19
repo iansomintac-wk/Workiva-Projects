@@ -544,3 +544,15 @@ test('unsupported: Upstream T&D is not Downstream T&D, and a truly missing categ
   assert.equal(unsupported(run(askCat(4), [down])).length, 1, 'downstream is not upstream');
   assert.equal(unsupported(run(askCat(11), [up])).length, 1);
 });
+test('unsupported: a stock or share price with a future cue is a forecast ask without a will-be/do verb (H4)', () => {
+  const px = sheetOf('Prices', 'Date, Stock price\n2025-01-02, 10\n2025-01-03, 11');
+  for (const p of ['Estimate where the stock price goes next quarter', 'Where will our share price go after the Q3 release?', 'Estimate the share price next quarter', T3])
+    assert.equal(unsupported(run(p, [px])).length, 1, p);
+});
+test('unsupported: historical or summary stock price asks stay quiet; a forecast in the file silences H4 (H4 guard, C1)', () => {
+  const px = sheetOf('Prices', 'Date, Stock price\n2025-01-02, 10\n2025-01-03, 11');
+  for (const p of ['Summarize the stock price movements in this file', 'Summarize where the stock price went last quarter and how it moves with next quarter guidance', 'The share price goes into the Q3 report', 'Chart the stock price for the next quarter table', 'Estimate the share price impact of the Q3 release on last quarter costs'])
+    assert.equal(unsupported(run(p, [px])).length, 0, p);
+  const fc = sheetOf('Plan', 'Date, Stock price forecast\n2025-01-02, 10');
+  assert.equal(unsupported(run('Estimate where the stock price goes next quarter', [fc])).length, 0);
+});
