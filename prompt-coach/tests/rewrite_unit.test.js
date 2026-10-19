@@ -227,7 +227,7 @@ const kinds = (o) => o.notes.map((n) => n.kind);
 const PLAIN = 'Use only @RCM_FY26.xlsx. Summarize the failed controls for the audit committee in five bullets. Flag anything you cannot verify.';
 
 test('note personal: fires on SSN, salary, DOB and account numbers; not on a plain work prompt', () => {
-  for (const p of ['Summarize the file for employee 123-45-6789 in the HR report.', 'List salaries from the payroll report by department.', 'Add the date of birth to the employee table in the report.', 'Check the bank account 123456789012 in the vendor report.'])
+  for (const p of ['Summarize the file for employee 123-45-6789 in the HR report.', 'Name: John Smith, SSN 123-45-6789, salary 85000 in the HR report.', "Jane Doe's salary is $92,000 in the payroll report.", 'Add the date of birth to the employee table in the report.', 'Check the bank account 123456789012 in the vendor report.'])
     assert.ok(kinds(run(p)).includes('personal'), p);
   assert.ok(!kinds(run(PLAIN)).includes('personal'));
 });
@@ -261,4 +261,9 @@ test('note offtopic: no work words fires and the display grade is not strong; a 
 test('note offtopic: work prompts that name a document, letter, release or calc are never off-topic', () => {
   for (const p of ['rewrite the CEO letter in this doc to be 30% shorter', 'Write the earnings release headline', 'Can you look over the EPS calc', 'Tighten the second paragraph of the memo', 'make this slide say less'])
     assert.ok(!kinds(run(p)).includes('offtopic'), p);
+});
+
+test('note personal: salary alone (aggregate payroll accounting) does not fire', () => {
+  for (const p of ['Accrue the salaries expense for October in the trial balance', 'Review the salary accrual variance', 'List salaries from the payroll report by department.'])
+    assert.ok(!kinds(run(p)).includes('personal'), p);
 });

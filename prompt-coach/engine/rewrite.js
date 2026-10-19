@@ -528,7 +528,7 @@
     const notes = [];
     const stackedAll = !!d.stacked || listStacked(prompt);
     if (stackedAll) notes.push({ kind: 'stacked', text: 'You are asking for several things at once. Split them into separate prompts and ask one at a time.' });
-    if (PERSONAL.test(prompt)) notes.push({ kind: 'personal', text: "This prompt seems to include personal or account details. Remove them or check your company's policy before you paste it." });
+    if (PERSONAL.test(prompt) || salaryPersonal(prompt)) notes.push({ kind: 'personal', text: "This prompt seems to include personal or account details. Remove them or check your company's policy before you paste it." });
     if (CALC.test(prompt)) notes.push({ kind: 'calc', text: 'Workiva AI can get figures wrong. Check every figure it calculates against the source.' });
     const offtopic = !files.length && NONWORK.test(prompt) && !WORK.test(prompt) && !WORK2.test(prompt) && !Object.values(DOMAIN).some((re) => { re.lastIndex = 0; return re.test(t); });
     if (offtopic) notes.push({ kind: 'offtopic', text: 'This does not look like a Workiva task. The Coach is for prompts about your reports, data or documents.' });
@@ -557,7 +557,14 @@
     for (const seg of text.toLowerCase().split(/\s*(?:,\s*(?:and\s+|then\s+)?|;\s*|\s+and\s+)/)) { const m = LIST_VERBS.exec(seg.trim()); if (m) seen.add(m[1].replace(/z/g, 's')); }
     return seen.size >= 3;
   }
-  const PERSONAL = /\b\d{3}-\d{2}-\d{4}\b|\bsalar(?:y|ies)\b|\bdate of birth\b|\bdob\b|\b(?:account|acct|routing|iban|bank)\b[^.\n]{0,30}\b\d{8,}\b|\b\d{8,}\b[^.\n]{0,15}\b(?:account|acct|routing|iban)\b|\b(?:iban|routing number)\b/i;
+  const PERSONAL = /\b\d{3}-\d{2}-\d{4}\b|\bdate of birth\b|\bdob\b|\b(?:account|acct|routing|iban|bank)\b[^.\n]{0,30}\b\d{8,}\b|\b\d{8,}\b[^.\n]{0,15}\b(?:account|acct|routing|iban)\b|\b(?:iban|routing number)\b/i;
+  const SALARY = /\bsalar(?:y|ies)\b/i;
+  function salaryPersonal(text) {
+    if (!SALARY.test(text)) return false;
+    return /\bsalar(?:y|ies)\b(?:\W+\w+){0,4}?\W+\$?\d[\d,.]*\d|\$?\d[\d,.]*\d(?:\W+\w+){0,4}?\W+salar(?:y|ies)\b/i.test(text)
+      || /\b[A-Z][a-z]+ [A-Z][a-z]+\b/.test(text.replace(/(^|[.!?]\s+)\S+/g, '$1'))
+      || (/\b(?:employee|his|her)\b/i.test(text) && /\$\s?\d|\b\d{4,}\b/.test(text));
+  }
   const CALC = /\b(?:calculate|compute|recalculate|recompute|work out|sum|sum up|total up|add up)\b|\btotal(?:s|ed)? (?:the|each|all|by)\b/i;
   const NONWORK = /\b(?:weather|forecast for (?:today|tomorrow)|poems?|haiku|limerick|jokes?|riddles?|stories|story|recipes?|songs?|lyrics|movies?|films?|sports?|football|soccer|baseball|basketball|horoscope|trivia|vacation|holiday|restaurants?|cats?|dogs?|pets?|birthday|wedding|dating|gossip|celebrity|video games?|fairy tale|bedtime)\b/i;
   const WORK2 = /\b(?:docs?|letters?|paragraphs?|tabs?|text|drafts?|slides?|releases?|headlines?|calcs?|eps|pages?|charts?|graphs?|list|bullets?|notes?|minutes|agenda|proposal|plan|checklist|template|workbook|excel|pdf|powerpoint|csv|sentences?|wording|tone|rewrite|proofread|edit|cfo|ceo|auditors?|assurers?|regulators?|stakeholders?|analysts?|investors?|clients?|team|manager|company|business|project|quarterly|annual|cost|costs|price|sales|profit|loss|income|assets?|liabilit\w*|cash|debt|loan|percent|pbc|pcaob|cells?|columns?|rows?|talking points)\b|[%$€£]/i;

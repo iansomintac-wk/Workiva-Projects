@@ -85,7 +85,7 @@ changes the prompt; no duplicate sentences or empty fragments (2 runs have other
 ## Coach notes (T4, 2026-10-18)
 
 Four warning notes, additive only (engine/rewrite.js, small diff beside the notes block; another run owns the engine, weights and rewrite text). Grades, weights, rule scores and rewrite text are unchanged; only the page's display rule changed.
-- personal: SSN-like number, salary, date of birth, or a long number next to account/bank/routing/IBAN words.
+- personal: SSN-like number, salary (only with a person name or an amount nearby), date of birth, or a long number next to account/bank/routing/IBAN words.
 - calc: asks to calculate, compute, sum, total or work out a figure. Workiva AI can get figures wrong; check against the source.
 - stacked: the existing note also fires for a comma/and list of 3 or more distinct task verbs (listStacked in rewrite.js; rules.js stacked() is untouched because model features use it). coach() returns `stacked`, and the page downgrades strong to better with it.
 - offtopic: only a clear non-work cue (weather, poem, joke, recipe, ...) with no work or document words and no attached file (fires on 1 of 2,020 non-off-task train/test rows). coach() returns `offtopic`; the page shows weak instead of a polished finance rewrite as strong.
