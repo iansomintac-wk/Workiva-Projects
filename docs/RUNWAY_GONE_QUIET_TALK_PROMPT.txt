@@ -1,0 +1,21 @@
+TALK: Runway 1.1 "gone quiet" spec (Runway is Ian's Priority 1, ruling 2026-10-19-runway-joins-priority-1).
+Invoke studio-harness:talk-and-run first. Ian must be in the session; this is a talk, not a run.
+
+Worktree: make your OWN worktree from master (the commit that holds this file). Do not write in runway-day-sim
+(ruling 2026-10-19-own-worktree-when-another-run-is-live: if another run's ledger is live, message its lead and wait
+at most 15 minutes; if that lead isn't running, note it and carry on in your own worktree).
+
+Read docs/superpowers/specs/2026-10-19-runway-1.1-gone-quiet-pitch.md (approved by Ian 2026-10-19: small batch,
+one run, approach A) and the last 25 rows of .ledger/2026-10-16-runway-day-sim/progress.md (main checkout).
+
+1. Read-only probe of the sim book (tools/sim/osm-day: 34 accounts plus Fernhollow) for the pitch's three questions:
+   the hand-off and pause-end fields, what counts as activity, and the flood count (accounts per sim day the rule
+   would fire for). Numbers go in a file under docs/research/. No edits to either tracker.
+2. Spec with Ian, one question at a time, recommendation first: done-when = sim L7 and C3 PASS on 1.1, every other
+   C1/C2 day step unchanged, C4 breaks still flip. If the flood count is more than a few rows a day, stop and re-shape.
+3. Then the run prompt, budget.json and the bedtime slip, per talk-and-run.
+
+Rules: no tracker edits in the talk; 1.0 is never edited; no token-raise slip field (ruling
+2026-10-19-no-slip-field-for-relayed-token-raises); plain English to Ian. Queued behind this, one run each: D2, D3,
+L11 (warn, still allow) — ruling 2026-10-19-runway-sim-findings-ruled.
+Do not claude rm d83f27fa, a1ea90be, 1556e2fc, 6bd1e0f3, 6c4e428e, 7364c3eb or 53527902 (they share runway-day-sim).
