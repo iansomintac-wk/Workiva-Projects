@@ -6616,6 +6616,31 @@ function _runSelfChecksInner(){
       r.pausedFlag = isPaused(pz);
       r.pausedFires = quiet(pz).length;
       r.unpausedFires = quiet(un).length;
+      // 5. in implementation, back from pause: gone_quiet takes its severity-4 place on the impl path
+      //    (above a severity-2 aged blocker; after an equal-severity overdue commitment, as on the main path)
+      const implPh = {phase:'align', phaseHistory:[{phase:'align', date: ago(30)}]};
+      const pb = mk('__gqb__', {implementation: implPh, blockers:[{id:'b1', text:'x', owner:'customer', since: ago(30), resolvedOn:null}]});
+      const pc = mk('__gqc__', {implementation: implPh, commitments:[{id:'c1', text:'x', direction:'i_owe', due: ago(3), doneOn:null}]});
+      DATA.customers = [pb, pc];
+      DATA.pauseReturns = [{id:'__gqb__', name:'__gqb__', date: t}, {id:'__gqc__', name:'__gqc__', date: t}];
+      DATA.activities = {__gqb__:[], __gqc__:[]};
+      const cb = todayAccountCandidates(pb, {gainsightByCustomer:{}}), cc = todayAccountCandidates(pc, {gainsightByCustomer:{}});
+      r.implB = cb.map(x => x.source).join(',');
+      r.implC = cc.map(x => x.source).join(',');
+      // 6. a pause-return entry dated in the future does not fire yet; today's does
+      const pf = mk('__gqf__');
+      DATA.customers = [pf];
+      DATA.activities = {__gqf__:[]};
+      DATA.pauseReturns = [{id:'__gqf__', name:'__gqf__', date: isoAddDays(t, 3)}];
+      r.future = quiet(pf).length;
+      // 7. two entries for one account: the latest rules (an old entry cannot hide a newer one, nor revive)
+      const p2 = mk('__gq2__');
+      DATA.customers = [p2];
+      DATA.pauseReturns = [{id:'__gq2__', name:'__gq2__', date: ago(10)}, {id:'__gq2__', name:'__gq2__', date: ago(2)}];
+      DATA.activities = {__gq2__:[act(ago(5), 'Call')]};   // answers the old return, not the latest
+      r.twoNewerOpen = quiet(p2).length;
+      DATA.activities = {__gq2__:[act(ago(1), 'Call')]};   // answers the latest
+      r.twoAnswered = quiet(p2).length;
     } finally {
       DATA.customers = realC; DATA.activities = realA; DATA.pauseReturns = realP;
     }
@@ -6625,6 +6650,12 @@ function _runSelfChecksInner(){
       JSON.stringify(r.stops) === '[0,0,0,0,0]' && r.d7 === 1, JSON.stringify(r.stops));
     check('gone quiet: a pause return fires the day it is recorded (also while still in implementation) and stops on activity on or after that day',
       r.pTodayNoWait === 1 && r.pBefore === 1 && r.pOnDay === 0 && r.pAfter === 0 && r.pImpl === 1, JSON.stringify(r));
+    check('gone quiet: in implementation it is placed by severity (above a severity-2 blocker, after an equal-severity overdue commitment)',
+      r.implB === 'gone_quiet,blocker_aged' && r.implC === 'commitment_overdue,gone_quiet', JSON.stringify([r.implB, r.implC]));
+    check('gone quiet: a pause-return entry dated in the future does not fire',
+      r.future === 0, JSON.stringify(r.future));
+    check('gone quiet: with two pause-return entries the latest one rules',
+      r.twoNewerOpen === 1 && r.twoAnswered === 0, JSON.stringify([r.twoNewerOpen, r.twoAnswered]));
     check('gone quiet: a paused account never fires, while the identical unpaused account does',
       r.pausedFlag === true && r.pausedFires === 0 && r.unpausedFires === 1, JSON.stringify(r));
     check('gone quiet: GONE_QUIET_DAYS is 7 and gone_quiet is declared at severity 4',

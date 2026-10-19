@@ -11869,7 +11869,7 @@ function todayCoordinationCandidates(c){
 function goneQuietTrigger(c){
   if(isPaused(c)) return null;
   const last = lastActivityDate(c.id);
-  const back = (DATA.pauseReturns || []).filter(e => e.id === c.id && isRealISODate(e.date))
+  const back = (DATA.pauseReturns || []).filter(e => e.id === c.id && isRealISODate(e.date) && e.date <= todayISO())
     .reduce((m, e) => (!m || e.date > m ? e.date : m), null);
   if(back && !(last && last >= back)) return {kind:'pause', date: back};
   const impl = getImplementationState(c);
@@ -11877,16 +11877,20 @@ function goneQuietTrigger(c){
   if(live && daysSince(live) >= GONE_QUIET_DAYS && !(last && last > live)) return {kind:'handoff', date: live};
   return null;
 }
-function pushGoneQuiet(c, out){
+function pushGoneQuiet(c, out, placed){
   const quiet = goneQuietTrigger(c);
   if(!quiet) return;
   const d = TODAY_SOURCE_MAP.gone_quiet;
   const back = quiet.kind === 'pause';
-  out.push({source:'gone_quiet', severity:d.severity,
+  const row = {source:'gone_quiet', severity:d.severity,
     headline: back ? `${c.name} is back from pause and nobody has been in touch` : `No contact with ${c.name} since hand-off`,
     reasons: [back ? `Back from pause on ${fmtDate(quiet.date)}, no contact yet.`
                    : `No contact since hand-off on ${fmtDate(quiet.date)} (${daysSince(quiet.date)} days).`],
-    panelTab:'log', chipLabel:'Log contact', why:d.why});
+    panelTab:'log', chipLabel:'Log contact', why:d.why};
+  /* placed: the implementation path does not sort, so insert where the main path's stable sort would
+     put it (after equal severity, before the first lower one) without reordering what is already there. */
+  const at = placed ? out.findIndex(x => x.severity < row.severity) : -1;
+  if(at < 0) out.push(row); else out.splice(at, 0, row);
 }
 function todayAccountCandidates(c, ctx){
   const out = [];
@@ -11937,7 +11941,7 @@ function todayAccountCandidates(c, ctx){
      reasons and no others. */
   /* 1.1: a pause-return account still in implementation also gets a gone-quiet row
      (the hand-off trigger cannot apply there: it needs wentLiveOn). */
-  if(inImplementation(c)){ pushGoneQuiet(c, out); return out; }
+  if(inImplementation(c)){ pushGoneQuiet(c, out, true); return out; }
 
   const rec = getRecommendedAction(c);
   if(SIGNAL_KEY_SET.has(rec.key)){

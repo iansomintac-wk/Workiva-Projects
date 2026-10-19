@@ -26,11 +26,12 @@ OSM Runway — release notes
 
     - Today gains a "gone quiet" reason at the top band (severity 4): 7 days after the
       hand-off call if nobody has logged anything since, and on the day a customer
-      returns from a pause if nobody has logged anything since.
+      returns from a pause (a return dated in the future waits for its date) if nobody has logged
+      anything since.
     - Any logged activity stops it. A manual resume gets no row (no new stored field).
     - GONE_QUIET_DAYS = 7, a constant, no setting. An account that fires shows as
       Off Track in the book (severity 4) until contact is logged.
-    - Checks: 1.1 suite 480/480 (5 new), 1.0 suite 475/475 (1.0 file untouched).
+    - Checks: 1.1 suite 483/483 (8 new), 1.0 suite 475/475 (1.0 file untouched).
 
 1.1 — Step 1 (transcripts out of the book). Call transcripts move out of the book.
 
