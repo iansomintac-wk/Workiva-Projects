@@ -1,0 +1,103 @@
+Runway 1.1: "gone quiet" reaches Today (one new Today source in tracker 1.1; proof by the day and lifecycle sim): the run.
+
+Project: C:\Users\teasp\Documents\Runway Tracker. Work on branch runway-gone-quiet
+(worktree .claude\worktrees\runway-gone-quiet, based on master a6c79a1), which holds the spec and this prompt.
+
+Spec (approved by Ian 2026-10-19 ~05:36Z, "Yes, approve (Recommended)"):
+  docs/superpowers/specs/2026-10-19-runway-1.1-gone-quiet-design.md
+Read it whole; it carries Ian's rulings verbatim, the rule, the scope and the "Done when" lines. Probe numbers:
+docs/research/2026-10-19-gone-quiet-probe.md (both sections). Appetite: small batch, one run. If the fix cannot be
+kept that small, or L7 or C3 still fails after the change, STOP and re-shape with Ian; do not dig deeper.
+
+Method: studio-harness:talk-and-run, "The run". First check: echo "$STUDIO_RUN_LEDGER" and test -f on its
+budget.json and slip.json; empty or missing is a stop. Lead coordinates only; one fresh helper per piece, in order,
+never in parallel.
+  1. Plan by studio-harness:plan-writer at docs/superpowers/plans/2026-10-19-runway-1.1-gone-quiet.md (tasks of at
+     most 8 steps, exact files, check command and expected output per task). Header: `Suite: node --test
+     "test/*.test.mjs"` and `Data: (none)`. This project has no bin/rehearse.mjs: skip the rehearsal. Order:
+     (a) C3 rewritten in tools/sim/osm-day/verify.mjs to Ian's ruling, and shown to FAIL on unchanged 1.1 (measured,
+     before any tracker edit; the spec's red-first line); (b) the gone_quiet source, GONE_QUIET_DAYS = 7 and the
+     candidate in 1.1 only, test first; (c) the L6 and L7 breaks still flip on the changed 1.1 (tools/sim/osm-day/
+     lib/breaks.mjs), or are made to break the new source; (d) C8's pinned 1.1 hash re-pinned, 1.0 untouched;
+     (e) a full verify, two runs (C5), with captures of Fernhollow's Today row on 10-12 and 12-01 for Ian's look
+     call on the wording. Locked: every step's own pass rule in steps-a.mjs and steps-b.mjs, SILENCE_SRC, the
+     15 cap, the sort, existing severities. Then update budget.json tasksLeft from the plan.
+  2. Plan review: studio-harness:final-reviewer on the plan (frontier) and Codex, findings merged by the lead.
+     The default Codex Windows sandbox fails here (gotcha 2026-10-14-codex-shell-blocked-on-windows); use
+     `codex exec -s read-only -c windows.sandbox=unelevated --skip-git-repo-check -o <out> - < <prompt file>`
+     (gotcha 2026-10-17-codex-unelevated-sandbox-runs-on-windows, proposed, read not tested here: first try
+     its falsifier `... "echo hi"`). Put the spec and plan TEXT in the prompt file either way.
+  3. STOP: Ian approves the plan.
+  4. Each task: studio-harness:implementer (tests first, red then green), fresh studio-harness:checker, the lead
+     re-runs the task's check itself, ledger row. Checker lines go in role-checks.txt, one per line, each runnable
+     from anywhere (cd "<worktree>" && <command>). A full sim verify takes 25 to 37 minutes (measured 2026-10-17):
+     run it in the background with its log in sim-runs/, read only the C lines.
+  5. Final whole-branch review: studio-harness:final-reviewer and a Codex review (same command form as step 2)
+     of `git diff master...runway-gone-quiet` put in its prompt file as text; Ian decides any must-fix disagreement. Fix round,
+     re-check.
+  6. Evidence doc docs/evidence/2026-10-19-runway-1.1-gone-quiet.md: every "Done when" line, measured or not run,
+     with numbers and its baseline; the flood count seen in the sim; the captures' paths for Ian's look call.
+     CHANGELOG.txt / VALIDATION.txt / README lines that describe Today in 1.1 change in the same commit as the code.
+  7. Push and merge only as the slip below says. Copy the ledger to the main checkout's
+     .ledger/2026-10-19-runway-gone-quiet/ if allowed; if refused, say so and leave it in the worktree. Hand-off
+     PM step, then the next session per the slip. Final message to Ian: what was pushed or merged, the evidence
+     doc, the captures for his look call, the time used.
+
+Ledger: C:/Users/teasp/Documents/Runway Tracker/.claude/worktrees/runway-gone-quiet/.ledger/2026-10-19-runway-gone-quiet/
+(git-ignored): progress.md (the talk's rows and Ian's rulings verbatim are above the run's rows), budget.json,
+slip.json. Create role-checks.txt and reviews/ as needed. Remove worktrees only with studio-harness
+bin/remove-worktree.mjs, never plain git worktree remove (it deletes ignored files).
+
+Checks the lead re-runs (from the worktree root):
+  node --test --test-reporter=spec "test/*.test.mjs"
+                                       baseline 138 tests, 136 pass, 0 fail, 2 skipped on master 1bc01b5
+                                       (measured 2026-10-19 04:45Z by session 53527902; read here, re-measure
+                                       before task 1); the folder form `node --test test/` runs nothing on Node 26
+  git diff --quiet master -- osm-book-of-business-tracker-1.0.html      must stay clean for the whole run
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect <n>
+                                       re-measure n on master before task 1; the changed 1.1 must still pass
+  node tools/sim/osm-day/verify.mjs    the spec's C lines; baseline in the spec ("Done when"), from
+                                       docs/evidence/2026-10-16-osm-day-lifecycle-sim.md X10
+
+Test data: the field-test book (34 synthetic accounts) and the sim's synthetic "Fernhollow Renewables" only.
+Test emails use example.com or .invalid, never a real customer domain.
+
+Safety rules (Ian's):
+- Never edit osm-book-of-business-tracker-1.0.html. In 1.1 change only what the spec's Scope names.
+- Never open any HTML file from this folder in Ian's normal Chrome profile. Only headless Chrome with a throwaway
+  profile (--user-data-dir). Never run chrome.exe without --user-data-dir.
+- Never write test or synthetic data where the real book lives.
+- Never read, copy or upload book-of-business-RESTORE-POINT-*.json, exports, recordings, screenshots or zips
+  (the run's own sim captures in sim-runs/ excepted).
+- Real AI providers are never called: the fake network answers the three provider hosts in every run.
+- Stop browsers and servers by their own PIDs, never by image name. Delete a profile only after its browser has
+  exited (wait and retry). Logs to files, never into context.
+- Nothing is published: no Pages, no new remote, no .github/ workflow.
+- No token-raise slip field (ruling 2026-10-19-no-slip-field-for-relayed-token-raises): a cap raise goes through
+  Ian or the PM proxy with its logged decision line.
+- The one write allowed under ~/.claude/: the session-rename exception (Ian, 2026-10-09): when the successor is
+  running, set the `name` field of your own ~/.claude/jobs/<your id>/state.json to `COMPLETED - <name>`. Nothing
+  else there.
+
+Sessions: do NOT claude rm d83f27fa, a1ea90be, 1556e2fc, 6bd1e0f3, 6c4e428e, 7364c3eb or 53527902 (they share the
+runway-day-sim worktree), nor 3dbea68d, the talk session that launched you (it shares this runway-gone-quiet
+worktree). The successor removes a predecessor only when its state is done, everything is committed, and rm needs
+no force flags.
+
+Slip (Ian, 2026-10-19, verbatim in .ledger/2026-10-19-runway-gone-quiet/slip.json):
+- Push: yes ("Yes, that branch only (Recommended)"): runway-gone-quiet only, non-force, to origin
+  iansomintac/Workiva, when the run finishes. Never push master. No other branch.
+- Merge: yes ("Yes, if all checks pass"): only when every "Done when" line of the spec is PASS on the lead's own
+  re-run and the final review has no open must-fix. Merge rule first: local branch
+  backup/master-before-runway-gone-quiet-2026-10-19 at master's tip (not pushed: the slip names no other push),
+  conflicts keep both sides, full suite on the merged tree has no failure master lacks. Any condition unmet:
+  stop for Ian. Merge into the main checkout's local master; never push master.
+- Spend: $0 ("$0 (Recommended)"). Fake AI network every run. Codex reviews only while `codex login status` says
+  "Logged in using ChatGPT"; if it asks for credits or an API key, skip and record why.
+- New sessions: yes ("Yes (Recommended)"): a successor at the context stop and the next queued session at the end,
+  each launched with the same --settings STUDIO_RUN_LEDGER form and bound by this slip. Queued after this run, one
+  run each (ruling 2026-10-19-runway-sim-findings-ruled): D2, D3, L11 (warn, still allow); each starts with a talk.
+
+Stops: plan approval; anything the slip does not name; L7 or C3 still failing after the change (re-shape);
+a decision only Ian can make; two strikes per the skill. At every stop send a push notification, then ask in the
+session. Give Ian the time at start and at each stop.
