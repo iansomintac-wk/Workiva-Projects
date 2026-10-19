@@ -1009,6 +1009,7 @@
   .bp-stat{font-weight:700; font-size:var(--text-base); margin-top:2px;}
   .bp-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:10px; margin-top:8px;}
   .bp-sec{border-top:1px solid var(--border-soft); margin-top:12px; padding-top:10px;}
+  .bp-transcript{margin:6px 0 0; padding:6px 8px; max-height:calc(6 * 1.45em + 12px); overflow:auto; white-space:pre-wrap; word-break:break-word; font:inherit; font-size:var(--text-sm); line-height:1.45; color:var(--text-dim); background:var(--bg-card-hover); border:1px solid var(--border-soft); border-radius:6px;}
   .bp-sec .lbl{font-family:var(--font-mono); font-size:var(--text-xs); color:var(--text-faint);
     text-transform:uppercase; letter-spacing:.05em;}
   .bp-thread{margin-top:6px; padding:6px 8px; background:var(--bg-card-hover); border-radius:6px;}
@@ -2949,6 +2950,19 @@ function activityTranscript(activity){
     return hit ? {text: hit.text, truncated: t.truncated === true} : null;
   }
   return (typeof t.text === 'string' && t.text.trim()) ? t : null;
+}
+/* D2 prep: the closing stretch of a transcript for the call-prep panel. The last n speech lines
+   and everything after the first of them (speaker lines kept). Speech line = not blank, not a
+   "Name  hh:mm:ss" header, not a "-->" cue, not a bare timestamp, not WEBVTT. n or fewer: whole. */
+function closingStretch(text, n){
+  if(typeof text !== 'string' || !text.trim()) return '';
+  const keep = n > 0 ? n : 30;
+  const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const isHead = l => /^\S.*\s{2,}\d{1,2}:\d{2}(:\d{2})?$/.test(l) || l.includes('-->') || /^\d{1,2}:\d{2}(:\d{2})?([.,]\d+)?$/.test(l) || l === 'WEBVTT';
+  const at = [];
+  lines.forEach((l, i) => { if(!isHead(l)) at.push(i); });
+  if(at.length <= keep) return text.trim();
+  return lines.slice(at[at.length - keep]).join('\n');
 }
 /* ============ 1.1 Step 1: TRANSCRIPT STORE ============
    Transcripts live in IndexedDB (obm-transcripts-v1), one record per transcript VERSION, keyed
@@ -12616,6 +12630,23 @@ function renderBeatPanel(beat, dispatchChips){
   </div>`;
 }
 
+/* D2 prep: last call's closing stretch on the call-prep panel. Same eligibility and order as "Last touch"
+   (logged, not future-dated, newest first, ties keep array order). Hidden when no such activity has a transcript. */
+function beatTranscriptSection(c){
+  const acts = (DATA.activities[c.id] || []).filter(a => a && isLoggedPastDate(a.date))
+    .slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
+  let hit = null, tr = null;
+  for(const a of acts){ const t = activityTranscript(a); if(t && typeof t.text === 'string' && t.text.trim()){ hit = a; tr = t; break; } }
+  if(!hit) return '';
+  const label = `Last transcript &middot; ${hit.sessionNumber ? 'Session ' + escapeHtml(String(hit.sessionNumber)) : escapeHtml(hit.type || 'Call')} &middot; ${escapeHtml(fmtDate(hit.date))}`;
+  return `
+      <div class="bp-sec" data-beat-transcript-sec>
+        <div class="lbl">${label}</div>
+        <pre class="bp-transcript" data-beat-transcript>${escapeHtml(closingStretch(tr.text, 30))}</pre>
+        <p class="bp-basis"><button class="link-btn" data-open-cust="${escapeAttr(c.id)}" data-open-tab="activity">Read the full transcript</button></p>
+      </div>`;
+}
+
 /* Call prep, folded into the beat rather than living in its own scroll region.
    Every fact is read from the book at render time, so a prep card cannot go
    stale the way a written brief does. */
@@ -12627,6 +12658,7 @@ function renderBeatPrep(beat){
   return `
     <div class="focus-act">
       <h5>${x.at ? escapeHtml(fmtDayTime(x.at)) + ' · ' : ''}Call prep${x.next ? ` · Session ${x.next.number}` : ''} ${x.prepped ? '<span class="badge badge-ontrack">prep notes logged</span>' : '<span class="badge badge-watch">no prep notes</span>'}</h5>
+      ${beatTranscriptSection(c)}
 
       <div class="bp-sec">
         <div class="lbl">Pending deliverables</div>

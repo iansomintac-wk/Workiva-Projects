@@ -22,6 +22,13 @@ OSM Runway — release notes
       docs/HOSTING.md says what the page loads (outside hosts, no integrity attribute on the
       xlsx script, inline script and style needed) instead of "works with no network".
 
+1.1 — D2 prep. Call prep shows how the last call ended.
+
+    - Call prep in 1.1 shows the closing 30 speech lines of the newest transcript on the
+      account, in a scrolling box with a Read the full transcript link; hidden when the
+      account has no transcript. Only past-dated activities count (isLoggedPastDate), newest
+      first, ties in array order.
+
 1.1 — Gone quiet. Today sees a new customer nobody has spoken to.
 
     - Today gains a "gone quiet" reason at the top band (severity 4): 7 days after the

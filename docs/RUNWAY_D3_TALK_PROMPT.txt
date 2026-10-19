@@ -1,0 +1,50 @@
+Runway D3: "call prep shows what you owe and what they owe": the talk.
+(Queued by ruling 2026-10-19-runway-sim-findings-ruled: D2 (done, branch runway-d2-prep), then D3, then L11. Runway is a
+Priority 1 side slot, ruling 2026-10-19-runway-joins-priority-1.)
+
+Method: invoke studio-harness:talk-and-run first, "The talk". Ian (or the PM proxy, for what its guardrails allow) must
+be in the session; this is a talk, not a run. Launch with the default 200k stop.
+
+Project: C:\Users\teasp\Documents\Runway Tracker. Make your OWN worktree from master once D2 is merged (check
+`git log master` holds the D2 merge; else base on runway-d2-prep). Do not write in the runway-gone-quiet, runway-day-sim
+or runway-d2-prep worktrees (ruling 2026-10-19-own-worktree-when-another-run-is-live: if another run's ledger is live
+there, message that lead, wait at most 15 minutes, else carry on).
+
+Read first:
+- docs/evidence/2026-10-16-osm-day-lifecycle-sim.md, finding D3 (line 18): on Wed 2026-10-21 the prep panel shows the
+  open checklist item and the last-meeting question, but not "SIM-OWE you owe" / "SIM-OWE they owe". The meeting agenda
+  is a listed GAP.
+- docs/evidence/2026-10-19-runway-1.1-d2-prep.md (the last run's results, the C lines as they stand now, the look-call list).
+- docs/superpowers/specs/2026-10-19-runway-1.1-d2-prep-transcript-design.md (the pattern: one new section in renderBeatPrep).
+- tools/sim/osm-day/steps-a.mjs (D3 at line 60), lib/breaks.mjs (D3 break, line 9), lib/setup.mjs (Orion's seeded commitments, line 59).
+
+1. Read-only probe, numbers to docs/research/2026-MM-DD-d3-prep-probe.md: where 1.1 builds the call-prep panel
+   (renderBeatPrep, around line 12653); where commitments live (direction i_owe / they_owe, due, doneOn;
+   COMMITMENT_DIRECTIONS around line 3470) and how the Todos list shows them (around line 13751); what the panel shows
+   now and what the break strips; how many commitments a real account carries (field-test book) and what that does to
+   panel height; which sim steps and breaks touch D3; whether the meeting agenda GAP is in or out of scope. No tracker
+   edits. Mark each figure measured, read or assumed. (Line numbers above were read by the D2 hand-off PM, not re-run.)
+2. Spec with Ian, one question at a time, recommendation first, with a real example: should the panel list open
+   commitments in both directions, which ones (open only, overdue first?), how many, and what shows with none. Done
+   when (draft): sim D3 PASS on 1.1; C1 PASS 9 FAIL 1 [D8]; every other C1/C2 step unchanged; the D3 break still
+   flips in C4 with VACUOUS 0; C8 re-pinned on the new 1.1 hash; C3 and L7 still PASS; full suite no failure master
+   lacks; 1.0 results identical; D2 still PASS. Measure the baseline with a full verify of master first, run alone.
+3. Then the run prompt, budget.json and the bedtime slip, per talk-and-run. Launch the run with STUDIO_RUN_LEDGER and
+   CLAUDE_STOP_AT_TOKENS 300000 in --settings.
+
+Rules (Ian's):
+- Never edit osm-book-of-business-tracker-1.0.html. No tracker edits in the talk.
+- Never open any HTML from this folder in Ian's normal Chrome profile; headless Chrome with a throwaway
+  --user-data-dir only. Stop browsers by their own PIDs.
+- Never read, copy or upload book-of-business-RESTORE-POINT-*.json, exports, recordings, screenshots or zips.
+- Test data: the field-test book and the sim's synthetic accounts only; emails example.com or .invalid.
+- Real AI providers are never called (fake network). $0 spend.
+- No token-raise slip field (ruling 2026-10-19-no-slip-field-for-relayed-token-raises).
+- A screenshot tool lives in tools/, never under tools/sim/osm-day/ (test osm-day-safety.test.mjs "control e").
+- No helper edits the worktree while a full verify runs from it (D2 run lost a baseline run that way; ledger
+  2026-10-19-helper-edited-worktree-under-running-verify). Run a full verify alone, watched by a Monitor (the PC ran
+  low on memory on 2026-10-19); restart a reaped one only when asked.
+- Plain English to Ian; any wording on screen is his look call. If the fix cannot stay a small batch, stop and re-shape.
+- Do not claude rm sessions that share a worktree you did not make.
+
+Queued behind this: L11 (warn, still allow).
