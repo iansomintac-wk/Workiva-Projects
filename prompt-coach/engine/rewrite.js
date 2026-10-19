@@ -444,6 +444,10 @@
   function categoryHit(n, lower, byNameOnly) {
     const starts = [new RegExp(CAT_LBL[n].source, 'g')];
     if (!byNameOnly) starts.unshift(new RegExp('\\b(?:category|cat\\.?)\\s*' + n + '\\b', 'g'));
+    if (!byNameOnly) { // a row that starts with the bare number ("6, 1200") lists it when a figure follows on that same line
+      const rr = new RegExp('(?:^|\\n)\\s*' + n + '\\s*[,\\t:.-]', 'g'); let m;
+      while ((m = rr.exec(lower))) { const e = m.index + m[0].length, nl = lower.indexOf('\n', e); if (figureAfter(nl < 0 ? lower : lower.slice(0, nl), e)) return 'exact'; }
+    }
     for (const re of starts) { let m; while ((m = re.exec(lower))) { if (figureAfter(lower, m.index + m[0].length)) return 'exact'; if (!m[0].length) re.lastIndex++; } }
     if (n === 8 || n === 13) {
       const rest = lower.replace(/(?:upstream|downstream|upstr\.?|downstr\.?) leased/g, ''), re = /leased assets/g; let m;

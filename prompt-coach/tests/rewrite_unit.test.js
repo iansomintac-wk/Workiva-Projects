@@ -607,3 +607,20 @@ test('unsupported: a numbered ask with its name in brackets still needs a figure
   const g = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nCapital goods, 300\nUse of sold products, 70');
   assert.equal(unsupported(run(ask, [g])).length, 0, 'its own row with a figure lists it');
 });
+
+// ---- Task D (Ian 2026-10-19): a row that starts with a category number lists that category again, but only with a figure after it ----
+const askRows = (n) => 'Give me our Scope 3 category ' + n + ' emissions with the source line.';
+test('unsupported: number rows in a Word note list their categories; 9 is absent, 6 is listed (Task D)', () => {
+  const note = { name: 'n.docx', kind: 'Word', text: 'Scope 3 emissions FY2025\n1, 4910\n6, 1200\n7, 398', periods: [] };
+  assert.equal(unsupported(run(askRows(9), [note])).length, 1, 'category 9 is not a row');
+  assert.equal(unsupported(run(askRows(6), [note])).length, 0, 'category 6 has its row');
+});
+test('unsupported: number rows in an Excel sheet list their categories (Task D)', () => {
+  const x = mk('s3.xlsx', 'Scope 3', 'Category, tCO2e\n1, 4910\n6, 1200\n7, 398', ['Category', 'tCO2e']);
+  assert.equal(unsupported(run(askRows(9), [x])).length, 1, 'category 9 is not a row');
+  assert.equal(unsupported(run(askRows(6), [x])).length, 0, 'category 6 has its row');
+});
+test('unsupported: a number row without a figure does not list the category (Task D)', () => {
+  const note = { name: 'n.docx', kind: 'Word', text: 'Scope 3 emissions FY2025\n1, 4910\n6, n/a\n7, 398', periods: [] };
+  assert.equal(unsupported(run('Scope 3 category 6 emissions with the source line.', [note])).length, 1);
+});

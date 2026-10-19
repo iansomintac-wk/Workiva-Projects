@@ -6,7 +6,7 @@ strong version into toggleable SCOPE elements. Everything runs in the browser: n
 server, no uploads. Built for customer-facing use where Claude access can't be provisioned.
 
 ```sh
-node tests/build.js                      # -> dist/prompt-coach.html (single file, 337854 bytes, LF)
+node tests/build.js                      # -> dist/prompt-coach.html (single file, 338240 bytes, LF)
 node tests/pagetest.js                      # real-browser page test of the built page (notes, display grade, off-topic); build first
 node tests/eval.js rulefeat data/test.jsonl          # accuracy on held-out prompts
 node tests/simulate.js data/train_*.jsonl            # rewrite invariants
@@ -107,7 +107,6 @@ Five warning notes, additive only (engine/rewrite.js, small diff beside the note
     - an unformatted value from 1900 to 2099 ("2050") is read as a year;
     - a figure more than 60 characters after the name (a long description column) is not seen;
     - a remark line followed by an unlabelled number can be read as that category's figure;
-    - number-only rows ("11, 4000") no longer list a category.
 
 ## Real files
 
