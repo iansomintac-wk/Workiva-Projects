@@ -75,7 +75,7 @@ test('cues, bare timestamps, WEBVTT and speaker headers are not speech lines; 31
 // ---- Task 2: the section in renderBeatPrep ----
 function secCtx(acts, today = '2026-10-21') {
   const ctx = vm.createContext({});
-  vm.runInContext(['escapeHtml', 'escapeAttr', 'closingStretch', 'beatTranscriptSection', 'renderBeatPrep'].map(grab).join('\n'), ctx);
+  vm.runInContext(['escapeHtml', 'escapeAttr', 'closingStretch', 'beatTranscriptSection', 'getCommitments', 'openCommitments', 'rankedPromises', 'beatPromisesSection', 'renderBeatPrep'].map(grab).join('\n'), ctx);
   vm.runInContext(`var DATA = {activities: {c1: ${JSON.stringify(acts)}}};
     function fmtDate(d){ return d; } function fmtDayTime(){ return ''; } function getNextSessionTime(){ return ''; }
     function isLoggedPastDate(d){ return /^\\d{4}-\\d{2}-\\d{2}$/.test(d || '') && d <= '${today}'; }

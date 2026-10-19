@@ -12643,6 +12643,33 @@ function rankedPromises(c, cap){
   return {kept: ranked.slice(0, keep), more: Math.max(0, ranked.length - keep)};
 }
 
+/* D3 prep: the date cue on a promise row, the same cues as the Coordination tab. '' when undated. */
+function promiseCue(x){
+  if(!x.due) return '';
+  if(commitmentIsOverdue(x)) return `<span style="color:var(--status-risk-text); font-size:var(--text-xs);">${daysSince(x.due)}d overdue</span>`;
+  if(commitmentDueSoon(x)) return `<span style="color:var(--status-watch-text); font-size:var(--text-xs);">due soon</span>`;
+  return `<span style="color:var(--text-faint); font-size:var(--text-xs);">due ${escapeHtml(fmtDate(x.due))}</span>`;
+}
+
+/* D3 prep: "Promises" on the call-prep panel. Open commitments, up to 5 (rankedPromises), grouped
+   "You owe" then "They owe you", plus an "N more" link to the Coordination tab. Hidden when none are open. */
+function beatPromisesSection(c){
+  const r = rankedPromises(c, 5);
+  if(!r.kept.length) return '';
+  const group = (key, label) => {
+    const rows = r.kept.filter(x => x.direction === key);
+    if(!rows.length) return '';
+    return `
+        <div class="bp-basis" data-beat-promise-group="${key}" style="margin:8px 0 0;">${label}</div>
+        <ul style="margin:4px 0 0; padding-left:16px; font-size:var(--text-sm); color:var(--text-dim);">${rows.map(x => `<li data-beat-promise>${escapeHtml(x.text)} ${promiseCue(x)}</li>`).join('')}</ul>`;
+  };
+  return `
+      <div class="bp-sec" data-beat-promises-sec>
+        <div class="lbl">Promises</div>${group('i_owe', 'You owe')}${group('they_owe', 'They owe you')}
+        ${r.more ? `<p class="bp-basis" data-beat-promises-more>${r.more} more — <button class="link-btn" data-open-cust="${escapeAttr(c.id)}" data-open-tab="coordination">see them all</button></p>` : ''}
+      </div>`;
+}
+
 /* D2 prep: last call's closing stretch on the call-prep panel. Same eligibility and order as "Last touch"
    (logged, not future-dated, newest first, ties keep array order). Hidden when no such activity has a transcript. */
 function beatTranscriptSection(c){
@@ -12680,6 +12707,8 @@ function renderBeatPrep(beat){
         ${deliverables.length ? `<div class="bp-basis" style="margin-top:6px;">This session should produce: ${escapeHtml(deliverables.join('; '))}</div>` : ''}
         ${(!pendingItems.length && !deliverables.length) ? `<div class="bp-body" style="color:var(--text-faint);">Nothing outstanding.</div>` : ''}
       </div>
+
+      ${beatPromisesSection(c)}
 
       <div class="bp-sec bp-time">
         <label class="lbl" for="bp-time-${escapeAttr(c.id)}">Time on your calendar</label>
