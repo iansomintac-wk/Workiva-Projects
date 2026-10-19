@@ -1,0 +1,15 @@
+MADE-UP TEST DATA
+CONTROL LIST - Quellmoor Foods (made-up)
+
+C01 Bank accounts are reconciled to the ledger every month by the accounts team.
+C02 Warehouse stock is counted every quarter and compared with the stock records.
+C03 Who can use the payroll system is reviewed every quarter by IT.
+C04 Expense claims are approved by the claimant's line manager before payment.
+C05 Changes to supplier payment details are confirmed with the supplier by phone.
+C06 Backups of the finance database are test-restored every quarter.
+C07 A physical inventory count is done each quarter and differences are posted after approval.
+C08 Staff expense reports need line manager sign-off before reimbursement.
+C09 Payroll system user access rights are checked each quarter by the IT team.
+C10 Restore tests of the finance database backups run once a quarter.
+C11 Before a supplier's bank details are updated, finance calls the supplier to verify them.
+C12 New suppliers are approved by procurement before the first order.

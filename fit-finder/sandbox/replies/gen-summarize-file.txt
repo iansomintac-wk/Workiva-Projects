@@ -1,0 +1,23 @@
+(the collapsed UI toggle "Thought" above the answer is left out)
+
+Here is the summary and decision log based solely on the document you selected.
+
+Packing Line Upgrade — Summary for Operations Leadership
+The Harrow site packing line is due for an upgrade after nine years of operation, during which output has gradually declined.
+Two supplier quotes have been received: Alder at £118,000 and Birch at £104,000 (with a longer delivery time).
+The current project budget holds £95,000, meaning an additional £25,000 must be approved before any order can be placed.
+A pilot will be run following the upgrade, requiring two analysts on six-month contracts to track results, with a review of pilot results suggested for late September.
+Operator training is already planned and is unaffected by any of the outstanding decisions.
+Three Points Requiring a Decision
+
+Table
+
+#	Decision Needed	Owner	Deadline
+1	Choose between the Alder and Birch quotes	Dana	15 May
+2	Approve the additional £25,000 budget	Marcus	Before order placement
+3	Select the pilot shift (nights or weekends) and confirm hiring 2 analysts on six-month contracts	Leadership / Hana	Not specified
+
+No facts beyond those stated in the document have been added. Please review before circulating.
+
+8:00 AM • Oct 19, 2026
+

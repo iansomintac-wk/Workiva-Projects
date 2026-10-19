@@ -8,10 +8,10 @@ const card = cat.useCases[0].id;
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'synth-score-'));
 let n = 0, fails = 0;
 const text = (rows) => rows.map((r) => (typeof r === 'string' ? r : JSON.stringify(r))).join('\n') + '\n';
-const run = (prompts, gold) => {
+const run = (prompts, gold, extra = []) => {
   const p = path.join(dir, 'p' + n + '.jsonl'), g = path.join(dir, 'g' + n + '.jsonl');
   fs.writeFileSync(p, text(prompts)); fs.writeFileSync(g, text(gold));
-  return spawnSync(process.execPath, [script, p, g], { encoding: 'utf8' });
+  return spawnSync(process.execPath, [script, p, g, ...extra], { encoding: 'utf8' });
 };
 const ok = (name, cond, detail) => { n++; if (!cond) { fails++; console.log('FAIL ' + name + (detail ? ': ' + detail : '')); } };
 const closed = (name, r, why) => ok(name, r.status === 2 && r.stdout === '' && r.stderr.includes(why), `exit ${r.status} stdout "${r.stdout}" stderr "${r.stderr.trim()}"`);
@@ -34,6 +34,20 @@ closed('cards not an array', run(P, [{ ...G[0], cards: card }, G[1]]), 'malforme
 closed('unknown card id', run(P, [{ ...G[0], cards: ['NOPE'] }, G[1]]), 'unknown card');
 closed('cards on a not-a-fit row', run(P, [G[0], { ...G[1], cards: [card] }]), 'not-a-fit');
 closed('empty files', run([], []), 'no rows');
+// --top3: the right card anywhere in the 3 shown, and any wrong card shown
+const { match } = require('../engine/fit.js');
+const multi = cat.useCases.find((u) => match(u.try, cat).length >= 2);
+const shown = multi ? match(multi.try, cat).map((x) => x.id) : [];
+const PM = [{ id: 'M1', task: multi ? multi.try : 'zzqx' }];
+const gold = (fit, cards) => [{ id: 'M1', fit, cards, by: 'model', conf: 'high' }];
+const second = (r) => (r.stdout.split('\n')[1] || '') + '\n';
+ok('top3: a card sample with two or more matches exists', !!multi);
+ok('top3: first card shown is in the gold', /^top 3: right card anywhere in the 3 shown 1 of 1 that fit \(first card right 1, gain 0\); any wrong card shown 1 of 1 \(M1\); first card wrong or on a not-a-fit prompt 0; rise in wrong lists 1\n$/.test(second(run(PM, gold('good', [shown[0]]), ['--top3']))), 'shown ' + shown.join(','));
+ok('top3: a gold card at rank 2 counts as right in the 3', /^top 3: right card anywhere in the 3 shown 1 of 1 that fit \(first card right 0, gain 1\); any wrong card shown 1 of 1 \(M1\); first card wrong or on a not-a-fit prompt 1; rise in wrong lists 0\n$/.test(second(run(PM, gold('good', [shown[1]]), ['--top3']))));
+ok('top3: no wrong card when the gold lists every shown card', /^top 3: right card anywhere in the 3 shown 1 of 1 that fit \(first card right 1, gain 0\); any wrong card shown 0 of 1 \(\); first card wrong or on a not-a-fit prompt 0; rise in wrong lists 0\n$/.test(second(run(PM, gold('good', shown), ['--top3']))));
+ok('top3: a card shown on a not-a-fit row is a wrong card', /^top 3: right card anywhere in the 3 shown 0 of 0 that fit \(first card right 0, gain 0\); any wrong card shown 1 of 1 \(M1\); first card wrong or on a not-a-fit prompt 1; rise in wrong lists 0\n$/.test(second(run(PM, gold('not', []), ['--top3']))));
+ok('top3: rows with no card shown (missed, and rightly none)', /^top 3: right card anywhere in the 3 shown 0 of 1 that fit \(first card right 0, gain 0\); any wrong card shown 0 of 2 \(\); first card wrong or on a not-a-fit prompt 0; rise in wrong lists 0\n$/.test(second(run(P, G, ['--top3']))));
+ok('top3: without the flag the output is still one line', run(PM, gold('good', [shown[0]])).stdout.split('\n').filter(Boolean).length === 1);
 fs.rmSync(dir, { recursive: true, force: true });
 console.log(fails ? `synth-score tests FAILED: ${fails} of ${n}` : `synth-score tests pass: ${n}`);
 process.exit(fails ? 1 : 0);

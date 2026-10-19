@@ -1,0 +1,43 @@
+{"id":"X1","task":"Every quarter I have to explain in the MD&A why revenue and operating expenses moved against last year, can you give me a starting version?"}
+{"id":"X2","task":"Make sure the numbers in our 10-Q draft match from the face statements all the way through the footnotes."}
+{"id":"X3","task":"Decide whether this prior-period error is big enough that we have to restate."}
+{"id":"X4","task":"I want to know if our press release says anything different from what the MD&A and its tables show."}
+{"id":"X5","task":"At each year end I need to lay out where the German and Dutch subsidiaries' local accounts depart from US GAAP and why."}
+{"id":"X6","task":"How do our segment disclosures stack up against what our three closest competitors put in their annual reports?"}
+{"id":"X7","task":"Post the intercompany elimination entries in SAP for this month."}
+{"id":"X8","task":"The filing check is throwing a pile of XBRL warnings about calculation inconsistencies and negative values, what do they mean and how do I clear them?"}
+{"id":"X9","task":"We just closed an acquisition and need a first draft of the current report we have to file within four business days."}
+{"id":"X10","task":"Give me the main takeaways from this 60-page audit committee pack before tomorrow morning."}
+{"id":"X11","task":"Email every control owner who has not uploaded evidence yet and keep nudging them until they do."}
+{"id":"X12","task":"How do I link a value from a spreadsheet into my document so it updates on its own?"}
+{"id":"X13","task":"Can you make this risk factor paragraph plainer so a board member without a finance background follows it?"}
+{"id":"X14","task":"This VLOOKUP keeps returning N/A in my fixed asset rollforward tab, why?"}
+{"id":"X15","task":"Work out the deferred tax provision for all 40 entities to the dollar."}
+{"id":"X16","task":"I need a Wdata query that pulls trial balance rows for entity 200 and I have no idea of the syntax."}
+{"id":"X17","task":"Our teams in France and Japan need the code of conduct in their own languages."}
+{"id":"X18","task":"After the merger we have two control libraries and I suspect a lot of them cover the same thing."}
+{"id":"X19","task":"Sign off on the SOX 404 management assessment on behalf of the CFO."}
+{"id":"X20","task":"We are adopting NIST CSF 2.0 this year, which of our IT general controls line up with it and where are the holes?"}
+{"id":"X21","task":"Go through the evidence uploaded for each key control and flag anything that does not show the reviewer, the date or the threshold."}
+{"id":"X22","task":"For each of our revenue controls, write out how the tester should walk through it and what they should look for."}
+{"id":"X23","task":"Book a slot with the audit committee chair for next Thursday."}
+{"id":"X24","task":"The three-way match control failed testing this quarter, help me write it up as a deficiency."}
+{"id":"X25","task":"We spotted a new exposure around vendors using our data to train AI models and I need a control written to cover it."}
+{"id":"X26","task":"What should our corrective action plan look like for the user access review control that failed?"}
+{"id":"X27","task":"Get the plant managers to send me their Q3 fuel consumption figures."}
+{"id":"X28","task":"Pull together what came out of this quarter's conversations with risk owners into something our ERM steering group can read in ten minutes."}
+{"id":"X29","task":"Turn our procure-to-pay process write-up into a diagram of the steps and handoffs."}
+{"id":"X30","task":"What does ESRS E1 actually want us to say about our climate transition plan?"}
+{"id":"X31","task":"Approve the final sustainability report so it can be published."}
+{"id":"X32","task":"I have our Scope 1 and 2 numbers and the water data collected, write the environmental section of the sustainability report from them."}
+{"id":"X33","task":"The board wants a two-page version of our climate narrative with the jargon taken out."}
+{"id":"X34","task":"Line up this year's energy and waste figures by site against last year and tell me which jumps look off and what might explain them."}
+{"id":"X35","task":"Compute our exact Scope 3 emissions from the supplier spend file."}
+{"id":"X36","task":"Before we file, confirm the share count and EPS mentioned in the 10-K text agree with the financial statement tables."}
+{"id":"X37","task":"Summarize the lease accounting memo our auditors sent so I can brief my team on it."}
+{"id":"X38","task":"Choose which audit firm we should hire next year."}
+{"id":"X39","task":"Draft the paragraph explaining why gross margin fell this year compared with last."}
+{"id":"X40","task":"People keep asking me how to roll a document forward to the next quarter in Workiva, what are the steps?"}
+{"id":"X41","task":"How far are we from our 2030 emissions target and roughly what yearly cut would get us there?"}
+{"id":"X42","task":"Submit the 10-K to EDGAR tonight."}
+{"id":"X43","task":"Explain in plain terms what the ISSB S2 Scope 3 disclosure asks of a company our size."}

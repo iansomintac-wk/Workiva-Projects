@@ -1,0 +1,15 @@
+TALK PROMPT: Fit Finder, what to show when no card matches. Drafted 2026-10-19 by the PM step of the top-3 + sandbox run
+(lead d72dc59c). Load studio-harness:talk-and-run first; this is a talk (Ian in the conversation), not a run.
+
+Read: docs/evidence/2026-10-19-top3-sandbox.md (sections 2, 7, 8) and the 2026-10-19 top3/sandbox spec in docs/superpowers/specs/.
+Problem: on the fresh blind set, 22 of the 31 tasks that fit and have a matching feature got no card at all; showing three
+cards instead of one gained 0. No card is the main failure.
+Ian decides first: is a fallback (for example the nearest cards in the task's area) worth trying, or is it parked?
+Probe first (read-only): for the 22 misses, which area and which wording miss. Do not score or re-read the fresh blind set
+(fit-finder/data/top3/); use the tune set or new sentences.
+Frozen until Ian says yes: fit-finder/engine/, every card's id/area/ops/match.
+Also queue for Ian the locked-file test fixes in the evidence doc (scorer counts "rightly none" apart, empty-gold test,
+rank 3/4 boundary, kit test checks the first card, MADE-UP tag on the prior-year file) and whether the older blind-set
+sentences share the X41 pattern (a fitting task with no matching feature counted as right).
+GRC cards: not verifiable in Ian's sandbox (no Evidence analyzer, no Risk & Control knowledge base); keep as they are.
+Appetite: one talk, no build. Work repo: write nothing to the brain or studio-harness.

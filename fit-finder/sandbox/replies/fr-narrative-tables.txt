@@ -1,0 +1,19 @@
+(the collapsed UI toggle "Thought" above the answer is left out)
+
+Here is every mismatch I found between the two documents:
+
+Table
+
+Item	Draft Narrative value	Summary Table value
+Revenue	52.0 million	52.6 million
+Net income	6.2 million	6.4 million
+Cash at year end	9.8 million	8.9 million
+Headcount	310	301
+New sites opened	4	3
+
+Matches (no action needed): Cost of sales (31.5 million) and Total assets (88.4 million) are identical in both documents.
+
+Five items need your review before the draft goes to review. Let me know if you'd like help with anything else once you've checked them.
+
+7:53 AM • Oct 19, 2026
+

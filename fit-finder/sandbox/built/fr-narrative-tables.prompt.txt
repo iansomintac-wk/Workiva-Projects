@@ -1,0 +1,1 @@
+Use only the draft and the other document I selected with @. Context: the draft goes to review soon, so I need to catch mismatches first. Check them against each other and list every place where a number or statement does not match, as a table with the section and both values. Do not fix anything or guess; I will check each one.

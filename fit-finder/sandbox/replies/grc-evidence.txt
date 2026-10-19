@@ -1,0 +1,24 @@
+(the collapsed UI toggle "Thought" above the answer is left out)
+
+Here is the assessment based solely on the evidence file you referenced:
+
+Table
+
+Control Attribute	Status	Finding	Source
+Every manual journal entry for the month is listed	✅ Shown	Ledger export covers 1–28 March with 214 entries	E1
+A manager who did not prepare the entries performs the review	⚠️ Unclear	The checklist is initialled MO, and M. Okoro appears as a preparer of 34 entries. If MO = M. Okoro, the reviewer also prepared entries — independence is compromised. The file does not confirm the reviewer's role or that they are a manager	E2, E3
+Entries above 10,000 are approved by a named person	❌ Not shown	The approval log lists 9 qualifying entries, but the approver column shows "system" for all of them — no named individual is recorded	E5
+Reviewer queries are resolved	❌ Not shown	An email shows 3 queries were raised on 12 March, but the file contains no response, resolution note, or follow-up evidence	E4
+Review checklist is signed and dated	⚠️ Partially shown	The checklist carries initials (MO) but no date is recorded on it. The close calendar shows the March close completed on 4 April, but that does not date the checklist itself	E3, E6
+Coverage is the full month (1–31 March)	⚠️ Gap noted	The export runs only to 28 March, leaving 3 days uncovered. It is unclear whether entries on 29–31 March exist and were omitted, or whether none were posted	E1
+
+Summary of gaps to follow up:
+
+Confirm whether MO on the checklist is the same M. Okoro who prepared 34 entries — if so, independence is broken.
+Obtain evidence that the 3 reviewer queries were resolved before sign-off.
+Replace or supplement the approval log to show a named human approver, not just "system."
+Obtain a dated checklist or a sign-off date tied to the review.
+Clarify whether the 28 March cut-off on the export means no entries existed on 29–31 March, and document accordingly.
+
+7:55 AM • Oct 19, 2026
+

@@ -1,0 +1,117 @@
+[
+  {
+    "card": "fr-yoy-narrative",
+    "file": "fr-yoy-narrative.txt",
+    "fill": {
+      "[who will read it]": "the audit committee",
+      "[section]": "Management discussion",
+      "[threshold]": "3%",
+      "[to confirm]": "TO CONFIRM"
+    },
+    "planted": [
+      {"id": "P1", "find": "468 million", "note": "Net sales rose from 412 million to 468 million."},
+      {"id": "P2", "find": "31.4 percent", "note": "Gross margin fell from 33.0 percent to 31.4 percent."},
+      {"id": "P3", "find": "1,240 employees", "note": "Employees rose from 1,180 to 1,240."},
+      {"id": "P4", "find": "140 million", "note": "Net debt fell from 175 million to 140 million."},
+      {"id": "P5", "find": "0.42 per share", "note": "Dividend rose from 0.40 to 0.42 per share."}
+    ]
+  },
+  {
+    "card": "fr-narrative-tables",
+    "file": "fr-narrative-tables.txt",
+    "fill": {},
+    "planted": [
+      {"id": "P1", "find": "Revenue (million) | 52.6", "note": "Revenue is 52.0 million in the narrative and 52.6 in the table."},
+      {"id": "P2", "find": "Net income (million) | 6.4", "note": "Net income is 6.2 million in the narrative and 6.4 in the table."},
+      {"id": "P3", "find": "Cash at year end (million) | 8.9", "note": "Cash is 9.8 million in the narrative and 8.9 in the table."},
+      {"id": "P4", "find": "Headcount | 301", "note": "Headcount is 310 in the narrative and 301 in the table."},
+      {"id": "P5", "find": "New sites opened | 3", "note": "New sites are 4 in the narrative and 3 in the table."}
+    ]
+  },
+  {
+    "card": "grc-evidence",
+    "file": "grc-evidence.txt",
+    "fill": {
+      "[control description]": "every manual journal entry for the month is listed, a manager who did not prepare the entries reviews them, entries above 10,000 are approved by a named person, reviewer queries are resolved, and the review checklist is signed and dated"
+    },
+    "planted": [
+      {"id": "P1", "find": "covers 1 to 28 March", "note": "The listing stops at 28 March, so completeness for the whole month is not shown."},
+      {"id": "P2", "find": "M. Okoro (34 entries)", "note": "A preparer shares initials with the reviewer, so reviewer independence is in doubt."},
+      {"id": "P3", "find": "page carries the initials MO", "note": "The checklist is initialled but no sign-off date is shown."},
+      {"id": "P4", "find": "raising 3 queries on individual entries", "note": "The queries are shown but no resolution or reply is in the file."},
+      {"id": "P5", "find": "approver column shows system", "note": "Approvals above 10,000 show no named approver."}
+    ]
+  },
+  {
+    "card": "grc-rationalize",
+    "file": "grc-rationalize.txt",
+    "fill": {},
+    "planted": [
+      {"id": "P1", "find": "C03 Who can use", "note": "C03 and C09 both cover the quarterly payroll access review."},
+      {"id": "P2", "find": "C05 Changes to supplier", "note": "C05 and C11 both verify supplier bank detail changes by phone."},
+      {"id": "P3", "find": "C02 Warehouse stock", "note": "C02 and C07 both cover the quarterly inventory count."},
+      {"id": "P4", "find": "C04 Expense claims", "note": "C04 and C08 both require line manager approval of expenses."},
+      {"id": "P5", "find": "C06 Backups of", "note": "C06 and C10 both cover quarterly restore tests of finance backups."}
+    ]
+  },
+  {
+    "card": "sus-anomalies",
+    "file": "sus-anomalies.txt",
+    "fill": {
+      "[current period]": "the Apr-Jun column",
+      "[previous period]": "the Jan-Mar column"
+    },
+    "planted": [
+      {"id": "P1", "find": "Site B electricity | 280 | 190", "note": "Site B electricity fell about 32 percent."},
+      {"id": "P2", "find": "Business flights | 90 | 160", "note": "Business flights rose about 78 percent."},
+      {"id": "P3", "find": "Generator diesel | 40 | 95", "note": "Generator diesel rose about 138 percent."},
+      {"id": "P4", "find": "Courier freight | 70 | 41", "note": "Courier freight fell about 41 percent."},
+      {"id": "P5", "find": "Staff car mileage | 55 | 80", "note": "Staff car mileage rose about 45 percent."}
+    ]
+  },
+  {
+    "card": "sus-exec-narrative",
+    "file": "sus-exec-narrative.txt",
+    "fill": {
+      "[the board]": "the board of directors",
+      "[number]": "80",
+      "[last period]": "last year"
+    },
+    "planted": [
+      {"id": "P1", "find": "8,420 tonnes", "note": "Scope 1 and 2 emissions of 8,420 tonnes are kept."},
+      {"id": "P2", "find": "64 percent", "note": "Renewable electricity of 64 percent is kept."},
+      {"id": "P3", "find": "1.8 million cubic metres", "note": "Water withdrawal of 1.8 million cubic metres is kept."},
+      {"id": "P4", "find": "7 lost-time injuries", "note": "7 lost-time injuries are kept."},
+      {"id": "P5", "find": "71 percent", "note": "Recycling rate of 71 percent is kept."}
+    ]
+  },
+  {
+    "card": "gen-summarize-file",
+    "file": "gen-summarize-file.txt",
+    "fill": {
+      "[who will read it]": "the operations leadership team"
+    },
+    "planted": [
+      {"id": "P1", "find": "choose between the Alder and Birch quotes by 15 May", "note": "Choose a supplier (Alder or Birch) by 15 May."},
+      {"id": "P2", "find": "approve an extra 25,000", "note": "Approve an extra 25,000 of budget."},
+      {"id": "P3", "find": "pick the pilot shift, either nights or weekends", "note": "Pick the pilot shift: nights or weekends."},
+      {"id": "P4", "find": "confirm hiring 2 analysts", "note": "Confirm hiring 2 analysts on a six-month contract."},
+      {"id": "P5", "find": "set the review date for the pilot results", "note": "Set the review date for the pilot results."}
+    ]
+  },
+  {
+    "card": "gen-rewrite",
+    "file": "gen-rewrite.txt",
+    "fill": {
+      "[audience]": "the board",
+      "[number]": "70"
+    },
+    "planted": [
+      {"id": "P1", "find": "52.0 million", "note": "Revenue of 52.0 million is kept."},
+      {"id": "P2", "find": "11.5 percent", "note": "Operating margin of 11.5 percent is kept."},
+      {"id": "P3", "find": "4 new sites", "note": "4 new sites opened is kept."},
+      {"id": "P4", "find": "38 for the year", "note": "38 customer complaints is kept."},
+      {"id": "P5", "find": "first 15 suppliers", "note": "The first 15 suppliers signed up is kept."}
+    ]
+  }
+]
