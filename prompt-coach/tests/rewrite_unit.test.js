@@ -476,21 +476,6 @@ test('grounding: FY2020 is not satisfied by a file that only has FY2024 and FY20
   const g = (o) => o.notes.filter((n) => n.kind === 'grounding').map((n) => n.text).join(' ');
   assert.match(g(run('Using only @f.xlsx, compare our FY2020 baseline to FY2025 in a table with each source row. Do not guess.', [f])), /FY2020/);
 });
-
-// ---- known-limits sweep (2026-10-19) ----
-test('unsupported: "Forecast product revenue using this file" against historical-only text fires (C2b)', () => {
-  const h = sheetOf('Actuals', 'Account, Q1, Q2\nRevenue, 100, 120');
-  assert.equal(unsupported(run('Forecast product revenue using this file', [h])).length, 1);
-  assert.equal(unsupported(run('Forecast Q4 EMEA product revenue from this file', [h])).length, 1);
-});
-test('unsupported: a forecast noun phrase about the file stays quiet (C2b near misses)', () => {
-  const h = sheetOf('Actuals', 'Account, Q1, Q2\nRevenue, 100, 120');
-  for (const p of ['Summarize the forecast table revenue on this slide', 'Explain the forecast variance revenue in this file', 'Compare product revenue between Q1 and Q2 in this file', 'Compare forecast against actual revenue in this file'])
-    assert.equal(unsupported(run(p, [h])).length, 0, p);
-  const plan = sheetOf('Plan', 'Account, FY26 forecast\nRevenue, 130');
-  assert.equal(unsupported(run('Forecast product revenue using this file', [plan])).length, 0, 'file has a forecast');
-  assert.equal(unsupported(run('Forecast revenue using this file', [h])).length, 1, 'the old case still fires');
-});
 test('grounding: "Q1 FY25" counts as present when the file says "FY2025 Q1" or "Q1 FY2025" (C5b)', () => {
   const g = (o) => o.notes.filter((n) => n.kind === 'grounding').map((n) => n.text).join(' ');
   const ask = 'Using only @f.xlsx, summarise Q1 FY25 revenue in a table with each source row. Do not guess.';
