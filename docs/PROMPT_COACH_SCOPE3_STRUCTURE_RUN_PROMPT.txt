@@ -8,17 +8,18 @@ WHERE
   branch worktree-prompt-coach-scope3-structure (from prompt-coach 59b09c1, contains 77ecb77).
 - Spec (the authority): docs/superpowers/specs/2026-10-19-prompt-coach-scope3-structure-design.md.
 - Ledger: .ledger/2026-10-19-prompt-coach-scope3-structure/ (budget.json, slip.json, progress.md, prototype/).
-- Guard scripts to reuse (copy into this ledger, retarget paths, do not edit the originals):
-  C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-known-limits/.ledger/2026-10-19-prompt-coach-known-limits/
-  scripts/ (chk.sh, dump_runs.js, file_probe.js, cmp_fixture.js, sealed_run.js) and reviews/test/probe.test.js.
-  prototype/probe_proto.test.js shows the retargeting (PC path, git cwd).
+- Guard scripts, already copied into this ledger by the talk (from the known-limits run ledger): scripts/ (chk.sh,
+  dump_runs.js, file_probe.js, cmp_fixture.js, sealed_run.js) and reviews/test/probe.test.js. They still name the
+  known-limits worktree path: retarget the paths (chk.sh W/L, probe.test.js PC and git cwd) before first use;
+  prototype/probe_proto.test.js shows the probe retargeting. The ledger is git-ignored: nothing in it is committed.
 - Rules: CLAUDE.md (repo root), prompt-coach/README.md.
 
 ORDER
 1. First check: STUDIO_RUN_LEDGER set; budget.json and slip.json exist; else stop.
 2. Fresh held-out (spec section 3): an Opus helper writes 24 Scope 3 items (12 should warn, 12 near misses), sealed
    with sha256 in progress.md before any code change. Never reuse K1-K24 or the probe phrasings; the known-limits
-   heldout_sealed.json is SEEN. Bar, fixed now: >=10/12 warn and 0/12 near-misses warn.
+   heldout_sealed.json is SEEN. The labeller marks items it is unsure of. Bar, fixed now: >=10/12 warn and 0/12
+   near-misses warn. Copy slip.json's "words" line into the evidence doc at the end (the ledger is not committed).
 3. Plan via studio-harness:plan-writer from the spec's build order (tasks <= 8 steps, Data: line, Suite: line),
    reviewed by a frontier model and Codex. STOP: plan approval by Ian (the PM proxy if he is away). Update
    budget.json from the approved plan.
