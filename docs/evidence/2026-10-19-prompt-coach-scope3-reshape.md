@@ -69,3 +69,15 @@ The held-out set was scored once, at SHA 7c49c74 (result: FAIL, above). It is no
 - F1 (engine): `explainExempt` in engine/rewrite.js no longer lets "cat." before a number end the sentence, so "For Scope 3 cat. 4, explain what it covers." stays quiet and "Explain Scope 3 cat. 4 increase vs FY24" is checked. Two unit tests added (77 pass). Not measured on the held-out set.
 - F2-F4: README text, test comments and one extra listed row in a test, and a comment in engine/rewrite.js. No behaviour change.
 - dist/prompt-coach.html and the README byte count were rebuilt for F1.
+
+## Final review: open for Ian
+
+Two reviewers (Opus and Codex) went over the branch. The fix round (commit 7a6efe8) fixed the "cat. N" sentence split (F1) and the README, test comments and this doc. Inspection then stopped at its 2-round budget, so the items below get no further fix round. I did not re-run anything for this section; every line is **read** from the merged review notes unless marked otherwise.
+
+1. **Definition asks with no listed explain word now warn (H6 class).** Base skipped these because the classifier said "explain". The branch removed that skip, so "what does Scope 3 category N cover" can warn. Both reviewers say do not ship as is. H6 is the case seen in the held-out run (**read**; the held-out set is spent, and a fix shaped on H6 would be tuning on it). Needs your design call and a fresh held-out set.
+2. **"why" and "%" in a definition sentence make it checked.** The change-word list in the spec is your exact ruling, so widening or narrowing it is yours to decide. (**read**)
+3. **Change-word inflections stay exempt.** "increases", "rises", "drops", "changes" are not caught, because the spec list is exact. Your call. (**read**)
+4. **"What does Scope 3 cat. 4 mean?" still warns.** The explain pattern cannot cross the period in "cat."; base stayed quiet only through the classifier skip. Same family as item 1, and the fix touches explain detection. (**read**; re-inspection finding, not reproduced by me)
+5. **Word clean lines leave out Heading 4-6 and anything past 2,000 entries.** A category named only there gets a wrong warning. Codex suggests keeping positive matches from the full text, which changes spec rule 1. It is documented as a README limit. (**read**; the selector and the 2,000 cap are lead-read, **assumed** correct, not run by me)
+
+Nothing in this section was measured now, and nothing was run in a Workiva sandbox. (**assumed**: the reviewers' reproductions are accurate.)
