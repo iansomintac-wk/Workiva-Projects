@@ -59,7 +59,8 @@ never in parallel.
      `git diff master...runway-l11` put in its prompt file as text; the proxy decides a must-fix disagreement.
      Fix round, re-check.
   6. Evidence doc docs/evidence/2026-10-19-runway-1.1-l11-csat-warning.md: every "Done when" line, measured or not
-     run, with numbers and its baseline; the control's result; the captures' paths and the look-call list for Ian
+     run, with numbers and its baseline (the field-test line: compare the verify's ft/1.1.json, 14 metrics, with the
+     talk's sim-runs/verify-2026-10-19T10-38-36-251Z/ft/1.1.json, key by key); the control's result; the captures' paths and the look-call list for Ian
      (the words "No CSAT contact is marked added, so nobody will receive the survey. You can still graduate.", amber,
      placement under the title). CHANGELOG.txt / VALIDATION.txt / README lines that describe graduation in 1.1 change in
      the same commit as the code; the sim finding doc's L11 row gets a line saying what changed and where the result is.
