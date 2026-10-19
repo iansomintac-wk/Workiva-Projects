@@ -221,3 +221,39 @@ test('workiva tips match the live Support Center (re-check 2026-10-19): no unsup
     assert.ok(!src.includes(bad), 'rewrite.js still contains "' + bad + '"');
   }
 });
+
+// ---- Coach notes (T4): additive warnings; grades unchanged ----
+const kinds = (o) => o.notes.map((n) => n.kind);
+const PLAIN = 'Use only @RCM_FY26.xlsx. Summarize the failed controls for the audit committee in five bullets. Flag anything you cannot verify.';
+
+test('note personal: fires on SSN, salary, DOB and account numbers; not on a plain work prompt', () => {
+  for (const p of ['Summarize the file for employee 123-45-6789 in the HR report.', 'List salaries from the payroll report by department.', 'Add the date of birth to the employee table in the report.', 'Check the bank account 123456789012 in the vendor report.'])
+    assert.ok(kinds(run(p)).includes('personal'), p);
+  assert.ok(!kinds(run(PLAIN)).includes('personal'));
+});
+
+test('note calc: fires when asked to calculate a figure; not on a plain work prompt', () => {
+  assert.ok(kinds(run('Calculate the total revenue from the attached report.')).includes('calc'));
+  assert.ok(kinds(run('Recalculate the variance in the Q3 table and sum each column.')).includes('calc'));
+  assert.ok(!kinds(run(PLAIN)).includes('calc'));
+});
+
+test('note stacked: a comma list of 3+ task verbs counts as stacked and the display rule downgrades', () => {
+  const p = 'Summarize the report, list the risks, draft an email, and compare to last year';
+  const o = run(p);
+  assert.ok(kinds(o).includes('stacked'));
+  assert.equal(o.stacked, true);
+  assert.ok(!kinds(run(PLAIN)).includes('stacked'));
+  assert.equal(run(PLAIN).stacked, false);
+  assert.ok(!kinds(run('Summarize the report, the risks and the controls for the audit committee.')).includes('stacked'));
+});
+
+test('note offtopic: no work words fires and the display grade is not strong; a work prompt does not fire', () => {
+  for (const p of ["What's the weather today?", 'Write a poem about cats']) {
+    const o = run(p);
+    assert.ok(kinds(o).includes('offtopic'), p);
+    assert.equal(o.offtopic, true);
+  }
+  assert.ok(!kinds(run(PLAIN)).includes('offtopic'));
+  assert.ok(!kinds(run('Summarize the attached policy for the board.')).includes('offtopic'));
+});

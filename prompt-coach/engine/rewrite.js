@@ -526,7 +526,12 @@
     const scope = Object.fromEntries(K.map((k) => [k, { frag: assemble(segments.filter((g) => g.letter === k), allOn), why: why[k], mine: !genUsed.has(k) }]));
 
     const notes = [];
-    if (d.stacked) notes.push({ kind: 'stacked', text: 'You are asking for several things at once. Split them into separate prompts and ask one at a time.' });
+    const stackedAll = !!d.stacked || listStacked(prompt);
+    if (stackedAll) notes.push({ kind: 'stacked', text: 'You are asking for several things at once. Split them into separate prompts and ask one at a time.' });
+    if (PERSONAL.test(prompt)) notes.push({ kind: 'personal', text: "This prompt seems to include personal or account details. Remove them or check your company's policy before you paste it." });
+    if (CALC.test(prompt)) notes.push({ kind: 'calc', text: 'Workiva AI can get figures wrong. Check every figure it calculates against the source.' });
+    const offtopic = !WORK.test(prompt) && !files.length;
+    if (offtopic) notes.push({ kind: 'offtopic', text: 'This does not look like a Workiva task. The Coach is for prompts about your reports, data or documents.' });
     if (d.words < 6) notes.push({ kind: 'short', text: 'Very short prompts leave almost everything to guesswork. Aim for one or two full sentences.' });
     if (files.length) {
       const fileText = files.map((f) => (f.text || '') + ' ' + (f.sheets || []).map((s) => s.name + ' ' + (s.headers || []).join(' ')).join(' ')).join(' ').toLowerCase();
@@ -542,9 +547,20 @@
       : !on.S && files.length ? 'You attached ' + listify(files.map((f) => cleanFile(f.name))) + ', but the prompt does not point to it. Start with ' + files.map((f) => '@' + cleanFile(f.name)).join(' ') + (on.O ? ' so the AI knows what to read.' : ' and say the one thing you want back.')
       : 'The AI would have to guess ' + listify(['S', 'O'].filter((k) => !on[k]).map((k) => MISSING[k])) + '.';
     const placeholders = (strongP.match(/\[[^\]]+\]/g) || []).length;
-    return { grade, detected: on, headline, stages, scope, segments, notes, tips, intent: ctx.intent, domain: ctx.domain, placeholders, hits: d.el };
+    return { grade, detected: on, headline, stages, scope, segments, notes, stacked: stackedAll, offtopic, tips, intent: ctx.intent, domain: ctx.domain, placeholders, hits: d.el };
   }
 
-  const api = { sentenceSpans, directVoice, fixTypos, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
+  // Coach notes (T4): additive warnings that never change a grade, weight or rewrite.
+  const LIST_VERBS = /^(?:please |then |also )?(summari[sz]e|draft|write|rewrite|compare|list|check|review|extract|translate|calculate|compute|reconcile|explain|analy[sz]e|flag|email|format|convert|prepare|generate|find|build|create)\b/;
+  function listStacked(text) {
+    const seen = new Set();
+    for (const seg of text.toLowerCase().split(/\s*(?:,\s*(?:and\s+|then\s+)?|;\s*|\s+and\s+)/)) { const m = LIST_VERBS.exec(seg.trim()); if (m) seen.add(m[1].replace(/z/g, 's')); }
+    return seen.size >= 3;
+  }
+  const PERSONAL = /\b\d{3}-\d{2}-\d{4}\b|\bsalar(?:y|ies)\b|\bdate of birth\b|\bdob\b|\b(?:account|acct|routing|iban|bank)\b[^.\n]{0,30}\b\d{8,}\b|\b\d{8,}\b[^.\n]{0,15}\b(?:account|acct|routing|iban)\b|\b(?:iban|routing number)\b/i;
+  const CALC = /\b(?:calculate|compute|recalculate|recompute|work out|sum|sum up|total up|add up)\b|\btotal(?:s|ed)? (?:the|each|all|by)\b/i;
+  const WORK = /\b(?:report|reports|data|document|documents|file|files|spreadsheet|sheet|table|budget|audit|auditor|control|controls|risk|risks|policy|policies|revenue|expense|expenses|variance|filing|disclosure|esg|sox|ledger|invoice|invoices|statement|statements|financial|finance|accounting|compliance|workiva|wdata|workspace|board|committee|quarter|fiscal|emissions|sustainability|tax|payroll|forecast|margin|contract|memo|deck|presentation|section|footnote|10-?k|10-?q|xbrl|kpi|metrics?|figures?|numbers?|customer|customers|vendor|vendors|employee|employees|email|summary|analysis|review|q[1-4]|fy\s?\d*)\b|@\w/i;
+
+  const api = { listStacked, sentenceSpans, directVoice, fixTypos, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
   if (isNode) module.exports = api; else root.ScopeRewrite = api;
 })(typeof window !== 'undefined' ? window : globalThis);

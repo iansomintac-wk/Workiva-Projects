@@ -300,7 +300,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     const pick = ScopeClassify.pick(prompt, CLS);
     const r = ScopeRewrite.coach(prompt, { files, detect, ...pick });
     // one job at a time: a stacked prompt can't be strong
-    r.displayGrade = r.grade === 'strong' && r.hits && ScopeRules.detect(prompt).stacked ? 'better' : r.grade;
+    r.displayGrade = r.offtopic ? 'weak' : r.grade === 'strong' && r.hits && r.stacked ? 'better' : r.grade;
     const prevKey = state.result && state.result.stages.strong.prompt;
     state.result = r;
     if (prevKey !== r.stages.strong.prompt) state.on = Object.fromEntries(K.map((k) => [k, true]));

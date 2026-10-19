@@ -82,6 +82,14 @@ changes the prompt; no duplicate sentences or empty fragments (2 runs have other
 - Filler and questions (measured 2026-10-17, sim_customers + test): rewrites with filler (please, can you, ...) went from 66 Strong to 0 Better and 0 Strong; Strong rewrites containing "?" went from 89 to 69 (24 + 45).
 - Every letter can be switched off (fix 4): when only Context is missing and another letter was found inside someone else's sentence (for example the objective inside the opening Source sentence), that letter still gets its own short blank-free sentence, so its toggle changes the text. Known limit: the sentence can repeat the ask ("Summarize the key points of the content." after "give a 100-word summary"; 4 of the 62 runs this changed).
 
+## Coach notes (T4, 2026-10-18)
+
+Four warning notes, additive only (engine/rewrite.js, small diff beside the notes block; another run owns the engine, weights and rewrite text). Grades, weights, rule scores and rewrite text are unchanged; only the page's display rule changed.
+- personal: SSN-like number, salary, date of birth, or a long number next to account/bank/routing/IBAN words.
+- calc: asks to calculate, compute, sum, total or work out a figure. Workiva AI can get figures wrong; check against the source.
+- stacked: the existing note also fires for a comma/and list of 3 or more distinct task verbs (listStacked in rewrite.js; rules.js stacked() is untouched because model features use it). coach() returns `stacked`, and the page downgrades strong to better with it.
+- offtopic: no work or document words and no attached file. coach() returns `offtopic`; the page shows weak instead of a polished finance rewrite as strong.
+
 ## Real files
 
 `tests/filetest.js` loads real Word, Excel, PowerPoint, PDF and CSV files (from
