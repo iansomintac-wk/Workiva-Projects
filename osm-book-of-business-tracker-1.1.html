@@ -12729,8 +12729,10 @@ function beatAgendaItems(c, pendingItems){
   rankedPromises(c, 99).kept.filter(commitmentIsOverdue).slice(0, 5)
     .forEach(p => items.push((p.direction === 'i_owe' ? 'You owe: ' : 'They owe: ') + p.text));
   const qs = collectOpenQuestions(c);
-  const top = qs.length ? qs[0].date : null;
-  qs.filter(x => x.date === top).slice(0, 5).forEach(x => items.push('Open question: ' + x.thread.q));
+  // One call only: the newest by date, a same-day tie going to the greater activity id.
+  let top = null;
+  qs.forEach(x => { if(!top || x.date > top.date || (x.date === top.date && String(x.activityId) > String(top.activityId))) top = x; });
+  qs.filter(x => top && x.activityId === top.activityId).slice(0, 5).forEach(x => items.push('Open question: ' + x.thread.q));
   if(pendingItems && pendingItems.length) items.push('Next step: ' + pendingItems[0].label);
   return items;
 }

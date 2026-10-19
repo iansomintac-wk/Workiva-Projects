@@ -39,6 +39,13 @@ test('agenda items: overdue promises (oldest first), open questions of the newes
   assert.deepEqual(Array.from(ctxFor(ACTS).beatAgendaItems(c, P)),
     ['They owe: Late file', 'You owe: Send mapping doc', 'Open question: Q new', 'Next step: Data file']);
 });
+test('two calls on the same day: only the single newest call (by activity id) contributes its questions', () => {
+  const acts = [
+    { id: 'a1', date: '2026-10-14', openThreads: [T('Q first call')] },
+    { id: 'a2', date: '2026-10-14', openThreads: [T('Q second call'), T('Q second b')] }];
+  assert.deepEqual(Array.from(ctxFor(acts).beatAgendaItems({ id: 'c1', name: 'Orion', commitments: [] }, [])),
+    ['Open question: Q second call', 'Open question: Q second b']);
+});
 test('agenda items empty with nothing overdue, open or pending; the section is then the empty string', () => {
   const x = ctxFor([]), e = { id: 'c1', name: 'Orion', commitments: [] };
   assert.deepEqual(Array.from(x.beatAgendaItems(e, [])), []);

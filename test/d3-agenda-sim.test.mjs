@@ -18,6 +18,15 @@ test('d3AgendaJudge: fails when the agenda, the button, or the clipboard text is
   assert.equal(ok({ text: 'Agenda - Orion Semiconductor\n1. Open question: SIM-QUESTION x' }).passed, false);
   assert.match(ok({ clip: '' }).evidence, /clipboard/);
 });
+test('d3AgendaJudge: fails when the displayed list items differ from the copied numbered lines', () => {
+  const items = ['Open question: SIM-QUESTION which sandbox region do we use?', 'Next step: SIM-OWE checklist: confirm sandbox access'];
+  assert.equal(ok({ items }).passed, true);
+  const bad = ok({ items: [items[0], 'Next step: SIM-OWE checklist: something else'] });
+  assert.equal(bad.passed, false);
+  assert.match(bad.evidence, /differ|match/);
+  assert.equal(ok({ items: [items[0]] }).passed, false);
+  assert.equal(ok({ items: [items[1], items[0]] }).passed, false);
+});
 test('GAPS.D3 is gone and classify carries no gap for D3', () => {
   assert.equal(GAPS.D3, undefined);
   assert.equal('gap' in classify({ id: 'D3', passed: true }), false);

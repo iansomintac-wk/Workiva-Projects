@@ -12,7 +12,7 @@ OSM Runway — release notes
       (overdue promises, the open questions of the newest call that has any, the next unticked checklist
       step). A "Copy agenda" button copies it as plain numbered text for an invite or email. It stores
       nothing and has no new fields; it is hidden when there is nothing to list.
-    - Sim D3 now also checks the Agenda: it clicks Copy and compares the clipboard text. The "meeting agenda" GAP is gone.
+    - Sim D3 now also checks the Agenda: it clicks Copy and compares the clipboard text and requires the on-screen list to equal the copied lines. Two calls on the same day no longer both feed the agenda: only the single newest call (greater activity id on a tie) contributes questions. The "meeting agenda" GAP is gone.
       SIM_EXTRA_BREAK=agenda-off (a check-only break) removes just the Agenda, so only that check can fail.
     - Fix: the Agenda's open-question line showed "Open question: undefined"; it now shows the question text.
     - Dev tooling: the L11, D2 and D3 capture tools now use a shared capture guard (tools/lib/capture-guard.mjs). A shot is refused

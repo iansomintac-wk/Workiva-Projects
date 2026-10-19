@@ -37,7 +37,7 @@ export const TRANSCRIPT_TEXT_JS = `(async a => { const t = a && a.transcript; if
   if (t.ref && typeof tsGet === 'function') { const r = await tsGet(t.ref); return (r && r.text) || ''; } return ''; })`;
 
 // Judge for the D3 agenda leg: the agenda is on the panel and clicking Copy put the same list on the clipboard.
-export function d3AgendaJudge({ found, text = '', copy, clip = '' } = {}) {
+export function d3AgendaJudge({ found, text = '', items, copy, clip = '' } = {}) {
   const lacks = [];
   if (!found) lacks.push('agenda not on the panel');
   if (!copy) lacks.push('no Copy button');
@@ -47,6 +47,13 @@ export function d3AgendaJudge({ found, text = '', copy, clip = '' } = {}) {
     for (const w of [ORION, 'Open question: SIM-QUESTION', 'Next step: SIM-OWE checklist']) if (!clip.includes(w)) lacks.push(`clipboard lacks "${w}"`);
   }
   for (const w of ['SIM-QUESTION', 'SIM-OWE checklist']) if (found && !(text || '').includes(w)) lacks.push(`agenda text lacks "${w}"`);
+  // The complete ordered on-screen list must equal the clipboard's numbered lines.
+  if (found && clip) {
+    const num = l => /^\d+\.\s/.test(l), bare = l => String(l).trim().replace(/^\d+\.\s*/, '');
+    const shown = (Array.isArray(items) ? items : String(text || '').split('\n').map(l => l.trim()).filter(num)).map(bare);
+    const copied = clip.split('\n').map(l => l.trim()).filter(num).map(bare);
+    if (shown.length !== copied.length || shown.some((l, i) => l !== copied[i])) lacks.push(`displayed agenda items differ from the copied lines (shown ${JSON.stringify(shown)}, copied ${JSON.stringify(copied)})`);
+  }
   const passed = !lacks.length;
   return { passed, evidence: passed ? 'agenda on the panel, Copy put it on the clipboard' : lacks.join('; ') };
 }
@@ -88,9 +95,10 @@ export const PART_A = [
       const p = pane && pane.querySelector('[data-beat-agenda]');
       const btn = p && p.querySelector('[data-beat-agenda-copy]');
       const text = p ? p.innerText : '';
+      const items = p ? [...p.querySelectorAll('ol > li')].map(li => li.innerText.trim()) : [];
       if (btn) btn.click();
       await new Promise(r => setTimeout(r, 100));
-      return JSON.stringify({ found: !!p, text, copy: !!btn, clip: window.__clip || '' }); })()`));
+      return JSON.stringify({ found: !!p, text, items, copy: !!btn, clip: window.__clip || '' }); })()`));
     const j = d3AgendaJudge(info);
     return { passed: !absent.length && j.passed, evidence: `${absent.length ? `absent from panel: ${absent.join(', ')}` : 'open deliverables and question on the panel'}; agenda: ${j.evidence}` };
   } },
