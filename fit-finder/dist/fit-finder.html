@@ -175,7 +175,7 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
           <div class="panel-head"><span class="label">a prompt to start with</span><button class="copy" type="button" id="copy">copy</button></div>
           <p class="prompt-text" id="starter"></p>
         </div>
-        <p class="coachline" id="coachLine">Paste it into Workiva AI chat, or improve it first in the <a id="coachLink" href="https://claude.ai/artifact/9Qk7uhNgri3uCSkUafsDQV" target="_blank" rel="noopener">Prompt Coach</a>. Replace each [bracket] with your own words before you paste.</p>
+        <p class="coachline" id="coachLine">Paste it into Workiva AI chat, or improve it first in the <a id="coachLink" href="https://claude.ai/artifact/9Qk7uhNgri3uCSkUafsDQV" target="_blank" rel="noopener">Prompt Coach</a>. Replace each [bracket] with your own words before you paste. <span id="coachFallback" hidden>(No prompt-coach.html in this folder? <a href="https://claude.ai/artifact/9Qk7uhNgri3uCSkUafsDQV" target="_blank" rel="noopener">Open the online Coach.</a>)</span></p>
         <div class="panel" id="fullerPanel" hidden>
           <div class="panel-head"><span class="label">or start from the fuller prompt for this use case</span><button class="copy" type="button" id="copyFuller">copy</button></div>
           <p class="prompt-text" id="fuller"></p>
@@ -514,7 +514,7 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
   const BLOCK = { judgment: 'judgment or sign-off', 'exact-calc': 'exact calculation', 'cross-system': 'work in other systems', 'collect-from-people': 'getting input from people', 'one-off': 'a one-off' };
   const NAME = { good: 'good fit', partial: 'partial fit', not: 'not a fit' };
   const list = (a) => a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
-  if (location.protocol === 'file:') $('coachLink').setAttribute('href', 'prompt-coach.html');
+  if (location.protocol === 'file:') { $('coachLink').setAttribute('href', 'prompt-coach.html'); $('coachFallback').hidden = false; }
   let rep = 'auto';
   for (const [t, p] of [['tab-task', 'pane-task'], ['tab-list', 'pane-list']]) $(t).onclick = () => {
     for (const [t2, p2] of [['tab-task', 'pane-task'], ['tab-list', 'pane-list']]) { $(t2).setAttribute('aria-selected', String(t2 === t)); $(p2).hidden = p2 !== p; }

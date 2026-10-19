@@ -108,6 +108,8 @@ async function main() {
       check(W, 'Prompt Coach link is the same-folder file under file:', !!link && link.href === 'prompt-coach.html', link && link.href);
       check(W, 'Prompt Coach link opens safely in a new tab', !!link && link.target === '_blank' && /noopener/.test(link.rel) && link.text === 'Prompt Coach');
       check(W, 'paste-or-improve line under the starter prompt', !!link && link.para.includes('Paste it into Workiva AI chat, or improve it first in the Prompt Coach'));
+      const fb = await ev(`(() => { const s = document.getElementById('coachFallback'); const a = s && s.querySelector('a'); return s ? { hidden: s.hidden, text: s.textContent, href: a && a.getAttribute('href') } : null; })()`);
+      check(W, 'under file: a fallback line links the online Coach', !!fb && !fb.hidden && fb.text.includes('No prompt-coach.html in this folder? Open the online Coach.') && fb.href === COACH, JSON.stringify(fb));
       const fill = 'Replace each [bracket] with your own words before you paste.';
       const fillN = await ev(`(async () => { await setTask(FitCatalogue.useCases.find((x) => x.id === 'fr-yoy-narrative').try); return { coach: t('#coachLine'), fuller: !!document.getElementById('fullerPanel') && !document.getElementById('fullerPanel').hidden, near: (document.getElementById('fullerPanel').textContent + t('#coachLine')).split(${JSON.stringify(fill)}).length - 1 }; })()`);
       check(W, 'coach line tells the user to replace each [bracket]', fillN.coach.includes(fill) && fillN.fuller, JSON.stringify(fillN.coach).slice(0, 80));
