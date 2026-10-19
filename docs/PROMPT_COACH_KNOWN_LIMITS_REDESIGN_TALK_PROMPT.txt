@@ -1,0 +1,37 @@
+TALK (DRAFT, not launched): Prompt coach known limits, redesign (Workiva repo)
+
+Drafted 2026-10-19 by the hand-off PM step of run 3276bf06 (known-limits sweep). Launch only on Ian's yes.
+Load studio-harness:talk-and-run first. Talk only: no code and no commits until Ian approves a spec.
+
+WHERE
+- New worktree from prompt-coach after the known-limits merge (check: origin/prompt-coach contains 77ecb77 or the
+  hand-off commit after it, else stop).
+- The known-limits run ledger stays in the old worktree:
+  C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-known-limits/.ledger/2026-10-19-prompt-coach-known-limits/
+
+READ
+- docs/evidence/2026-10-19-prompt-coach-known-limits.md (sections 3, 4 and 8), docs/PROMPT_COACH_KNOWN_LIMITS_RUN_PROMPT.txt.
+- In the old ledger: progress.md, logs/final_probe.log (probe cases), logs/sealed_after.txt (sealed misses K3, K6, K7,
+  K8, K11-K13, K20, K23, K24). heldout_sealed.json is now SEEN: never use it as held-out again.
+
+PROBLEM
+4 of 6 pattern fixes (C2 forecast phrase, C4 incidental category words, S3 LE basis, H4 future share price) were
+reverted on Ian's ruling 2026-10-19 17:15Z ("Ship the 2 clean fixes (Recommended)"). Sealed held-out: 2/12 fire,
+the same as base. The probe found H4 9 false fires, C2 4 false fires, C4 6 lost fires, LE 3 lost fires. Pattern
+patching on named phrasings does not generalize. Kept: C5 "Q1 FY25", S6 "Upstream/Downstream T&D".
+
+ASK
+Decide the approach before building. Use the spread: three usual options plus one that breaks an assumption (for
+example a scored feature approach instead of regex; telling a Scope 3 methodology note from a category list by
+structure; accepting the limits and documenting them). Each option gets its cheapest check, run on the probe cases
+and on a fresh held-out that Opus labels and seals before any change. Probe real prompt phrasing first ($0): how
+forecast and price asks are actually worded (typos, "price target", "lands", "stock move").
+
+OPEN FOR IAN
+(1) Codex's warning on "Compare forecast Q4 revenue with Q3 actuals" (report only so far).
+(2) A Workiva AI sandbox check of the T3 decline line.
+(3) The E1-8 primary quote (eur-lex, Reg. 2023/2772); the run's research could not fetch it.
+
+NO-GOS: grades, weights, classifier (an option that needs one goes to Ian as a ruling), installs, live spend, push or
+merge without slip.json. PARKED: Q2, Q3, Q5, T5 known limits, SOX ITGC and SUS-1 grounding flags, "Summarize Scope"
+grounding flag, browser tests (pagetest.js, filetest.js).
