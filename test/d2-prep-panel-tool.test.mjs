@@ -15,6 +15,6 @@ test('d2-prep panel tool lives in tools/, not under tools/sim/osm-day/', () => {
 test('d2-prep panel tool launches the sim, stops it in a finally, and never names port 8790', () => {
   const src = readFileSync(TOOL, 'utf8');
   assert.ok(src.includes('launch('));
-  assert.ok(src.includes('ctx.stop()'));
+  assert.match(src, /\bfinally\s*\{[^{}]*\bctx\.stop\(\)/, 'ctx.stop() must sit inside a finally { } block');
   assert.ok(!src.includes('8790'));
 });

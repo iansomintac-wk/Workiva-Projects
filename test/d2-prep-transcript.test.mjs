@@ -126,3 +126,33 @@ test('section: shows the closing window and sits between Call prep and Pending d
   const a = html.indexOf('Call prep'), b = html.indexOf('data-beat-transcript'), c = html.indexOf('Pending deliverables');
   assert.ok(a >= 0 && a < b && b < c, `${a} ${b} ${c}`);
 });
+
+test('section: label (type, session number) and the data-open-cust value are escaped', () => {
+  const evil = `"x" & <b>y</b>`;
+  const ctx = secCtx([T('2026-10-10', 'body', { type: evil })]);
+  const o1 = ctx.beatTranscriptSection({ id: 'c1' });
+  assert.ok(o1.includes('&quot;x&quot; &amp; &lt;b&gt;y&lt;/b&gt;'), 'type escaped in label');
+  assert.ok(!o1.includes('<b>'));
+  const o2 = secCtx([T('2026-10-10', 'body', { sessionNumber: evil })]).beatTranscriptSection({ id: 'c1' });
+  assert.ok(o2.includes('Session &quot;x&quot; &amp; &lt;b&gt;y&lt;/b&gt;') && !o2.includes('<b>'), 'sessionNumber escaped');
+  const id = `a"b&c<i>`;
+  const ctx3 = vm.createContext({});
+  vm.runInContext(['escapeHtml', 'escapeAttr', 'closingStretch', 'beatTranscriptSection'].map(grab).join('\n'), ctx3);
+  vm.runInContext(`var DATA = {activities: {${JSON.stringify(id)}: [{date:'2026-10-10', type:'Call', transcript:{text:'t'}}]}};
+    function fmtDate(d){ return d; } function isLoggedPastDate(){ return true; } function activityTranscript(a){ return a.transcript; }`, ctx3);
+  const o3 = ctx3.beatTranscriptSection({ id });
+  assert.ok(o3.includes('data-open-cust="a&quot;b&amp;c&lt;i&gt;"'), 'attribute value escaped');
+  assert.ok(!o3.includes('<i>'));
+});
+
+test('closingStretch: headers, cues, bare timestamps and WEBVTT around the 30 cut are not counted; exact stretch returned', () => {
+  const c = load();
+  const junk = ['Name  00:12:34', '00:01:02 --> 00:01:04', '00:00:09', 'WEBVTT'];
+  const lines = [];
+  for (let i = 0; i < 35; i++) { lines.push(`sp ${i}`); if (i === 4 || i === 5 || i === 20) lines.push(...junk); }
+  const start = lines.indexOf('sp 5');
+  const expected = lines.slice(start).join('\n');
+  const out = c(lines.join('\n'), 30);
+  assert.equal(out, expected);
+  assert.equal(speech(out).length, 30);
+});

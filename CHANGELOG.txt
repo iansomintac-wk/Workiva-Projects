@@ -9,9 +9,6 @@ OSM Runway — release notes
     - tools/selfcheck.mjs --serve <dir> runs the same in-page checks from a served
       address (127.0.0.1, GET only); every run now opens a blank page then navigates,
       supports --pre page-start scripts and prints a console-error count.
-    - Call prep in 1.1 shows the closing 30 speech lines of the newest transcript on the
-      account (same order as Last touch), in a scrolling box with a Read the full
-      transcript link; hidden when the account has no transcript.
     - Settings shows "Kept by browser: yes / no (export regularly)" and, on a served
       address only, the tracker asks the browser to keep its storage (never on file://).
     - Empty-book hint on a served address ("New address, no book here yet. ..."),
@@ -24,6 +21,13 @@ OSM Runway — release notes
     - Settings, if open, now updates its "Kept by browser" line when the answer arrives;
       docs/HOSTING.md says what the page loads (outside hosts, no integrity attribute on the
       xlsx script, inline script and style needed) instead of "works with no network".
+
+1.1 — D2 prep. Call prep shows how the last call ended.
+
+    - Call prep in 1.1 shows the closing 30 speech lines of the newest transcript on the
+      account, in a scrolling box with a Read the full transcript link; hidden when the
+      account has no transcript. Only past-dated activities count (isLoggedPastDate), newest
+      first, ties in array order.
 
 1.1 — Gone quiet. Today sees a new customer nobody has spoken to.
 
