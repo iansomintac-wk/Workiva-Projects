@@ -287,3 +287,14 @@ test('displayGrade: off-topic is weak, strong with stacked is better, else the g
   assert.equal(W.displayGrade({ grade: 'strong', hits: {}, stacked: true, offtopic: false }, ''), 'better');
   assert.equal(W.displayGrade({ grade: 'strong', hits: {}, stacked: false, offtopic: false }, ''), 'strong');
 });
+
+// ---- T5: missing-data version of the anomaly template (spec 2026-10-19) ----
+test('missing-data: T5 typed with @sus_supplier_data.csv gets the missing-data table and rule', () => {
+  const o = run('Which suppliers are missing emissions data?', [{ name: 'sus_supplier_data.csv' }]);
+  const s = o.stages.strong.prompt;
+  assert.equal(o.intent, 'anomaly');
+  assert.ok(s.includes('what is missing'), s);
+  assert.ok(s.includes('Do not fill in or estimate missing values'), s);
+  assert.ok(!s.includes('why it looks wrong'), s);
+  assert.ok(!s.includes('Do not correct any values'), s);
+});
