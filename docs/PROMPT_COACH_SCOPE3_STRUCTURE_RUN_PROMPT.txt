@@ -1,0 +1,45 @@
+RUN: Prompt coach Scope 3 "in the file" by structure (Workiva repo)
+
+Written 2026-10-19 by the redesign talk (predecessor 3276bf06). Ian approved the spec ("Approve the spec
+(Recommended)"). Load studio-harness:talk-and-run first; you are the run lead, coordinate only.
+
+WHERE
+- Worktree: C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-structure,
+  branch worktree-prompt-coach-scope3-structure (from prompt-coach 59b09c1, contains 77ecb77).
+- Spec (the authority): docs/superpowers/specs/2026-10-19-prompt-coach-scope3-structure-design.md.
+- Ledger: .ledger/2026-10-19-prompt-coach-scope3-structure/ (budget.json, slip.json, progress.md, prototype/).
+- Guard scripts to reuse (copy into this ledger, retarget paths, do not edit the originals):
+  C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-known-limits/.ledger/2026-10-19-prompt-coach-known-limits/
+  scripts/ (chk.sh, dump_runs.js, file_probe.js, cmp_fixture.js, sealed_run.js) and reviews/test/probe.test.js.
+  prototype/probe_proto.test.js shows the retargeting (PC path, git cwd).
+- Rules: CLAUDE.md (repo root), prompt-coach/README.md.
+
+ORDER
+1. First check: STUDIO_RUN_LEDGER set; budget.json and slip.json exist; else stop.
+2. Fresh held-out (spec section 3): an Opus helper writes 24 Scope 3 items (12 should warn, 12 near misses), sealed
+   with sha256 in progress.md before any code change. Never reuse K1-K24 or the probe phrasings; the known-limits
+   heldout_sealed.json is SEEN. Bar, fixed now: >=10/12 warn and 0/12 near-misses warn.
+3. Plan via studio-harness:plan-writer from the spec's build order (tasks <= 8 steps, Data: line, Suite: line),
+   reviewed by a frontier model and Codex. STOP: plan approval by Ian (the PM proxy if he is away). Update
+   budget.json from the approved plan.
+4. Tasks one at a time, tests first (red on parent, green on commit), checker after each, lead re-runs the check:
+   rules 1-2, rules 3-4, README known-limits list + dist rebuild with README line 9 byte count in the same commit.
+   The prototype in prototype/patch.js and patch2.js is a reference, not the build: the implementer writes the code
+   in the engine's own style.
+5. Guards after every task, identical to base 59b09c1: unit 57/0 existing unchanged (+ new); 1,841 stored prompts,
+   0 train warnings; no-file Strong identical; fixtures same (19); simulate, customer_check, eval identical; probe
+   0 DIFF rows and 9 of 9 C4 layouts warning.
+6. The lead scores the held-out once, after the last build task; report, do not tune after.
+7. Final review (final-reviewer + read-only Codex); Ian rules where they disagree on must-fix. Evidence doc
+   docs/evidence/YYYY-MM-DD-prompt-coach-scope3-structure.md with numbers (measured vs read).
+8. Push the run's own branch (slip: yes). STOP for merge: slip says no ("No, stop for me (Recommended)").
+
+SLIP (Ian, 2026-10-19, AskUserQuestion; repo has .ask-ian-only): push its own branch yes; merge no, stop for
+him; spend nothing ($0, usage only); new sessions yes when needed (successor at the 300k stop).
+NO-GOS: forecast, share-price or LE detection changes; grades, weights, classifier; installs; live Workiva AI spend;
+editing locked tests or the sealed bar; never force.
+STOPS: plan approval, two strikes, cap, merge.
+OPEN FOR IAN (not this run): Codex's "Compare forecast Q4 revenue with Q3 actuals" warning; a Workiva AI sandbox
+check of the T3 decline line; the E1-8 primary quote (eur-lex, Reg. 2023/2772).
+PARKED: Q2, Q3, Q5, T5 known limits; SOX ITGC and SUS-1 grounding flags; "Summarize Scope" grounding flag; browser
+tests (pagetest.js, filetest.js).
