@@ -74,6 +74,10 @@ Keeps an OSM's book of business in one place and turns it into a day's work.
               account, in a scrolling box with a Read the full transcript link; hidden when there is none.
               It also shows a Promises section: the account's open commitments, up to 5, most urgent
               first, grouped You owe then They owe you, with a link to the Coordination tab for more.
+              In 1.1, Call prep starts with an Agenda: a numbered list built from what is already there
+              (overdue promises, open questions from the last call, the next checklist step) and a
+              "Copy agenda" button that copies it as plain text to paste into an invite or email.
+              It stores nothing and asks you to fill in nothing.
 
 
 Where your data lives

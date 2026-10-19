@@ -74,7 +74,7 @@ const rows = html => (html.match(/<li data-beat-promise>/g) || []).length;
 
 test('beatPromisesSection: empty string with no open commitment; renderBeatPrep prints no Promises then', () => {
   for (const cm of [[], undefined, [K('d', 'i_owe', null, '2026-10-01')]]) assert.equal(sec(cm).html, '');
-  const ctx = ctxFor('2026-10-21', ['escapeHtml', 'escapeAttr', 'fmtDate', 'closingStretch', 'beatTranscriptSection', 'rankedPromises', 'promiseCue', 'beatPromisesSection', 'renderBeatPrep']);
+  const ctx = ctxFor('2026-10-21', ['escapeHtml', 'escapeAttr', 'fmtDate', 'closingStretch', 'beatTranscriptSection', 'rankedPromises', 'promiseCue', 'beatPromisesSection', 'getOpenThreads', 'unresolvedThreads', 'collectOpenQuestions', 'commitmentIsOverdue', 'beatAgendaItems', 'beatAgendaText', 'beatAgendaSection', 'renderBeatPrep']);
   vm.runInContext(`var DATA = {activities: {c1: []}}; function fmtDayTime(){ return ''; } function getNextSessionTime(){ return ''; }
     function isLoggedPastDate(){ return false; } function activityTranscript(){ return null; }`, ctx);
   const html = ctx.renderBeatPrep({ call: { c: { id: 'c1' }, at: null, next: null, prepped: false } });
@@ -124,7 +124,7 @@ test('beatPromisesSection: 7 open show 5 rows and a more line to the Coordinatio
 });
 
 test('renderBeatPrep: Promises sits after Pending deliverables and before Time on your calendar', () => {
-  const ctx = ctxFor('2026-10-21', ['escapeHtml', 'escapeAttr', 'fmtDate', 'closingStretch', 'beatTranscriptSection', 'rankedPromises', 'promiseCue', 'beatPromisesSection', 'renderBeatPrep']);
+  const ctx = ctxFor('2026-10-21', ['escapeHtml', 'escapeAttr', 'fmtDate', 'closingStretch', 'beatTranscriptSection', 'rankedPromises', 'promiseCue', 'beatPromisesSection', 'getOpenThreads', 'unresolvedThreads', 'collectOpenQuestions', 'commitmentIsOverdue', 'beatAgendaItems', 'beatAgendaText', 'beatAgendaSection', 'renderBeatPrep']);
   vm.runInContext(`var DATA = {activities: {c1: []}}; function fmtDayTime(){ return ''; } function getNextSessionTime(){ return ''; }
     function isLoggedPastDate(){ return false; } function activityTranscript(){ return null; }`, ctx);
   const html = ctx.renderBeatPrep({ call: { c: { id: 'c1', commitments: [K('p1', 'i_owe')] }, at: null, next: null, prepped: false } });

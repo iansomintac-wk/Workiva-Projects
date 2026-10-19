@@ -12705,6 +12705,33 @@ function beatPromisesSection(c){
       </div>`;
 }
 
+/* Agenda for the call, built only from what the book already holds: overdue promises,
+   the open questions of the newest call that has any, then the next unticked checklist step.
+   Stores nothing; Copy puts plain numbered text on the clipboard for an invite or email. */
+function beatAgendaItems(c, pendingItems){
+  const items = [];
+  rankedPromises(c, 99).kept.filter(commitmentIsOverdue).slice(0, 5)
+    .forEach(p => items.push((p.direction === 'i_owe' ? 'You owe: ' : 'They owe: ') + p.text));
+  const qs = collectOpenQuestions(c);
+  const top = qs.length ? qs[0].date : null;
+  qs.filter(x => x.date === top).slice(0, 5).forEach(x => items.push('Open question: ' + x.thread.text));
+  if(pendingItems && pendingItems.length) items.push('Next step: ' + pendingItems[0].label);
+  return items;
+}
+function beatAgendaText(c, items){
+  return 'Agenda - ' + c.name + '\n' + items.map((t, i) => (i + 1) + '. ' + t).join('\n');
+}
+function beatAgendaSection(c, pendingItems){
+  const items = beatAgendaItems(c, pendingItems);
+  if(!items.length) return '';
+  return `
+      <div class="bp-sec" data-beat-agenda>
+        <div class="lbl">Agenda</div>
+        <ol style="margin:4px 0 0; padding-left:20px; font-size:var(--text-sm); color:var(--text-dim);">${items.map(t => `<li>${escapeHtml(t)}</li>`).join('')}</ol>
+        <p class="bp-basis" style="margin-top:6px;"><button class="btn btn-sm" data-beat-agenda-copy="${escapeAttr(c.id)}" aria-label="Copy agenda for ${escapeAttr(c.name)} as plain text">Copy agenda</button></p>
+      </div>`;
+}
+
 /* D2 prep: last call's closing stretch on the call-prep panel. Same eligibility and order as "Last touch"
    (logged, not future-dated, newest first, ties keep array order). Hidden when no such activity has a transcript. */
 function beatTranscriptSection(c){
@@ -12733,6 +12760,7 @@ function renderBeatPrep(beat){
   return `
     <div class="focus-act">
       <h5>${x.at ? escapeHtml(fmtDayTime(x.at)) + ' · ' : ''}Call prep${x.next ? ` · Session ${x.next.number}` : ''} ${x.prepped ? '<span class="badge badge-ontrack">prep notes logged</span>' : '<span class="badge badge-watch">no prep notes</span>'}</h5>
+      ${beatAgendaSection(c, pendingItems)}
       ${beatTranscriptSection(c)}
 
       <div class="bp-sec">
@@ -15232,6 +15260,11 @@ function bindBeatPane(root){
      here — that would fight the scroll; the badge only moves on the explicit
      Mark button, which does render. */
   const commitLater = debounceCommit();
+  q('[data-beat-agenda-copy]').forEach(b => b.addEventListener('click', () => {
+    const c = fpCustomer(b.dataset.beatAgendaCopy); if(!c) return;
+    const pending = (DATA.activities[c.id] || []).flatMap(a => (a.checklist || []).filter(i => !i.done).map(i => ({label:i.label, date:a.date})));
+    copyToClipboard(beatAgendaText(c, beatAgendaItems(c, pending)), 'Agenda copied - paste it into the invite or email');
+  }));
   q('[data-fp-csat]').forEach(inp => {
     const write = ()=>{
       const c = fpCustomer(inp.dataset.fpCsat);
