@@ -1,7 +1,7 @@
 # Evidence: Prompt Coach Better / Strong rewrites (2026-10-16 run)
 
 Branch `worktree-prompt-coach-rewrites`, from `prompt-coach` at `73be350`. Code last changed at `f95ab85`
-(Task 7 fix 4); the only code change since is fix 2 in `rewrite.js` (`a552672`; `a7d0501` rebuilt dist and README only). Spec: `docs/superpowers/specs/2026-10-16-prompt-coach-rewrites-design.md`.
+(Task 7 fix 4); the only code change since is fix 2 in `rewrite.js` (`a552672`; `a7d0501` rebuilt dist, README and spec). Spec: `docs/superpowers/specs/2026-10-16-prompt-coach-rewrites-design.md`.
 Plan: `docs/superpowers/plans/2026-10-16-prompt-coach-rewrites.md`.
 
 Labels used in every row: **measured** = a command was run and its output read, command and commit named;
@@ -21,7 +21,7 @@ Spec design rules (read: spec "Design" section, lines 103-134), all in `prompt-c
    can, could, would you / would you mind / I was wondering if you could / I'd like you to / I need you to
    become an imperative; "please" inside a sentence is dropped; "pls" and "plz" are removed, not expanded;
    "Additionally, ensure that if" becomes "If"; "word(s)" becomes "words"; other questions stay questions.
-4. Typos: a list of about 20 common misspellings ("seperately", "recieve", "occured" ...) fixed, whole words only.
+4. Typos: a list of 27 common misspellings (TYPOS in engine/rewrite.js) ("seperately", "recieve", "occured" ...) fixed, whole words only.
 5. Context fits the task: extract says "This table feeds [what it is for, such as ...]"; other data intents say
    "This is for [what it feeds, such as ...]"; the wording registers as C under the current rules.
 6. Blank rule: a prompt whose only missing letter is Context gets exactly one blank; no other prompt gets more
@@ -77,7 +77,7 @@ The "?" prediction was an assumption in the plan and is wrong: 89 became 69, not
 | customer_check, `data/test.jsonl` | PASS | PASS 609 runs after fix 2 (notStrong 0, filler, order, broken, blankMore, blankOnlyC, ianCase all 0/609). Before fix 2 (at `a7d0501`) it was FAIL with notStrong 2/609: the "assurance reviewer" prompt x2 (missing P). Ian ruled "Fix in the rewriter" on 2026-10-17 and fix 2 made a scope-limit-only Evaluate match still get the coach's Evaluate sentence; the parent `73be350` had notStrong 4/609 (that prompt x2 plus the "user-control assessment" prompt x2, fixed earlier). Resolved: Yes, met. Plan lines 51 and 60 carry the same wrong premise (one only-Context prompt, rule 6 turns it to PASS) | measured: `node prompt-coach/tests/customer_check.js prompt-coach/data/test.jsonl` at `a552672` (FIX2); pre-fix figure at `a7d0501`; parent figure measured 2026-10-17 on `73be350` (read: spec line 162-164) |
 | filetest | passes | 8 rows, errors [], exit 0 (via the npx-cache alias, VENDOR folder outside the repo) | measured: `node prompt-coach/tests/filetest.js` after the build; re-run at `a552672`: exit 0, 8 rows, errors [] (`fix2_filetest.txt`); first run at `a7d0501` |
 | Built page, rebuilt | build runs, dist unchanged on rebuild | build 314 KB (321,725 bytes); rebuild left dist unchanged | measured: `node prompt-coach/tests/build.js`, lead re-run at `a7d0501` |
-| Built page in a browser, by the Claude browser extension | no console errors, no sideways scroll, desktop and phone | Run by Ian himself (2026-10-17, started 15:34:59Z) with Claude in Chrome, in his Chrome, on the build before fix 2 (`3d8321a` dist): console 0 errors, 0 warnings (after one reload); desktop 1521 = 1521, no sideways scroll; typed input equal; STRONG text equal; BETTER NO TAB (the known limit, section 5). Phone width NOT measured there: the resize reported success but innerWidth stayed 1536. The phone width rests on the Playwright run below. The helper's tool-reported total_cost_usd was 0.98; whether it was billed is not known | measured: `.ledger/2026-10-16-prompt-coach-rewrites/logs/browser_ext_report.md` and `browser_ext_cmp.txt` (the earlier classifier denial of the one-shot helper is superseded) |
+| Built page in a browser, by the Claude browser extension | no console errors, no sideways scroll, desktop and phone | Run by Ian himself (2026-10-17, started 15:34:59Z) with Claude in Chrome, in his Chrome, on the build before fix 2 (`3d8321a` dist): console 0 errors, 0 warnings (after one reload); desktop 1521 = 1521, no sideways scroll; typed input equal; STRONG text equal; BETTER NO TAB (the known limit, section 5). Phone width NOT measured there: the resize reported success but innerWidth stayed 1536. The phone width rests on the Playwright run below. The helper's tool-reported total_cost_usd was 0.98 (`.ledger/2026-10-16-prompt-coach-rewrites/logs/browser_ext_usage.json`, total_cost_usd 0.98 as the tool reports; `progress.md:225`); whether it was billed is not known | measured: `.ledger/2026-10-16-prompt-coach-rewrites/logs/browser_ext_report.md` and `browser_ext_cmp.txt` (the earlier classifier denial of the one-shot helper is superseded) |
 | Built page, Playwright extra (not the extension test) | same | Headless Chromium (Playwright 1.62.1, npx cache), page served at 127.0.0.1:8765; Ian's case typed in; console 0 errors, 0 warnings; desktop 1280x800 scrollWidth 1280 equals clientWidth 1280; phone 390x844 scrollWidth 390 equals clientWidth 390; Strong tab text equals `tests/fixtures/rewrites/ian_strong.txt` exactly inside the page's quote marks. Three controls each made a check fail (injected console.error gave 1 error; injected 2000px div gave 2008 wider than 390; one word changed in Strong gave not equal) | measured by the run lead (run 7) with `.ledger/.../browser_pw.js` and `browser_cmp.js`, 2026-10-17 12:01Z, at `a7d0501` |
 | Built page, Playwright extra again at `a552672` (after fix 2) | same | dist 322,247 bytes; console 0 errors, 0 warnings; 1280 = 1280 and 390 = 390, no sideways scroll; STRONG text equal; BETTER NO TAB. This is the only phone-width measurement on the fix 2 build, and the extension run did not measure phone width | measured by the run lead, `fix2_pw_run.txt` and `fix2_pw_cmp.txt` in `.ledger/2026-10-16-prompt-coach-rewrites/logs/`, at `a552672` |
 
@@ -121,8 +121,8 @@ Approved target: spec "Target for Ian's case" (read: spec lines 80-96), stored a
   therefore does not reach the page. `template.html` is a locked file in the same plan (line 30), unchanged since
   `73be350`. Showing it needs a locked-file edit, which is Ian's ruling. Class: seam-untested (engine checked,
   page join not).
-- Live test in Workiva AI not run (next session, Ian present).
-- Workiva @-file limits unconfirmed.
+- Live test in Workiva AI run 2026-10-18: results in prompt-coach/research/live-tests/results/2026-10-18-live-test-results.md (12 planted cases at 2 runs per prompt plus the FR-2 pilot at 1 run per prompt, 3 prompts, 75 answers; on means the original prompt did as well or better than both Strong prompts on keyed findings, but not in every case: P1 was worse on invented, and the hard-plant lead rests on SUS-4, without which P1 21/22, P2 21/22, P3 22/22).
+- Workiva @-file limits confirmed 2026-10-18 from the support page (max 10 files per prompt; Word and Excel on AWS only; no size limit stated); see the results file above and prompt-coach/README.md.
 - The artifact has not been republished; the published artifact is probably an older build (assumed).
 - Codex review not available (it cannot start a shell on this PC), so `final-reviewer` alone.
 - Final review (final-reviewer only, Opus; read: ledger reviews/final-review.md, 2026-10-17): 1 must-fix, 5 should-fix, 6 notes.

@@ -1,0 +1,54 @@
+DONE 2026-10-19 by lead 4f7baac0: checker, final review (Opus + Codex), fix round, merge. Next: docs/PROMPT_COACH_FINDINGS_FIX_TALK_PROMPT.txt.
+
+RESUME 2: Prompt coach tricky batch run (Workiva repo), after run lead 646ee949 hit the 200k context stop
+
+Written 2026-10-19 ~06:15Z by run lead 646ee949 ("NEW - Prompt Coach tricky batch run 2"). Load
+studio-harness:talk-and-run first and follow "The run". You are the run lead: coordinate only.
+Read docs/PROMPT_COACH_TRICKY_BATCH_RUN_PROMPT.txt for WHERE, SLIP and SAFETY; they still hold.
+
+FIRST CHECK: echo "$STUDIO_RUN_LEDGER" (non-empty, absolute); budget.json and slip.json exist there; else stop.
+
+STATE (ledger .ledger/2026-10-18-prompt-coach-next/progress.md is the memory; read its "# Run" section from
+"04:39Z RESUME lead 646ee949" on, about 30 rows)
+- Plan rev 3: docs/superpowers/plans/2026-10-18-prompt-coach-tricky-batch.md. Tasks 1-10 DONE.
+- Task 10 commit 50662ee: prompt-coach/research/live-tests/results/2026-10-19-tricky-batch-results.md + README line 81.
+  Lead re-ran: suite PASS 229 runs, 19/19/0; lock check empty (control fires); held/disproved grep 7.
+- Results (Opus final scorer, 24 live answers, Ian's own sandbox): rewrite helps DISPROVED (2 of 6); rating vs quality
+  held narrowly (weak 7/8 vs strong 14/14); T6 invented DISPROVED (0 of 2, Workiva AI declined); scorer agreement
+  DISPROVED (10 of 24 on 9 fields after mapping found labels to key items; label run 21/24 was a wording artifact);
+  Opus unruled 14 = rulebook gap (rulebook not edited).
+
+NEXT, in order
+1. One checker (studio-harness:checker) on Tasks 9-10: commit 50662ee (2 files; numbers in the results file match
+   logs/criteria.md and logs/agree_mapped_out.txt; the 5 open questions frame the helper's two suggestions as
+   recommendations, not Ian's rulings; no customer data; no answer text quoted beyond short phrases) and the ledger
+   scripts scripts/{sentcheck,tsvcheck,agree}.cjs (each already lead-verified with a failing control: ledger rows
+   T5s4, T7s1, T9s1-3). Write its check lines to .ledger/<run>/role-checks.txt first (one line each, cd-prefixed).
+2. Final whole-branch review: Opus (studio-harness:final-reviewer) + Codex (read-only, method below), diff
+   prompt-coach..HEAD; merge the two lists; must-fix disagreements go to Ian.
+3. Fix round if any, re-check. Evidence doc is the results file (already committed).
+4. Slip (slip.json): push own branch YES; merge into prompt-coach after checks and review YES ("Keep them (Rec.)").
+   Follow the merge rule: backup branch backup/prompt-coach-before-<branch>-<date> at prompt-coach's remote tip first,
+   full suite on the result. Never push main or prompt-coach directly beyond that merge; no force flags.
+5. Hand-off PM step, then ask Ian "Start the next session?".
+
+BUDGET: helper cap 1.0M (Ian, STOP-C: "1.0M, scoring outside (Rec.)"); helper-rows.md sum 875,614 at hand-off
+(all rows, this run). ~125k left: checker (~35k) + Opus final review (~75k) fit, little margin. If short, ask Ian
+before the review; do not exceed.
+
+RULINGS THIS RESUME (verbatim in progress.md): STOP-C "Signed in; you start both (Rec.)"; cap "1.0M, scoring
+outside (Rec.)"; drivers "Up to 2 more (Rec.)" (one used; 1 unused, not needed). Earlier: "Approve, cap 700k (Rec.)",
+"Use it as written (Rec.)", "Add counting rules, both re-score (Rec.)", "Report extras, don't gate (Rec.)".
+
+METHODS MEASURED
+- Codex: `codex exec -s read-only -c windows.sandbox=unelevated --skip-git-repo-check -o <out> - < <in>` from an empty
+  temp folder; it runs its own start-up (brain context, skill files) only.
+- Blind Opus: `claude -p --model opus --tools "" --strict-mcp-config --no-session-persistence --output-format json < in`.
+- Lead never `cd`s in its own Bash calls (role hooks resolve paths against the lead's cwd).
+- Ledger scripts must be .cjs (repo "type": "module").
+
+GOTCHA CANDIDATES for Ian (not yet ledger-add'ed): seam-untested: comparing two scorers' free-text foundItems as
+string sets (21/24 artifact); key `prompt` field leaked the typed version into blind scorer inputs (caught, fixed).
+
+PREDECESSORS: 646ee949 (this lead) and 81f4d236 share this worktree: claude rm would delete it. Keep both; do not rm.
+Drivers aef602f4, f97d12dd: done, same worktree, keep.
