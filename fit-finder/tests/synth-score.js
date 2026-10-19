@@ -38,3 +38,10 @@ const agree = rows.filter((r) => rate(r.task).fit === gold.get(r.id).fit).length
 const ids = (a) => a.map((r) => r.id).join(',');
 const S = 2 * wrong.length + missed.length + 2 * notShown.length;
 console.log(`first card right: ${fit.length - wrong.length - missed.length} of ${fit.length} that fit; wrong card ${wrong.length} (${ids(wrong)}); no card where one fits ${missed.length} (${ids(missed)}); card on a not-a-fit prompt ${notShown.length} (${ids(notShown)}); fit agreement ${agree} of ${rows.length}; score ${S}`);
+if (process.argv.includes('--top3')) {
+  const shownIds = (r) => match(r.task, cat).map((u) => u.id);
+  const inThree = fit.filter((r) => { const s = shownIds(r); return s.length ? s.some((c) => want(r).includes(c)) : !want(r).length; });
+  const anyWrong = rows.filter((r) => shownIds(r).some((c) => !want(r).includes(c)));
+  const R = fit.length - wrong.length - missed.length, B = wrong.length + notShown.length;
+  console.log(`top 3: right card anywhere in the 3 shown ${inThree.length} of ${fit.length} that fit (first card right ${R}, gain ${inThree.length - R}); any wrong card shown ${anyWrong.length} of ${rows.length} (${ids(anyWrong)}); first card wrong or on a not-a-fit prompt ${B}; rise in wrong lists ${anyWrong.length - B}`);
+}
