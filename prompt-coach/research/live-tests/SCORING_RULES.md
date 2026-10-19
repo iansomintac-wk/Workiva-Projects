@@ -176,7 +176,7 @@ with no cause earns the item; one giving the 30% rise "from higher airfares all 
 
 job = 0 only when the answer (a) does a different job from the one asked (asked to list issues, it rewrites the file;
 asked for one deliverable, it gives another), (b) does something the prompt forbade in words (the prompt says "do not
-speculate" and the answer speculates), or (c) does not do the job at all (only asks questions, or refuses). Everything
+speculate" and the answer speculates), or (c) does not do the job at all (only asks questions, or refuses, except when the answer key says the file cannot support the ask: a clear decline that says what the file lacks is job 1, the R7 case). Everything
 else is scored in its own field and leaves job 1: extras, hypotheses and speculation the prompt did not forbid, added
 sections, a wrong or loose heading, false or invented statements, missed items and table or format misses.
 Made-up example: asked for a reconciliation table, an answer that gives the table plus a "possible causes" section
@@ -215,6 +215,7 @@ Written after the tricky-batch final review. The 24 scores are unchanged; nothin
   about something in the file, not to a new company figure. `mustNotClaim` names the prohibited content; it does not
   decide the field. In this batch the conflict did not arise: all 4 T6 answers declined, and both scorers gave
   false 0 and invented 1 in all 8 T6 rows (measured 2026-10-19 from the mapped score files).
-- **R14(c) versus R7.** R14(c) scores a refusal as job 0. For T3 and T6 declining is the right answer (R7), so R14(c)
-  does not apply there; R7 takes precedence. The scores stand as given, so the T3 x2 and T6 x4 refusals are among the
-  unruled items in the results file; Ian decides whether to change R14(c).
+- **R14(c) versus R7.** Ruling: when the answer key says the file cannot support the ask (T3, T6), a clear decline
+  that says what the file lacks scores job 1; R14(c) does not score it job 0. Decided by proxy, i.e. proxy decided 2026-10-19 08:12Z (PM proxy
+  for Ian; Ian may overturn). Scores already given are not re-scored in this run, so the T3 x2 and T6 x4 refusals stay
+  as scored; the change applies to the next batch.

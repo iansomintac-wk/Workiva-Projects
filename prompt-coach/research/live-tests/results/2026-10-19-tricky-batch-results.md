@@ -110,7 +110,7 @@ From reading the six Strong rewrites (`tricky_findings.txt`); out of scope for t
 ## Open questions for Ian
 
 1. **Refusal when declining is right.** Recommended: when the key says the file cannot support the ask, a
-   clear decline scores job 1. This would settle 6 of Opus's 14 unruled items. Your call: change R14(c)?
+   clear decline scores job 1. This would settle 6 of Opus's 14 unruled items. Your call: change R14(c)? Answered: yes, R14(c) changed; proxy decided 2026-10-19, Ian may overturn. Not re-scored; applies to the next batch.
 2. **The "[number]" placeholder.** Recommended: score table and format as N/A when the prompt itself left
    the count blank, and log the blank as a coach finding. Agree?
 3. **Extra.** Keep reporting it as Opus/Codex totals (123 vs 198 here), or define a counting unit so it can
