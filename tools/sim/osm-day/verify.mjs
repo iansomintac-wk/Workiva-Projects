@@ -12,6 +12,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveUnderSimRuns } from './lib/outdir.mjs';
 import { stripTimings } from './lib/report.mjs';
+import { CHECKED } from './lib/results.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..', '..', '..');
@@ -110,7 +111,7 @@ function c4(runs) {
   for (const v of VERSIONS) {
     const br = fullResult(runs, v).breaks || [];
     const n = k => br.filter(b => b.verdict === k).length;
-    if (br.length !== 21 || n('FLIPPED') !== 21) ok = false;
+    if (br.length !== CHECKED.length || n('FLIPPED') !== CHECKED.length) ok = false;
     parts.push(`${v} FLIPPED ${n('FLIPPED')} VACUOUS ${n('VACUOUS')} NOT-TESTED ${n('NOT-TESTED')} of ${br.length}`);
   }
   return `C4 ${ok ? 'PASS' : 'FAIL'} ${parts.join(' | ')}`;

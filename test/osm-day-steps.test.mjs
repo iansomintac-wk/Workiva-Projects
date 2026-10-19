@@ -1,14 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { BREAKS, OVERRIDE_NAMES } from '../tools/sim/osm-day/lib/breaks.mjs';
+import { BREAKS, OVERRIDE_NAMES, OVERRIDE_NAMES_1_1_ONLY } from '../tools/sim/osm-day/lib/breaks.mjs';
 
-const IDS = ['D1','D2','D3','D4','D5','D6','D7','D8','D9','D10','L1','L2','L3','L4','L5','L6','L7','L8','L9','L10','L11'];
+const IDS = ['D1','D2','D3','D4','D5','D6','D7','D8','D9','D10','L1','L2','L3','L4','L5','L6','L7','L8','L9','L10','L11','L12'];
 const FILES = ['1.0', '1.1'].map(v => [v, readFileSync(new URL(`../osm-book-of-business-tracker-${v}.html`, import.meta.url), 'utf8')]);
 
-test('BREAKS holds exactly the 21 checked ids and none for L12', () => {
+test('BREAKS holds exactly the 22 checked ids (L12 included)', () => {
   assert.deepEqual(Object.keys(BREAKS).sort(), [...IDS].sort());
-  assert.equal(BREAKS.L12, undefined);
+  assert.ok(BREAKS.L12);
 });
 test('every js ends with its own marker, and D5 is the AI break', () => {
   for (const id of IDS) {
@@ -22,6 +22,7 @@ test('every js parses', () => {
 test('each override name is a function in both trackers', () => {
   assert.ok(OVERRIDE_NAMES.length >= 18);
   for (const [v, html] of FILES) for (const n of OVERRIDE_NAMES) assert.ok(html.includes(`function ${n}(`), `${v} ${n}`);
+  for (const n of OVERRIDE_NAMES_1_1_ONLY) assert.ok(FILES.find(f => f[0] === '1.1')[1].includes(`function ${n}(`), `1.1 ${n}`);
 });
 test('isGraduatingSoon uses days <= 30 in both trackers', () => {
   for (const [v, html] of FILES) {
@@ -71,11 +72,11 @@ test('CAL holds the Part B calendar for L1..L6', async () => {
   assert.equal(CAL.L5, '2026-10-05');
   assert.deepEqual([CAL.L6.from, CAL.L6.to], ['2026-10-06', '2026-10-26']);
 });
-test('PART_B holds L1..L12 in order, each async, CHECKED except L12 (Task 10)', async () => {
+test('PART_B holds L1..L12 in order, each async, all CHECKED', async () => {
   const { PART_B } = await import('../tools/sim/osm-day/steps-b.mjs');
   const { CHECKED } = await import('../tools/sim/osm-day/lib/results.mjs');
   assert.deepEqual(PART_B.map(s => s.id), ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'L9', 'L10', 'L11', 'L12']);
-  for (const s of PART_B) { assert.equal(CHECKED.includes(s.id), s.id !== 'L12', s.id); assert.equal(s.run.constructor.name, 'AsyncFunction', s.id); }
+  for (const s of PART_B) { assert.equal(CHECKED.includes(s.id), true, s.id); assert.equal(s.run.constructor.name, 'AsyncFunction', s.id); }
 });
 test('committedDate and l10Day follow the Part B chronology (Task 10)', async () => {
   const { committedDate, l10Day } = await import('../tools/sim/osm-day/steps-b.mjs');
@@ -117,7 +118,7 @@ test('prerequisites runs the earlier steps first, and D4 before D5 (Task 11)', a
 });
 test('exit code: a full run missing a step or break is 2, scoped runs are valid (Task 11)', async () => {
   const { exitCode, STEP_IDS, CHECKED } = await import('../tools/sim/osm-day/lib/results.mjs');
-  const steps = STEP_IDS.map(id => ({ id, status: id === 'L12' ? 'GAP' : 'PASS' }));
+  const steps = STEP_IDS.map(id => ({ id, status: 'PASS' }));
   const breaks = CHECKED.map(id => ({ id, verdict: 'FLIPPED' }));
   assert.equal(exitCode({ steps, breaks }), 0);
   assert.equal(exitCode({ steps: steps.slice(1), breaks }), 2);

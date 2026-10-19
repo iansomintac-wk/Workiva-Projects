@@ -25,6 +25,7 @@ export const BREAKS = {
   L9: B('L9', `toggleComplianceGate = () => false`),
   L10: B('L10', `isGraduatingSoon = () => false`),
   L11: B('L11', `{const o=openGraduationConfirmModal; openGraduationConfirmModal=(...a)=>{const r=o(...a); document.querySelectorAll('#gc-csat').forEach(e=>e.remove()); return r}}`),
+  L12: B('L12', `csatSurveyOverdue = () => null`),
 };
 
 // Every global the overrides replace or the probe relies on; each must be `function <name>(` in both trackers.
@@ -35,3 +36,6 @@ export const OVERRIDE_NAMES = [
   'toggleComplianceGate', 'adminGapList', 'isGraduatingSoon', 'validateGraduationDraft', 'parseOutstandingQuestions',
   'openGraduationConfirmModal',
 ];
+
+// Override names that exist in 1.1 only (1.0 has no CSAT follow-up); checked against 1.1 alone.
+export const OVERRIDE_NAMES_1_1_ONLY = ['csatSurveyOverdue'];

@@ -107,6 +107,14 @@ const candidateSources = ctx => ctx.ev(`(() => { const c = DATA.customers.find(x
   return JSON.stringify({ sources: todayAccountCandidates(c, { gainsightByCustomer: g }).map(x => x.source), paused: isPaused(c),
     regulatory: buildRiskHubList({ readOnly: true }).filter(it => it.c.id === c.id && it.category && it.category.key === 'regulatory').length }); })()`).then(JSON.parse);
 
+// Must equal CSAT_FOLLOWUP_DAYS in the tracker.
+const CSAT_N = 7;
+export function l12Judge({ atDay6 = [], atDay7 = [], afterAnswer = [] }) {
+  const S = 'csat_unanswered';
+  const passed = !atDay6.includes(S) && atDay7.includes(S) && !afterAnswer.includes(S);
+  return { passed, evidence: `CSAT survey sent ${CSAT_N} days before: Today row at day 6 ${atDay6.includes(S)}, at day 7 ${atDay7.includes(S)}, after an Answered date ${afterAnswer.includes(S)}` };
+}
+
 // L11 verdict (ruling 2026-10-19-runway-sim-findings-ruled: "Warn, but allow"). Leg 2, no contact: the setup readback is done:false with an empty name,
 // a non-empty #gc-csat line, OK enabled, and after the click stage graduated with >= 1 "Success Plan objective" queue item. Leg 1, with contact:
 // the readback is done:true and there is no #gc-csat. The line is read by its id and non-empty text, never its exact words.
@@ -464,8 +472,22 @@ export const PART_B = [
     const j = l11Judge({ withContact, noContact });
     return { passed: j.passed, evidence: await withBreak(ctx, j.evidence) };
   } },
-  { id: 'L12', async run() {
-    return { passed: true, evidence: 'GAP: nothing in the tracker tracks a CSAT survey sent or answered, or its follow-up' };
+  { id: 'L12', async run(ctx) {
+    await ensureNT(ctx);
+    const { N, T } = ctx.state;
+    if (!N || !T) throw new Error('L12 needs L9 first (ctx.state.N, T)');
+    await openDay(ctx, T);
+    const id = await fernId(ctx);
+    const setCsat = (sent, answered) => ctx.ev(`(() => { const a = DATA.customers.find(x => x.id === ${JSON.stringify(id)}).compliance.associatedPeopleCSAT;
+      a.surveySentOn = ${JSON.stringify(sent)}; a.surveyAnsweredOn = ${JSON.stringify(answered)}; saveData(); return true; })()`);
+    await setCsat(T, null);
+    const sourcesOn = async iso => { await openDay(ctx, iso); const r = await candidateSources(ctx); return r.sources || []; };
+    const atDay6 = await sourcesOn(addDays(T, 6));
+    const atDay7 = await sourcesOn(addDays(T, 7));
+    await setCsat(T, addDays(T, 7));
+    const afterAnswer = (await candidateSources(ctx)).sources || [];
+    const j = l12Judge({ atDay6, atDay7, afterAnswer });
+    return { passed: j.passed, evidence: await withBreak(ctx, j.evidence) };
   } },
 ];
 

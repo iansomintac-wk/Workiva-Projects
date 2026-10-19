@@ -3,18 +3,16 @@ export const STEP_IDS = [
   ...Array.from({ length: 10 }, (_, i) => `D${i + 1}`),
   ...Array.from({ length: 12 }, (_, i) => `L${i + 1}`),
 ];
-export const CHECKED = STEP_IDS.filter((id) => id !== 'L12');
+export const CHECKED = STEP_IDS;
 
 export const GAPS = {
   D3: 'meeting agenda',
   D7: ['close a CTA after an ordinary call', 'success plan task update', 'Renewal Forecast Scorecard'],
   L10: 'CSM request (Google form)',
-  L12: 'CSAT survey sent/answered tracking and follow-up',
 };
 
 export function classify({ id, passed } = {}) {
   if (!STEP_IDS.includes(id)) throw new Error(`unknown step id: ${id}`);
-  if (id === 'L12') return { id, status: 'GAP', gap: GAPS.L12 };
   if (typeof passed !== 'boolean') throw new Error(`step ${id} needs a boolean passed`);
   const r = { id, status: passed ? 'PASS' : 'FAIL' };
   if (GAPS[id]) r.gap = GAPS[id];
@@ -42,8 +40,7 @@ export function validateRun({ steps = [], breaks = [], scope } = {}) {
   }
   for (const id of wantBreaks) if (!bIds.includes(id)) errs.push(`missing break ${id}`);
   for (const id of new Set(bIds)) {
-    if (id === 'L12') errs.push('break on L12');
-    else if (STEP_IDS.includes(id) && !wantBreaks.includes(id)) errs.push(`unexpected break ${id}`);
+    if (STEP_IDS.includes(id) && !wantBreaks.includes(id)) errs.push(`unexpected break ${id}`);
     if (bIds.filter((x) => x === id).length > 1) errs.push(`duplicate break ${id}`);
   }
   for (const s of steps) {

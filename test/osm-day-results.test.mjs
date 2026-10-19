@@ -9,12 +9,12 @@ import {
 const steps = (ids = STEP_IDS, status = 'PASS') => ids.map((id) => ({ id, status }));
 const brks = (ids = CHECKED, verdict = 'FLIPPED') => ids.map((id) => ({ id, verdict }));
 
-test('ids: 22 steps in order, 21 checked (all but L12)', () => {
+test('ids: 22 steps in order, all 22 checked', () => {
   assert.equal(STEP_IDS.length, 22);
   assert.deepEqual(STEP_IDS.slice(0, 3), ['D1', 'D2', 'D3']);
   assert.equal(STEP_IDS[21], 'L12');
-  assert.equal(CHECKED.length, 21);
-  assert.ok(!CHECKED.includes('L12'));
+  assert.equal(CHECKED.length, 22);
+  assert.ok(CHECKED.includes('L12'));
 });
 
 test('classify: plain pass and fail', () => {
@@ -35,10 +35,6 @@ test('classify: checked step without a boolean throws; unknown id throws', () =>
   assert.throws(() => classify({ id: 'X9', passed: true }));
 });
 
-test('classify: L12 is GAP', () => {
-  assert.equal(classify({ id: 'L12' }).status, 'GAP');
-});
-
 test('breakVerdict table', () => {
   assert.equal(breakVerdict('PASS', 'FAIL'), 'FLIPPED');
   assert.equal(breakVerdict('PASS', 'PASS'), 'VACUOUS');
@@ -56,10 +52,6 @@ test('validateRun FULL: 21 steps errors', () => {
 
 test('validateRun FULL: missing break errors', () => {
   assert.ok(validateRun({ steps: steps(), breaks: brks(CHECKED.slice(1)) }).length > 0);
-});
-
-test('validateRun FULL: break on L12 errors', () => {
-  assert.ok(validateRun({ steps: steps(), breaks: brks([...CHECKED, 'L12']) }).length > 0);
 });
 
 test('validateRun FULL: checked step reported GAP errors', () => {
@@ -105,9 +97,8 @@ test('exitCode: 1 on FAIL or VACUOUS', () => {
   assert.equal(exitCode({ steps: steps(), breaks: b }), 1);
 });
 
-test('exitCode: 0 when all PASS/GAP and all FLIPPED', () => {
-  const s = steps(); s[21] = { id: 'L12', status: 'GAP' };
-  assert.equal(exitCode({ steps: s, breaks: brks() }), 0);
+test('exitCode: 0 when all PASS and all FLIPPED', () => {
+  assert.equal(exitCode({ steps: steps(), breaks: brks() }), 0);
 });
 
 // ---- C3 (gone quiet): Fernhollow's row is in the day's 15, in a day step, by day 7 after hand-off ----

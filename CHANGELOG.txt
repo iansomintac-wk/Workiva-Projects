@@ -27,7 +27,8 @@ OSM Runway — release notes
     - The CSAT block in the call panel now has "Survey sent" and "Answered" date fields (change saves them; clearing one empties it).
     - Today shows a "CSAT follow-up" row when a survey was sent 7 or more days ago with no answer date.
       N = 7 is an ASSUMPTION, one named constant (CSAT_FOLLOWUP_DAYS). Graduated accounts are included.
-    - Nothing new in the Gainsight export or queue. Data and Today row only; the date inputs come in the next step.
+    - Nothing new in the Gainsight export or queue. Data, date inputs and Today row only.
+    - Sim L12 is now a checked step (22 of 22 checked) with its own break; the L12 gap is gone.
 
 1.1 — L11. Graduating with no CSAT contact warns, and still lets you graduate.
 

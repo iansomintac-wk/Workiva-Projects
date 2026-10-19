@@ -37,8 +37,8 @@ tools/sim/osm-day/run.mjs [--version 1.0|1.1] [--part A|B] [--only D5,L7]
 (D1-D10) and one account's lifecycle (L1-L12) on a fake clock with fake AI
 replies, then breaks each checked step on purpose to prove the check can fail.
 Each run writes sim-runs/<stamp>/ (git-ignored): report-<v>.md, results-<v>.json,
-diff.md, run.log and times.txt. Exit 0 = every step passes (or is a listed
-gap) and every break flips it; 1 = a finding (FAIL, VACUOUS or NOT-TESTED);
+diff.md, run.log and times.txt. Exit 0 = every step passes (D3, D7 and L10 keep listed
+gaps) and every break flips it; 1 = a finding (FAIL, VACUOUS or NOT-TESTED);
 2 = the harness failed (missing step, a guard tripped, an AI request escaped
 the fake). A line marked PARTIAL comes from a run with --part, --only or
 --no-breaks, so it does not cover the whole inventory. It never edits a tracker.

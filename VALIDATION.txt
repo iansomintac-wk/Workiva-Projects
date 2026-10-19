@@ -1880,3 +1880,5 @@ TRIM R4 - FINAL-REVIEW FIXES M-6 TO M-10 AND THE R3 CHECKER ITEMS (suite 468 -> 
     Sim L11 (steps-b.mjs l11Judge + BREAKS.L11, judge tests X6 in test/osm-day-steps.test.mjs): "warned and still allowed", two legs; figures are in the evidence doc, not measured here.
   - CSAT dates in the CSAT block (1.1, L12): test/l12-csat-followup.test.mjs csatDatesHtml test, and tools/l12-persist-check.mjs (real Chrome: an old book with no dates loads through prepareBookData with both dates null; typing Survey sent / Answered dates saves to storage and survives a reload-style prepareBookData; prints L12-PERSIST {"legacy":true,"saved":true,"ok":true}), run by test/l12-persist-check.test.mjs.
   - CSAT follow-up (1.1, L12 data and Today row): 5 tests in test/l12-csat-followup.test.mjs (4 behaviour, 1 Gainsight-export invariant); in-page suite unchanged, 465/483 on both the parent and this change (same 18 failures). Sim figures in the evidence doc.
+
+  - Sim L12 (l12Judge + BREAKS.L12): checked step, 22 checked; test/l12-sim.test.mjs (4 tests). `node tools/sim/osm-day/run.mjs --version 1.1 --only L12`: L12 PASS, break FLIPPED (sim-runs/t3-l12). Figures in evidence doc.
