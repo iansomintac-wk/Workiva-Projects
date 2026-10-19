@@ -79,7 +79,7 @@ The four reverted items go to a later redesign talk with the probe cases in sect
 - Sealed misses: the K-ids in section 3, mainly typos, other price wordings, and Scope 3 asks against a methodology note.
 - Open Codex warning: "Compare forecast Q4 revenue with Q3 actuals" gets the warning. Still Ian's call.
 - Ian's sandbox check of the T3 decline line in a Workiva AI sandbox is still open.
-- Codex final inspection findings R2 (PDF/slide newline-joined text), R3 (numeric labels such as "1. Preparation"), R4 ("Where should the stock price column go in next quarter's report?") and R5 (flat computed across files) were raised against cfad8ae; they were not re-checked on the final HEAD (read only).
+- Codex final inspection findings R2 (PDF/slide newline-joined text), R3 (numeric labels such as "1. Preparation"), R4 ("Where should the stock price column go in next quarter's report?") and R5 (flat computed across files) were raised against cfad8ae. All four target code the revert removed: on the final HEAD `rewrite.js` has 0 matches for `rowLabelCats`, `stockForward`, `LE_BASIS` and `flat`, and the probe shows 0 DIFF rows against base (measured by the lead). They apply again only if the four fixes are rebuilt.
 
 ## 9. Cost
 - Helper tokens: 826,480 across 21 rows of `helper-rows.md` (measured now, sum of the tokens column) before this task. Cap 1.1M, raised from 600k by Ian at 16:00Z. Codex runs are not counted (no token column). The lead's own session and this task are excluded.
