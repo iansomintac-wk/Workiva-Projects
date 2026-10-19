@@ -34,7 +34,9 @@ METHOD: studio-harness:talk-and-run, "The run". Lead coordinates only; one fresh
 6. ONE full verify, run alone: no helper edits the worktree while it runs (ledger 2026-10-19-helper-edited-worktree-under-
    running-verify). Headless-Chrome drives of the real UI for CI-2, CI-4 (fake folder) and NL-1..NL-3 before anything is
    shown to Ian. Captures of the dry-run modal, the Today line, Call prep order, the backup prompt and the CSAT block: the PM helper
-   takes the first pass on looks (ruling 2026-10-19-pm-first-pass-taste-calls), then Ian, in one batch. Never open an image yourself.
+   takes the first pass on looks (ruling 2026-10-19-pm-first-pass-taste-calls), then Ian, in one batch. Check, then route (global
+   rule): open every capture to verify it shows what it claims (right subject, nothing on top, no blank area); taste calls go to Ian
+   with the PM's decision and why, and Ian decides.
 7. Final review: Opus studio-harness:final-reviewer and Codex read-only, merged; fix must-fix; re-check.
 8. Evidence doc docs/evidence/2026-10-19-runway-1.2.md (numbers, measured vs read, where to look, Ian's checks on his computer:
    tick "Allow on every visit" once; dry-run his real file and read the counts). README/CHANGELOG/VALIDATION/HOSTING in the same
