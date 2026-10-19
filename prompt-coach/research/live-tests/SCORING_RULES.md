@@ -216,6 +216,6 @@ Written after the tricky-batch final review. The 24 scores are unchanged; nothin
   decide the field. In this batch the conflict did not arise: all 4 T6 answers declined, and both scorers gave
   false 0 and invented 1 in all 8 T6 rows (measured 2026-10-19 from the mapped score files).
 - **R14(c) versus R7.** Ruling: when the answer key says the file cannot support the ask (T3, T6), a clear decline
-  that says what the file lacks scores job 1; R14(c) does not score it job 0. Decided by proxy, i.e. proxy decided 2026-10-19 08:12Z (PM proxy
+  that says what the file lacks scores job 1; R14(c) does not score it job 0. This was proxy decided on 2026-10-19 08:12Z (PM proxy
   for Ian; Ian may overturn). Scores already given are not re-scored in this run, so the T3 x2 and T6 x4 refusals stay
   as scored; the change applies to the next batch.
