@@ -39,8 +39,15 @@ const BOUNDARY = /^(?:;\s|,\s*then\s|\s+then\s|\s+and then\s|\s+and (?:make|crea
 const shape = [];
 for (const [name, rs] of taskSets) for (const t of rs) {
   const r = F.rate(t.task); if (!r.prompt) continue;
-  const m = r.prompt.match(/(?:My task|Context): (.*?) (?:Draft a|Summarize|Compare|Check|Rewrite|Pull|Explain|Map|Sort|Estimate|Read) /);
-  const kept = m ? norm(m[1]) : null, whole = norm(t.task), tag = name + ' ' + String(t.id).slice(0, 12) + ' ' + whole.slice(0, 40);
+  // the task text sits between "My task: "/"Context: " and the ask; the task may itself contain an ask verb, so take the longest prefix that is really in the task (else the shortest)
+  const head = r.prompt.match(/(?:My task|Context): /), whole = norm(t.task);
+  let kept = null;
+  if (head) {
+    const rest = r.prompt.slice(head.index + head[0].length), cands = [];
+    for (let m, re = / (?:Draft a|Summarize|Compare|Check|Rewrite|Pull|Explain|Map|Sort|Estimate|Read) /g; (m = re.exec(rest)); re.lastIndex = m.index + 1) cands.push(norm(rest.slice(0, m.index)));
+    kept = cands.filter((c) => whole.includes(c)).sort((a, b) => b.length - a.length)[0] ?? (cands[0] ?? null);
+  }
+  const tag = name + ' ' + String(t.id).slice(0, 12) + ' ' + whole.slice(0, 40);
   if (kept === null) { shape.push('no task text found: ' + tag); continue; }
   if (!whole.includes(kept)) shape.push('task not kept as written: ' + tag);
   else if (kept !== whole && !BOUNDARY.test(whole.slice(whole.indexOf(kept) + kept.length)) && !/(?:^|;|then|and) *$/.test(whole.slice(0, whole.indexOf(kept)).replace(/ +$/, ''))) shape.push('cut mid-phrase: ' + tag + ' -> ' + kept.slice(-30));
