@@ -1,0 +1,49 @@
+RUN: Prompt coach Scope 3 reshape, option A (Workiva repo)
+
+Written 2026-10-19 by talk session cba7d32e. Load studio-harness:talk-and-run first and follow "The run".
+You are the run LEAD: you coordinate only; helpers plan, build and check, one at a time, never in parallel.
+
+WHERE
+- Worktree .claude/worktrees/prompt-coach-scope3-reshape, branch worktree-prompt-coach-scope3-reshape, from
+  origin/prompt-coach 59b09c1. Spec commit 65476d7.
+- Spec: docs/superpowers/specs/2026-10-19-prompt-coach-scope3-reshape-design.md (approved by Ian 2026-10-19).
+- Ledger (git-ignored, absolute in STUDIO_RUN_LEDGER): .ledger/2026-10-19-prompt-coach-scope3-reshape/
+  Holds budget.json, slip.json, rulings.md (Ian's words verbatim), probe/ (P1 real reader harness: make_fixtures.js,
+  run_reader.js, engine_on_reader.js, reader_out.json; P2 category-word counts and two ERPNext charts; SUMMARY.md),
+  and predecessor-scope3-structure-ledger/ (edge probe E1-E18: reviews/test/final_opus_probe.test.js and
+  logs/final_opus_probe.log; scripts/sealed_run.js and dump_runs.js; the SEEN held-out S1-S24).
+
+ORDER OF WORK (spec section 5)
+1. Plan by studio-harness:plan-writer: tasks of at most 8 steps, exact files, check command and expected output each;
+   header carries `Data: (none)` unless a task changes data. Plan review by Opus and by Codex
+   (claudex-loop:codex-review). STOP: Ian approves the plan; then update budget.json (tasksLeft, cap) from it.
+2. Task 1 is the fresh held-out: a blind Opus helper writes 24 items (12 should-warn, 12 near-miss, labelled by truth),
+   told nothing of the engine; the lead builds real files with probe/p1/make_fixtures.js style, reads them with the
+   REAL files.js in headless Chrome (probe/p1/run_reader.js; Chrome at C:/Program Files/Google/Chrome/Application),
+   freezes the reader output, and records sha256 of items, reader output and scoring script before any code change.
+   Measure base guard counts in the same task.
+3. Tasks 2-5 (Word clean lines; explain middle rule; short labels as listed; README and dist): implementer test-first
+   (each new test fails on base), checker, lead re-runs the check.
+4. Score once, base and branch on the same frozen reader output. Bar (Ian): 0 of 12 near-misses warn; 0 new warnings
+   against base on every quiet probe row (E1-E18, P1 files x listed/listed-num/finance asks, the two charts as sheets
+   with a figure per account, 1,516 stored asks with train files); branch catches >= base + 2 of 12. A miss is
+   reported, never tuned.
+5. Final whole-branch review: Opus (studio-harness:final-reviewer) and Codex; merge the lists; fix round; re-check.
+6. Evidence doc docs/evidence/YYYY-MM-DD-prompt-coach-scope3-reshape.md with measured/read/assumed marks.
+7. Hand-off PM step, then STOP for merge (slip says no merge).
+
+SLIP (Ian, 2026-10-19, verbatim in slip.json): push its own branch yes; merge no, stop for Ian; spend nothing (usage
+only); new sessions yes when needed.
+
+SAFETY
+- Never open or score heldout_sealed.json S1-S24 or K1-K24 except to confirm they are not reused; they are SEEN.
+- No tuning against the fresh set after scoring. No installs (the reader runs on the system Chrome with the page's own
+  cdnjs libraries, as in probe P1). No live Workiva AI calls. No changes to files.js, forecast/share-price/LE
+  detection, grades, weights or classifier.
+- No writes under ~/.claude/ except the session-rename exception in talk-and-run "Session names".
+- Logs to files; helpers reply in at most ~10 lines.
+- Stops: plan approval; merge; spend; a decision only Ian makes; two strikes. At a stop: PushNotification, notify.mjs,
+  then ask in the session.
+
+OPEN FOR IAN (not this run): merge of the scope3-structure branch (lead recommends not); Codex's "Compare forecast Q4
+revenue with Q3 actuals" warning; Workiva AI sandbox check of the decline line (gates option D); E1-8 eur-lex quote.
