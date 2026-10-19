@@ -109,7 +109,7 @@ const candidateSources = ctx => ctx.ev(`(() => { const c = DATA.customers.find(x
 
 // Must equal CSAT_FOLLOWUP_DAYS in the tracker.
 const CSAT_N = 7;
-// onScreen: whether the CSAT follow-up row is rendered on Today (day step or Below the day), not only ranked; { d6, d7, answered } booleans, `where` = { d7 } text.
+// onScreen: whether the pinned "Surveys to chase" line names Fernhollow on Today, not only ranked; { d6, d7, answered } booleans, `where` = { d7 } text.
 export function l12Judge({ atDay6 = [], atDay7 = [], afterAnswer = [], onScreen = {} }) {
   const S = 'csat_unanswered';
   const on = { d6: onScreen.d6 === true, d7: onScreen.d7 === true, answered: onScreen.answered === true };
@@ -484,12 +484,11 @@ export const PART_B = [
     const setCsat = (sent, answered) => ctx.ev(`(() => { const a = DATA.customers.find(x => x.id === ${JSON.stringify(id)}).compliance.associatedPeopleCSAT;
       a.surveySentOn = ${JSON.stringify(sent)}; a.surveyAnsweredOn = ${JSON.stringify(answered)}; saveData(); return true; })()`);
     await setCsat(T, null);
-    // The Fernhollow CSAT follow-up row on screen: a day step (h4 names the account) or a Below-the-day row (.todo-cust), with the CSAT follow-up text.
+    // The Fernhollow CSAT follow-up on screen: the pinned "Surveys to chase" line at the top of Today (#surveys-to-chase), outside the ranking, naming the account.
     const screenNow = () => ctx.ev(`(() => { ui.view = 'today'; ui.openCustomerId = null; render();
       const F = ${JSON.stringify(FERN)}; const c = DATA.customers.find(x => x.name === F); const list = todayActionList(); const idx = list.findIndex(r => r.customerId === c.id);
-      const step = [...document.querySelectorAll('[data-day-step]')].find(e => { const h = e.querySelector('h4'); return h && h.textContent.includes(F) && /CSAT survey sent/.test(e.textContent); });
-      const below = [...document.querySelectorAll('[data-today-row]')].find(e => { const h = e.querySelector('.todo-cust'); return h && h.textContent.includes(F) && /CSAT survey sent/.test(e.textContent); });
-      return JSON.stringify({ on: !!(step || below), where: step ? 'day step' : below ? 'Below the day' : null, pos: idx >= 0 ? idx + 1 : null, of: list.length, source: idx >= 0 ? list[idx].source : null }); })()`).then(JSON.parse);
+      const pin = document.querySelector('#surveys-to-chase'); const hit = !!pin && /Surveys to chase/.test(pin.textContent) && pin.textContent.includes(F) && !!pin.querySelector('[data-open-cust="' + c.id + '"]');
+      return JSON.stringify({ on: hit, where: hit ? 'pinned line' : null, pos: idx >= 0 ? idx + 1 : null, of: list.length, source: idx >= 0 ? list[idx].source : null }); })()`).then(JSON.parse);
     const sourcesOn = async iso => { await openDay(ctx, iso); const r = await candidateSources(ctx); return { sources: r.sources || [], scr: await screenNow() }; };
     const d6 = await sourcesOn(addDays(T, 6));
     const d7 = await sourcesOn(addDays(T, 7));

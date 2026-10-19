@@ -3,6 +3,11 @@ OSM Runway — release notes
 
 1.1 — Hosting. A site you can put behind company sign-in (nothing is published).
 
+    - 1.1 - Surveys to chase: one short line at the top of Today, outside the ranking: "Surveys to chase: Fernhollow (sent 9 days
+      ago, no answer)". It lists every account (graduated too) whose CSAT survey was sent 7 or more days ago with no answer date, shows however
+      busy the day is, names open the account (5 shown, then "+N more"), and is hidden when there are none. The CSAT follow-up row stays in the ranking.
+    - Sim L12 now reads that pinned line for the on-screen check (absent at day 6 and after Answered). tools/l12-panel.mjs also shoots it
+      (pinned-line), guarded, CAPTURE-GUARD line in sim-runs/captures-batch.log.
     - 1.1 - Agenda + Copy: Call prep opens with a numbered Agenda built from what the book already holds
       (overdue promises, the open questions of the newest call that has any, the next unticked checklist
       step). A "Copy agenda" button copies it as plain numbered text for an invite or email. It stores

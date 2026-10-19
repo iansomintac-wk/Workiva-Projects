@@ -1,5 +1,5 @@
 // Dev tooling (not part of the bundle): L12 (CSAT follow-up) and agenda captures for 1.1. Synthetic data only.
-// usage: node tools/l12-panel.mjs --captures -> sim-runs/l12/{agenda,csat-dates,today-row}.{png,txt}; CAPTURE-GUARD lines to sim-runs/captures-batch.log
+// usage: node tools/l12-panel.mjs --captures -> sim-runs/l12/{agenda,csat-dates,pinned-line,today-row}.{png,txt}; CAPTURE-GUARD lines to sim-runs/captures-batch.log
 // Throwaway osmsim-* profiles only (inSim in tools/l11-csat-panel.mjs), removed by ctx.stop() in a finally.
 // Order matters: the agenda needs Orion's open promises, and the Today row needs them cleared (an overdue promise, severity 4, hides
 // the severity-2 CSAT row), so agenda and csat-dates are shot first and the promises are closed last, before today-row.
@@ -59,6 +59,12 @@ async function captures() {
     const csat = `Array.from(${PANE(id)}.querySelectorAll('.focus-act')).find(e => { const h = e.querySelector('h5'); return h && h.textContent.includes('Associated contact for CSAT'); })`;
     if (!(await has(ctx, id, csat))) throw new Error('Orion pane has no CSAT focus-act; stopping');
     await shot(ctx, { file: 'csat-dates', id, targetExpr: csat, state: 'CSAT block, survey sent 2026-10-14, answered empty', text: await textOf(ctx, csat) });
+
+    // (4) the pinned "Surveys to chase" line at the top of Today: outside the ranking, so it needs no cleared promises
+    await ctx.ev(OPEN(id)); await sleep(400);
+    const pinned = `document.querySelector('#surveys-to-chase')`;
+    if (!(await ctx.ev(`!!${pinned}`))) throw new Error('no #surveys-to-chase line on Today; stopping');
+    await shot(ctx, { file: 'pinned-line', id, targetExpr: pinned, state: 'Pinned Surveys to chase line at the top of Today, survey sent 2026-10-14, answered empty (day 7)', text: await textOf(ctx, pinned) });
 
     // (ii) make CSAT the top candidate: close Orion's open promises (one cause at a time, max 5 passes: promises, then a flagged activity, then a behind-target date)
     let src = await topSource(ctx, id);

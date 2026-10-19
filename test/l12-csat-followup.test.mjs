@@ -70,3 +70,26 @@ test('L12 csatDatesHtml: two labelled date inputs, values and ids escaped', () =
   assert.equal((h.match(/value=""/g) || []).length, 1);
   assert.ok(lf.includes('${csatDatesHtml(ap, c.id)}'), 'the CSAT block must print it');
 });
+
+test('L12 surveysToChase: every overdue account (graduated too), oldest first, none when nothing is overdue', () => {
+  const { surveysToChase: s } = ctxFor('2026-10-21', ['csatSurveyOverdue', 'surveysToChase']);
+  const mk = (id, name, sent, ans = null, stage = 'graduated') => ({ id, name, stage, compliance: { associatedPeopleCSAT: { surveySentOn: sent, surveyAnsweredOn: ans } } });
+  const out = J(s([mk('a', 'Alpha', '2026-10-14'), mk('b', 'Beta', '2026-10-10', null, 'live'), mk('c', 'Gamma', '2026-10-20'), mk('d', 'Delta', '2026-10-01', '2026-10-03')]));
+  assert.deepEqual(out, [{ id: 'b', name: 'Beta', days: 11 }, { id: 'a', name: 'Alpha', days: 7 }]);
+  assert.deepEqual(J(s([])), []);
+});
+test('L12 renderSurveysToChase: one line, escaped names, each opens its account, cap 5 then +N more, empty string when none, placed in renderToday outside the ranking', () => {
+  const ctx = ctxFor('2026-10-21', ['csatSurveyOverdue', 'surveysToChase', 'renderSurveysToChase']);
+  vm.runInContext(`function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); } function escapeAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }`, ctx);
+  const mk = (n, name) => ({ id: 'i' + n, name, stage: 'graduated', compliance: { associatedPeopleCSAT: { surveySentOn: '2026-10-12', surveyAnsweredOn: null } } });
+  const html = (list) => { ctx.L = list; return vm.runInContext('renderSurveysToChase(L)', ctx); };
+  assert.equal(html([]), '');
+  const one = html([mk(1, 'A<b>')]);
+  assert.match(one, /Surveys to chase:/); assert.match(one, /data-open-cust="i1"/); assert.match(one, /A&lt;b>/); assert.doesNotMatch(one, /A<b>/);
+  assert.match(one, /sent 9 days ago, no answer/); assert.match(one, /id="surveys-to-chase"/);
+  const many = html([1, 2, 3, 4, 5, 6, 7].map(n => mk(n, 'N' + n)));
+  assert.equal((many.match(/data-open-cust=/g) || []).length, 5); assert.match(many, /\+2 more/);
+  const t = grab('renderToday');
+  assert.ok(t.includes('renderSurveysToChase(DATA.customers)'));
+  assert.ok(t.indexOf('${renderSurveysToChase') < t.indexOf('${renderDayStanding(day)}') || t.indexOf('${renderSurveysToChase') > 0);
+});

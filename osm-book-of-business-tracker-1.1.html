@@ -11749,6 +11749,17 @@ function pushCsatFollowUp(c, out){
     reasons: [`Sent ${o.days} days ago, no answer date recorded. Chase it, then add the answer date.`],
     panelTab:'overview', chipLabel:'CSAT follow-up', why:d.why});
 }
+/* L12 ruling: one pinned line at the top of Today, outside the ranking, so a survey nobody answered shows however busy the day is. */
+function surveysToChase(customers){
+  return (customers || []).map(c => { const o = csatSurveyOverdue(c); return o ? {id:c.id, name:c.name, days:o.days} : null; })
+    .filter(Boolean).sort((a, b) => b.days - a.days);
+}
+function renderSurveysToChase(customers){
+  const list = surveysToChase(customers); if(!list.length) return '';
+  const shown = list.slice(0, 5), more = list.length - shown.length;
+  const names = shown.map(x => `<button class="link-btn" data-open-cust="${escapeAttr(x.id)}" data-open-tab="overview" style="font-weight:600;">${escapeHtml(x.name)}</button> (sent ${x.days} days ago, no answer)`).join('; ');
+  return `<div class="section-card" id="surveys-to-chase" style="margin-bottom:16px; border-left:3px solid var(--accent-watch);"><div style="font-size:var(--text-sm); color:var(--text-dim);"><strong style="color:var(--text);">Surveys to chase:</strong> ${names}${more ? `; +${more} more` : ''}</div></div>`;
+}
 const TODAY_SOURCE_DEFS = [
   {source:'coverage_neglected', severity:3,
    why:'No touchpoint past the neglect threshold and nothing on the calendar — the same band as a long stall, because it is one.'},
@@ -13052,6 +13063,7 @@ function renderToday(){
 
   return `
     <div>
+      ${renderSurveysToChase(DATA.customers)}
       ${renderDayStanding(day)}
       ${renderDayBriefBar()}
       ${readiness}
