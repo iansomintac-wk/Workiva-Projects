@@ -1,0 +1,78 @@
+SHARE-READY RUN PROMPT. Written 2026-10-19 ~01:30Z by session 2c0f094c ("NEW - Fit Finder next") at its 200k
+context stop. Load studio-harness:talk-and-run first; you are the run lead (coordinate, helpers build).
+
+WHERE: C:/Users/teasp/Documents/workiva/.claude/worktrees/fit-finder-fair-test, branch share-ready (from
+origin/prompt-coach a96a1f1 + the fair-test rulings doc). Ledger: .ledger/2026-10-19-share-ready/progress.md
+(read it first: Ian's words and every measurement so far). Task list mirrors T1-T6 below.
+
+IAN'S GOAL (verbatim, 2026-10-19): "I want this fully working so that come monday, I can share this with internal
+teammembers and customers for them to try this out". Failure means (verbatim): "wrong feature suggestions and false
+claims about Workiva AI and a prompt that does not adhere to prompting best practices". Ruled: "yes, keep them
+separate with the link". Then, away from the computer: "Why can't you do everything you need to do so its good to
+go for teammates and customers by Monday i.e implement fixes and improvements. I will be away from computer and you
+already know what to do, so just do it?" -> build without asking; stop only for the run stops below.
+
+MEASURED 2026-10-19 by 2c0f094c (scripts in C:/Users/teasp/.claude/jobs/2c0f094c/tmp/: grade-probe.cjs,
+edge.cjs; copy them into .ledger/2026-10-19-share-ready/ if that folder is gone):
+- Coach grade of Fit Finder prompts (coach page's way: model.predict + rewrite.coach + stacked downgrade):
+  starter 76/89 strong (9 weak, e.g. the COLLECT "Draft a short, polite request" starter = weak/SPE);
+  fuller/catalogue prompts shown 1/17 strong, 9 weak; all catalogue prompts 1/15 strong, 9 weak. 8 of the 9
+  weak catalogue prompts leave weak when "@[x]" becomes a filename: the coach does not read "@[placeholder]"
+  as a source.
+- Fit Finder edge batch (38 inputs, 0 throws): wrong/doubtful card: "Explain the new lease accounting standard"
+  -> sus-requirements; "Translate the sustainability report into Spanish" -> sus-exec-narrative before
+  gen-translate; "Do not summarize anything, just file it" -> summarize card; TB pack with CFO sign-off ->
+  fr-yoy-narrative. Missed: "Review the SOC 1 report and list the exceptions" no card. "Make this memo more
+  concise", "more professional", French, "help", "What is Workiva AI?" -> fit "not" with no ops (page says
+  not a fit). Page note still says "not yet measured on real tasks" (template.html line ~202).
+- Coach edge batch (20 inputs, 0 throws): no note for personal data (name+SSN+salary), none for a calculation
+  ask, a 4-job comma list is not "stacked", off-topic ("What's the weather today?", a poem) is polished into a
+  finance prompt graded strong.
+- Sharing (support.claude.com article 9547008, spot-checked verbatim): "Everyone needs a Claude account."
+  "People without one can't open a shared artifact, even with the link." Team/Enterprise external sharing only
+  when an Owner turns it on. JS for logged-out viewers not confirmed.
+- Active Prompt Coach run (session "NEW - Prompt Coach tricky batch run", worktree prompt-coach-rewrites) lists
+  changing the coach's engine, weights or rewrite as out of scope: keep coach changes additive (notes), never
+  change grades except the stacked display rule, and say so in its README.
+
+TASKS (one helper at a time, implementer then checker; tests first; <= 8 steps each):
+T1 New fit-finder test: every prompt the page can show (starter for every row of data/tasks.jsonl and the synth
+   sets, every catalogue useCases[].prompt, the COLLECT starter) grades strong in the coach as the coach page
+   grades; red first. Fix on the Fit Finder side (catalogue prompt fields, starter()) so all are strong; do not
+   change coach scoring. Near-copy check vs data/real = 0 (.ledger/2026-10-18-fit-finder-fair-test/nearcopy.cjs).
+T2 Claims: a researcher (already dispatched by 2c0f094c) writes docs/research/2026-10-19-workiva-ai-claims-recheck.md.
+   If it is missing, dispatch studio-harness:researcher again with the same outcome. Fix every "changed" claim in
+   catalogue.json / capabilities-confirmed.md / coach tips; cite the live page and date.
+T3 Fit Finder page: (a) the How-it-rates note gives the measured numbers honestly (README: real prompts and the
+   fair test); (b) when rate() finds no operation, show "couldn't tell which step this is" with an example,
+   and "English only" for non-English text, instead of "not a fit"; (c) the Coach link points to
+   prompt-coach.html beside the file when opened from disk (file:), else the artifact URL. pagetest passes.
+T4 Coach notes (prompt-coach/engine/rewrite.js notes, tests in prompt-coach/tests): personal data (SSN-like,
+   salary, date of birth, bank/account numbers), calculation asks ("check every figure it calculates"),
+   comma lists of 3+ task verbs count as stacked, off-topic (no work/document words) says it is not a Workiva
+   task. pc-simulate, pc-customer, pc-eval and build output unchanged except the new notes.
+T5 Wrong cards: FIRST a writer helper (not shown engine/fit.js or match fields) writes a blind set of about 40
+   sentences in the problem areas above plus not-fit and not-rewrite controls, labelled per data/LABELING.md
+   with card gold by id from catalogue task text; commit it, score the current engine once. Then targeted
+   match/engine fixes (sus-requirements scope, translate order, negation "do not X", SOC report review, the
+   DRAFT-only e-mail rule at fit.js ~134). Keep: catalogue.test.js and fair-guard pins (node tests/fair-guard.js
+   --base aea74611bf1cec86aae2a58c7f5cb12102418f25 --lock-base <task parent> plus a pins file if a pin moves for
+   the better; a pin may not get worse). Score the blind set once after. Do not re-score the fair-test untouched
+   half. Report both scores.
+T6 Final review (studio-harness:final-reviewer; Codex read-only too if `codex` runs), fix round, evidence doc
+   docs/evidence/2026-10-19-share-ready.md, README + byte counts in the same commits. Republish both artifacts
+   (Fit Finder https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE, Prompt Coach
+   https://claude.ai/artifact/9Qk7uhNgri3uCSkUafsDQV: read each first, record the version replaced) only when
+   every suite passes. Write a short sharing note for Ian in the evidence doc: teammates/customers need a Claude
+   account for the links; the two dist files work offline side by side; public hosting is Ian's call.
+
+DATA CARE: never open, print or quote fit-finder/data/real/ or C:/Users/teasp/Documents/workiva-sealed/; tests
+that read data/real print counts only. Nothing customer-specific to external services. Product names and
+availability only from the live support pages.
+
+STOPS (notify, then ask): push or merge (slip.json says no; Ian's words named neither) - finish everything else,
+republish, then stop for merge; spend money (none approved); the same check failing twice (two strikes); context
+200k (write the resume prompt, launch the successor, as 2c0f094c did). Logs to files; helpers reply in <= 10 lines.
+
+SESSION NAMES: you are "NEW - Fit Finder share-ready run". Predecessor 2c0f094c: rename it is done by itself; do
+not `claude rm` it or 63073f73/b2758e3d/a7010c17 - they share this worktree and its git-ignored .ledger/.
