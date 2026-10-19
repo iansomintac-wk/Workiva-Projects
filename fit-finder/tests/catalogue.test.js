@@ -466,5 +466,8 @@ const notShownF = freshRows.filter((r) => goldF.has(r.id) && goldF.get(r.id).fit
 const agreeF = freshRows.filter((r) => goldF.has(r.id) && rate(r.task).fit === goldF.get(r.id).fit).length;
 const byF = (b) => goldFRows.filter((g) => g.by === b).length;
 console.log(`fresh prompts first card right: ${fitF.length - wrongF.length - missedF.length} of ${fitF.length} that fit; wrong card ${wrongF.length} (${wrongF.map((r) => r.id).join(',')}); no card where one fits ${missedF.length} (${missedF.map((r) => r.id).join(',')}); card on a not-a-fit prompt ${notShownF.length} (${notShownF.map((r) => r.id).join(',')}); fit agreement ${agreeF} of ${freshRows.length}; labelled by Ian ${byF('ian')}, by the model ${byF('model')}`);
+check('catalogue does not claim a Rephrase quick edit (live S22: shortening, changing the tone, or elaborating)', () => {
+  assert(!/rephrase/i.test(JSON.stringify(cat)), 'catalogue.json contains "Rephrase"');
+});
 console.log(fails ? fails + ' failed' : 'all catalogue checks pass');
 process.exit(fails ? 1 : 0);

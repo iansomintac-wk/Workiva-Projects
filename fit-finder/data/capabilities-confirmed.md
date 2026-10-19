@@ -80,3 +80,13 @@ Availability: IN = included with Workiva AI; DEP = depends on your Workiva solut
 - Evidence analyzer: only S1 mentions it.
 - Sustainability anomaly review: once left out as no feature named; S16 names the job ("identify anomalies, outliers, and other inconsistencies") and gives a prompt to run on the sustainability report or Factbook spreadsheet, so it is now a use case. S16 is written "for: Sustainability Reporting Advanced workspaces"; it does not say the prompt itself needs that solution. Its badge stays "included with Workiva AI": Ian, 2026-10-15, "it works on anything they have in their workspace so if they are we using sustainability they should be able to use any prompt" (S16 also notes "Workiva AI is available for any customer who signs the Workiva AI Terms of Use").
 - Up to 10 files, no direct upload, knowledge bases in chat, inline spreadsheet editor: confirmed (S3, S6, S9, S20).
+
+## Re-check 2026-10-19
+Source: docs/research/2026-10-19-workiva-ai-claims-recheck.md (live Support Center pages S2, S3, S6, S7, S11, S12, S20, S22; MCP page "Connecting the Workiva MCP to Claude", updated 2026-10-16). Corrected:
+- Quick edits (S22): "shortening, changing the tone, or elaborating". No menu labels are given and "Rephrase" is not on the page. Catalogue doc.how and the Coach rewrite tip changed.
+- Workiva MCP to Claude: now documented. Limited-availability preview for select customers, read-only at launch, off by default. Catalogue leftOut text updated; it stays left out.
+- Coach tip "does not read your open file unless you reference it": not stated on any page. Now: select the text or table first, or type @ in chat to reference a file (S3, S6, S20).
+- Coach tip "works on the current sheet": S20 says "Select a single cell or a cell range". Now says it works on what you select.
+- "Tie-Out Agent" is the press-release name. Live name: Tie-out assistant, preview, 10-K and 10-Q only (S7, S11).
+- "Benchmarking Agent" is the press-release name. Live name: Benchmarking, preview (S7, S12).
+- Unchanged: Agent Studio still has no Support Center page.

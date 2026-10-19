@@ -214,3 +214,10 @@ test('evaluate: a scope limit is not an Evaluate rule, so Strong still adds the 
   const q = run("As an assurance reviewer, read the selected Scope 3 Category 1 methodology and list the questions you'd ask. Max ten. Flag anything you are unsure of.");
   assert.ok(!q.segments.some((x) => x.generated && x.letter === 'E'), q.stages.strong.prompt);
 });
+
+test('workiva tips match the live Support Center (re-check 2026-10-19): no unsupported claims or press-release names', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../engine/rewrite.js'), 'utf8');
+  for (const bad of ['Rephrase', 'Tie-Out Agent', 'Benchmarking Agent', 'current sheet', 'does not read your open file']) {
+    assert.ok(!src.includes(bad), 'rewrite.js still contains "' + bad + '"');
+  }
+});

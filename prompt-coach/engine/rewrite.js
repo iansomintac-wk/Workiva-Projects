@@ -339,16 +339,16 @@
   function workivaTips(ctx, on, files) {
     const tips = [];
     if (files.length) tips.push('In Workiva AI chat, type @ and pick ' + (files.length === 1 ? 'the file' : 'each file') + ' so the AI can read ' + (files.length === 1 ? 'it' : 'them') + ' (up to 10 per prompt).');
-    else if (!on.S) tips.push('The document companion does not read your open file unless you reference it. Select the text or table first, or type @ in chat to reference a file.');
+    else if (!on.S) tips.push('To point Workiva AI at the right content, select the text or table first, or type @ in chat to reference a file.');
     if (/\b(?:attached|uploaded)\b/i.test(ctx.prompt || '') && /\bknowledge base\b/i.test(ctx.prompt || '')) tips.push('Your prompt says both "attached" and "knowledge base". Use one: in chat, type @ and pick each file you want read.');
     const tip = {
-      rewrite: 'For quick changes, select the text and use the companion’s quick edits: Shorten, Elaborate, Rephrase, or Change tone.',
+      rewrite: 'For quick changes, select the text and use the companion’s quick edits to shorten, change the tone, or elaborate.',
       formula: 'In a spreadsheet, select the cell and use Fix this formula or Explain this formula from the companion.',
-      variance: 'In a spreadsheet, the companion works on the current sheet. Select the rows first, or try Find trends for a quick first pass.',
-      anomaly: 'In a spreadsheet, the companion works on the current sheet. Select the range you want checked first.',
+      variance: 'In a spreadsheet, the companion works on what you select. Select a cell or a range of rows first, or try Find trends for a quick first pass.',
+      anomaly: 'In a spreadsheet, the companion works on what you select. Select the cell or range you want checked first.',
       summarize: ctx.files.some((f) => f.kind === 'Excel') ? 'For a quick first pass on a range, try the spreadsheet companion’s Summarize data action.' : null,
-      consistency: ctx.domain === 'FR' ? 'If your package includes it, the Tie-Out Agent is built for finding discrepancies across a financial report. Ask your account team.' : null,
-      compare: ctx.domain === 'FR' && /\bpeers?|competitors?|benchmark/.test(ctx.t) ? 'If your package includes it, the Benchmarking Agent compares your SEC filings with peers. Ask your account team.' : null,
+      consistency: ctx.domain === 'FR' ? 'If your package includes it, the Tie-out assistant (a preview, for 10-K and 10-Q filings only) is built for finding discrepancies across a financial report. Ask your account team.' : null,
+      compare: ctx.domain === 'FR' && /\bpeers?|competitors?|benchmark/.test(ctx.t) ? 'If your package includes it, Benchmarking (a preview) compares the disclosures in your financial report with those of peer companies. Ask your account team.' : null,
       map: ctx.domain === 'SUS' ? 'If your package includes it, the Sustainability Disclosure Agent scores a disclosure against ESRS or ISSB requirements. Ask your account team.' : null,
       gaps: ctx.domain === 'SUS' ? 'If your package includes it, the Sustainability Disclosure Agent runs a gap assessment against ESRS or ISSB. Ask your account team.' : null,
       explain: ctx.domain === 'SUS' ? 'Switch the knowledge base to ESRS (or ISSB) for framework questions, then check the cited sources.' : null
