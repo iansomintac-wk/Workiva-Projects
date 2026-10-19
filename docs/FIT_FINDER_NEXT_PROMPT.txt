@@ -15,12 +15,12 @@ bar would be 4 and it would fail. Pins unchanged, fair-guard passes. Not merged.
 This is not the real-set done-when: fresh real wrong is 5 against a bar of 3, and a second untouched real set
 is still missing.
 
-PUT TO IAN FIRST, one at a time, in this order (skip any he already answered in the run's last session):
-1. Which bar reading counts: all 42 fitting rows (pass at the bar) or the 32 with a gold card (fail).
-   Recommend the spec's 42, reported with the 4-bar failure beside it.
-2. The fit.js e-mail rule in match(): no card when the only operation is DRAFT and the ask mentions e-mail,
-   so DRAFT-only cards (8-K, test steps, findings, new controls, remediation) are lost. The engine is locked
-   after scoring. Recommend: leave it, and fix it only with a new unscored set. Never re-score the old half.
+ANSWERED by Ian 2026-10-18 22:46Z and 2026-10-19 00:19Z (verbatim in progress.md; do not ask again):
+1. Bar reading: "All 42 count (Recommended)". Verdict PASS at the bar; the 32-row fail (bar 4) is reported beside it.
+2. The fit.js e-mail rule in match() (no card when the only operation is DRAFT and the ask mentions e-mail):
+   "Leave it, fix with fresh set (Recommended)". No engine change now; never re-score the old half.
+
+PUT TO IAN FIRST, one at a time, in this order:
 3. Republish the live page? Only Ian says; recommend not yet.
 4. Merge fit-finder-fair-test? Recommend wait until 1-3 are answered. No merge or push without his yes.
 5. Ratify the ledger defect 2026-10-18-guard-locked-pathspec-cwd and the Bash-backslash gotcha (code files

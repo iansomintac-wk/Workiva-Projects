@@ -268,4 +268,5 @@ fit rows have a gold card and 10 do not (counted from the gold files), so card h
 and 20; a read-only reviewer's re-run reports 15 (35.7% of 42; 15 of 32 card rows), read from the
 reviewer, not measured here. Bar reading: by the spec's definition F is all fitting rows (42), so
 the bar is 5 and 5 wrong passes at the bar. If F counted only fit rows with a gold card (32), the
-bar would be 4 and 5 wrong would fail. The verdict stays the spec's; which reading counts is Ian's.
+bar would be 4 and 5 wrong would fail. The verdict stays the spec's: Ian ruled 2026-10-18 "All 42
+count (Recommended)", with the 32-row fail reported beside it.

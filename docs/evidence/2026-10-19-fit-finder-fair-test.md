@@ -241,11 +241,14 @@ got no card; the engine may pass partly by staying silent (assumed; the gold has
 - The token cap ruling: the run used up its 1.3M helper token cap at the Task 9 checker, and Ian
   raised it to 1.7M (read: L/progress.md, 22:06Z). Task 10 and the reviews ran under that ruling.
 - Which bar reading counts for Monday: F as all fitting rows (42, bar 5, pass at the bar) or as fit
-  rows with a gold card (32, bar 4, fail). Section 3.
+  rows with a gold card (32, bar 4, fail). Section 3. Ruled 2026-10-18 22:46Z: "All 42 count
+  (Recommended)", so the verdict is pass at the bar, with the 32-row fail reported beside it.
 - The e-mail rule (Opus S1, not fixed because the engine is locked after the scoring):
   `fit-finder/engine/fit.js` line 134 returns no card for any ask whose only operation is DRAFT and
   that mentions e-mail. At least five DRAFT-only cards exist (8-K, test steps, findings, new
-  controls, remediation), so such asks lose a fitting card and no pin catches it.
+  controls, remediation), so such asks lose a fitting card and no pin catches it. Ruled 2026-10-19
+  00:19Z: "Leave it, fix with fresh set (Recommended)": no engine change now; a fix comes only with
+  a fresh unscored set.
 - Reviews: the Opus final-reviewer and a read-only Codex review ran (plan Task 10 steps 4 and 5);
   their findings are fixed in this document and the README except the two items above, which are
   Ian's. Reviews: L/reviews/opus-final-review.md, L/reviews/codex-final-review.log,
