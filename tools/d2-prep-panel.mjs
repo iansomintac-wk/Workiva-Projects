@@ -10,12 +10,14 @@ import { resolveUnderSimRuns } from './sim/osm-day/lib/outdir.mjs';
 import { launch } from './sim/osm-day/lib/browser.mjs';
 import { setupA } from './sim/osm-day/lib/setup.mjs';
 import { DAY } from './sim/osm-day/steps-a.mjs';
+import { guardShot, seedExported, resetCapture } from './lib/capture-guard.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = resolveUnderSimRuns(join(ROOT, 'sim-runs', 'd2-prep'), ROOT);
 const fx = { window: {} };
 vm.runInNewContext(readFileSync(join(ROOT, 'tools', 'step1-fixture.js'), 'utf8'), fx);
 const CALLS = fx.window.STEP1_CALLS;
+const GUARD_LOG = resolveUnderSimRuns(join(ROOT, 'sim-runs', 'captures-batch.log'), ROOT);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // Opens the account's prep panel (as steps-a panelText does) and reports the pane and its transcript boxes.
@@ -48,6 +50,7 @@ async function inSim(fn) {
   const ctx = await launch({ version: '1.1', startDay: DAY, runDir: join(OUT, 'run-' + Date.now()), part: 'A' });
   try {
     const seeded = await setupA(ctx);
+    await seedExported(ctx, DAY);                 // before load, so the 'never exported' backup nag never opens
     await ctx.openOn(DAY);
     return await fn(ctx, seeded);
   } finally { await ctx.stop(); }
@@ -74,11 +77,11 @@ async function check() {
 async function shot(ctx, file, name, info) {
   if (!info.found || !info.pane) throw new Error('no prep pane for ' + name + ': ' + JSON.stringify(info));
   await sleep(300);
-  const r = info.rect;
-  const s = await ctx.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip: { x: r.x, y: r.y, width: r.w, height: r.h, scale: 1 } });
   mkdirSync(OUT, { recursive: true });
   const png = join(OUT, file + '.png');
-  writeFileSync(png, Buffer.from(s.data, 'base64'));
+  const pane = `document.querySelector('.day-pane[data-day-holds="' + cssEscape(${JSON.stringify(info.id)}) + '"]')`;
+  try { await guardShot(ctx, { name: 'd2-' + file, account: name, accountId: info.id, targetExpr: pane, png, logFile: GUARD_LOG }); }
+  finally { await resetCapture(ctx); }
   writeFileSync(join(OUT, file + '.txt'), `Account: ${name}\nBox height: ${info.boxInfo ? info.boxInfo.height + 'px' : 'none (no transcript box)'}\nLabel: ${info.label || 'none'}\nBoxes in pane: ${info.boxes}\n`);
   console.log(png);
   console.log(join(OUT, file + '.txt'));

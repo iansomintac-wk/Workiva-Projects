@@ -11,10 +11,12 @@ import { resolveUnderSimRuns } from './sim/osm-day/lib/outdir.mjs';
 import { launch } from './sim/osm-day/lib/browser.mjs';
 import { setupA } from './sim/osm-day/lib/setup.mjs';
 import { DAY } from './sim/osm-day/steps-a.mjs';
+import { guardShot, seedExported, resetCapture } from './lib/capture-guard.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = resolveUnderSimRuns(join(ROOT, 'sim-runs', 'd3-prep'), ROOT);
 const CONTROL_REF = 'c297df3';
+const GUARD_LOG = resolveUnderSimRuns(join(ROOT, 'sim-runs', 'captures-batch.log'), ROOT);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const OPEN = name => `(() => {
@@ -54,6 +56,7 @@ export async function inSim(fn, version = '1.1') {
   const ctx = await launch({ version, startDay: DAY, runDir: join(OUT, 'run-' + Date.now()), part: 'A' });
   try {
     await setupA(ctx);
+    await seedExported(ctx, DAY);                 // before load, so the 'never exported' backup nag never opens
     await ctx.openOn(DAY);
     return await fn(ctx);
   } finally { await ctx.stop(); }
@@ -93,11 +96,11 @@ async function control() {
 async function shot(ctx, file, name, info, extra) {
   if (!info.found || !info.pane) throw new Error('no prep pane for ' + name + ': ' + JSON.stringify(info));
   await sleep(300);
-  const r = info.rect;
-  const s = await ctx.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip: { x: r.x, y: r.y, width: r.w, height: r.h, scale: 1 } });
   mkdirSync(OUT, { recursive: true });
   const png = join(OUT, file + '.png');
-  writeFileSync(png, Buffer.from(s.data, 'base64'));
+  const pane = `document.querySelector('.day-pane[data-day-holds="' + cssEscape(${JSON.stringify(info.id)}) + '"]')`;
+  try { await guardShot(ctx, { name: 'd3-' + file, account: name, accountId: info.id, targetExpr: pane, png, logFile: GUARD_LOG }); }
+  finally { await resetCapture(ctx); }
   writeFileSync(join(OUT, file + '.txt'), `Account: ${name}\nOpen commitments: ${info.open}\nPromise rows: ${info.rows}\nSection height: ${info.sectionHeight}px\n${extra || ''}`);
   console.log(png);
   console.log(join(OUT, file + '.txt'));

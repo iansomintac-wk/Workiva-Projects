@@ -3,7 +3,7 @@
 //        node tools/l11-csat-panel.mjs --captures -> sim-runs/l11-csat/{no-contact-goal,no-contact-no-goal,contact-added}.{png,txt}
 //        node tools/l11-csat-panel.mjs --control   -> same step on the pre-change tracker at 96c55c0 (CONTROL_REF); must exit 1
 // Throwaway osmsim-* profiles only (launch()), removed by ctx.stop() in a finally.
-import { writeFileSync, rmSync, mkdirSync } from 'node:fs';
+import { writeFileSync, rmSync, mkdirSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { resolve, dirname, join } from 'node:path';
@@ -12,11 +12,13 @@ import { resolveUnderSimRuns } from './sim/osm-day/lib/outdir.mjs';
 import { launch } from './sim/osm-day/lib/browser.mjs';
 import { setupA, setupB } from './sim/osm-day/lib/setup.mjs';
 import { DAY } from './sim/osm-day/steps-a.mjs';
+import { guardShot, seedExported, resetCapture } from './lib/capture-guard.mjs';
 import { PART_B, PART_B_ORDER, CAL } from './sim/osm-day/steps-b.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = resolveUnderSimRuns(join(ROOT, 'sim-runs', 'l11-csat'), ROOT);
 const CONTROL_REF = '96c55c0';
+const GUARD_LOG = resolveUnderSimRuns(join(ROOT, 'sim-runs', 'captures-batch.log'), ROOT);
 
 // Signal cleanup. launch() (browser.mjs) registers its own SIGINT/SIGTERM handler AFTER ours; it stops Chrome by its PID, removes
 // the osmsim-* profile and only then exits (130/143). So ours must remove the file, must NOT exit (an early exit skips that stop),
@@ -106,11 +108,10 @@ async function captures() {
       const info = JSON.parse(await ctx.ev(READ_STATE));
       const ok = info.modal && (st.csat ? !info.csat : (info.csat && info.text !== '' && info.nogoal === !st.goal));
       if (!ok) throw new Error('preconditions failed for ' + st.file + '; stopping: ' + JSON.stringify({ ...info, rect: undefined }));
-      const r = info.rect;
-      const s = await ctx.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip: { x: r.x, y: r.y, width: r.w, height: r.h, scale: 1 } });
-      const buf = Buffer.from(s.data, 'base64');
       const png = join(OUT, st.file + '.png');
-      writeFileSync(png, buf);
+      try { await guardShot(ctx, { name: 'l11-' + st.file, account: ACCOUNT, accountId: '', targetExpr: "document.getElementById('gc-ok').closest('.modal')", png, logFile: GUARD_LOG }); }
+      finally { await resetCapture(ctx); }
+      const buf = readFileSync(png);
       const hex = createHash('sha256').update(buf).digest('hex').slice(0, 12);
       const txt = join(OUT, st.file + '.txt');
       writeFileSync(txt, `Account: ${ACCOUNT}
@@ -128,6 +129,7 @@ export async function inSim(fn) {
   const ctx = await launch({ version: '1.1', startDay: DAY, runDir: join(OUT, 'run-' + Date.now()), part: 'A' });
   try {
     await setupA(ctx);
+    await seedExported(ctx, DAY);                 // before load, so the 'never exported' backup nag never opens
     await ctx.openOn(DAY);
     return await fn(ctx);
   } finally { await ctx.stop(); }

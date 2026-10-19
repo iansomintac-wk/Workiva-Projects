@@ -10,6 +10,10 @@ OSM Runway — release notes
     - Sim D3 now also checks the Agenda: it clicks Copy and compares the clipboard text. The "meeting agenda" GAP is gone.
       SIM_EXTRA_BREAK=agenda-off (a check-only break) removes just the Agenda, so only that check can fail.
     - Fix: the Agenda's open-question line showed "Open question: undefined"; it now shows the question text.
+    - Dev tooling: the L11, D2 and D3 capture tools now use a shared capture guard (tools/lib/capture-guard.mjs). A shot is refused
+      (and logged as CAPTURE-GUARD in sim-runs/captures-batch.log) if the pane does not show the intended account, anything sits on top of
+      it, or the image has a blank band. The tools seed "last exported" before load, so the "never exported" backup prompt no longer
+      covers the shot, and size the window to the pane so nothing below ~700 px comes out blank.
     - Dev tooling: tools/d3-prep-panel.mjs now stops its Chrome and removes the osmsim profile on Ctrl-C /
       SIGTERM, as tools/l11-csat-panel.mjs does (installSignalCleanup; the tool's CLI runs only as the entry point).
     - tools/build-site.mjs builds site/ (index.html and .nojekyll only) and refuses
