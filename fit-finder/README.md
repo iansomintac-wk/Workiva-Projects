@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (92068 bytes, LF)
+node tests/build.js                                               # -> dist/fit-finder.html (92152 bytes, LF)
 # Offline Coach link: ship both html files (fit-finder.html and prompt-coach.html) in one folder; opened from a file, the link uses prompt-coach.html, online it uses the artifact URL.
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
@@ -285,7 +285,7 @@ Share-ready fix A (final review): How it rates adds the untouched blind result (
 
 ## Top-3 and sandbox check (2026-10-19)
 
-The page still shows ONE card; it does not list three. Task 3 (the three-card list) was skipped by the PM proxy; Ian may overturn that.
+The page shows one card in full; cards 2 and 3 appear only as "Also close:" names, as before. Task 3 (a full three-card list) was skipped by the PM proxy; Ian may overturn that.
 
 Parent score (before this branch) and end score (after; one measurement read twice, because the engine and every id/area/ops/match are frozen) are identical:
 
@@ -294,8 +294,9 @@ first card right: 9 of 32 that fit; wrong card 1 (X2); no card where one fits 22
 top 3: right card anywhere in the 3 shown 9 of 32 that fit (first card right 9, gain 0); any wrong card shown 1 of 43 (X2); first card wrong or on a not-a-fit prompt 1; rise in wrong lists 0
 ```
 
+- The scorer's "first card right 9" counts X41, a task that fits but has no matching feature, where the page rightly showed none; the right feature came first for 8 of the 31 that fit and have one.
 - Gain from showing three cards: 0 (right card anywhere in 3 is 9 of 32, the same as the first card). Rise in wrong lists: 0.
 - The spec prediction (gain of at least 3) is disproved.
 - The main failure is no card at all: 22 of the 32 tasks that fit.
-- Sandbox check (`sandbox/scoring-sheet.md`): eight prompt cards run in Ian's own Workiva AI sandbox on made-up files, each with 5 planted items. First run 6 pass, 2 fail (an added currency); the fixed prompts re-run and pass. In place, the gen-rewrite card fails (word and fact changes). The two GRC features (Evidence analyzer, Risk & Control knowledge base) are not in this sandbox, so those cards were answered by plain @ chat. The sandbox may have features a customer lacks.
+- Sandbox check (`sandbox/scoring-sheet.md`): eight prompt cards run in Ian's own Workiva AI sandbox on made-up files, each with 5 planted items. First run 6 pass on the sheet's rule (at least 4 of 5 planted items found, nothing invented), 2 fail (an added currency); sus-exec-narrative broke its "under 80 words" limit in chat (85) and in place (94), and in place opened with the cause, not the change; gen-summarize-file passed on its second re-run; the fixed prompts re-run and pass. In place, the gen-rewrite card fails (word and fact changes). The two GRC features (Evidence analyzer, Risk & Control knowledge base) are not in this sandbox, so those cards were answered by plain @ chat. The sandbox may have features a customer lacks.
 - Tone-only edits stay without a card (rule C).
