@@ -1,0 +1,43 @@
+FIT FINDER FAIR TEST: run resume prompt. Written 2026-10-18 ~22:25Z by "NEW - Fit Finder fair test run" (b2758e3d)
+at its 200k context stop. Work in C:/Users/teasp/Documents/workiva/.claude/worktrees/fit-finder-fair-test
+(branch fit-finder-fair-test). Load studio-harness:talk-and-run first; you are the RUN LEAD (coordinate only).
+Run `date -u` before every time stamp. Workiva has .ask-ian-only (topic "label"): questions go to Ian only.
+
+FIRST CHECK: echo "$STUDIO_RUN_LEDGER" must be the absolute path of .ledger/2026-10-18-fit-finder-fair-test;
+budget.json and slip.json must exist there. Empty or missing: stop, push-notify Ian, ask.
+
+STATE (all measured by the predecessor; the ledger progress.md has every row)
+- Tasks 1-10 of docs/superpowers/plans/2026-10-18-fit-finder-fair-test.md are DONE and checked, including the
+  final review (Opus final-reviewer + read-only Codex), the merged list (reviews/merged-final.md), the doc
+  fix round (5b267a4, c19a9a2) and a Sonnet re-review (PASS, items 1-11 fixed).
+- Untouched half, scored once: "first card right: 25 of 42 that fit; wrong card 5 (N42,N48,N53,N56,N91);
+  no card where one fits 12 (...); card on a not-a-fit prompt 1 (N34); fit agreement 19 of 50; score 24".
+  Bar floor(3*42/23) = 5: PASS at the bar. If F counted only fit rows with a gold card (32) the bar would be
+  4 and it would fail: which reading counts is Ian's (evidence doc section 8).
+- Pins unchanged (B 13/30 w3, A 12/29 w0, real 15/19 w2, fresh 15/23 w5 K1 agree 12/29, eval A 52/60,
+  B 45/60), fair-guard PASS. Evidence doc: docs/evidence/2026-10-19-fit-finder-fair-test.md (due 14:00Z
+  2026-10-19: already committed).
+- Pushed (slip yes): origin/fit-finder-fair-test at c19a9a2, origin/fit-finder-fair-test-tune at 6ae0943.
+  NOT merged (slip: merge no). Live page NOT republished (Ian's).
+- Budget: Ian raised runTokenCap to 1,700,000 at 22:06Z ("Raise to 1.7M (Recommended)").
+
+WHAT IS LEFT (in order)
+1. Hand-off PM step (talk-and-run): dispatch studio-harness:pm with the four questions (milestone done by
+   its check; next on the route; missing research; draft of the next prompt) plus ruling capture. Rulings
+   from this run with no record: Ian's cap raise above (verbatim in progress.md). Also proposed, Ian to
+   ratify: ledger defect 2026-10-18-guard-locked-pathspec-cwd. The lead writes the PM's draft and commits
+   it as docs/FIT_FINDER_NEXT_PROMPT.txt (add named files only), then pushes fit-finder-fair-test.
+2. Push-notify Ian with the untouched-half line and "PASS at the bar (5 of 5)", then ask in the session:
+   the two Ian items (which bar reading counts; the fit.js:134 e-mail rule that drops cards on DRAFT-only
+   asks mentioning e-mail, engine locked after scoring) and "Start the next session?".
+3. Empty .ledger/2026-10-18-fit-finder-fair-test/role-checks.txt at the end of the run.
+
+DATA CARE: never open, print or quote fit-finder/data/real/ (git-excluded) or
+C:/Users/teasp/Documents/workiva-sealed/. Never re-score the untouched half. No engine, catalogue or test
+change. No merge. ~/.claude: no writes except the session-rename exception.
+
+SESSION NAMES: this session is "NEW - Fit Finder fair test run resume". Predecessors: b2758e3d ("NEW - Fit
+Finder fair test run", which renames itself COMPLETED once you run) and the talk a7010c17 ("COMPLETED - Fit
+Finder fair test talk"). Follow the session-name rule for predecessor b2758e3d: `claude rm` only when its
+state is done, everything is committed, and no --discard-unpushed or --force-remove-worktree is needed.
+The talk a7010c17 was not removed by b2758e3d (see progress.md); apply the same rule to it.

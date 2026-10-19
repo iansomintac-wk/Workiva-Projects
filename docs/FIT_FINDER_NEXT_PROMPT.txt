@@ -1,0 +1,45 @@
+FIT FINDER NEXT SESSION PROMPT. Drafted by the hand-off PM (studio-harness:pm, sonnet) for the fair-test run
+(b2758e3d, resumed by 63073f73) on 2026-10-18; written and committed by the run lead.
+
+Work in C:/Users/teasp/Documents/workiva/.claude/worktrees/fit-finder-fair-test (branch fit-finder-fair-test,
+pushed; tune branch fit-finder-fair-test-tune at 6ae0943). Load studio-harness:talk-and-run first. Workiva has
+.ask-ian-only: questions go to Ian only, one at a time, recommendation first, plain words.
+
+READ FIRST: docs/evidence/2026-10-19-fit-finder-fair-test.md (section 8 is Ian's list), fit-finder/README.md
+(the done-when near line 218, and the fair-test result), .ledger/2026-10-18-fit-finder-fair-test/progress.md,
+docs/FIT_FINDER_FAIR_TEST_RUN_RESUME_PROMPT.txt, docs/superpowers/specs/2026-10-18-fit-finder-fair-test-design.md.
+
+STATE (read, not measured by you): the untouched half was scored once: first card right 25 of 42; wrong card 5
+(N42,N48,N53,N56,N91); bar floor(3*42/23)=5; PASS at the bar. If F counted only the 32 rows with a gold card the
+bar would be 4 and it would fail. Pins unchanged, fair-guard passes. Not merged. Live page not republished.
+This is not the real-set done-when: fresh real wrong is 5 against a bar of 3, and a second untouched real set
+is still missing.
+
+ANSWERED by Ian 2026-10-18 22:46Z and 2026-10-19 00:19Z (verbatim in progress.md; do not ask again):
+1. Bar reading: "All 42 count (Recommended)". Verdict PASS at the bar; the 32-row fail (bar 4) is reported beside it.
+2. The fit.js e-mail rule in match() (no card when the only operation is DRAFT and the ask mentions e-mail):
+   "Leave it, fix with fresh set (Recommended)". No engine change now; never re-score the old half.
+
+PUT TO IAN FIRST, one at a time, in this order:
+3. Republish the live page? Only Ian says; recommend not yet.
+4. Merge fit-finder-fair-test? Recommend wait until 1-3 are answered. No merge or push without his yes.
+5. Ratify the ledger defect 2026-10-18-guard-locked-pathspec-cwd and the Bash-backslash gotcha (code files
+   through the Write tool only); confirm the 1.7M cap ruling was recorded.
+Then ask what he wants next. Do not start a new job on your own. Park this job; revive it only when Ian
+supplies a second untouched real set or says so.
+
+MISSING RESEARCH ($0, not started, each needs Ian's yes): (a) a read-only count of DRAFT-only e-mail asks that
+lose a fitting card, on tuning-side or synthetic rows only; (b) a noise note on whether 42 fits and one label
+error (about 3 points per card) can carry a pass/fail call; (c) a sandbox check that the rewrite-family card
+advice works in Workiva AI (docs/evidence/2026-10-16-sandbox-pilot.md covers one earlier test only).
+
+DATA CARE: never open, print or quote fit-finder/data/real/ (git-excluded) or
+C:/Users/teasp/Documents/workiva-sealed/. Do not re-score the untouched half. No engine, catalogue or test
+change. No install, no ~/.claude writes except the session-rename exception. Counts and ids only. Say which
+numbers you measured now and which you only read.
+
+SESSION NAMES: name this session "NEW - Fit Finder next". Predecessors: 63073f73 ("NEW - Fit Finder fair test
+run resume"), b2758e3d and a7010c17. Apply the session-name rule (claude rm only when state is done,
+everything is committed, no force flags). CAUTION: all of them share this worktree, and `claude rm` deletes
+"a background session and its worktree"; this worktree holds the git-ignored .ledger/. Do not rm any of them
+from inside it; ask Ian, and back up .ledger/ (or use studio-harness bin/remove-worktree.mjs --dry-run) first.

@@ -1,0 +1,845 @@
+Fit Finder v4.22: hand-off (2026-10-17, session 08fbee0d, successor of 08b76f43; PM step and brain capture done)
+
+NEXT SESSION (written by 08fbee0d at 11:1xZ; supersedes every NEXT SESSION below, including v4.21's step 1, now done)
+Nothing is half-done in the repo; the code is as v4.21 left it (ccda404). Same run ledger folder (fit-finder-v422).
+1. DONE 15:4xZ: item 71's 5 checks were answered by program lead 17 (a model) on Ian's 15:30:18Z words "You were
+   supposed to provide the answers" (ian-words.txt): 1 no, 2 no, 3 yes, 4 yes, 5 no; A yes, B yes, (a) keep the
+   narrow rule. Applied in 41e69de (plan 2026-10-17-fit-finder-item71-labels.md; rows stay by: model, overturnable):
+   fresh first card right 15 of 23, wrong 5 (G2,G14,G15,G22,X1). Proposal A's bar: right met, wrong NOT met (5 vs
+   <= 3), so Fit Finder is not done by A; the honest test is the same bar once on a second untouched real set.
+   Proposal B: brain page fit-finder/product/product rewritten from the README (Sonnet helper; lead added the live
+   v13 line and the done-when). It is a tracked file in Ian's studio-harness main checkout, left uncommitted with
+   the other records (lead 15: on Ian's END list; equal to origin/main before the edit, so today's pull is unaffected).
+2. DONE 15:4xZ: live page republished as version 14 (version id 1792251986-190c) on Ian's own "yes", typed in the
+   v4.22 chat at 15:45Z (lead 17's earlier yes was not taken). Sonnet helper: before, the live page contained v13's
+   dist (8050b07, 82,594 bytes) after CRLF->LF; after, it contains the branch dist (82,673 bytes LF, rule C) and not
+   v13's. v4.23 (74b74df4) re-checked it read-only at 15:48Z: live index.html of version 1792251986-190c is 83,219
+   bytes, no CR; it contains the HEAD dist (82,673 bytes LF) exactly at offset 531 (the rest is the 546-byte publish
+   skeleton) and does not contain v13's dist. README now records version 14 and calls the 383afd3 rule "the v13
+   rule" (it said "the live rule"). Otherwise no queued work: do not tune. Report to the program lead and stop.
+3. For the program lead, not this repo: Ian's 08:03:54Z and 07:59:11Z words have no ruling record (PM, read); they
+   are program-wide expectations, so recording them is the lead's call. The new studio-harness records below are
+   uncommitted in Ian's studio-harness main checkout (status proposed); committing there needs a yes.
+4. Candidate (l), for the program lead, not recorded: v4.22 kept listening after launching v4.23 with the same ask,
+   so Ian's question was put in two chats, and v4.22's copy of progress.md into fit-finder-v423 overwrote v4.23's two
+   rows (re-added). A predecessor that hands an ask on should stop taking answers to it, and append, not copy, a ledger.
+   brain capture (v4.23): no roadmap, no missed fact, no parked idea.
+
+UPDATE 2026-10-17, session 08fbee0d (successor of 08b76f43)
+- PM hand-off step (pm, Sonnet, 25,795 tokens, 6 tool uses, 50 s): rule C's milestone done by its checks; no route
+  milestone for Fit Finder (gate: no roadmap); next = item 71; no research missing.
+- brain capture: roadmap n/a, no missed fact, no parked idea. v4.17-v4.21's candidates (a)-(k) recorded in
+  studio-harness (uncommitted, proposed): ledger defect 2026-10-17-role-boundary-judges-paths-from-the-helper-cwd
+  ((a)+(i); role_boundary.mjs:17-20 judges the path relative to the payload cwd, read in the code); gotchas
+  2026-10-17-codex-unelevated-sandbox-runs-on-windows ((b), plus a recur of 2026-10-14-codex-shell-blocked-on-windows),
+  -git-bash-rewrites-double-slash-arguments ((e)), -ledger-scripts-under-type-module-must-be-cjs ((c)),
+  -rehearse-reads-every-line-under-expected-breaks ((d); read from hand-offs, not re-run),
+  -plan-writer-numbers-are-read-not-measured ((f)); brain rules in brain/fit-finder/rule/: check-overlap-with-real-
+  data-by-5-word-runs ((h)), outside-reviewers-do-not-open-real-data ((j)), a-what-if-score-reproduces-the-suite-
+  first ((k)), score-reviewer-false-positives-on-a-blind-set ((g)). brain check: 98 pages, 1 pre-existing error
+  (shared/research/claude-exe-not-on-path, not this session's).
+
+Fit Finder v4.21: hand-off (2026-10-17, session 08b76f43, successor of 50904aba; rule C built, reviewed, pushed)
+
+WHERE
+Same worktree and branch. Pushed by v4.21 under the slip (push of this branch only; merge no; spend none):
+dbfa197 (rule C; amends the unpushed 6c8c351, see below), ccda404 (final-review doc fixes), then this hand-off
+commit. Live page still v13 (dist of 8050b07); branch dist 82,673 bytes LF. Run ledger:
+C:/Users/teasp/Documents/studio-harness/.claude/worktrees/bedtime-slip/.ledger/2026-10-16-24h-program/fit-finder-v422/
+(slip.json, budget.json, progress.md; nearcopy.cjs, whatif.cjs, outcome.cjs). v4.21's ledger with reviews/ is fit-finder-v421/.
+
+NEXT SESSION (written by 08b76f43 at the 200k stop; supersedes every NEXT SESSION below)
+Nothing is half-done in the repo. Rule C is built (dbfa197), checked, reviewed by Opus and Codex, fixed (ccda404), pushed.
+1. PM hand-off step (studio-harness:pm, the four questions: milestone done by its check; next on the route; missing
+   research; draft of the next prompt) and brain capture (studio-harness:brain; `node <STUDIO>/bin/brain.mjs capture`),
+   skipped since v4.17. Capture candidates: v4.19's (a)-(d) below; v4.20's (e)-(g) below; plus v4.21's:
+   (h) an exact-match overlap check against data/real missed a near-copy of a customer comment (one word removed;
+   checker caught it; never pushed, amended): check overlap by shared 5-word runs (fit-finder-v422/nearcopy.cjs);
+   (i) the final-reviewer's Write to the run's reviews/ was refused because its cwd is the workiva worktree, same root
+   as (a); the lead writes the review file from its reply;
+   (j) an outside reviewer (Codex) sends what it reads to another company: tell it in the prompt not to open
+   fit-finder/data/real/ (it obeyed: it excluded the folder from its own git diff);
+   (k) a what-if score must reproduce the suite's own line before its numbers are used (v4.21's first script gave 6 of
+   23 vs the suite's 10: "no card" is right when the label lists no card).
+2. Item 71 in ../for-ian.md is Ian's (5 label checks re-measured on rule C; A, B; (a) keep the narrow rule or "wider
+   rule"; (b) republish v14). On his answers: label changes go in data/card-gold-fresh.jsonl with by: ian (one small
+   plan task); "wider rule" means V2 back (6f7090e's line 16 and card line 169) with its known slips in the README;
+   republish v14 only on his words.
+3. Otherwise Fit Finder has no queued work: do not start new tuning. Report to the program lead and stop at the task
+   boundary.
+
+UPDATE 2026-10-17, session 08b76f43 (successor of 50904aba): rule C
+- Dry run re-run (dry/dry.sh in fit-finder-v421): as planned (4 FAIL on parent, 0 on C, fresh 12 -> 10 of 23, older 0,
+  9 mutants killed). Rehearse exit 0.
+- Implementer (Sonnet role) 6c8c351: all plan numbers matched. Checker PASS + gap: pool row 68 was a real comment
+  (G12) minus one word. Replaced with a fresh sentence scored identical on live, V2 and C; amended before any push
+  (dbfa197).
+- Final review: Codex 0/0/0 ship (ran its own mutants); Opus 1 must-fix / 2 should / 5 nits, all docs: a quoted real
+  fragment in the evidence doc; README overstated C's precision (on the blind held-out V2 is no worse on wrong cards,
+  1 vs 1, and reaches more, 13 vs 7); README quoted 2 real prompts (older). Fixed in ccda404; known limit added
+  ("Help me understand the wording better." gets the rewrite card first, measured).
+- Still in pushed history (no force push): the 7-word fragment "Write it in a more professional manner." in the
+  plans of 6f7090e and f13090c; short, generic, from a public post.
+
+Fit Finder v4.20: hand-off (2026-10-17, session 50904aba, successor of c4f8b112; two-strikes round chose rule C)
+
+WHERE
+Same worktree and branch. Pushed by v4.20 under the slip (push of this branch only; merge no; spend none):
+this hand-off commit (plan for rule C + this note). Live page still v13 (dist of 8050b07). Run ledger:
+C:/Users/teasp/Documents/studio-harness/.claude/worktrees/bedtime-slip/.ledger/2026-10-16-24h-program/fit-finder-v421/
+(slip.json, budget.json naming the plan, progress.md, round/ = the round's files, heldout.jsonl,
+heldscore.cjs, dry/ = the lead's dry run of the plan).
+
+NEXT SESSION (written by 50904aba at the 200k stop; supersedes every NEXT SESSION below)
+1. Re-run the lead's dry run: bash <v421>/dry/dry.sh > <v421>/dry/dry.log 2>&1 (it extracts the plan's
+   own blocks and runs Steps 1-4 and 8 on a scratch git copy of a313d12). Expect: Step 3 exit 1 with
+   exactly 4 FAIL (the plan lists them); Step 4 exit 0, 0 FAIL, only the fresh line 12 -> 10 of 23;
+   older texts 0 changed; 9 killed, 0 survivors. The previous run is not evidence for Steps 3 and 8:
+   the Step 2 splice had stopped (Git Bash turns a "//" argument into a path), now fixed with
+   MSYS_NO_PATHCONV=1. A failure here goes back to the plan (fix the sentence, never the rule).
+2. Rehearse: node C:/Users/teasp/Documents/studio-harness/bin/rehearse.mjs <plan> --ledger <v421>, from
+   the repo root (budget.json already names the plan). The plan's Expected breaks lists the 13 old
+   checks that Task 1 itself replaces; if rehearse calls them mismatches (no break happens after the
+   task), empty that section (gotcha: every non-empty line counts as a break) and re-rehearse.
+3. Implementer (shell cwd at the repo root), checker, your own re-run, then one final review (Opus
+   final-reviewer + Codex read-only with the diff in the prompt). Stopping rule (lead 13 and v4.19):
+   findings that are only sentences written against the rule go to the README as known limits; a
+   realistic must-fix still gets fixed.
+4. Then push (slip), item 71 in ../for-ian.md in plain words: rule C replaced V2; it reaches fewer
+   rewrite asks than V2 (7 vs 13 of 20 blind sentences; live 3) and gives no wrong rewrite card on the
+   42 reviewer sentences; Ian can ask for the wider rule. Republish v14 and his 5 checks stay his.
+5. PM hand-off step and brain capture (skipped since v4.17): candidates as in v4.19's list below,
+   plus (e) Git Bash rewrites "//..." arguments (MSYS path conversion): use MSYS_NO_PATHCONV=1;
+   (f) a plan-writer cannot run node -e, awk or sha1sum, so its numbers are read, not measured: the
+   lead dry-runs the plan's own blocks (dry/extract.cjs); (g) a two-strikes round can stop on
+   evidence: a blind held-out set (40 sentences, Sonnet, 20 s) showed the reviewers' false positives
+   came from sentences written against the regex (V2: 0 extra wrong cards on blind sentences).
+Program lead: "NEW - 24h program lead 13" (1cca7841) unless renamed; it agreed to the round and
+gets status by SendMessage.
+
+UPDATE 2026-10-17, session 50904aba (successor of c4f8b112): two-strikes round on rewrite reach
+- Program lead 13: "treat rewrite reach as two strikes ... no V3 by more word patches"; one round,
+  conventional fix vs the live rule. Done in about 25 minutes.
+- Blind held-out writer (Sonnet, low, 20 s): 40 sentences, 20 rewrite asks + 20 finance uses of the
+  same words, labels by: model (sha1 991b35ee). Kept from the round helper.
+- Round helper (Opus, 129,116 tokens, 32 tool uses, 606 s); I re-ran its run.sh byte-identical.
+  Pool of 87 reviewer and suite sentences (45 asks, 42 false positives). Causes shown by experiment:
+  "revise + noun" and the tone words sit on both sides; the added card words gate all 19 wrong
+  cards; dropping any single word leaves 12 or more.
+  Rule      reviewer FPs with card  fresh right/23 (wrong)  blind asks with card  blind finance with card
+  live      0 of 42                 8 (6)                   3 of 20               1 of 20 (H32)
+  C         0 of 42                 10 (6)                  7 of 20               1 of 20 (same H32)
+  V2        19 of 42                12 (6)                  13 of 20              1 of 20 (same H32)
+  A, B, real, evals and the 139 older texts are unchanged on all three. C clears both bars: chosen
+  (sent to lead 13 as a spread with the cheapest check of each).
+- Plan docs/superpowers/plans/2026-10-17-fit-finder-rewrite-reach-c.md (plan-writer, Sonnet, 98,956
+  tokens; it could run nothing). Lead dry run found two defects, fixed in the plan (see NEXT SESSION 1);
+  one was my error: I gave whole-file hashes where the plan checks line hashes.
+
+Fit Finder v4.19: hand-off (2026-10-17, session c4f8b112, successor of bc8a82fb; rewrite-reach rule V2 in 6f7090e)
+
+WHERE
+Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
+worktree-fit-finder-v4. Pushed by v4.19 under the slip (push of this branch only; merge no; spend
+none): 6f7090e, then this hand-off commit. Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is
+still version 13 (dist of 8050b07, 82,594 bytes LF); the branch dist is now 83,833 (rule V2), so a
+republish (v14) would change the live page: Ian's call, and not yet (see 1). Run ledger (git-ignored):
+C:/Users/teasp/Documents/studio-harness/.claude/worktrees/bedtime-slip/.ledger/2026-10-16-24h-program/fit-finder-v420/
+(slip.json, budget.json, progress.md, reviews/, v2probe.cjs, v3probe.cjs copied from fit-finder-v419).
+
+NEXT SESSION (written by c4f8b112 at the 200k stop; supersedes every NEXT SESSION below)
+Read this file, CLAUDE.md, fit-finder/README.md (last section) and the run ledger. Nothing is
+half-done in the repo. Order:
+1. Final review of V2 (607cf8a..6f7090e). Codex is done (reviews/2026-10-17-codex-v2.md): 3 must-fix
+   (a hyphen ends the noun: "Revise the note-payable interest rate monthly" and "Revise the
+   letter-of-credit amount" get the rewrite card again; the writing-noun window takes compounds:
+   "Make the customer email address more professional" gets the card; manner and pronoun need no
+   writing: "Process invoices in a more professional way", "The close process is informal; make it
+   more formal" get the card), 3 should-fix (recall lost against V1: "Revise the email please",
+   "Revise the paragraph about revenue", "Make my email more professional sounding"; the tests miss
+   all of these), 1 minor (README "only when it describes a piece of writing" overstates). Opus
+   final-reviewer (done at the stop, findings in progress.md and reviews/2026-10-17-opus-v2.md):
+   2 must-fix, 5 should-fix, 3 nits: finance word before the noun ("Revise the budget draft before
+   close", "Revise the credit memo for the customer return"); plurals add false positives ("Revise
+   the credit memos every month"); "a more formal way/register"; "make it more formal" on process
+   work; and V2 LOSES everyday asks V1 read ("Revise the email below", "Make my writing more
+   professional", "Make my status update more concise"), so README's "V1 gains (all kept)" is
+   wrong beyond the plan's own list. Lead measured 09:55Z (job tmp opuscheck.cjs, copied to the
+   ledger): of Opus's 13 false positives V2 shows the rewrite card on 13, the V3 copy on 8; of
+   its 10 everyday asks V2 reads 0 as REWRITE, V3 1. So V3 as probed is NOT enough.
+2. FIRST JOB: choose the approach before building. Patching the regex sentence by sentence did
+   not converge (V1 -> V2 -> V3 each fixed the known list and the next review found more). Pool
+   every sentence found so far (V2 checks 14, Codex V2 7, Opus V2 13 + 10 asks, v3probe's 25
+   positives) as a fixed check set, then "recommend from a spread" (Ian's trial rule), each option
+   scored on that set, the fresh line and the 139 older texts: (a) revert engine line 16 and the
+   card to 383afd3 (the live page's rule: fresh 8 of 23, no wrong rewrite cards); (b) keep only the
+   safe V1 parts (e.g. "worded better", "reword" on the card) and drop revise/tone; (c) V3 plus the
+   Opus fixes; (d) one that breaks an assumption (e.g. the rewrite card shown only as a second card
+   when another op is present). Pick the survivor; it is a technical choice under the standing yes
+   unless it changes what Ian was told in item 71 (then say so there). README must be corrected in
+   the same commit (its V2 "all kept" claim is wrong). The V3 probe, for reference: the lead probed it (v3probe.cjs in the ledger; run
+   node v3probe.cjs <absolute fit-finder dir at V2> <scratch dir>): hyphen does not end the noun;
+   "please" and "about" may follow the noun; a tone word after a writing noun only with a
+   to/for/from/about/on/with phrase between; it/this/that/them only with writing context earlier in
+   the text (a JS lookbehind); manner/way/style/voice only after a writing verb; tone/wording/
+   language/register directly; "sounding" as a complement. Measured: 21 false-positive sentences
+   (14 V2 + 7 Codex) 0 bad, 25 positives 0 bad, fresh unchanged (12 of 23, wrong 6), 139 older texts
+   0 change, fresh G12 same fit/ops/first card. One deliberate narrowing: bare "Make it more
+   professional." no longer reads REWRITE (no writing context), so the V2 check "a tone word about
+   it, this or sound" needs a sentence with context (e.g. "I wrote an email to a client; make it
+   more professional."); the plan must say so. Merge in Opus's V2 findings first. Path: plan-writer
+   -> lead review (run the plan's Step 1 code on parent and V3 copies, dry-run its mutants from the
+   plan text; v4.19's tools for this: job tmp planstep1.js / mutdry.cjs, copy the idea) -> rehearse
+   (node C:/Users/teasp/Documents/studio-harness/bin/rehearse.mjs <plan> --ledger <v420 folder>,
+   from the repo root) -> implementer -> checker -> lead re-run -> one final review (Opus + Codex).
+   Stopping rule proposed (assumed, untested): after V3, findings that are only made-up edge
+   sentences (none from real prompts) go into the README as known limits instead of another round;
+   a must-fix on a realistic task still gets fixed.
+3. Ian's item 71 (5 checks, proposals A and B, republish v14): his. for-ian 71's republish line
+   says "not yet"; keep it so until V3 is clean, then say what changed in plain words.
+4. PM hand-off step and brain capture (skipped by v4.17, v4.18, v4.19). Capture candidates:
+   (a) role_boundary resolves a helper's Write path against the lead's shell cwd: never cd in the
+   lead's shell while a writing helper runs; use subshells (v4.19 slipped once, no harm);
+   (b) Codex on Windows works with -c windows.sandbox=unelevated (lead 12's form: codex exec -s
+   read-only -c windows.sandbox=unelevated --skip-git-repo-check -o <out> - < <prompt>); 2 runs
+   today exit 0, about 4 min each; recur gotcha 2026-10-14-codex-shell-blocked-on-windows with this
+   fix; (c) the bedtime-slip ledger sits under a package.json with "type": "module": scripts there
+   must be .cjs, and a scratch copy of fit-finder under it needs package.json {"type":"commonjs"};
+   (d) rehearse reads every non-empty line under "## Expected breaks" as a break, so none = empty.
+Program lead: "NEW - 24h program lead 13" (1cca7841) unless renamed; send it status.
+
+UPDATE 2026-10-17, session c4f8b112 (successor of bc8a82fb): rewrite-reach rule V2 built
+- 09:12Z start. Codex retry of the V1 review with lead 12's unelevated-sandbox form: done, exit 0;
+  agrees with Opus S1/S2 (calls them must-fix), adds 2 false positives, flags reply and plurals.
+- V2 probed by the lead; plan cdbffbc (plan-writer, Sonnet; lead fixes: absolute cd in every
+  block, .cjs scripts, probe's right count), rehearsed 0 mismatches.
+- 6f7090e (implementer, Sonnet): new checks 6 FAIL on the parent, 0 after; the 14 false positives
+  no longer read REWRITE; fresh 12 of 23, wrong 6 (unchanged); half A 12/29 w0; held-out 13/30 w3;
+  real 15/19 w2; eval A 52/60, B 45/60; pagetest 72 checks 0 failed; dist 83,833 = README;
+  mutants 7 killed 0 survivors. Checker PASS; lead re-ran all of it. Pushed 6f7090e.
+
+Fit Finder v4.18: hand-off (2026-10-17, session bc8a82fb, successor of a1b6f82c; rewrite-reach rule V1 in 0dd05ca + a1c94cb)
+
+WHERE
+Repo C:/Users/teasp/Documents/workiva, worktree .claude/worktrees/fit-finder-v4, branch
+worktree-fit-finder-v4. Pushed by v4.18 under the slip (push of this branch only; merge no; spend
+none): see the UPDATE below for the pushed commit. Live page https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is
+still version 13 (dist of 8050b07, 82,594 bytes LF); the branch dist is now 82,907 (rule V1), so a
+republish (v14) would change the live page: that is Ian's call. Run ledger (git-ignored):
+C:/Users/teasp/Documents/studio-harness/.claude/worktrees/bedtime-slip/.ledger/2026-10-16-24h-program/fit-finder-v419/
+(slip.json, budget.json, progress.md copied from fit-finder-v418).
+
+NEXT SESSION (written by bc8a82fb at the 200k stop; supersedes every NEXT SESSION below)
+Read this file, CLAUDE.md, fit-finder/README.md (last section) and the run ledger. Nothing is
+half-done. Order:
+1. Final reviews of 383afd3..a1c94cb ran at the stop (Opus final-reviewer and Codex read-only, in
+   parallel): findings in fit-finder-v418/reviews/ (2026-10-17-opus-final.md, 2026-10-17-codex.txt);
+   summary in the UPDATE below. The Codex review was BLOCKED (its sandbox: "setup refresh had
+   errors", 40,403 tokens, no findings); re-run it with the diff text inside the prompt (git diff
+   383afd3..a1c94cb -- fit-finder/engine fit-finder/data/catalogue.json fit-finder/tests
+   fit-finder/README.md, written to a file with the Write tool or git, then passed in), so it needs no
+   shell. Opus (0 must-fix, 3 should-fix, 5 minor) found false positives, CONFIRMED by the lead's
+   measurement (parent vs HEAD, in the review file): "make the close process more formal" not -> good
+   + rewrite card; "accrue more professional fees", "revise the letter of credit amount", "hire more
+   professional staff" not -> partial + rewrite card; "revise the draft budget" first card none ->
+   gen-rewrite; "make my memo more concise" good but no card (card lacks concise/friendly). Lead's
+   merge: fix before any republish (a wrong card is worse than none). FIRST JOB: a fix round, test
+   first: guards with exactly those sentences (expect no REWRITE / no rewrite card where numbers work
+   is meant), keep the 4 fresh gains (G10, G12, G13, G17) and 0 change on the 139 older texts. Ideas
+   to probe (assumed, untested): the tone alternative only after a writing object (make <it/this/the
+   email/reply/memo/letter/message/note/wording/tone/language> more ...); revise + noun not followed by
+   budget/p&l/amount/schedule/forecast/of credit/payable; add concise/friendly to the card or drop them
+   from the engine. Then re-run the Codex review (diff in the prompt). Merge the two lists; a fix round for any must-fix goes through a plan
+   + rehearse (the rehearsal lock covers this ledger: budget.json "plan" + rehearsal.json in the new
+   ledger folder, made with node C:/Users/teasp/Documents/studio-harness/bin/rehearse.mjs <plan>
+   --ledger <folder> from the repo root), implementer, checker, your re-run. Dispatch writing roles
+   only with your shell cwd at the repo root (role_boundary resolves paths against it).
+2. Ian's 5 checks and proposals A (done-when) and B (brain page) are item 71 in
+   ../for-ian.md "## Now" (rewritten in plain words, effects re-measured on a1c94cb). They stay his;
+   do not wait idle. When he answers: card-gold-fresh.jsonl rows -> by: ian, README + print line, one commit.
+3. Republish v14 only on Ian's yes (item 71 asks it, recommended once the reviews are clean).
+4. PM hand-off step and brain capture (both skipped by v4.17 and v4.18 at their stops). Capture
+   candidates: (a) role_boundary resolves a helper's Write path against the lead's shell cwd; (b) the
+   gotcha 2026-10-14-codex-shell-blocked-on-windows is INTERMITTENT, not stale: codex exec -s
+   read-only 'echo hi' printed hi at ~08:58Z, then the review run at 09:00Z failed with "setup
+   refresh had errors" (recur it; I first called it stale on the one probe, corrected); (c) the rehearse parser reads every
+   non-empty line under "## Expected breaks" as a break, so "none" = an empty section.
+Program lead: "NEW - 24h program lead 12" (b5ab70f1) unless renamed; send it status.
+
+UPDATE 2026-10-17, session bc8a82fb (successor of a1b6f82c): rewrite-reach rule V1 built
+- Start 08:37Z: baseline re-run on 383afd3 equals v4.17's figures. Pushed 1ee18cb..383afd3 (slip;
+  lead 12's answer 1). for-ian 71 rewritten in plain words.
+- Plan docs/superpowers/plans/2026-10-17-fit-finder-rewrite-reach.md (plan-writer, Sonnet), e51a0db.
+  Lead review ran all 28 check sentences on a V1 scratch copy: 2 failed and were replaced; rehearsed,
+  0 mismatches.
+- 0dd05ca + a1c94cb (implementer, Sonnet): new checks red on the parent (13 FAIL), green after;
+  fresh first card right 8 -> 12 of 23 (G10, G12, G13, G17), wrong 6 unchanged; half A, held-out,
+  real unchanged; eval A 52/60, B 45/60; 0 of the 139 older texts change in rate() or match()
+  (control 1); mutants 12 killed, 0 survivors; pagetest 72 checks, 0 failed; dist 82,907 = README.
+  Checker PASS; lead re-ran all of it. Tuned on the fresh set: not held-out evidence (README says so).
+- Ian's 5 checks re-measured on a1c94cb: base 12/23 w6; all the raising way 17 w5; all the lowering
+  way 10 w7. Proposal A's bar (>= 12 right, <= 3 wrong): right met, wrong 6 is the gap.
+
+NEXT SESSION (written by a1b6f82c at the 200k stop; DONE by bc8a82fb except Ian's items; kept for the record)
+Read this file, CLAUDE.md, fit-finder/README.md (last section) and the run ledger above. Nothing is
+half-done. First, for Ian (one at a time, plain words; a relayed answer is not his yes):
+1. Push 7492870 and the hand-off commit? (live page unchanged: dist unchanged, v13 still right.)
+2. His 5 checks on the fresh set, said up front: 5 questions, 7 prompts, each deciding the score
+   (the ledger has the why and the measured effect of each; every other row stays by: model):
+   (1) G4+G21, a new email or memo from my points: does the rewrite card fit? model yes (low); no -> 10 of 23.
+   (2) G16+G19, create an XLOOKUP / INDEX MATCH formula: does the formula card fit? model yes; no -> 10 of 23.
+   (3) G26, "identify the 3-5 most important trends, risks ... recommend actions": page shows the
+       summarize card; model says no card (high). Fits -> 9 of 23, wrong 5. (Same shape as W3.)
+   (4) G6, compare EY's Q2 GAAP checklist with the reviewed Q1: page and model say narrative-and-tables
+       (model low). No -> 7 of 23, wrong 7 (over the disproof line).
+   (5) G24, "Grammar check this": no card on page or label (model low). Rewrite fits -> 7 of 23.
+   Update data/card-gold-fresh.jsonl rows to by: ian, README and print line, in one commit.
+3. Proposed done-when (Ian decides the numbers): "on the fresh set, first card right on at least 12
+   of 23 and wrong on at most 3" (now 8 and 6). Say the caveat with it: fixes are now found on this
+   set, so the honest test is the same bar on a second untouched real set, scored once.
+4. The brain page fit-finder/product/product is stale (describes the design bundle); rewrite from the
+   README on his yes.
+Work that does not need Ian: build the rewrite-reach rule V1, test first (it clears the bar: fresh
+8 -> 12 of 23, 0 new wrong cards, nothing outside the fresh set changed; see UPDATE). Then dist,
+pagetest, README; republish v14 only on Ian's yes. Then the PM hand-off step and brain capture
+(skipped here at the stop). Program lead: "24h program lead" (15f24600) unless renamed; send it status.
+
+UPDATE 2026-10-17, session a1b6f82c (successor of 0da306a0): fresh set scored once in 7492870
+- v4.16 (0da306a0) built 29 real prompts (data/real/2026-10-17-fresh.jsonl, git-ignored: G1-G26 "AI
+  FTW!" giveaway comments, R1-R2 roll-forward post, X1 XBRL post) on Ian's "Fresh test set
+  (Recommended)" and "Yes, real only (Recommended)", ran a blind Opus labeler (77,769 tokens, 6 tool
+  uses, 202 s; packet = guide + 26 card descriptions + prompt text) and wrote a prediction before any
+  engine run. Its temp files are backed up in the run ledger folder (v416-tmp-backup/); its .js files
+  fail there (studio-harness package.json is "type": "module"): copy them out to run.
+- Backup checked: 29 rows, same ids in labels, control and packet; packet text identical.
+- 7492870 (built by me: the implementer dispatch was REFUSED by the rehearsal lock, because the
+  program lead's budget.json names no plan; this repo has no bin/rehearse.mjs): data/card-gold-fresh.jsonl
+  (by: model 29), a suite check (red with no file; 7 of 7 planted faults fail, control passes), print
+  line, README section and file row. Suite line equals v4.16's own scorer: first card right 8 of 23
+  that fit; wrong 6 (G2,G14,G15,G22,G26,X1); no card where one fits 9; card on a not-a-fit prompt 1
+  (G5); fit agreement 12 of 29. Prediction (fit 65-85%, first card 50-75%, wrong <= 4; disproved if
+  first < 40% or wrong > 6): DISPROVED (35%). B 45/60, dist 82,594 unchanged.
+- Rewrite-reach probe (Sonnet helper, read-only, scratch copy; re-run by me with a fingerprint):
+  V1 = engine REWRITE also reads "revis(e|ing) <0-2 words> email/letter/memo/message/draft/text/
+  wording/language/paragraph/section/note", "word(ed|ing) <0-2 words> better", "(more|less)
+  professional/formal/polite/diplomatic/concise/friendly"; gen-rewrite match adds
+  re-?word\w*|rephras\w*|revis\w*|worded|wording|professional|formal|polite|diplomatic.
+  Fresh 8 -> 12 (G10, G12, G13, G17), wrong unchanged; B, A, real 19, evals unchanged; 0 of the 139
+  older texts changed (so no held-out evidence either way). V2 (match without professional etc.)
+  gets 11 (misses G12). Script: job a1b6f82c tmp/variant.js (may be gone; the regexes are above).
+- Parked: G22 (sus-requirements and fr-gaap-stat fire on a US GAAP ASU memo; removing both gains no
+  right card), G2/G15 (controls-mapping card), X1, G14: none reaches the bar of 3.
+
+NEXT SESSION (written by d9df741b; DONE by 0da306a0 and a1b6f82c: option (c) taken; kept for the record)
+Repo note from d9df741b: LOCAL ONLY (not pushed): the hand-off commit after fe2f389, unless the launch note says pushed. Push only with Ian's yes. GitHub prints "This
+repository moved ... https://github.com/iansomintac/Workiva.git" on push; pushes still land; changing
+the remote is Ian's call (not asked). Draft PR #1 into prompt-coach (not merged). Live page
+https://claude.ai/artifact/KUoxuD4M3ccZfqSB1nC2LE is still version 13 = dist of 8050b07 (82,594 bytes
+LF); fe2f389 left dist unchanged (rebuild: tree clean), so no republish.
+
+(d9df741b's NEXT SESSION, continued)
+Read this file, CLAUDE.md and fit-finder/README.md (its last two sections). Nothing is half-done. If
+the launch note does not say pushed, ask Ian directly: push the hand-off commit? A relayed answer is
+not his yes. No fair score is left: B has been used for several fixes and the 19 real prompts were
+tuned on. Then ask which next, recommendation first, each with its cheapest check (d breaks the
+assumption that Fit Finder should keep going): (c, Recommended by the PM) a fresh held-out set:
+30 new tasks, real ones preferred (more Workiva Community posts) over model-written, labelled by a
+blind top-model labeler; Ian checks a stated few that decide the score; the suite scores it once
+before any rule change; (a) task 19: park (measured: at most +1 on A, and fr-peers would have to
+accept DRAFT); (b) B's 3 wrong cards (67, 74, 91) and real W1, S1: park unless there is a new idea;
+(d) stop Fit Finder and take the route's next item (the route page has no Fit Finder milestone;
+PM 2026-10-17); check: its done-when is stated. Optional: the one-minute sandbox check of the
+Workflows menu for Benchmarking. Program lead: "NEW - 24h program lead 11" (15f24600) unless
+renamed; send it status. The 24h program ends about 15:30Z 2026-10-17.
+
+UPDATE 2026-10-17, session d9df741b (successor of d6215817): real-prompt card score in fe2f389
+- Start 07:05Z: tree clean, origin = local = 6cdcb76. Removed d6215817 (done, all pushed, no
+  worktreePath; worktree intact after; owner 648f12e7 kept). Status sent to "NEW - 24h program lead 10".
+- Measured before asking: task 19 gets no card because it has no peer word AND the engine reads
+  DRAFT,ACT while fr-peers needs COMPARE; the only other half-A fr-peers row (11) already gets it, so a
+  rule gains at most 1 of 29 (bar 3). 12 of 19 real prompts got a card, none labelled.
+- Ian picked "Score the 19 real prompts (Recommended)" over task 19, 30 fresh tasks, B's 3 wrong.
+- Blind Opus labeler (general-purpose, Opus, 62,012 tokens, 3 tool uses, 85 s; packet = prompt text +
+  26 card descriptions, no match words, no ops, fingerprinted). Model labels: 14 of 19 right, wrong 3
+  (W1, W3, S1), none-where-fits 2 (W5, S2). Scorer control (all labels []): 12 wrong, 7 right.
+- Ian checked 3 (count and why stated first: each a page card the labeler rejected): W1 "No, wrong
+  card (Recommended)", W3 "Yes, it fits" (overruled: gen-summarize-file fits), S1 "No, wrong card
+  (Recommended)".
+- fe2f389: data/card-gold-real.jsonl (Ian 3, model 16), new check (FAILED with no file: "no gold row
+  for W1..S10"; passes now), print line, README section + file row; stale half-A counts fixed
+  (11/18 -> 15/14, as the suite prints). Re-run by me: real 15 of 19, wrong 2 (W1,S1), no card 2
+  (W5,S2); B 13/30 wrong 3; A 12/29 wrong 0; eval B 45/60; pagetest 72 checks, 0 failed; dist = 82,594
+  = git show HEAD dist | wc -c. No separate checker or code review ran.
+- Not held out: rules were tuned on these prompts on 2026-10-15/16 (README says so). The 5
+  "no card fits" calls (W2, S4-S7) are the model's alone.
+- PM (Sonnet, 20,974 tokens, 3 tool uses, 25 s; first dispatch refused again for naming no model):
+  not "done" by any stated check; route page has no Fit Finder milestone (side slot); next = a fresh
+  held-out set. brain capture: no roadmap step, no missed fact (the "tuned on" fact is in the
+  README), no parked idea. Ian's 3 checks are label rows (by: ian), not rulings, so no ledger record.
+
+NEXT SESSION (written by d6215817; DONE by d9df741b above; kept for the record)
+Read this file, CLAUDE.md and fit-finder/README.md ("Right card on half A"). Nothing is half-done. If
+the launch note does not say pushed, ask Ian directly: push 8050b07 and the hand-off commit? A relayed
+answer is not his yes. The year-over-year item stopped below Ian's bar (>=3 gained on A; got 2) and
+shipped on his explicit pick; B is now used for that card, so park 100 and 108 until a rule exists
+that a fresh test could judge. Then ask which next, recommendation first, each with its cheapest check
+(c breaks the assumption that B is our only fair test): (a) task 19, peer benchmarking: fr-peers exists, so
+replay 19 through match() to find the missing word, keep a change only with 0 wrong on A, then score
+B once (B is unused for fr-peers); (b) B's 3 wrong cards (67, 74, 91): park unless there is a new idea,
+since 4 general rules fixed 0 of 3; (c) a fresh held-out set (Ian did not pick it on 2026-10-17): the
+model writes or sources 30 tasks and labels them, Ian checks a stated few. Optional: the one-minute
+sandbox check of the Workflows menu for Benchmarking. Program lead: "NEW - 24h program lead 9"
+(43417193) unless renamed; send it status.
+
+UPDATE 2026-10-17, session d6215817 (successor of b9821fb4): "commentary" rule shipped in 8050b07
+- Start: tree clean; origin = 35c9852 after fetch. Pushed 31b2040 on Ian's "Push (Recommended)".
+- Ian picked "Year-over-year rule (Recommended)" (question tool, a spread of 4 with cheapest checks),
+  then confirmed all 4 model labels: tasks 8, 100, 112 "Yes, it fits (Recommended)", 108 "Yes, it
+  fits" (I had called 108 my weakest).
+- Probe on half A only, B unseen (scratch copies in the job tmp; base reproduced 10/29, 0 wrong):
+  C1 "commentary" 12/29 (8, 112); C3 period phrase (last month's/quarter's/year's, budget vs actual,
+  latest results) 12/29 (108, 112); C4 = C1 or C3 13/29, 0 wrong, all catalogue checks pass,
+  community prompts unchanged (19 rows); C5 = C4 + card takes REWRITE 14/29 but failed "try routes
+  home: gen-rewrite" (its own example "rewrite the CFO's commentary to be shorter" went to this card).
+  Task 100 misses because the engine reads it as REWRITE only (gold also has DRAFT).
+- B scored once on C4, prediction stated first (wrong stays 3): disproved, right 13 -> 13, wrong 3 -> 5
+  (80 "reusing last year's wording" sustainability statement; 115 "comparing the new draft against
+  last year's version"), both from "last year's". Not shipped. Ian picked "Ship \"commentary\" only
+  (Recommended)" over "Test it on B first", "Ship nothing, move on" and "Get fresh test tasks".
+- 8050b07 (implementer@bf18c2a, Sonnet, 31,651 tokens, 14 tool uses, 125 s): catalogue
+  `|commentary`, 4 gold rows by:ian (Ian 15, model 14), new check, README, dist. Re-run by me: half A
+  12/29, wrong 0, no card 17; B 13/30, wrong 3 (67,74,91), so "B unchanged", which I had marked
+  assumed, is now measured (the suite prints B on every run); evals A 52/60, B 45/60 unchanged; new
+  check FAILs on 31b2040's catalogue (task 8), passes on HEAD; pagetest 72 checks, 0 failed; README
+  82,594 = git show HEAD dist | wc -c; rebuild leaves tree clean.
+- Republished v13 (Sonnet general-purpose helper, 108,322 tokens, 4 tool uses, 23 s); checked as in
+  WHERE. PM (Sonnet, 21,644 tokens, 4 tool uses; first dispatch refused by the hook for naming no
+  model): milestone not done by its check, shipped below the bar on Ian's pick; next = task 19.
+- My slips, caught by controls: a node -e with `\\` in a Bash command broke (the recorded rule, again),
+  so a "0 lines" community diff compared two unchanged copies; and I first ran data/real/rate-real.js
+  with one argument, so both runs crashed and the diff was empty. Both re-run correctly, with the
+  catalogue change fingerprinted (match tail printed).
+- Predecessor b9821fb4 kept (done, COMPLETED; shares this worktree, so claude rm would remove it).
+
+NEXT SESSION (written by b9821fb4; DONE by d6215817 above; kept for the record)
+Read this file, CLAUDE.md and fit-finder/README.md ("Right card on half A"). Nothing is half-done. If
+the launch note does not say pushed, ask Ian directly: push 8fe2020 and the hand-off commit? A relayed
+answer is not his yes. Labelling is the model's job: a top-model labeler labels, and Ian checks only
+the few calls that decide the score, with the count said up front (his pick "Model, you check 3
+(Recommended)", after "Why am I labeling these, isn't that your job?"). Then ask which next,
+recommendation first, each with its cheapest check: (a) a rule (not a per-task word) for half A's 4
+year-over-year misses (8, 100, 108, 112): all four labels are the model's, so first Ian confirms them
+(4 yes/no), then target at least 3 gained and 0 wrong on A, then score B once; (b) B's 3 wrong cards
+(67, 74, 91): four general rules fixed 0 of 3 in memory; (c) peer benchmarking for task 19. Optional:
+the one-minute sandbox check of the Workflows menu for Benchmarking. Program lead: "NEW - 24h program
+lead 9" (43417193) unless renamed; send it status.
+
+UPDATE 2026-10-16, session b9821fb4 (successor of c9f81242): half A card labels DONE in 8fe2020
+- Push checked at start: origin = local = 4efa749 (the launch note's "both pushed" confirmed).
+- Probe (read-only, in memory, before asking): B baseline reproduced (13 right, 3 wrong, 14 none).
+  Four general rules fixed 0 of B's 3 wrong cards: a score cutoff (wrong cards score 6, 5, 3; right
+  ones 1.5 to 6); sus-requirements also doing SUMMARIZE (0 of 139 first cards change); a tie-break
+  toward the task's first step (0 change); first-step-only (right 13 -> 11, wrong still 3).
+- Ian picked "Label half A first (Recommended)" (question tool). Blind Opus labeler (64,016 tokens,
+  5 tool uses, 102 s; task text + 26 cards, no engine pick, no match words). Ian labelled 8 (seed
+  20261016: 81, 22, 103, 16, 94, 19, 58, 66): exact match with the model on 5; the 3 differences were
+  all the model also accepting a general card.
+- Ian, verbatim: "Why am I labeling these, isn't that your job?" My error: I framed the option as Ian
+  labelling all 29 and skipped B's agreed method (model labels, Ian checks 8, limit 2). I said so;
+  he then picked "Model, you check 3 (Recommended)": 23, 49, 65, where the model's call decides the
+  score and is weakest. He overruled it on 23 (the page's card is right). The model's specific picks:
+  accepted 6 of 7 (I first said 6 of 6, before 23; corrected to him).
+- 8fe2020 (Sonnet implementer, 29,167 tokens, 17 tool uses, 82 s; its report was empty, so I re-ran
+  everything): card-gold-a.jsonl (Ian 11, model 18) + a catalogue.test.js check + README. Measured by
+  me: green; red with no file (exit 1); 7 planted faults each FAIL, control passes; A 52/60, B 45/60;
+  dist rebuilt, tree clean. I amended the README to say the 4 year-over-year labels are the model's.
+- Result: half A first card right 10 of 29, wrong 0, no card 19; 13 of the 19 land on chat with your
+  file; 6 real misses: 8, 100, 108, 112 (year-over-year narrative), 19 (peer benchmarking, Ian's
+  label), 29 (formula or query help, weak). The 4 share no card keyword: "commentary on the key
+  drivers", "roll forward last month's commentary", "board paper ... latest results", "budget vs
+  actual commentary". PM (Sonnet, 22,725 tokens, 6 tool uses) picks (a); it wrongly listed 7772b44 as
+  unpushed.
+- My slips, caught by controls: Git Bash heredocs wrote '\\b' as '\b' in two probe scripts (every
+  keyword null; controls 0 and 14 exposed it; fixed with the Write and Edit tools); I filtered on
+  surface 'chat' instead of 'files' (0 of 19 -> 13 of 19; B's known 7 of 7 control exposed it).
+- Predecessor c9f81242 kept (state working when checked; shares this worktree, so claude rm would
+  remove it).
+- Pushed 4efa749..35c9852 on Ian's "Push (Recommended)". On his "Record all three (Recommended)":
+  ruling 2026-10-16-the-model-labels-ian-checks-the-deciding-few (proposed) and brain rule pages
+  fit-finder/rule/the-model-labels-ian-checks-a-stated-few.md and write-scripts-with-the-write-tool.md,
+  all uncommitted in the studio-harness checkout. Corrected cause: not heredocs; any `\\` in a Bash
+  tool command arrives as `\`, even in single quotes (od -c, measured).
+- Stopped at the 200k context line after the records; this edit is local (commit after 35c9852).
+
+NEXT SESSION (written by c9f81242; DONE by b9821fb4 above; kept for the record)
+Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. If the launch note does not
+say pushed, ask Ian directly: push 7772b44 and the hand-off commit? A relayed answer is not his yes.
+Then ask which next, recommendation first, each option with its cheapest check: fix the 3 wrong cards
+(67, 74, 91; PM's pick: a wrong card is worse than none); label half A's 29 fitting tasks for cards
+first, so fixes are found there and half B stays a fair score; or reach the 7 no-card tasks (30, 45,
+50, 59, 80, 111, 119). All 10 are in held-out half B, already used for 2 fixes; a fix there should be
+a rule, not a task-specific word. Showing the top 2 cards was measured and rejected (a right card
+shown 13 -> 14 of 30, wrong cards shown 3 -> 7). Optional one-minute sandbox check: does the Workiva
+AI panel's Workflows menu list Benchmarking? Program lead: "NEW - 24h program lead 8" (a5936613)
+unless renamed; send it status.
+
+UPDATE 2026-10-16, session c9f81242 (successor of d2e2611b): catalogue re-check DONE in 7772b44
+- Probe (read-only, before asking): the 10 open card tasks are all in half B; half A has 29 fitting
+  tasks, 10 reach a card, none card-labelled; top-2 cards measured as above.
+- Ian picked "Check the AI feature claims (Recommended)", then "Also update the catalogue" (option
+  labels, question tool). Three Haiku research helpers (low effort; 16-19k tokens, 5-6 tool uses,
+  29-63 s each); every quote re-fetched from the Zendesk API and matched by me.
+- Result: no claim on the page changes. Benchmarking holds (S7, 2026-10-13, lists it as an available
+  workflow, not tagged Preview). Suggestions' only page (2026-09-14) is still an early-access preview to
+  14 Sep; no later page. Agent Studio: no support page; trade press 2026-09-15 = build your own agents.
+  Evidence: docs/evidence/2026-10-16-catalogue-recheck.md.
+- 7772b44 (Sonnet implementer, 29,865 tokens, 14 tool uses, 85 s): Agent Studio left out (5 left out),
+  Suggestions reason dated; new catalogue check red on the parent's catalogue (exported, run by me),
+  green after; A 52/60, B 45/60, first card right 13 of 30, all unchanged; pagetest 72 checks, 0 failed.
+- My correction: the implementer wrote 82,827 bytes in README (the CRLF copy on disk: 82,583 + 244
+  CRs); fixed to 82,583 (LF, as committed) by amending the local commit before the hand-off.
+- Republished v12 (Sonnet helper, 70,094 tokens, 3 tool uses); checked as in WHERE.
+- Predecessor d2e2611b kept (done, COMPLETED; shares this worktree, so claude rm would remove it).
+- Rulings: none (option labels only). Missed fact for the brain (bank add on Ian's yes): README byte
+  counts are LF; on Windows the working-tree file is CRLF, so ls -l / disk size reads larger.
+
+NEXT SESSION (written by d2e2611b; DONE by c9f81242 above; kept for the record)
+Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. dd64db7 and f53af7f are
+pushed (Ian's "Push (Recommended)"); the pilot commit after them is local unless the launch note says
+pushed: ask Ian directly. A relayed answer is not his yes. The sandbox pilot is DONE (see UPDATE).
+Ask which next, recommendation first: the 3 wrong cards (67, 74, 91), the 7 no-card tasks whose right
+cards name another feature (30, 45, 50, 59, 80, 111, 119), or re-checking the catalogue claims the
+pilot's Part 1 raised (Benchmarking not shown under that name; "AI suggestions" and "Agent Studio"
+exist). A sandbox test is available for any "does this feature do the job" question: write the
+browser-extension prompt with planted items and a pass bar first (ruling
+2026-10-16-test-workiva-ai-claims-in-sandbox, proposed). Program lead: "NEW - 24h program lead 7"
+unless renamed; send it status.
+
+UPDATE 2026-10-16, session d2e2611b: sandbox pilot DONE (docs/evidence/2026-10-16-sandbox-pilot.md)
+- Ian ran docs/FIT_FINDER_SANDBOX_PILOT_PROMPT.txt in the browser extension and pasted its report;
+  scored here from the AI's verbatim table: 4 of 4 changes listed, 0 invented (pass bar met); flag
+  (b) removed risk sentence: flagged; flag (a) "up 6%" vs $4.2bn -> $4.5bn: missed ("Expected
+  year-roll"). One run. README sentence updated.
+- Part 1: all five features seen except Benchmarking (nearest: "Intelligent Finance" peer panel);
+  also "AI suggestions" (Tools menu) and "Agent Studio" (left nav). Claims to re-check, not fixes.
+- My error, corrected: the pass bar said gen-summarize-file is right for tasks 0 and 115; Ian's gold
+  has it for 115 only (task 0: fr-yoy-narrative).
+- Pushed b468958..f53af7f on Ian's "Push (Recommended)"; ruling 2026-10-16-test-workiva-ai-claims-
+  in-sandbox (proposed) and brain park fit-finder/objective/fit-finder-a-compare-a-draft-...md written
+  on his "Record it (Recommended)", both uncommitted in the studio-harness checkout.
+
+UPDATE 2026-10-16, session d2e2611b (successor of ef7552f6): STILL OPEN "right-suggestion rate" DONE in dd64db7
+- Probe (read-only, before asking): 30 held-out tasks fit, 16 reach a card; 3 of the 16 first cards
+  are from another area (46, 67, 118).
+- Ian picked "Right-card rate (Recommended)", then "Top model + your 8 (Recommended)" (option labels,
+  question tool, no relay message); design approved, verbatim: "yes".
+- Blind Opus labeler (61,349 tokens, 4 tool uses, 94 s) on the 30 (task text + 26 cards, no engine
+  pick, no match words). Ian checked 8 picked by seed 20261016 before labelling (115, 105, 38, 74, 21,
+  55, 30, 60): agreed on 6, disagreed on 115 (he: gen-summarize-file; model: none) and 60 (he: also
+  sus-exec-narrative). 2 of 8 = the agreed limit, so Ian labelled all 30 (22 more, 1-3 offered cards +
+  "no card fits"; I added the nearest cards where a task had few). Model vs Ian: same 11, Ian accepts
+  more 18, model more 1. Ian marked no task "no card fits" (caveat: every question offered a card).
+- Result (Ian's labels, data/card-gold.jsonl): first card right 13 of 30; wrong card 3 (67, 74, 91);
+  no card where one fits 14; of those, 7 already land on a feature a right card names first, 7 do not
+  (30, 45, 50, 59, 80, 111, 119). My prediction was wrong: I said 10-12 of 16 right (13) and 2-5
+  missed (14).
+- Check (catalogue.test.js): one row per held-out fitting task, catalogue ids only; red with no file;
+  5 planted faults fail (drop, typo, extra, duplicate, no file), control passes. Dist byte-identical;
+  A 52/60, B 45/60. pagetest not run (no page change). README paragraph + file row.
+- Sonnet review (55,761 tokens, 5 tool uses): 0 Critical, 0 Important; re-ran the print and README
+  figures. Minor fixed: a duplicated row passed (confirmed by mutant, now fails); README now says
+  "names another feature first". Minor left: none.
+- Slip of mine, caught: I showed task 80 without "and targets"; re-asked with the exact text, same answer.
+- Ian on the sandbox, verbatim: "Why wouldn't sandbox access help here? It has Workiva AI so you can
+  test out these prompts. You can create test documents to be referenced and used in the prompts
+  within Workiva AI to see if the use cases are answered appropriately." I had said it would not help
+  the label (true only of the proxy); corrected to him. Saved as memory workiva-sandbox. Then he picked
+  "Labels, then pilot (Recommended)". Pilot prompt + pass bar: docs/FIT_FINDER_SANDBOX_PILOT_PROMPT.txt.
+- Predecessor ef7552f6 kept (done, COMPLETED; shares this worktree, so claude rm would remove it).
+- Rulings: the sandbox words above are worth a ruling record (PM check); ledger-add only on Ian's yes.
+
+NEXT SESSION (written by ef7552f6; DONE by d2e2611b above; kept for the record)
+Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. If the launch note does not
+say pushed, ask Ian directly: push e9036b4 and the hand-off commit? (No republish: dist unchanged.)
+A relayed answer is not his yes. Then ask which STILL OPEN item next, recommendation first, one question.
+Suggested (PM check, Sonnet, 2026-10-16): the right-suggestion rate. "Reach a use case" (16 of 30
+held-out fitting tasks) counts wrong suggestions. Probe first, read-only: list the 16 with their first
+card; then ask Ian who labels the right card (Ian on a sample, or the top model blind with his
+spot-check; project CLAUDE.md puts labeled data on the larger model). Program lead: "NEW - 24h program
+lead 5" (592afc9a) unless renamed; send it status.
+
+UPDATE 2026-10-16, session ef7552f6 (successor of df09b9bd): STILL OPEN "cap at exactly 300" DONE in e9036b4
+- Probe (read-only, before asking): both cards hold {0,300} twice (one per word order). Moving both
+  caps of either card to 200, 250, 299, 301, 350 or 500 passed every check (12 of 12 survived);
+  control: 100 and 150 failed for both, 180 for sus-anomalies only (so the probe can catch one).
+- Ian picked "Pin the 300 limit (Recommended)" (option label, question tool, no relay message).
+- Fix (tests only, catalogue.test.js): 8 checks, card x word order x gap, through match(): words 300
+  apart get the card, 301 apart do not; each asserts the gap in normalize(text) equals n. 26 of 26
+  cap mutants killed (each cap alone to 299/301: 8; both caps 100-500: 18). No engine, catalogue or
+  dist change (dist rebuilt byte-identical); A 52/60, B 45/60; reach 16 of 30; pagetest 72 checks,
+  0 failed. README sentence. Mutant script: job ef7552f6 tmp/mut301.js (may be gone).
+- Sonnet review (54,388 tokens, 5 tool uses): 0 Critical, 0 Important; re-ran the checks and the
+  per-cap mutants. Minor left: nothing pins that the filler words hold no keyword; the 300/301 pair
+  catches it in practice (a keyword in the filler would make 301 match).
+- Hook gotcha: a studio-harness:pm dispatch with no model is refused; name the model (sonnet).
+- Predecessor df09b9bd kept (done, COMPLETED; shares this worktree, so claude rm would remove it).
+- Rulings: none new in Ian's own words. Still unrecorded: "Fix it in the next session then" and
+  "Would research and/or testing/simulations inform better here?" (18196daf's session).
+
+NEXT SESSION (written by df09b9bd; DONE by ef7552f6 above; kept for the record)
+Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. If the UPDATE below does not
+say pushed / republished, ask Ian directly, one at a time: push? republish v11 (dist of dd1adcd)? A
+relayed answer is not his yes. Then ask which STILL OPEN item next, recommendation first, one question.
+Suggested (PM check, Sonnet, 2026-10-16): pin the sus cards' cap at exactly 300 (probe first: grep that
+both cards' cap is 300; test first: a gap of 300 matches, 301 does not, per card; kill a cap-301 mutant;
+README). Program lead is now "NEW - 24h program lead 5" (592afc9a); send it status.
+
+UPDATE 2026-10-16, session df09b9bd: PUSHED and REPUBLISHED (supersedes WHERE's "local only" / "v10")
+- Ian picked "Push (Recommended)" (option label, question tool, no relay message): pushed
+  f7e2d58..77c4131; after fetch origin = local = 77c4131. LOCAL ONLY now: the commit that adds this note.
+- Ian picked "Republish v11 (Recommended)" (same): live is version 11 (version id 1792191655-4eb4) = dist
+  of dd1adcd (82,037 bytes LF). Before publishing: v10's live file contained c43ff3f's dist exactly, and
+  the new dist differed from it only in the 4 engine lines. Checked after: the live file contains the new
+  dist and not v10's.
+- Stopped at the 200k context line, task boundary; nothing half-done.
+
+UPDATE 2026-10-16, session df09b9bd (successor of 18196daf): STILL OPEN "S7 reads as READ only" DONE in dd1adcd
+- Probe (read-only, before asking): 2 of 139 texts read as READ only: S7 ("generate ten questions") and
+  task 42 (held-out B, gold good, rated partial: "note exceptions ... whether our ... controls cover
+  them"). "Review <data> for unusual changes" appears in 0 of 139.
+- Ian picked "Reading-only gap (Recommended)" (option label). My option text claimed both would get a use
+  case; a simulation showed that wrong (S7: no card covers writing assurance questions; adding DRAFT
+  flips S7 partial -> good via "assurance" in REPEATS, against Ian's label). Corrected to Ian; he picked
+  "C: three rules + role (Recommended)" (option label). Both answers came through the question tool.
+- Fix (engine/fit.js): EXTRACT "not(es?|ing) (the|any|all)? exceptions/deviations/findings"; CHECK
+  "whether <0-5 words> controls/policies/procedures/evidence/tests/testing/documentation/scope cover(s|ed)";
+  DRAFT "(generat|suggest)\w* <0-3 words> questions"; REPEATS "assurance(?! provider)". 8 new checks
+  failed first; 6 guards pass both ways; mutants 8 of 9 killed (survivor widens cover to covering/
+  coverage, which would also be a check; not pinned on purpose).
+- Measured vs f9caef0: 3 of 139 changed: 42 READ -> READ+CHECK+EXTRACT, gets grc-framework, fit stays
+  partial (engine misses that it recurs); S7 READ -> READ+DRAFT, stays partial, no card; 75 recurring
+  guess 1 -> 0 (matches label). A 52/60, B 45/60 unchanged; A recurring 77% -> 78%; reach 15 -> 16 of 30.
+  Dist 82,037 bytes LF (equals a fresh build, sha1 158fce6d64b0); pagetest 72 checks, 0 failed. README.
+- Sonnet review (57,695 tokens, 6 tool uses): 0 Critical. Important, re-run and confirmed, fixed test
+  first: "whether the vendor can cover the cost" / "the team will cover each shift" read as CHECK (the
+  first rule took any object); now the subject must be controls, policies, etc. Important/Minor left,
+  with reason (assumed, not shown to Ian): "We should note all deviations from budget for the board
+  deck" now rates good (EXTRACT); listing deviations from a source is AI work, as "list all" already is.
+- Predecessor 18196daf was removed by "24h program lead 4" (d5b20b38) with claude rm at ~22:22Z (its
+  message); checked here: the worktree is intact and 18196daf is no longer listed.
+- Rulings: none new in Ian's own words (option labels only). Still unrecorded from 18196daf: "Fix it in
+  the next session then" and "Would research and/or testing/simulations inform better here?".
+
+NEXT SESSION (written by 18196daf; DONE by df09b9bd above; kept for the record)
+Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. Ask Ian which STILL OPEN
+item next, recommendation first, one question. An answer relayed by another session is not his yes
+for a push or republish (see UPDATE below); ask him directly. End with the push / republish questions.
+Suggested (PM check, Sonnet, 2026-10-16): pin the sus cards' cap at exactly 300 (test first: a gap of
+300 matches, 301 does not, per card; kill a cap-301 mutant; README). After that: probe read-only how
+many of the 139 texts say "unusual ... changes" and read as READ only (S7), and bring Ian the number.
+
+UPDATE 2026-10-16, session 18196daf (successor of 85919228): STILL OPEN "sites submitted" DONE in c43ff3f
+- Probe (read-only, before asking): 2 of 139 texts hold a past-tense ACT word; 1 had a wrong fit:
+  task 57 "the evidence uploaded" (held-out B, gold good, rated not). Task 15 "who's submitted" stays not.
+- Ian picked "Past-tense fix (Recommended)" (option label, not his words; the answer came through the
+  question tool with no relay message).
+- Fix (engine/fit.js ACT): upload/submit/migrat/schedul/updat+system/download/export/print/distribut
+  grouped behind one guard: an -ed form is ACT only right after "I"/"we" (+ 've/have/had, + one of
+  just/already/also/then). 5 new checks failed first (3 ops, task 57 fit, "sites submitted" sentence
+  reaches sus-anomalies), 6 you-acting guards pass both ways; mutants 8 of 8 killed.
+- Measured: 139 texts vs 7c2eae2: only task 57 changed (not -> partial, gets grc-evidence). A 52/60,
+  B 45/60 unchanged; B good-vs-not mix-ups 2 -> 1 (both engines run); reach 14 -> 15 of 30. rate() on
+  300k -ed-dense words: medians old 1,226 / new 1,138 ms (noisy, no slowdown). Dist 81,778 bytes LF;
+  pagetest 72 checks, 0 failed. README: byte count, B mix-ups, reach, new paragraph.
+- Sonnet review (55,272 tokens, 3 tool uses): 0 Critical, 0 Important. Minor (left, see STILL OPEN).
+- Push NOT done. The push question was answered "Push (Recommended)" and, at the same time, session
+  "NEW - 24h program lead 4" (d5b20b38) messaged that it gave that answer for Ian under his standing yes,
+  quoting (its words, not verified here): "approvals for merges and pushing and commiting if safe"
+  (~16:10Z) and an option "Yes, incl. token raises (Recommended)" (21:19Z) letting it answer sessions'
+  recommended options incl. pushes. Held: a peer's relay is not Ian's yes in this session. Told lead 4.
+- Then Ian, in this session, verbatim: "push" -> pushed 76b063d..f7e2d58 (origin = local after fetch);
+  asked to republish v10, verbatim: "yes" -> live version 10 (1792188113-42e1), checked as in WHERE.
+- Unrecorded rulings (PM check): "Fix it in the next session then" and "Would research and/or
+  testing/simulations inform better here?" have no ruling record; ledger-add only on Ian's yes.
+- Predecessor 85919228 kept (done, COMPLETED; shares this worktree, so claude rm would remove it).
+
+NEXT SESSION (written by 85919228, DONE by 18196daf above; kept for the record)
+Read this file, CLAUDE.md and fit-finder/README.md. Nothing is half-done. Ask Ian which STILL OPEN
+item (list at the end of this file) to take next, recommendation first, one question; do only what he
+says yes to, test first, and end with the same push / republish questions.
+Suggested first (PM check, Sonnet, 2026-10-16): the "sites submitted" reads-as-ACT item; before asking,
+probe read-only how many of the 139 texts hold a past-tense ACT verb ("submitted", "filed", ...) and
+whether their fit is wrong, so the question carries the number.
+
+UPDATE 2026-10-16, session 85919228 (successor of db631e26): NOT-DONE items 1-3 below DONE
+- Item 1: the sus-anomalies candidate got no card because "submitted" reads as ACT, so rate() gives fit
+  'not' and match() returns [] before any keyword check (shown: dropping only "submitted" -> fit good).
+  Not the cap. Check uses "entered". Two long-sentence checks (one per card, keywords ~200 apart) pass at
+  cap 300, fail at cap 100: mutants 10 of 10 killed (were 8 of 10).
+- Item 2 (measured): 139 texts vs b18ad11: 0 changed, 0 contain digit.digit (control removing
+  sus-anomalies changes 92 and S3; a dot-rule control changed 0, so it proves nothing). A 52/60,
+  B 45/60. Dist 81,570 bytes LF; pagetest 72 checks, 0 failed. README paragraph + byte count.
+- Item 3: Sonnet review (54,890 tokens, 5 tool uses): 0 Critical, 0 Important. Minor fixed: README
+  said 4-8 s, test comment ~9 s for the uncapped table; re-measured both cards uncapped: 13.9, 14.2,
+  15.5 s (capped 0.10-0.17 s); both now say 9-15 s. Minor left: no check pins exactly 300 (a 301 gap).
+- Found, not fixed (pre-existing, idea for Ian): "sites submitted" (past tense, describing data) reads
+  as ACT and rates the whole task "not a fit".
+- Ian 2026-10-16 (option labels he chose, not his words): "Push (Recommended)" -> pushed
+  4da5266..76b063d; "Republish v9 (Recommended)" -> live version 9, checked as in WHERE.
+- Predecessor db631e26 kept (done, renamed COMPLETED; shares this worktree, so claude rm would
+  remove the worktree or need force flags).
+
+NEXT SESSION (written by db631e26 at the 200k stop; supersedes every NEXT SESSION below)
+Read this file, CLAUDE.md and fit-finder/README.md. State: b18ad11 (year-over-year decimal fix) is pushed
+(origin = 4da5266) and LIVE as version 8 (version id 1792164810-98a1, checked: live file contains the dist).
+The WIP commit after it (local, not pushed) fixes the same gap in sus-anomalies and sus-disclosure, CAPPED.
+Ian's rulings 2026-10-16 (option labels he chose, not his words): "Push (Recommended)", "Republish v8
+(Recommended)", "Fix now, here (Recommended)" (the two sus cards), then he asked "Would research and/or
+testing/simulations inform better here?" (his words); after the simulation below: "Cap at 300 (Recommended)".
+Done in the WIP (measured): both patterns' sentence scans -> (?:[^.;]|(?<=\d)\.(?=\d)){0,300} (sus-disclosure
+[^.] instead of [^.;]). 4 decimal checks failed first, 2 full-stop guards pass both ways; new check
+'speed: a pasted 5,000-row emissions table rates under 2 s' failed uncapped (5,882 ms), passes capped; all
+catalogue checks pass (494 ms); reach 14 of 30. Mutants 8 of 10 killed; both survivors shrink the cap to 100.
+Simulation (rate+match, the page's path; before / uncapped / capped): table 1k rows 13/227/12 ms, 5k rows
+92/8,919/100 ms, 20k rows 261/73,740/184 ms; prose 5k sentences 103/88/82 ms; same cards in all. On the 139
+texts the two cards' hits span at most 121 chars (0 over 300). The uncapped version was never committed.
+NOT DONE, in order:
+1. Kill the cap-100 survivors: add one long-sentence check per card (keywords 100-300 chars apart). Candidate
+   for sus-disclosure measured: "Draft a first version of the section that explains how our forty sites
+   collected their fuel, fleet and purchased electricity figures this year, which estimates we used and
+   why, for the sustainability pages." spans 199, gets sus-disclosure. The sus-anomalies candidate (tmp
+   longsent.js, span 222) got NO card from match() though the keyword hits; find why (fit or ops) before
+   using it. Confirm both checks fail with cap 100 (mutants2.js in job db631e26 tmp, may be gone).
+2. 139-text old-vs-new diff vs b18ad11 (expect 0: no text has digit.digit), eval A/B (expect 52/60, 45/60),
+   node tests/build.js, node tests/pagetest.js, README (byte count; the "Use cases on real tasks"
+   paragraph: the two sus cards now also step over decimals and look at most 300 chars).
+3. Sonnet re-review of git diff b18ad11..HEAD -- fit-finder (excluding dist). Commit on top (amend nothing).
+4. Ask Ian, one at a time: push? republish (v9)? Then the STILL OPEN list.
+
+UPDATE 2026-10-16, session db631e26 (successor of a316ccd1): decimal-point gap FIXED in b18ad11 (pushed, live v8)
+- fr-yoy-narrative's two look-arounds: [^.;]{0,300} -> (?:[^.;]|(?<=\d)\.(?=\d)){0,300}. 6 new checks:
+  2 sustainability ("of 3.5% in Scope 2 emissions", "emissions rose 3.5% year-over-year") failed first
+  on a2c56f8's catalogue, pass now; 4 guards (2 revenue, 2 full stop incl. "for 2025. Scope 2") pass both.
+- Measured: catalogue checks all pass (756 ms); 9 of 10 mutants killed (3 uncapped: 30-120 s, killed by
+  the speed check); survivor drops (?<=\d) (differs only on ".5%"). 139 texts: 0 contain digit.digit,
+  0 changed. A 52/60, B 45/60. Pattern on 300k words: no stops 89->88 ms, decimals everywhere 7->106 ms,
+  sentences 16->20 ms. Dist 81,454 bytes LF; pagetest 72 checks, 0 failed. README updated.
+- Sonnet review (53,087 tokens, 5 tool uses): 0 Important. Minor: ".5" or "3." (dot not between two
+  digits) still ends the sentence (by design, no check pins it).
+- MEASURED, NOT FIXED (needs Ian's yes): sus-anomalies and sus-disclosure share the gap. "Review the
+  Scope 2 emissions data of 3.5 million tonnes and flag any anomalies." gets no use case (with "for 2025":
+  sus-anomalies); "Draft a short summary of our 4.2% cut for the sustainability pages." loses
+  sus-disclosure. Probe: tmp othergap.js (job db631e26).
+- Gotcha (measured, cause assumed to be the Bash tool's transport): "\\" inside a quoted heredoc or
+  node -e came through as "\"; write regex-bearing scripts with the Write tool.
+- Predecessor a316ccd1 kept (shares this worktree; unpushed commits).
+- Next: ask Ian, one at a time: push b18ad11 and the hand-off commits? republish the live page (v8)?
+  fix the same gap in sus-anomalies and sus-disclosure? Then the STILL OPEN list.
+
+NEXT SESSION (written by a316ccd1, DONE by db631e26 above; kept for the record)
+Ian, 2026-10-16, verbatim: "Fix it in the next session then" (the decimal-point gap).
+Read this file, CLAUDE.md and fit-finder/README.md. Fix the decimal-point gap, test first:
+- Add catalogue checks: "Explain the year-over-year change of 3.5% in Scope 2 emissions." does NOT get
+  fr-yoy-narrative; "Explain the year-over-year change of 3.5% in revenue." still does. Confirm red.
+- Probe first: how many of the 139 texts contain digit.digit (data/tasks.jsonl + data/real/*.jsonl).
+- Candidate (assumed, untested): in both look-arounds replace [^.;] with (?:[^.;]|(?<=\d)\.(?=\d)) (JSON: \\d, \\.),
+  keep the 300-char cap. Other [^.;] patterns (sus-anomalies, sus-disclosure's [^.]) may share the gap;
+  measure, fix only with Ian's yes.
+- Re-run: catalogue checks (incl. the speed check, under 2 s), cap mutants + a decimal mutant, the
+  139-text old-vs-new diff (expect only digit.digit texts to change), eval A/B, build, pagetest; README.
+- Commit; then ask Ian, one at a time: push? republish (v8)?
+
+UPDATE 2026-10-16, session a316ccd1 (successor of 927f0985)
+- Items 1-4 DONE in 2deb044 (on top of the WIP commit 0a7524d): fr-yoy-narrative look-arounds capped
+  at 300 chars. New check 'speed: ... 300k words with no full stops runs under 2 s' failed first
+  (11,652 ms), passes after (whole catalogue check 0.55 s). 139 texts old vs new: 0 changed (control
+  vs 0fb4187 shows the expected 5: 92, S1, S2, S3, S10). A 52/60, B 45/60. 6 of 6 cap mutants killed
+  (the WIP's original 10 mutants were not re-run; their script is gone). Dist rebuilt, 81,408 bytes
+  LF (81,651 CRLF on disk); pagetest 72 checks, 0 failed. README updated.
+- Sonnet re-review (65,161 tokens, 15 tool uses): 0 Important. Minor, confirmed by re-run: a decimal
+  point splits the sentence, so 'Explain the year-over-year change of 3.5% in Scope 2 emissions.'
+  still gets fr-yoy-narrative (same at 0fb4187 and 0a7524d, not caused by the cap). Open, needs Ian.
+- Predecessor 927f0985 kept (shares this worktree; rm would delete it; unpushed commits).
+- Ian said yes to both item 5 questions (option labels he chose, not his words): branch pushed
+  (0f549bb..3fa192c); live page republished as version 7 (version id 1792163169-5d77), checked:
+  the live file contains the new dist exactly. This note itself is a local commit (not pushed).
+- Next, needs Ian: the decimal-point gap above; then the STILL OPEN list.
+
+IAN'S RULING THIS SESSION (2026-10-16)
+- Asked which open item next, he picked "Fix wrong pointers (Recommended)" (S1, S2, S3, S9/S10
+  of the 19 Community prompts). That is an option label he chose, not his own words.
+
+DONE IN THIS WIP COMMIT (measured this session)
+- Cause, traced per prompt: a bare "year-over-year" sent S1 (emissions), S2 (data check) and S10
+  (Wdata query) to fr-yoy-narrative; "duplicate records" sent S2 to grc-rationalize; "Wdata table"
+  sent S10 to fr-narrative-tables; S3's "generate potential explanations ... prior reporting
+  period" read as READ only; "Create a query" was not DRAFT.
+- Fix (word level): engine EXPLAIN = (generat|giv|writ|draft|suggest|offer)\w* + up to 2 words
+  (not "their") + explanations; COMPARE "prior (reporting )?period"; DRAFT "create a query".
+  Catalogue: fr-yoy-narrative bare year-over-year/yoy only when its sentence names no
+  sustainability data and no outliers/anomalies/unusual; fr-narrative-tables not "wdata table";
+  grc-rationalize not "duplicate records/rows/entries/values/data/transactions/invoices/payments/lines".
+- After: S1 -> sus-exec-narrative, gen-summarize-file; S2 -> none (chat with file; the anomaly card
+  needs a sustainability word by design, trial-balance guard); S3 -> sus-anomalies; S10 -> gen-wdata
+  (S21: create, improve, explain, fix SQL). S9 left alone on purpose: it summarizes a query's
+  results, and gen-wdata is for writing or fixing a query (the old hand-off's "S9 misses gen-wdata"
+  was wrong for S9).
+- Checks: catalogue all pass (new checks each failed first); 10 of 10 mutants killed (incl. the two
+  rejected first versions); 139 tasks before/after: only S1, S2, S3, S10 and labelled task 92 changed
+  (92 gains an Explain step; first use case sus-anomalies, then fr-yoy-narrative); no fit changed;
+  A 52/60, B 45/60 unchanged; reach 14 of 30 unchanged.
+- Sonnet review (60,663 tokens, 7 tool uses): 3 Important, all re-run and confirmed, all fixed
+  (financial yoy tasks without "narrative" lost the card; "duplicate control entries" lost
+  grc-rationalize; "list their explanations" became EXPLAIN). Minor "data table" narrowed to wdata.
+- README paragraph "Use cases on real tasks (2026-10-16)" describes the current rule.
+
+NOT DONE (the next session does these, in order)
+1. SPEED REGRESSION, must fix before anything ships. Measured with tmp/regexcost.js (copy below):
+   the changed patterns on a 300k-word input with NO full stops take ~31 s (old 33 ms); on
+   ordinary sentences 61 ms (old 50 ms). Cause: fr-yoy-narrative's lookbehind
+   (?<![^.;]*\b(SUS)\b[^.;]*) and lookahead (?![^.;]*\b(SUS)\b) scan the whole sentence at every
+   year-over-year hit. Planned fix: drop the useless leading [^.;]* in the lookbehind and cap both
+   scans at 300 chars: (?<!\b(SUS)\b[^.;]{0,300}) ... (?![^.;]{0,300}\b(SUS)\b). Test first: a
+   check that fr-yoy-narrative's regex on 300k words with no full stops runs under 2 s (fails now
+   at ~31 s), then the cap, then re-run catalogue checks, the 10 mutants and the 139-task diff.
+   Note: the WHOLE old engine already takes ~32-40 s on that no-stop input (other [^.;]* patterns,
+   e.g. sus-anomalies); that is pre-existing and not in scope unless Ian says so.
+2. Rebuild dist (node tests/build.js), run node tests/pagetest.js (not run this session), update
+   the README byte count. Size note: the committed dist blob is 80,867 bytes (LF), 81,469 on disk
+   (CRLF); README says 81,110 - check which figure build.js prints and use that.
+3. Sonnet re-review of the final diff (git diff 0fb4187..HEAD -- fit-finder/engine
+   fit-finder/data/catalogue.json fit-finder/tests fit-finder/README.md).
+4. Amend nothing; commit the speed fix on top of this WIP commit.
+5. Ask Ian, one at a time: push the branch? republish the live page (v7)?
+Scratch scripts used (in the old job's tmp, may be gone): snap.js (fit/ops/steps/top-3 per task),
+compare.js (old vs new on inputs), mutants.js, regexcost.js. To rebuild "old": git show
+4545647:fit-finder/engine/fit.js and :fit-finder/data/catalogue.json into a scratch folder.
+
+STILL OPEN (each needs Ian's yes)
+- DONE in c43ff3f: "sites submitted" (past tense, describing data) read as ACT.
+- Minor from c43ff3f's review: a first-person past tense is now missed with two adverbs or an -ly
+  adverb ("I then quickly uploaded"), "I'd uploaded", or passive "by me"; another person's past tense
+  ("the analyst uploaded the file to the portal") is no longer ACT (by design). None in the 139 texts.
+- DONE in e9036b4: no check pinned the sus cards' cap at exactly 300 (any cap from 200 to 500 passed).
+- DONE in dd64db7: the right-suggestion rate (first card right 13 of 30, Ian's labels).
+- Next (Ian's pick): the sandbox pilot, docs/FIT_FINDER_SANDBOX_PILOT_PROMPT.txt.
+- Wrong first card on 3 held-out tasks: 67 (ESRS mapping -> grc-framework; right sus-requirements),
+  74 (ISSB requirements into questions -> sus-exec-narrative; right sus-requirements/sus-disclosure),
+  91 (sustainability exec summary -> sus-disclosure; right sus-exec-narrative/gen-summarize-file).
+- No card on 7 held-out tasks whose right cards name another feature first: 30, 45, 50, 59, 80, 111,
+  119 (and 7 more where chat with your file is already a right card's feature: 6, 26, 86, 95, 99,
+  106, 115). Versions compare (0, 115) could get a card only with a Workiva source or Ian's ruling on
+  sandbox evidence.
+- DONE in dd1adcd: S7 and task 42 read as READ only ("review <data> for unusual changes": 0 of 139).
+- Idea only (no card covers it): S7 drafts assurance questions; a sourced card would need a Workiva page.
+- Assumed, not shown to Ian (dd1adcd review): "note all deviations from budget for the board deck" rates
+  good (EXTRACT). Task 42 stays partial because the engine misses that SOC 2 reviews recur.
+- S16 also offers a cross-reference check within the sustainability report (idea only).
+- DONE in dd64db7: the "reach a use case" figure counted wrong suggestions; card-gold.jsonl now gives a right-card rate.
+- Design-review NICE items; Benchmarking preview wording conflict; merge.
+- Sessions 648f12e7, 4583497d, ed322f71, 5127436a, 927f0985 all own this worktree; `claude rm`
+  deletes the worktree, so remove none while a session works here.
+
+NEXT SESSION
+Read this file, CLAUDE.md and fit-finder/README.md. Do NOT-DONE items 1-3 (Ian already chose this
+item), then item 5's questions, one at a time; do only what he says yes to.

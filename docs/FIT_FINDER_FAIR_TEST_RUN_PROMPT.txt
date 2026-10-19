@@ -1,0 +1,55 @@
+FIT FINDER FAIR TEST: run prompt. Written 2026-10-18 by "NEW - Fit Finder fair test talk" (a7010c17).
+Work in C:/Users/teasp/Documents/workiva/.claude/worktrees/fit-finder-fair-test (branch fit-finder-fair-test).
+Workiva has .ask-ian-only (topic "label"): questions go to Ian only, never to another session.
+Load studio-harness:talk-and-run first (you are the RUN LEAD: coordinate only; never plan or build in your
+own context). Run `date -u` before every time stamp.
+
+FIRST CHECK (talk-and-run): echo "$STUDIO_RUN_LEDGER"; it must be the absolute path of
+.ledger/2026-10-18-fit-finder-fair-test, and budget.json and slip.json must exist there. Empty or missing: stop,
+push-notify Ian, ask.
+Also check: progress.md has a row "Ian approved the plan" with his words verbatim (the talk writes it before launch);
+missing is a stop. And `test -f fit-finder/data/real/2026-10-17-fresh.jsonl && test -f fit-finder/data/real/2026-10-15-community.jsonl`;
+if missing, copy fit-finder/data/real/ from ../fit-finder-v4/fit-finder/data/real/ (git-excluded; never commit it).
+
+WHAT
+- Spec: docs/superpowers/specs/2026-10-18-fit-finder-fair-test-design.md (Ian's rulings verbatim are in it).
+- Plan (Ian's approval words are in progress.md, see the first check): docs/superpowers/plans/2026-10-18-fit-finder-fair-test.md.
+  Do the 10 tasks in order, one helper at a time, a fresh checker after each, then re-run the check yourself
+  and write the ledger row (talk-and-run "The run", step 2). Task 7 is the only tune task (tune-loop skill).
+- Ledger: .ledger/2026-10-18-fit-finder-fair-test/progress.md (one row per dispatch, talk-and-run format).
+- Due: the evidence doc docs/evidence/2026-10-19-fit-finder-fair-test.md by 2026-10-19 14:00Z (Ian presents Monday).
+
+DATA CARE
+- fit-finder/data/real/ (customer prompts) is in this worktree via .git/info/exclude (copied from fit-finder-v4
+  by the talk). Never commit it, print it, or quote it in a dispatch. Every Codex prompt says not to open
+  fit-finder/data/real/, .ledger/ or C:/Users/teasp/Documents/workiva-sealed/, and its log is checked for reads.
+- The untouched half lives only in C:/Users/teasp/Documents/workiva-sealed/2026-10-18-fit-finder-fair-test/
+  after Task 6. The tune dispatch never names it. It is scored ONCE, in Task 9; a hash mismatch is a stop.
+- New prompts are labelled by the model by Ian's ruling. Never change a label Ian made; never ask Ian to label.
+- Product names and availability claims stay as the catalogue has them (no card text changes; the guard checks).
+
+BEDTIME SLIP (.ledger/2026-10-18-fit-finder-fair-test/slip.json, Ian 2026-10-18 19:23Z)
+- Push its own branch: yes ("Yes, push its branch (Recommended)"). Branches: fit-finder-fair-test and
+  fit-finder-fair-test-tune only. Never main/master, never force.
+- Merge: no (not named for Fit Finder).
+- Spend: none (usage only; no paid tools).
+- New sessions: yes ("Yes, if needed (Recommended)"): a successor at the 200k context stop.
+
+STOPS (push-notify Ian, then ask in the session)
+- Spend of any kind; merge; force flags; a hash mismatch on the untouched half; the leak audit (Task 7) finding
+  any read of the sealed folder; changing any label Ian made; a check failing twice (talk-and-run two strikes:
+  a fresh Opus debugging helper, one round, then stop if unproven); a decision only Ian can make.
+- ~/.claude: no writes, except the session-rename exception (talk-and-run "Session names": set the `name` field of
+  your own ~/.claude/jobs/<your id>/state.json to "COMPLETED - Fit Finder fair test run" once a successor runs).
+- Your own context near 200k: write the ledger and docs/FIT_FINDER_FAIR_TEST_RUN_RESUME_PROMPT.txt, commit,
+  launch the successor with the same --settings ledger form (slip allows new sessions), and end.
+
+END
+- Task 10 = evidence doc with every figure the spec's success criteria name (untouched-half line verbatim,
+  pass or fail against floor(3F/23), each regression pin, the prediction and whether it was disproved), then the
+  final review by the Opus final-reviewer and a read-only Codex review; merge the two lists; Ian decides where
+  they disagree on must-fix. Fix round, re-check.
+- Push the branch (slip yes). Do NOT merge. Do not republish the live page (Ian's).
+- Hand-off PM step (talk-and-run): the PM's draft next prompt is committed as docs/FIT_FINDER_NEXT_PROMPT.txt; then push-notify Ian with the untouched-half line and pass/fail, and ask
+  "Start the next session?". Session name: this session is "NEW - Fit Finder fair test run"; predecessor is
+  the talk session a7010c17 ("NEW - Fit Finder fair test talk"): follow the session-name rule for it.
