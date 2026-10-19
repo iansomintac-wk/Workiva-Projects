@@ -35,3 +35,12 @@ test('l11-csat panel tool pins the control ref 96c55c0', () => {
   assert.ok(src.includes('96c55c0'));
   assert.ok(!src.includes('8790'));
 });
+
+test('l11-csat --captures screenshots three states to png + txt with a sha256 prefix, and stops the browser in a finally', () => {
+  const src = readFileSync(TOOL, 'utf8');
+  assert.ok(src.includes('--captures'));
+  assert.ok(src.includes('Page.captureScreenshot'));
+  assert.ok(src.includes("createHash('sha256')"));
+  for (const stem of ['no-contact-goal', 'no-contact-no-goal', 'contact-added']) assert.ok(src.includes(stem), stem);
+  assert.match(src, /\bfinally\s*\{[^{}]*\bctx\.stop\(\)/);
+});
