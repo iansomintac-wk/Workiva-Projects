@@ -11,6 +11,10 @@ Everything below holds **on this set** only: 6 prompts x 2 versions x 2 runs = 2
 
 ## What was done
 
+- **Coach version.** The grades and Strong rewrites come from the coach at commit 0ec11fa (engine unchanged since
+  79cd855). origin/prompt-coach 5a1e05c has since changed `engine/rewrite.js`, so the T3/T4 findings and open
+  question 4 may be partly fixed after merge.
+
 - Six tricky prompts on the existing made-up fixtures (no customer data), graded by the engine as typed:
   T1 "variances?" (weak), T2 messy accruals with typos (weak), T3 a stock-price forecast from a flux file
   (weak), T4 three jobs in one ask (better), T5 supplier data with no source named (weak), T6 a polished
@@ -39,17 +43,17 @@ Everything below holds **on this set** only: 6 prompts x 2 versions x 2 runs = 2
   pass/fail verdict agreed in 6 of 6 (read).
 - They split mostly on how many extras an answer has. Ian's ruling (verbatim pick): **"Report extras, don't
   gate (Rec.)"**. On the other 9 fields, 2 of 6 rows differ (R2 table, R6 job; measured from the same
-  table). **Held** under the ruling; **disproved** if extra counts as a field.
+  table). **Held** under the ruling only. As the spec wrote it ("any field"), prediction 1 is **disproved**; it passes only under Ian's ruling.
 
 ## Each prediction next to its result
 
 | # | Prediction (spec) | Result on this set | Verdict |
 |---|---|---|---|
-| 1 | Rulebook: at most 2 of 6 re-scored rows differ | 2 of 6 on 9 fields (measured); 5 of 6 with extra (measured) | HELD under Ian's ruling; DISPROVED if extra counts |
-| 2 | Strong rewrite has a higher good share than typed in at least 4 of 6 (assumed) | 2 of 6 (T1 1/2 to 2/2, T4 1/2 to 2/2; the other 4 are 2/2 both ways); typed 10/12, Strong 12/12 (read, script output, Opus rows) | DISPROVED (2 is the disproof line) |
-| 3 | Weak-graded prompts get a lower good share than strong-graded (assumed) | weak 7/8 (88%), better 1/2 (50%), strong 14/14 (100%) (read, script output; checked against the per-prompt table) | HELD, n small |
+| 1 | Rulebook: at most 2 of 6 re-scored rows differ | 2 of 6 on 9 fields (measured); 5 of 6 with extra (measured) | DISPROVED as the spec wrote it (any field); passes only under Ian's ruling |
+| 2 | Strong rewrite has a higher good share than typed in at least 4 of 6 (assumed) | 2 of 6 (T1 1/2 to 2/2, T4 1/2 to 2/2; the other 4 are 2/2 both ways); typed 10/12, Strong 12/12 (read, script output, Opus rows). Codex rows: rewrite helps 1 of 6 (measured). Good answers: Opus 22, Codex 16, split on 6 rows Q01 Q05 Q07 Q15 Q16 Q21 (Opus good each) | DISPROVED under both scorers (2 is the disproof line) |
+| 3 | Weak-graded prompts get a lower good share than strong-graded (assumed) | weak 7/8 (88%), better 1/2 (50%), strong 14/14 (100%) (read, script output; checked against the per-prompt table). Codex: weak 5/8 (63%), strong 10/14 (71%) (measured). Opus: weak 7/8, strong 14/14. Earlier batch, same measure: strong 52% < better 68% (75 rows, measured) | HELD under both, narrowly; n small |
 | 4 | T6: at least 1 of 2 typed runs invents a figure (assumed) | typed 0 of 2, all T6 runs 0 of 4 (read, script output) | DISPROVED: Workiva AI declined every time |
-| 5 | Opus and Codex differ on fewer than 1 in 3 of the 24 rows | 10 of 24 differ on 9 fields, after label mapping (measured); limit was 8 | DISPROVED |
+| 5 | Opus and Codex differ on fewer than 1 in 3 of the 24 rows | 10 of 24 differ on 9 fields, after label mapping (measured); limit: at most 7 may differ | DISPROVED |
 | 6 | Sample stated plainly | 24 answers (measured, 24 rows) | HELD (a statement) |
 
 On criterion 4: the coach rated T6 strong, and the answer was a correct refusal; on this set the coach's
@@ -76,7 +80,7 @@ On criterion 4: the coach rated T6 strong, and the answer was a correct refusal;
   right answer (T3 x2, T6 x4); (2) the coach's unfilled "[number] bullets" placeholder versus the table and
   format fields (T4); (3) found credit for a partly named key item (T2 Q07); (4) whether a correctly
   computed % change counts as "a number not in the file" (T1); (5) row numbering by data row or sheet row
-  (T6 Q14).
+  (T6 Q14); (6) whether a "recurring ~$2" item counts toward found (T1; decides Q16 and Q21).
 - **The rulebook was not edited mid-batch**; these are left for Ian (below).
 
 ## Coach findings (not fixed here)

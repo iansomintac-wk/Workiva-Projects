@@ -202,3 +202,18 @@ hold, in the score files' field terms:
 - `invented` = 1 (no company fact absent from the file).
 
 `hard`, `extra`, `table`, `clarify`, `source`, `job` and `format` are recorded but do not enter the good-answer test.
+
+## Corrections after scoring (2026-10-19)
+
+Written after the tricky-batch final review. The 24 scores are unchanged; nothing above is rewritten.
+
+- **R7 example.** The example says "found 1" for an answer that says the file has no category 11 row. The T3 and T6
+  keys have 2 items each, and both scorers gave found 2 for a correct refusal. Read "found 1" there as one key item
+  credited, not the found total.
+- **R2 versus R7/R11 (precedence).** A figure given for an ask the file cannot support is invented under R7/R11, even
+  when the key lists it under `mustNotClaim`. R2's "any `mustNotClaim` stated is false" applies to a wrong statement
+  about something in the file, not to a new company figure. `mustNotClaim` names the prohibited content; it does not
+  decide the field. Which way the 24 scores went was not recomputed here (assumed: scorers followed the R7 text).
+- **R14(c) versus R7.** R14(c) scores a refusal as job 0. For T3 and T6 declining is the right answer (R7), so R14(c)
+  does not apply there; R7 takes precedence. The scores stand as given, so the T3 x2 and T6 x4 refusals are among the
+  unruled items in the results file; Ian decides whether to change R14(c).
