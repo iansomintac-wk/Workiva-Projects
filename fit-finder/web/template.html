@@ -199,7 +199,7 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
       <details class="how">
         <summary>How it rates</summary>
         <p class="hint">Good fits come back every period and are mostly reading, comparing, checking, summarizing or drafting. Judgment, exact calculation, other systems and chasing people stay with you. It is pattern-based and uses no AI.</p>
-        <p class="hint" id="howRates">On 60 sample tasks written and labelled by AI it agreed 75% of the time; not yet measured on real tasks. Features come from 23 Workiva support pages read on 15 Oct 2026.</p>
+        <p class="hint" id="howRates">On 60 sample tasks written and labelled by AI it agreed on fit 75% of the time. On 19 real prompts (Workiva and community posts) the first feature it suggested was right for 15. On 29 newer real prompts it suggested a wrong feature 5 times in 23 that fit, and agreed on fit for only 12 of 29. So treat it as a first guess and check the linked support page. Features come from 23 Workiva support pages read on 15 Oct 2026, re-checked 19 Oct 2026.</p>
       </details>
     </div>
   </section>
@@ -224,6 +224,7 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
   const BLOCK = { judgment: 'judgment or sign-off', 'exact-calc': 'exact calculation', 'cross-system': 'work in other systems', 'collect-from-people': 'getting input from people', 'one-off': 'a one-off' };
   const NAME = { good: 'good fit', partial: 'partial fit', not: 'not a fit' };
   const list = (a) => a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+  if (location.protocol === 'file:') $('coachLink').setAttribute('href', 'prompt-coach.html');
   let rep = 'auto';
   for (const [t, p] of [['tab-task', 'pane-task'], ['tab-list', 'pane-list']]) $(t).onclick = () => {
     for (const [t2, p2] of [['tab-task', 'pane-task'], ['tab-list', 'pane-list']]) { $(t2).setAttribute('aria-selected', String(t2 === t)); $(p2).hidden = p2 !== p; }
@@ -237,7 +238,8 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
       if (!b.length && !r.repeats) return 'Workiva AI can take a first pass at this. It pays off most on work you repeat, so it is a better fit if this comes back every period.';
       return 'Workiva AI can take part of it' + (ai.length ? ' (' + list(ai) + ')' : '') + '. ' + (b.length ? 'The ' + list(b) + ' stays with you.' : 'The rest stays with you.');
     }
-    if (!r.ops.length) return 'Add a verb or two (compare, check, draft, approve, send) so it can tell what the task involves.';
+    if (r.lang === 'other') return 'Fit Finder reads English only for now. Try the task in English.';
+    if (!r.ops.length) return 'Couldn’t tell which step of your work this is. Try describing what you do, for example: “Every month I compare the draft board pack to last month’s and list what changed.”';
     return 'The core of this is ' + (b.length ? list(b) : 'work without a text or table to start from') + ', which stays with you.' + (ai.length ? ' Workiva AI can still help with the ' + list(ai) + '.' : r.ops.includes('COLLECT') ? ' Workiva AI can draft the request for you.' : '');
   }
 
@@ -246,7 +248,7 @@ details.how { margin-top: 8px; } details.how summary { cursor: pointer; font-wei
     if (!text) { fitEl.className = 'fitbadge none'; fitEl.textContent = 'type a task'; for (const id of ['why', 'aiLine', 'youLine']) $(id).textContent = ''; for (const id of ['starterPanel', 'coachLine', 'fullerPanel', 'firstTry', 'where']) $(id).hidden = true; return; }
     const r = FitEngine.rate(text, rep === 'auto' ? undefined : { repeats: rep === 'yes' });
     $('repeats').checked = !!r.repeats;
-    fitEl.className = 'fitbadge ' + (r.ops.length ? r.fit : 'none'); fitEl.textContent = r.ops.length ? NAME[r.fit] : 'not sure yet';
+    fitEl.className = 'fitbadge ' + (r.ops.length ? r.fit : 'none'); fitEl.textContent = r.ops.length ? NAME[r.fit] : r.lang === 'other' ? 'English only' : 'couldn’t tell';
     $('why').textContent = why(r);
     const ai = r.steps.filter((s) => s.who === 'ai').map((s) => s.label.toLowerCase()), you = r.steps.filter((s) => s.who === 'you').map((s) => s.label.toLowerCase());
     line('aiLine', 'Workiva AI takes: ', ai); line('youLine', 'Stays with you: ', you);

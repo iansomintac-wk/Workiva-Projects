@@ -5,7 +5,7 @@ const CHROME = process.env.CHROME || 'C:/Program Files/Google/Chrome/Application
 const PAGE = 'file:///' + path.resolve(__dirname, '../dist/fit-finder.html').replace(/\\/g, '/');
 const OUT = process.argv[2] || 'C:/Users/teasp/Downloads/fit-finder-improved/captures/';
 const COACH = 'https://claude.ai/artifact/9Qk7uhNgri3uCSkUafsDQV';
-const HOW = 'On 60 sample tasks written and labelled by AI it agreed 75% of the time; not yet measured on real tasks. Features come from 23 Workiva support pages read on 15 Oct 2026.';
+const HOW = 'On 60 sample tasks written and labelled by AI it agreed on fit 75% of the time. On 19 real prompts (Workiva and community posts) the first feature it suggested was right for 15. On 29 newer real prompts it suggested a wrong feature 5 times in 23 that fit, and agreed on fit for only 12 of 29. So treat it as a first guess and check the linked support page. Features come from 23 Workiva support pages read on 15 Oct 2026, re-checked 19 Oct 2026.';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const freePort = () => new Promise((res) => { const s = net.createServer().listen(0, () => { const p = s.address().port; s.close(() => res(p)); }); });
 
@@ -94,8 +94,13 @@ async function main() {
       // rates text, coach link, banned phrase
       const how = await ev(`t('#howRates')`);
       check(W, 'How it rates text present', how.includes(HOW), JSON.stringify(how).slice(0, 80));
+      check(W, 'note has no "not yet measured" and states the real-prompt count 15', !/not yet measured/.test(how) && /right for 15./.test(how));
+      const msgs = await ev(`(async () => { const out = {}; for (const [k, v] of [['help', 'help'], ['fr', 'Résumez ce rapport trimestriel'], ['not', 'The CFO and I sign off the final 10-Q before it is filed.']]) { await setTask(v); out[k] = ['fit', 'why', 'aiLine', 'youLine', 'where'].map((i) => t('#' + i)).join(' | '); } return out; })()`);
+      check(W, 'no-step input says could not tell, with an example, not "not a fit"', /Couldn.t tell which step of your work this is/.test(msgs.help) && /for example/i.test(msgs.help) && !/not a fit/i.test(msgs.help), msgs.help.slice(0, 80));
+      check(W, 'French input says English only, not "not a fit"', /reads English only for now/.test(msgs.fr) && !/not a fit/i.test(msgs.fr), msgs.fr.slice(0, 80));
+      check(W, 'a real not-a-fit sample still shows not a fit', /not a fit/.test(msgs.not) && !/Couldn.t tell/.test(msgs.not), msgs.not.slice(0, 80));
       const link = await ev(`(() => { const a = document.getElementById('coachLink'); return a ? { href: a.getAttribute('href'), target: a.target, rel: a.rel, text: a.textContent, para: a.parentElement.textContent } : null; })()`);
-      check(W, 'Prompt Coach link href exact', !!link && link.href === COACH, link && link.href);
+      check(W, 'Prompt Coach link is the same-folder file under file:', !!link && link.href === 'prompt-coach.html', link && link.href);
       check(W, 'Prompt Coach link opens safely in a new tab', !!link && link.target === '_blank' && /noopener/.test(link.rel) && link.text === 'Prompt Coach');
       check(W, 'paste-or-improve line under the starter prompt', !!link && link.para.includes('Paste it into Workiva AI chat, or improve it first in the Prompt Coach'));
       const banned = await ev(`/Workiva['\\u2019]s prompt/i.test(document.documentElement.textContent)`);

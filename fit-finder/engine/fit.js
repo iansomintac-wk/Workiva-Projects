@@ -35,6 +35,17 @@
       .replace(/\bu\b/g, 'you').replace(/\bw\/o\b/g, 'without').replace(/\b(?:prev|prv)\b/g, 'previous');
   }
 
+  // rough language check: English stopwords vs. common French/Spanish/German/Italian/Portuguese ones
+  const EN_STOP = new Set('the a an of to and in for is are on with that this it be as at by from or we i you my our your each every all not'.split(' '));
+  const OTHER_STOP = new Set('le la les de des du et un une ce ces pour sur dans avec est sont que qui der die das und ist nicht mit ein eine zu el los las del y para por con una es se che il di per non um uma os as dos e em'.split(' '));
+  function language(text) {
+    const w = String(text).toLowerCase().match(/[a-zÀ-ɏ]+/g) || [];
+    if (w.length < 2) return 'en';
+    const en = w.filter((x) => EN_STOP.has(x)).length, other = w.filter((x) => OTHER_STOP.has(x)).length;
+    const accents = (String(text).match(/[À-ɏ]/g) || []).length;
+    return other > en || (en === 0 && accents > 0) ? 'other' : 'en';
+  }
+
   function rate(text, opts) {
     const t = normalize(text);
     const ops = [], hits = {};
@@ -53,7 +64,7 @@
     else if (!blockers.length) fit = repeats ? 'good' : 'partial';
     else if (aiCore.every((o) => o === 'CHECK' || o === 'COMPARE') && blockers.some((b) => b !== 'judgment')) fit = 'not';
     else fit = aiCore.length >= 2 || !APPROVAL_ONLY.test(t) ? 'partial' : 'not';
-    return { fit, repeats: repeats ? 1 : 0, ops, blockers, hits, steps: steps(t, ops), prompt: starter(text, ops, fit) };
+    return { fit, unclear: ops.length === 0, lang: language(text), repeats: repeats ? 1 : 0, ops, blockers, hits, steps: steps(t, ops), prompt: starter(text, ops, fit) };
   }
 
   // what each step is, who keeps it, and why (plain words; no product claims)
