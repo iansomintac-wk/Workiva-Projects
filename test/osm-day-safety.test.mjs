@@ -29,11 +29,14 @@ test('cleanup kills, waits for exit, then removes', async () => {
 });
 
 test('control c: countLeftovers sees a leftover osmsim- folder', () => {
-  const before = countLeftovers(['osmsim-'], tmpdir());
-  const dir = mkdtempSync(join(tmpdir(), 'osmsim-test-'));
-  try { assert.equal(countLeftovers(['osmsim-'], tmpdir()), before + 1); }
-  finally { rmSync(dir, { recursive: true, force: true }); }
-  assert.equal(countLeftovers(['osmsim-'], tmpdir()), before);
+  const priv = mkdtempSync(join(tmpdir(), 'countleft-'));
+  try {
+    assert.equal(countLeftovers(['osmsim-'], priv), 0);
+    const dir = mkdtempSync(join(priv, 'osmsim-test-'));
+    assert.equal(countLeftovers(['osmsim-'], priv), 1);
+    rmSync(dir, { recursive: true, force: true });
+    assert.equal(countLeftovers(['osmsim-'], priv), 0);
+  } finally { rmSync(priv, { recursive: true, force: true }); }
 });
 
 test('control d: assertMarker throws on missing or wrong marker', () => {
