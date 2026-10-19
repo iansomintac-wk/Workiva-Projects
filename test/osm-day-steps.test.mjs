@@ -328,7 +328,7 @@ test('X5 verify C5 compares unmasked: no SIM-EXT mask remains', () => {
 });
 
 // ---- X6/X7/X8: L11 clicks OK with no contact; L7 judged on the rendered Today; L5 plan on Fernhollow's Sessions panel ----
-test('X6 L11 judge: OK enabled with no contact is clicked and the state after the click decides; no refusal FAILs', async () => {
+test('X6 L11 judge: warned and still allowed passes; each missing piece FAILs', async () => {
   const { l11Judge } = await import('../tools/sim/osm-day/steps-b.mjs');
   const line = 'No CSAT contact is marked added, so nobody will receive the survey. You can still graduate.';
   const nc = { g0: { csatDone: false, contact: '' }, hasLine: true, text: line, okDisabled: false, clicked: true, stage: 'graduated', queued: 2 };

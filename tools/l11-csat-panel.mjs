@@ -7,7 +7,7 @@ import { writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { resolve, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolveUnderSimRuns } from './sim/osm-day/lib/outdir.mjs';
 import { launch } from './sim/osm-day/lib/browser.mjs';
 import { setupA, setupB } from './sim/osm-day/lib/setup.mjs';
@@ -17,6 +17,15 @@ import { PART_B, PART_B_ORDER, CAL } from './sim/osm-day/steps-b.mjs';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = resolveUnderSimRuns(join(ROOT, 'sim-runs', 'l11-csat'), ROOT);
 const CONTROL_REF = '96c55c0';
+
+// Signal cleanup. launch() (browser.mjs) registers its own SIGINT/SIGTERM handler AFTER ours; it stops Chrome by its PID, removes
+// the osmsim-* profile and only then exits (130/143). So ours must remove the file, must NOT exit (an early exit skips that stop),
+// and keeps an unref'd timer as a backstop for a signal that lands before launch() has registered.
+export function installSignalCleanup(proc, cleanup) {
+  for (const [sig, code] of [['SIGINT', 130], ['SIGTERM', 143]]) {
+    proc.on(sig, () => { cleanup(); setTimeout(() => proc.exit(code), 15000).unref(); });
+  }
+}
 
 async function runL11(version) {
   const ctx = await launch({ version, startDay: CAL.L1, runDir: join(OUT, 'run-' + Date.now()), part: 'B' });
@@ -48,8 +57,7 @@ async function control() {
   let created = false;
   const cleanup = () => { if (created) { rmSync(file, { force: true }); created = false; } };
   process.on('exit', cleanup);
-  process.on('SIGINT', () => { cleanup(); process.exit(130); });
-  process.on('SIGTERM', () => { cleanup(); process.exit(143); });
+  installSignalCleanup(process, cleanup);
   try {
     // 'wx': fail rather than overwrite a file this run did not create
     writeFileSync(file, execFileSync('git', ['show', CONTROL_REF + ':osm-book-of-business-tracker-1.1.html'], { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 }), { flag: 'wx' });
@@ -80,7 +88,7 @@ const SETUP_STATE = (name, st) => `(() => {
 })()`;
 
 const READ_STATE = `(() => {
-  const m = document.querySelector('.modal'); const l = document.querySelector('#gc-csat');
+  const ok = document.getElementById('gc-ok'); const m = ok ? ok.closest('.modal') : null; const l = m ? m.querySelector('#gc-csat') : null;
   if (!m) return JSON.stringify({modal: false});
   m.scrollIntoView({block: 'start'});
   const r = m.getBoundingClientRect();
@@ -116,7 +124,7 @@ sha256 (first 12 of the png): ${hex}
   });
 }
 
-async function inSim(fn) {
+export async function inSim(fn) {
   const ctx = await launch({ version: '1.1', startDay: DAY, runDir: join(OUT, 'run-' + Date.now()), part: 'A' });
   try {
     await setupA(ctx);
@@ -125,9 +133,11 @@ async function inSim(fn) {
   } finally { await ctx.stop(); }
 }
 
-try {
-  if (process.argv.includes('--check')) process.exit((await check()) ? 0 : 1);
-  else if (process.argv.includes('--control')) process.exit((await control()) ? 0 : 1);
-  else if (process.argv.includes('--captures')) { await captures(); process.exit(0); }
-  else { console.error('usage: node tools/l11-csat-panel.mjs --check | --control (vs ' + CONTROL_REF + ') | --captures'); process.exit(2); }
-} catch (e) { console.log('l11 tool error: ' + e.message); process.exit(2); }
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    if (process.argv.includes('--check')) process.exit((await check()) ? 0 : 1);
+    else if (process.argv.includes('--control')) process.exit((await control()) ? 0 : 1);
+    else if (process.argv.includes('--captures')) { await captures(); process.exit(0); }
+    else { console.error('usage: node tools/l11-csat-panel.mjs --check | --control (vs ' + CONTROL_REF + ') | --captures'); process.exit(2); }
+  } catch (e) { console.log('l11 tool error: ' + e.message); process.exit(2); }
+}
