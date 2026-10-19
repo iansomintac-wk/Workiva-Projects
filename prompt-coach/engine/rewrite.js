@@ -136,6 +136,18 @@
     }
   }
 
+  /* Missing-data ask (spec 2026-10-19): the user asks what is missing or blank, not what is wrong.
+     Rule and condition clauses are cut out before looking for the missing word, so "if X is missing" and
+     "don't guess missing dates" do not count; the condition clause ends at its comma, so "If possible, list
+     missing data" keeps its request. Wrong-value words are looked for in the whole prompt (mixed ask). */
+  const MISS_WORD = /\b(?:missing|blank|empty|no (?:data|values?|figures?)|without (?:a |any )?(?:values?|data))\b/;
+  const MISS_RULE = /\bif\b[^,.;!?\n]*|\b(?:don'?t|do not|never|not)\s+(?:\w+\s+){0,3}?(?:guess|assume|estimate|fill|make up|chase|plug|infer)\b[^.;!?\n]*|\bleave\b[^.;!?\n]*\bblank\b|\b(?:a|an|new|the)\s+(?:\w+\s+){0,2}?blank (?:tab|sheet|page|template|row|line|space)\b/g;
+  const MISS_WRONG = /\b(?:zero|duplicat\w*|exceptions?|wrong|incorrect|outliers?|anomal\w*|unusual|mismatch\w*|suspicious|spikes?|out of place|inconsisten\w*|typos?)\b/;
+  function missingAsk(prompt) {
+    const s = String(prompt || '').toLowerCase().replace(/[\u2018\u2019]/g, "'");
+    return MISS_WORD.test(s.replace(MISS_RULE, ' ')) && !MISS_WRONG.test(s);
+  }
+
   function paramsFragment(ctx) {
     const h = ctx.headers.slice(0, 4);
     const cols = h.length >= 2 ? h.join(', ') : null;
@@ -589,6 +601,6 @@
     return r.grade === 'strong' && r.hits && r.stacked ? 'better' : r.grade;
   }
 
-  const api = { displayGrade, listStacked, sentenceSpans, directVoice, fixTypos, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
+  const api = { displayGrade, listStacked, sentenceSpans, missingAsk, directVoice, fixTypos, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
   if (isNode) module.exports = api; else root.ScopeRewrite = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -298,3 +298,26 @@ test('missing-data: T5 typed with @sus_supplier_data.csv gets the missing-data t
   assert.ok(!s.includes('why it looks wrong'), s);
   assert.ok(!s.includes('Do not correct any values'), s);
 });
+
+test('missing-data: missingAsk fires on train ask rows 25 27 30 33 36 37 38 and on no mixed or mention row (ids 16-38)', () => {
+  const rows = fs.readFileSync(path.join(__dirname, '../research/2026-10-19-missing-ask-labels.tsv'), 'utf8').replace(/\r/g, '').trim().split('\n').slice(1).map((l) => l.split('\t'));
+  const train = rows.filter((r) => Number(r[0]) >= 16);
+  assert.equal(train.length, 23);
+  for (const r of train) {
+    const fired = W.missingAsk(r[3]);
+    if (r[2] === 'mixed' || r[2] === 'mention') assert.equal(fired, false, r[0] + ' ' + r[2] + ': ' + r[3]);
+    if (['25', '27', '30', '33', '36', '37', '38'].includes(r[0])) assert.equal(fired, true, r[0] + ': ' + r[3]);
+  }
+});
+
+test('missing-data: a truly mixed request does not take the missing-only template', () => {
+  assert.equal(W.missingAsk('List missing values and, if a zero is found, report it too.'), false);
+  assert.equal(W.missingAsk('Which suppliers have duplicate or missing emissions data?'), false);
+  assert.equal(W.missingAsk('List any outliers. If a value is missing, say so.'), false);
+  assert.equal(W.missingAsk('Which suppliers are missing emissions data?'), true);
+});
+
+test('missing-data: a request that a condition introduces still counts as a missing-data ask', () => {
+  assert.equal(W.missingAsk('If possible, list missing emissions data.'), true);
+  assert.equal(W.missingAsk('List the suppliers. If the file has a blank tab, ignore it.'), false);
+});
