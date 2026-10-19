@@ -5,7 +5,7 @@ const CHROME = process.env.CHROME || 'C:/Program Files/Google/Chrome/Application
 const PAGE = 'file:///' + path.resolve(__dirname, '../dist/fit-finder.html').replace(/\\/g, '/');
 const OUT = process.argv[2] || 'C:/Users/teasp/Downloads/fit-finder-improved/captures/';
 const COACH = 'https://claude.ai/artifact/9Qk7uhNgri3uCSkUafsDQV';
-const HOW = 'On 60 sample tasks written and labelled by AI it agreed on fit 75% of the time. On 19 real prompts (Workiva and community posts) the first feature it suggested was right for 15. On 29 newer real prompts it suggested a wrong feature 5 times in 23 that fit, and agreed on fit for only 12 of 29. So treat it as a first guess and check the linked support page. Features come from 23 Workiva support pages read on 15 Oct 2026, re-checked 19 Oct 2026.';
+const HOW = 'On 60 sample tasks written and labelled by AI it agreed on fit 75% of the time. On 19 real prompts (Workiva and community posts) the first feature it suggested was right for 15. On 29 newer real prompts, which it was tuned on and which AI labelled, it suggested a wrong feature 5 times in 23 that fit, and agreed on fit for only 12 of 29. On 40 new test sentences aimed at weak spots, written and labelled by AI and never tuned on, the first feature was right for 11 of 29 that fit, wrong for 9, and a feature was shown for 4 tasks that do not fit. So treat it as a first guess and check the linked support page. Features come from 23 Workiva support pages read on 15 Oct 2026; 22 of 23 re-checked on 18 Oct 2026 (one needs sign-in).';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const freePort = () => new Promise((res) => { const s = net.createServer().listen(0, () => { const p = s.address().port; s.close(() => res(p)); }); });
 
@@ -66,7 +66,7 @@ async function main() {
       check(W, 'first try hidden when there are no steps', noSteps);
       // badge exact texts
       const badges = await ev(`(() => { const out = new Set(); for (let i = 0; i < q('.role-chip').length; i++) { q('.role-chip')[i]?.click(); q('#wins .avail').forEach((a) => out.add(a.textContent)); } return [...out]; })()`);
-      const okB = new Set(['included with Workiva AI', 'check your entitlement', 'preview: ask if it is on for you', 'not a named feature: try it on one file first']);
+      const okB = new Set(['included with Workiva AI', 'check your entitlement', 'preview: ask if it is on for you', 'not a named feature: try it on one file first', 'not on a public support page yet: check in your workspace']);
       check(W, 'badges use only the four exact texts', badges.length > 0 && badges.every((b) => okB.has(b)), JSON.stringify(badges));
       // badge contrast (WCAG) in both themes, and visible hint under an assumed badge
       const HINT = "Workiva doesn't name a feature for this; try it on one file first.";
@@ -108,6 +108,16 @@ async function main() {
       check(W, 'Prompt Coach link is the same-folder file under file:', !!link && link.href === 'prompt-coach.html', link && link.href);
       check(W, 'Prompt Coach link opens safely in a new tab', !!link && link.target === '_blank' && /noopener/.test(link.rel) && link.text === 'Prompt Coach');
       check(W, 'paste-or-improve line under the starter prompt', !!link && link.para.includes('Paste it into Workiva AI chat, or improve it first in the Prompt Coach'));
+      const fill = 'Replace each [bracket] with your own words before you paste.';
+      const fillN = await ev(`(async () => { await setTask(FitCatalogue.useCases.find((x) => x.id === 'fr-yoy-narrative').try); return { coach: t('#coachLine'), fuller: !!document.getElementById('fullerPanel') && !document.getElementById('fullerPanel').hidden, near: (document.getElementById('fullerPanel').textContent + t('#coachLine')).split(${JSON.stringify(fill)}).length - 1 }; })()`);
+      check(W, 'coach line tells the user to replace each [bracket]', fillN.coach.includes(fill) && fillN.fuller, JSON.stringify(fillN.coach).slice(0, 80));
+      check(W, 'fuller panel carries the fill-the-brackets line too', fillN.near >= 2, 'count ' + fillN.near);
+      const art = fs.readFileSync(path.resolve(__dirname, '../dist/fit-finder.html'), 'utf8');
+      check(W, 'static Coach href in the html is the https artifact', art.includes('id="coachLink" href="' + COACH + '"'));
+      const peers = await ev(`(async () => { await setTask(FitCatalogue.useCases.find((x) => x.id === 'fr-peers').try); return q('#where .avail').map((x) => x.textContent); })()`);
+      check(W, 'fr-peers card badge says preview', peers.length > 0 && peers.every((v) => /^preview/.test(v)), JSON.stringify(peers));
+      const tr = await ev(`(async () => { await setTask('Every year I translate the annual report into French and German.'); return q('#where .avail').map((x) => x.textContent); })()`);
+      check(W, 'translations card does not claim inclusion', tr.length > 0 && !tr.includes('included with Workiva AI') && tr.includes('not on a public support page yet: check in your workspace'), JSON.stringify(tr));
       const banned = await ev(`/Workiva['\\u2019]s prompt/i.test(document.documentElement.textContent)`);
       check(W, 'no "Workiva\'s prompt" anywhere', !banned);
       // layout + capture

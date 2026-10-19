@@ -10,6 +10,8 @@ const cases = [
   { t: 'Explain the new revenue standard to the board', first: 'none' },
   { t: 'Explain the new CSRD requirements to the team', first: 'sus-requirements' },
   { t: 'Explain the ESRS E1 standard', first: 'sus-requirements' },
+  { t: 'For our climate disclosures, explain what the new requirements mean', first: 'sus-requirements' },
+  { t: 'Explain the TCFD requirements', first: 'sus-requirements' },
   // 2 a translate ask leads with the translate card
   { t: 'Translate the sustainability report into Spanish', first: 'gen-translate' },
   { t: 'Translate the climate disclosure into German', first: 'gen-translate' },

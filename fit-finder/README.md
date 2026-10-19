@@ -12,8 +12,8 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (88,205 bytes)
-# Offline Coach link: keep dist/fit-finder.html and prompt-coach.html in one folder; opened from a file, the link uses prompt-coach.html, online it uses the artifact URL.
+node tests/build.js                                               # -> dist/fit-finder.html (89183 bytes)
+# Offline Coach link: ship both html files (fit-finder.html and prompt-coach.html) in one folder; opened from a file, the link uses prompt-coach.html, online it uses the artifact URL.
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
 node tests/prompts-strong.test.js                                # every prompt the page can show grades strong in the Prompt Coach
@@ -278,3 +278,5 @@ leads with the translate card; an op word after "do not / don't / no need to / n
 exceptions/findings" reads as EXTRACT, so a SOC or assurance report review reaches the file-summary card. Tone and length
 words ("more concise", "more professional") are left out of REWRITE on purpose: rule C (2026-10-17) and its tests say so.
 Cases: tests/edge-cards.test.js. Dist size 88205 bytes (LF, as committed).
+
+Share-ready fix A (final review): How it rates adds the untouched blind result (11 of 29 first feature right, 9 wrong, 4 shown on tasks that do not fit; the 29 newer prompts were tuned on and AI-labelled); "22 of 23 re-checked on 18 Oct 2026 (one needs sign-in)"; fuller prompts say "I selected with @" (chat takes no uploads); both prompt panels say to replace each [bracket]; the sustainability requirements cue also counts before the word, plus TCFD, SASB, CDP, EU taxonomy, double materiality, GRI; Benchmarking badge is preview; Translations badge is "not on a public support page yet: check in your workspace" (S1 only). Pagetest also checks the static https Coach href. Dist size 89183 bytes (LF, as committed).

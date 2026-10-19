@@ -34,7 +34,7 @@ Checked 2026-10-15. Generated from catalogue.json and capabilities-register.md; 
 - Spreadsheets return a formula, not a calculated value (S19).
 
 ## Features
-Availability: IN = included with Workiva AI; DEP = depends on your Workiva solutions; PRE = preview.
+Availability: IN = included with Workiva AI; DEP = depends on your Workiva solutions; PRE = preview; UNL = listed on S1 only, no public support page (the page badge says "not on a public support page yet: check in your workspace").
 
 | Feature | What the page says | Avail. | Source |
 |---|---|---|---|
@@ -44,11 +44,11 @@ Availability: IN = included with Workiva AI; DEP = depends on your Workiva solut
 | Prompt advisor | Ready-made prompts by industry; View prompt advisor, then Use prompt | IN | S23, S2 |
 | In spreadsheets | Fix, Explain, Summarize data, Find trends, ask about cells; returns formulas | IN | S19, S20 |
 | Wdata queries | Create, improve, explain, fix SQL; "no SQL knowledge required" | IN | S21 |
-| Translations | Listed as translating document content; no how-to on any page read | IN | S1 |
+| Translations | Listed as translating document content on S1 only (behind sign-in, not re-checkable); no how-to on any page read; the page does not claim it is included | UNL | S1 |
 | Support Intelligence knowledge base | + Add Knowledge bases; searches Support Center, links articles and videos | IN | S9 |
 | AI Error Validation | Help me fix this in the Validation Panel; "US-GAAP filings only" | IN | S14 |
 | Tie-out assistant (preview) | Matches related figures in a document, lists differences; "Only 10-Ks and 10-Qs" | PRE | S7, S10, S11, S8 |
-| Benchmarking workflow | Compares your reporting content against peer data | DEP | S7, S12, S8 |
+| Benchmarking workflow (preview) | Compares your reporting content against peer data | PRE | S7, S12, S8 |
 | SEC Filing Intelligence | ask about selected 10-K and 10-Q filings; needs listed solutions | DEP | S13, S1 |
 | Automated 8-K setup (preview) | Workflows, then Report generation (or Create, Agentic report); drafts an 8-K for review; "a starting point, not a final filing" | PRE | S15 |
 | Risk and Controls Intelligence (GRC) | Chat in GRC workflows; Risk & Control intelligence knowledge base optional by solutions | DEP | S1, S9 |
