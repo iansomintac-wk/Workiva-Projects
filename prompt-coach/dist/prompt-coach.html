@@ -782,8 +782,8 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
      "don't guess missing dates" do not count; the condition clause ends at its comma, so "If possible, list
      missing data" keeps its request. Wrong-value words are looked for in the whole prompt (mixed ask). */
   const MISS_WORD = /\b(?:missing|blank|empty|no (?:data|values?|figures?)|without (?:a |any )?(?:values?|data))\b/;
-  const MISS_RULE = /\bif\b[^,.;!?\n]*|\b(?:don'?t|do not|never|not)\s+(?:\w+\s+){0,3}?(?:guess|assume|estimate|fill|make up|chase|plug|infer)\b[^.;!?\n]*|\bleave\b[^.;!?\n]*\bblank\b|\b(?:a|an|new|the)\s+(?:\w+\s+){0,2}?blank (?:tab|sheet|page|template|row|line|space)\b/g;
-  const MISS_WRONG = /\b(?:zero|duplicat\w*|exceptions?|wrong|incorrect|outliers?|anomal\w*|unusual|mismatch\w*|suspicious|spikes?|out of place|inconsisten\w*|typos?)\b/;
+  const MISS_RULE = /(?<!\b(?:check|see|ask|confirm|find out|tell (?:me|us))\s)\bif\b[^,.;!?\n]*|\b(?:don'?t|do not|never|not)\s+(?:\w+\s+){0,3}?(?:guess|assume|estimate|fill|make up|chase|plug|infer)\b[^.;!?\n]*|\bleave\b[^.;!?\n]*\bblank\b|\b(?:a|an|new|the)\s+(?:\w+\s+){0,2}?blank (?:tab|sheet|page|template|row|line|space)\b/g;
+  const MISS_WRONG = /\b(?:zero|invalid|negative|error\w*|duplicat\w*|exceptions?|wrong|incorrect|outliers?|anomal\w*|unusual|mismatch\w*|suspicious|spikes?|out of place|inconsisten\w*|typos?)\b/;
   function missingAsk(prompt) {
     const s = String(prompt || '').toLowerCase().replace(/[\u2018\u2019]/g, "'");
     return MISS_WORD.test(s.replace(MISS_RULE, ' ')) && !MISS_WRONG.test(s);

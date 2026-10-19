@@ -339,3 +339,17 @@ test('missing-data: detected sheet headers lead the missing-data table', () => {
   const s = run('Which suppliers are missing emissions data?', [f]).stages.strong.prompt;
   assert.ok(s.includes('Return a table: Supplier, Country, Emissions tCO2e, what is missing, where it should be.'), s);
 });
+
+test('missing-data: an indirect question after check/tell me/see/find out is a missing-data ask, a conditional clause is not', () => {
+  assert.equal(W.missingAsk('Check if any suppliers are missing emissions data'), true);
+  assert.equal(W.missingAsk('Tell me if any suppliers are missing emissions data'), true);
+  assert.equal(W.missingAsk('See whether any suppliers are missing emissions data'), true);
+  assert.equal(W.missingAsk('If a value is missing, say so.'), false);
+  assert.equal(W.missingAsk('If possible, list missing emissions data.'), true);
+});
+
+test('missing-data: invalid, negative and error words make the ask mixed', () => {
+  assert.equal(W.missingAsk('Find missing or invalid emissions values'), false);
+  assert.equal(W.missingAsk('Flag negative emissions and missing values'), false);
+  assert.equal(W.missingAsk('Find errors and missing values in the supplier file'), false);
+});
