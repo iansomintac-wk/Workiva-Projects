@@ -1,0 +1,27 @@
+SHARE-READY RUN, RESUME PROMPT. Written 2026-10-19 ~05:35Z by run lead 8ee22fc0 ("NEW - Fit Finder share-ready run")
+at its context stop. Load studio-harness:talk-and-run first.
+
+WHERE: C:/Users/teasp/Documents/workiva/.claude/worktrees/fit-finder-fair-test, branch share-ready (2993c5e..HEAD).
+Ledger: .ledger/2026-10-19-share-ready/progress.md (every dispatch and measurement). Evidence and sharing note:
+docs/evidence/2026-10-19-share-ready.md.
+
+STATE: T1-T6 done. Final review (Opus + Codex read-only) merged; fix rounds A, B, B2, C, D done; re-review 16/18 fixed,
+2 partly, both closed in D. All 10 suites pass at fde835b. Both artifacts republished (Fit Finder v15, Prompt Coach
+v13). Stopped for merge: slip.json names neither push nor merge.
+
+DO, in order:
+1. Ask Ian (plain English, one question at a time, recommendation first):
+   a. Merge share-ready into prompt-coach? Recommend yes after the backup branch per the merge rule; warn that the
+      active Prompt Coach run (worktree prompt-coach-rewrites) also edits prompt-coach/engine/rewrite.js: conflicts
+      keep both sides, re-run the full suite on the result.
+   b. Rule C: should tone-only edits ("make this memo more concise / more professional") get the rewrite card?
+      Recommend: leave as is (it gave false cards on 19 of 42 non-rewrite sentences); the page says "couldn't tell".
+   c. Blind result unchanged (11 of 29 right, 9 wrong): share with customers now with the page's honest numbers, or
+      teammates first? Recommend teammates first as a labelled pilot, customers after a second round of card fixes.
+2. Hand-off PM step (studio-harness:pm, four questions) and ruling capture of Ian's verbatim words in the ledger.
+3. Only on Ian's yes: merge per the merge rule; record his words in .ledger/2026-10-19-share-ready/slip.json first.
+
+DATA CARE: never open, print or quote fit-finder/data/real/ or C:/Users/teasp/Documents/workiva-sealed/. Do not
+re-score fit-finder/data/synth/2026-10-19-blind.jsonl or 2026-10-18-holdout.jsonl.
+SESSION NAMES: do not `claude rm` 2c0f094c, 63073f73, b2758e3d, a7010c17 or 8ee22fc0: they share this worktree and
+its git-ignored .ledger/.
