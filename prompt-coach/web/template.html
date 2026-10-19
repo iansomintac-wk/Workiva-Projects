@@ -347,7 +347,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     if (sensitive) notes.append(note('warn', sensitive));
     const off = byKind('offtopic');
     if (off) notes.append(note('warn', off.text));
-    for (const k of ['calc', 'stacked', 'grounding']) { const n = byKind(k); if (n && !(off && k === 'stacked')) notes.append(note('warn', n.text)); }
+    for (const k of ['calc', 'stacked', 'grounding', 'unsupported']) { const n = byKind(k); if (n && !(off && k === 'stacked')) notes.append(note('warn', n.text)); }
   }
   function note(kind, text, lead) {
     const d = document.createElement('div'); d.className = 'note' + (kind ? ' ' + kind : '');
