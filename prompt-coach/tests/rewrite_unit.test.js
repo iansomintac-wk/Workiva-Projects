@@ -569,3 +569,40 @@ test('unsupported: the 9 stored explain asks split as measured (explain9)', () =
     assert.equal(unsupported(run(p, [file])).filter((x) => x.text.includes('category ' + n + ' (')).length, checked ? 1 : 0, prefix);
   }
 });
+
+// Task 4 (spec rule 3): short row labels count as listed
+const shortFile = (text) => ({ name: 'summary.xlsx', kind: 'Excel', sheets: [{ name: 'S', headers: [] }], periods: [], text });
+const askS3 = (n) => 'Calculate Scope 3 category ' + n + ' emissions.';
+const f4 = { name: 'summary.xlsx', kind: 'Excel', sheets: [{ name: 'Summary', headers: [] }], periods: [], text: '## Summary\nScope 3 summary\nPurch. goods, 1,200\nWaste in ops, 300' };
+
+test('unsupported: short label rows count as listed (category 6 missing)', () => {
+  const u = unsupported(run(askS3(6), [f4]));
+  assert.equal(u.length, 1, JSON.stringify(u)); assert.ok(u[0].text.includes('category 6 ('), u[0].text);
+});
+test('unsupported: short label shows category 5 as listed', () => {
+  assert.equal(unsupported(run(askS3(5), [f4])).length, 0);
+});
+test('unsupported: short label sheet with Upstr. T&D, Downstr. T&D, EOL', () => {
+  const f = shortFile('## S\nScope 3 summary\nUpstr. T&D, 400\nDownstr. T&D, 500\nEOL, 80');
+  assert.equal(unsupported(run(askS3(12), [f])).length, 0);
+  assert.equal(unsupported(run(askS3(4), [f])).length, 0);
+  const u = unsupported(run(askS3(6), [f]));
+  assert.equal(u.length, 1, JSON.stringify(u)); assert.ok(u[0].text.includes('category 6 ('), u[0].text);
+});
+test('unsupported: short label EOL needs a word boundary', () => {
+  const f = shortFile('## S\nScope 3 summary\nGeology survey, 1\nPurchased goods, 2\nBusiness travel, 3');
+  const u = unsupported(run(askS3(12), [f]));
+  assert.equal(u.length, 1, JSON.stringify(u)); assert.ok(u[0].text.includes('category 12 ('), u[0].text);
+});
+test('unsupported: short label one leased row is counted once', () => {
+  const f = shortFile('## S\nScope 3 summary\nUpstr. leased assets, 60');
+  assert.equal(unsupported(run(askS3(6), [f])).length, 0);
+});
+test('unsupported: short label upstream and downstream leased are distinguished', () => {
+  const up = shortFile('## S\nScope 3 summary\nPurchased goods, 1\nUpstr. leased assets, 60');
+  const u1 = unsupported(run(askS3(13), [up]));
+  assert.equal(u1.length, 1, JSON.stringify(u1)); assert.ok(u1[0].text.includes('category 13 ('), u1[0].text);
+  const down = shortFile('## S\nScope 3 summary\nPurchased goods, 1\nDownstr. leased assets, 60');
+  const u2 = unsupported(run(askS3(8), [down]));
+  assert.equal(u2.length, 1, JSON.stringify(u2)); assert.ok(u2[0].text.includes('category 8 ('), u2[0].text);
+});

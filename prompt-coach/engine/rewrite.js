@@ -418,10 +418,11 @@
   }
   const CAT_NAME = [null, 'purchased goods and services', 'capital goods', 'fuel- and energy-related activities', 'upstream transportation and distribution', 'waste generated in operations', 'business travel', 'employee commuting', 'upstream leased assets', 'downstream transportation and distribution', 'processing of sold products', 'use of sold products', 'end-of-life treatment of sold products', 'downstream leased assets', 'franchises', 'investments'];
   const CAT_RE = [null, /purchased goods/, /capital goods/, /fuel[- ]and[- ]energy|energy-related/, /upstream (?:transport|t ?& ?d|t and d)/, /waste generated|(?:^|\n)\s*waste\s*[,\t:]/, /business travel/, /commut/, /upstream leased/, /downstream (?:transport|t ?& ?d|t and d)/, /processing of sold/, /use of sold/, /end[- ]of[- ]life/, /downstream leased/, /franchis/, /investment/];
+  const CAT_SHORT = [null, /purch\.? goods/, null, null, /upstr\.? (?:transport|t ?& ?d|t and d)/, /waste in ops?\b/, null, null, /upstr\.? leased/, /downstr\.? (?:transport|t ?& ?d|t and d)/, null, null, /\beol\b/, /downstr\.? leased/, null, null];
   // 'exact' = listed by number or by its own name; 'generic' = a plain "leased assets" row, which may be category 8 or 13; null = not listed.
   function categoryHit(n, lower) {
-    if (new RegExp('\\b(?:category|cat\\.?)\\s*' + n + '\\b').test(lower) || new RegExp('(?:^|\\n)\\s*' + n + '\\s*[,\\t:.-]').test(lower) || CAT_RE[n].test(lower)) return 'exact';
-    if ((n === 8 || n === 13) && /leased assets/.test(lower.replace(/(?:upstream|downstream) leased/g, ''))) return 'generic';
+    if (new RegExp('\\b(?:category|cat\\.?)\\s*' + n + '\\b').test(lower) || new RegExp('(?:^|\\n)\\s*' + n + '\\s*[,\\t:.-]').test(lower) || CAT_RE[n].test(lower) || (CAT_SHORT[n] && CAT_SHORT[n].test(lower))) return 'exact';
+    if ((n === 8 || n === 13) && /leased assets/.test(lower.replace(/(?:upstream|downstream|upstr\.?|downstr\.?) leased/g, ''))) return 'generic';
     return null;
   }
   // "FY25" is present when the file says FY2025 (or FY 2025, FY'25), and the same for CY; FY26 against FY2024/FY2025 is still absent.
