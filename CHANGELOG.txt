@@ -5,7 +5,7 @@ OSM Runway — release notes
 
     - 1.1 - Surveys to chase: one short line at the top of Today, outside the ranking: "Surveys to chase: Fernhollow (sent 9 days
       ago, no answer)". It lists every account (graduated too) whose CSAT survey was sent 7 or more days ago with no answer date, shows however
-      busy the day is, names open the account (5 shown, then "+N more"), and is hidden when there are none. The CSAT follow-up row stays in the ranking.
+      busy the day is, names open the account's Details tab, where the two dates are entered (5 shown, then "+N more"), and is hidden when there are none. The CSAT follow-up row stays in the ranking.
     - Sim L12 now reads that pinned line for the on-screen check (absent at day 6 and after Answered). tools/l12-panel.mjs also shoots it
       (pinned-line), guarded, CAPTURE-GUARD line in sim-runs/captures-batch.log.
     - 1.1 - Agenda + Copy: Call prep opens with a numbered Agenda built from what the book already holds
@@ -45,7 +45,7 @@ OSM Runway — release notes
 
 1.1 — L12. Today chases a CSAT survey nobody answered.
     - The CSAT block holds two optional dates, surveySentOn and surveyAnsweredOn (old books load with both empty).
-    - The CSAT block in the call panel now has "Survey sent" and "Answered" date fields (change saves them; clearing one empties it).
+    - The CSAT block in the call panel and the Details tab now have "Survey sent" and "Answered" date fields (change saves them; clearing one empties it; a year before 2000 typed by keyboard is ignored). Works for accounts outside the day's top 15.
     - Today shows a "CSAT follow-up" row when a survey was sent 7 or more days ago with no answer date.
       N = 7 is an ASSUMPTION, one named constant (CSAT_FOLLOWUP_DAYS). Graduated accounts are included.
     - Nothing new in the Gainsight export or queue. Data, date inputs and Today row only.

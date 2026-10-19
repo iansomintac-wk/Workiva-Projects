@@ -12,7 +12,7 @@ test('l12 persist check: legacy book loads and both dates persist in real Chrome
   assert.ok(existsSync(TOOL), 'tools/l12-persist-check.mjs must exist');
   const r = spawnSync(process.execPath, [TOOL], { cwd: ROOT, encoding: 'utf8', timeout: 120000 });
   assert.equal(r.status, 0, 'exit 0 expected; stdout: ' + (r.stdout || '').slice(-300));
-  assert.match(r.stdout, /L12-PERSIST \{"legacy":true,"saved":true,"ok":true\}/);
+  assert.match(r.stdout, /L12-PERSIST \{"legacy":true,"saved":true,"pinned":true,"ok":true\}/);
 });
 
 test('l12 persist check source: uses inSim, prepareBookData and change events; no cancel button, no port 8790', () => {

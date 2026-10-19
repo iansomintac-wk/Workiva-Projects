@@ -11735,6 +11735,11 @@ function csatDatesHtml(ap, id){
       </div>`;
 }
 
+/* L12: a typed year like 0002 (keyboard entry fires change per keystroke) is not stored; clearing is allowed. */
+function csatDateChangeOk(v){
+  if(!v) return true;
+  return isRealISODate(v) && Number(String(v).slice(0, 4)) >= 2000;
+}
 function csatSurveyOverdue(c){
   const ap = c && c.compliance && c.compliance.associatedPeopleCSAT;
   if(!ap || !isRealISODate(ap.surveySentOn) || isRealISODate(ap.surveyAnsweredOn)) return null;
@@ -11747,7 +11752,7 @@ function pushCsatFollowUp(c, out){
   out.push({source:'csat_unanswered', severity:d.severity,
     headline: `CSAT survey sent ${fmtDate(o.sentOn)} and not answered`,
     reasons: [`Sent ${o.days} days ago, no answer date recorded. Chase it, then add the answer date.`],
-    panelTab:'overview', chipLabel:'CSAT follow-up', why:d.why});
+    panelTab:'details', chipLabel:'CSAT follow-up', why:d.why});
 }
 /* L12 ruling: one pinned line at the top of Today, outside the ranking, so a survey nobody answered shows however busy the day is. */
 function surveysToChase(customers){
@@ -11757,7 +11762,7 @@ function surveysToChase(customers){
 function renderSurveysToChase(customers){
   const list = surveysToChase(customers); if(!list.length) return '';
   const shown = list.slice(0, 5), more = list.length - shown.length;
-  const names = shown.map(x => `<button class="link-btn" data-open-cust="${escapeAttr(x.id)}" data-open-tab="overview" style="font-weight:600;">${escapeHtml(x.name)}</button> (sent ${x.days} days ago, no answer)`).join('; ');
+  const names = shown.map(x => `<button class="link-btn" data-open-cust="${escapeAttr(x.id)}" data-open-tab="details" style="font-weight:600;">${escapeHtml(x.name)}</button> (sent ${x.days} days ago, no answer)`).join('; ');
   return `<div class="section-card" id="surveys-to-chase" style="margin-bottom:16px; border-left:3px solid var(--accent-watch);"><div style="font-size:var(--text-sm); color:var(--text-dim);"><strong style="color:var(--text);">Surveys to chase:</strong> ${names}${more ? `; +${more} more` : ''}</div></div>`;
 }
 const TODAY_SOURCE_DEFS = [
@@ -14048,6 +14053,7 @@ function renderComplianceSection(c){
         <label>Contact name(s) added</label>
         <input type="text" id="comp-associated-name" placeholder="e.g. Jane Doe, VP Sustainability" value="${escapeAttr(ap.contactName)}">
       </div>
+      ${csatDatesHtml(ap, c.id)}
     </div>
   `;
 }
@@ -15222,6 +15228,24 @@ function renderLogActivityTab(c){
    The `data-fp-*` controls exist ONLY in beat panes. The rest (open-cust,
    goto-risk, rec-done, rec-dismiss, thread-resolve) also appear elsewhere on
    the tab, so their global bindings exclude pane descendants — see notInPane(). */
+/* L12: the two survey-date inputs (csatDatesHtml) exist in the day pane and in the Details tab; both bind here. */
+function bindCsatDateInputs(root){
+  if(!root) return;
+  [['fpCsatSent', 'surveySentOn'], ['fpCsatAnswered', 'surveyAnsweredOn']].forEach(([ds, key]) => {
+    [...root.querySelectorAll('[data-' + ds.replace(/[A-Z]/g, m => '-' + m.toLowerCase()) + ']')].forEach(inp => {
+      inp.addEventListener('change', ()=>{
+        const c = DATA.customers.find(x => x.id === inp.dataset[ds]);
+        if(!c || !c.compliance || !c.compliance.associatedPeopleCSAT) return;
+        if(!csatDateChangeOk(inp.value)) return;
+        const keepId = inp.id;
+        markUndoable('CSAT survey date');
+        c.compliance.associatedPeopleCSAT[key] = isRealISODate(inp.value) ? inp.value : null;
+        saveData(); render();
+        const again = keepId && document.getElementById(keepId); if(again) again.focus();
+      });
+    });
+  });
+}
 function bindBeatPane(root){
   if(!root) return;
   const q = sel => [...root.querySelectorAll(sel)];
@@ -15288,17 +15312,7 @@ function bindBeatPane(root){
     inp.addEventListener('input', ()=> commitLater(write));
     inp.addEventListener('change', write);
   });
-  [['fpCsatSent', 'surveySentOn'], ['fpCsatAnswered', 'surveyAnsweredOn']].forEach(([ds, key]) => {
-    q('[data-' + ds.replace(/[A-Z]/g, m => '-' + m.toLowerCase()) + ']').forEach(inp => {
-      inp.addEventListener('change', ()=>{
-        const c = fpCustomer(inp.dataset[ds]);
-        if(!c || !c.compliance || !c.compliance.associatedPeopleCSAT) return;
-        markUndoable('CSAT survey date');
-        c.compliance.associatedPeopleCSAT[key] = isRealISODate(inp.value) ? inp.value : null;
-        saveData(); render();
-      });
-    });
-  });
+  bindCsatDateInputs(root);
   q('[data-fp-sentiment]').forEach(ta => {
     const write = ()=>{
       const [which, id] = ta.dataset.fpSentiment.split('|');
@@ -16574,6 +16588,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     $('#comp-associated-name') && $('#comp-associated-name').addEventListener('change', e=>{
       c.compliance.associatedPeopleCSAT.contactName = e.target.value; saveData();
     });
+    bindCsatDateInputs($('#comp-associated-name') && $('#comp-associated-name').closest('.compliance-item'));
 
     $('#btn-archive-cust') && $('#btn-archive-cust').addEventListener('click', ()=>{
       showConfirmModal(`Archive ${c.name}? This downloads their full record (customer profile + activity history) as a JSON file, then permanently removes them from the live tracker.`, ()=> archiveCustomer(c.id));

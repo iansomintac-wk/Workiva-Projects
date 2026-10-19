@@ -91,5 +91,27 @@ test('L12 renderSurveysToChase: one line, escaped names, each opens its account,
   assert.equal((many.match(/data-open-cust=/g) || []).length, 5); assert.match(many, /\+2 more/);
   const t = grab('renderToday');
   assert.ok(t.includes('renderSurveysToChase(DATA.customers)'));
-  assert.ok(t.indexOf('${renderSurveysToChase') < t.indexOf('${renderDayStanding(day)}') || t.indexOf('${renderSurveysToChase') > 0);
+  const first = t.indexOf('${renderSurveysToChase');
+  assert.ok(first > 0 && first < t.indexOf('${renderDayStanding(day)}'), 'pinned line is before the day standing');
+  assert.ok(t.slice(t.lastIndexOf('return `'), first).replace(/\s+/g, '') === 'return`<div>', 'pinned line is the first thing in the returned markup');
+});
+
+test('L12 F1: pinned line and CSAT row open the Details tab, which carries both date inputs and a wired handler', () => {
+  assert.match(grab('renderSurveysToChase'), /data-open-tab="details"/);
+  assert.match(grab('pushCsatFollowUp'), /panelTab:\s*'details'/);
+  const d = grab('renderComplianceSection');
+  assert.ok(d.includes('csatDatesHtml(ap, c.id)'), 'Details CSAT block prints csatDatesHtml');
+  assert.ok(grab('bindCsatDateInputs').includes("['fpCsatSent', 'surveySentOn']"));
+  assert.ok(lf.includes("bindCsatDateInputs(root);") && lf.includes("closest('.compliance-item'))"), 'both the pane and the Details tab bind it');
+});
+
+test('L12 S3: a typed year before 2000 is neither stored nor rendered', () => {
+  const g = grab('csatDateChangeOk');
+  const ctx = vm.createContext({});
+  vm.runInContext(`function isRealISODate(d){ return /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(d || '') && !isNaN(new Date(d + 'T00:00:00')); }
+${g}`, ctx);
+  const ok = v => vm.runInContext(`csatDateChangeOk(${JSON.stringify(v)})`, ctx);
+  assert.equal(ok('0002-10-14'), false); assert.equal(ok('1999-12-31'), false);
+  assert.equal(ok('2026-10-14'), true); assert.equal(ok(''), true, 'clearing is allowed');
+  assert.ok(lf.includes('csatDateChangeOk(inp.value)'));
 });
