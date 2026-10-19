@@ -17060,6 +17060,14 @@ function openGraduationConfirmModal(c){
   refresh();
 }
 
+/* L11: the graduation confirm box warns when no CSAT contact is marked added. Same test as
+   gates.csat and the CSAT gate's isMissing. A prompt, never a block: OK's rule is unchanged. */
+function graduationCsatWarning(c){
+  const a = c && c.compliance && c.compliance.associatedPeopleCSAT;
+  if(a && a.done === true) return '';
+  return 'No CSAT contact is marked added, so nobody will receive the survey. You can still graduate.';
+}
+
 function renderNewCsrdField(moduleName){
   if(!moduleSupportsCSRD(moduleName)) return '';
   return `
