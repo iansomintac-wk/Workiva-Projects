@@ -398,8 +398,7 @@ test('unsupported: no file text means no note and no decline line (T3 with a bar
 });
 
 test('unsupported: forecast basis is looked for in the file text only, not in a sheet named Forecast (C3)', () => {
-  const hist = mk('hist.xlsx', 'Forecast', 'Account, Q1, Q2\nRevenue, 100, 120', ['Account', 'Q1']);
-  hist.text = '## Actuals\nAccount, Q1, Q2\nRevenue, 100, 120'; // text is historical only; the sheet NAME says Forecast
+  const hist = mk('hist.xlsx', 'Forecast', 'Account, Q1, Q2\nRevenue, 100, 120', ['Account', 'Q1']); // same shape engine/files.js builds: text starts '## Forecast'
   assert.equal(unsupported(run(T3, [hist])).length, 1);
   assert.equal(unsupported(run(T3, [mk('fc.xlsx', 'Plan', 'Account, FY26 forecast\nRevenue, 130')])).length, 0);
 });
@@ -441,4 +440,39 @@ test('grounding: FY25 counts as present when the file has FY2025; FY26 against t
   const g = (o) => o.notes.filter((n) => n.kind === 'grounding').map((n) => n.text).join(' ');
   assert.ok(!/FY25/.test(g(run(T6, [sus]))), g(run(T6, [sus])));
   assert.match(g(run('Using only @sus_ghg_inventory.xlsx, list the Scope 3 totals for FY26 in a table with each source row. Do not guess.', [sus])), /FY26/);
+});
+
+// ---- final-review fixes (C1-C4, S1, S3, S4, S5) ----
+const sheetOf = (sheet, body) => mk('f.xlsx', sheet, body);
+test('unsupported: a historical stock price summary is not a forecast ask (C1)', () => {
+  const px = sheetOf('Prices', 'Date, Stock price\n2025-01-02, 10\n2025-01-03, 11');
+  assert.equal(unsupported(run('Summarize the stock price movements in this file', [px])).length, 0);
+  assert.equal(unsupported(run(T3, [px])).length, 1, 'T3 still fires');
+});
+test('unsupported: "what will the documents ..." is not a forecast ask: do/be need a word boundary (S1)', () => {
+  const f = sheetOf('Controls', 'Control ID, Owner\nC1, Ann');
+  assert.equal(unsupported(run('What will the documents need to show for SOX, using @f.xlsx', [f])).length, 0);
+  assert.equal(unsupported(run('What will the beginning of the report need, using @f.xlsx', [f])).length, 0);
+});
+test('unsupported: "Forecast Q4 revenue using this file" against historical-only text fires (C2)', () => {
+  const h = sheetOf('Actuals', 'Account, Q1, Q2\nRevenue, 100, 120');
+  assert.equal(unsupported(run('Forecast Q4 revenue using this file', [h])).length, 1);
+  assert.equal(unsupported(run('Forecast revenue using this file', [h])).length, 1);
+});
+test('unsupported: forecast-basis words are bounded: "Plant output" is no basis (C3)', () => {
+  const f = sheetOf('Actuals', 'Plant output and historical revenue');
+  assert.equal(unsupported(run('Predict revenue next quarter', [f])).length, 1);
+});
+test('unsupported: Fcst, Bgt and FY26E headers count as a forecast basis (S3)', () => {
+  for (const body of ['Account, FY25A, FY26E\nRevenue, 100, 130', 'Account, Fcst\nRevenue, 130', 'Account, Bgt\nRevenue, 130'])
+    assert.equal(unsupported(run('Predict next quarter revenue from this', [sheetOf('Model', body)])).length, 0, body);
+});
+test('unsupported: incidental words do not make a Scope 3 category list (C4)', () => {
+  const f = sheetOf('Notes', 'Scope 3 inventory preparation notes\nFuel for Scope 1 boilers\nWaste water discharged');
+  assert.equal(unsupported(run(askCat(11), [f])).length, 0);
+});
+test('grounding: FY2020 is not satisfied by a file that only has FY2024 and FY2025 (S4)', () => {
+  const f = sheetOf('Inv', 'Item, FY2024, FY2025\nElectricity, 1, 2');
+  const g = (o) => o.notes.filter((n) => n.kind === 'grounding').map((n) => n.text).join(' ');
+  assert.match(g(run('Using only @f.xlsx, compare our FY2020 baseline to FY2025 in a table with each source row. Do not guess.', [f])), /FY2020/);
 });

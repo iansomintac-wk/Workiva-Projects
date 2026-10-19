@@ -407,12 +407,12 @@
   /* ---------------- the file cannot support the ask (T3 / T6) ---------------- */
   const DECLINE = 'If the file does not contain what this needs, say so instead of estimating.';
   // A prediction ask. "forecast" counts as a verb, "forecast for", or the thing to produce; "the forecast table on this slide" is a noun use about the file and does not.
-  const FORECAST_ASK = /\b(?:predict\w*|projections?|(?:stock|share) price|forecast(?:ing)?\s+(?:for|our|my|next|what|how|whether|revenue|sales|earnings)\b|(?:give|make|produce|build|create|run|need|want)\s+(?:me\s+)?(?:a|an|the)?\s*(?:\w+\s+)?forecast\b(?!\s+(?:table|tab|sheet|slide|file|column|row))|what will (?:our|the|it|this)\s+(?:[\w&-]+\s+){0,3}(?:do|be|look like|end up|land|come in))/i;
-  const FORECAST_BASIS = /\b(?:forecast|budget|plan|guidance|outlook|projection|target|estimate)/i;
+  const FORECAST_ASK = /\b(?:predict\w*|projections?|forecast(?:ing)?\s+(?:for|our|my|next|what|how|whether)\b|forecast(?:ing)?\s+(?:(?:Q[1-4]|(?:FY|CY)\s?'?\d{2,4}|(?:19|20)\d{2}|next|the|this|our|my|each|every|full[- ]year|annual|quarterly|monthly)\s+)*(?:revenue|sales|earnings|income|costs?|expenses?|demand|cash|margins?|growth|spend|profit|ebitda)\b|(?:give|make|produce|build|create|run|need|want)\s+(?:me\s+)?(?:a|an|the)?\s*(?:\w+\s+)?forecast\b(?!\s+(?:table|tab|sheet|slide|file|column|row))|what will (?:our|the|it|this)\s+(?:[\w&-]+\s+){0,3}(?:do|be|look like|end up|land|come in)\b)/i;
+  const FORECAST_BASIS = /\b(?:forecast(?:s|ed|ing)?|budget(?:s|ed|ing)?|plan(?:s|ned|ning)?|guidance|outlook|projections?|projected|targets?|estimat(?:e|es|ed|ion)|fcst|bgt|latest estimate|(?:(?:FY|CY)\s?'?\d{2,4}|(?:19|20)\d{2})E)\b/i;
   const CAT_ASK = /\b(?:category|cat\.?)\s*(\d{1,2})\b(?:\s*\(([^)]{3,60})\))?/gi;
   const CAT_EXPLAIN = /\b(?:explain|what counts|what does\b[^?.]*\bmean|walk me through|define|definition|what is)\b/i;
   const CAT_NAME = [null, 'purchased goods and services', 'capital goods', 'fuel- and energy-related activities', 'upstream transportation and distribution', 'waste generated in operations', 'business travel', 'employee commuting', 'upstream leased assets', 'downstream transportation and distribution', 'processing of sold products', 'use of sold products', 'end-of-life treatment of sold products', 'downstream leased assets', 'franchises', 'investments'];
-  const CAT_RE = [null, /purchased goods/, /capital goods/, /fuel|energy-related/, /upstream transport/, /waste/, /business travel/, /commut/, /upstream leased/, /downstream transport/, /processing of sold/, /use of sold/, /end[- ]of[- ]life/, /downstream leased/, /franchis/, /investment/];
+  const CAT_RE = [null, /purchased goods/, /capital goods/, /fuel[- ]and[- ]energy|energy-related/, /upstream transport/, /waste generated|(?:^|\n)\s*waste\s*[,\t:]/, /business travel/, /commut/, /upstream leased/, /downstream transport/, /processing of sold/, /use of sold/, /end[- ]of[- ]life/, /downstream leased/, /franchis/, /investment/];
   // 'exact' = listed by number or by its own name; 'generic' = a plain "leased assets" row, which may be category 8 or 13; null = not listed.
   function categoryHit(n, lower) {
     if (new RegExp('\\b(?:category|cat\\.?)\\s*' + n + '\\b').test(lower) || new RegExp('(?:^|\\n)\\s*' + n + '\\s*[,\\t:.-]').test(lower) || CAT_RE[n].test(lower)) return 'exact';
@@ -427,10 +427,10 @@
   }
   function cannotSupport(prompt, files, intent) {
     if (!files.some((f) => (f.text || '').trim())) return null;
-    const text = files.map((f) => f.text || '').join('\n'); // file text only: a sheet or header named Forecast is not a forecast
+    const text = files.map((f) => (f.text || '').replace(/^## .*$/gm, '')).join('\n'); // file text only: a sheet NAME (the '## name' line engine/files.js writes) is not a forecast; a header cell or a cell value is
     if (FORECAST_ASK.test(prompt) && !FORECAST_BASIS.test(text)) return { kind: 'forecast' };
     if (intent === 'explain' || CAT_EXPLAIN.test(prompt)) return null;
-    const lower = text.toLowerCase();
+    const lower = files.map((f) => f.text || '').join('\n').toLowerCase(); // the sheet name still counts as Scope 3 context here
     if (!/scope\s*3/i.test(prompt) || !/scope\s*3/.test(lower)) return null; // Scope 3 context in the ask AND in the file
     let exact = 0, generic = false;
     for (let n = 1; n <= 15; n++) { const h = categoryHit(n, lower); if (h === 'exact') exact++; else if (h === 'generic') generic = true; }
@@ -598,7 +598,7 @@
     if (files.length) {
       const fileText = files.map((f) => (f.text || '') + ' ' + (f.sheets || []).map((s) => s.name + ' ' + (s.headers || []).join(' ')).join(' ')).join(' ').toLowerCase();
       const terms = (prompt.match(/\bQ[1-4]\s?FY\s?'?\d{2,4}\b|\b(?:FY|CY)\s?'?\d{2,4}\b|\bQ[1-4]\b|\b(?:19|20)\d{2}\b|\bScope [123]\b|\b[A-Z][A-Za-z]+(?: [A-Z][A-Za-z]+)+\b/g) || []).filter((x) => !/^(You|The|Use|Do|Please)\b/.test(x));
-      const missingTerms = [...new Set(terms)].filter((x) => !fileText.includes(x.toLowerCase()) && !yearForms(x).some((v) => fileText.includes(v.toLowerCase())));
+      const missingTerms = [...new Set(terms)].filter((x) => !yearForms(x).some((v) => new RegExp(v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?!\\d)', 'i').test(fileText)));
       if (missingTerms.length) notes.push({ kind: 'grounding', text: 'Your prompt mentions ' + listify(missingTerms.map((x) => '"' + x + '"')) + ', which does not appear in the attached ' + (files.length === 1 ? 'file' : 'files') + '. Check you attached the right source.' });
       if (ctx.unsupported) notes.push({ kind: 'unsupported', text: unsupportedNote(ctx.unsupported) });
       if (ctx.periods.length) notes.push({ kind: 'periods', text: 'Periods found in your files: ' + ctx.periods.join(', ') + '.' });
