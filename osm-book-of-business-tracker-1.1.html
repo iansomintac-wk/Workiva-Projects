@@ -5623,7 +5623,7 @@ function defaultCompliance(){
   return {
     sentiment: {done:false, date:null, answerA:'', answerB:''},
     outcomePlan: {done:false, date:null, outcomeNumber:null, planText:''},
-    associatedPeopleCSAT: {done:false, date:null, contactName:''}
+    associatedPeopleCSAT: {done:false, date:null, contactName:'', surveySentOn:null, surveyAnsweredOn:null}
   };
 }
 
@@ -11718,6 +11718,28 @@ function getDomainImbalanceClusters(){
    here, so adding a source without declaring its band fails the suite instead
    of silently defaulting to something arbitrary. */
 const GONE_QUIET_DAYS = 7; // days after the hand-off call with no contact before an account counts as "gone quiet"
+const CSAT_FOLLOWUP_DAYS = 7; // ASSUMED: days after "Survey sent" with no "Answered" date before Today asks you to chase it
+function normalizeCsatBlock(ap){
+  const a = ap || {};
+  return Object.assign({}, a, {
+    done: !!a.done, date: isRealISODate(a.date) ? a.date : null, contactName: typeof a.contactName === 'string' ? a.contactName : '',
+    surveySentOn: isRealISODate(a.surveySentOn) ? a.surveySentOn : null,
+    surveyAnsweredOn: isRealISODate(a.surveyAnsweredOn) ? a.surveyAnsweredOn : null});
+}
+function csatSurveyOverdue(c){
+  const ap = c && c.compliance && c.compliance.associatedPeopleCSAT;
+  if(!ap || !isRealISODate(ap.surveySentOn) || isRealISODate(ap.surveyAnsweredOn)) return null;
+  const days = daysSince(ap.surveySentOn);
+  return days >= CSAT_FOLLOWUP_DAYS ? {sentOn: ap.surveySentOn, days} : null;
+}
+function pushCsatFollowUp(c, out){
+  const o = csatSurveyOverdue(c); if(!o) return;
+  const d = TODAY_SOURCE_MAP.csat_unanswered;
+  out.push({source:'csat_unanswered', severity:d.severity,
+    headline: `CSAT survey sent ${fmtDate(o.sentOn)} and not answered`,
+    reasons: [`Sent ${o.days} days ago, no answer date recorded. Chase it, then add the answer date.`],
+    panelTab:'overview', chipLabel:'CSAT follow-up', why:d.why});
+}
 const TODAY_SOURCE_DEFS = [
   {source:'coverage_neglected', severity:3,
    why:'No touchpoint past the neglect threshold and nothing on the calendar — the same band as a long stall, because it is one.'},
@@ -11748,7 +11770,9 @@ const TODAY_SOURCE_DEFS = [
   {source:'grad_review_due', severity:2,
    why:'A graduated account has reached its check-back date. One question, asked once, and it is the only thing here that measures whether the onboarding actually held.'},
   {source:'gone_quiet', severity:4,
-   why:'Nobody has been in touch since the hand-off call, or since the pause ended. A new or returning customer who hears nothing assumes nobody is looking after them.'}
+   why:'Nobody has been in touch since the hand-off call, or since the pause ended. A new or returning customer who hears nothing assumes nobody is looking after them.'},
+  {source:'csat_unanswered', severity:2,
+   why:'A CSAT survey went out a week or more ago and nothing says it was answered. Survey scores only count if they come back.'}
 ];
 const TODAY_SOURCE_MAP = TODAY_SOURCE_DEFS.reduce((m,d)=>{ m[d.source] = d; return m; }, {});
 
@@ -11920,6 +11944,7 @@ function todayAccountCandidates(c, ctx){
       reasons: [`Graduated ${fmtDate(actualGraduationDate(c) || c.gradReview.dueOn)}, and the ${gradReviewDays()}-day check-back came due ${fmtDate(c.gradReview.dueOn)}.`],
       panelTab: 'overview', chipLabel: 'Answer the check-back', why: d.why});
   }
+  pushCsatFollowUp(c, out);
   // Graduated accounts have otherwise left the book — out of triage entirely.
   if(c.stage === 'graduated') return out;
 
@@ -18537,6 +18562,7 @@ function backfillCustomerRecord(c){
   if(c.compliance.outcomePlan.outcomeNumber === undefined) c.compliance.outcomePlan.outcomeNumber = null;
   if(c.compliance.outcomePlan.planText === undefined) c.compliance.outcomePlan.planText = '';
   if(!isRecordObject(c.compliance.associatedPeopleCSAT)) c.compliance.associatedPeopleCSAT = defaultCompliance().associatedPeopleCSAT;
+  c.compliance.associatedPeopleCSAT = normalizeCsatBlock(c.compliance.associatedPeopleCSAT);
   // v48: a malformed compliance date clears to null — "not recorded" is the
   // honest reading of a date we can't parse, and one bad date must not reject
   // the whole book at the validation boundary.
@@ -18972,7 +18998,7 @@ function assertNormalizedBookData(data, source){
       if(!SESSION_NOTE_KEY_RE.test(session) || !isRecordObject(note) || !isRecordObject(note.deliverables || {}) || (note.prep !== undefined && typeof note.prep !== 'string')) rejectData(source, `${label} has an invalid note for Session ${session}.`);
     });
     if(!isRecordObject(c.compliance) || !isRecordObject(c.compliance.sentiment) || !isRecordObject(c.compliance.outcomePlan) || !isRecordObject(c.compliance.associatedPeopleCSAT)) rejectData(source, `${label} has invalid compliance data.`);
-    const complianceDates = [c.compliance.sentiment.date,c.compliance.outcomePlan.date,c.compliance.associatedPeopleCSAT.date].filter(Boolean);
+    const complianceDates = [c.compliance.sentiment.date,c.compliance.outcomePlan.date,c.compliance.associatedPeopleCSAT.date,c.compliance.associatedPeopleCSAT.surveySentOn,c.compliance.associatedPeopleCSAT.surveyAnsweredOn].filter(Boolean);
     if(complianceDates.some(d=>!isRealISODate(d))) rejectData(source, `${label} has an invalid compliance date.`);
     if(c.domainScores && (!isRecordObject(c.domainScores) || Object.values(c.domainScores).some(v=>!Number.isInteger(v) || v < 0 || v > 4))) rejectData(source, `${label} has an invalid domain score.`);
     if(c.pause && !isValidPauseRecord(c.pause)) rejectData(source, `${label} retains an invalid pause.`);

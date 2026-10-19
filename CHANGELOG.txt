@@ -22,6 +22,12 @@ OSM Runway — release notes
       docs/HOSTING.md says what the page loads (outside hosts, no integrity attribute on the
       xlsx script, inline script and style needed) instead of "works with no network".
 
+1.1 — L12. Today chases a CSAT survey nobody answered.
+    - The CSAT block holds two optional dates, surveySentOn and surveyAnsweredOn (old books load with both empty).
+    - Today shows a "CSAT follow-up" row when a survey was sent 7 or more days ago with no answer date.
+      N = 7 is an ASSUMPTION, one named constant (CSAT_FOLLOWUP_DAYS). Graduated accounts are included.
+    - Nothing new in the Gainsight export or queue. Data and Today row only; the date inputs come in the next step.
+
 1.1 — L11. Graduating with no CSAT contact warns, and still lets you graduate.
 
     - The graduation confirm box gets one amber line under its title when no CSAT contact is
