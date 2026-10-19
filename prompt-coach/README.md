@@ -6,7 +6,7 @@ strong version into toggleable SCOPE elements. Everything runs in the browser: n
 server, no uploads. Built for customer-facing use where Claude access can't be provisioned.
 
 ```sh
-node tests/build.js                      # -> dist/prompt-coach.html (single file, 334009 bytes, LF)
+node tests/build.js                      # -> dist/prompt-coach.html (single file, 334435 bytes, LF)
 node tests/pagetest.js                      # real-browser page test of the built page (notes, display grade, off-topic); build first
 node tests/eval.js rulefeat data/test.jsonl          # accuracy on held-out prompts
 node tests/simulate.js data/train_*.jsonl            # rewrite invariants
@@ -93,6 +93,9 @@ Five warning notes, additive only (engine/rewrite.js, small diff beside the note
 - stacked: the existing note also fires for a comma/and list of 3 or more distinct task verbs (listStacked in rewrite.js; rules.js stacked() is untouched because model features use it). coach() returns `stacked`, and the page downgrades strong to better with it.
 - offtopic: only a clear non-work cue (weather, poem, joke, recipe, ...) with no work or document words and no attached file (fires on 1 of 2,020 non-off-task train/test rows). coach() returns `offtopic`; the page shows weak instead of a polished finance rewrite as strong.
 - unsupported (2026-10-19): a warning when the attached file cannot support the ask. Only when a file has text. Two cases. Forecast: the ask wants a forecast, and no forecast, budget, plan, guidance, outlook, projection, target or estimate word (whole words, also Fcst, Bgt and FY26E-style headers) appears in the file's text; a sheet name does not count. A stock or share price alone is not a forecast ask. Scope 3 category: the ask says "Scope 3" and names a category N, the file's text says Scope 3 and recognises at least 2 categories, and category N is not listed in it (one name that fits two categories counts once). Explain asks are excluded from the Scope 3 category case only; the forecast case applies to them too. It is additive: it never changes the grade, a weight or the other rewrite text. Grounding rule: "FY25" counts as present when the file says "FY2025"; "FY26" is still flagged. Unit tests: tests/rewrite_unit.test.js.
+- Grounding compound term (2026-10-19): "Q1 FY25" in the ask matches "FY2025 Q1" or "Q1 FY2025" in the file; only FY compounds, nothing else.
+- Scope 3 categories (2026-10-19): "Upstream T&D" and "Downstream T&D" rows in the file count as categories 4 and 9.
+- Known limits of the unsupported note: forecast phrasing such as "Forecast product revenue...", incidental category words, LE as a forecast basis, and future share-price asks are not handled.
 
 ## Real files
 
