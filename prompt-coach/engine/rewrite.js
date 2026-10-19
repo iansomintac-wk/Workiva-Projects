@@ -155,7 +155,9 @@
       case 'errors': return 'Return a table: location, what is wrong, suggested fix. ';
       case 'gaps': return 'Return a table: item, what is missing, why it matters. ';
       case 'variance': return 'Return a table: ' + (cols ? cols + ', ' : 'item, both values, ') + 'change in amount and percent. Include only changes over [your threshold]. ';
-      case 'anomaly': return 'Return a table: ' + (cols ? cols + ', ' : 'item, value, ') + 'why it looks wrong, what to check. ';
+      case 'anomaly': return ctx.missingAsk
+        ? 'Return a table: ' + (cols ? cols + ', ' : 'item, ') + 'what is missing, where it should be. '
+        : 'Return a table: ' + (cols ? cols + ', ' : 'item, value, ') + 'why it looks wrong, what to check. ';
       case 'consistency': return 'For each mismatch, give both locations and both values in a table. ';
       case 'rewrite': return 'Keep it to [target length], in the same voice. ';
       case 'summarize': return 'Use [number] bullets. ';
@@ -176,7 +178,7 @@
       case 'errors': return 'Do not change anything yourself, and flag anything you are not sure is an error.';
       case 'gaps': return 'Only flag gaps you can point to in the source, and mark judgment calls for my review.';
       case 'variance': return 'Do not speculate beyond the data; phrase explanations as hypotheses and list open questions for the data owner separately.';
-      case 'anomaly': return 'Do not correct any values; flag anything you are unsure of.';
+      case 'anomaly': return ctx.missingAsk ? 'Do not fill in or estimate missing values.' : 'Do not correct any values; flag anything you are unsure of.';
       case 'consistency': return 'Do not decide which value is correct.';
       case 'rewrite': return 'Preserve every number, date, and factual claim, and do not introduce new facts.';
       case 'summarize': return 'Do not add anything that is not in the source, and keep every figure exactly as written.';
@@ -419,6 +421,7 @@
     };
     ctx.audDomain = opts.areaSure === false ? 'GEN' : ctx.domain;
     ctx.intent = opts.intent || intentOf(t, files.some((f) => f.kind === 'Excel') || /\b(data|table|numbers|figures|emissions|revenue|metrics?)\b/.test(t));
+    ctx.missingAsk = ctx.intent === 'anomaly' && missingAsk(prompt);
     const taskSure = opts.taskSure !== false;
     const gen = { S: sourceFragment(ctx), C: contextFragment(ctx), O: objectiveFragment(ctx), P: paramsFragment(ctx), E: evalFragment(ctx) };
     const BLANK = { O: 'Identify and list [what you want back, such as the issues and where they are, or the key points]. ', P: 'Format it as [a table, bullets, or a short paragraph]. ', E: evalFragment({ intent: null }) };

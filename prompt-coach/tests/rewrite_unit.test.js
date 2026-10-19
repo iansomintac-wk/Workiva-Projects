@@ -321,3 +321,21 @@ test('missing-data: a request that a condition introduces still counts as a miss
   assert.equal(W.missingAsk('If possible, list missing emissions data.'), true);
   assert.equal(W.missingAsk('List the suppliers. If the file has a blank tab, ignore it.'), false);
 });
+
+test('missing-data: a mixed ask keeps its anomaly lines, and another intent never gets the missing-data rule', () => {
+  const mixed = run('Which suppliers have duplicate or missing emissions data?', [{ name: 'sus_supplier_data.csv' }], { intent: 'anomaly', taskSure: true }).stages.strong.prompt;
+  assert.ok(mixed.includes('why it looks wrong'), mixed);
+  assert.ok(mixed.includes('Do not correct any values'), mixed);
+  assert.ok(!mixed.includes('Do not fill in or estimate missing values'), mixed);
+  const q = 'Which suppliers are missing emissions data?';
+  assert.equal(W.missingAsk(q), true);
+  const gaps = run(q, [], { intent: 'gaps', taskSure: true }).stages.strong.prompt;
+  assert.ok(gaps.includes('Only flag gaps you can point to in the source'), gaps);
+  assert.ok(!gaps.includes('Do not fill in or estimate missing values'), gaps);
+});
+
+test('missing-data: detected sheet headers lead the missing-data table', () => {
+  const f = { name: 'sus_supplier_data.csv', kind: 'CSV', periods: [], text: '', sheets: [{ name: 'Suppliers', headers: ['Supplier', 'Country', 'Emissions tCO2e'] }] };
+  const s = run('Which suppliers are missing emissions data?', [f]).stages.strong.prompt;
+  assert.ok(s.includes('Return a table: Supplier, Country, Emissions tCO2e, what is missing, where it should be.'), s);
+});
