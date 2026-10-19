@@ -22,6 +22,9 @@ OSM Runway — release notes
       docs/HOSTING.md says what the page loads (outside hosts, no integrity attribute on the
       xlsx script, inline script and style needed) instead of "works with no network".
 
+1.1 — Graduation prompt colour.
+    - The line under the graduation confirm box title (#gc-prompt) used var(--warn), which is not defined, so it fell back to grey; it now uses var(--status-watch-text) like the CSAT line.
+
 1.1 — L12. Today chases a CSAT survey nobody answered.
     - The CSAT block holds two optional dates, surveySentOn and surveyAnsweredOn (old books load with both empty).
     - The CSAT block in the call panel now has "Survey sent" and "Answered" date fields (change saves them; clearing one empties it).

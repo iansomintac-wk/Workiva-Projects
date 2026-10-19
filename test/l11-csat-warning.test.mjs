@@ -82,3 +82,10 @@ test('L11 validateGraduationDraft: result is identical with and without a CSAT c
     assert.deepEqual(a, b);
   }
 });
+
+test('item 2: #gc-prompt uses --status-watch-text like #gc-csat, never the undefined --warn', () => {
+  const line = lf.split('\n').find(l => l.includes('id="gc-prompt"'));
+  assert.ok(line, '#gc-prompt line missing');
+  assert.ok(line.includes('color:var(--status-watch-text, var(--text-dim));'), line);
+  assert.ok(!line.includes('--warn'), line);
+});

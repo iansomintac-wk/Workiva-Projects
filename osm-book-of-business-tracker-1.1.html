@@ -17057,7 +17057,7 @@ function openGraduationConfirmModal(c){
         <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;">
           ${GOAL_VERDICTS.filter(v => v.key !== 'replaced').map(v => `<label class="checklist-item" style="margin:0;"><input type="radio" name="gc-verdict" value="${escapeAttr(v.key)}"> ${escapeHtml(v.label)}</label>`).join('')}
         </div>
-        <p id="gc-prompt" class="gp-meta" style="display:none; margin:0 0 6px; color:var(--warn, var(--text-dim));"></p>
+        <p id="gc-prompt" class="gp-meta" style="display:none; margin:0 0 6px; color:var(--status-watch-text, var(--text-dim));"></p>
         <div class="field" style="margin-bottom:10px;"><label for="gc-note">Verdict note</label>
           <textarea id="gc-note" rows="2" maxlength="500" placeholder="One line on why"></textarea></div>
       </div>
