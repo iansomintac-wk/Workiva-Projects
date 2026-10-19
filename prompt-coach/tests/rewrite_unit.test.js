@@ -353,3 +353,85 @@ test('missing-data: invalid, negative and error words make the ask mixed', () =>
   assert.equal(W.missingAsk('Flag negative emissions and missing values'), false);
   assert.equal(W.missingAsk('Find errors and missing values in the supplier file'), false);
 });
+
+// ---- T3/T6: the file cannot support the ask (spec 2026-10-19) ----
+const RULES = require('../engine/rules.js');
+const { SPECS } = require('../research/live-tests/make_live_fixtures.js');
+require('../engine/files.js');
+const FX_HEADER = (rows) => { for (const r of rows.slice(0, 12)) { const cells = (r || []).map((c) => (c == null ? '' : String(c).trim())).filter(Boolean); if (cells.filter((c) => /[A-Za-z]/.test(c) && c.length < 40).length >= 2) return cells.slice(0, 10); } return []; };
+// Built the way engine/files.js reads a file and the way the ledger file_probe.js builds it: xlsx = "## sheet" + rows as text.
+function fx(name) {
+  const { periodsOf } = globalThis.ScopeFiles;
+  const s = SPECS.find((x) => x.name === name); assert.ok(s, 'no fixture ' + name);
+  if (s.kind === 'xlsx') { const rows = s.rows.filter((r) => r.length); const headers = FX_HEADER(rows), text = '## ' + s.sheet + '\n' + rows.map((r) => r.join(', ')).join('\n'); return { name, kind: 'Excel', text, sheets: [{ name: s.sheet, headers }], periods: periodsOf(headers.join(' ') + ' ' + text) }; }
+  if (s.kind === 'docx') { const text = [s.title, ...s.paras].join(' '); return { name, kind: 'Word', text, headings: [s.title], periods: periodsOf(text) }; }
+  if (s.kind === 'pdf') { const text = s.pages.map((p) => p.join(' ')).join('\n'); return { name, kind: 'PDF', text, periods: periodsOf(text) }; }
+  return { name, kind: 'Text', text: s.text || '', periods: periodsOf(s.text || '') };
+}
+const mk = (name, sheet, body, headers = []) => ({ name, kind: 'Excel', sheets: [{ name: sheet, headers }], periods: [], text: '## ' + sheet + '\n' + body });
+const DECLINE = 'If the file does not contain what this needs, say so instead of estimating.';
+const T3 = 'what will our stock price do next quarter based on this';
+const T6 = 'As a sustainability analyst, using only @sus_ghg_inventory.xlsx, calculate our Scope 3 category 11 (use of sold products) emissions for FY25. Show the method and every input with its source row in a short table (item, value, source row), then give the total in tCO2e. Keep it to one page, in a formal tone.';
+const unsupported = (o) => o.notes.filter((n) => n.kind === 'unsupported');
+const askCat = (n, scope3 = true) => 'Using only @s3.xlsx, calculate our ' + (scope3 ? 'Scope 3 ' : '') + 'category ' + n + ' emissions in a table with item, value and source row. Do not guess.';
+
+test('unsupported: T3 forecast ask on the flux file gets the note and a Strong with the decline line that still grades strong', () => {
+  const o = run(T3, [fx('fr_flux_q3.xlsx')]);
+  assert.equal(unsupported(o).length, 1, JSON.stringify(o.notes));
+  assert.match(unsupported(o)[0].text, /forecast/i);
+  const s = o.stages.strong.prompt;
+  assert.ok(s.endsWith(DECLINE), s);
+  assert.equal(RULES.grade(detect(s).on), 'strong', s);
+});
+
+test('unsupported: T6 asks for Scope 3 category 11 the file does not list: note names it, Strong is the typed prompt', () => {
+  const o = run(T6, [fx('sus_ghg_inventory.xlsx')]);
+  assert.equal(unsupported(o).length, 1, JSON.stringify(o.notes));
+  assert.match(unsupported(o)[0].text, /category 11/);
+  assert.equal(o.stages.strong.prompt, T6);
+});
+
+test('unsupported: no file text means no note and no decline line (T3 with a bare file name)', () => {
+  const o = run(T3, [{ name: 'fr_flux_q3.xlsx' }]);
+  assert.equal(unsupported(o).length, 0);
+  assert.ok(!o.stages.strong.prompt.includes(DECLINE));
+});
+
+test('unsupported: forecast basis is looked for in the file text only, not in a sheet named Forecast (C3)', () => {
+  const hist = mk('hist.xlsx', 'Forecast', 'Account, Q1, Q2\nRevenue, 100, 120', ['Account', 'Q1']);
+  hist.text = '## Actuals\nAccount, Q1, Q2\nRevenue, 100, 120'; // text is historical only; the sheet NAME says Forecast
+  assert.equal(unsupported(run(T3, [hist])).length, 1);
+  assert.equal(unsupported(run(T3, [mk('fc.xlsx', 'Plan', 'Account, FY26 forecast\nRevenue, 130')])).length, 0);
+});
+
+test('unsupported: a category ask needs Scope 3 in the ask and in the file (C1)', () => {
+  const sales = mk('s3.xlsx', 'Sales', 'Category 1 Domestic, 500\nCategory 2 Export, 300');
+  assert.equal(unsupported(run(askCat(11, false), [sales])).length, 0, 'not a Scope 3 ask');
+  assert.equal(unsupported(run(askCat(11, true), [sales])).length, 0, 'file has no Scope 3 list');
+  assert.equal(unsupported(run(askCat(11, false), [fx('sus_ghg_inventory.xlsx')])).length, 0, 'ask does not say Scope 3');
+});
+
+test('unsupported: leased assets fits both category 8 and 13, so it counts once and is not a fire (C2)', () => {
+  const one = mk('s3.xlsx', 'Scope 3', 'Leased assets, 60');
+  assert.equal(unsupported(run(askCat(13), [one])).length, 0, 'one recognised name is below the minimum of 2');
+  const two = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nLeased assets, 60');
+  assert.equal(unsupported(run(askCat(13), [two])).length, 0, 'generic leased assets may be 13');
+  assert.equal(unsupported(run(askCat(11), [two])).length, 1, 'category 11 is absent');
+  const up = mk('s3.xlsx', 'Scope 3', 'Waste, 90\nUpstream leased assets, 60');
+  assert.equal(unsupported(run(askCat(13), [up])).length, 1, 'only the upstream kind is listed, so 13 is absent');
+});
+
+test('unsupported: no train-labelled row fires against any of the three area fixtures (tuning guard, train rows only)', () => {
+  const rows = fs.readFileSync(path.join(__dirname, '../research/2026-10-19-cannot-support-labels.tsv'), 'utf8').split('\n').slice(1).filter(Boolean).map((l) => l.split('\t'));
+  const train = rows.filter((r) => r[1] === 'train');
+  assert.ok(train.length >= 40, 'train rows: ' + train.length);
+  const files = ['fr_flux_q3.xlsx', 'sus_ghg_inventory.xlsx', 'grc_rcm.xlsx'].map(fx);
+  const fired = [];
+  for (const r of train) for (const f of files) if (unsupported(run(r[6], [f])).length) fired.push(r[2] + ' x ' + f.name);
+  assert.deepEqual(fired, []);
+});
+
+test('unsupported: the page template renders the unsupported kind', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../web/template.html'), 'utf8');
+  assert.ok(html.includes("'grounding', 'unsupported'"), 'template.html list of warning kinds');
+});
