@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (91503 bytes, LF)
+node tests/build.js                                               # -> dist/fit-finder.html (92068 bytes, LF)
 # Offline Coach link: ship both html files (fit-finder.html and prompt-coach.html) in one folder; opened from a file, the link uses prompt-coach.html, online it uses the artifact URL.
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
@@ -32,6 +32,8 @@ node tests/pagetest.js [capture-folder]                            # real Chrome
 | `data/card-gold-a.jsonl` | For the 29 half-A tasks that fit: every card right to show, each row labelled by Ian (15) or a blind top-model labeler (14) (2026-10-16) |
 | `data/card-gold-real.jsonl` | For the 19 real prompts in `data/real/2026-10-15-community.jsonl`: every card right to show, each row labelled by Ian (3) or a blind top-model labeler (16) (2026-10-17) |
 | `data/card-gold-fresh.jsonl` | For the 29 fresh real prompts in `data/real/2026-10-17-fresh.jsonl`: fit and every card right to show, each row labelled by Ian (0) or a blind top-model labeler (29) (2026-10-17) |
+| `data/top3/` | The 43-sentence set written 2026-10-19 (`2026-10-19-top3.jsonl`), its gold (`card-gold-top3.jsonl`) and sha256 file; scored once, never tuned on |
+| `sandbox/` | Eight made-up files and prompts run in a Workiva AI sandbox: `scoring-sheet.md`, `key.json`, saved `replies/`, rebuilt prompt cards (`built*`) |
 
 ## How good it is (2026-10-15)
 Half A (60 tasks) tuned the rules; half B is held out. Fit agreement: A 86.7%, **B 75.0%**
@@ -280,3 +282,20 @@ words ("more concise", "more professional") are left out of REWRITE on purpose: 
 Cases: tests/edge-cards.test.js. Dist size was 88205 bytes at that dated step (current size: see the build line above).
 
 Share-ready fix A (final review): How it rates adds the untouched blind result (11 of 29 first feature right, 9 wrong, 4 shown on tasks that do not fit; the 29 newer prompts were tuned on and AI-labelled); "22 of 23 re-checked on 18 Oct 2026 (one needs sign-in)"; fuller prompts say "I selected with @" (chat takes no uploads); both prompt panels say to replace each [bracket]; the sustainability requirements cue also counts before the word, plus TCFD, SASB, CDP, EU taxonomy, double materiality, GRI; Benchmarking badge is preview; Translations badge is "not on a public support page yet: check in your workspace" (S1 only). Pagetest also checks the static https Coach href. Dist size 89183 bytes (LF, as committed).
+
+## Top-3 and sandbox check (2026-10-19)
+
+The page still shows ONE card; it does not list three. Task 3 (the three-card list) was skipped by the PM proxy; Ian may overturn that.
+
+Parent score (before this branch) and end score (after; one measurement read twice, because the engine and every id/area/ops/match are frozen) are identical:
+
+```
+first card right: 9 of 32 that fit; wrong card 1 (X2); no card where one fits 22 (X4,X5,X6,X8,X10,X12,X13,X14,X16,X17,X18,X22,X25,X26,X28,X29,X30,X33,X34,X36,X39,X40); card on a not-a-fit prompt 0 (); fit agreement 18 of 43; score 24
+top 3: right card anywhere in the 3 shown 9 of 32 that fit (first card right 9, gain 0); any wrong card shown 1 of 43 (X2); first card wrong or on a not-a-fit prompt 1; rise in wrong lists 0
+```
+
+- Gain from showing three cards: 0 (right card anywhere in 3 is 9 of 32, the same as the first card). Rise in wrong lists: 0.
+- The spec prediction (gain of at least 3) is disproved.
+- The main failure is no card at all: 22 of the 32 tasks that fit.
+- Sandbox check (`sandbox/scoring-sheet.md`): eight prompt cards run in Ian's own Workiva AI sandbox on made-up files, each with 5 planted items. First run 6 pass, 2 fail (an added currency); the fixed prompts re-run and pass. In place, the gen-rewrite card fails (word and fact changes). The two GRC features (Evidence analyzer, Risk & Control knowledge base) are not in this sandbox, so those cards were answered by plain @ chat. The sandbox may have features a customer lacks.
+- Tone-only edits stay without a card (rule C).
