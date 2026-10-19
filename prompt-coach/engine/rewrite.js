@@ -413,7 +413,7 @@
   const CAT_ASK = /\b(?:category|cat\.?)\s*(\d{1,2})\b(?:\s*\(([^)]{3,60})\))?/gi;
   const CAT_EXPLAIN = /\b(?:explain|what counts|what does\b[^?.]*\bmean|walk me through|define|definition|what is)\b/i;
   const CAT_NAME = [null, 'purchased goods and services', 'capital goods', 'fuel- and energy-related activities', 'upstream transportation and distribution', 'waste generated in operations', 'business travel', 'employee commuting', 'upstream leased assets', 'downstream transportation and distribution', 'processing of sold products', 'use of sold products', 'end-of-life treatment of sold products', 'downstream leased assets', 'franchises', 'investments'];
-  const CAT_RE = [null, /purchased goods/, /capital goods/, /fuel[- ]and[- ]energy|energy-related/, /upstream transport/, /waste generated|(?:^|\n)\s*waste\s*[,\t:]/, /business travel/, /commut/, /upstream leased/, /downstream transport/, /processing of sold/, /use of sold/, /end[- ]of[- ]life/, /downstream leased/, /franchis/, /investment/];
+  const CAT_RE = [null, /purchased goods/, /capital goods/, /fuel[- ]and[- ]energy|energy-related/, /upstream (?:transport|t ?& ?d|t and d)/, /waste generated|(?:^|\n)\s*waste\s*[,\t:]/, /business travel/, /commut/, /upstream leased/, /downstream (?:transport|t ?& ?d|t and d)/, /processing of sold/, /use of sold/, /end[- ]of[- ]life/, /downstream leased/, /franchis/, /investment/];
   // 'exact' = listed by number or by its own name; 'generic' = a plain "leased assets" row, which may be category 8 or 13; null = not listed.
   function categoryHit(n, lower) {
     if (new RegExp('\\b(?:category|cat\\.?)\\s*' + n + '\\b').test(lower) || new RegExp('(?:^|\\n)\\s*' + n + '\\s*[,\\t:.-]').test(lower) || CAT_RE[n].test(lower)) return 'exact';

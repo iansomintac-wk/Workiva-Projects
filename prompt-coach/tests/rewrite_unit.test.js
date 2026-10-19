@@ -531,3 +531,16 @@ test('grounding: a different quarter or year, or a bare calendar year, is still 
     assert.match(g(run(ask, [sheetOf('Rev', body)])), /Q1 FY25/, body);
   assert.ok(!/Q1 FY25/.test(g(run(ask, [sheetOf('Rev', 'Account, Q1 FY25\nRevenue, 1')]))), 'literal match still passes');
 });
+test('unsupported: a row "Upstream T&D" or "Downstream T&D" lists category 4 or 9, so asking for it does not fire (S6b)', () => {
+  const up = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nUpstream T&D, 150\nBusiness travel, 80');
+  assert.equal(unsupported(run(askCat(4), [up])).length, 0);
+  const down = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nDownstream T&D, 70\nBusiness travel, 80');
+  assert.equal(unsupported(run(askCat(9), [down])).length, 0);
+});
+test('unsupported: Upstream T&D is not Downstream T&D, and a truly missing category still fires (S6b guard)', () => {
+  const up = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nUpstream T&D, 150\nBusiness travel, 80');
+  assert.equal(unsupported(run(askCat(9), [up])).length, 1, 'only upstream is listed');
+  const down = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nDownstream T&D, 70\nBusiness travel, 80');
+  assert.equal(unsupported(run(askCat(4), [down])).length, 1, 'downstream is not upstream');
+  assert.equal(unsupported(run(askCat(11), [up])).length, 1);
+});
