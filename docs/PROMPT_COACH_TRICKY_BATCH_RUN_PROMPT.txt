@@ -1,8 +1,8 @@
 RUN: Prompt coach scoring rulebook, then the tricky live batch (Workiva repo)
 
 Written 2026-10-19 by the talk "NEW - Prompt Coach next talk". Load studio-harness:talk-and-run first and follow
-"The run". You are the run lead: coordinate only, never plan or build in your own context. Workiva has
-.ask-ian-only in spirit: every question goes to Ian (or a PM proxy session per the global rules).
+"The run". You are the run lead: coordinate only, never plan or build in your own context. Every question goes to
+Ian (or a PM proxy session, per the global rules).
 
 WHERE
 - Worktree: C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-rewrites, branch
@@ -12,7 +12,8 @@ WHERE
   (progress.md has the talk's rulings and probes; budget.json; slip.json).
 - Old score files (rulings to draw the rulebook from, Opus-final rows, "vs Codex" column):
   .ledger/2026-10-16-prompt-coach-rewrites/logs/live_<CASE>_scores.md; answers: logs/live_<CASE>.md.
-- Talk scratch scripts (copy what you need into the plan; they live in the talk's job tmp and may be gone):
+- Talk scripts (saved in the ledger folder scripts/: grade.js, grade_tricky.js, grade_one.js, rewrite_tricky.js,
+  count.js; vs_codex.tsv and tricky_strong.txt are their outputs). The grade and rewrite scripts take the prompt-coach folder as first argument:
   grading = engine/model.js predict + engine/weights.json + rules.grade; rewrite = rewrite.coach(prompt,
   {files:[{name}], detect, ...classify.pick(prompt, CLS)}).stages.strong.prompt (files must be objects with name).
 
