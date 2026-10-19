@@ -419,6 +419,12 @@
     if ((n === 8 || n === 13) && /leased assets/.test(lower.replace(/(?:upstream|downstream) leased/g, ''))) return 'generic';
     return null;
   }
+  // "FY25" is present when the file says FY2025 (or FY 2025, FY'25), and the same for CY; FY26 against FY2024/FY2025 is still absent.
+  function yearForms(term) {
+    const m = /^(FY|CY)\s?'?(\d{2}|\d{4})$/i.exec(term); if (!m) return [term];
+    const y = m[2].length === 2 ? '20' + m[2] : m[2], p = m[1];
+    return [p + y, p + y.slice(2), p + ' ' + y, p + ' ' + y.slice(2), p + "'" + y.slice(2)];
+  }
   function cannotSupport(prompt, files, intent) {
     if (!files.some((f) => (f.text || '').trim())) return null;
     const text = files.map((f) => f.text || '').join('\n'); // file text only: a sheet or header named Forecast is not a forecast
@@ -592,7 +598,7 @@
     if (files.length) {
       const fileText = files.map((f) => (f.text || '') + ' ' + (f.sheets || []).map((s) => s.name + ' ' + (s.headers || []).join(' ')).join(' ')).join(' ').toLowerCase();
       const terms = (prompt.match(/\bQ[1-4]\s?FY\s?'?\d{2,4}\b|\b(?:FY|CY)\s?'?\d{2,4}\b|\bQ[1-4]\b|\b(?:19|20)\d{2}\b|\bScope [123]\b|\b[A-Z][A-Za-z]+(?: [A-Z][A-Za-z]+)+\b/g) || []).filter((x) => !/^(You|The|Use|Do|Please)\b/.test(x));
-      const missingTerms = [...new Set(terms)].filter((x) => !fileText.includes(x.toLowerCase()));
+      const missingTerms = [...new Set(terms)].filter((x) => !fileText.includes(x.toLowerCase()) && !yearForms(x).some((v) => fileText.includes(v.toLowerCase())));
       if (missingTerms.length) notes.push({ kind: 'grounding', text: 'Your prompt mentions ' + listify(missingTerms.map((x) => '"' + x + '"')) + ', which does not appear in the attached ' + (files.length === 1 ? 'file' : 'files') + '. Check you attached the right source.' });
       if (ctx.unsupported) notes.push({ kind: 'unsupported', text: unsupportedNote(ctx.unsupported) });
       if (ctx.periods.length) notes.push({ kind: 'periods', text: 'Periods found in your files: ' + ctx.periods.join(', ') + '.' });

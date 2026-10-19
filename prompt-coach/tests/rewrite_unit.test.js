@@ -435,3 +435,10 @@ test('unsupported: the page template renders the unsupported kind', () => {
   const html = fs.readFileSync(path.join(__dirname, '../web/template.html'), 'utf8');
   assert.ok(html.includes("'grounding', 'unsupported'"), 'template.html list of warning kinds');
 });
+
+test('grounding: FY25 counts as present when the file has FY2025; FY26 against the same file is still flagged', () => {
+  const sus = fx('sus_ghg_inventory.xlsx');
+  const g = (o) => o.notes.filter((n) => n.kind === 'grounding').map((n) => n.text).join(' ');
+  assert.ok(!/FY25/.test(g(run(T6, [sus]))), g(run(T6, [sus])));
+  assert.match(g(run('Using only @sus_ghg_inventory.xlsx, list the Scope 3 totals for FY26 in a table with each source row. Do not guess.', [sus])), /FY26/);
+});
