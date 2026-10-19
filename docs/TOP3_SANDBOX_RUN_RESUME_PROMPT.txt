@@ -1,0 +1,16 @@
+TOP-3 + SANDBOX RUN, RESUME PROMPT. Written 2026-10-19 07:30Z by run lead d3d833fc at the Task 5 stop (only if d3d833fc
+is gone; otherwise Ian answers in d3d833fc). Load studio-harness:talk-and-run first; you are the run lead.
+
+WHERE: C:/Users/teasp/Documents/workiva/.claude/worktrees/fit-finder-fair-test, branch fit-finder-top3 (pushed).
+Plan rev 2: docs/superpowers/plans/2026-10-19-fit-finder-top3-sandbox.md (approved by PM proxy 51656567, 07:15Z).
+Ledger: .ledger/2026-10-19-top3-sandbox/progress.md (git-ignored; IAN-MORNING.md there is Ian's step). Launch with
+STUDIO_RUN_LEDGER set to that folder (absolute) via --settings, with CLAUDE_STOP_AT_TOKENS 300000.
+
+DONE: T1 blind set c93c1e4 (BASE); T2 scorer a70bea8 + one-time parent score (parent-score.txt: first card right
+9 of 32, no card 22, gain 0 -> prediction disproved); T3 SKIPPED (proxy decided, option 1: page unchanged; Ian may
+overturn); T4 sandbox kit 44be21d + 18e99e5 (names fixed), checker PASS.
+NEXT: T5 waits for Ian's 8 Workiva AI replies (fit-finder/sandbox/built/batch-message.md). Then T5 steps 2-7, T6,
+T7 (HOW sentence must report the first-card result, since the page does not list three; pagetest stays at its
+current check count plus the HOW check), T8 final review (Opus + Codex read-only, unelevated sandbox), T9 evidence
++ merge per slip.json (backup branch first). Never re-score data/top3 except T7 step 1 (once). Data care as in
+docs/TOP3_SANDBOX_RUN_PROMPT.txt.
