@@ -1,0 +1,46 @@
+TALK (DRAFT, not launched): Prompt coach Scope 3 structure, reshape after the failed bar (Workiva repo)
+
+Drafted 2026-10-19 by the Hand-off PM step of run c846565a. Launch only on Ian's yes. Load studio-harness:talk-and-run
+first. Talk only: no code and no commits until Ian approves a spec.
+
+WHERE
+- New worktree from prompt-coach (59b09c1). Branch worktree-prompt-coach-scope3-structure (HEAD after the hand-off commit)
+  is evidence only and is not merged (unless Ian rules otherwise at the run's merge stop).
+- Run ledger: .ledger/2026-10-19-prompt-coach-scope3-structure/ in that worktree (git-ignored).
+
+READ
+- docs/evidence/2026-10-19-prompt-coach-scope3-structure.md (sections 1, 4, 5, 9), the spec
+  docs/superpowers/specs/2026-10-19-prompt-coach-scope3-structure-design.md, and in the ledger reviews/final_opus.md,
+  reviews/final_codex.md, reviews/heldout_diagnosis.md, logs/final_opus_probe.log.
+- heldout_sealed.json (S1-S24) is now SEEN: never reuse it as a held-out. K1-K24 of the known-limits run are SEEN too.
+
+PROBLEM
+- The sealed bar failed: 2/12 should-warn, 1/12 near-miss (base, diagnosis only: 1/12 and 0/12).
+- The branch adds 8 false warnings on finance asks and sheets (edge probe E1-E6, E17, E18), warns on 4 listed shapes
+  the README names as limits (E8, E10, E11, E15) and loses 2 correct base warnings (E7 transposed table, E9 figureless prose).
+- 5 of the 10 misses are "Explain ..." asks that the engine skips by an older design (CAT_EXPLAIN / explain intent).
+- Word text is flattened in production (prompt-coach/engine/files.js:51), so Task D's number-row rule never fires on
+  Word, and sealed_run.js scored Word items on a friendlier shape (newlines kept).
+- Rules 1-4 are fixes by structure; the sealed result says they are not enough.
+
+ASK
+1. Probe first, $0, read-only: what files.js hands the engine for real Word, PDF and PowerPoint files (a real-shape
+   fixture set), and how often category words fire on real finance asks and sheets (investment, capex, commuting,
+   franchise). These two must exist before a "done when" can be stated.
+2. Then the spread: three usual options plus one that breaks an assumption (for example: judge the file without
+   "listed categories" at all, or accept the limits and document them). Each with its cheapest check on the probe
+   cases and on a fresh held-out that Opus writes and seals in production file shape before any change.
+3. State the bar and the done-when before any plan.
+
+DECIDE WITH IAN, one question at a time
+(a) Coach explain asks that need a figure from the file?
+(b) Fix the Word flattening in the reader?
+(c) Is a false warning on a finance sheet worse than a missed warning?
+
+OPEN FOR IAN: the merge of the scope3-structure branch (lead's recommendation: do not); Codex's "Compare forecast Q4
+revenue with Q3 actuals" warning; the Workiva AI sandbox check of the T3 decline line; the E1-8 primary quote
+(eur-lex, Reg. 2023/2772).
+NO-GOS: forecast, share-price or LE detection changes; grades, weights, classifier; installs; live Workiva AI spend;
+tuning against a sealed set; push or merge without slip.json words.
+PARKED: Q2, Q3, Q5, T5 known limits; SOX ITGC and SUS-1 grounding flags; "Summarize Scope" grounding flag; browser
+tests (pagetest.js, filetest.js).
