@@ -1,5 +1,5 @@
 MADE-UP TEST DATA
-CONTROL LIST - Marlow Foods (made-up)
+CONTROL LIST - Quellmoor Foods (made-up)
 
 C01 Bank accounts are reconciled to the ledger every month by the accounts team.
 C02 Warehouse stock is counted every quarter and compared with the stock records.

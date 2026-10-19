@@ -12,11 +12,11 @@ Use only the current-year file and the prior-year file I selected with @. Contex
 ### File: fr-yoy-narrative.txt
 ----- file starts -----
 MADE-UP TEST DATA
-CURRENT YEAR - Management discussion, Brindle Works
+CURRENT YEAR - Management discussion, Tarnwick Works
 
 Net sales were 468 million, led by higher volume at the Harrow plant. Gross margin was 31.4 percent. Operating expenses were 96 million. We ended the year with 1,240 employees. Capital spending was 38 million, mostly for the Harrow packing line. Net debt stood at 140 million at year end. The dividend was 0.42 per share.
 
-PRIOR YEAR - Management discussion, Brindle Works
+PRIOR YEAR - Management discussion, Tarnwick Works
 
 Net sales were 412 million, led by new contracts at the Harrow plant. Gross margin was 33.0 percent. Operating expenses were 96 million. We ended the year with 1,180 employees. Capital spending was 38 million, mostly for the Harrow packing line. Net debt stood at 175 million at year end. The dividend was 0.40 per share.
 ----- file ends -----
@@ -31,7 +31,7 @@ Use only the draft and the other document I selected with @. Context: the draft 
 ### File: fr-narrative-tables.txt
 ----- file starts -----
 MADE-UP TEST DATA
-DRAFT NARRATIVE - Annual summary, Marlow Foods (made-up)
+DRAFT NARRATIVE - Annual summary, Quellmoor Foods (made-up)
 
 Revenue for the year was 52.0 million. Cost of sales was 31.5 million. Net income was 6.2 million. Cash at year end was 9.8 million. Total assets were 88.4 million. Headcount stood at 310 and we opened 4 new sites during the year.
 
@@ -57,7 +57,7 @@ Use only the evidence file I selected with @. Context: I am testing this control
 ### File: grc-evidence.txt
 ----- file starts -----
 MADE-UP TEST DATA
-EVIDENCE FILE - March journal entry review, Marlow Foods (made-up)
+EVIDENCE FILE - March journal entry review, Quellmoor Foods (made-up)
 
 E1. Ledger export of manual journal entries. The export covers 1 to 28 March and holds 214 entries.
 
@@ -82,7 +82,7 @@ You are an internal controls analyst. Use only the control list I selected with 
 ### File: grc-rationalize.txt
 ----- file starts -----
 MADE-UP TEST DATA
-CONTROL LIST - Marlow Foods (made-up)
+CONTROL LIST - Quellmoor Foods (made-up)
 
 C01 Bank accounts are reconciled to the ledger every month by the accounts team.
 C02 Warehouse stock is counted every quarter and compared with the stock records.
@@ -108,7 +108,7 @@ Use only the data from the Apr-Jun column and the Jan-Mar column I selected with
 ### File: sus-anomalies.txt
 ----- file starts -----
 MADE-UP TEST DATA
-EMISSIONS BY SOURCE, tonnes CO2e - Marlow Foods (made-up)
+EMISSIONS BY SOURCE, tonnes CO2e - Quellmoor Foods (made-up)
 
 Source | Jan-Mar | Apr-Jun
 Boiler gas | 410 | 425
@@ -133,7 +133,7 @@ Use only the selected sustainability narrative. Context: it goes to the board of
 ### File: sus-exec-narrative.txt
 ----- file starts -----
 MADE-UP TEST DATA
-SUSTAINABILITY NARRATIVE - Marlow Foods (made-up)
+SUSTAINABILITY NARRATIVE - Quellmoor Foods (made-up)
 
 This year our work on emissions, energy and safety moved forward on several fronts, and we want to set out clearly where we stand. Scope 1 and 2 emissions fell to 8,420 tonnes, helped by the new heat recovery unit at the main bakery. Renewable sources supplied 64 percent of our electricity, up from the contracts we signed with two regional wind farms. Water withdrawal came to 1.8 million cubic metres, and the team is still working on the cooling loop that drives most of that use. We recorded 7 lost-time injuries, and every one was reviewed with the site leads and the safety committee. The recycling rate reached 71 percent as the new sorting line came into service. Next year we plan to extend these programmes to the two smaller sites.
 ----- file ends -----
@@ -148,7 +148,7 @@ Use only the document I selected with @. Context: the summary is for the operati
 ### File: gen-summarize-file.txt
 ----- file starts -----
 MADE-UP TEST DATA
-MEMO - Packing line upgrade, Marlow Foods (made-up)
+MEMO - Packing line upgrade, Quellmoor Foods (made-up)
 From: Priya. To: Operations leadership.
 
 The packing line at the Harrow site is due for an upgrade, and the team has narrowed the work to a few options. Two suppliers have quoted. The Alder quote is 118,000 and the Birch quote is 104,000 with a longer delivery time. We need Dana to choose between the Alder and Birch quotes by 15 May so the order can be placed. The project budget currently holds 95,000, so we need Marcus to approve an extra 25,000 before any order goes out. The upgrade needs a pilot, and we need leadership to pick the pilot shift, either nights or weekends. Two analysts would be needed to track results, so we need Hana to confirm hiring 2 analysts on a six-month contract. Finally, we need Dana to set the review date for the pilot results, which we suggest in late September. Training for operators is planned and is not affected by these points. The current line has run for nine years and its output has slipped slowly.
@@ -164,7 +164,7 @@ Use only the selected section. Context: it is going to the board. Rewrite it in 
 ### File: gen-rewrite.txt
 ----- file starts -----
 MADE-UP TEST DATA
-BOARD COMMENTARY - Marlow Foods (made-up)
+BOARD COMMENTARY - Quellmoor Foods (made-up)
 
 The year was a steady one for the company, with progress in most areas and a few lessons we intend to act on. Revenue reached 52.0 million, which gave us a good base for the plans ahead. Operating margin was 11.5 percent, a little lower than we hoped because of higher packaging costs. We opened 4 new sites, each of them on time and close to the budget we set, which the teams should be proud of. Customer complaints fell to 38 for the year, the lowest count since we began keeping this record. We also started a new supplier programme, and the first 15 suppliers have signed up to it. Looking forward, we will keep a close watch on costs and continue to invest in our people, our sites and our systems, while staying careful about risks that could affect delivery.
 ----- file ends -----
