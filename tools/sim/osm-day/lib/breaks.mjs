@@ -24,7 +24,7 @@ export const BREAKS = {
   L8: B('L8', `classifyRiskText = () => []`),
   L9: B('L9', `toggleComplianceGate = () => false`),
   L10: B('L10', `isGraduatingSoon = () => false`),
-  L11: B('L11', `{const o=validateGraduationDraft; validateGraduationDraft=(c,d)=>{const r=o(c,d); r.missing=r.missing.filter(k=>!/csat/i.test(k)); r.ok=!r.missing.length; return r}}`),
+  L11: B('L11', `{const o=openGraduationConfirmModal; openGraduationConfirmModal=(...a)=>{const r=o(...a); document.querySelectorAll('#gc-csat').forEach(e=>e.remove()); return r}}`),
 };
 
 // Every global the overrides replace or the probe relies on; each must be `function <name>(` in both trackers.
@@ -33,4 +33,5 @@ export const OVERRIDE_NAMES = [
   'queueGainsightItem', 'markRiskActioned', 'inImplementation', 'exportData', 'setHandoffField',
   'markImplementationGoLive', 'computeCoverage', 'todayActionList', 'isPaused', 'classifyRiskText',
   'toggleComplianceGate', 'adminGapList', 'isGraduatingSoon', 'validateGraduationDraft', 'parseOutstandingQuestions',
+  'openGraduationConfirmModal',
 ];

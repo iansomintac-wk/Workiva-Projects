@@ -1,0 +1,32 @@
+DRAFT (hand-off PM step of the Runway L11 run, 2026-10-19). Not launched: nothing after L11 is queued, so it needs the PM
+proxy's logged yes (or Ian's) before any session starts from it.
+
+Talk session: Runway 1.1, sim D3 meeting agenda. Start with studio-harness:talk-and-run ("The talk"). Announce the time left.
+
+Read first:
+- docs/evidence/2026-10-19-runway-1.1-l11-csat-warning.md (what just merged)
+- docs/evidence/2026-10-16-osm-day-lifecycle-sim.md (the D3 row and the GAP lines)
+- docs/superpowers/specs/2026-10-19-runway-1.1-d3-prep-promises-design.md (the spec pattern)
+- brain/runway/product/product.md in the studio-harness checkout
+
+Problem story: before a call the CSM sees the open item, the last-meeting question and now what each side owes. The
+tracker still has no meeting agenda, so the CSM builds one by hand each call (sim D3 GAP).
+
+Do this: use superpowers:brainstorming. Ask Ian (or the newest running "NEW - PM proxy*" session, by SendMessage) one
+question at a time, recommendation first, in plain words. Do not build.
+
+Before the first question, run these $0 read-only probes:
+1. What the sim's D3 step checks today and what a passing agenda would have to show.
+2. Which tracker data an agenda could draw from without new fields (owe items, open checklist, last question, silence).
+3. A search of how CSMs structure a customer-call agenda. Give the source and mark what you could not confirm.
+
+Output: a spec file with the problem story, appetite, no-gos, Done-when lines (sim D3 GAP becomes a judged step; other C
+lines unchanged; 1.0 untouched) and a TUNE-free plan outline, plus a run prompt.
+
+No-gos: new stored fields unless Ian says so; L12 and CSAT survey tracking; the Gainsight reminder idea from the L11 spec;
+any paid call; editing osm-book-of-business-tracker-1.0.html.
+
+Stop at: the spec, for Ian's or the PM proxy's yes. Do not start the run.
+
+Parked: L12 (revive when Ian wants survey tracking); the Gainsight reminder at graduation (L11 spec, Out).
+Open for Ian from L11: three look calls on sim-runs/l11-csat/*.png (words, amber colour, placement under the title).
