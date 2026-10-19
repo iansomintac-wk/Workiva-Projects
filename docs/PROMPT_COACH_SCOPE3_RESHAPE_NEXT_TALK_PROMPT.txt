@@ -1,0 +1,25 @@
+TALK: Prompt coach Scope 3 reshape missed its bar (Workiva repo)
+
+Written 2026-10-19 by run lead 0d1b55ae from the hand-off PM step. Load studio-harness:talk-and-run first; this is a TALK (Ian decides), not a run. Do not build or tune.
+
+READ FIRST
+- docs/evidence/2026-10-19-prompt-coach-scope3-reshape.md (verdict, per-item results, "Final review: open for Ian")
+- .ledger/2026-10-19-prompt-coach-scope3-reshape/rulings.md, progress.md, reviews/merged.md (git-ignored, in worktree .claude/worktrees/prompt-coach-scope3-reshape)
+- docs/superpowers/specs/2026-10-19-prompt-coach-scope3-reshape-design.md
+- Never open held-out or sealed files: the fresh set (heldout/) is now SPENT, as are S1-S24 and K1-K24.
+
+FACTS (measured in the run)
+- Held-out scored once at 7c49c74: near-miss warns 1/12 (bar 0; H6, a definition ask), catch 2/12 vs base 2/12 (gain 0, bar +2). Quiet rows: 0 new warnings. Unit 77/0, guards OK after the review fixes.
+- The kept gate (ask AND file say "Scope 3") holds for only 3 of the 12 should-warn items, so the bar (base+2 = 4) could not be reached.
+- H6 cause measured: base stayed quiet only through the classifier's intent=explain skip, which spec rule 2 removed.
+- Open review items (both reviewers): H6 class (definition asks worded outside CAT_EXPLAIN now warn; do not ship as is); "What does Scope 3 cat. N mean?" still warns; "why"/"%" and change-word inflections; Word clean lines omit Heading 4-6 / past 2,000 entries.
+- Branch worktree-prompt-coach-scope3-reshape, HEAD = the commit that adds this file, base 59b09c1; PUSHED to origin (slip), not merged.
+
+ASK IAN, one question at a time, recommendation first, plain words (decision cards):
+1. Drop the branch and keep base? (recommended: yes, most reversible; the branch stays in git)
+2. A new attempt as a separate design: ask OR file says "Scope 3", a definition-ask rule, a fresh held-out? (probe first on non-sealed data: how many should-warn asks pass each gate)
+3. Is "base + 2" still the bar, given the ceiling of 3 with the kept gate?
+
+FIRST, with Ian's yes, record the run's unrecorded rulings via ledger-add + brain capture (verbatim in rulings.md): "Wrong warning is worse (Recommended)"; "Use clean lines in this check (Recommended)"; "Zero wrong + beat base by 2 (Recommended)"; "Approve the spec (Recommended)"; this run's throwaway Codex folder yes and plan approval (ledger only). Also ledger-add the defect: plan writer measured dist with wc -c on a CRLF working copy (core.autocrlf=true) and called a correct README figure stale.
+Missing research ($0): real customer Scope 3 ask wording; the sandbox check of the decline line (OPEN FOR IAN); the gate probe above.
+Give time left at start and at each stop.
