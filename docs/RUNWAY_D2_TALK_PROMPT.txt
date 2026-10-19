@@ -1,0 +1,44 @@
+Runway D2: "call prep shows the previous call's transcript line": the talk.
+(Queued by ruling 2026-10-19-runway-sim-findings-ruled: D2, then D3, then L11, each starts with a talk. Runway is a
+Priority 1 side slot, ruling 2026-10-19-runway-joins-priority-1.)
+
+Method: invoke studio-harness:talk-and-run first, "The talk". Ian (or the PM proxy, for what its guardrails allow) must
+be in the session; this is a talk, not a run.
+
+Project: C:\Users\teasp\Documents\Runway Tracker. Make your OWN worktree from master (the commit holding this file).
+Do not write in the runway-gone-quiet or runway-day-sim worktrees (ruling 2026-10-19-own-worktree-when-another-run-is-live:
+if another run's ledger is live there, message that lead, wait at most 15 minutes, else carry on).
+
+Read first:
+- docs/evidence/2026-10-16-osm-day-lifecycle-sim.md, finding D2 (line 17): on Wed 2026-10-21 the prep panel for a call
+  does not show the previous call's transcript line (SIM-TRANSCRIPT-LINE absent), on 1.0 and 1.1.
+- docs/evidence/2026-10-19-runway-1.1-gone-quiet.md (the last run's results and the C lines as they stand now).
+- tools/sim/osm-day/steps-a.mjs (D2 starts at line 53) and tools/sim/osm-day/lib/breaks.mjs (the D2 break).
+
+1. Read-only probe, numbers to docs/research/2026-MM-DD-d2-prep-probe.md: where 1.1 builds the call-prep panel; whether
+   the transcript is reachable there (transcripts moved to IndexedDB, obm-transcripts-v1, at 1.1 Step 1: read, not
+   checked); what a real-length transcript does to the panel; which sim steps and breaks touch D2. No tracker edits.
+   Mark each figure measured, read or assumed.
+2. Spec with Ian, one question at a time, recommendation first, with a real example: should the panel show the last
+   transcript line, how much of it, and what shows when there is no transcript. Done when (draft): sim D2 PASS on 1.1;
+   every other C1/C2 step unchanged; the D2 break still flips in C4 with VACUOUS 0; C8 re-pinned on the new 1.1 hash;
+   C3 and L7 still PASS; full suite no failure master lacks; 1.0 results identical.
+3. Then the run prompt, budget.json and the bedtime slip, per talk-and-run. Launch the run with STUDIO_RUN_LEDGER and
+   CLAUDE_STOP_AT_TOKENS 300000 in --settings.
+
+Rules (Ian's):
+- Never edit osm-book-of-business-tracker-1.0.html. No tracker edits in the talk.
+- Never open any HTML from this folder in Ian's normal Chrome profile; headless Chrome with a throwaway --user-data-dir
+  only. Stop browsers by their own PIDs.
+- Never read, copy or upload book-of-business-RESTORE-POINT-*.json, exports, recordings, screenshots or zips.
+- Test data: the field-test book and the sim's synthetic accounts only; emails example.com or .invalid.
+- Real AI providers are never called (fake network). $0 spend.
+- No token-raise slip field (ruling 2026-10-19-no-slip-field-for-relayed-token-raises).
+- A screenshot tool lives in tools/, never under tools/sim/osm-day/ (test/osm-day-safety.test.mjs "control e";
+  found the hard way in the gone-quiet run).
+- The PC ran low on memory on 2026-10-19 and Claude Code reaped a background sim verify once; run a full verify alone,
+  watched by a Monitor, and restart a reaped one only when asked.
+- Plain English to Ian; any wording on screen is his look call. If the fix cannot stay a small batch, stop and re-shape.
+- Do not claude rm sessions that share a worktree you did not make.
+
+Queued behind this: D3, then L11 (warn, still allow).
