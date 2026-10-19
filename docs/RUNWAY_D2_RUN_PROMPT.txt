@@ -55,7 +55,8 @@ never in parallel.
 
 Ledger: C:/Users/teasp/Documents/Runway Tracker/.claude/worktrees/runway-d2-prep/.ledger/2026-10-19-runway-d2-prep/
 (git-ignored): progress.md (the talk's rows and the rulings verbatim are above the run's rows), budget.json,
-slip.json. Create role-checks.txt and reviews/ as needed. Remove worktrees only with studio-harness
+slip.json. budget.json's "plan" path does not exist yet: the plan-writer creates it in step 1. This lead was
+launched with CLAUDE_STOP_AT_TOKENS 300000 in --settings (run-lead stop); budget runTokenCap 1,600,000. Create role-checks.txt and reviews/ as needed. Remove worktrees only with studio-harness
 bin/remove-worktree.mjs, never plain git worktree remove (it deletes ignored files).
 
 Checks the lead re-runs (from the worktree root):
