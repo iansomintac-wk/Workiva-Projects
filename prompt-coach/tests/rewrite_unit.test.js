@@ -522,10 +522,11 @@ test('unsupported: a non-Word file with lines is still read from its text', () =
   const withLines = { name: 'd1.xlsx', kind: 'Excel', sheets: [], periods: [], text, lines };
   const noLines = { name: 'd1.xlsx', kind: 'Excel', sheets: [], periods: [], text };
   assert.equal(unsupported(run(D1_ASK, [withLines])).length, unsupported(run(D1_ASK, [noLines])).length);
+  assert.equal(unsupported(run(D1_ASK, [withLines])).length, 0);
 });
 
 const f3 = { name: 's3.xlsx', kind: 'Excel', sheets: [{ name: 'Summary', headers: [] }], periods: [], text: '## Summary\nScope 3 summary\n6, 1,240\n7, 890' };
-test('unsupported: explain a definition stays quiet', () => {
+test('unsupported: explain a definition stays quiet (guard: base also skips explain asks)', () => {
   assert.equal(unsupported(run('Explain what Scope 3 category 4 covers.', [f3])).length, 0);
 });
 test('unsupported: explain with a change word is checked', () => {
@@ -554,13 +555,15 @@ test('unsupported: explain the dropped figure is checked', () => {
 });
 test('unsupported: the 9 stored explain asks split as measured (explain9)', () => {
   const asks = new Set();
+  // NOTE: the regex below is a copy of CAT_EXPLAIN in engine/rewrite.js; change both together.
   for (const f of fs.readdirSync(path.join(__dirname, '../data')).filter((x) => x.endsWith('.jsonl'))) {
     for (const l of fs.readFileSync(path.join(__dirname, '../data', f), 'utf8').split('\n')) {
       try { const p = JSON.parse(l).prompt; if (typeof p === 'string' && /scope\s*3/i.test(p) && /\b(?:explain|what counts|what does\b[^?.]*\bmean|walk me through|define|definition|what is)\b/i.test(p)) asks.add(p); } catch (e) { /* blank line */ }
     }
   }
   assert.equal(asks.size, 9);
-  // measured 2026-10-19: [ask prefix, category number, checked?]; 6 numbered asks, 5 exempt, 1 checked
+  // measured 2026-10-19: [ask prefix, category number, checked?]; 6 numbered asks, 5 exempt, 1 checked.
+  // KNOWN-LIMIT PIN: the 'Pull Scope 3 Category 4 totals ... and explain' row is exempt (false) but the spec counts it as needing the file's figure; it pins current behaviour, expected wrong. A correct fix will flip it.
   const M9 = [['walk me through scope 3 category 11', 11, false], ['Pull Scope 3 Category 4 totals', 4, false], ['Can you unpack', 11, false], ['Explain, for a procurement audience', 1, false], ['what does this paragraph mean', 11, false], ['explain why scope 3 cat 1 jumped', 1, true]];
   const names = ['purchased goods', 'capital goods', 'fuel and energy', 'upstream transport', 'waste generated', 'business travel', 'commuting', 'upstream leased', 'downstream transport', 'processing of sold', 'use of sold', 'end of life', 'downstream leased', 'franchises', 'investments'];
   for (const [prefix, n, checked] of M9) {
@@ -580,7 +583,8 @@ test('unsupported: short label rows count as listed (category 6 missing)', () =>
   assert.equal(u.length, 1, JSON.stringify(u)); assert.ok(u[0].text.includes('category 6 ('), u[0].text);
 });
 test('unsupported: short label shows category 5 as listed', () => {
-  assert.equal(unsupported(run(askS3(5), [f4])).length, 0);
+  const f = shortFile('## S\nScope 3 summary\nWaste in ops, 300\nBusiness travel, 5\nPurchased goods, 7');
+  assert.equal(unsupported(run(askS3(5), [f])).length, 0);
 });
 test('unsupported: short label sheet with Upstr. T&D, Downstr. T&D, EOL', () => {
   const f = shortFile('## S\nScope 3 summary\nUpstr. T&D, 400\nDownstr. T&D, 500\nEOL, 80');
@@ -605,4 +609,13 @@ test('unsupported: short label upstream and downstream leased are distinguished'
   const down = shortFile('## S\nScope 3 summary\nPurchased goods, 1\nDownstr. leased assets, 60');
   const u2 = unsupported(run(askS3(8), [down]));
   assert.equal(u2.length, 1, JSON.stringify(u2)); assert.ok(u2[0].text.includes('category 8 ('), u2[0].text);
+});
+
+// F1 (final review): "cat." before a number is an abbreviation, not a sentence end
+test('unsupported: cat. abbreviation does not split the explain sentence (quiet)', () => {
+  assert.equal(unsupported(run('For Scope 3 cat. 4, explain what it covers.', [f3])).length, 0);
+});
+test('unsupported: cat. abbreviation with a change word is still checked', () => {
+  const u = unsupported(run('Explain Scope 3 cat. 4 increase vs FY24', [f3]));
+  assert.equal(u.length, 1); assert.ok(u[0].text.includes('category 4 ('), u[0].text);
 });

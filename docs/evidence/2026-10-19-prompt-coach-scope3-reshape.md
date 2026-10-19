@@ -33,7 +33,7 @@ Marks: **measured** = a command run this session produced it; **read** = taken f
 
 - Quiet sets: 4 (not the plan's 5, a plan counting error; the list names 4). Rows: E 18, P1 36, charts 6, stored asks 1,516. Base already warns on 3 of these rows; the branch adds 0 new. **measured**
 - Unit tests: 75 pass, 0 fail (base 57; 18 added by this work). **measured**
-- Guards: GUARDS_OK. Base counts re-measured: fixtures 19, train warnings 0, simulate 2,070, customer 229, rulefeat 8. The branch matches on all of them. **measured**
+- Guards: GUARDS_OK (includes the no-file Strong byte-identical guard). Base counts re-measured: fixtures 19, train warnings 0, simulate 2,070, customer 229, rulefeat 8. The branch matches on all of them. **measured**
 - Dist size: README says the LF byte count, 335,298 bytes. The plan's check used the CRLF working copy and got 336,361, which would have made the README wrong; fixed in 7c49c74. **measured**
 
 ## Explain asks: spec vs measured
@@ -58,6 +58,14 @@ Marks: **measured** = a command run this session produced it; **read** = taken f
 
 ## What Ian decides next
 
-1. Keep the branch or drop it. It adds one wrong warning (H6) and catches nothing more than base. Safest: do not ship it. The 18 new unit tests do pass.
+1. Keep the branch or drop it. It adds one wrong warning (H6) and catches nothing more than base. Safest: do not ship it. The new unit tests pass, but they pin current behaviour (the explain rows were measured from the implementation, including one known-wrong exemption: "Pull ... totals ... and explain"), so passing is not evidence the rules are right.
 2. Whether a new attempt should relax the "ask and file both say Scope 3" gate. That is a new design and a new held-out set, since this one is now spent. It is not a tweak to this branch.
 3. Whether the bar itself is reachable: with the gate kept, 3 of 12 is the ceiling, so "base + 2" can only pass if base catches at most 1.
+
+## Unscored changes
+
+The held-out set was scored once, at SHA 7c49c74 (result: FAIL, above). It is not re-scored. After that SHA the fix round changed:
+
+- F1 (engine): `explainExempt` in engine/rewrite.js no longer lets "cat." before a number end the sentence, so "For Scope 3 cat. 4, explain what it covers." stays quiet and "Explain Scope 3 cat. 4 increase vs FY24" is checked. Two unit tests added (77 pass). Not measured on the held-out set.
+- F2-F4: README text, test comments and one extra listed row in a test, and a comment in engine/rewrite.js. No behaviour change.
+- dist/prompt-coach.html and the README byte count were rebuilt for F1.

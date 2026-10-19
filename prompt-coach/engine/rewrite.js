@@ -413,7 +413,12 @@
   const CAT_EXPLAIN = /\b(?:explain|what counts|what does\b[^?.]*\bmean|walk me through|define|definition|what is)\b/i;
   const CAT_CHANGE = /\b(?:why|rose|rise|jumped|increased?|decreased?|fell|drop(?:ped)?|changed?|vs|versus|compared)\b|%/i;
   function explainExempt(prompt, index) { // the sentence holding this category mention has an explain word and no change word
-    const sp = sentenceSpans(prompt).find((x) => index >= x.start && index < x.end); if (!sp) return false;
+    const spans = []; // sentenceSpans ends a span at the "." of "cat." in "cat. 4"; join that span to the next one (offsets stay those of the prompt)
+    for (const x of sentenceSpans(prompt)) {
+      const last = spans[spans.length - 1];
+      if (last && /\bcat\.$/i.test(prompt.slice(last.start, last.end)) && /^\s*\d/.test(prompt.slice(x.start, x.end))) last.end = x.end; else spans.push({ start: x.start, end: x.end });
+    }
+    const sp = spans.find((x) => index >= x.start && index < x.end); if (!sp) return false;
     const s = prompt.slice(sp.start, sp.end); return CAT_EXPLAIN.test(s) && !CAT_CHANGE.test(s);
   }
   const CAT_NAME = [null, 'purchased goods and services', 'capital goods', 'fuel- and energy-related activities', 'upstream transportation and distribution', 'waste generated in operations', 'business travel', 'employee commuting', 'upstream leased assets', 'downstream transportation and distribution', 'processing of sold products', 'use of sold products', 'end-of-life treatment of sold products', 'downstream leased assets', 'franchises', 'investments'];
@@ -437,7 +442,7 @@
     const y = m[2].length === 2 ? '20' + m[2] : m[2], p = m[1];
     return [p + y, p + y.slice(2), p + ' ' + y, p + ' ' + y.slice(2), p + "'" + y.slice(2)];
   }
-  function cannotSupport(prompt, files, intent) {
+  function cannotSupport(prompt, files, intent) { // `intent` is deliberately unused: the explain exemption is the per-mention explainExempt, not the classifier's intent
     if (!files.some((f) => (f.text || '').trim())) return null;
     const text = files.map((f) => (f.text || '').replace(/^## .*$/gm, '')).join('\n'); // file text only: a sheet NAME (the '## name' line engine/files.js writes) is not a forecast; a header cell or a cell value is
     if (FORECAST_ASK.test(prompt) && !FORECAST_BASIS.test(text)) return { kind: 'forecast' };
