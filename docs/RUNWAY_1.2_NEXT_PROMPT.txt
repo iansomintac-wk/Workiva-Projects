@@ -1,0 +1,22 @@
+DRAFT (hand-off PM step of the Runway 1.1 batch run, session 4ea55df8, 2026-10-19). Not launched: start it only on Ian's yes.
+
+TALK (light), Runway 1.2 next list. New worktree from master after the 1.1 batch merge.
+Read first: .ledger/2026-10-19-runway-1.1-batch/progress.md (in the runway-1.1-batch worktree) and
+docs/evidence/2026-10-19-runway-1.1-batch.md. Ian is at the PC: ask via AskUserQuestion, one question at a time, one (Recommended).
+No-gos: 1.0 untouched unless Ian says so for the backup prompt; $0; no force flags. The real book is not on this PC.
+
+Ian's words carried over: "Ship now, list both (Recommended)" (ruling 2026-10-19-runway-ship-looks-list-two-changes).
+
+1. Ask Ian the Snowflake question from the evidence doc ("Can your Snowflake app download the survey sent and answered
+   dates per account as a CSV, and what are the column headings?"). If CSV works, plan option (a), an "Import CSAT dates"
+   task reusing the Gainsight CSV import; it never overwrites a hand-typed date with a blank.
+2. Promises placed just under the Agenda in Call prep; backup prompt title "Back up your book first?" with a normal (not
+   red) button (1.1; ask Ian about 1.0). Taste calls: PM helper first pass, then Ian (ruling 2026-10-19-pm-first-pass-taste-calls).
+3. PM nits: "(0 of 0 gates done)" on a 0-gate account; hide "Answered" until a survey is sent.
+4. Test hygiene: X1 (test/osm-day-safety.test.mjs) and X3 (test/selfcheck-exit.test.mjs) still diff the shared tmpdir;
+   give each its own folder as e8beb09 did. Investigate the sim's pre-existing L8 and D8 fails: fix, or write down why not.
+5. The CSAT date typing guard (years before 2000 ignored, focus kept) is unit-tested only: drive it with real keystrokes
+   in headless Chrome.
+
+Order: plan, one Codex review (codex exec ... < /dev/null), build test-first, one full verify, Opus + Codex final review,
+merge with a backup branch.
