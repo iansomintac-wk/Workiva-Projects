@@ -425,16 +425,31 @@
     const y = m[2].length === 2 ? '20' + m[2] : m[2], p = m[1];
     return [p + y, p + y.slice(2), p + ' ' + y, p + ' ' + y.slice(2), p + "'" + y.slice(2)];
   }
+  // Categories 1-15 listed as a row label: the cell before the first comma, tab or colon of a line (up to 90 characters). A label that names two or more categories ("Business travel and Investments, ...") is a sentence, and counts for none.
+  function rowLabelCats(rowsText) {
+    const labels = rowsText.split('\n').map((l) => { const m = /^[ \t]*([^,\t:]{1,90})[,\t:]/.exec(l); return m ? m[1].trim() : ''; }).filter(Boolean);
+    const hits = new Set();
+    for (const lb of labels) {
+      const got = [];
+      for (let n = 1; n <= 15; n++) if (CAT_RE[n].test(lb + ',') || new RegExp('^(?:(?:category|cat\\.?)\\s*)?' + n + '(?:\\b|$)').test(lb)) got.push(n);
+      if (got.length === 1) hits.add(got[0]);
+    }
+    return hits.size;
+  }
   function cannotSupport(prompt, files, intent) {
     if (!files.some((f) => (f.text || '').trim())) return null;
     const text = files.map((f) => (f.text || '').replace(/^## .*$/gm, '')).join('\n'); // file text only: a sheet NAME (the '## name' line engine/files.js writes) is not a forecast; a header cell or a cell value is
     if (FORECAST_ASK.test(prompt) && !FORECAST_BASIS.test(text)) return { kind: 'forecast' };
     if (intent === 'explain' || CAT_EXPLAIN.test(prompt)) return null;
     const lower = files.map((f) => f.text || '').join('\n').toLowerCase(); // the sheet name still counts as Scope 3 context here
+    // Word keeps its real paragraphs and table rows in f.lines (text is one flattened line); spreadsheets keep rows as lines of text. Flattened text with no line breaks (PDF, slides, old Word shapes) cannot show rows, so it keeps the old rule (2 names anywhere).
+    const rowsText = files.map((f) => (f.lines ? f.lines.join('\n') : f.text || '')).join('\n').toLowerCase();
+    const flat = files.some((f) => !f.lines && f.kind !== 'Excel' && (f.text || '').trim() && !/\n/.test(f.text));
     if (!/scope\s*3/i.test(prompt) || !/scope\s*3/.test(lower)) return null; // Scope 3 context in the ask AND in the file
     let exact = 0, generic = false;
     for (let n = 1; n <= 15; n++) { const h = categoryHit(n, lower); if (h === 'exact') exact++; else if (h === 'generic') generic = true; }
-    if (exact + (generic ? 1 : 0) < 2) return null; // one name that fits two categories counts once
+    const listed = rowLabelCats(rowsText) + (generic ? 1 : 0);
+    if (!(listed >= 2 || exact >= 3 || (flat && exact + (generic ? 1 : 0) >= 2))) return null; // a list needs 2 row labels (a plain "leased assets" row counts once), or 3 names anywhere
     for (const m of prompt.matchAll(CAT_ASK)) {
       const n = Number(m[1]); if (n < 1 || n > 15) continue;
       const given = (m[2] || '').toLowerCase().trim();

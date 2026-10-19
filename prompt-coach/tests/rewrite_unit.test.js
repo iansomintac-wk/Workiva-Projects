@@ -491,3 +491,22 @@ test('unsupported: a forecast noun phrase about the file stays quiet (C2b near m
   assert.equal(unsupported(run('Forecast product revenue using this file', [plan])).length, 0, 'file has a forecast');
   assert.equal(unsupported(run('Forecast revenue using this file', [h])).length, 1, 'the old case still fires');
 });
+test('unsupported: category words inside a note sentence are not a category list (C4b)', () => {
+  const f = sheetOf('Scope 3 notes', 'Scope 3 notes: Business travel and Investments are covered in the appendix.\nPrepared by, Finance');
+  assert.equal(unsupported(run(askCat(11), [f])).length, 0);
+  const g = sheetOf('Scope 3 notes', 'Business travel and Investments, both covered in the appendix\nPrepared by, Finance');
+  assert.equal(unsupported(run(askCat(11), [g])).length, 0, 'one label naming two categories is not two rows');
+  const w = { name: 'n.docx', kind: 'Word', text: 'Scope 3 notes Business travel and Investments are covered in the appendix.', lines: ['Scope 3 notes', 'Business travel and Investments are covered in the appendix.'], periods: [] };
+  assert.equal(unsupported(run(askCat(11), [w])).length, 0, 'Word paragraph');
+});
+test('unsupported: real category rows (comma, tab, long numbered labels, Word table rows) still make a list (C4b guard)', () => {
+  assert.equal(unsupported(run(T6, [fx('sus_ghg_inventory.xlsx')])).length, 1);
+  assert.equal(unsupported(run(askCat(11), [mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nBusiness travel, 80')])).length, 1);
+  assert.equal(unsupported(run(askCat(11), [mk('s3.xlsx', 'Scope 3', 'Business travel\t310\nEmployee commuting\t20')])).length, 1);
+  assert.equal(unsupported(run(askCat(6), [mk('s3.xlsx', 'Scope 3', 'Business travel\t310\nEmployee commuting\t20')])).length, 0, 'category 6 is listed');
+  assert.equal(unsupported(run(askCat(11), [mk('s3.xlsx', 'Scope 3', 'Category 4 - Upstream transportation and distribution, 150\nCategory 12 - End-of-life treatment of sold products, 20')])).length, 1, 'long labels');
+  const w = { name: 'n.docx', kind: 'Word', text: 'Scope 3 Purchased goods, 5200 Business travel, 80', lines: ['Scope 3', 'Purchased goods, 5200', 'Business travel, 80'], periods: [] };
+  assert.equal(unsupported(run(askCat(11), [w])).length, 1, 'Word table as files.js reads it');
+  const flat = { name: 'n.pdf', kind: 'PDF', text: 'Scope 3 categories Purchased goods Business travel', periods: [] };
+  assert.equal(unsupported(run(askCat(11), [flat])).length, 1, 'flattened document text keeps the old rule');
+});
