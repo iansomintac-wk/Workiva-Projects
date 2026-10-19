@@ -1,0 +1,28 @@
+TALK: Prompt coach, re-check the tricky-batch coach findings on the new coach, then pick the first fix (Workiva repo)
+
+Written 2026-10-19 by run lead 4f7baac0 ("Prompt Coach tricky batch run 3") from the hand-off PM draft. Load
+studio-harness:talk-and-run first and follow "The talk". Work in a fresh worktree branched from origin/prompt-coach.
+
+READ FIRST
+- prompt-coach/research/live-tests/results/2026-10-19-tricky-batch-results.md (its 5 open questions at the end).
+- Run ledger (git-ignored, in worktree prompt-coach-rewrites): .ledger/2026-10-18-prompt-coach-next/progress.md,
+  reviews/merged_final.md.
+
+STATE
+- The tricky batch is merged into origin/prompt-coach (see the ledger's last rows for the merge commit and the
+  backup branch). Its grades and Strong rewrites came from the coach at 0ec11fa. The share-ready run changed
+  engine/rewrite.js since (53 lines added, 9 removed, read by the PM, not re-measured), so the T3, T4, T5 and T6
+  coach findings may already be partly fixed.
+- Results (Opus final scorer, Codex second, n = 24): rewrite helps DISPROVED (Opus 2 of 6, Codex 1 of 6); rating
+  vs quality held narrowly under both; T6 invented DISPROVED (all declined); scorer agreement DISPROVED (10 of 24);
+  good answers Opus 22, Codex 16.
+
+ORDER
+1. Probe ($0, no Workiva AI): re-run the coach (grade + Strong rewrite) on T1-T6 typed prompts on the current
+   engine; compare with logs/tricky_grades.txt and tricky_strong_all.txt; say which findings still hold.
+2. Ask Ian open question 4 first (which coach finding to fix first); the PM recommends the T5 template, then T3/T6.
+   One question at a time, recommendation first.
+3. Spec the chosen fix with a failing test and before/after counts; then write the run prompt per talk-and-run.
+4. Park Q1-Q3 and Q5 with a recommendation each; do not gate on "extra" (Ian: "Report extras, don't gate (Rec.)").
+
+NO-GOS: no new live Workiva AI batch; no spend; no engine change beyond the chosen finding; no force flags.

@@ -1,3 +1,5 @@
+DONE 2026-10-19 by lead 4f7baac0: checker, final review (Opus + Codex), fix round, merge. Next: docs/PROMPT_COACH_FINDINGS_FIX_TALK_PROMPT.txt.
+
 RESUME 2: Prompt coach tricky batch run (Workiva repo), after run lead 646ee949 hit the 200k context stop
 
 Written 2026-10-19 ~06:15Z by run lead 646ee949 ("NEW - Prompt Coach tricky batch run 2"). Load
