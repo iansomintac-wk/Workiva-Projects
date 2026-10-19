@@ -1,0 +1,122 @@
+Runway 1.1 D3: call prep shows what you owe and what they owe (one new "Promises" section in tracker 1.1's call-prep
+panel; proof by the day and lifecycle sim): the run.
+
+Project: C:\Users\teasp\Documents\Runway Tracker. Work on branch runway-d3-prep
+(worktree .claude\worktrees\runway-d3-prep, based on master c297df3, which holds the D2 merge), which holds the spec
+and this prompt.
+
+Spec (approved 2026-10-19 09:31Z by the PM proxy for Ian, "A, proxy decided. Spec 53df51b approved as written (cap 5
++ "1 more" on Orion stays)."; decisions.md line 48):
+  docs/superpowers/specs/2026-10-19-runway-1.1-d3-prep-promises-design.md
+Read it whole; it carries the rulings verbatim, the change, the scope and the "Done when" lines. Probe numbers:
+docs/research/2026-10-19-d3-prep-probe.md (code note: docs/research/2026-10-19-d3-prep-probe-code.md; its claim that
+the field-test seed is not in the sim is wrong, see the probe). Appetite: small batch, one run. If the fix cannot stay
+that small, or D3 still fails on 1.1 after the change, STOP and re-shape; do not dig deeper.
+
+Questions tonight: questions for Ian go to the newest running "NEW - PM proxy overnight*" session (today "NEW - PM
+proxy overnight 2") by SendMessage, with your recommendation and its source or test; wait for its reply message.
+NEVER use AskUserQuestion. Before acting on a proxy answer, check its line exists in
+C:/Users/teasp/Documents/studio-harness/.ledger/proxy/decisions.md. Look calls (words, layout) are never judged by the
+run: capture them for Ian's morning list and keep going.
+
+Method: studio-harness:talk-and-run, "The run". First check: echo "$STUDIO_RUN_LEDGER" and test -f on its
+budget.json and slip.json; empty or missing is a stop. Lead coordinates only; one fresh helper per piece, in order,
+never in parallel.
+  1. Plan by studio-harness:plan-writer at docs/superpowers/plans/2026-10-19-runway-1.1-d3-prep-promises.md (tasks
+     of at most 8 steps, exact files, check command and expected output per task). Header: `Suite: node --test
+     --test-reporter=spec "test/*.test.mjs"` and `Data: (none)`. This project has no bin/rehearse.mjs: skip the
+     rehearsal. Order:
+     (a) the ranking/cap function in 1.1 with its unit test, red first (overdue before dated before undated, done ones
+     out, both directions; 7 open gives 5 kept and "2 more"; Orion's 6 from the probe keep both SIM-OWE rows);
+     (b) the section in renderBeatPrep (renderBeatPrep stays `function renderBeatPrep(`), after Pending deliverables,
+     hidden when no open commitment, text escaped and each commitment's text starting its own text node (the D3 break
+     strips SIM-OWE[^<]*), test first; add the new function(s) to the vm list in test/d2-prep-transcript.test.mjs:78
+     in the same task (expected break otherwise);
+     (c) the panel check tool in tools/ (copy the pattern of tools/d2-prep-panel.mjs): Orion on 10-21 shows 5 rows,
+     "1 more", both SIM-OWE texts; Aurora 0 section elements; section height recorded; the control (master's
+     tracker) must fail;
+     (d) C8's pinned 1.1 hash re-pinned in tools/sim/osm-day/verify.mjs, 1.0 untouched;
+     (e) a full verify (two runs, C5), plus captures for Ian's look call: Orion on 10-21, a 1-commitment account
+     (Solaris or Halcyon), Aurora (none). A capture tool lives in tools/, never under tools/sim/osm-day/ (test
+     osm-day-safety.test.mjs "control e"). Locked: every step's own pass rule in steps-a.mjs and steps-b.mjs, every
+     break in lib/breaks.mjs, OVERRIDE_NAMES. Then update budget.json tasksLeft from the plan.
+  2. Plan review: studio-harness:final-reviewer on the plan (frontier) and Codex, findings merged by the lead.
+     Codex form: `codex exec -s read-only -c windows.sandbox=unelevated --skip-git-repo-check -o <out> - < <prompt
+     file>` (gotcha 2026-10-17-codex-unelevated-sandbox-runs-on-windows; first try its falsifier `... "echo hi"`).
+     Put the spec and plan TEXT in the prompt file.
+  3. STOP: plan approval, by the PM proxy for Ian (SendMessage, wait for the reply, check its decisions.md line).
+  4. Each task: studio-harness:implementer (tests first, red then green), fresh studio-harness:checker, the lead
+     re-runs the task's check itself, ledger row. Checker lines go in role-checks.txt, one per line, each runnable
+     from anywhere (cd "<worktree>" && <command>). A full sim verify took 20m11s on 2026-10-19 (measured by the talk)
+     and the PC has run low on memory (5.8 GB free of 32 GB at the talk's start): run a full verify alone, nothing
+     else heavy beside it, and NO helper edits the worktree while it runs (ledger
+     2026-10-19-helper-edited-worktree-under-running-verify), watched by a Monitor, log in sim-runs/, read only the C
+     lines. Restart a reaped verify only after asking the proxy.
+  5. Final whole-branch review: studio-harness:final-reviewer and a Codex review (same command form as step 2) of
+     `git diff master...runway-d3-prep` put in its prompt file as text; the proxy decides a must-fix disagreement.
+     Fix round, re-check.
+  6. Evidence doc docs/evidence/2026-10-19-runway-1.1-d3-prep.md: every "Done when" line, measured or not run, with
+     numbers and its baseline; the section height; the captures' paths and the look-call list for Ian (heading
+     "Promises", "You owe" / "They owe you", date cues, "N more" wording, placement). CHANGELOG.txt / VALIDATION.txt /
+     README lines that describe call prep in 1.1 change in the same commit as the code.
+  7. Push and merge only as the slip below says. Hand-off PM step, then the next queued talk (L11) per the slip.
+     Final message (to the proxy, and in the session): what was pushed or merged, the evidence doc, the captures
+     for Ian's look call, the time used. Run node "C:/Users/teasp/Documents/studio-harness/bin/notify.mjs" "<...>".
+
+Ledger: C:/Users/teasp/Documents/Runway Tracker/.claude/worktrees/runway-d3-prep/.ledger/2026-10-19-runway-d3-prep/
+(git-ignored): progress.md (the talk's rows and the rulings verbatim are above the run's rows), budget.json,
+slip.json. budget.json's "plan" path does not exist yet: the plan-writer creates it in step 1. This lead was
+launched with CLAUDE_STOP_AT_TOKENS 300000 in --settings (run-lead stop); budget runTokenCap 1,600,000. Create
+role-checks.txt and reviews/ as needed. Remove worktrees only with studio-harness bin/remove-worktree.mjs, never plain
+git worktree remove (it deletes ignored files).
+
+Checks the lead re-runs (from the worktree root), baselines measured by the talk on master c297df3:
+  node --test --test-reporter=spec "test/*.test.mjs"
+                                       155 tests, 153 pass, 0 fail, 2 skipped; the folder form `node --test test/`
+                                       runs nothing on Node 26
+  git diff --quiet master -- osm-book-of-business-tracker-1.0.html      must stay clean for the whole run
+  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 483
+                                       483/483, 0 console errors; the changed 1.1 must still pass
+  node tools/sim/osm-day/verify.mjs    the spec's C lines; baseline in the spec ("Done when"), state dir
+                                       sim-runs/verify-2026-10-19T09-08-01-319Z
+
+Test data: the field-test book (34 synthetic accounts) and the sim's synthetic accounts only. Test emails use
+example.com or .invalid, never a real customer domain.
+
+Safety rules (Ian's):
+- Never edit osm-book-of-business-tracker-1.0.html. In 1.1 change only what the spec's Scope names.
+- Never open any HTML file from this folder in Ian's normal Chrome profile. Only headless Chrome with a throwaway
+  profile (--user-data-dir). Never run chrome.exe without --user-data-dir.
+- Never write test or synthetic data where the real book lives.
+- Never read, copy or upload book-of-business-RESTORE-POINT-*.json, exports, recordings, screenshots or zips
+  (the run's own sim captures in sim-runs/ excepted).
+- Real AI providers are never called: the fake network answers the three provider hosts in every run. $0.
+- Stop browsers and servers by their own PIDs, never by image name. Delete a profile only after its browser has
+  exited (wait and retry). Logs to files, never into context.
+- Nothing is published: no Pages, no new remote, no .github/ workflow.
+- No token-raise slip field (ruling 2026-10-19-no-slip-field-for-relayed-token-raises): a cap raise goes through
+  the PM proxy with its logged decision line.
+- The one write allowed under ~/.claude/: the session-rename exception (Ian, 2026-10-09): when the successor is
+  running, set the `name` field of your own ~/.claude/jobs/<your id>/state.json to `COMPLETED - <name>`. Nothing
+  else there.
+
+Sessions: do NOT claude rm 1c93fa0b (the talk that launched you; it shares this runway-d3-prep worktree), nor any
+session in the runway-gone-quiet, runway-day-sim or runway-d2-prep worktrees. The successor removes a predecessor only
+when its state is done, everything is committed, and rm needs no force flags.
+
+Slip (standing slip, written by studio-harness bin/standing-slip.mjs into .ledger/2026-10-19-runway-d3-prep/slip.json;
+launch approved by the PM proxy, decisions.md line 48):
+- Push: yes, branch runway-d3-prep only, non-force, to origin, when the run finishes. Never push master.
+- Merge: yes, only when every "Done when" line of the spec is PASS on the lead's own re-run and the final review has
+  no open must-fix. Merge rule first: local branch backup/master-before-runway-d3-prep-2026-10-19 at master's tip,
+  conflicts keep both sides, full suite on the merged tree has no failure master lacks. Any condition unmet: stop
+  for the proxy. Merge into the main checkout's local master; never push master.
+- Spend: $0. Fake AI network every run. Codex reviews only while `codex login status` says "Logged in using
+  ChatGPT"; if it asks for credits or an API key, skip and record why.
+- New sessions: yes: a successor at the context stop and the next queued talk at the end, each launched with the
+  same --settings form. Queued after this run (ruling 2026-10-19-runway-sim-findings-ruled): L11 (warn, still allow);
+  it starts with a talk (launch the talk with the default 200k stop, not 300k).
+
+Stops: plan approval; anything the slip does not name; D3 still failing after the change (re-shape); a decision only
+Ian can make; two strikes per the skill. At every stop send a push notification, then message the proxy and wait.
+Give the time at start and at each stop.

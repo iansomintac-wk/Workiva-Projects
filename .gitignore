@@ -73,3 +73,6 @@ site/
 
 # Day+lifecycle sim run folders (tools/sim/osm-day/run.mjs)
 sim-runs/
+
+# D3 prep control copy (tools/d3-prep-panel.mjs --control)
+osm-book-of-business-tracker-d3ctl.html

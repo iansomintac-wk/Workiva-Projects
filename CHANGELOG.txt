@@ -22,6 +22,13 @@ OSM Runway — release notes
       docs/HOSTING.md says what the page loads (outside hosts, no integrity attribute on the
       xlsx script, inline script and style needed) instead of "works with no network".
 
+1.1 — D3 prep. Call prep shows what you owe and what they owe.
+
+    - Call prep in 1.1 gets a Promises section after Pending deliverables: the account's open
+      commitments, up to 5, most urgent first (overdue, then by due date, then undated),
+      grouped You owe then They owe you, with a date cue on the dated ones and a link to the
+      Coordination tab for the rest; hidden when there are none.
+
 1.1 — D2 prep. Call prep shows how the last call ended.
 
     - Call prep in 1.1 shows the closing 30 speech lines of the newest transcript on the

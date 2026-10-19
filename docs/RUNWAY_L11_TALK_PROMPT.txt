@@ -1,0 +1,70 @@
+Runway L11: "graduation warns when there is no CSAT contact, but still lets you graduate": the talk.
+(DRAFT by the D3 talk's hand-off PM, 2026-10-19; refreshed by the D3 run's hand-off PM step, 2026-10-19: D3 PASS on 1.1,
+branch runway-d3-prep b887582, merged into master by that run unless `git log master` says otherwise.)
+(Queued by ruling 2026-10-19-runway-sim-findings-ruled: D2 (done), D3 (done once its run merges), then L11. Runway is
+a Priority 1 side slot, ruling 2026-10-19-runway-joins-priority-1.)
+
+Method: invoke studio-harness:talk-and-run first, "The talk". Ian (or the PM proxy, for what its guardrails allow) must
+be in the session; this is a talk, not a run. Questions go to the newest running "NEW - PM proxy overnight*" session
+by SendMessage when Ian is away. Launch with the default 200k stop.
+
+Project: C:\Users\teasp\Documents\Runway Tracker. Make your OWN worktree from master once D3 is merged (check
+`git log master` holds the D3 merge; else base on runway-d3-prep). Do not write in the runway-gone-quiet,
+runway-day-sim, runway-d2-prep or runway-d3-prep worktrees (ruling 2026-10-19-own-worktree-when-another-run-is-live:
+if another run's ledger is live there, message that lead, wait at most 15 minutes, else carry on).
+
+Read first:
+- docs/evidence/2026-10-16-osm-day-lifecycle-sim.md, finding L11 (line 22): with no CSAT contact (read back
+  done:false, contactName:"") the graduation confirm box has its OK button enabled and there is no refusal. With a
+  contact added it graduates and queues 1 "Success Plan objective" item. Ruling: warn, still allow.
+- docs/evidence/2026-10-19-runway-1.1-d3-prep.md (the last run's results and look-call list). The C lines as they
+  stand after D3 (read from that verify, sim-runs/verify-d3prep in the D3 worktree): C1 1.1 PASS 9 FAIL 1 [D8] GAP 0;
+  C2 1.1 PASS 9 FAIL 2 [L8,L11] GAP 1; C4 1.1 FLIPPED 18 VACUOUS 0 NOT-TESTED 3 (1.0 15/0/6); C8 1.1 6d319644,
+  1.0 a21ca8c3; suite 168 tests, 166 pass, 0 fail, 2 skipped; selfcheck 483/483. Re-measure them on master.
+- D3's look calls (heading "Promises", "You owe" / "They owe you", date cues, "N more" wording, placement) are still
+  on Ian's morning list; they do not block L11.
+- docs/superpowers/specs/2026-10-19-runway-1.1-d3-prep-promises-design.md (the pattern for spec, Done-when lines and
+  look calls).
+- tools/sim/osm-day/steps-b.mjs (grep L11), lib/breaks.mjs (L11 break: it filters csat out of
+  validateGraduationDraft's missing list), lib/setup.mjs (the graduating account and its seeded CSAT state).
+- the day-sim notes on X6 (docs/RUNWAY_DAY_SIM_RUN_RESUME_PROMPT.txt line 29, L11 clicks OK with no contact).
+
+1. Read-only probe, numbers to docs/research/2026-MM-DD-l11-prep-probe.md: in 1.1, validateGraduationDraft (around
+   line 5096) and its callers (around 5118 and 5142); the graduation confirm box and its OK button; the CSAT gate
+   (around 7467 and 7482, "no CSAT contact") and the isMissing check around 6445; compliance.associatedPeopleCSAT
+   (done, date, contactName); where a warning line can sit in the confirm box without disabling OK; whether any
+   readiness text already says "no CSAT contact" and where it shows; how many graduating accounts in the field-test
+   book and the sim lack a CSAT contact; what the L11 sim step and its break touch, and whether the break still flips
+   once the pass rule is "warning shown and still allowed" (the step's pass rule is locked in steps-b.mjs: settle in
+   the talk whether L11's rule may change, or whether the current rule already reads a warning as PASS); which other
+   sim steps and breaks pass through graduation (L10). No tracker edits. Mark each figure measured, read or assumed.
+   (Line numbers above were read by the PM, not re-run.)
+2. Spec with Ian, one question at a time, recommendation first, with a real example: should the warning appear in the
+   confirm box, in the readiness list, or both; the exact words (a look call; the proxy may decide for the night, Ian
+   can overturn in the morning); should OK stay enabled and graduation go through unchanged (the ruling says yes);
+   should the choice be recorded on the account (default: no, nothing stored, to keep this a small batch); what shows
+   when the contact is present (default: no warning). Done when (draft): sim L11 PASS on 1.1; the L11 break flips in
+   C4 with VACUOUS 0 (1.1 NOT-TESTED re-counted from 3); C1 1.1 stays PASS 9 FAIL 1 [D8]; C2 otherwise unchanged
+   (C2 1.1 from PASS 9 FAIL 2 [L8,L11] GAP 1 to PASS 10 FAIL 1 [L8] GAP 1, or as measured); C8 re-pinned on the new 1.1 hash; C3 and L7 as on master; full suite no failure master lacks; 1.0
+   results identical; D2 and D3 still PASS. Measure the baseline with a full verify of master first, run alone.
+3. Then the run prompt, budget.json and the bedtime slip, per talk-and-run. Launch the run with STUDIO_RUN_LEDGER and
+   CLAUDE_STOP_AT_TOKENS 300000 in --settings.
+
+Rules (Ian's):
+- Never edit osm-book-of-business-tracker-1.0.html. No tracker edits in the talk.
+- Never open any HTML from this folder in Ian's normal Chrome profile; headless Chrome with a throwaway
+  --user-data-dir only. Stop browsers by their own PIDs.
+- Never read, copy or upload book-of-business-RESTORE-POINT-*.json, exports, recordings, screenshots or zips.
+- Test data: the field-test book and the sim's synthetic accounts only; emails example.com or .invalid.
+- Real AI providers are never called (fake network). $0 spend.
+- No token-raise slip field (ruling 2026-10-19-no-slip-field-for-relayed-token-raises).
+- A screenshot tool lives in tools/, never under tools/sim/osm-day/ (test osm-day-safety.test.mjs "control e").
+- No helper edits the worktree while a full verify runs from it (ledger
+  2026-10-19-helper-edited-worktree-under-running-verify). Run a full verify alone, watched by a Monitor (the PC ran
+  low on memory on 2026-10-19); restart a reaped one only when asked.
+- Plain English to Ian; any wording on screen is his look call. If the fix cannot stay a small batch, stop and
+  re-shape.
+- Do not claude rm sessions that share a worktree you did not make.
+
+Queued behind this: nothing on the sim findings list. L12 (CSAT survey tracking) stays a listed GAP, and the D3
+meeting agenda stays a GAP; either needs its own talk and Ian's yes.

@@ -69,6 +69,8 @@ Keeps an OSM's book of business in one place and turns it into a day's work.
               nothing logged since. Any logged activity stops it.
               In 1.1, Call prep also shows the closing 30 speech lines of the newest transcript on the
               account, in a scrolling box with a Read the full transcript link; hidden when there is none.
+              It also shows a Promises section: the account's open commitments, up to 5, most urgent
+              first, grouped You owe then They owe you, with a link to the Coordination tab for more.
 
 
 Where your data lives
