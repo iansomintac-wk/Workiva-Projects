@@ -1,0 +1,47 @@
+RUN (light): Runway 1.1 remaining fixes in ONE batch, so Ian can start using it (Runway Tracker repo)
+Written 2026-10-19 ~15:35Z by cc43273d. Worktree: this folder (.claude/worktrees/runway-1.1-batch, branch runway-1.1-batch from
+master 8765eb5, which is on GitHub as branch runway-tracker). Run `date -u` before every stamp. Ian is AT THE PC: ask him directly
+(AskUserQuestion, one question, one "(Recommended)" option), never a proxy.
+
+IAN'S WORDS (2026-10-19, typed, verbatim)
+- "I want Runway fixes and improvements implemented first before I use it, what part of that is complicated? This should not have
+  taken all weekend for you to still not have something done for me"
+- To the list below: "those"
+- L12: "Gainsight doesn't track it, do the smallest version. I am able to get this information from Quicksight but this sometimes
+  takes 24 hours to update and takes too many clicks to get into. I have access to my internal Snowflake app that can pull this data
+  but i am not sure if I am able to push that data through a connector to the tracker."
+- Ruling 2026-10-19-runway-real-book-not-on-this-pc: his real book is NOT on this PC; do not add steps, stops or warnings to protect it.
+
+WHY LIGHT: last night 4 small fixes took ~7 h (talk + plan + 2 plan reviews + build + 1-2 x 20-min sim verifies + 2 final reviews each).
+This batch: one short design message to Ian, then build. Tests first still (red then green), but: ONE plan review (Codex read-only),
+ONE full sim verify at the end, ONE final review (Opus final-reviewer). Target: in front of Ian within ~3 hours.
+
+THE BATCH (all on 1.1 only; 1.0 never edited)
+1. L12 smallest version: on the account's existing CSAT block add two dates, "Survey sent" and "Answered"; one Today row when a survey
+   was sent N days ago with no answer (N = 7, assumed; one named constant, said in the docs). Sim: L12 becomes a checked step (remove it
+   from the GAP list in tools/sim/osm-day/lib/results.mjs), with a judge and a break that flips it, VACUOUS 0. Ian's yes to "do the
+   smallest version" covers this locked-file change for L12 only. Nothing new in the Gainsight export.
+2. #gc-prompt line in the graduation confirm box: uses undefined --warn so it shows grey; switch to --status-watch-text like #gc-csat
+   (found by the L11 final review; read docs/evidence/2026-10-19-runway-1.1-l11-csat-warning.md).
+3. tools/d3-prep-panel.mjs: Ctrl-C leaves Chrome and its temp profile; stop the browser in the signal handler, as tools/l11-csat-panel.mjs
+   now does; add a test.
+4. Meeting agenda view (sim GAP note on D3): ask Ian ONE question first with your recommended smallest shape (e.g. a numbered list at the
+   top of Call prep built from promises, open questions and checklist, no new data). If he says skip, skip it.
+5. $0 research, report only (no build): can his Snowflake app's CSAT sent/answered data reach the tracker? Read connector/CONTRACT.md and
+   connector/adapters (Gainsight, Gong) and Settings' Gainsight CSV import. Answer in the evidence doc: (a) CSV export from Snowflake into
+   an import like the Gainsight one; (b) a connector adapter; what each needs from Ian (what his Snowflake app can export or call), marked
+   measured / read / assumed. Bring Ian one question if a choice is needed.
+
+ORDER
+1. First check: STUDIO_RUN_LEDGER set, budget.json and slip.json exist (standing slip: push own branch, merge after checks + review).
+2. Short design message to Ian (items 1-4 in plain words, 1 question for item 4); then a plan by studio-harness:plan-writer (<= 8 steps a
+   task), Codex plan review, approval by Ian.
+3. Build each task test-first (implementer, then checker; lead re-runs the check). Baseline first: full suite (node --test from the repo
+   root measured 353 tests, 351 pass, 0 fail, 2 skipped on 8765eb5) and the sim's full verify.
+4. One full verify, run alone; captures for Ian of the L12 Today row and the CSAT dates (and the agenda if built).
+5. Opus final review; fix must-fix; evidence doc docs/evidence/2026-10-19-runway-1.1-batch.md; update CHANGELOG/VALIDATION/README in the
+   same commits as the behaviour.
+6. Merge into master with a backup branch, then push master to origin runway-tracker (fast-forward, backup branch of the old tip pushed
+   first). Tell Ian where to look for each change (which panel, which data makes it show).
+Codex on this PC: run codex exec with -c windows.sandbox=unelevated (ledger gotchas 2026-10-14, 2026-10-17).
+NO-GOS: no force flags; $0; no ~/.claude writes (session-rename exception only); no publishing.
