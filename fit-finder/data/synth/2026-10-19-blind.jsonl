@@ -1,0 +1,40 @@
+{"id":"K1","task":"Can you explain what ASC 842 actually requires us to do for short-term leases vs. leases over 12 months? Mostly what goes on the balance sheet."}
+{"id":"K2","task":"translate this variance commentary into German for our Frankfurt finance team, keep the numbers and headings as they are"}
+{"id":"K3","task":"Rewrite our ERP account mapping logic so legacy cost centres roll up to the new entity structure."}
+{"id":"K4","task":"Don't rewrite the whole risk factors section, just fix the grammar and leave my wording alone."}
+{"id":"K5","task":"Go through this SOC 2 Type II report from our payroll vendor and list any exceptions, qualified opinions or controls that weren't tested. We need it for our vendor file."}
+{"id":"K6","task":"make this paragraph more concise, its way too wordy for the MD&A"}
+{"id":"K7","task":"Please approve and lock the Q3 close period in the system so nobody can post to it any more."}
+{"id":"K8","task":"Summarise what CSRD requires for double materiality assessment, in plain terms for our sustainability team who haven't worked with it before."}
+{"id":"K9","task":"Translate our EUR and GBP balances to USD at the year-end rate for the consolidation and give me the totals to the cent."}
+{"id":"K10","task":"Draft a short email to our auditor saying the PBC list will be a couple days late and asking if Thursday works."}
+{"id":"K11","task":"I've put the trial balance in the sheet with the accrual and prepaid reconciliations. Can you check that the pack is complete and write up the open items so the controller can sign it off?"}
+{"id":"K12","task":"Review the access request from Dana in the finance system and tell me if she should get posting rights. Rewrite the role if needed."}
+{"id":"K13","task":"Explain in simple terms how expected credit losses (CECL) differ from the old incurred loss model. Not a full memo, just a half page."}
+{"id":"K14","task":"Don't send anything to the auditors yet. Just pull together a list of what we'd need to provide for the fixed asset testing and I'll review it."}
+{"id":"K15","task":"make this sound friendlier, it's going to a supplier we've had a late payment issue with: 'Your invoice is overdue on our side because of missing PO. Send PO.'"}
+{"id":"K16","task":"Can you tell me how much the Workiva licence costs for 25 users and whether we'd need the extra module for ESG?"}
+{"id":"K17","task":"Run an exceptions report in our database for all journal entries over 50k posted on weekends and send me the list."}
+{"id":"K18","task":"Here's our internal audit report on procurement. Pull out all the findings, rank them by severity and note which ones have no management response yet."}
+{"id":"K19","task":"Translate this board memo about the restructuring into French, formal register please."}
+{"id":"K20","task":"Book the accrual journal for the unbilled consulting fees to the ERP, debit expense credit accrued liabilities, 18,450.37."}
+{"id":"K21","task":"what does the SEC climate disclosure rule say about scope 1 and 2 emissions reporting, who has to do it and when"}
+{"id":"K22","task":"Prepare the bank reconciliation summary for the month-end close package: unreconciled items, aging, and a note for the CFO who has to sign it."}
+{"id":"K23","task":"Make this email sound more formal. its going to the audit committee chair. 'hey, quick heads up, we found a couple of errors in the Q2 numbers, fixing them now, will send updated deck soon'"}
+{"id":"K24","task":"Summarise the key points of IFRS 15 five step model so I can explain it to new joiners."}
+{"id":"K25","task":"Summarise the data in the exceptions table in our warehouse and rewrite the query so it runs faster."}
+{"id":"K26","task":"Can you give me the weighted average cost of capital to two decimals from these inputs? It has to match the valuation model exactly."}
+{"id":"K27","task":"I need a SOC 1 Type 2 report reviewed. List any control deviations, anything carved out, and the complementary user entity controls we're meant to have in place."}
+{"id":"K28","task":"Change permissions on the board pack so only the CFO and the legal team can edit the sustainability section."}
+{"id":"K29","task":"plain english pls: 'The entity shall recognise impairment loss where carrying amount exceeds recoverable amount, being the higher of fair value less costs of disposal and value in use.'"}
+{"id":"K30","task":"Write a quick note to Priya asking her to send the intercompany confirmations by Friday so we can finish the elimination entries."}
+{"id":"K31","task":"Tighten up this sustainability report intro. Keep it under 120 words and keep the tone professional but not stiff."}
+{"id":"K32","task":"Rather than redoing the whole footnote, can you only update the sentence about the credit facility maturity and leave the rest unchanged?"}
+{"id":"K33","task":"Check our year-end close checklist and flag anything that looks like it hasn't been reviewed yet, then draft the cover note for the CFO sign-off."}
+{"id":"K34","task":"Translate this ISSB S2 climate section into Spanish for our Mexico subsidiary, the technical terms should stay consistent."}
+{"id":"K35","task":"Review the segregation of duties exceptions from the system and revoke the ones that conflict."}
+{"id":"K36","task":"Explain what SOX 404 management assessment needs to include and what the auditor attests to. Keep it brief."}
+{"id":"K37","task":"Send the filed 10-K to the SEC EDGAR portal once the CFO approves, and mark the document final."}
+{"id":"K38","task":"Make this less stiff and more human: 'Pursuant to the aforementioned policy, employees are required to submit expense claims within thirty days of incurrence.'"}
+{"id":"K39","task":"Reviewing the trial balance for the subsidiary — can you list balances that look odd vs last year and draft questions for the local controller before I pass the pack up for sign-off?"}
+{"id":"K40","task":"Translate the rewrite rules in our ETL job that maps account codes from the old chart to the new chart, I think there are some exceptions in the mapping table too."}
