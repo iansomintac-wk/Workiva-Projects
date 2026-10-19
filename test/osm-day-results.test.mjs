@@ -109,23 +109,36 @@ test('exitCode: 0 when all PASS/GAP and all FLIPPED', () => {
   assert.equal(exitCode({ steps: s, breaks: brks() }), 0);
 });
 
-// ---- X9: C3 reports a disproved coverage prediction ----
-const l6ev = (cov, cap) => `firstToday=2026-10-06 (day 1) firstWatch=2026-10-15 (day 10) firstOffTrack=2026-10-26 (day 21) rank=3 firstRanked=2026-10-06 where=day step beyondBeatCapDays=${cap} reasonIsCoverage=${cov} reason="x"`;
-const c3runs = (cov, cap) => [{ res: Object.fromEntries(['1.0', '1.1'].map(v => [v, { partial: false, steps: [{ id: 'L6', status: 'PASS', evidence: l6ev(cov, cap) }] }])) }];
-test('X9 C3 PASS when the coverage row shows and the timings hold', async () => {
+// ---- C3 (gone quiet): Fernhollow's row is in the day's 15, in a day step, by day 7 after hand-off ----
+const dayRowsEv = rows => `firstToday=2026-10-06 (day 1) firstWatch=2026-10-15 (day 10) firstOffTrack=2026-10-26 (day 21) rank=3 firstRanked=2026-10-06 where=gate deck beyondBeatCapDays=0/21 reasonIsCoverage=true reason="x" capHiddenDays=0/21 remainingThroughDay7=[] dayRows=[${rows.join(';')}]`;
+const c3res = (rows11, rows10 = rows11) => [{ res: { '1.0': { partial: false, steps: [{ id: 'L6', status: 'PASS', evidence: dayRowsEv(rows10) }] }, '1.1': { partial: false, steps: [{ id: 'L6', status: 'PASS', evidence: dayRowsEv(rows11) }] } } }];
+const DECK_ONLY = ['2026-10-06@none@gate deck', '2026-10-07@none@gate deck', '2026-10-12@28@gate deck'];
+test('C3 FAIL on 1.1 when Fernhollow shows only as a gate-deck card or Below the day through day 7', async () => {
   const { c3 } = await import('../tools/sim/osm-day/verify.mjs');
-  const line = c3(c3runs(true, '3/21'));
-  assert.match(line, /^C3 PASS /); assert.doesNotMatch(line, /disproved/);
+  assert.match(c3(c3res(DECK_ONLY)), /^C3 FAIL .*1\.1 no on-screen row in the day's 15/);
+  assert.match(c3(c3res(['2026-10-12@1@Below the day'])), /^C3 FAIL .*1\.1 no on-screen row in the day's 15/);
 });
-test('X9 C3 FAIL disproved when L6 shows no coverage row, still printing the Today, Watch and Off Track days', async () => {
+test('C3 PASS when 1.1 has a ranked day-step row on 2026-10-12, and 1.0 failing does not gate it', async () => {
   const { c3 } = await import('../tools/sim/osm-day/verify.mjs');
-  const line = c3(c3runs(false, '3/21'));
-  assert.match(line, /^C3 FAIL .*disproved/);
-  assert.match(line, /Today d1<=7 true, Watch d10<=10 true, OffTrack d21<=21 true/);
+  const line = c3(c3res(['2026-10-12@1@day step+gate deck'], DECK_ONLY));
+  assert.match(line, /^C3 PASS /);
+  assert.match(line, /1\.0 no on-screen row .*\(reported, expected to fail\)/);
+  assert.match(line, /1\.1 in the day's 15 on screen on 2026-10-12 \(rank 1, day step\+gate deck\)/);
 });
-test('X9 C3 FAIL disproved when Fernhollow is beyond the beat cap on every day', async () => {
+test('C3 does not count a day-step row after day 7 or one ranked past 15', async () => {
   const { c3 } = await import('../tools/sim/osm-day/verify.mjs');
-  assert.match(c3(c3runs(true, '21/21')), /^C3 FAIL .*disproved/);
+  assert.match(c3(c3res(['2026-10-13@1@day step'])), /^C3 FAIL .*1\.1 no on-screen row/);
+  assert.match(c3(c3res(['2026-10-12@16@day step'])), /^C3 FAIL .*1\.1 no on-screen row/);
+});
+test('C3 FAIL when the L6 evidence carries no dayRows (unreadable)', async () => {
+  const { c3 } = await import('../tools/sim/osm-day/verify.mjs');
+  const runs = [{ res: Object.fromEntries(['1.0', '1.1'].map(v => [v, { partial: false, steps: [{ id: 'L6', status: 'PASS', evidence: 'firstToday=2026-10-06' }] }])) }];
+  assert.match(c3(runs), /^C3 FAIL .*dayRows unreadable/);
+});
+test('L6 evidence ends with a dayRows field (evidence only; the pass rule line is untouched)', () => {
+  const t = readFileSync(new URL('../tools/sim/osm-day/steps-b.mjs', import.meta.url), 'utf8');
+  assert.match(t, /dayRows=\[\$\{log\.map\(/);
+  assert.match(t, /const passed = firstToday !== 'never' && firstToday <= CAL\.L6\.day7;/);
 });
 test('X9 run.mjs does not cut L6 evidence at 600 characters', () => {
   const t = readFileSync(new URL('../tools/sim/osm-day/run.mjs', import.meta.url), 'utf8');

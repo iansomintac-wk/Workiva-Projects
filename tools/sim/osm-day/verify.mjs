@@ -1,6 +1,7 @@
 // Verify C1-C8 of the day+lifecycle sim. Prints exactly one line per check and writes sim-runs/verify.txt.
 //   node tools/sim/osm-day/verify.mjs                      run everything (two full runs, two field tests), then score
 //   node tools/sim/osm-day/verify.mjs --score-only [--dir <state dir>]   score a state dir written by an earlier run
+//   node tools/sim/osm-day/verify.mjs --c3-only --dir <folder under sim-runs>   print just C3 from results-1.0/1.1.json there (partial ok); exit 0 PASS, 1 FAIL, 2 harness error
 // State dir (default sim-runs/verify): before.json, after.json, run1/, run2/ (run.mjs --out folders, run.exit),
 // ft/<v>.json + ft/<v>.exit. Exit 0 only if C5-C8 hold and no run exited 2; C1-C4 are reported, not gated.
 import { spawnSync, execFileSync } from 'node:child_process';
@@ -79,23 +80,29 @@ function partLine(tag, ch, runs) {
   return `${tag} ${bad ? 'FAIL' : 'PASS'} ${parts.join(' | ')}`;
 }
 
-const L6RE = /firstToday=(\S+)(?: \(day (\d+)\))? firstWatch=(\S+)(?: \(day (\d+)\))? firstOffTrack=(\S+)(?: \(day (\d+)\))?/;
+export const C3_DAY7 = '2026-10-12';
+const DAYROWS_RE = /dayRows=\[([^\]]*)\]/;
+const c3Entry = s => { const [d, rank, where] = s.split('@'); return { d, rank: rank === 'none' ? null : Number(rank), where: where === 'none' ? '' : where }; };
+// The one place that says "rendered in a day step": a day step (a booked call's beat), in the day's 15.
+// Below the day (past what one day holds) and a gate-deck card do not count (Ian's ruling, spec line 41).
+export const c3OnScreen = e => e.rank !== null && e.rank <= 15 && /day step/.test(e.where);
+function c3Version(v, res) {
+  if (!res) return { ok: false, text: `${v} not run`, ran: false };
+  const s = (res.steps || []).find(x => x.id === 'L6');
+  const m = s && DAYROWS_RE.exec(s.evidence || '');
+  if (!m) return { ok: false, text: `${v} L6 dayRows unreadable`, ran: true };
+  const days = m[1].split(';').filter(Boolean).map(c3Entry).filter(e => e.d <= C3_DAY7);
+  const hit = days.find(c3OnScreen);
+  if (hit) return { ok: true, text: `${v} in the day's 15 on screen on ${hit.d} (rank ${hit.rank}, ${hit.where})`, ran: true };
+  return { ok: false, ran: true, text: `${v} no on-screen row in the day's 15 on or before ${C3_DAY7} (seen: ${days.map(e => `${e.d.slice(5)}:${e.rank === null ? '-' : e.rank}/${e.where || '-'}`).join(' ')})` };
+}
+// Ian's ruling (2026-10-19): on 1.1 a silent new customer's row is in the day's 15 within 7 days of hand-off. 1.0 is reported and expected to fail; only 1.1 gates the line.
+export function c3FromResults(res) {
+  const r10 = c3Version('1.0', res['1.0']), r11 = c3Version('1.1', res['1.1']);
+  return `C3 ${r11.ok ? 'PASS' : 'FAIL'} ${r10.text}${r10.ran && !r10.ok ? ' (reported, expected to fail)' : ''} | ${r11.text}`;
+}
 export function c3(runs) {
-  const parts = []; let ok = true;
-  for (const v of VERSIONS) {
-    const s = fullResult(runs, v).steps.find(x => x.id === 'L6');
-    const m = s && L6RE.exec(s.evidence || '');
-    if (!m) { ok = false; parts.push(`${v} L6 evidence unreadable`); continue; }
-    const [t, w, o] = [m[2], m[4], m[6]].map(x => (x === undefined ? Infinity : Number(x)));
-    const b = [t <= 7, w <= 10, o <= 21];
-    // Spec 8, C3: "due soon" is disproved if it does not show on Today as a coverage row: L6 saw no coverage reason, or Fernhollow sat beyond the beat cap every day.
-    const cap = /beyondBeatCapDays=(\d+)\/(\d+)/.exec(s.evidence || '');
-    const disproved = /reasonIsCoverage=false/.test(s.evidence || '') || (!!cap && Number(cap[2]) > 0 && cap[1] === cap[2]);
-    if (!b.every(Boolean) || disproved) ok = false;
-    const d = x => (x === Infinity ? 'never' : 'd' + x);
-    parts.push(`${v} ${disproved ? 'disproved (no on-screen coverage row by day 7): ' : ''}Today ${d(t)}<=7 ${b[0]}, Watch ${d(w)}<=10 ${b[1]}, OffTrack ${d(o)}<=21 ${b[2]}`);
-  }
-  return `C3 ${ok ? 'PASS' : 'FAIL'} ${parts.join(' | ')}`;
+  return c3FromResults(Object.fromEntries(VERSIONS.map(v => [v, fullResult(runs, v)])));
 }
 
 function c4(runs) {
@@ -198,6 +205,15 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const di = args.indexOf('--dir');
   let dir;
   try {
+    if (args.includes('--c3-only')) {
+      if (di < 0) throw new Error('--c3-only needs --dir');
+      const cdir = resolveUnderSimRuns(args[di + 1], ROOT);
+      const res = {};
+      for (const v of VERSIONS) { const p = join(cdir, `results-${v}.json`); if (existsSync(p)) res[v] = readJson(p); }
+      const line = c3FromResults(res);
+      console.log(line);
+      process.exit(line.startsWith('C3 PASS') ? 0 : 1);
+    }
     const fresh = join(ROOT, 'sim-runs', 'verify-' + new Date().toISOString().replace(/[:.]/g, '-'));
     dir = di >= 0 ? resolveUnderSimRuns(args[di + 1], ROOT) : args.includes('--score-only') ? join(ROOT, 'sim-runs', 'verify') : fresh;
     if (!args.includes('--score-only') && existsSync(join(dir, 'run1'))) throw new Error(`${dir} already holds a run; use a fresh folder`);

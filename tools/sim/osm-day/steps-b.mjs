@@ -323,7 +323,7 @@ export const PART_B = [
     const remaining = log.filter(x => x.d <= CAL.L6.day7 && (x.rendered || x.rank !== null)).map(x => `${x.d}: ${x.headline} | ${x.reason}`);
     const passed = firstToday !== 'never' && firstToday <= CAL.L6.day7;
     const dayNo = d => d === 'never' ? 'never' : daysBetween(CAL.L5, d);
-    return { passed, evidence: await withBreak(ctx, `firstToday=${firstToday} (day ${dayNo(firstToday)}) firstWatch=${firstWatch} (day ${dayNo(firstWatch)}) firstOffTrack=${firstOffTrack} (day ${dayNo(firstOffTrack)}) rank=${ft ? ft.rank : 'none'} firstRanked=${firstRanked} where=${ft ? ft.where : 'none'} beyondBeatCapDays=${log.filter(x => x.beyondBeatCap).length}/${log.length} reasonIsCoverage=${reasonIsCoverage} reason="${ft ? ft.reason : ''}" capHiddenDays=${log.filter(x => x.capHidden).length}/${log.length} remainingThroughDay7=[${remaining.join(' ;; ')}]`) };
+    return { passed, evidence: await withBreak(ctx, `firstToday=${firstToday} (day ${dayNo(firstToday)}) firstWatch=${firstWatch} (day ${dayNo(firstWatch)}) firstOffTrack=${firstOffTrack} (day ${dayNo(firstOffTrack)}) rank=${ft ? ft.rank : 'none'} firstRanked=${firstRanked} where=${ft ? ft.where : 'none'} beyondBeatCapDays=${log.filter(x => x.beyondBeatCap).length}/${log.length} reasonIsCoverage=${reasonIsCoverage} reason="${ft ? ft.reason : ''}" capHiddenDays=${log.filter(x => x.capHidden).length}/${log.length} remainingThroughDay7=[${remaining.join(' ;; ')}] dayRows=[${log.map(x => `${x.d}@${x.rank == null ? 'none' : x.rank}@${x.where || 'none'}`).join(';')}]`) };
   } },
   { id: 'L7', async run(ctx) {
     await openDay(ctx, CAL.L7.email);
