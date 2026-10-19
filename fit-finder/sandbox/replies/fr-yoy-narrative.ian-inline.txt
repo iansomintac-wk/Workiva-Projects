@@ -1,0 +1,30 @@
+Below is a draft narrative based solely on the figures in the two files you provided. Changes of 3% or less (operating expenses: 0%; capital spending: 0%) are excluded.
+
+***
+
+**Tarnwick Works — Year-over-Year Change Summary (Management Discussion)**
+
+* **Net sales** increased 13.6% to £468 million from £412 million, driven by higher volume at the Harrow plant.
+
+* **Gross margin** declined 1.6 percentage points (approximately 4.8% on a relative basis) to 31.4% from 33.0%; the underlying cause of the compression is TO CONFIRM.
+
+* **Headcount** rose 5.1% to 1,240 employees from 1,180; the drivers of the increase are TO CONFIRM.
+
+* **Net debt** decreased 20.0% to £140 million from £175 million; the specific repayment or cash generation activity behind this reduction is TO CONFIRM.
+
+* **Dividend per share** increased 5.0% to £0.42 from £0.40; the rationale for the increase is TO CONFIRM.
+
+***
+
+**Notes for your review:**
+
+Metric    Prior Year    Current Year    Change
+Net sales    £412m    £468m    +13.6%
+Gross margin    33.0%    31.4%    −1.6 pp / −4.8%
+Operating expenses    £96m    £96m    0.0% — excluded
+Capital spending    £38m    £38m    0.0% — excluded
+Employees    1,180    1,240    +5.1%
+Net debt    £175m    £140m    −20.0%
+Dividend per share    £0.40    £0.42    +5.0%
+
+The four **TO CONFIRM** items flag places where the files state the figure but do not explain the business reason — you'll want to verify the narrative rationale before this goes to the audit committee.

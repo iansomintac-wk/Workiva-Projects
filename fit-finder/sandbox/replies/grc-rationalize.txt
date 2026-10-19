@@ -1,0 +1,26 @@
+(the collapsed UI toggle "Thought" above the answer is left out)
+
+Here is the overlap analysis based on the control descriptions in your file:
+
+Table
+
+Group	Control IDs	Why they look alike
+Bank / Ledger Reconciliation	C01	Only one control; included for completeness — no overlap.
+Payroll System Access Review	C03, C09	Both describe a quarterly IT review of who can access the payroll system.
+Expense Claim Approval	C04, C08	Both require line manager sign-off on employee expense claims before payment/reimbursement.
+Supplier Bank Detail Verification	C05, C11	Both describe calling the supplier by phone to confirm/verify changes to their payment details before updating records.
+Finance Database Backup Restore Testing	C06, C10	Both describe quarterly test-restores of finance database backups.
+Physical Inventory Count	C02, C07	Both describe a quarterly physical stock/inventory count compared against records, with differences resolved after approval.
+New Supplier Onboarding	C12	Only one control; included for completeness — no overlap.
+
+Summary of likely duplicates (four pairs):
+
+C03 / C09 — appear to be the same payroll access review control, worded differently.
+C04 / C08 — appear to be the same expense approval control, worded differently.
+C05 / C11 — appear to be the same supplier bank detail verification control, worded differently.
+C06 / C10 — appear to be the same backup restore test control, worded differently.
+
+These four pairs would be the natural starting point for rationalisation, but as you noted, the final call on what to do with them is yours.
+
+7:56 AM • Oct 19, 2026
+

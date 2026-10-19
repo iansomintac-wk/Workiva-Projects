@@ -1,0 +1,18 @@
+(the collapsed UI toggle "Thought" above the answer is left out)
+
+Here is a draft year-over-year change narrative for the Management discussion section, based solely on the figures in the two files you selected:
+
+Management Discussion — Year-Over-Year Changes
+
+Net sales increased to $468 million from $412 million, a rise of 13.6%, driven by higher volume at the Harrow plant.
+Gross margin declined to 31.4% from 33.0%, a decrease of 1.6 percentage points (approximately 4.8%), reflecting TO CONFIRM [no explanation for the margin compression is given in the source files — please confirm the driver before filing].
+Headcount grew to 1,240 employees from 1,180, an increase of approximately 5.1%; TO CONFIRM whether this growth was planned or requires further explanation for the audit committee.
+Net debt fell to $140 million from $175 million at year end, a reduction of 20%, reflecting an improvement in the Company's balance sheet position.
+Dividend per share increased to $0.42 from $0.40, a rise of 5.0%.
+
+Not included (change at or below 3%): Operating expenses (unchanged at $96 million) and capital spending (unchanged at $38 million).
+
+Note: All figures are drawn directly from the two files you provided. Items marked TO CONFIRM require your input before this narrative is finalised for the audit committee.
+
+7:50 AM • Oct 19, 2026
+

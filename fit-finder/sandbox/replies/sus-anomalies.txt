@@ -1,0 +1,36 @@
+(the collapsed UI toggle "Thought" above the answer is left out)
+
+Here are the variance calculations across all sources, followed by the flagged anomalies:
+
+Table
+
+Source	Jan–Mar (t CO₂e)	Apr–Jun (t CO₂e)	Change	% Change
+Boiler gas	410	425	+15	+3.7%
+Fleet diesel	220	231	+11	+5.0%
+Site A electricity	300	310	+10	+3.3%
+Site B electricity	280	190	−90	−32.1%
+Business flights	90	160	+70	+77.8%
+Refrigerant top-ups	15	16	+1	+6.7%
+Waste to landfill	60	58	−2	−3.3%
+Generator diesel	40	95	+55	+137.5%
+Courier freight	70	41	−29	−41.4%
+Staff car mileage	55	80	+25	+45.5%
+Flagged Anomalies (>±20% variance)
+
+Table
+
+Source	Jan–Mar	Apr–Jun	% Change	Possible Rationale
+Site B electricity	280	190	−32.1%	Possible partial site shutdown, improved efficiency measure, or metering/data entry error. Worth confirming whether Site B had reduced operations in Apr–Jun.
+Business flights	90	160	+77.8%	Could reflect a seasonal uptick in travel (e.g. trade shows, end-of-year meetings) or a one-off trip that inflated the figure. The absolute number is modest, but the proportional jump is significant — worth a narrative note in the report.
+Generator diesel	40	95	+137.5%	The largest relative swing in the dataset. Could indicate a power outage event requiring extended generator use, or a data entry error (e.g. a zero omitted in Q1 or an extra entry in Q2). This warrants direct verification before publication.
+Courier freight	70	41	−41.4%	A large drop — possible shift in freight provider, reduced dispatch volumes, or a methodology change in how courier emissions are estimated. Could also be a missing invoice or allocation error.
+Staff car mileage	55	80	+45.5%	Notable increase; could reflect seasonal field activity or a change in reimbursement/reporting policy. Alternatively, Q1 data may be understated if not all claims were submitted in time.
+
+Suggested next steps before sign-off:
+
+Generator diesel is the highest priority to verify given the magnitude of the change.
+Site B electricity and Courier freight both show large decreases — confirm these are genuine reductions rather than missing data.
+If any figures are still estimates or pending final invoices, flag them as provisional in the report.
+
+7:58 AM • Oct 19, 2026
+

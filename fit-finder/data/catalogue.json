@@ -87,8 +87,8 @@
       "id": "fr-yoy-narrative", "area": "FR", "role": "SEC or external reporting",
       "task": "Write the first draft of the year-over-year change narrative.",
       "ops": ["DRAFT", "COMPARE"], "match": "(?<!\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|co2e?|carbon|energy (?:use|usage|consumption|data)|factbook|anomal\\w*|outliers?|unusual)\\b(?:[^.;]|(?<=\\d)\\.(?=\\d)){0,300})(?:year[- ]over[- ]year|yoy)\\b(?!(?:[^.;]|(?<=\\d)\\.(?=\\d)){0,300}\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|co2e?|carbon|energy (?:use|usage|consumption|data)|factbook|anomal\\w*|outliers?|unusual)\\b)|variance (?:narrative|commentary|explanations?)|md&a|flux|change narrative|commentary",
-      "surfaces": ["advisor", "doc", "files"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S2", "S23"],
-      "prompt": "Use only the current-year file and the prior-year file I selected with @. Context: this narrative goes to [who will read it] in the [section] of our report. Draft the year-over-year change narrative for [section], explaining each change of more than [threshold] in one or two sentences, as a short list. Use only figures in the files, and mark anything I need to confirm as [to confirm].",
+      "surfaces": ["doc", "files"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S2", "S23"],
+      "prompt": "Use only the current-year file and the prior-year file I selected with @. Context: this narrative goes to [who will read it] in the [section] of our report. Draft the year-over-year change narrative for [section], explaining each change of more than [threshold] in one or two sentences, as a short list. Use only figures in the files, keeping each amount and unit exactly as written with no currency added. Do not explain a change the files do not explain; mark it, and anything else I need to confirm, as [to confirm].",
       "stays": "Checking every figure, and deciding what is worth explaining.",
       "try": "Every quarter I draft the year-over-year change narrative for the MD&A."
     },
@@ -151,7 +151,7 @@
       "task": "Pull the key points out of a long document before a meeting.",
       "ops": ["SUMMARIZE", "READ", "EXTRACT"], "match": "summar\\w*|key points|recap|long (?:document|file|report|memo)|before (?:a|the) meeting|brief(?:ing)?|(?:soc [12]|assurance|audit) reports?",
       "surfaces": ["files", "chat"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S3", "S6"],
-      "prompt": "Use only the document I selected with @. Context: the summary is for [who will read it], who will not read the full file. Summarize it in five bullets, then list the three points that need a decision. Do not add facts that are not in the document; I will review it.",
+      "prompt": "Use only the document I selected with @. Context: the summary is for [who will read it], who will not read the full file. Summarize it in five bullets, then list every point that needs a decision, with who decides and by when if the document says. Keep each amount and unit exactly as written with no currency added, and do not add facts that are not in the document; I will review it.",
       "stays": "What to act on. Check each Sources link Workiva AI lists under its answer.",
       "try": "Before each audit committee meeting I summarize the long memos into key points."
     },
@@ -170,7 +170,7 @@
       "ops": ["REWRITE"], "match": "proofread\\w*|bullet\\w*|capitali[sz]\\w*|synonyms?|better word|rewrit\\w*|shorten\\w*|tighten\\w*|plain english|board|executives?|audience|tone|too long|re-?word\\w*|rephras\\w*|worded|wording",
       "surfaces": ["doc"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S2", "S22", "S6"],
       "prompt": "Use only the selected section. Context: it is going to [audience]. Rewrite it in under [number] words, as one short paragraph. Keep every number and fact exactly as written, and do not add anything new.",
-      "stays": "The final wording and every number.",
+      "stays": "The final wording, every number and fact, and the length: count the words yourself.",
       "try": "Every quarter I rewrite the CFO's commentary to be shorter for the board."
     },
     {
@@ -305,7 +305,7 @@
       "ops": ["REWRITE", "SUMMARIZE"], "match": "(?<!\\btranslat\\w*(?: [\\w-]+){0,6} )(?:sustainab\\w*|esg|climate|carbon|emissions)",
       "surfaces": ["doc"], "fitBasis": "named", "evidence": ["heard"], "refs": ["S2", "S22", "S6"],
       "prompt": "Use only the selected sustainability narrative. Context: it goes to [the board]. Rewrite it in under [number] words, as a short paragraph that leads with what changed since [last period]. Keep every number and fact exactly as written, and do not add anything new.",
-      "stays": "The message and every number.",
+      "stays": "The message, every number and fact, and the length: count the words yourself.",
       "try": "I rewrite the sustainability section to be shorter for the board."
     },
     {
