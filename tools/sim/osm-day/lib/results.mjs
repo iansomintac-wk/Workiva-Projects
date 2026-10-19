@@ -6,7 +6,6 @@ export const STEP_IDS = [
 export const CHECKED = STEP_IDS;
 
 export const GAPS = {
-  D3: 'meeting agenda',
   D7: ['close a CTA after an ordinary call', 'success plan task update', 'Renewal Forecast Scorecard'],
   L10: 'CSM request (Google form)',
 };

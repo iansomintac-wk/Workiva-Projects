@@ -4,6 +4,7 @@
 import { mkdirSync, writeFileSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { AGENDA_OFF } from './lib/breaks.mjs';
 import { launch } from './lib/browser.mjs';
 import { filesSince } from './lib/outdir.mjs';
 import { setupA } from './lib/setup.mjs';
@@ -35,6 +36,21 @@ async function orionPanel(ctx) {
 export const TRANSCRIPT_TEXT_JS = `(async a => { const t = a && a.transcript; if (!t) return ''; if (typeof t.text === 'string') return t.text;
   if (t.ref && typeof tsGet === 'function') { const r = await tsGet(t.ref); return (r && r.text) || ''; } return ''; })`;
 
+// Judge for the D3 agenda leg: the agenda is on the panel and clicking Copy put the same list on the clipboard.
+export function d3AgendaJudge({ found, text = '', copy, clip = '' } = {}) {
+  const lacks = [];
+  if (!found) lacks.push('agenda not on the panel');
+  if (!copy) lacks.push('no Copy button');
+  if (!clip) lacks.push('clipboard empty after Copy');
+  else {
+    if (!clip.startsWith('Agenda - ')) lacks.push('clipboard does not start "Agenda - "');
+    for (const w of [ORION, 'Open question: SIM-QUESTION', 'Next step: SIM-OWE checklist']) if (!clip.includes(w)) lacks.push(`clipboard lacks "${w}"`);
+  }
+  for (const w of ['SIM-QUESTION', 'SIM-OWE checklist']) if (found && !(text || '').includes(w)) lacks.push(`agenda text lacks "${w}"`);
+  const passed = !lacks.length;
+  return { passed, evidence: passed ? 'agenda on the panel, Copy put it on the clipboard' : lacks.join('; ') };
+}
+
 export const PART_A = [
   { id: 'D1', async run(ctx) {
     await ctx.openOn(DAY);
@@ -58,9 +74,25 @@ export const PART_A = [
     return { passed: !absent.length, evidence: absent.length ? `absent from panel: ${absent.join(', ')}` : 'all prep texts on the panel, no click-through' };
   } },
   { id: 'D3', async run(ctx) {
-    const text = await orionPanel(ctx);
+    await ctx.openOn(DAY);
+    // Documented extra break (VALIDATION.txt): removes only the agenda so only the agenda judge can fail. Never set by a normal run.
+    if (process.env.SIM_EXTRA_BREAK === 'agenda-off') await ctx.ev(AGENDA_OFF);
+    const text = await panelText(ctx, ORION);
+    if (text === null) throw new Error('Orion has no beat panel on Today');
     const absent = checkTexts(text, ['SIM-OWE checklist', 'SIM-OWE you owe', 'SIM-OWE they owe', 'SIM-QUESTION']);
-    return { passed: !absent.length, evidence: absent.length ? `absent from panel: ${absent.join(', ')}` : 'open deliverables and question on the panel' };
+    // Click Copy for real; headless Chrome has no clipboard permission, so capture what the page hands to navigator.clipboard.writeText.
+    const info = JSON.parse(await ctx.ev(`(async () => {
+      window.__clip = null; navigator.clipboard.writeText = t => { window.__clip = t; return Promise.resolve(); };
+      const c = DATA.customers.find(x => x.name === ${JSON.stringify(ORION)});
+      const pane = document.querySelector('.day-pane[data-day-holds="' + c.id + '"]');
+      const p = pane && pane.querySelector('[data-beat-agenda]');
+      const btn = p && p.querySelector('[data-beat-agenda-copy]');
+      const text = p ? p.innerText : '';
+      if (btn) btn.click();
+      await new Promise(r => setTimeout(r, 100));
+      return JSON.stringify({ found: !!p, text, copy: !!btn, clip: window.__clip || '' }); })()`));
+    const j = d3AgendaJudge(info);
+    return { passed: !absent.length && j.passed, evidence: `${absent.length ? `absent from panel: ${absent.join(', ')}` : 'open deliverables and question on the panel'}; agenda: ${j.evidence}` };
   } },
   { id: 'D4', async run(ctx) {
     await ctx.openOn(DAY);

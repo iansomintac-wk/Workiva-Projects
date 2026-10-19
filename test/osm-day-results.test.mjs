@@ -23,10 +23,10 @@ test('classify: plain pass and fail', () => {
 });
 
 test('classify: gap step that passes keeps PASS and carries gap text', () => {
-  const r = classify({ id: 'D3', passed: true });
+  const r = classify({ id: 'D7', passed: true });
   assert.equal(r.status, 'PASS');
-  assert.equal(r.gap, GAPS.D3);
-  assert.match(String(GAPS.D3), /meeting agenda/);
+  assert.equal(r.gap, GAPS.D7);
+  assert.ok(GAPS.D7.length > 0);
 });
 
 test('classify: checked step without a boolean throws; unknown id throws', () => {

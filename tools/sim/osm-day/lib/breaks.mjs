@@ -28,6 +28,10 @@ export const BREAKS = {
   L12: B('L12', `csatSurveyOverdue = () => null`),
 };
 
+// Extra break for D3 only (SIM_EXTRA_BREAK=agenda-off), NOT in BREAKS: removes only the agenda, every old panel text stays,
+// so only the agenda judge can fail. Re-renders the Today panel as the other breaks' steps do.
+export const AGENDA_OFF = `beatAgendaSection = () => ''${m('D3-agenda-off')}`;
+
 // Every global the overrides replace or the probe relies on; each must be `function <name>(` in both trackers.
 export const OVERRIDE_NAMES = [
   'callsScheduledToday', 'renderBeatPrep', 'renderBeatPanel', 'commitDataCandidate', 'saveData',
