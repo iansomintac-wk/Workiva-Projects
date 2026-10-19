@@ -41,7 +41,16 @@ const OPEN = name => `(() => {
   return JSON.stringify(out);
 })()`;
 
-async function inSim(fn, version = '1.1') {
+// Signal cleanup. launch() (browser.mjs) registers its own SIGINT/SIGTERM handler AFTER ours; it stops Chrome by its PID, removes
+// the osmsim-* profile and only then exits (130/143). So ours must remove the file, must NOT exit (an early exit skips that stop),
+// and keeps an unref'd timer as a backstop for a signal that lands before launch() has registered.
+export function installSignalCleanup(proc, cleanup) {
+  for (const [sig, code] of [['SIGINT', 130], ['SIGTERM', 143]]) {
+    proc.on(sig, () => { cleanup(); setTimeout(() => proc.exit(code), 15000).unref(); });
+  }
+}
+
+export async function inSim(fn, version = '1.1') {
   const ctx = await launch({ version, startDay: DAY, runDir: join(OUT, 'run-' + Date.now()), part: 'A' });
   try {
     await setupA(ctx);
@@ -72,8 +81,7 @@ async function control() {
   let created = false;
   const cleanup = () => { if (created) { rmSync(file, { force: true }); created = false; } };
   process.on('exit', cleanup);
-  process.on('SIGINT', () => { cleanup(); process.exit(130); });
-  process.on('SIGTERM', () => { cleanup(); process.exit(143); });
+  installSignalCleanup(process, cleanup);
   try {
     // 'wx': fail rather than overwrite a file this run did not create
     writeFileSync(file, execFileSync('git', ['show', CONTROL_REF + ':osm-book-of-business-tracker-1.1.html'], { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 }), { flag: 'wx' });
@@ -110,7 +118,10 @@ async function captures() {
   });
 }
 
-if (process.argv.includes('--check')) process.exit((await check()) ? 0 : 1);
-else if (process.argv.includes('--control')) process.exit((await control()) ? 0 : 1);
-else if (process.argv.includes('--captures')) await captures();
-else { console.error('usage: node tools/d3-prep-panel.mjs --check | --control (vs ' + CONTROL_REF + ') | --captures'); process.exit(2); }
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (!process.argv.includes('--control')) installSignalCleanup(process, () => {});
+  if (process.argv.includes('--check')) process.exit((await check()) ? 0 : 1);
+  else if (process.argv.includes('--control')) process.exit((await control()) ? 0 : 1);
+  else if (process.argv.includes('--captures')) await captures();
+  else { console.error('usage: node tools/d3-prep-panel.mjs --check | --control (vs ' + CONTROL_REF + ') | --captures'); process.exit(2); }
+}
