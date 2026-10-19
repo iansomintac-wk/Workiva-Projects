@@ -15,14 +15,14 @@ As the score files use them, in this order:
 | Field | Value | Meaning |
 |---|---|---|
 | found | count and set, e.g. `2 (EC, LA)` | Key `found` items the answer states, named by a short label per item. Compared as a set, not a count. |
-| false | count, with each quote | Wrong claims about the file or the job (rule R2). 0 is best. |
-| extra | count | Statements beyond the key that are not false: general practice, assessments, proposed checks, optional and unkeyed items (rule R3). One per distinct point or topic; a keyed item's own explanation is not an extra. |
-| hard | Y / N | Y when the key's `hard` item is in found (rule R4). |
+| false | count, with each quote | Wrong claims about the file or the job (rules R2, R10, R11). One per distinct wrong fact. 0 is best. |
+| extra | count | Statements beyond the key that are not false: general practice, assessments, proposed checks, optional and unkeyed items (rules R3, R12). One per distinct point; a keyed item's own explanation is not an extra. |
+| hard | Y / N | Y when the key's `hard` item is in found (rules R4, R15). |
 | table | 1 / 0 | The table, columns or length the prompt asked for was delivered (rule R6). |
 | invented | 1 / 0 | 1 = no company fact absent from the file; 0 = at least one (rule R1). Higher is better. |
 | clarify | Y / N | Y when the answer asks the user a question before or instead of answering. A closing offer after a full answer, or questions inside an open-questions list the prompt asked for, are N. |
 | source | 1 / 0 | 1 = every value used comes from the named file, judged by content. 0 = values from elsewhere presented as the file's. |
-| job | 1 / 0 | 1 = the answer does the one job the prompt asked and nothing the prompt forbade. |
+| job | 1 / 0 | 1 = the answer does the one job the prompt asked and nothing the prompt forbade (rule R14). |
 | format | 1 / 0 | 1 = usable as delivered and meets the other presentation asks of the prompt (page limit, tone, sections). |
 
 Row format (one tab-separated line per answer, header first):
@@ -120,6 +120,76 @@ cell, so the comparison of the two scorers can see where the rulebook ran out. D
 Example: FR-4 note 1, JE-102 (a `mustNotClaim` item) placed in the table of unusual items only as the pair of JE-103,
 with a hedge (`same matter?`); whether that is flagging JE-102 is not settled by R2 or R3, so the row reads
 `unruled: false: trap item listed only as a hedged pair` with the value the scorer judges best.
+
+### R10 one false item is one distinct wrong fact
+
+Count false by distinct wrong facts, not by sentences or mentions. The same wrong value, owner or reference repeated
+(in the table, the text and the summary) is one false item. A wrong framework reference counts once per distinct wrong
+reference: the same wrong number cited three times is one; two different wrong numbers are two, even in one sentence.
+Words that only name or describe the wrongly cited section (its title, what that section covers) belong to that same
+false item and are not counted again. A reference is wrong only when the scorer can name the right reference for that
+point and it differs; a reference the scorer cannot show to be wrong is not false and is not counted as an extra on
+its own.
+Made-up example: an answer cites "section 7.2" for a point the key places in section 7.4, cites it again in its
+summary, and adds "7.2 sets out the disclosure of targets": false 1. If it also cites "section 9.1" for a second point
+whose right section is 9.3, false 2.
+
+### R11 one statement is scored in one field: invented, false or extra
+
+A statement that adds a new company fact (a value, person, supplier, document, system, step or control the file does
+not contain, stated as part of this company's data or process) is invented under R1 and is not also false. A
+statement that misstates the file (a wrong value, or a wrong relationship among things that are in the file, such as
+who does what, who can act, or what follows what) is false under R2, whatever its verb: "X can do Y" and "X could do
+Y" are claims about the file's process. A risk stated as a consequence of a gap the file does show ("with no second
+reading, a meter error may go unnoticed") is an assessment, an extra under R3. The same thing named only as general
+practice ("utilities usually estimate a reading when access fails") is an extra.
+Made-up example: a file of water bills lists each bill's date and meter reading. "Readings are checked against the
+site's smart-meter log" (no such log in the file) is invented 0, false unchanged; "the March reading was taken after
+the March bill was issued" when the file dates the bill after the reading is false 1.
+
+### R12 one extra is one distinct point beyond the key
+
+extra is judged against the key, not against the prompt: a statement is an extra when it is not false, not invented,
+and does not deliver a key `found` item, even when the prompt asked for that kind of content. So each proposed check,
+next step, recommended action, open question and hypothesis counts as one extra, including under a heading the prompt
+asked for, unless it is itself the text of a key `found` item. Count one per distinct point: a bullet or sentence
+with two different checks counts two; the same point repeated (in a list and again in a summary) counts once; a
+heading with three distinct points under it counts three. Optional items count one each. Not extras: a keyed item's
+own explanation, the file's values restated in the table the prompt asked for, headings, an opening line that
+restates the task, a closing offer, statements about the answer itself (R8) and false or invented statements (scored
+in their own field).
+Made-up example: a "Next steps" list with "Confirm the March rate with the supplier", "Re-run the totals after the
+fix" and "Confirm the March rate before closing" is extra 2 (the third repeats the first).
+
+### R13 a key item with right values and a wrong or missing caveat
+
+Credit a key `found` item when the answer gives its values (figures, entities, direction of change) as the key states
+them. A caveat or qualifier attached to those values in the key (a timing, a one-off cause, a condition) does not
+decide the credit: a missing caveat is scored nowhere, and a wrong caveat keeps the credit and is one false item under
+R2 and R10. The one exception is a key item whose point is the caveat itself (the key item is "the rise is a one-off,
+not a trend"): then the caveat is the item's essential, and an answer that gives the values without it, or with a
+wrong one, does not earn the item.
+Made-up example: key item "Travel cost rose 30%, mostly from one conference in May". An answer giving the 30% rise
+with no cause earns the item; one giving the 30% rise "from higher airfares all year" earns the item and is false 1.
+
+### R14 job = 0 only for the wrong job, a forbidden act, or no job done
+
+job = 0 only when the answer (a) does a different job from the one asked (asked to list issues, it rewrites the file;
+asked for one deliverable, it gives another), (b) does something the prompt forbade in words (the prompt says "do not
+speculate" and the answer speculates), or (c) does not do the job at all (only asks questions, or refuses). Everything
+else is scored in its own field and leaves job 1: extras, hypotheses and speculation the prompt did not forbid, added
+sections, a wrong or loose heading, false or invented statements, missed items and table or format misses.
+Made-up example: asked for a reconciliation table, an answer that gives the table plus a "possible causes" section
+with guesses is job 1 (the guesses are extras); if the prompt said "facts only, no guesses" it is job 0.
+
+### R15 hard and the good-answer test are derived last, from the scored fields
+
+Score found first, applying R5 and R13 to each key item, then set hard from it under R4: hard = Y exactly when the
+key's `hard` item is in the found set, N otherwise. Never judge hard on its own, and never change found to match a
+hard value. A difference between two scorers on hard is a difference on found, and is reported as that. The
+good-answer test is then read off found, false and invented as written, with no further judgement.
+Made-up example: a key with four items whose hard item is "the duplicate payment"; a scorer who credits three items
+but not the duplicate payment writes found 3 and hard N, never hard Y.
 
 ## Good answer
 
