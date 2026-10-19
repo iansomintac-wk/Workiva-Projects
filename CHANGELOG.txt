@@ -7,6 +7,7 @@ OSM Runway — release notes
       (overdue promises, the open questions of the newest call that has any, the next unticked checklist
       step). A "Copy agenda" button copies it as plain numbered text for an invite or email. It stores
       nothing and has no new fields; it is hidden when there is nothing to list.
+    - Fix: the Agenda's open-question line showed "Open question: undefined"; it now shows the question text.
     - Dev tooling: tools/d3-prep-panel.mjs now stops its Chrome and removes the osmsim profile on Ctrl-C /
       SIGTERM, as tools/l11-csat-panel.mjs does (installSignalCleanup; the tool's CLI runs only as the entry point).
     - tools/build-site.mjs builds site/ (index.html and .nojekyll only) and refuses

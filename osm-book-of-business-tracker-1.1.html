@@ -12714,7 +12714,7 @@ function beatAgendaItems(c, pendingItems){
     .forEach(p => items.push((p.direction === 'i_owe' ? 'You owe: ' : 'They owe: ') + p.text));
   const qs = collectOpenQuestions(c);
   const top = qs.length ? qs[0].date : null;
-  qs.filter(x => x.date === top).slice(0, 5).forEach(x => items.push('Open question: ' + x.thread.text));
+  qs.filter(x => x.date === top).slice(0, 5).forEach(x => items.push('Open question: ' + x.thread.q));
   if(pendingItems && pendingItems.length) items.push('Next step: ' + pendingItems[0].label);
   return items;
 }

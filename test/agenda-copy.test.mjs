@@ -15,7 +15,8 @@ function grab(name) {
   return lf.slice(i, j + 2);
 }
 const FNS = ['localDateISO', 'getCommitments', 'openCommitments', 'commitmentIsOverdue', 'commitmentDueSoon', 'calendarDayOrdinal', 'calendarDayDiff', 'daysSince', 'rankedPromises', 'isRealISODate', 'escapeHtml', 'escapeAttr', 'getOpenThreads', 'unresolvedThreads', 'collectOpenQuestions', 'beatAgendaItems', 'beatAgendaText', 'beatAgendaSection'];
-const T = (text, resolvedOn) => resolvedOn ? { text, resolvedOn } : { text };
+// Real stored thread shape (normalizeOpenThread): the question is .q, collectOpenQuestions returns {thread: <that>}.
+const T = (q, resolvedOn) => ({ id: 't' + q, q, a: null, answeredOn: null, resolvedOn: resolvedOn || null });
 function ctxFor(acts) {
   const ctx = vm.createContext({});
   const iso = lf.match(/^const ISO_DATE_RE = .*$/m);
