@@ -1,0 +1,21 @@
+Snowflake probe for Runway (read-only). Written 2026-10-19 by the Runway 1.1 batch run (session 4ea55df8).
+Run it in a Claude Code session started WITH the Claude in Chrome extension connected, on the machine whose Chrome
+is signed into Ian's Snowflake app (Ian's Mac). Ian is at the computer; ask him one question at a time.
+
+Goal: find out whether Ian's Snowflake app can give the CSAT survey "sent" and "answered" dates per account as a CSV,
+so Runway 1.1 can import them (option (a) in docs/evidence/2026-10-19-runway-1.1-batch.md, Snowflake section).
+
+Before you start: ask Ian to confirm his company allows an AI browser agent in its Snowflake. If he is not sure, stop.
+
+Do (read-only):
+1. Load the chrome-browser skill, check tabs, open a NEW tab on the Snowflake app Ian names.
+2. Use Snowflake's own AI assistant or its table browser to find where CSAT survey records live (table/view name).
+3. Report ONLY: the table/view name; the column names for account identity (name? Gainsight ID? Salesforce ID?),
+   survey sent date, survey answered date; whether "answered" can be empty; whether results can be downloaded as CSV
+   (where the button is); whether a saved query can be re-run later.
+
+Never: copy, screenshot or save any customer row or value; download files; change, save or share anything in Snowflake;
+run a query that writes. If a dialog or sign-in appears, stop and tell Ian. Close the tabs you opened.
+
+Output: at most 15 lines to Ian, labelled measured (seen on screen) or assumed. Ian brings it to the Runway 1.2 talk
+(docs/RUNWAY_1.2_NEXT_PROMPT.txt, item 1).
