@@ -1,0 +1,45 @@
+RESUME: Prompt coach tricky batch run (Workiva repo), after the run lead hit the 200k context stop
+
+Written 2026-10-19 ~04:30Z by run lead 81f4d236 ("NEW - Prompt Coach tricky batch run"). Load
+studio-harness:talk-and-run first and follow "The run". You are the run lead: coordinate only.
+Read docs/PROMPT_COACH_TRICKY_BATCH_RUN_PROMPT.txt for WHERE, SLIP and SAFETY; they still hold.
+
+FIRST CHECK: echo "$STUDIO_RUN_LEDGER" (non-empty, absolute); budget.json and slip.json exist there; else stop.
+
+STATE (ledger .ledger/2026-10-18-prompt-coach-next/progress.md is the memory; read its "# Run" section)
+- Plan rev 3, approved: docs/superpowers/plans/2026-10-18-prompt-coach-tricky-batch.md (commit 2767442).
+- Done: Task 1 rulebook (603df91), counting rules R10-R15 (bdf93fa), Task 2 gate (passed under Ian's
+  ruling: extras reported as a range, not gated; 9 other fields 2 of 6 differ), Task 3 keys T1-T6 (2d01b5f).
+- Task 4 Steps 1-2 (id_map.tsv, run_sheet.md): see the last T4 ledger row; if missing, re-run that helper.
+- NEXT: Task 4 Step 3 = STOP-C. Push a notification, then ask Ian to sign in to his Workiva sandbox in
+  Windows Chrome and to launch (or OK you launching) a driver: last time Ian ran `claude --bg --chrome` himself
+  and the lead sent the brief by SendMessage (so the driver's own permission check fires). A driver filled its
+  200k context after about 12 chats last run: plan two drivers (T1-T3, T4-T6), each needs Ian's yes.
+  Old driver lines: .ledger/2026-10-16-prompt-coach-rewrites/progress.md lines 267-383 (fixtures copied to
+  logs/upload with sha256 check; brief files driver_brief_*.txt; helpers logs/tools/save.sh).
+
+RULINGS THIS RUN (verbatim in progress.md): "Approve, cap 700k (Rec.)"; T6 "Use it as written (Rec.)";
+gate 1 "Add counting rules, both re-score (Rec.)"; gate 2 "Report extras, don't gate (Rec.)".
+
+BUDGET: helper cap 700k; about 580k used by this lead's helpers (the cap counts per helper; a fresh lead's
+helpers start a new count in the same budget.json? check the mod status line before the first dispatch).
+Remaining work (Tasks 5-10, final review) will not fit 120k: ask Ian for a cap at STOP-C, recommend moving
+Task 7 Opus scoring to blind `claude -p` calls (outside the helper cap, as done for round 2).
+
+METHODS MEASURED THIS RUN
+- Codex: `codex exec -s read-only -c windows.sandbox=unelevated --skip-git-repo-check -o <out> - < <in>`, run
+  from an empty temp folder outside the repo (blind). Works; Codex runs its own start-up (brain context, 2
+  skill files), nothing about the scores.
+- Blind Opus: `claude -p --model opus --tools "" --strict-mcp-config --no-session-persistence --output-format json
+  < <in>` from an empty temp folder; result in .result; cost field is tool-reported API-equivalent.
+- Runners: $CLAUDE_JOB_DIR of the old lead is gone with it; copy the shape from progress.md (T2b, T2e rows).
+- The lead must never `cd` in its own Bash calls: the role hooks resolve helper paths against the lead's cwd
+  (a plan-writer Write was refused when the lead's cwd was the ledger folder).
+
+SCORING NOTES FOR TASKS 7-9 (Ian's gate-2 ruling): agreement on the 24 = rows differing in the 9 fields other
+than extra; extra reported as Opus/Codex range. Rulebook R10-R15 were written after seeing the 6 splits, so say
+so in the results. Plan Task 2 Step 2's one-liner is a false positive by construction (the rulebook itself
+matches its marker regex); measured and recorded; do not reuse it unmodified in Task 8.
+
+PREDECESSOR: 81f4d236 (this lead). Remove only if state done, all committed, no force flags. Talk 0cfadaad was
+state blocked: kept.
