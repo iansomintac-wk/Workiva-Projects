@@ -76,3 +76,4 @@ sim-runs/
 
 # D3 prep control copy (tools/d3-prep-panel.mjs --control)
 osm-book-of-business-tracker-d3ctl.html
+osm-book-of-business-tracker-l11ctl.html
