@@ -69,10 +69,17 @@ async function check(version = '1.1') {
 
 async function control() {
   const file = join(ROOT, 'osm-book-of-business-tracker-d3ctl.html');
+  let created = false;
+  const cleanup = () => { if (created) { rmSync(file, { force: true }); created = false; } };
+  process.on('exit', cleanup);
+  process.on('SIGINT', () => { cleanup(); process.exit(130); });
+  process.on('SIGTERM', () => { cleanup(); process.exit(143); });
   try {
-    writeFileSync(file, execFileSync('git', ['show', CONTROL_REF + ':osm-book-of-business-tracker-1.1.html'], { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 }));
+    // 'wx': fail rather than overwrite a file this run did not create
+    writeFileSync(file, execFileSync('git', ['show', CONTROL_REF + ':osm-book-of-business-tracker-1.1.html'], { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 }), { flag: 'wx' });
+    created = true;
     return await check('d3ctl');
-  } finally { rmSync(file, { force: true }); }
+  } finally { cleanup(); }
 }
 
 async function shot(ctx, file, name, info, extra) {

@@ -18,3 +18,14 @@ test('d3-prep panel tool launches the sim, stops it in a finally, and never name
   assert.match(src, /\bfinally\s*\{[^{}]*\bctx\.stop\(\)/, 'ctx.stop() must sit inside a finally { } block');
   assert.ok(!src.includes('8790'));
 });
+
+test('d3-prep --control writes its copy exclusively, deletes only what it created, cleans on exit/signal, and the file is gitignored', () => {
+  const src = readFileSync(TOOL, 'utf8');
+  assert.match(src, /flag:\s*'wx'/, "control file must be written with flag: 'wx'");
+  assert.match(src, /\bcreated\b/, 'must track whether this run created the file');
+  assert.match(src, /if\s*\(\s*created\s*\)\s*\{?\s*rmSync/, 'must delete only when this run created it');
+  assert.match(src, /process\.on\(\s*'exit'/, 'must register an exit cleanup');
+  assert.match(src, /process\.on\(\s*'SIG(INT|TERM)'/, 'must register a signal cleanup');
+  const ign = readFileSync(resolve(ROOT, '.gitignore'), 'utf8').split(/\r?\n/);
+  assert.ok(ign.includes('osm-book-of-business-tracker-d3ctl.html'), '.gitignore must list the control file');
+});
