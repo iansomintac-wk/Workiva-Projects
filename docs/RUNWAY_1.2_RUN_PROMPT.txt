@@ -1,0 +1,49 @@
+RUN: Runway 1.2, CSAT dates from Snowflake (import + folder watch) plus the 1.1 next list (Runway Tracker repo)
+Written 2026-10-19 by talk session 4549483a. Worktree: this folder (.claude/worktrees/runway-1.2, branch runway-1.2 from master
+63dc5d6, which holds the 1.1 batch merge). Run `date -u` before every stamp. Ian is AT THE PC: ask him directly (AskUserQuestion,
+one question, one "(Recommended)" option), never a proxy. AskUserQuestion loses pasted text: when you need Ian to paste something,
+ask in plain text and end the turn.
+
+SPEC (approved by Ian, "Approve (Recommended)", 2026-10-19): docs/superpowers/specs/2026-10-19-runway-1.2-design.md. Read it whole:
+it carries Ian's rulings verbatim, the measured/read/assumed evidence, the design (3.1-3.5), the checks with predictions (4), scope (5)
+and safety (6).
+
+SAFETY (from the spec, repeated because it matters)
+- Ian's real CSV (C:\Users\teasp\Downloads\csat_runway_export_2026-10-19-1444.csv) is customer data. Never copy it, or any row, name
+  or ID from it, into the repo, a test, a fixture, a log, a capture, a helper prompt or a review. Tests use made-up IDs and names that
+  mirror only the measured shape (spec section 2). No helper opens that file.
+- The import code makes no network call. The real book is not on this PC; never read *RESTORE-POINT* files or exports.
+- 1.0 is never edited. $0. No force flags. No ~/.claude writes (session-rename exception only). No publishing.
+
+METHOD: studio-harness:talk-and-run, "The run". Lead coordinates only; one fresh helper per piece, in order, never in parallel.
+1. First check: echo "$STUDIO_RUN_LEDGER"; test -f on its budget.json and slip.json; empty or missing is a stop.
+2. Baseline, run alone, logs to files: full suite `node --test --test-reporter=spec test/*.test.mjs` (master measured 395 tests,
+   393 pass, 0 fail, 2 skipped at 19:53Z per the 1.1 evidence doc: read, reproduce it) and the sim's full verify
+   (tools/sim/osm-day/verify.mjs; 1.1 evidence lists C1 FAIL [D8], C2 FAIL [L8] as pre-existing).
+3. Plan by studio-harness:plan-writer at docs/superpowers/plans/2026-10-19-runway-1.2.md: tasks of <= 8 steps, exact files, check
+   command and expected output each. Header `Suite: node --test --test-reporter=spec test/*.test.mjs` and `Data: (none)`. No
+   bin/rehearse.mjs here: skip the rehearsal. Suggested order: CI-1 pure builder (several tasks, one rule group each, red first);
+   CI-3 salesforceId field; CI-2 modal + Apply (backup via exportData first); CI-4 folder watch with the fake-folder seam; NL-1..NL-3;
+   NL-5 real-keystroke check; NL-4 X1/X3 hygiene; NL-4 L8/D8 investigation (superpowers:systematic-debugging; fix or write down why
+   not). Each html change re-pins the 1.1 sha in docs/HOSTING.md (test/hosting-docs.test.mjs) and tools/sim/osm-day/verify.mjs C8, and
+   the selfcheck --expect count if it moves, in the same commit. Locked sim files (steps-a.mjs, steps-b.mjs, lib/breaks.mjs) may change
+   only for L8/D8 and only as the approved plan names.
+4. ONE Codex plan review, read-only: codex exec -c windows.sandbox=unelevated ... < /dev/null (stdin hang: ledger 2026-10-19). Fold
+   findings in. STOP: Ian approves the plan (AskUserQuestion).
+5. Build each task test-first (implementer; a fresh checker; the lead re-runs the check line itself and reads only the summary).
+6. ONE full verify, run alone: no helper edits the worktree while it runs (ledger 2026-10-19-helper-edited-worktree-under-
+   running-verify). Headless-Chrome drives of the real UI for CI-2, CI-4 (fake folder) and NL-1..NL-3 before anything is
+   shown to Ian. Captures of the dry-run modal, the Today line, Call prep order, the backup prompt and the CSAT block: the PM helper
+   takes the first pass on looks (ruling 2026-10-19-pm-first-pass-taste-calls), then Ian, in one batch. Never open an image yourself.
+7. Final review: Opus studio-harness:final-reviewer and Codex read-only, merged; fix must-fix; re-check.
+8. Evidence doc docs/evidence/2026-10-19-runway-1.2.md (numbers, measured vs read, where to look, Ian's checks on his computer:
+   tick "Allow on every visit" once; dry-run his real file and read the counts). README/CHANGELOG/VALIDATION/HOSTING in the same
+   commits as the behaviour.
+9. Merge into master per the merge rule (backup branch of the target's tip pushed first; full suite on the result has no failure
+   master lacks), then push master to origin runway-tracker fast-forward (backup branch of the old remote tip first). Tell Ian where
+   to look for each change, and the one-line how-to for his real file.
+10. Hand-off PM step. Next queued: stage 2 talk (a Snowflake slot in connector/, gated on Ian trying a personal access token in
+    Snowflake: profile -> Programmatic access tokens). Draft its prompt, do not launch it unless Ian says yes.
+
+Codex on this PC: -c windows.sandbox=unelevated (ledger gotchas 2026-10-14, 2026-10-17).
+Ledger: .ledger/2026-10-19-runway-1.2/progress.md (one row per dispatch, talk-and-run Ledger format).
