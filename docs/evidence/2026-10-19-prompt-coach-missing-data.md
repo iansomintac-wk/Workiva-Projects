@@ -56,5 +56,5 @@ Label-level missingAsk misses (Measured on all 38 labels): ids 4 and 10 (mention
 Held-out caveat: ids 1-15 were already read at Task 4, so post-fix numbers on them are NOT held-out. The held-out result stays Task 4's: 4 of 4 ask ids changed; the pattern-level mention ids 4 and 10 fire, masked.
 
 ## Known limits (not fixed; proxy ruling)
-- "missing net zero targets": fires (a missing ask about something other than data values).
+- "missing net zero targets": does NOT fire missingAsk (measured by node, 2026-10-19; the earlier line saying it fires was wrong).
 - "ignore duplicates" and "Exceptions tab": the wrong-value words are checked on the whole prompt, so these keep a genuine missing ask from firing.
