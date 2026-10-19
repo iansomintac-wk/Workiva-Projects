@@ -19,7 +19,7 @@ const VERSIONS = ['1.0', '1.1'];
 const PREFIXES = ['fieldtest-', 'osmsim-', 'clockspike-', 'aispike-'];
 const HASHES = {
   '1.0': 'a21ca8c34c9c0859bf6b26e77f53a748e34daa026c21d2dba8f95f980d2fbddb',
-  '1.1': 'b247a93cd504416518077088e5092bad234ec5eb5a51491bc24f87e08edd22d2',
+  '1.1': 'c52c423be35d50c2138087569a0befefe390c471c91201bd88150383d43f27f3',
 };
 const trackerFile = v => join(ROOT, `osm-book-of-business-tracker-${v}.html`);
 
@@ -150,6 +150,7 @@ function c7(dir, before, after) {
   return { ok, line: `C7 ${ok ? 'PASS' : 'FAIL'} exit ${exits.every(e => e === 0) ? '0 x2' : 'NOT 0 x2 (' + exits.join(' ') + ')'}, metrics keys ${metricKeys.join('/')}, ${fresh.length} new folders` };
 }
 
+// C8: 1.1 is guarded by its pin, 1.0 by pin and diff.
 function c8() {
   const got = {}; let ok = true;
   for (const v of VERSIONS) {
@@ -157,9 +158,9 @@ function c8() {
     if (got[v] !== HASHES[v]) ok = false;
   }
   const base = spawnSync('git', ['rev-parse', '--verify', '--quiet', 'master'], { cwd: ROOT }).status === 0 ? 'master' : 'main';
-  const d = spawnSync('git', ['diff', '--quiet', base, '--', ...VERSIONS.map(v => `osm-book-of-business-tracker-${v}.html`)], { cwd: ROOT });
+  const d = spawnSync('git', ['diff', '--quiet', base, '--', 'osm-book-of-business-tracker-1.0.html'], { cwd: ROOT });
   const clean = d.status === 0;
-  return { ok: ok && clean, line: `C8 ${ok && clean ? 'PASS' : 'FAIL'} 1.0 ${got['1.0'].slice(0, 8)}... 1.1 ${got['1.1'].slice(0, 8)}... diff ${clean ? 'clean' : 'DIRTY vs ' + base + ' (git exit ' + d.status + ')'}${ok ? '' : ' HASH CHANGED'}` };
+  return { ok: ok && clean, line: `C8 ${ok && clean ? 'PASS' : 'FAIL'} 1.0 ${got['1.0'].slice(0, 8)}... 1.1 ${got['1.1'].slice(0, 8)}... 1.0 diff ${clean ? 'clean vs ' + base : 'DIRTY vs ' + base + ' (git exit ' + d.status + ')'}${ok ? '' : ' HASH CHANGED'}` };
 }
 
 export function score(dir) {

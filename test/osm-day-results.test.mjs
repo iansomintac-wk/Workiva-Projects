@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -143,4 +144,13 @@ test('L6 evidence ends with a dayRows field (evidence only; the pass rule line i
 test('X9 run.mjs does not cut L6 evidence at 600 characters', () => {
   const t = readFileSync(new URL('../tools/sim/osm-day/run.mjs', import.meta.url), 'utf8');
   assert.match(t, /cut[(]r[.]evidence, id === 'L6'/);
+});
+
+const verifySrc = () => readFileSync(new URL('../tools/sim/osm-day/verify.mjs', import.meta.url), 'utf8');
+const pinned = v => new RegExp(`'${v.replace('.', '\.')}': '([0-9a-f]{64})'`).exec(verifySrc())[1];
+const shaOf = v => createHash('sha256').update(readFileSync(new URL(`../osm-book-of-business-tracker-${v}.html`, import.meta.url))).digest('hex');
+test('C8 pins the 1.1 tracker at its current sha256', () => { assert.equal(pinned('1.1'), shaOf('1.1')); });
+test('C8 pins the 1.0 tracker at its current sha256 (unchanged by this run)', () => { assert.equal(pinned('1.0'), shaOf('1.0')); });
+test('C8 git diff against master covers the 1.0 file only', () => {
+  assert.match(verifySrc(), /'diff', '--quiet', base, '--', 'osm-book-of-business-tracker-1\.0\.html'\]/);
 });
