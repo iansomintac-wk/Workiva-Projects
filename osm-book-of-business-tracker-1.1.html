@@ -2950,6 +2950,19 @@ function activityTranscript(activity){
   }
   return (typeof t.text === 'string' && t.text.trim()) ? t : null;
 }
+/* D2 prep: the closing stretch of a transcript for the call-prep panel. The last n speech lines
+   and everything after the first of them (speaker lines kept). Speech line = not blank, not a
+   "Name  hh:mm:ss" header, not a "-->" cue, not a bare timestamp, not WEBVTT. n or fewer: whole. */
+function closingStretch(text, n){
+  if(typeof text !== 'string' || !text.trim()) return '';
+  const keep = n > 0 ? n : 30;
+  const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const isHead = l => /^\S.*\s{2,}\d{1,2}:\d{2}(:\d{2})?$/.test(l) || l.includes('-->') || /^\d{1,2}:\d{2}(:\d{2})?([.,]\d+)?$/.test(l) || l === 'WEBVTT';
+  const at = [];
+  lines.forEach((l, i) => { if(!isHead(l)) at.push(i); });
+  if(at.length <= keep) return text.trim();
+  return lines.slice(at[at.length - keep]).join('\n');
+}
 /* ============ 1.1 Step 1: TRANSCRIPT STORE ============
    Transcripts live in IndexedDB (obm-transcripts-v1), one record per transcript VERSION, keyed
    <activityId>:<12 hex of sha1>. The book keeps only {ref, chars, sha1, truncated}.
