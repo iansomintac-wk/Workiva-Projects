@@ -88,7 +88,7 @@ Four warning notes, additive only (engine/rewrite.js, small diff beside the note
 - personal: SSN-like number, salary, date of birth, or a long number next to account/bank/routing/IBAN words.
 - calc: asks to calculate, compute, sum, total or work out a figure. Workiva AI can get figures wrong; check against the source.
 - stacked: the existing note also fires for a comma/and list of 3 or more distinct task verbs (listStacked in rewrite.js; rules.js stacked() is untouched because model features use it). coach() returns `stacked`, and the page downgrades strong to better with it.
-- offtopic: no work or document words and no attached file. coach() returns `offtopic`; the page shows weak instead of a polished finance rewrite as strong.
+- offtopic: only a clear non-work cue (weather, poem, joke, recipe, ...) with no work or document words and no attached file (fires on 1 of 2,020 non-off-task train/test rows). coach() returns `offtopic`; the page shows weak instead of a polished finance rewrite as strong.
 
 ## Real files
 

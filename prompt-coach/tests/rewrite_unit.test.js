@@ -257,3 +257,8 @@ test('note offtopic: no work words fires and the display grade is not strong; a 
   assert.ok(!kinds(run(PLAIN)).includes('offtopic'));
   assert.ok(!kinds(run('Summarize the attached policy for the board.')).includes('offtopic'));
 });
+
+test('note offtopic: work prompts that name a document, letter, release or calc are never off-topic', () => {
+  for (const p of ['rewrite the CEO letter in this doc to be 30% shorter', 'Write the earnings release headline', 'Can you look over the EPS calc', 'Tighten the second paragraph of the memo', 'make this slide say less'])
+    assert.ok(!kinds(run(p)).includes('offtopic'), p);
+});
