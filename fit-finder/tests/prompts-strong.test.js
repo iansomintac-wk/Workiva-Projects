@@ -61,6 +61,21 @@ for (const [name, rs] of taskSets) for (const t of rs) {
   const ph = r.prompt.match(/\[[^\]]+\]/g) || [];
   if (new Set(ph).size !== ph.length) shape.push('placeholder twice: ' + tag);
 }
+// a starter never drops a constraint, a condition, a list item or the thing "it" refers to (fix B): these words must appear in the starter's task text
+const KEEP = [
+  ['Compare the current and prior reports; do not reveal employee names.', ['do not reveal employee names']],
+  ['Read the incident log; then draft an email about it', ['incident log', 'draft an email about it']],
+  ['If any account changed by more than 10% then explain why', ['more than 10%', 'explain why']],
+  ['Check these balances for mismatches: cash; receivables; payables', ['cash', 'receivables', 'payables']],
+  ['Summarize the audit minutes; only use the signed version', ['only use the signed version']],
+  ['Pull the open items from the log, and keep the owner names out; then draft the cover email', ['keep the owner names out']],
+  ['Check the vendor file for gaps; when a contract expires within 90 days then flag it; then email Sam', ['expires within 90 days']],
+  ['Check the ledger for gaps: sales; returns; refunds; then draft an email about them', ['sales', 'returns', 'refunds', 'ledger']]
+];
+for (const [t, words] of KEEP) {
+  const p = F.rate(t).prompt || '', task = p.slice(p.indexOf('My task: ')).toLowerCase();
+  for (const w of words) if (!task.includes(w.toLowerCase())) shape.push('starter dropped "' + w + '": ' + t.slice(0, 50));
+}
 const sh = [...new Set(shape)];
 console.log('starter shape: ' + sh.length + ' problems');
 for (const f of sh.slice(0, 60)) console.log('  FAIL ' + f);

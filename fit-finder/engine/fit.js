@@ -32,7 +32,11 @@
 
   function normalize(t) {
     return (' ' + String(t || '').toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, ' ') + ' ')
-      .replace(/\b(?:do not|don't|no need to|never|without)\s+(\w+)/g, (m, w) => Object.values(OPS).some((re) => re.test(' ' + w + ' ')) ? ' ' : m).replace(/\bu\b/g, 'you').replace(/\bw\/o\b/g, 'without').replace(/\b(?:prev|prv)\b/g, 'previous');
+      .replace(/\b(?:do not|don't|no need to|never|without)\s+(\w+)/g, (m, w, at, all) => {
+        // "never" and "without" are an instruction only at a clause start ("Never summarize", "and without checking"), not in "accounts that never reconcile"
+        if (/^(?:never|without)/.test(m) && !/(?:^\s*|[;.!?,]\s*|\b(?:and|but|then)\s+)$/.test(all.slice(0, at))) return m;
+        return Object.values(OPS).some((re) => re.test(' ' + w + ' ')) ? ' ' : m;
+      }).replace(/\bu\b/g, 'you').replace(/\bw\/o\b/g, 'without').replace(/\b(?:prev|prv)\b/g, 'previous');
   }
 
   // rough language check: English stopwords vs. common French/Spanish/German/Italian/Portuguese ones
@@ -124,7 +128,13 @@
       if (/then/.test(m[0]) || m[0][0] === ';' || newJob(task.slice(m.index + m[0].length))) { parts.push(task.slice(at, m.index)); at = m.index + m[0].length; }
     }
     const k = parts.findIndex((p) => first && OPS[first].test(normalize(p)));
-    if (k >= 0 && parts.length > 1) task = parts[k].replace(/[.!?]*$/, '.');
+    // drop other clauses only if each is a separate job (holds a task verb the page shows as its own step) and none is a constraint or condition;
+    // keep the whole task when the kept clause points back with it/them/this/that, or in any doubt
+    const startsJob = (p) => newJob(p.replace(/^\s*(?:and|then|also)\s+/i, '')) || Object.values(OPS).some((re) => re.test(normalize(p)));
+    const NOT_A_JOB = /\b(?:do not|don't|never|only|without|keep|exclude|unless|if|when|whenever)\b/i;
+    const dropped = parts.filter((_, i) => i !== k);
+    const safe = dropped.every((p) => startsJob(p) && !NOT_A_JOB.test(p)) && !(k > 0 && /\b(?:it|them|this|that|these|those|they)\b/i.test(parts[k]));
+    if (k >= 0 && parts.length > 1 && safe) task = parts[k].replace(/[.!?]*$/, '.');
     if (!first) {
       if (ops.includes('COLLECT')) return 'Use only the text below. Context: ' + task + ' Draft a short, polite request to [who] asking for [what you need] by [date], as an e-mail of no more than five sentences. Do not invent deadlines or facts; I will review it and decide what to send.';
       return null;
@@ -155,12 +165,16 @@
     if (r.fit === 'not' || !catalogue) return [];
     const t = normalize(text), ai = r.ops.filter((o) => AI_OPS.includes(o) && o !== 'READ');
     if (/e-?mail/.test(t) && r.ops.length === 1 && r.ops[0] === 'DRAFT') return [];
-    return catalogue.useCases.map((u) => {
+    const hits = catalogue.useCases.map((u) => {
       const kw = t.match(new RegExp('\\b(?:' + u.match + ')', 'g'));
       const shared = u.ops.filter((o) => ai.includes(o)).length;
       // a general entry gives way to a specific one that fits as well
       return { u, score: kw && shared ? shared * 2 + new Set(kw).size - (u.area === 'GEN' ? 1.5 : 0) : 0 };
-    }).filter((x) => x.score).sort((a, b) => b.score - a.score).slice(0, max || 3).map((x) => x.u);
+    }).filter((x) => x.score).sort((a, b) => b.score - a.score).map((x) => x.u);
+    // a translate verb anywhere with "into/to <language>" leads with the translate card, whatever else the task mentions
+    const tr = /\btranslat\w*\b.*\b(?:into|to)\s+(?:english|french|german|spanish|japanese|chinese|portuguese|italian|dutch|korean|arabic|russian|mandarin|swedish|polish|turkish|hindi)\b/.test(t) ? hits.findIndex((u) => u.id === 'gen-translate') : -1;
+    if (tr > 0) hits.unshift(hits.splice(tr, 1)[0]);
+    return hits.slice(0, max || 3);
   }
 
   const api = { rate, scan, match, lead, patternPrompt, normalize, OPS, AI_OPS, STEP };

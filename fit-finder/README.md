@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (89183 bytes)
+node tests/build.js                                               # -> dist/fit-finder.html (90652 bytes, LF)
 # Offline Coach link: ship both html files (fit-finder.html and prompt-coach.html) in one folder; opened from a file, the link uses prompt-coach.html, online it uses the artifact URL.
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
@@ -257,7 +257,7 @@ were kept, both on the tuning half only. Net change from the base commit (read f
 card was shown: right = fits - wrong - missed. A fit row whose gold names no card therefore counts
 as right when no card is shown (the same definition as the suite's fresh line).
 
-Dist size 83016 bytes (LF, as committed). Measured after these rules (suite): B first card right 13 of 30, wrong 3; A 12 of 29, wrong 0;
+Dist size at the fair test (2026-10-18): 83016 bytes (LF, as committed); not the current size, see the build line above. Measured after these rules (suite): B first card right 13 of 30, wrong 3; A 12 of 29, wrong 0;
 real 15 of 19, wrong 2; fresh 15 of 23, wrong 5, card on a not-a-fit prompt 1, fit agreement 12
 of 29. Eval fit agreement: A 52/60, B 45/60. The live page is not republished.
 
