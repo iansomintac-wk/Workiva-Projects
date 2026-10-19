@@ -1,0 +1,1 @@
+You are an internal controls analyst. Use only the control list I selected with @. Context: we are looking for overlapping controls to simplify our testing. Group controls whose descriptions cover the same risk or activity, as a table with the control IDs and one line on why they look alike. Do not recommend removing any; I will decide.

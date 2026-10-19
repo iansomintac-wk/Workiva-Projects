@@ -1,0 +1,14 @@
+MADE-UP TEST DATA
+EMISSIONS BY SOURCE, tonnes CO2e - Marlow Foods (made-up)
+
+Source | Jan-Mar | Apr-Jun
+Boiler gas | 410 | 425
+Fleet diesel | 220 | 231
+Site A electricity | 300 | 310
+Site B electricity | 280 | 190
+Business flights | 90 | 160
+Refrigerant top-ups | 15 | 16
+Waste to landfill | 60 | 58
+Generator diesel | 40 | 95
+Courier freight | 70 | 41
+Staff car mileage | 55 | 80
