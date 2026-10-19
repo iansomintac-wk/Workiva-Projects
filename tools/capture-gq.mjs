@@ -1,17 +1,17 @@
 // Dev tooling (not part of the bundle): captures Fernhollow's gone-quiet row on Today (1.1) and counts gone_quiet rows per day.
-// usage: node tools/sim/osm-day/capture-gq.mjs            -> sim-runs/gq-captures/fernhollow-<date>.{png,txt}
-//        node tools/sim/osm-day/capture-gq.mjs --flood    -> sim-runs/gq-captures/flood.json
+// usage: node tools/capture-gq.mjs            -> sim-runs/gq-captures/fernhollow-<date>.{png,txt}
+//        node tools/capture-gq.mjs --flood    -> sim-runs/gq-captures/flood.json
 // Throwaway osmsim-* profiles only (launch()), removed by ctx.stop() in a finally.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resolveUnderSimRuns } from './lib/outdir.mjs';
-import { launch } from './lib/browser.mjs';
-import { setupA, setupB } from './lib/setup.mjs';
-import { PART_A, DAY } from './steps-a.mjs';
-import { PART_B, PART_B_ORDER, CAL } from './steps-b.mjs';
+import { resolveUnderSimRuns } from './sim/osm-day/lib/outdir.mjs';
+import { launch } from './sim/osm-day/lib/browser.mjs';
+import { setupA, setupB } from './sim/osm-day/lib/setup.mjs';
+import { PART_A, DAY } from './sim/osm-day/steps-a.mjs';
+import { PART_B, PART_B_ORDER, CAL } from './sim/osm-day/steps-b.mjs';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = resolveUnderSimRuns(join(ROOT, 'sim-runs', 'gq-captures'), ROOT);
 const FERN = 'Fernhollow Renewables';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
