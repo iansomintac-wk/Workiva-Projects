@@ -436,7 +436,8 @@
     const text = files.map((f) => (f.text || '').replace(/^## .*$/gm, '')).join('\n'); // file text only: a sheet NAME (the '## name' line engine/files.js writes) is not a forecast; a header cell or a cell value is
     if (FORECAST_ASK.test(prompt) && !FORECAST_BASIS.test(text)) return { kind: 'forecast' };
     if (intent === 'explain' || CAT_EXPLAIN.test(prompt)) return null;
-    const lower = files.map((f) => f.text || '').join('\n').toLowerCase(); // the sheet name still counts as Scope 3 context here
+    const scope3Text = (f) => (f.kind === 'Word' && Array.isArray(f.lines) ? f.lines.join('\n') : (f.text || ''));
+    const lower = files.map(scope3Text).join('\n').toLowerCase(); // the sheet name still counts as Scope 3 context here
     if (!/scope\s*3/i.test(prompt) || !/scope\s*3/.test(lower)) return null; // Scope 3 context in the ask AND in the file
     let exact = 0, generic = false;
     for (let n = 1; n <= 15; n++) { const h = categoryHit(n, lower); if (h === 'exact') exact++; else if (h === 'generic') generic = true; }

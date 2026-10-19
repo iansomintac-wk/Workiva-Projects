@@ -502,3 +502,24 @@ test('unsupported: Upstream T&D is not Downstream T&D, and a truly missing categ
   assert.equal(unsupported(run(askCat(4), [down])).length, 1, 'downstream is not upstream');
   assert.equal(unsupported(run(askCat(11), [up])).length, 1);
 });
+
+// Scope 3 reshape, rule 1: a Word file is read by its clean lines (the reader glues cells in text).
+const wordD1 = (lines, text) => ({ name: 'd1.docx', kind: 'Word', sheets: [], periods: [], text, lines });
+const D1_ASK = 'Using this file, calculate Scope 3 category 4 upstream transport emissions for FY25.';
+test('unsupported: a Word file is read by its clean lines, so number rows count as listed (D1)', () => {
+  const d1 = wordD1(['Scope 3 emissions by category', '6, 1,240', '7, 890'], 'Scope 3 emissions by category61,240' + '7890');
+  const u = unsupported(run(D1_ASK, [d1]));
+  assert.equal(u.length, 1);
+  assert.ok(u[0].text.includes('category 4 ('));
+});
+test('unsupported: a Word file that lists the category stays quiet (D1 guard)', () => {
+  const d1 = wordD1(['Scope 3 emissions by category', '4, 410', '6, 1,240', '7, 890'], 'Scope 3 emissions by category' + '4410' + '61,240' + '7890');
+  assert.equal(unsupported(run(D1_ASK, [d1])).length, 0);
+});
+test('unsupported: a non-Word file with lines is still read from its text', () => {
+  const lines = ['Scope 3 emissions by category', '6, 1,240', '7, 890'];
+  const text = 'Scope 3 emissions by category61,240' + '7890';
+  const withLines = { name: 'd1.xlsx', kind: 'Excel', sheets: [], periods: [], text, lines };
+  const noLines = { name: 'd1.xlsx', kind: 'Excel', sheets: [], periods: [], text };
+  assert.equal(unsupported(run(D1_ASK, [withLines])).length, unsupported(run(D1_ASK, [noLines])).length);
+});
