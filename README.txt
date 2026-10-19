@@ -124,6 +124,8 @@ count alone.
               choice or a new goal written there and then. The signal
               "ready_to_graduate" fires when a target date is set and every
               gate of the primary goal is done (or the verdict is already met).
+              With no CSAT contact marked added, the confirm box also says so;
+              it never blocks.
   Early exit  If planned sessions were never held, the confirm asks for an exit
               reason (Goal met early, No more enablement needed, Paused or at
               risk, Other) and records those sessions as not needed. Every

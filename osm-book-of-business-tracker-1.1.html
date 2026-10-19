@@ -16987,6 +16987,7 @@ function openGoalFormModal(c, mode, onDone){
    note and never blocks (R4/A8). */
 function openGraduationConfirmModal(c){
   const p = primaryGoal(c);
+  const csatWarn = graduationCsatWarning(c);
   const unheldIds = unheldPlannedSessions(c);
   const set = getSessionTemplateSet(c);
   const unheldTitles = unheldIds.map(id => { const i = set.findIndex(t => t.id === id); const n = i >= 0 ? i + 1 : parseInt(id, 10);
@@ -16996,6 +16997,7 @@ function openGraduationConfirmModal(c){
   backdrop.innerHTML = `
     <div class="modal" style="max-width:480px;">
       <h3>Graduate ${escapeHtml(c.name)}</h3>
+      ${csatWarn ? `<p id="gc-csat" class="gp-meta" style="margin:0 0 10px; color:var(--warn, var(--text-dim));">${escapeHtml(csatWarn)}</p>` : ''}
       ${p ? `<p class="gp-meta" style="margin:0 0 10px;">Primary goal: ${escapeHtml(p.text)} (${p.gates.filter(g => g.done).length} of ${p.gates.length} gates done)</p>` : `
       <p class="gp-meta" style="margin:0 0 10px;">No hand-off goal is set. Add one now, or graduate without one.</p>
       <div id="gc-nogoal-wrap">

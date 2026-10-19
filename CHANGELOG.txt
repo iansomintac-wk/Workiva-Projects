@@ -22,6 +22,14 @@ OSM Runway — release notes
       docs/HOSTING.md says what the page loads (outside hosts, no integrity attribute on the
       xlsx script, inline script and style needed) instead of "works with no network".
 
+1.1 — L11. Graduating with no CSAT contact warns, and still lets you graduate.
+
+    - The graduation confirm box gets one amber line under its title when no CSAT contact is
+      marked added: "No CSAT contact is marked added, so nobody will receive the survey. You
+      can still graduate." It shows with or without a goal.
+    - OK and the graduation itself are unchanged; nothing new is stored; 1.0 is not changed.
+    - The sim's L11 judge and break now read "warned and still allowed".
+
 1.1 — D3 prep. Call prep shows what you owe and what they owe.
 
     - Call prep in 1.1 gets a Promises section after Pending deliverables: the account's open
