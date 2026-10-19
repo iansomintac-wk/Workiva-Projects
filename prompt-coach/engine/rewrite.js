@@ -422,6 +422,12 @@
   }
   // "FY25" is present when the file says FY2025 (or FY 2025, FY'25), and the same for CY; FY26 against FY2024/FY2025 is still absent.
   function yearForms(term) {
+    const q = /^(Q[1-4])\s?(FY)\s?'?(\d{2}|\d{4})$/i.exec(term);
+    if (q) { // fiscal compound only: adjacent forms in either order; a bare calendar year (Q1 2025) is not accepted for a fiscal year
+      const out = [];
+      for (const y of yearForms(q[2] + q[3])) out.push(q[1] + ' ' + y, q[1] + y, y + ' ' + q[1], y + q[1], q[1] + '-' + y, y + '-' + q[1]);
+      return out;
+    }
     const m = /^(FY|CY)\s?'?(\d{2}|\d{4})$/i.exec(term); if (!m) return [term];
     const y = m[2].length === 2 ? '20' + m[2] : m[2], p = m[1];
     return [p + y, p + y.slice(2), p + ' ' + y, p + ' ' + y.slice(2), p + "'" + y.slice(2)];

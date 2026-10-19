@@ -518,3 +518,16 @@ test('unsupported: words that only contain "le" are no forecast basis (S3b guard
   for (const body of ['Account, Role\nRevenue, 100', 'Account, Sample, Table\nRevenue, 1', 'Account, le monde\nRevenue, 1', 'Account, Legal Entity\nRevenue, 1'])
     assert.equal(unsupported(run('Predict next quarter revenue from this', [sheetOf('Model', body)])).length, 1, body);
 });
+test('grounding: "Q1 FY25" counts as present when the file says "FY2025 Q1" or "Q1 FY2025" (C5b)', () => {
+  const g = (o) => o.notes.filter((n) => n.kind === 'grounding').map((n) => n.text).join(' ');
+  const ask = 'Using only @f.xlsx, summarise Q1 FY25 revenue in a table with each source row. Do not guess.';
+  assert.ok(!/Q1 FY25/.test(g(run(ask, [sheetOf('Rev', 'Account, FY2025 Q1, FY2025 Q2\nRevenue, 1, 2')]))));
+  assert.ok(!/Q1 FY25/.test(g(run(ask, [sheetOf('Rev', 'Account, Q1 FY2025\nRevenue, 1')]))));
+});
+test('grounding: a different quarter or year, or a bare calendar year, is still flagged for "Q1 FY25" (C5b guard)', () => {
+  const g = (o) => o.notes.filter((n) => n.kind === 'grounding').map((n) => n.text).join(' ');
+  const ask = 'Using only @f.xlsx, summarise Q1 FY25 revenue in a table with each source row. Do not guess.';
+  for (const body of ['Account, FY2025 Q2\nRevenue, 1', 'Account, FY2024 Q1\nRevenue, 1', 'Account, Q1 2025\nRevenue, 1', 'Account, Q1, FY2025 total\nRevenue, 1'])
+    assert.match(g(run(ask, [sheetOf('Rev', body)])), /Q1 FY25/, body);
+  assert.ok(!/Q1 FY25/.test(g(run(ask, [sheetOf('Rev', 'Account, Q1 FY25\nRevenue, 1')]))), 'literal match still passes');
+});
