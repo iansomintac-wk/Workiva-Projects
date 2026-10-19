@@ -523,3 +523,49 @@ test('unsupported: a non-Word file with lines is still read from its text', () =
   const noLines = { name: 'd1.xlsx', kind: 'Excel', sheets: [], periods: [], text };
   assert.equal(unsupported(run(D1_ASK, [withLines])).length, unsupported(run(D1_ASK, [noLines])).length);
 });
+
+const f3 = { name: 's3.xlsx', kind: 'Excel', sheets: [{ name: 'Summary', headers: [] }], periods: [], text: '## Summary\nScope 3 summary\n6, 1,240\n7, 890' };
+test('unsupported: explain a definition stays quiet', () => {
+  assert.equal(unsupported(run('Explain what Scope 3 category 4 covers.', [f3])).length, 0);
+});
+test('unsupported: explain with a change word is checked', () => {
+  const u = unsupported(run('Explain why Scope 3 category 4 rose in FY25.', [f3]));
+  assert.equal(u.length, 1); assert.ok(u[0].text.includes('category 4 ('), u[0].text);
+});
+test('unsupported: explain in another sentence is checked', () => {
+  assert.equal(unsupported(run('Explain the method used in this report. Then give me Scope 3 category 4 emissions.', [f3])).length, 1);
+});
+test('unsupported: explain in the same sentence stays quiet', () => {
+  assert.equal(unsupported(run('Summarise the file and explain Scope 3 category 4.', [f3])).length, 0);
+});
+test('unsupported: explain with a percent is checked', () => {
+  assert.equal(unsupported(run('Explain Scope 3 category 4 as a % of total.', [f3])).length, 1);
+});
+test('unsupported: explain on one category does not hide a second category (per mention)', () => {
+  const u = unsupported(run('Explain what Scope 3 category 4 covers. Then give me Scope 3 category 5 emissions.', [f3]));
+  assert.equal(u.length, 1); assert.ok(u[0].text.includes('category 5 (') && !u[0].text.includes('category 4 ('), u[0].text);
+});
+test('unsupported: explain the drop is checked', () => {
+  const u = unsupported(run('Explain the drop in Scope 3 category 4 emissions.', [f3]));
+  assert.equal(u.length, 1); assert.ok(u[0].text.includes('category 4 ('), u[0].text);
+});
+test('unsupported: explain the dropped figure is checked', () => {
+  assert.equal(unsupported(run('Explain how Scope 3 category 4 dropped.', [f3])).length, 1);
+});
+test('unsupported: the 9 stored explain asks split as measured (explain9)', () => {
+  const asks = new Set();
+  for (const f of fs.readdirSync(path.join(__dirname, '../data')).filter((x) => x.endsWith('.jsonl'))) {
+    for (const l of fs.readFileSync(path.join(__dirname, '../data', f), 'utf8').split('\n')) {
+      try { const p = JSON.parse(l).prompt; if (typeof p === 'string' && /scope\s*3/i.test(p) && /\b(?:explain|what counts|what does\b[^?.]*\bmean|walk me through|define|definition|what is)\b/i.test(p)) asks.add(p); } catch (e) { /* blank line */ }
+    }
+  }
+  assert.equal(asks.size, 9);
+  // measured 2026-10-19: [ask prefix, category number, checked?]; 6 numbered asks, 5 exempt, 1 checked
+  const M9 = [['walk me through scope 3 category 11', 11, false], ['Pull Scope 3 Category 4 totals', 4, false], ['Can you unpack', 11, false], ['Explain, for a procurement audience', 1, false], ['what does this paragraph mean', 11, false], ['explain why scope 3 cat 1 jumped', 1, true]];
+  const names = ['purchased goods', 'capital goods', 'fuel and energy', 'upstream transport', 'waste generated', 'business travel', 'commuting', 'upstream leased', 'downstream transport', 'processing of sold', 'use of sold', 'end of life', 'downstream leased', 'franchises', 'investments'];
+  for (const [prefix, n, checked] of M9) {
+    const p = [...asks].find((a) => a.startsWith(prefix)); assert.ok(p, prefix);
+    const file = { name: 's3.xlsx', kind: 'Excel', sheets: [{ name: 'S', headers: [] }], periods: [], text: '## S\nScope 3 summary\n' + names.map((nm, i) => (i + 1 === n ? null : 'category ' + (i + 1) + ' ' + nm + ', 10')).filter(Boolean).join('\n') };
+    assert.equal(unsupported(run(p, [file])).filter((x) => x.text.includes('category ' + n + ' (')).length, checked ? 1 : 0, prefix);
+  }
+});
