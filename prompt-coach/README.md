@@ -97,7 +97,17 @@ Five warning notes, additive only (engine/rewrite.js, small diff beside the note
 - Scope 3 categories (2026-10-19): "Upstream T&D" and "Downstream T&D" rows in the file count as categories 4 and 9.
 - Scope 3 listed means a figure (2026-10-19): a category is in the file only when its name, short label (purch. goods, waste in ops, upstr./downstr., EOL) or "category N" / "cat N" is followed within 60 characters by a figure (not a year, not FY/Q/H tags, not a number glued to letters, not a bare percent) before the next category name starts.
 - Scope 3 by structure (2026-10-19): a summary sheet with short labels and figures counts as a Scope 3 list without the words "Scope 3"; an ask that names a category in words (or by short label such as EOL) is checked like a numbered one; the name typed in brackets after a category number counts as listed only when a figure follows it in the file.
-- Known limits of the unsupported note: forecast phrasing such as "Forecast product revenue...", LE as a forecast basis, and future share-price asks are not handled.
+- Known limits of the unsupported note (left alone on purpose; probe of the 1,841 stored prompts in data/*.jsonl (2,161 rows, of which 320 have no prompt), all AI-written, no real prompts exist, so there is too little to build a rule that generalises; the word-pattern fixes tried earlier did not generalise on a sealed set):
+  - Forecast phrasing: "forecast" appears in 1 of the 1,841 prompts, as a noun ("the forecast table on this slide"). Asks such as "Forecast product revenue..." are not handled.
+  - Future share or stock price: "share price" or "stock price" 0, "price target" 0, "predict" 0 of the 1,841. Not handled.
+  - LE (latest estimate) as a forecast basis: not treated as a forecast, budget or plan word.
+  - Scope 3 is checked by structure (a figure within 60 characters after the category name, short label or "category N"). Known misses, all left alone on purpose:
+    - a figure before the name ("1,240 tCO2e came from business travel") is not seen as listed;
+    - unit-suffixed figures ("1.2m", "80k") are not figures, because a number glued to letters does not count;
+    - an unformatted value from 1900 to 2099 ("2050") is read as a year;
+    - a figure more than 60 characters after the name (a long description column) is not seen;
+    - a remark line followed by an unlabelled number can be read as that category's figure;
+    - number-only rows ("11, 4000") no longer list a category.
 
 ## Real files
 
