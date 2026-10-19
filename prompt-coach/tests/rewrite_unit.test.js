@@ -267,3 +267,23 @@ test('note personal: salary alone (aggregate payroll accounting) does not fire',
   for (const p of ['Accrue the salaries expense for October in the trial balance', 'Review the salary accrual variance', 'List salaries from the payroll report by department.'])
     assert.ok(!kinds(run(p)).includes('personal'), p);
 });
+
+// ---- fix C: personal-note false positives and the shared display rule ----
+test('note personal: ordinary accounting prompts with long numbers, IBAN, salary expense or routing do not fire', () => {
+  for (const p of ['Reconcile GL account 40100200 to the bank statement for October', 'Record the bank loan of 25000000', 'Summarize salary expense by department for the Audit Committee', 'Salary expense of $4,200,000 rose 3%', 'Explain the IBAN format for our vendor master data', 'Set up the approval routing for invoices'])
+    assert.ok(!kinds(run(p)).includes('personal'), p);
+});
+
+test('note personal: SSN without dashes, spaced account number and a birth date fire', () => {
+  for (const p of ['SSN 123456789', 'account number 1234 5678 9012', 'born on 4 May 1980'])
+    assert.ok(kinds(run(p)).includes('personal'), p);
+});
+
+test('displayGrade: off-topic is weak, strong with stacked is better, else the grade; one rule shared with the page', () => {
+  const hk = 'Use only the observations below. Write a haiku for my niece, as three lines. Flag anything you cannot verify';
+  assert.equal(W.displayGrade(run(hk), hk), 'weak');
+  const st = run('Summarize the report, list the risks, draft an email, and compare to last year');
+  assert.equal(W.displayGrade(st, ''), st.grade === 'strong' && st.hits ? 'better' : st.grade);
+  assert.equal(W.displayGrade({ grade: 'strong', hits: {}, stacked: true, offtopic: false }, ''), 'better');
+  assert.equal(W.displayGrade({ grade: 'strong', hits: {}, stacked: false, offtopic: false }, ''), 'strong');
+});

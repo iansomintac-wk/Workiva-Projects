@@ -299,8 +299,8 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     if (!prompt.trim()) { renderEmpty(); return; }
     const pick = ScopeClassify.pick(prompt, CLS);
     const r = ScopeRewrite.coach(prompt, { files, detect, ...pick });
-    // one job at a time: a stacked prompt can't be strong
-    r.displayGrade = r.offtopic ? 'weak' : r.grade === 'strong' && r.hits && r.stacked ? 'better' : r.grade;
+    // one shared display rule (ScopeRewrite.displayGrade): off-topic is weak, a stacked strong prompt is better
+    r.displayGrade = ScopeRewrite.displayGrade(r, prompt);
     const prevKey = state.result && state.result.stages.strong.prompt;
     state.result = r;
     if (prevKey !== r.stages.strong.prompt) state.on = Object.fromEntries(K.map((k) => [k, true]));
@@ -337,11 +337,17 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     const r = state.result, g = r.displayGrade;
     renderMirror(prompt, r);
     $('yourLabel').textContent = GRADE_LABEL[g]; $('yourLabel').style.color = GRADE_COLOR[g];
-    $('headline').textContent = g !== r.grade ? 'All five SCOPE elements are here, but it asks for several things at once. Split it into one ask at a time.' : r.headline;
-    // only warnings that matter: sensitive data, or a file that doesn't match the prompt
+    $('headline').textContent = r.offtopic ? 'This is not a Workiva task, so there is nothing to grade.'
+      : g !== r.grade ? 'All five SCOPE elements are here, but it asks for several things at once. Split it into one ask at a time.' : r.headline;
+    // warnings that matter: the engine's notes, plus the page's own check for emails, card numbers and passwords
     const notes = $('notes'); notes.replaceChildren();
-    if (/\b[\w.+-]+@[\w-]+\.[\w.]+\b|\b\d{3}-\d{2}-\d{4}\b|\b(?:\d[ -]?){13,16}\b|\bpassword\s*[:=]/i.test(prompt)) notes.append(note('warn', 'This looks like personal or sensitive data. Leave it out of AI prompts unless your AI policy allows it.'));
-    const ground = r.notes.find((n) => n.kind === 'grounding'); if (ground) notes.append(note('warn', ground.text));
+    const byKind = (k) => r.notes.find((n) => n.kind === k);
+    const personal = byKind('personal');
+    const sensitive = personal ? personal.text : /\b[\w.+-]+@[\w-]+\.[\w.]+\b|\b(?:\d[ -]?){13,16}\b|\bpassword\s*[:=]/i.test(prompt) ? 'This looks like personal or sensitive data. Leave it out of AI prompts unless your AI policy allows it.' : '';
+    if (sensitive) notes.append(note('warn', sensitive));
+    const off = byKind('offtopic');
+    if (off) notes.append(note('warn', off.text));
+    for (const k of ['calc', 'stacked', 'grounding']) { const n = byKind(k); if (n && !(off && k === 'stacked')) notes.append(note('warn', n.text)); }
   }
   function note(kind, text, lead) {
     const d = document.createElement('div'); d.className = 'note' + (kind ? ' ' + kind : '');
@@ -354,7 +360,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     // tabs: your prompt (live, editable), then each stronger version above its grade
     const r = state.result, order = ['weak', 'better', 'strong'];
     const gi = r ? order.indexOf(r.grade) : 0;
-    const keys = ['mine', ...(r ? order.slice(gi + 1) : [])];
+    const keys = ['mine', ...(r && !r.offtopic ? order.slice(gi + 1) : [])]; // off-topic: no polished rewrite to show
     if (!keys.includes(state.stage)) state.stage = 'mine';
     const tabs = $('stageTabs'); tabs.replaceChildren();
     for (const key of keys) {

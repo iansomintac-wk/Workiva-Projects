@@ -7,6 +7,7 @@ server, no uploads. Built for customer-facing use where Claude access can't be p
 
 ```sh
 node tests/build.js                      # -> dist/prompt-coach.html (single file, ~300 KB)
+node tests/pagetest.js                      # real-browser page test of the built page (notes, display grade, off-topic); build first
 node tests/eval.js rulefeat data/test.jsonl          # accuracy on held-out prompts
 node tests/simulate.js data/train_*.jsonl            # rewrite invariants
 node tests/customer_check.js                         # strong version keeps the user's ask, adds blanks not facts; no filler, original order, whole pieces, blank rule, Ian's invoice case
@@ -84,8 +85,8 @@ changes the prompt; no duplicate sentences or empty fragments (2 runs have other
 
 ## Coach notes (T4, 2026-10-18)
 
-Four warning notes, additive only (engine/rewrite.js, small diff beside the notes block; another run owns the engine, weights and rewrite text). Grades, weights, rule scores and rewrite text are unchanged; only the page's display rule changed.
-- personal: SSN-like number, salary (only with a person name or an amount nearby), date of birth, or a long number next to account/bank/routing/IBAN words.
+Four warning notes, additive only (engine/rewrite.js, small diff beside the notes block; another run owns the engine, weights and rewrite text). Grades, weights, rule scores and rewrite text are unchanged; only the page's display rule changed. The display rule is one exported function, `ScopeRewrite.displayGrade(result, prompt)` (off-topic shows weak; strong with stacked asks shows better), used by the page and by fit-finder/tests/prompts-strong.test.js. For an off-topic prompt the page shows the off-topic note and no Better/Strong rewrite tabs. The page renders the personal, calc, stacked (not for off-topic), off-topic and grounding notes; `node tests/pagetest.js` types real inputs into dist/prompt-coach.html in headless Chrome and checks them (run `node tests/build.js` first).
+- personal: SSN (with dashes, or 9 digits after an SSN / social security word), date of birth or "born ... year", an account/card/routing/IBAN number (needs the word number/no/# or a bank/card word before the digits, or an IBAN-shaped code), or a person's salary (a name or employee/his/her with an amount, or "Name's salary"). Not fired by GL account numbers, loan amounts, salary expense, the word IBAN or approval routing. The page also warns on emails, card numbers and passwords.
 - calc: asks to calculate, compute, sum, total or work out a figure. Workiva AI can get figures wrong; check against the source.
 - stacked: the existing note also fires for a comma/and list of 3 or more distinct task verbs (listStacked in rewrite.js; rules.js stacked() is untouched because model features use it). coach() returns `stacked`, and the page downgrades strong to better with it.
 - offtopic: only a clear non-work cue (weather, poem, joke, recipe, ...) with no work or document words and no attached file (fires on 1 of 2,020 non-off-task train/test rows). coach() returns `offtopic`; the page shows weak instead of a polished finance rewrite as strong.

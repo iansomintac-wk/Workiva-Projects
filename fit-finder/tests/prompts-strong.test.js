@@ -15,7 +15,7 @@ const cat = rj('fit-finder/data/catalogue.json');
 const detect = (p) => { const r = M.predict(p, weights, { mode: weights.mode }); return { on: r.on, d: r.rules }; };
 const grade = (p) => {
   const r = W.coach(p, { files: [], detect, ...C.pick(p, CLS) });
-  return r.offtopic ? 'weak' : r.grade === 'strong' && r.hits && r.stacked ? 'better' : r.grade; // the page's display rule
+  return W.displayGrade(r, p); // the page's display rule, shared
 };
 const rows = (f) => fs.readFileSync(path.join(root, 'fit-finder/data', f), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
 const sets = [];
