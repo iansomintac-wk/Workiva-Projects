@@ -159,7 +159,7 @@
       "task": "Answer questions about how to do something in Workiva.",
       "ops": ["EXPLAIN"], "match": "(?:in|with|use|using) workiva|how (?:do|to)|support (?:center|articles?)|workiva (?:features?|help)",
       "surfaces": ["support-kb"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S9"],
-      "prompt": "Use only the Workiva support knowledge base. Context: I am helping a colleague who is new to [the task]. Explain how to [the task] in Workiva, as a numbered list of steps with a link to each Support Center article you used. If the articles do not cover it, say so rather than guess.",
+      "prompt": "Use only the Support Intelligence knowledge base. Context: I am helping a colleague who is new to [the task]. Explain how to [the task] in Workiva, as a numbered list of steps with a link to each Support Center article you used. If the articles do not cover it, say so rather than guess.",
       "stays": "Trying the steps in your own workspace; your setup and permissions may differ.",
       "try": "Every week I answer questions from colleagues about how to do things in Workiva."
     },

@@ -33,7 +33,26 @@ for (const [name, rs] of taskSets) {
 }
 sets.push(['catalogue use cases', cat.useCases.filter((u) => u.prompt).map((u) => u.prompt)]);
 sets.push(['COLLECT starter', [F.rate('Chase the site owners for their data every month.').prompt].filter(Boolean)]);
-let bad = 0;
+// the starter keeps the person's own task: it ends at a clause boundary or is the whole task, keeps the clause its ask is for, and repeats no placeholder
+const norm = (t) => String(t).trim().replace(/\s+/g, ' ').replace(/[.!?]*$/, '');
+const BOUNDARY = /^(?:;\s|,\s*then\s|\s+then\s|\s+and then\s|\s+and (?:make|create|build|prepare)\b)/;
+const shape = [];
+for (const [name, rs] of taskSets) for (const t of rs) {
+  const r = F.rate(t.task); if (!r.prompt) continue;
+  const m = r.prompt.match(/(?:My task|Context): (.*?) (?:Draft a|Summarize|Compare|Check|Rewrite|Pull|Explain|Map|Sort|Estimate|Read) /);
+  const kept = m ? norm(m[1]) : null, whole = norm(t.task), tag = name + ' ' + String(t.id).slice(0, 12) + ' ' + whole.slice(0, 40);
+  if (kept === null) { shape.push('no task text found: ' + tag); continue; }
+  if (!whole.includes(kept)) shape.push('task not kept as written: ' + tag);
+  else if (kept !== whole && !BOUNDARY.test(whole.slice(whole.indexOf(kept) + kept.length)) && !/(?:^|;|then|and) *$/.test(whole.slice(0, whole.indexOf(kept)).replace(/ +$/, ''))) shape.push('cut mid-phrase: ' + tag + ' -> ' + kept.slice(-30));
+  const lead = F.lead(t.task);
+  if (lead && !F.OPS[lead].test(F.normalize(kept))) shape.push('lead clause lost (' + lead + '): ' + tag);
+  const ph = r.prompt.match(/\[[^\]]+\]/g) || [];
+  if (new Set(ph).size !== ph.length) shape.push('placeholder twice: ' + tag);
+}
+const sh = [...new Set(shape)];
+console.log('starter shape: ' + sh.length + ' problems');
+for (const f of sh.slice(0, 60)) console.log('  FAIL ' + f);
+let bad = sh.length;
 for (const [name, ps] of sets) {
   const n = { weak: 0, better: 0, strong: 0 }, failing = [];
   for (const p of ps) { const g = grade(p); n[g]++; if (g !== 'strong') failing.push(g + ' ' + p.slice(0, 60)); }

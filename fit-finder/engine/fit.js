@@ -102,17 +102,23 @@
   function starter(text, ops, fit) {
     const first = lead(text);
     let task = String(text || '').trim().replace(/\s+/g, ' ').replace(/[.!?]*$/, '.');
-    // a task with several jobs: the starter takes the first one, which the Coach reads as one job
-    const cut = first && task.match(/,?\s+(?:and then|then|and)\s+|;\s+/);
-    if (cut) {
-      const rest = normalize(task.slice(cut.index + cut[0].length));
-      if (Object.keys(OPS).some((o) => o !== first && OPS[o].test(rest))) task = task.slice(0, cut.index).replace(/[.!?]*$/, '.');
+    // a task with several jobs: keep the clause with the first job the AI can take, which the Coach reads as one job.
+    // Clauses end at ";", "then", or "and" plus make/create/build/prepare; the rest is the person's other steps.
+    const JOB = /^(?:make|create|build|prepare)\b/i;
+    const newJob = (r) => JOB.test(r);
+    const parts = [];
+    for (let at = 0, m, re = /(?:;|,?\s+(?:and )?then|,?\s+and)\s+/g; ; ) {
+      m = re.exec(task);
+      if (!m) { parts.push(task.slice(at)); break; }
+      if (/then/.test(m[0]) || m[0][0] === ';' || newJob(task.slice(m.index + m[0].length))) { parts.push(task.slice(at, m.index)); at = m.index + m[0].length; }
     }
+    const k = parts.findIndex((p) => first && OPS[first].test(normalize(p)));
+    if (k >= 0 && parts.length > 1) task = parts[k].replace(/[.!?]*$/, '.');
     if (!first) {
       if (ops.includes('COLLECT')) return 'Use only the text below. Context: ' + task + ' Draft a short, polite request to [who] asking for [what you need] by [date], as an e-mail of no more than five sentences. Do not invent deadlines or facts; I will review it and decide what to send.';
       return null;
     }
-    return 'Use only [the selected file or table]. My task: ' + task + ' ' + ASK[first] + ' This is a first pass for [who will read it], so I can decide what to change before it goes out. Do not add facts that are not in the source; I will review and decide.';
+    return 'Use only [the selected file or table]. My task: ' + task + ' ' + ASK[first] + ' This is a first pass' + (ASK[first].includes('[who will read it]') ? '' : ' for [who will read it]') + ', so I can decide what to change before it goes out. Do not add facts that are not in the source; I will review and decide.';
   }
   // a use case's fuller prompt fits only when it starts where the person's task starts
   function patternPrompt(text, u) {
