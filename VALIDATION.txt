@@ -1872,3 +1872,4 @@ TRIM R4 - FINAL-REVIEW FIXES M-6 TO M-10 AND THE R3 CHECKER ITEMS (suite 468 -> 
     c4 11/11, c5 13/13, c6 14/14; contract 43/43; connector-e2e 7/7; connector-demo; b0-run-headed (4 legs as expected). No console error on load.
   - Evidence: docs/superpowers/evidence/trim-and-integration/R4.md.
   - Gone quiet (1.1): 8 in-page checks (tracker 1.1 suite 483/483); hand-off day 6/7, activity stops it, pause return (also in implementation), paused excluded with an unpaused control, constant and band.
+  - Call prep transcript (1.1): 8 unit tests in test/d2-prep-transcript.test.mjs (closing-stretch cut, section hidden/selection/future-dated/escape/order); in-page suite unchanged, 483/483.

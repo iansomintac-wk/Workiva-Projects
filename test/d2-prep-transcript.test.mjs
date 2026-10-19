@@ -71,3 +71,58 @@ test('cues, bare timestamps, WEBVTT and speaker headers are not speech lines; 31
   assert.ok(o2.startsWith('line 5\nAnn Lee  00:00:06'));
   assert.equal(speech(o2).length, 30);
 });
+
+// ---- Task 2: the section in renderBeatPrep ----
+function secCtx(acts, today = '2026-10-21') {
+  const ctx = vm.createContext({});
+  vm.runInContext(['escapeHtml', 'escapeAttr', 'closingStretch', 'beatTranscriptSection', 'renderBeatPrep'].map(grab).join('\n'), ctx);
+  vm.runInContext(`var DATA = {activities: {c1: ${JSON.stringify(acts)}}};
+    function fmtDate(d){ return d; } function fmtDayTime(){ return ''; } function getNextSessionTime(){ return ''; }
+    function isLoggedPastDate(d){ return /^\\d{4}-\\d{2}-\\d{2}$/.test(d || '') && d <= '${today}'; }
+    function activityTranscript(a){ return a.transcript && a.transcript.text ? a.transcript : null; }`, ctx);
+  return ctx;
+}
+const beat = { call: { c: { id: 'c1' }, at: null, next: null, prepped: false } };
+const T = (date, text, extra = {}) => ({ date, type: 'Call', summary: 's', transcript: { text }, ...extra });
+
+test('section: hidden entirely when the account has no transcript', () => {
+  for (const acts of [[{ date: '2026-10-10', type: 'Call', summary: 's' }], []]) {
+    const ctx = secCtx(acts);
+    assert.equal(ctx.beatTranscriptSection({ id: 'c1' }), '');
+    const html = ctx.renderBeatPrep(beat);
+    assert.ok(html.includes('Call prep'));
+    assert.ok(!html.includes('data-beat-transcript'));
+  }
+});
+
+test('section: newest logged transcript wins, ties keep array order, label falls back to type', () => {
+  const ctx = secCtx([T('2026-10-05', 'OLD-3', { sessionNumber: 3 }), T('2026-10-12', 'MID-5', { sessionNumber: 5 }),
+    { date: '2026-10-18', type: 'Note', summary: 'n' }, T('2026-10-09', 'MID-4', { sessionNumber: 4 })]);
+  const out = ctx.beatTranscriptSection({ id: 'c1' });
+  for (const s of ['MID-5', 'Session 5', '2026-10-12', 'Read the full transcript', 'data-open-tab="activity"', 'data-open-cust="c1"']) assert.ok(out.includes(s), s);
+  for (const s of ['OLD-3', 'MID-4']) assert.ok(!out.includes(s), s);
+  const tie = secCtx([T('2026-10-12', 'FIRST-TIE'), T('2026-10-12', 'SECOND-TIE')]).beatTranscriptSection({ id: 'c1' });
+  assert.ok(tie.includes('FIRST-TIE') && !tie.includes('SECOND-TIE'));
+  assert.ok(tie.includes('Call') && !tie.includes('Session'));
+});
+
+test('section: a future-dated transcript is never chosen', () => {
+  const both = secCtx([T('2026-10-25', 'FUTURE-T'), T('2026-10-10', 'PAST-T')]).beatTranscriptSection({ id: 'c1' });
+  assert.ok(both.includes('PAST-T') && !both.includes('FUTURE-T'));
+  assert.equal(secCtx([T('2026-10-25', 'FUTURE-T')]).beatTranscriptSection({ id: 'c1' }), '');
+});
+
+test('section: transcript text is escaped', () => {
+  const out = secCtx([T('2026-10-10', '<img src=x onerror=alert(1)> hi')]).beatTranscriptSection({ id: 'c1' });
+  assert.ok(out.includes('&lt;img') && !out.includes('<img'));
+});
+
+test('section: shows the closing window and sits between Call prep and Pending deliverables', () => {
+  const text = Array.from({ length: 40 }, (_, n) => `Speaker  00:00:${String(n).padStart(2, '0')}\nline ${n}`).join('\n');
+  const ctx = secCtx([T('2026-10-10', text)]);
+  const out = ctx.beatTranscriptSection({ id: 'c1' });
+  assert.ok(out.includes('line 39') && !out.includes('line 0\n') && !/line 0</.test(out));
+  const html = ctx.renderBeatPrep(beat);
+  const a = html.indexOf('Call prep'), b = html.indexOf('data-beat-transcript'), c = html.indexOf('Pending deliverables');
+  assert.ok(a >= 0 && a < b && b < c, `${a} ${b} ${c}`);
+});
