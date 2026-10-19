@@ -1110,15 +1110,20 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     if (FORECAST_ASK.test(prompt) && !FORECAST_BASIS.test(text)) return { kind: 'forecast' };
     if (intent === 'explain' || CAT_EXPLAIN.test(prompt)) return null;
     const lower = files.map((f) => f.text || '').join('\n').toLowerCase(); // the sheet name still counts as Scope 3 context here
-    if (!/scope\s*3/i.test(prompt) || !/scope\s*3/.test(lower)) return null; // Scope 3 context in the ask AND in the file
+    const pl = prompt.toLowerCase(), named = [], numbered = [...prompt.matchAll(CAT_ASK)].map((m) => Number(m[1])).filter((n) => n >= 1 && n <= 15);
+    for (let n = 1; n <= 15; n++) if (CAT_LBL[n].test(pl)) named.push(n);
+    if (!(/scope\s*3/i.test(prompt) || named.length)) return null; // Scope 3 ask: the words, or a category named in words (a bare "category 11" stays quiet)
+    let byName = 0; for (let n = 1; n <= 15; n++) if (categoryHit(n, lower, true)) byName++;
+    if (!(/scope\s*3/.test(lower) || byName >= 2)) return null; // Scope 3 file: the words, or at least 2 categories (by name or short label) with figures
     let exact = 0, generic = false;
     for (let n = 1; n <= 15; n++) { const h = categoryHit(n, lower); if (h === 'exact') exact++; else if (h === 'generic') generic = true; }
     if (exact + (generic ? 1 : 0) < 2) return null; // one name that fits two categories counts once
     for (const m of prompt.matchAll(CAT_ASK)) {
       const n = Number(m[1]); if (n < 1 || n > 15) continue;
       const given = (m[2] || '').toLowerCase().trim();
-      if (categoryHit(n, lower) === null && !(given && lower.includes(given))) return { kind: 'category', n, name: given || CAT_NAME[n] };
+      if (categoryHit(n, lower) === null && !(given && givenListed(lower, given))) return { kind: 'category', n, name: given || CAT_NAME[n] };
     }
+    for (const n of named) if (!numbered.includes(n) && categoryHit(n, lower) === null) return { kind: 'category', n, name: CAT_NAME[n] };
     return null;
   }
   function unsupportedNote(u) {

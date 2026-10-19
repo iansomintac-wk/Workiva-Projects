@@ -566,3 +566,44 @@ test('unsupported: a figure may start inside the 60 characters but is judged as 
   assert.equal(unsupported(run(askCat(6), [tailFile(' '.repeat(59) + '12%')])).length, 1, '12% starts at the 60th character; the "%" past the window still makes it a percent');
   assert.equal(unsupported(run(askCat(6), [tailFile(' '.repeat(50) + '1,240')])).length, 0, '1,240 inside the window is a figure');
 });
+
+test('unsupported: a summary sheet of short labels with figures is a Scope 3 list without the words (rule 3, K23/K24 shape)', () => {
+  const sum = mk('summary.xlsx', 'Summary', 'Purch. goods & svcs, 5200\nWaste in ops, 40\nUpstr. leased assets, 15\nEOL treatment, 90');
+  const o = run(askCat(11), [sum]);
+  assert.equal(unsupported(o).length, 1, JSON.stringify(o.notes));
+  assert.match(unsupported(o)[0].text, /category 11/);
+  assert.equal(unsupported(run(askCat(12), [sum])).length, 0, 'EOL is listed');
+  const one = mk('summary.xlsx', 'Summary', 'Business travel, 80\nTotal, 80');
+  assert.equal(unsupported(run(askCat(11), [one])).length, 0, 'one category with a figure is not a list');
+  const rows = mk('rows.xlsx', 'Sales', 'Category 1 Domestic, 500\nCategory 2 Export, 300');
+  assert.equal(unsupported(run(askCat(11), [rows])).length, 0, 'numbered rows alone do not make a Scope 3 file (C1)');
+});
+
+test('unsupported: an ask that names a category in words gets the same check without "Scope 3" (rule 4, K11/K12 shape)', () => {
+  const f = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nBusiness travel, 80');
+  const ask = (w) => 'Using only @s3.xlsx, calculate our ' + w + ' emissions in a table with item, value and source row. Do not guess.';
+  const a = unsupported(run(ask('use of sold products'), [f]));
+  assert.equal(a.length, 1);
+  assert.match(a[0].text, /category 11/);
+  const b = unsupported(run(ask('EOL treatment'), [f]));
+  assert.equal(b.length, 1);
+  assert.match(b[0].text, /category 12/);
+  assert.equal(unsupported(run(ask('business travel'), [f])).length, 0, 'listed with a figure');
+  assert.equal(unsupported(run(ask('Scope 3 category 11 (use of sold products)'), [f])).length, 1, 'number and name give one note');
+});
+
+test('unsupported: a bare category number without "Scope 3" or a category name in words stays quiet (rule 4, C1 guard)', () => {
+  const f = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nBusiness travel, 80');
+  const words = 'Using only @s3.xlsx, calculate our use of sold products emissions in a table with item, value and source row. Do not guess.';
+  assert.equal(unsupported(run(words, [f])).length, 1, 'the category in words fires');
+  assert.equal(unsupported(run(askCat(11, false), [f])).length, 0, 'category 11 alone stays quiet');
+  assert.equal(unsupported(run('Explain what counts as use of sold products in @s3.xlsx.', [f])).length, 0, 'explain asks stay excluded');
+});
+
+test('unsupported: a numbered ask with its name in brackets still needs a figure after that name in the file (rule 1, numbered ask)', () => {
+  const ask = 'Using only @s3.xlsx, calculate our Scope 3 category 11 (use of sold products) emissions in a table with item, value and source row. Do not guess.';
+  const f = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nCapital goods, 300\nNote: use of sold products not yet assessed');
+  assert.equal(unsupported(run(ask, [f])).length, 1, 'the name is only in a remark, no figure after it');
+  const g = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nCapital goods, 300\nUse of sold products, 70');
+  assert.equal(unsupported(run(ask, [g])).length, 0, 'its own row with a figure lists it');
+});
