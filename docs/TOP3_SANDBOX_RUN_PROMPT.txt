@@ -1,0 +1,36 @@
+TOP-3 + SANDBOX RUN PROMPT. Written 2026-10-19 by session 52d5b479 ("NEW - Fit Finder share-ready resume") after
+the talk. Load studio-harness:talk-and-run first; you are the run lead (coordinate, helpers build).
+
+WHERE: C:/Users/teasp/Documents/workiva/.claude/worktrees/fit-finder-fair-test. Create branch fit-finder-top3 from
+the current HEAD of share-ready (origin/prompt-coach 5a1e05c + the hand-off docs). Spec:
+docs/superpowers/specs/2026-10-19-fit-finder-top3-sandbox-design.md (Ian's verbatim words, evidence, design A/B/C,
+prediction). Ledger: .ledger/2026-10-19-top3-sandbox/progress.md (budget.json and slip.json are there).
+
+ORDER:
+1. Plan by studio-harness:plan-writer in docs/superpowers/plans/2026-10-19-fit-finder-top3-sandbox.md, tasks <= 8
+   steps. Task 1 is the fresh blind set (spec C): a top-model helper (MODEL OVERRIDE: labels decide the outcome)
+   writes ~40 sentences + gold labels without reading fit-finder/engine/ or catalogue match patterns; commit with a
+   sha256 file (as for fit-finder/data/synth/2026-10-18-holdout.sha256); score once on the parent commit and record it. Then the page (A, tests first: fit-finder/tests/pagetest.js checks for
+   the three-card list and card switch must fail before), the sandbox kit (B), the README/"How it rates" numbers,
+   the end score (once), evidence doc docs/evidence/2026-10-19-top3-sandbox.md. Plan review: Opus + Codex
+   read-only (tell Codex not to open fit-finder/data/real/; close its stdin). Plan approval is a stop for Ian
+   unless his slip words cover it; ask him with AskUserQuestion.
+2. Sandbox (B) needs Ian: when the kit is ready, notify him and ask him to paste each prompt + made-up file into
+   Workiva AI through the Claude browser extension and return the replies as text (not screenshots). Batch all
+   ~8 prompts in one message: it is Ian's only paste step. Keep
+   building what does not depend on the replies. Score them, fix failing cards' text, ask him to re-run only those.
+3. Final whole-branch review (Opus + Codex read-only), fix round, re-run all suites, evidence doc, then stop for
+   merge unless slip.json names it. Do not share or publish anything; republishing the two existing artifacts only
+   if Ian asks.
+
+TRAPS (studio-harness ledger; read before the steps they touch): 2026-10-14-codex-shell-blocked-on-windows and
+2026-10-17-codex-unelevated-sandbox-runs-on-windows (Codex reviews), 2026-10-16-node26-test-folder-arg-runs-nothing
+(test commands: name files, and check the pass count is not 0).
+STOPS: plan approval; sandbox replies; push or merge the slip does not name; spend (none approved: usage only); a
+decision only Ian can make. Notify at every stop (PushNotification + notify.mjs).
+DATA CARE: never open, print or quote fit-finder/data/real/ or C:/Users/teasp/Documents/workiva-sealed/. Do not
+re-score 2026-10-19-blind.jsonl or 2026-10-18-holdout.jsonl. Sandbox data is made up.
+MAIN CHECKOUT: its local prompt-coach (0ec11fa, 15 unpushed live-test commits) belongs to another run; never merge
+into it or touch it.
+SESSION NAMES: do not `claude rm` 2c0f094c, 63073f73, b2758e3d, a7010c17, 8ee22fc0 or 52d5b479: they share this
+worktree and its git-ignored .ledger/.
