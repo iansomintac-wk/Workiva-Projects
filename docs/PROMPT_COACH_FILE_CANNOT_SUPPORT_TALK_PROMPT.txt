@@ -1,0 +1,58 @@
+TALK: Prompt coach, "the file cannot support this ask" (T3 / T6), scope it (Workiva repo)
+
+Written 2026-10-19 from the missing-data run's hand-off PM (run lead 467c0faf), corrected by the lead.
+Load studio-harness:talk-and-run first and follow "The talk". Work in a fresh worktree branched from
+origin/prompt-coach (check first that the missing-data merge is in: git log origin/prompt-coach shows
+"Prompt coach T5: fix round").
+
+READ FIRST
+- prompt-coach/research/live-tests/results/2026-10-19-tricky-batch-results.md (T3 lines 92-93, T6 line 98,
+  open questions at the end).
+- docs/superpowers/specs/2026-10-19-prompt-coach-missing-data-template-design.md and
+  docs/evidence/2026-10-19-prompt-coach-missing-data.md.
+- Run ledger (git-ignored, worktree prompt-coach-findings-fix):
+  .ledger/2026-10-19-prompt-coach-missing-data/progress.md.
+
+STATE
+- The T5 missing-data template is done (branch worktree-prompt-coach-findings-fix, fix round 4e28a8c).
+  Merge state: confirm with git.
+- The coach keeps a forecast ask with no basis in the file (T3) and returns T6 unchanged with no warning.
+- Label ids 1-15 of prompt-coach/research/2026-10-19-missing-ask-labels.tsv are SPENT as a held-out set
+  (read at Task 4). Do not reuse them as held-out; make a fresh split.
+- Known limits of the T5 fix (measured, not fixed):
+  - "missing net zero targets" does NOT fire ("net zero" counts as the wrong-value word "zero").
+  - "ignore duplicates" and "Exceptions tab" suppress a genuine missing ask (wrong-value words are
+    checked on the whole prompt).
+  - The regex uses lookbehind (Chrome 62+, Firefox 78+, Safari 16.4+); older Safari would throw at load.
+    Not browser-tested.
+  - Mention ids 4 and 10 fire missingAsk; their own format masks it in the Strong text.
+  - Ask id 26 is silent.
+  - pagetest.js / filetest.js are not runnable on this PC (Linux Playwright path).
+
+ORDER
+1. Probe ($0, no Workiva AI): over the 1,841 stored prompts and T3/T6, count asks the loaded file cannot
+   support (forecast with no basis; category or period not in the file). Opus labels, train ids only.
+   Check what the engine sees of file text (the grounding note already reads it).
+2. Ask Ian Q1 first (below), one question at a time, recommendation first. Then spec the fix with a
+   failing test and before/after counts, and write the run prompt per talk-and-run.
+3. Put the "FY25" false alarm (the file says FY2025) in the spec as a small separate item; ask Ian
+   whether it is in scope.
+
+PARKED (report, do not gate; for Ian)
+- Q1 refusal when declining is right: change R14(c) so a clear decline scores job 1 when the key says the
+  file cannot support the ask (settles 6 of Opus's 14 unruled items). Recommend yes.
+- Q2 "[number]" placeholder: score table/format N/A when the prompt left the count blank; log as a coach
+  finding. Recommend yes.
+- Q3 extra: keep reporting Opus/Codex totals; do not gate (Ian: "Report extras, don't gate (Rec.)").
+- Q5 scorer agreement: keep Opus as final; a third read on the 10 split rows only if a later decision
+  hangs on them. Recommend no third read now.
+- FY25 false alarm: the T6 grounding note flags "FY25" when the file says "FY2025".
+
+RULINGS WITHOUT A RECORD (from the missing-data talk and run; ledger-add needs a yes)
+- Ian 2026-10-19 (AskUserQuestion): "T5 wrong template (Rec.)", "Missing-data version (Rec.)".
+- PM proxy for Ian, proxy decided, Ian may overturn (pm-proxy decisions.md): spec + 38 labels (line 92),
+  plan approve (100), compare_strong check correction (101), fix round B (107), cap 650k->750k (108),
+  push/merge (see the run ledger).
+
+NO-GOS: no new live Workiva AI batch; no spend; no engine change beyond the chosen finding; grades,
+weights and classifier untouched; no force flags.
