@@ -502,3 +502,67 @@ test('unsupported: Upstream T&D is not Downstream T&D, and a truly missing categ
   assert.equal(unsupported(run(askCat(4), [down])).length, 1, 'downstream is not upstream');
   assert.equal(unsupported(run(askCat(11), [up])).length, 1);
 });
+
+test('unsupported: a category name in a passing remark with no figure after it is not listed (rule 1, K11 shape)', () => {
+  const f = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nCapital goods, 300\nNote: cut business travel budgets in H2');
+  assert.equal(unsupported(run(askCat(6), [f])).length, 1, 'business travel has no figure');
+  const g = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nBusiness travel, 80');
+  assert.equal(unsupported(run(askCat(6), [g])).length, 0, 'a figure after the name lists it');
+});
+
+test('unsupported: a category name inside another row\'s Note cell does not list it (rule 1, K13 shape)', () => {
+  const f = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nUse of sold products, 70, Excludes fuel purchased for fleet - see fuel and energy note');
+  assert.equal(unsupported(run(askCat(3), [f])).length, 1, 'fuel and energy only in a note');
+  const g = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nFuel and energy, 40');
+  assert.equal(unsupported(run(askCat(3), [g])).length, 0, 'its own row with a figure lists it');
+});
+
+test('unsupported: short labels with a figure list their category (rule 2)', () => {
+  const f = mk('s3.xlsx', 'Scope 3', 'Purch. goods & svcs, 5200\nWaste in ops, 40\nUpstr. leased assets, 15\nEOL treatment, 90');
+  assert.equal(unsupported(run(askCat(11), [f])).length, 1, 'category 11 is absent');
+  for (const n of [1, 5, 8, 12]) assert.equal(unsupported(run(askCat(n), [f])).length, 0, 'category ' + n + ' is listed by its short label');
+  assert.equal(unsupported(run(askCat(13), [f])).length, 1, 'upstream leased is category 8, not 13');
+});
+
+test('unsupported: years, FY/Q/H tags and a bare percent are not figures (rule 1)', () => {
+  for (const tail of ['FY2025', 'Q4 H2', '2025', '12%', '(FY25 Q4)']) {
+    const f = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nCapital goods, 300\nBusiness travel, ' + tail);
+    assert.equal(unsupported(run(askCat(6), [f])).length, 1, tail);
+  }
+  for (const tail of ['80', '1,240', '12.5', '$80']) {
+    const f = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nCapital goods, 300\nBusiness travel, ' + tail);
+    assert.equal(unsupported(run(askCat(6), [f])).length, 0, tail);
+  }
+});
+
+test('unsupported: the year exclusion covers the whole numeric token, so 2025.5 is a figure and 2025 is not (rule 1)', () => {
+  const tailFile = (tail) => mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nCapital goods, 300\nBusiness travel, ' + tail);
+  assert.equal(unsupported(run(askCat(6), [tailFile('2025')])).length, 1, '2025 is a year');
+  assert.equal(unsupported(run(askCat(6), [tailFile('2025.5')])).length, 0, '2025.5 is a figure');
+  assert.equal(unsupported(run(askCat(6), [tailFile('1999')])).length, 1, '1999 is a year');
+  assert.equal(unsupported(run(askCat(6), [tailFile('1999.25')])).length, 0, '1999.25 is a figure');
+});
+
+test('unsupported: a number glued to letters is not a figure, even a comma-grouped or decimal one (rule 1)', () => {
+  const tailFile = (tail) => mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nCapital goods, 300\nBusiness travel, ' + tail);
+  assert.equal(unsupported(run(askCat(6), [tailFile('1,240tCO2e')])).length, 1, '1,240tCO2e is glued to letters');
+  assert.equal(unsupported(run(askCat(6), [tailFile('1,240.5tCO2e')])).length, 1, '1,240.5tCO2e is one token glued to letters');
+  assert.equal(unsupported(run(askCat(6), [tailFile('1,240,500tCO2e')])).length, 1, '1,240,500tCO2e is one token glued to letters');
+  assert.equal(unsupported(run(askCat(6), [tailFile('1,240 tCO2e')])).length, 0, 'a space makes 1,240 a figure');
+  assert.equal(unsupported(run(askCat(6), [tailFile('1,240')])).length, 0, '1,240 is a figure');
+  assert.equal(unsupported(run(askCat(6), [tailFile('1,240.5')])).length, 0, '1,240.5 is a figure');
+  assert.equal(unsupported(run(askCat(6), [tailFile('1,240,500')])).length, 0, '1,240,500 is a figure');
+});
+
+test('unsupported: the 60-character window stops at the next category name (rule 1)', () => {
+  const h = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nCapital goods, 300\nBusiness travel\nEmployee commuting, 40');
+  assert.equal(unsupported(run(askCat(6), [h])).length, 1, 'the next row\'s figure belongs to commuting');
+  const g = mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nCapital goods, 300\nBusiness travel, 80\nEmployee commuting, 40');
+  assert.equal(unsupported(run(askCat(6), [g])).length, 0, 'its own figure lists it');
+});
+
+test('unsupported: a figure may start inside the 60 characters but is judged as a whole token (rule 1, window edge)', () => {
+  const tailFile = (tail) => mk('s3.xlsx', 'Scope 3', 'Purchased goods, 5200\nCapital goods, 300\nBusiness travel' + tail);
+  assert.equal(unsupported(run(askCat(6), [tailFile(' '.repeat(59) + '12%')])).length, 1, '12% starts at the 60th character; the "%" past the window still makes it a percent');
+  assert.equal(unsupported(run(askCat(6), [tailFile(' '.repeat(50) + '1,240')])).length, 0, '1,240 inside the window is a figure');
+});
