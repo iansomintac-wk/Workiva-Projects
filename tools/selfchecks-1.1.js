@@ -1067,35 +1067,52 @@ function _runSelfChecksInner(){
     ok = ok && _riskHubCache === prevHub;   // FX2: the render swapped _riskHubCache; it must be put back
     check('v13 step 2e: a missing-evidence case is listed under Signals to check (keeping its row id and confirm button), not as a risk card, until a reason confirms it', ok, detail);
   })();
-  (function(){                                   // FX2 (1): a mixed case keeps the confirmed item's first reason
+  (function(){                                   // FX2 (1): a mixed case, driven through the real confirm and dismiss controls
     let ok = false, detail = '';
     const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const prevView = ui.view, prevOpen = ui.openCustomerId, prevTab = ui.panelTab, realSave = saveData, prevUL = _undoLabel;
     const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+    const closeModals = () => document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
     try{
+      saveData = function(){ return true; };
       DATA.riskLog = {}; DATA.activities = {};
       const c = v13Acct('__fx2a__', {riskOverride: 'risk'});
       DATA.customers = [c];
       DATA.activities[c.id] = [{id:'afx2', date: isoAddDays(todayISO(), -6), type:'Onboarding Session', summary:'They raised a blocker and are frustrated.', sessionNumber:1, checklist:[], flagged:true}];
-      reset();
-      const caseOf = () => buildRiskCases(buildRiskHubList()).find(k => k.c.id === c.id);
-      const items = () => caseOf().items;
+      reset(); ui.view = 'risk'; ui.openCustomerId = null;
+      const items = () => { reset(); return buildRiskCases(buildRiskHubList()).find(k => k.c.id === c.id).items; };
       const two = items().length >= 2;
-      setRiskVerdict(items()[0], 'confirmed', 'FIRST reason'); reset();
+      setRiskVerdict(items()[0], 'confirmed', 'FIRST reason');
       const firstKey = items().find(it => riskItemIsRisk(it)).logKey;
-      confirmRiskCase(caseOf(), 'SECOND reason'); reset();
+      const submit = (btnSel, taSel, okSel, text) => {
+        render();
+        const btn = document.querySelector(btnSel);
+        if(!btn) return false;
+        btn.click();
+        const ta = document.querySelector(taSel);
+        if(!ta) return false;
+        ta.value = text; ta.dispatchEvent(new Event('input', {bubbles: true}));
+        document.querySelector(okSel).click();
+        return true;
+      };
+      const clicked = submit('[data-risk-confirm="' + c.id + '"]', '#rkc-reason', '#rkc-ok', 'SECOND reason');
       const keptFirst = DATA.riskLog[firstKey].verdictReason === 'FIRST reason' && DATA.riskLog[firstKey].verdict === 'confirmed';
       const others = items().filter(it => it.logKey !== firstKey);
       const otherGot = others.length > 0 && others.every(it => it.tracking.verdictReason === 'SECOND reason');
-      DATA.riskLog = {}; reset();
-      setRiskVerdict(items()[0], 'confirmed', 'FIRST reason'); reset();
-      dismissRiskCase(caseOf(), 'nope'); reset();
+      closeModals();
+      DATA.riskLog = {};
+      setRiskVerdict(items()[0], 'confirmed', 'FIRST reason');
+      const clicked2 = submit('[data-risk-dismiss="' + c.id + '"]', '#rkd-reason', '#rkd-ok', 'nope');
       const stillConfirmed = items().filter(it => riskItemIsRisk(it)).length === 1 && items().filter(it => riskVerdictState(it) === 'dismissed').length === items().length - 1;
-      ok = two && keptFirst && otherGot && stillConfirmed;
-      detail = JSON.stringify({two, keptFirst, otherGot, stillConfirmed});
+      ok = two && clicked && clicked2 && keptFirst && otherGot && stillConfirmed;
+      detail = JSON.stringify({two, clicked, clicked2, keptFirst, otherGot, stillConfirmed});
     }catch(e){ detail = 'threw: ' + e.message; }
+    closeModals(); saveData = realSave; _undoLabel = prevUL;
     DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    ui.view = prevView; ui.openCustomerId = prevOpen; ui.panelTab = prevTab;
+    try{ render(); }catch(e){}
     _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
-    check('FX2: confirming a mixed case acts only on unconfirmed items and keeps the first reason; dismissing never drops a confirmed item', ok, detail);
+    check('FX2: confirming a mixed case through the real controls acts only on unconfirmed items and keeps the first reason; dismissing never drops a confirmed item', ok, detail);
   })();
   (function(){                                   // FX2 (2)+(4): pre-1.2 confirmations stay risks, labelled; the card prints the reason
     let ok = false, detail = '';
@@ -1122,26 +1139,34 @@ function _runSelfChecksInner(){
     _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
     check('FX2: a pre-1.2 confirmation (no reason) stays a risk with the add-a-reason label and still nags; the card prints a reason when there is one', ok, detail);
   })();
-  (function(){                                   // FX2 (3): the account desk Confirm opens the reason modal
+  (function(){                                   // FX2 (3): a real click on the account desk Confirm opens the reason modal
     let ok = false, detail = '';
     const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
-    const closeModals = () => document.querySelectorAll('#rkc-reason').forEach(t => { const bd = t.closest('.modal-backdrop'); if(bd) bd.remove(); });
+    const prevView = ui.view, prevOpen = ui.openCustomerId, prevTab = ui.panelTab, realSave = saveData, prevUL = _undoLabel, prevSnap = DATA.weeklySnapshot;
+    const closeModals = () => document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
     try{
+      saveData = function(){ return true; };
       const c = v13Acct('__fx2c__', {riskOverride: 'risk'});
       DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
-      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
-      const it = buildRiskHubList().find(r => r.c.id === c.id);
+      DATA.weeklySnapshot = {date: isoAddDays(todayISO(), -7), ids: []};   // so the Joined Needs Attention deck (editor risk) renders
+      ui.openCustomerId = null; ui.view = 'copilot';
+      render();
+      const btn = document.querySelector('[data-dk-risk^="confirmed|"]');
+      const found = !!btn;
       const before = document.querySelectorAll('#rkc-reason').length;
-      const returned = openDeskRiskConfirm(it.logKey);
+      if(btn) btn.click();
       const modalOpened = document.querySelectorAll('#rkc-reason').length === before + 1;
-      const noVerdictYet = !(DATA.riskLog[it.logKey] && DATA.riskLog[it.logKey].verdict);
-      ok = returned === true && modalOpened && noVerdictYet;
-      detail = JSON.stringify({returned, modalOpened, noVerdictYet});
+      const noVerdictYet = Object.keys(DATA.riskLog).every(k => !DATA.riskLog[k].verdict);
+      ok = found && modalOpened && noVerdictYet;
+      detail = JSON.stringify({found, modalOpened, noVerdictYet});
     }catch(e){ detail = 'threw: ' + e.message; }
-    closeModals();
+    closeModals(); saveData = realSave; _undoLabel = prevUL;
     DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    if(prevSnap === undefined) delete DATA.weeklySnapshot; else DATA.weeklySnapshot = prevSnap;
+    ui.view = prevView; ui.openCustomerId = prevOpen; ui.panelTab = prevTab;
+    try{ render(); }catch(e){}
     _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
-    check('FX2: the account desk Confirm opens the reason modal and writes nothing until a reason is given', ok, detail);
+    check('FX2: a real click on the account desk Confirm opens the reason modal and writes no verdict', ok, detail);
   })();
   /* ============ v61: Today unified action ranking ============
      "no Today row renders without a citation" and "Start-here card shows exactly
