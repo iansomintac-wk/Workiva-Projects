@@ -159,12 +159,12 @@ Still open: the reason line for weak prompts was generic, and often wrong for th
 something the prompt has (89) or misses its missing source or ask (63); two lines cover 45% of
 them; 0 of 13 live-test cases grade weak. Ian chose (2026-10-20) a line that quotes the prompt's own
 words. Built 2026-10-20 for the ask only (PM proxy for Ian; Ian may overturn): the weak headline on
-"Your prompt" and `stages.weak.verdict` add `The coach read your ask as "<span>"`, only when the
-detector is sure the ask is missing (p < 0.2); a vague verb followed directly by a colon (a field label) is
-skipped. The source is never quoted (a source quote picked the wrong words 12 times in 17). The probe
-counted 55 of 432 weak prompts reached out of fold, 0 wrong by label, 4 wrong words by eye before the
-colon skip (probe counts, not re-measured here). The letters the line names are still the detector's;
-naming only the letters the detector is sure of is still open (Ian's morning list). The earlier
-147-of-430 probe measured the reason line, which no tab shows since 16a49e2; the headline names only
-source and ask. The shipped out-of-fold count is in
+"Your prompt" and `stages.weak.verdict` end with `The coach read your ask as "<span>".` (the quote alone,
+wording D), only when the detector is sure the ask is missing (p < 0.2); a one-word span, a vague verb
+followed directly by a colon (a field label) and a span cut at a file-name dot give no quote. The source is
+never quoted. Shipped check out of fold: 432 weak, 45 quoted, 0 wrong by label, 0 wrong words by eye,
+1 of 45 false by eye (row 12, a detector error the quote exposes). The letters the line names are still the
+detector's; naming only the letters the detector is sure of is still open (Ian's morning list). The
+earlier 147-of-430 probe measured the reason line, which no tab shows since 16a49e2; the headline names only
+source and ask. Details, history and the final numbers are in
 `docs/evidence/2026-10-20-prompt-coach-quote-line.md`. See `research/2026-10-20-quote-line-probe.md`.
