@@ -10535,7 +10535,7 @@ function classifyRiskText(text){
 const RISK_UNACTIONED_DAYS = 7;
 const RISK_MAINTENANCE_DAYS = 14;
 // Risks the OSM has confirmed, with the reason they wrote. Read-only: never creates DATA.riskLog.
-function confirmedRisksFor(c){ const log = isRecordObject(DATA.riskLog) ? DATA.riskLog : {}; return Object.keys(log).filter(k => k.split('|')[0] === c.id && isRecordObject(log[k]) && log[k].verdict === 'confirmed' && typeof log[k].verdictReason === 'string' && log[k].verdictReason.trim()).map(k => ({kind: k.split('|').slice(1).join(' ') || 'risk', reason: log[k].verdictReason})); }
+function confirmedRisksFor(c){ const log = isRecordObject(DATA.riskLog) ? DATA.riskLog : {}; return Object.keys(log).filter(k => k.split('|')[0] === c.id && isRecordObject(log[k]) && log[k].verdict === 'confirmed' && typeof log[k].verdictReason === 'string' && log[k].verdictReason.trim()).map(k => ({kind: k.split('|').slice(1).join(' ') || 'risk', reason: log[k].verdictReason})).filter((x, i, a) => a.findIndex(y => y.reason.replace(/\s+/g, ' ').trim() === x.reason.replace(/\s+/g, ' ').trim()) === i); }   // FX4: one case's items share a reason; say it once
 // AI-bound wording: facts only. The automatic level (Off Track / Watch) is not sent as a judgement.
 function aiObservation(item){ if(item.kind === 'Off Track' || item.kind === 'Watch'){ const d = daysSince(lastActivityDate(item.c.id) || item.c.implementationDate); return d === null ? 'No activity logged yet.' : 'Last touchpoint ' + d + ' day(s) ago.'; } return item.detail; }
 function aiKindLabel(item){ return (item.kind === 'Off Track' || item.kind === 'Watch' || item.kind === 'Behind target') ? 'Pacing observation' : (item.kind === 'Risk language' || item.kind === 'Category signal') ? 'Note wording' : item.kind; }
@@ -10667,6 +10667,8 @@ function openDeskRiskConfirm(logKey){
   if(!it) return false;
   const k = buildRiskCases(buildRiskHubList()).find(x => x.c.id === it.c.id);
   if(!k) return false;
+  // FX4: nothing left to confirm: say so, and do not open a modal that would toast "confirmed" for a no-op.
+  if(k.items.every(x => riskVerdictState(x) === 'confirmed' && riskItemHasReason(x))){ showToast('Already confirmed as a real risk.'); return true; }
   showRiskConfirmModal(k, reason => {
     markUndoable('risk verdict');
     confirmRiskCase(k, reason);
@@ -10874,9 +10876,20 @@ function buildRiskExecSummary(item){
     : `actioned ${a.days === 0 ? 'today' : a.days + 'd ago'}`;
   // Ordered most- to least- essential; clauses are dropped from the END when the
   // budget runs out, so the account and the risk itself always survive.
+  const head = `${c.name} — ${aiKindLabel(item)}${item.category && item.category.label ? ` (${item.category.label})` : ''}.`;
+  // FX4: when the reasons do not fit, trim each to an equal share of what is left instead of dropping them all.
+  const confirmedClause = (cr => {
+    if(!cr.length) return '';
+    const pre = 'Confirmed by the OSM: ', rs = cr.map(x => x.reason.replace(/\s+/g, ' ').trim());
+    const full = pre + rs.join('; ');
+    const room = RISK_SUMMARY_MAX - head.length - 2;           // a space and the closing full stop
+    if(full.length <= room) return full;
+    const share = Math.floor((room - pre.length - 2 * (rs.length - 1)) / rs.length);
+    return share >= 12 ? pre + rs.map(r => trimToLength(r, share)).join('; ') : '';
+  })(confirmedRisksFor(c));
   const parts = [
-    `${c.name} — ${aiKindLabel(item)}${item.category && item.category.label ? ` (${item.category.label})` : ''}.`,
-    (cr => cr.length ? 'Confirmed by the OSM: ' + cr.map(x => x.reason).join('; ').replace(/\s+/g, ' ').trim() : '')(confirmedRisksFor(c)),
+    head,
+    confirmedClause,
     String(aiObservation(item) || '').replace(/\s+/g, ' ').trim(),
     inImplementation(c)
       ? `In implementation, ${implPhaseLabel(getImplementationState(c).phase)}.`
@@ -16130,6 +16143,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     const it = buildRiskHubList().find(r => r.logKey === logKey);
     if(!it) return;
     if(verdict === 'confirmed'){ openDeskRiskConfirm(logKey); return; }
+    if(riskVerdictState(it) === 'confirmed'){ showToast('Already confirmed as a real risk. Its reason is kept.'); return; }   // FX4: a confirmed item is never dismissed
     markUndoable('risk verdict');
     if(setRiskVerdict(it, verdict, '')){ render(); showToast(`Risk ${verdict}.`); }
   }));

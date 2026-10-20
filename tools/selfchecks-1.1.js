@@ -1093,7 +1093,8 @@ function _runSelfChecksInner(){
     const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
     const prevView = ui.view, prevOpen = ui.openCustomerId, prevTab = ui.panelTab, realSave = saveData, prevUL = _undoLabel;
     const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
-    const closeModals = () => document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    const preModals = new Set(document.querySelectorAll('.modal-backdrop'));
+    const closeModals = () => document.querySelectorAll('.modal-backdrop').forEach(el => { if(preModals.has(el)) return; const b = el.querySelector('#rkc-cancel'); if(b) b.click(); else el.remove(); });
     try{
       saveData = function(){ return true; };
       DATA.riskLog = {}; DATA.activities = {};
@@ -1164,7 +1165,8 @@ function _runSelfChecksInner(){
     let ok = false, detail = '';
     const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
     const prevView = ui.view, prevOpen = ui.openCustomerId, prevTab = ui.panelTab, realSave = saveData, prevUL = _undoLabel, prevSnap = DATA.weeklySnapshot;
-    const closeModals = () => document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    const preModals = new Set(document.querySelectorAll('.modal-backdrop'));
+    const closeModals = () => document.querySelectorAll('.modal-backdrop').forEach(el => { if(preModals.has(el)) return; const b = el.querySelector('#rkc-cancel'); if(b) b.click(); else el.remove(); });
     try{
       saveData = function(){ return true; };
       const c = v13Acct('__fx2c__', {riskOverride: 'risk'});
@@ -1188,6 +1190,161 @@ function _runSelfChecksInner(){
     try{ render(); }catch(e){}
     _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
     check('FX2: a real click on the account desk Confirm opens the reason modal and writes no verdict', ok, detail);
+  })();
+  (function(){                                   // FX4 (1): a real click on the desk Dismiss / Confirm of an already-confirmed item
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const prevView = ui.view, prevOpen = ui.openCustomerId, prevTab = ui.panelTab, realSave = saveData, prevUL = _undoLabel, prevSnap = DATA.weeklySnapshot, realToast = showToast;
+    const pre = new Set(document.querySelectorAll('.modal-backdrop'));
+    const closeOwn = () => document.querySelectorAll('.modal-backdrop').forEach(el => { if(pre.has(el)) return; const b = el.querySelector('#rkc-cancel'); if(b) b.click(); else el.remove(); });
+    const toasts = [];
+    try{
+      saveData = function(){ return true; };
+      showToast = function(m){ toasts.push(String(m)); };
+      const c = v13Acct('__fx4a__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const it0 = buildRiskHubList().find(r => r.c.id === c.id);
+      setRiskVerdict(it0, 'confirmed', 'FX4A-KEEP-THIS-REASON');
+      const key = it0.logKey;
+      DATA.weeklySnapshot = {date: isoAddDays(todayISO(), -7), ids: []};
+      ui.openCustomerId = null; ui.view = 'copilot';
+      render();
+      const dis = document.querySelector('[data-dk-risk="dismissed|' + key + '"]');
+      const found = !!dis;
+      if(dis) dis.click();
+      const kept = DATA.riskLog[key].verdict === 'confirmed' && DATA.riskLog[key].verdictReason === 'FX4A-KEEP-THIS-REASON';
+      const noDismissToast = !toasts.some(t => /dismissed/i.test(t));
+      toasts.length = 0; render();
+      const conf = document.querySelector('[data-dk-risk="confirmed|' + key + '"]');
+      const modals0 = document.querySelectorAll('#rkc-reason').length;
+      if(conf) conf.click();
+      const noModal = document.querySelectorAll('#rkc-reason').length === modals0;
+      const noFalseToast = !toasts.some(t => /confirmed as a real risk/i.test(t) && !/^already/i.test(t));
+      ok = found && kept && noDismissToast && noModal && noFalseToast;
+      detail = JSON.stringify({found, kept, noDismissToast, noModal, noFalseToast, toasts});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    closeOwn(); saveData = realSave; showToast = realToast; _undoLabel = prevUL;
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    if(prevSnap === undefined) delete DATA.weeklySnapshot; else DATA.weeklySnapshot = prevSnap;
+    ui.view = prevView; ui.openCustomerId = prevOpen; ui.panelTab = prevTab;
+    try{ render(); }catch(e){}
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX4: a real click on the desk Dismiss of an already-confirmed item keeps its verdict and reason, and desk Confirm on it neither opens the modal nor toasts "confirmed"', ok, detail);
+  })();
+  (function(){                                   // FX4 (2): only confirmed reasons reach the AI risk-summary text
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    try{
+      const c = v13Acct('__fx4b__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      DATA.activities[c.id] = [{id:'a__fx4b__', date: isoAddDays(todayISO(), -6), type:'Onboarding Session', summary:'They raised a blocker and are frustrated.', sessionNumber:1, checklist:[], flagged:true}];
+      const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+      reset();
+      const items = () => { reset(); return buildRiskHubList().filter(r => r.c.id === c.id); };
+      const n3 = items().length >= 3;
+      const keys = items().map(r => r.logKey);
+      setRiskVerdict(items()[0], 'confirmed', 'FX4B-CONFIRMED-REASON');
+      setRiskVerdict(items()[1], 'dismissed', 'FX4B-DISMISSED-REASON');
+      DATA.riskLog[keys[2]] = Object.assign(DATA.riskLog[keys[2]] || {firstSeen: todayISO(), lastActioned: null}, {verdictReason: 'FX4B-UNREVIEWED-REASON'});
+      const item = items().find(r => r.logKey === keys[0]);
+      const texts = [buildRiskSummaryPrompt(item), buildRiskExecSummary(item), buildCallPrepContext(c).text, JSON.stringify(aiCustomerSnapshot(c))];
+      const hasConf = texts.every(x => x.indexOf('FX4B-CONFIRMED-REASON') !== -1);
+      const noDis = texts.every(x => x.indexOf('FX4B-DISMISSED-REASON') === -1);
+      const noUnrev = texts.every(x => x.indexOf('FX4B-UNREVIEWED-REASON') === -1);
+      ok = n3 && hasConf && noDis && noUnrev;
+      detail = JSON.stringify({n3, hasConf, noDis, noUnrev});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX4: a dismissed or unreviewed item\'s reason never appears in the risk-summary prompt, the exec summary, the call-prep text or the AI snapshot', ok, detail);
+  })();
+  (function(){                                   // FX4 (3): two long reasons are trimmed, not dropped, in the exec summary
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    try{
+      const c = v13Acct('__fx4c__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      DATA.activities[c.id] = [{id:'a__fx4c__', date: isoAddDays(todayISO(), -6), type:'Onboarding Session', summary:'They raised a blocker and are frustrated.', sessionNumber:1, checklist:[], flagged:true}];
+      const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+      reset();
+      const items = () => { reset(); return buildRiskHubList().filter(r => r.c.id === c.id); };
+      const pad = n => new Array(n + 1).join('x');
+      const k0 = items()[0].logKey;
+      setRiskVerdict(items()[0], 'confirmed', ('ALPHA-REASON-' + pad(200)).slice(0, 200));
+      setRiskVerdict(items()[1], 'confirmed', ('BRAVO-REASON-' + pad(200)).slice(0, 200));
+      const s = buildRiskExecSummary(items().find(r => r.logKey === k0));
+      const both = s.indexOf('ALPHA-REASON-') !== -1 && s.indexOf('BRAVO-REASON-') !== -1;
+      const fits = s.length <= RISK_SUMMARY_MAX;
+      ok = both && fits;
+      detail = JSON.stringify({both, fits, len: s.length});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX4: the exec summary keeps both of two 200-character confirmed reasons (trimmed) and stays within its length cap', ok, detail);
+  })();
+  (function(){                                   // FX4 (5): a reason shared by several items is written once
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    try{
+      const c = v13Acct('__fx4d__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      DATA.activities[c.id] = [{id:'a__fx4d__', date: isoAddDays(todayISO(), -6), type:'Onboarding Session', summary:'They raised a blocker and are frustrated.', sessionNumber:1, checklist:[], flagged:true}];
+      const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+      reset();
+      const items = () => { reset(); return buildRiskHubList().filter(r => r.c.id === c.id); };
+      const R = 'FX4D-ONCE-ONLY';
+      const k0 = items()[0].logKey;
+      const nItems = items().length;
+      items().forEach(it => setRiskVerdict(it, 'confirmed', R));
+      const item = items().find(r => r.logKey === k0);
+      const count = s => s.split(R).length - 1;
+      const counts = [buildRiskSummaryPrompt(item), buildRiskExecSummary(item), buildCallPrepContext(c).text, JSON.stringify(aiCustomerSnapshot(c))].map(count);
+      // the prompt embeds the exec-summary draft, so it carries the reason once in its own section and once in the draft; the others exactly once
+      ok = nItems >= 2 && counts[1] === 1 && counts[2] === 1 && counts[3] === 1 && counts[0] === 2;
+      detail = JSON.stringify({counts, nItems});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX4: a reason shared by several confirmed items appears once per text, not once per item', ok, detail);
+  })();
+  (function(){                                   // FX4 (4): closing a check-opened modal leaks no keydown listener and spares others
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const prevView = ui.view, prevOpen = ui.openCustomerId, prevSnap = DATA.weeklySnapshot, realSave = saveData, prevUL = _undoLabel;
+    const realAdd = document.addEventListener, realRem = document.removeEventListener;
+    const sentinel = document.createElement('div'); sentinel.className = 'modal-backdrop'; sentinel.id = 'fx4-sentinel';
+    document.body.appendChild(sentinel);
+    const pre = new Set(document.querySelectorAll('.modal-backdrop'));
+    let adds = 0, rems = 0;
+    try{
+      saveData = function(){ return true; };
+      document.addEventListener = function(t){ if(t === 'keydown') adds++; return realAdd.apply(document, arguments); };
+      document.removeEventListener = function(t){ if(t === 'keydown') rems++; return realRem.apply(document, arguments); };
+      const c = v13Acct('__fx4e__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      DATA.weeklySnapshot = {date: isoAddDays(todayISO(), -7), ids: []};
+      ui.openCustomerId = null; ui.view = 'copilot';
+      render();
+      const addsBefore = adds;
+      const btn = document.querySelector('[data-dk-risk^="confirmed|"]');
+      if(btn) btn.click();
+      const opened = document.querySelectorAll('.modal-backdrop').length === pre.size + 1;
+      document.querySelectorAll('.modal-backdrop').forEach(el => { if(pre.has(el)) return; const b = el.querySelector('#rkc-cancel'); if(b) b.click(); else el.remove(); });
+      const spared = document.body.contains(sentinel);
+      const closedOwn = document.querySelectorAll('.modal-backdrop').length === pre.size;
+      ok = !!btn && opened && spared && closedOwn && adds - addsBefore === 1 && rems >= 1;
+      detail = JSON.stringify({btn: !!btn, opened, spared, closedOwn, adds, addsBefore, rems});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    document.addEventListener = realAdd; document.removeEventListener = realRem;
+    sentinel.remove(); document.querySelectorAll('.modal-backdrop').forEach(el => { if(!pre.has(el)) el.remove(); });
+    saveData = realSave; _undoLabel = prevUL;
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    if(prevSnap === undefined) delete DATA.weeklySnapshot; else DATA.weeklySnapshot = prevSnap;
+    ui.view = prevView; ui.openCustomerId = prevOpen;
+    try{ render(); }catch(e){}
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX4: closing the desk Confirm modal through its own Cancel leaks no keydown listener and removes no modal the check did not open', ok, detail);
   })();
   /* ============ v61: Today unified action ranking ============
      "no Today row renders without a citation" and "Start-here card shows exactly
