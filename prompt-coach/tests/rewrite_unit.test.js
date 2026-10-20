@@ -509,7 +509,7 @@ const withO = (x) => (p) => { const r = detectP(p); return { ...r, prob: { ...r.
 const coachWith = (prompt, det) => W.coach(prompt, { files: [], detect: det, ...C.pick(prompt, CLS) });
 const QUOTED = /The coach read your ask as "/;
 const HELP = 'help with the 10-K';
-const SAYS = ': that does not say what a finished answer looks like.';
+const SAYS = '.';
 const quotedBoth = (o) => QUOTED.test(o.headline) && QUOTED.test(o.stages.weak.verdict);
 const quotedNone = (o) => !QUOTED.test(o.headline) && !QUOTED.test(o.stages.weak.verdict);
 

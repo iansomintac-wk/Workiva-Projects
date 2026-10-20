@@ -1047,7 +1047,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
   const VAGUE_ONLY = /^\s*(?:(?:please|pls|can (?:you|u)|could you)\s+)*(?:analy[sz]e|review|look (?:at|over)|go over|check|help(?: me)?(?: with)?|work on|take a look at)\b[^?]*$/i;
   // Quote line: the user's own ask, only for a sentence-opening vague verb (spec 2026-10-20-prompt-coach-quote-line-design.md).
   const QUOTE_LEAD = /(?:^\s*|[.!?\n]\s*|:\s*)(?:(?:hey|hi|ok|so|just|quick(?:ly)?|please|pls|plz|can (?:you|u)|could (?:you|u)|would you|i need (?:you )?to|i want (?:you )?to|need (?:you )?to|want (?:you )?to|i'?d like (?:you )?to)[\s,]+)*$/i;
-  const QUOTE_SAYS = ': that does not say what a finished answer looks like.';
+  const QUOTE_SAYS = '.';
   function askQuote(prompt) {
     const re = new RegExp(VAGUE_VERB.source, 'gi'); let m;
     while ((m = re.exec(prompt))) {

@@ -22,7 +22,7 @@ const out = []; let weak = 0, quoted = 0, misLabel = 0;
 rows.forEach((r, i) => {
   const o = W.coach(r.prompt, { files: [], detect: detector(foldW[fold[i]]), ...C.pick(r.prompt, CLS) });
   if (o.grade !== 'weak') return; weak++;
-  const m = /The coach read your ask as "(.*?)": that /.exec(o.headline); if (!m) return;
+  const m = /The coach read your ask as "(.*?)"(?=[.:])/.exec(o.headline); if (!m) return;
   quoted++; if (r.O !== 0) misLabel++;
   out.push([r.src, ['S', 'C', 'O', 'P', 'E'].map((k) => (r[k] ? k : '-')).join(''), r.O === 0 ? 'labelOK' : 'labelMIS', m[1], r.prompt.replace(/\s+/g, ' '), o.headline].join('\t'));
 });
