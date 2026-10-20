@@ -4184,16 +4184,25 @@ function _runSelfChecksInner(){
     const banner = document.getElementById('tab-conflict');
     const bannerWas = banner ? banner.classList.contains('show') : false;
     const prevStale = (typeof _staleTab !== 'undefined') ? _staleTab : false;
+    const prevSuite = _suiteRunning, prevUndo = _undoSnapshot, prevLabel = _undoLabel;
     try{
+      /* The suite normally blocks every write, which would make "unchanged" true
+         on any code. Lift that block for this one probe and change the book first,
+         so a save that is not refused really would write; storage is put back below. */
+      _suiteRunning = false;
+      DATA.__b2probe = 1;
       window.dispatchEvent(new StorageEvent('storage', {key: STORAGE_KEY, oldValue: 'a', newValue: 'b'}));
       const saved = saveData();
       const maint = saveData({maintenance: true});
       const unchanged = localStorage.getItem(STORAGE_KEY) === before;
-      const backupBlocked = fsBlockedReason() !== '';
+      const backupBlocked = fsBlockedReason().indexOf('another tab') !== -1;
       const says = !!banner && banner.textContent.indexOf('Saving is off in this tab') !== -1;
       ok = saved === false && maint === false && unchanged && backupBlocked && says;
       detail = JSON.stringify({saved, maint, unchanged, backupBlocked, says});
     }catch(e){ detail = 'threw: ' + e.message; }
+    delete DATA.__b2probe;
+    _suiteRunning = prevSuite; _undoSnapshot = prevUndo; _undoLabel = prevLabel;
+    try{ if(before === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, before); }catch(e){}
     if(typeof _staleTab !== 'undefined') _staleTab = prevStale;
     if(banner) banner.classList.toggle('show', bannerWas);
     check('1.2 B2 a stale tab refuses saveData and the backup write until reload, and the banner says so', ok, detail);
