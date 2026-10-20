@@ -18333,7 +18333,15 @@ async function csatWatchClick(e){
   const t = e.target && e.target.closest && e.target.closest('[data-csat-review],[data-csat-allow]');
   if(!t) return;
   if(t.hasAttribute('data-csat-allow')) await csatWatchRefresh(true);
-  else if(_csatWatch.plan) openCsatImportModal(_csatWatch.plan, {fileName:_csatWatch.fileName, fileModified:_csatWatch.fileModified});
+  else if(_csatWatch.plan){
+    // The scan may be stale: rebuild from the book as it is now, so a newer date or ID typed since is respected.
+    const plan = buildCsatImportPlan(parseCsv(_csatWatch.text), DATA.customers, {});
+    if(plan.error || !plan.changes.length && !plan.suggestions.length && !plan.runwayNewer.length && !plan.ambiguous.length && !plan.conflicts.length){
+      _csatWatch = Object.assign(_csatWatch, {state:'off', plan:null}); render(); return;
+    }
+    _csatWatch.plan = plan;
+    openCsatImportModal(plan, {fileName:_csatWatch.fileName, fileModified:_csatWatch.fileModified});
+  }
 }
 function renderCsatWatchLine(){
   const w = _csatWatch;
@@ -19860,17 +19868,17 @@ function commitCsatImport(plan, tickedRows, meta){
   const by = {}; plan.skipped.forEach(s => { by[s.reason] = (by[s.reason] || 0) + 1; });
   DATA.csatImport = {fileName:meta && meta.fileName || '', fileModified:meta && meta.fileModified || 0, appliedAt:new Date().toISOString(),
     counts:{matched:plan.matched.length, dateChanges:plan.changes.length, notInRunway:plan.unmatchedRows.length, skipped:plan.skipped.length}};
-  saveData();
+  const saved = saveData() !== false;
   render();
-  return {accounts:res.accounts, fields:res.fields, idsWritten:res.idsWritten, backupFile:'book-of-business-export.json', skippedByReason:by, ambiguous:plan.ambiguous.length, conflicts:plan.conflicts.length};
+  return {saved:saved, accounts:res.accounts, fields:res.fields, idsWritten:res.idsWritten, backupFile:'book-of-business-export.json', skippedByReason:by, ambiguous:plan.ambiguous.length, conflicts:plan.conflicts.length};
 }
 function openCsatReportModal(res){
   const backdrop = document.createElement('div'); backdrop.className = 'modal-backdrop';
   const reasons = Object.keys(res.skippedByReason).map(k => `<li>${escapeHtml(k)}: ${res.skippedByReason[k]}</li>`).join('');
-  backdrop.innerHTML = `<div class="modal" style="max-width:420px;"><h3>CSAT import done</h3>
-    <p>Updated ${res.accounts} account${res.accounts === 1 ? '' : 's'} (${res.fields} date${res.fields === 1 ? '' : 's'}).</p>
-    ${reasons || res.ambiguous || res.conflicts ? `<ul style="font-size:var(--text-sm);">${reasons}${res.ambiguous ? `<li>Ambiguous: ${res.ambiguous}</li>` : ''}${res.conflicts ? `<li>Conflict: ${res.conflicts}</li>` : ''}</ul>` : ''}
-    <p style="font-size:var(--text-sm); color:var(--text-dim);">Backup downloaded first: ${escapeHtml(res.backupFile)}. Undo is available.</p>
+  backdrop.innerHTML = `<div class="modal" style="max-width:420px;"><h3>${res.saved === false ? 'CSAT import not saved' : 'CSAT import done'}</h3>
+    ${res.saved === false ? '<p>The import could NOT be saved, so your book on disk is unchanged. Nothing was kept after a reload.</p>' : `<p>Updated ${res.accounts} account${res.accounts === 1 ? '' : 's'} (${res.fields} date${res.fields === 1 ? '' : 's'}).</p>`}
+    ${res.saved === false ? '' : reasons || res.ambiguous || res.conflicts ? `<ul style="font-size:var(--text-sm);">${reasons}${res.ambiguous ? `<li>Ambiguous: ${res.ambiguous}</li>` : ''}${res.conflicts ? `<li>Conflict: ${res.conflicts}</li>` : ''}</ul>` : ''}
+    <p style="font-size:var(--text-sm); color:var(--text-dim);">Backup downloaded first: ${escapeHtml(res.backupFile)}.${res.saved === false ? '' : ' Undo is available.'}</p>
     <div class="modal-actions"><button class="btn btn-primary" id="csat-report-close">Close</button></div></div>`;
   document.body.appendChild(backdrop);
   backdrop.querySelector('#csat-report-close').addEventListener('click', () => backdrop.remove());

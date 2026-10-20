@@ -27,3 +27,6 @@ test('CHANGELOG 1.2 task 11: Settings watch controls bullet', () => assert.match
 test('CHANGELOG 1.2 task 13: Call prep order bullet', () => assert.match(s12, /Call prep order is now Agenda, Promises, Last transcript, Pending deliverables/));
 test('CHANGELOG 1.2 task 14: backup prompt bullet', () => assert.match(s12, /Back up your book first\?/));
 test('CHANGELOG 1.2 task 15: nits bullet', () => assert.match(s12, /Graduate modal omits "\(0 of 0 gates done\)"/));
+test('CHANGELOG 1.2 final review: Review rebuilds the plan from current data; a failed save is reported as not saved', () => {
+  assert.match(s12, /Review rebuilds the plan from the current book/); assert.match(s12, /says plainly it could NOT be saved/);
+});

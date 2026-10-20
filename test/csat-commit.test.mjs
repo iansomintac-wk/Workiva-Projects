@@ -69,3 +69,17 @@ test('CSAT apply click: reads the ticked suggestion rows, closes the dry run, co
   assert.deepEqual(calls[0][1][1], [2]); assert.deepEqual(calls[0][1][2], { fileName: 'f.csv', fileModified: 7 });
   assert.equal(removed, 1); assert.deepEqual(calls[1], ['report', { accounts: 1 }]);
 });
+test('CSAT commit: when saveData fails the result says saved:false and the report says NOT saved, with no "Updated" and no Undo claim', () => {
+  const e = env(); const plan = e.c.buildCsatImportPlan(e.table, e.customers, {});
+  e.c.saveData = () => false;
+  const r = J(e.c.commitCsatImport(plan, [], { fileName: 'f.csv', fileModified: 5 }));
+  assert.equal(r.saved, false);
+  e.c.openCsatReportModal(r);
+  const h = e.html();
+  assert.match(h, /could NOT be saved/); assert.ok(!h.includes('Updated') && !h.includes('Undo is available') && h.includes('book-of-business-export.json'), h);
+});
+test('CSAT commit: a successful save reports saved:true and keeps the "Updated" wording', () => {
+  const e = env(); const plan = e.c.buildCsatImportPlan(e.table, e.customers, {});
+  const r = J(e.c.commitCsatImport(plan, [], { fileName: 'f.csv', fileModified: 5 }));
+  assert.equal(r.saved, true);
+});

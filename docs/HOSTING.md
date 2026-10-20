@@ -55,4 +55,4 @@ A hosted address has its own storage, so its tracker starts with no accounts. Wh
 
 ## Checking what you received
 
-`index.html` in this package is a byte-for-byte copy of the 1.1 tracker. Its sha256 is `9e2b1be669fdd5211bec6f880430ac8bd92e4ba09661ac219a5159071efc23a7`. Compare it with `sha256sum index.html` (or `Get-FileHash index.html` in PowerShell) before uploading. This line is updated in the same commit as any change to the tracker.
+`index.html` in this package is a byte-for-byte copy of the 1.1 tracker. Its sha256 is `4829f7ef9f3e080ccfd1fd8194df5b96af96496b88fa275ed50afd479344e9f5`. Compare it with `sha256sum index.html` (or `Get-FileHash index.html` in PowerShell) before uploading. This line is updated in the same commit as any change to the tracker.

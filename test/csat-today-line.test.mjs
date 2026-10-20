@@ -112,3 +112,21 @@ test('CSAT today line (source presence; the headless drive proves it in the page
   assert.ok(body.includes('renderCsatWatchLine()') && body.includes('renderSurveysToChase('));
   assert.ok(src.includes("document.addEventListener('click', csatWatchClick)") && src.includes('csatWatchInit()'));
 });
+const clickReview = (c) => c.csatWatchClick({ target: { closest: () => ({ hasAttribute: a => a === 'data-csat-review' }) } });
+test('CSAT click: a newer Survey sent date typed after the scan is listed under "Runway is newer", not under changes (Apply must not overwrite it)', async () => {
+  let got; const { c, DATA } = env(undefined, { openCsatImportModal: p => { got = J(p); } });
+  await c.csatWatchUse(dirWith(L));
+  DATA.customers[0].compliance.associatedPeopleCSAT.surveySentOn = '2026-10-05';   // newer than the file's 2026-09-01
+  await clickReview(c);
+  assert.equal(got.changes.length, 0); assert.equal(got.runwayNewer.length, 1); assert.equal(got.runwayNewer[0].runwaySent, '2026-10-05');
+});
+test('CSAT click: a Salesforce ID typed after the scan means the name suggestion no longer offers to overwrite it', async () => {
+  let got; const { c, DATA } = env(undefined, { openCsatImportModal: p => { got = J(p); } });
+  DATA.customers[0].salesforceId = '';
+  await c.csatWatchUse(dirWith(L));
+  assert.equal(vm.runInContext('_csatWatch.plan.suggestions.length', c), 1);   // the scan did offer the name match
+  DATA.customers[0].salesforceId = sf(9);
+  await clickReview(c);
+  assert.equal(got, undefined);   // nothing left to do, so no modal offering the stale name match
+  assert.equal(vm.runInContext('_csatWatch.state', c), 'off');
+});
