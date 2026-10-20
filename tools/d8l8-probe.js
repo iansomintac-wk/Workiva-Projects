@@ -1,16 +1,17 @@
 /* 1.2 D8/L8 probe: clicking the last case on the Risk rail must bring it to the front, even when nothing
    sits below the deck to make up the scroll. Asynchronous, so it is not in the main suite:
-     node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/d8l8-probe.js --fn d8l8Probe --expect 1
-   It hides whatever follows the track while it runs, and restores: DATA.customers, DATA.activities, DATA.riskLog,
+     node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/d8l8-probe.js --fn d8l8Probe --expect 3
+   It hides whatever follows the track while it runs, and restores (saveData is stubbed so nothing persists): saveData, DATA.customers, DATA.activities, DATA.riskLog,
    ui.view, ui.riskFocusId, the scroll position. */
 window.d8l8Probe = async function d8l8Probe(){
   const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevView = ui.view, prevFocus = ui.riskFocusId;
-  const prevY = scrollY, hidden = [];
+  const prevY = scrollY, hidden = [], realSave = saveData, extra = [];
   const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
   const frame = () => new Promise(r => requestAnimationFrame(() => r()));
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   let ok = false, detail = '';
   try{
+    saveData = function(){ return true; };
     const mk = id => { const c = {id, name: 'D8L8 ' + id, module: DATA.config.modules[0], stage: DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200), totalSessions: 8, domainScores: {}, sessionNotes: {}, stageHistory: [], riskOverride: 'risk'}; backfillCustomerRecord(c); return c; };
     const cs = []; for(let i = 0; i < 14; i++) cs.push(mk('__d8l8_' + i));
     DATA.customers = cs; DATA.activities = {}; DATA.riskLog = {};
@@ -48,9 +49,40 @@ window.d8l8Probe = async function d8l8Probe(){
       }
     }
   }catch(e){ detail = 'threw: ' + e.message; }
+
+  /* the very bottom of the page, with the real page below the deck: the last case stays front and live */
+  const bottomPart = async (n, label) => {
+    let res = {ok: false, detail: ''};
+    try{
+      const mk2 = id => { const c = {id, name: 'D8L8 ' + id, module: DATA.config.modules[0], stage: DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200), totalSessions: 8, domainScores: {}, sessionNotes: {}, stageHistory: [], riskOverride: 'risk'}; backfillCustomerRecord(c); return c; };
+      const cs2 = []; for(let i = 0; i < n; i++) cs2.push(mk2('__d8l8b_' + i));
+      DATA.customers = cs2; DATA.activities = {}; DATA.riskLog = {};
+      reset();
+      buildRiskCases(buildRiskHubList()).forEach(k => setRiskVerdict(k.items[0], 'confirmed', 'short reason'));
+      reset(); ui.view = 'risk'; ui.riskFocusId = null; render();
+      await frame(); await frame();
+      const track = document.querySelector('.rk3-track'), host = track && track.parentElement;
+      if(!host || !host._deckCards || host._deckCards.length !== n || host.classList.contains('rk3--flat')){ res.detail = label + ' deck not bound: ' + JSON.stringify({n: host && host._deckCards ? host._deckCards.length : null}); return res; }
+      const last = host._deckCards[n - 1];
+      scrollTo(0, document.documentElement.scrollHeight); await sleep(400); await frame(); await frame();
+      scrollTo(0, document.documentElement.scrollHeight); await sleep(300); await frame();
+      const btns = [...last.querySelectorAll('button')].filter(b => b.offsetParent !== null);
+      const hit = btns.filter(b => { const q = b.getBoundingClientRect(); if(q.width < 1 || q.bottom < 0 || q.top > innerHeight) return false; const e = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !!e && (e === b || b.contains(e)); }).length;
+      const onScreen = btns.filter(b => { const q = b.getBoundingClientRect(); return q.height > 0 && q.bottom > 0 && q.top < innerHeight; }).length;
+      const needed = host._deckOffsetFor(n - 1);
+      const blank = track.offsetHeight - needed;
+      const r = {n, behind: last.classList.contains('is-behind'), opacity: +getComputedStyle(last).opacity, pe: getComputedStyle(last).pointerEvents, onScreen, hit, blank, limit: innerHeight + last.scrollHeight, scrollY: Math.round(scrollY)};
+      res.ok = !r.behind && r.opacity >= 0.99 && r.pe !== 'none' && onScreen > 0 && hit === onScreen && r.blank <= r.limit;
+      res.detail = label + ' ' + JSON.stringify(r);
+    }catch(e){ res.detail = label + ' threw: ' + e.message; }
+    return res;
+  };
+  extra.push(['1.2 D8/L8 page scrolled to the very bottom: a single short case stays front with live buttons, no more blank than needed', await bottomPart(1, 'one card')]);
+  extra.push(['1.2 D8/L8 page scrolled to the very bottom: the last of many cases stays front with live buttons, no more blank than needed', await bottomPart(14, 'many cards')]);
   hidden.forEach(h => { h[0].style.display = h[1]; });
-  DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.view = prevView; ui.riskFocusId = prevFocus;
+  saveData = realSave; DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.view = prevView; ui.riskFocusId = prevFocus;
   reset(); render();
   scrollTo(0, prevY);
-  return [{name: '1.2 D8/L8 the last case on the Risk rail comes to the front with nothing below the deck', ok, detail: ok ? '' : detail}];
+  return [{name: '1.2 D8/L8 the last case on the Risk rail comes to the front with nothing below the deck', ok, detail: ok ? '' : detail}]
+    .concat(extra.map(e => ({name: e[0], ok: e[1].ok, detail: e[1].ok ? '' : e[1].detail})));
 };
