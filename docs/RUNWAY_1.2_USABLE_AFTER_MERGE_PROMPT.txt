@@ -1,0 +1,11 @@
+SESSION (light): Runway 1.2 usable, after the merge (Runway Tracker repo). Drafted by the PM, edited by resume lead 944ad859, 2026-10-20.
+Read .ledger/2026-10-20-runway-1.2-usable-resume/progress.md and .ledger/2026-10-20-runway-1.2-cleanup/for-ian.md
+("Added by the resume run"), then follow the session-name rule for predecessor 944ad859. Run `date -u` before every stamp.
+1. Confirm with git that runway-1.2-cleanup is merged into master, origin/runway-tracker has the merge, and
+   backup/master-before-runway-1.2-usable-2026-10-20 exists on origin. If not merged, stop and tell Ian.
+2. Sim verify (node tools/sim/osm-day/verify.mjs, ~20 min) only after Ian says to run it, and only with >= 4.5 GB free;
+   in the background, output to a file. Record the C1-C8 lines or "deferred, memory" in progress.md and the evidence doc.
+3. Take the four wording look calls and the captures to Ian as one decision card (PM first pass: accept all), one at a time.
+4. ledger-add for any ruling with Ian's verbatim words. Stop at the task boundary.
+NO-GOS: no force flags; $0; no network from code or tests; 1.0 never edited; locked sim files never change; never read
+*RESTORE-POINT* files, exports or Ian's real CSAT file.
