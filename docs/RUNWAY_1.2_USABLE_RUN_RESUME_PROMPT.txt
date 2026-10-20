@@ -4,10 +4,12 @@ Worktree: .claude/worktrees/runway-1.2-cleanup, branch runway-1.2-cleanup (pushe
 before every stamp. Give the time at start and at each stop. Questions go to Ian, or to the PM proxy when one is named
 for the night, as decision cards (recommendation first, cheapest check).
 
-BEFORE LAUNCH (Ian's decision, not the run's): a helper budget. Give this run its OWN ledger folder
-(.ledger/2026-10-2x-runway-1.2-usable-resume/) with budget.json (est. ~350k helper tokens) and slip.json, because the
-budget guard sums every row of helper-rows.md and a shared ledger inherits earlier runs' spend (run B lost 1.35M to
-run A's rows). Launch with STUDIO_RUN_LEDGER set to that folder through --settings.
+LEDGER (own folder, Ian's yes 2026-10-20T14:29Z: "yes, launch the resume run with its own ledger"):
+.ledger/2026-10-20-runway-1.2-usable-resume/ with budget.json (runTokenCap 500,000: Ian approved ~350k, the lead's
+recount from run B's measured costs gave ~465k, raised within the standing +600k yes), slip.json (push, merge, new
+sessions yes; $0) and progress.md. Own folder because the budget guard sums every row of helper-rows.md and a shared
+ledger inherits earlier runs' spend (run B lost 1.35M to run A's rows). First check: echo "$STUDIO_RUN_LEDGER" names
+that folder; budget.json and slip.json exist there; never rewrite slip.json.
 
 READ: spec docs/superpowers/specs/2026-10-20-runway-1.2-usable-design.md; plan docs/superpowers/plans/2026-10-20-
 runway-1.2-usable.md ("Shared recipes"); run B's ledger .ledger/2026-10-20-runway-1.2-cleanup/progress.md ("## Run B")
