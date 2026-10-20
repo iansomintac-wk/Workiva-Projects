@@ -1,13 +1,44 @@
-DRAFT (hand-off PM step of the Runway 1.2 talk, session 4549483a, 2026-10-19). Not launched: start it only on Ian's yes,
-after the 1.2 run has merged.
+TALK: Runway stage 2, automatic CSAT pull from Snowflake (a Snowflake slot in connector/). Runway Tracker repo.
+DRAFT, written 2026-10-20 by the hand-off PM step of the Runway 1.2 run (lead 58d4f186), replacing the 13-line draft of talk 4549483a.
+Not launched: start only on Ian's yes, after 1.2 is merged and pushed. Run `date -u` before every stamp.
+Method: studio-harness:talk-and-run, "The talk". Brainstorm first (superpowers:brainstorming). Ask Ian in plain words, one question at a
+time, recommendation first, via AskUserQuestion. When you need pasted text, ask in plain text and end the turn.
 
-TALK: Runway stage 2, a Snowflake slot in connector/ (CSAT dates, automatic pull).
-Gate: Ian has tried Programmatic access tokens (Snowflake profile menu) and says whether it worked. If it did not, stop and park.
-Read: docs/superpowers/specs/2026-10-19-runway-1.2-design.md (section 3.1, the pure plan builder this reuses) and
-connector/adapters/gainsight-rest.mjs plus connector/CONTRACT.md (the adapter pattern and versioning).
-Goal (Ian, verbatim, 2026-10-19): "i want this to be almost like auto-updated."
-Brainstorm first. Offer a spread of options, each with its cheapest check. $0 research on Snowflake's SQL API with a token
-(auth shape, network-policy requirement, token lifetime).
-Safety: the token never goes in the repo, logs or captures; no real rows copied; read-only SELECT; the 1.2 builder is reused,
-not rewritten; nothing uploaded.
-Output: a spec with Ian's approval, then a run prompt, budget.json and slip.json.
+STEP 0, GATE (Ian does this first; the talk STOPS until he has)
+Ask Ian to try making a personal access token in Snowflake: his profile menu -> Programmatic access tokens (about 2 minutes).
+He only needs to say: did the option exist, did it let him create one, and did it ask for a role or a network policy. He must NOT paste
+the token anywhere. If he cannot create one (policy blocks it), stop, park stage 2 with that reason, and say what else is open:
+the 1.2 folder-watch import already gives most of the benefit.
+
+GOAL (Ian, verbatim, 2026-10-19, in the 1.2 spec): "i want this to be almost like auto-updated. The problem we have now is that there is no
+way for us to know this information without going into gainsight and clicking through for each customer to find it."
+
+WHAT IS KNOWN (read, not re-run)
+- 1.2 shipped on master: Settings -> Import CSAT dates (dry run, backup first, Apply) and the folder watch with the Today line. The pure
+  plan builder (spec section 3.1) already applies Ian's matching rules; stage 2 must REUSE it, not rewrite it.
+- Spec: docs/superpowers/specs/2026-10-19-runway-1.2-design.md. Evidence: docs/evidence/2026-10-19-runway-1.2.md (Next list, Known limits).
+- Connector pattern: connector/CONTRACT.md, connector/adapters/gainsight-rest.mjs, connector/adapters/index.mjs. It binds 127.0.0.1,
+  the bearer token is the only guard, adapters are versioned and have fakes plus fixtures.
+- The tracker html makes no network call and the import code is network-free. Anything that reaches Snowflake runs in connector/,
+  and the html receives the result through the contract. Tell Ian this plainly; he decides.
+- Export shape measured on Ian's file (spec section 2): 211 rows, 157 with an empty answered date. Use only counts, never rows.
+- Snowflake facts read from docs, not confirmed: PATs can be made by a normal user unless policy blocks it; Snowflake email cannot
+  attach a CSV.
+
+OPEN RESEARCH ($0, helpers, before the options spread)
+1. PAT scopes, role restriction, lifetime, network-policy requirement.
+2. SQL API (/api/v2/statements): auth header, paging, rate limits, timeout, what a read-only SELECT needs.
+3. CORS and file:// origin for a new connector route in Edge and Chrome.
+4. Which table and columns hold the CSAT data: only Ian's Snowflake chat knows; ask him, do not guess.
+
+ALSO WAITING ON IAN (do not block the talk): the D8/L8 ruling (docs/EXTENSION_PROGRESS.md item 3: should a confirmed risk case leave
+the Risk list?) and his two real-file checks from the 1.2 evidence doc.
+
+SAFETY
+- The token never goes in the repo, a log, a capture, a ledger row, a prompt or a helper's context. Ian types it into connector config only.
+- The customer CSV and any row, name or ID from it is never copied anywhere. Tests use made-up IDs.
+- Read-only SELECT; nothing uploaded; no network from the tracker html; $0; no installs without Ian's yes; 1.0 never edited; no
+  publishing; no force flags; never port 8790. No ~/.claude writes (session-rename exception only).
+
+OUTPUT: a spread of options (three usual and one that breaks a named assumption), each with its cheapest check; Ian picks; then a spec he
+approves; then a run prompt, budget.json and slip.json. Stop there. Do not start the run.
