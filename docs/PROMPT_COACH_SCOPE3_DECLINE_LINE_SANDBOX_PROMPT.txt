@@ -38,14 +38,3 @@ Give Ian the time at start and at each stop.
 Session names: rename only. Do NOT claude rm predecessor 7881a242 (or 0d1b55ae): their cwd is worktree
 prompt-coach-scope3-reshape, which holds the git-ignored reshape ledger, and claude rm deletes the worktree
 (gotcha 2026-10-16-claude-rm-predecessor-shares-the-worktree). Keep them and tell Ian.
-</content>
-</invoke>
-<invoke name="Bash">
-<parameter name="command">cat > .ledger/2026-10-20-prompt-coach-scope3-decline-line/rulings.md <<'EOF'
-# Rulings, talk 7881a242 (2026-10-19/20), verbatim, AskUserQuestion typed by Ian
-- 2026-10-19T23:5xZ records: "Yes, record and commit (Recommended)"
-- 2026-10-20T00:4xZ branch: "would deep targeted research help understand how we could do this best?" then "Drop branch, research next (Recommended)"
-- 2026-10-20T00:5xZ next attempt: "Prompt line, no detection (Recommended)"
-- 2026-10-20T01:0xZ design: "Approve, sandbox first (Recommended)"
-EOF
-date -u +%H:%M

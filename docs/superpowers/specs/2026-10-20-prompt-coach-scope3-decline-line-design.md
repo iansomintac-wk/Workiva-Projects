@@ -3,7 +3,9 @@
 Date: 2026-10-20. Talk session 7881a242 (predecessor run lead 0d1b55ae; talk prompt
 `docs/PROMPT_COACH_SCOPE3_RESHAPE_NEXT_TALK_PROMPT.txt` on branch worktree-prompt-coach-scope3-reshape).
 Branch: `worktree-prompt-coach-scope3-decline-line`, from `origin/prompt-coach` at 59b09c1 (base).
-Status: design approved in chat; the build waits for the sandbox check (section 3).
+Status: closed, nothing shipped. The sandbox check failed (ask 3 refused with the line; evidence
+`docs/evidence/2026-10-20-prompt-coach-scope3-decline-line-sandbox.md`), and Ian closed it on 2026-10-20 (rulings below).
+Section 4 is not built.
 Classification: bounded (one condition in existing code), customer-facing wording.
 
 Marking: **measured** = run in this talk; **read** = from a document, log or helper report; **assumed** = reasoned only.
@@ -17,6 +19,7 @@ Ledger (git-ignored): `.ledger/2026-10-20-prompt-coach-scope3-decline-line/rulin
   unmerged; base is kept.
 - 2026-10-20: next attempt: "Prompt line, no detection (Recommended)".
 - 2026-10-20: this design: "Approve, sandbox first (Recommended)".
+- 2026-10-20, after the sandbox FAIL (talk after session 28412002): "Close, ship nothing (Recommended)".
 
 ## 1. Why (evidence)
 

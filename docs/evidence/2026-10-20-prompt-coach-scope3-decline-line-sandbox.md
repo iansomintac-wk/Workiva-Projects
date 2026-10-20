@@ -199,3 +199,17 @@ Sent as the file chip alone (the ask text did not reach the box).
 - The existing base behaviour (line only when the `unsupported` note fires, `rewrite.js:574`) was not tested here.
   Whether that path can reach a definition-style ask is a question for the talk (assumed, not checked).
 - Limits: one run per cell; one sandbox (it may have features a customer lacks); one file layout (CSV).
+
+## Outcome (2026-10-20, talk after the FAIL)
+
+Ian: "Close, ship nothing (Recommended)". The change is not built; base keeps the line only where the
+`unsupported` note fires.
+
+Engine probe, **measured** this talk (the 3 asks with the CSV above, read through `engine/files.js` as a CSV, base
+code at c22a842): the `unsupported` note fires on ask 2 only, so today only ask 2's Strong gets the line; asks 1 and 3
+get neither (ask 3 classifies as explain, grade weak). The spec's section 2 change would have added the line to asks 1
+and 3, which is the cell that refused in run 6.
+
+Not tested (assumed risk, out of this change's scope): base's own Strong for ask 3 reads "Use only @FY2025 Scope 3
+emissions (tCO2e).csv. ... Cite the sources, and say if the requirement is not covered." That pins a definition ask
+to the file and may refuse the same way. Cheapest check: one sandbox run of that exact Strong text with the file.
