@@ -15,6 +15,7 @@ function runSelfChecks(){
 }
 function _runSelfChecksInner(){
   const results = [];
+  let _fx1Pending = null;                        // 1.2 FX1: settles when the waiting-write check has restored its globals
   const v13Acct = (id, o) => { const c = Object.assign({id, name:'V13 '+id, module:DATA.config.modules[0],
     stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
     totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[], riskOverride:'risk'}, o || {});
@@ -4253,6 +4254,7 @@ function _runSelfChecksInner(){
     const banner = document.getElementById('tab-conflict');
     const bannerWas = banner ? banner.classList.contains('show') : false;
     const prevStale = (typeof _staleTab !== 'undefined') ? _staleTab : false;
+    const prevToast = (typeof _staleToastShown !== 'undefined') ? _staleToastShown : false;
     const prevSuite = _suiteRunning, prevUndo = _undoSnapshot, prevLabel = _undoLabel;
     try{
       /* The suite normally blocks every write, which would make "unchanged" true
@@ -4273,8 +4275,54 @@ function _runSelfChecksInner(){
     _suiteRunning = prevSuite; _undoSnapshot = prevUndo; _undoLabel = prevLabel;
     try{ if(before === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, before); }catch(e){}
     if(typeof _staleTab !== 'undefined') _staleTab = prevStale;
+    if(typeof _staleToastShown !== 'undefined') _staleToastShown = prevToast;
     if(banner) banner.classList.toggle('show', bannerWas);
     check('1.2 B2 a stale tab refuses saveData and the backup write until reload, and the banner says so', ok, detail);
+  })();
+  (function(){                                   // 1.2 B2 FX1: a backup write already waiting must not land once the tab goes stale
+    /* fsWriteNow awaits the file system, so the proof is asynchronous: the entry is
+       added as passing, flipped when the write settles, and the suite result is
+       thenable until then (see the end of this function). Everything is restored
+       when it settles. */
+    const entry = {name: '1.2 B2 FX1 a backup write already waiting does not land after the tab goes stale', ok: true, detail: ''};
+    results.push(entry);
+    const before = localStorage.getItem(STORAGE_KEY);
+    const banner = document.getElementById('tab-conflict');
+    const bannerWas = banner ? banner.classList.contains('show') : false;
+    const prevStale = _staleTab, prevToast = _staleToastShown, prevSuite = _suiteRunning;
+    const prevHandle = _fsHandle, prevState = _fsState, prevErr = _fsError, prevWriting = _fsWriting, prevLast = _fsLastWriteAt;
+    const prevSynthetic = DATA.synthetic;
+    const calls = {write: 0, close: 0, abort: 0};
+    let release = null, pending = null;
+    const fakeWritable = {write: async () => { calls.write++; }, close: async () => { calls.close++; }, abort: async () => { calls.abort++; }};
+    const gate = new Promise(res => { release = () => res(fakeWritable); });
+    try{
+      _suiteRunning = false; _fsHandle = {createWritable: () => gate}; _fsState = 'ready'; _fsWriting = false;
+      delete DATA.synthetic;                           // the suite's own book is marked a test book, which would refuse before the write
+      pending = fsWriteNow(true);                      // parked on createWritable()
+    }catch(e){ entry.ok = false; entry.detail = 'threw: ' + e.message; }
+    /* Put everything back for the checks that follow; the call above has already read it.
+       The tab only goes stale, and the writer is only handed over, once the suite has
+       finished, so no other check ever runs against a stale tab. */
+    _suiteRunning = prevSuite; _fsHandle = prevHandle; _fsState = prevState; _fsWriting = prevWriting;
+    if(prevSynthetic !== undefined) DATA.synthetic = prevSynthetic;
+    Promise.resolve().then(() => {
+      window.dispatchEvent(new StorageEvent('storage', {key: STORAGE_KEY, oldValue: 'a', newValue: 'b'}));   // the tab goes stale
+      release();
+    });
+    _fx1Pending = Promise.resolve(pending).then(result => {
+      const unchanged = localStorage.getItem(STORAGE_KEY) === before;
+      const none = calls.write === 0 && calls.close === 0;
+      if(!(result === false && none && unchanged && _staleTab === true)){
+        entry.ok = false;
+        entry.detail = JSON.stringify({result, calls, unchanged, stale: _staleTab});
+      }
+    }, e => { entry.ok = false; entry.detail = 'threw: ' + e.message; }).then(() => {
+      _fsHandle = prevHandle; _fsState = prevState; _fsError = prevErr; _fsWriting = prevWriting; _fsLastWriteAt = prevLast;
+      _staleTab = prevStale; _staleToastShown = prevToast;
+      if(banner) banner.classList.toggle('show', bannerWas);
+      try{ if(before === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, before); }catch(e){}
+    });
   })();
   (function(){
     /* Phase 3 / badge FIX 2. The evidence badge named a band NUMBER (Sev N/4)
@@ -9769,6 +9817,10 @@ function _runSelfChecksInner(){
   const failed = results.filter(r=>!r.ok);
   results.forEach(r=>console.log((r.ok?'PASS':'FAIL')+' — '+r.name+(r.detail?': '+r.detail:'')));
   console.log(failed.length ? `${failed.length} CHECK(S) FAILED` : `All ${results.length} checks passed.`);
-  return {passed: results.length - failed.length, failed: failed.length, results};
+  const summary = () => ({passed: results.filter(r=>r.ok).length, failed: results.filter(r=>!r.ok).length, results});
+  const out = summary();
+  /* Awaiting the result waits for FX1's async check; reading it synchronously still works. */
+  if(_fx1Pending) Object.defineProperty(out, 'then', {enumerable: false, value: resolve => { _fx1Pending.then(() => resolve(summary())); }});
+  return out;
 }
 window.runSelfChecks = runSelfChecks;

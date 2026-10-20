@@ -18631,9 +18631,20 @@ async function fsWriteNow(silent){
   }
   _fsWriting = true;
   try{
+    /* 1.2 FX1: another tab can change the book while any of these awaits is pending.
+       Re-check right before each write and drop an uncommitted file (abort leaves
+       the backup file as it was) instead of landing an older copy over newer work. */
+    const dropIfStale = async w => {
+      if(!_staleTab) return false;
+      try{ if(w && typeof w.abort === 'function') await w.abort(); }catch(e){}
+      return true;
+    };
     const w = await _fsHandle.createWritable();
+    if(await dropIfStale(w)) return false;
     await w.write(serializeBackup(DATA, serializeBook(DATA)));
+    if(await dropIfStale(w)) return false;
     await w.close();
+    if(_staleTab) return false;   // committed already; do not stamp storage over the newer book
     _fsLastWriteAt = Date.now();
     _fsError = '';
     /* An automatic backup IS an export, so it stamps the same field the manual
@@ -18641,7 +18652,7 @@ async function fsWriteNow(silent){
        backed up every few seconds. Stamped at most once a day, and written
        straight to storage rather than through saveData(), because saveData()
        schedules a backup and that would loop. */
-    if(DATA.lastExportedAt !== todayISO()){
+    if(DATA.lastExportedAt !== todayISO() && !_staleTab){
       DATA.lastExportedAt = todayISO();
       try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); }catch(e){}
       render();
