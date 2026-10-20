@@ -4,6 +4,10 @@ Written 2026-10-20 by talk 7881a242. Load studio-harness:talk-and-run first, the
 before the first browser step. This session runs ONE check and reports. Do not change code, build or tune.
 Launched with --chrome (memory bg-browser-driver-needs-chrome-flag); if no mcp__claude-in-chrome__* tools load,
 stop and tell Ian.
+Work in C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-decline-line (branch
+worktree-prompt-coach-scope3-decline-line). Ian must be at the keyboard for step 1.
+Cap: each of the 6 runs is made once; at most 1 retry per run, only for a technical failure (page error, upload
+failed), never because the answer missed. Report every retry and its reason.
 
 READ FIRST
 - docs/superpowers/specs/2026-10-20-prompt-coach-scope3-decline-line-design.md, section 3 (the check, pass rule,
