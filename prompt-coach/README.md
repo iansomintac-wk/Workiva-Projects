@@ -161,7 +161,7 @@ them; 0 of 13 live-test cases grade weak. Ian chose (2026-10-20) a line that quo
 words. Built 2026-10-20 for the ask only (PM proxy for Ian; Ian may overturn): the weak headline on
 "Your prompt" and `stages.weak.verdict` end with `The coach read your ask as "<span>".` (the quote alone,
 wording D), only when the detector is sure the ask is missing (p < 0.2); a one-word span, a vague verb
-followed directly by a colon (a field label) and a span cut at a file-name dot give no quote. The source is
+followed directly by a colon (a field label) give no quote. Internal dots (file names like FY2025_Emissions.xlsx, decimals) are kept inside the quote: the span cuts at . ; ? ! only before whitespace or end, or at a line break. The quote is appended to the headline and inserted in the weak verdict before its "It is also missing ..." sentence. The source is
 never quoted. Shipped check out of fold: 432 weak, 45 quoted, 0 wrong by label, 0 wrong words by eye,
 1 of 45 false by eye (row 12, a detector error the quote exposes). The letters the line names are still the
 detector's; naming only the letters the detector is sure of is still open (Ian's morning list). The
