@@ -19583,6 +19583,22 @@ function csatIdsMatch(a, b){
   if(a === b) return true;
   return (a.length === 15 || b.length === 15) && a.slice(0, 15) === b.slice(0, 15);
 }
+function csatDecide(ap, sent, answered){
+  const rs = isRealISODate(ap && ap.surveySentOn) ? ap.surveySentOn : '';
+  const ra = isRealISODate(ap && ap.surveyAnsweredOn) ? ap.surveyAnsweredOn : '';
+  if(!rs) return {kind:'set', sent:sent, answered:answered || ra};
+  if(sent > rs) return {kind:'newer', sent:sent, answered:answered};
+  if(sent === rs) return (!ra && answered) ? {kind:'fill', sent:rs, answered:answered} : {kind:'same', sent:rs, answered:ra};
+  return {kind:'runwayNewer', sent:rs, answered:ra};
+}
+function csatChangesFor(c, d){
+  const ap = (c.compliance && c.compliance.associatedPeopleCSAT) || {};
+  const out = [];
+  const push = (field, from, to) => { if((from || '') !== (to || '')) out.push({customerId:c.id, name:c.name, field:field, from:from || '', to:to || ''}); };
+  if(d.kind === 'set' || d.kind === 'newer'){ push('surveySentOn', ap.surveySentOn, d.sent); push('surveyAnsweredOn', ap.surveyAnsweredOn, d.answered); }
+  else if(d.kind === 'fill') push('surveyAnsweredOn', ap.surveyAnsweredOn, d.answered);
+  return out;
+}
 function buildCsatImportPlan(table, customers, opts){
   const skipIds = (opts && opts.skipIds) || CSAT_SKIP_IDS;
   const plan = {error:null, rowCount:0, matched:[], changes:[], unchanged:[], runwayNewer:[], unmatchedRows:[], notInFile:[], ambiguous:[], conflicts:[], suggestions:[], skipped:[]};
@@ -19621,8 +19637,18 @@ function buildCsatImportPlan(table, customers, opts){
   live.forEach(x => {
     if(perCustomer[x.c.id].length > 1){ plan.conflicts.push({row:x.o.row, name:x.o.name, customerId:x.c.id}); return; }
     plan.matched.push({row:x.o.row, customerId:x.c.id, name:x.c.name, csvName:x.o.name, sent:x.o.sent, answered:x.o.answered});
+    const c = x.c, ap = (c.compliance && c.compliance.associatedPeopleCSAT) || {};
+    const d = csatDecide(ap, x.o.sent, x.o.answered);
+    if(d.kind === 'runwayNewer'){ plan.runwayNewer.push({customerId:c.id, name:c.name, runwaySent:d.sent, csvSent:x.o.sent}); return; }
+    const ch = csatChangesFor(c, d);
+    if(ch.length) ch.forEach(k => plan.changes.push(k)); else plan.unchanged.push(c.id);
   });
   plan.matched.sort((a, b) => a.row - b.row); plan.conflicts.sort((a, b) => a.row - b.row);
+  const touched = new Set();
+  plan.matched.forEach(m => touched.add(m.customerId));
+  plan.conflicts.forEach(m => touched.add(m.customerId));
+  plan.ambiguous.forEach(a => a.customerIds.forEach(id => touched.add(id)));
+  (customers || []).forEach(c => { if(!touched.has(c.id)) plan.notInFile.push({customerId:c.id, name:c.name}); });
   return plan;
 }
 function guessPartnerColumnMapping(headers){
