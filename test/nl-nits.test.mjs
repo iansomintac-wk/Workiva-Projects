@@ -28,8 +28,8 @@ test('NL-3 CSAT block: csatDatesHtml hides the Answered label with no sent date 
   assert.match(none, /data-fp-csat-ans-wrap="a1"[^>]*style="display:none"/);
   assert.match(some, /data-fp-csat-ans-wrap="a1"/); assert.doesNotMatch(some, /display:none/);
 });
-test('preserved: the CSAT block is printed from the one csatDatesHtml call in both places (passes on the parent)', () => {
-  assert.equal((src.match(/\$\{csatDatesHtml\(ap, c\.id\)\}/g) || []).length, 2);
+test('preserved: the CSAT block is printed from the one csatDatesHtml call in both places', () => {
+  assert.equal((src.match(/\$\{csatDatesHtml\(ap, c\.id, '(pane|details)'\)\}/g) || []).length, 2);
 });
 
 // Behavioural check of bindCsatDateInputs in both render locations (the beat pane and the Details tab each call it with their own root).

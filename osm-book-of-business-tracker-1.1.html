@@ -11736,11 +11736,11 @@ function normalizeCsatBlock(ap){
     surveyAnsweredOn: isRealISODate(a.surveyAnsweredOn) ? a.surveyAnsweredOn : null});
 }
 /* L12: the two survey dates, printed in the CSAT block. Empty value = not set. */
-function csatDatesHtml(ap, id){
-  const e = escapeAttr(id);
+function csatDatesHtml(ap, id, scope){
+  const e = escapeAttr(id), s = escapeAttr(scope || 'pane');
   return `<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:6px;">
-        <label for="fp-csat-sent-${e}">Survey sent <input type="date" class="dk-in" id="fp-csat-sent-${e}" data-fp-csat-sent="${e}" value="${escapeAttr(ap.surveySentOn || '')}"></label>
-        <label for="fp-csat-ans-${e}" data-fp-csat-ans-wrap="${e}"${ap.surveySentOn ? '' : ' style="display:none"'}>Answered <input type="date" class="dk-in" id="fp-csat-ans-${e}" data-fp-csat-answered="${e}" value="${escapeAttr(ap.surveyAnsweredOn || '')}"></label>
+        <label for="fp-csat-sent-${s}-${e}">Survey sent <input type="date" class="dk-in" id="fp-csat-sent-${s}-${e}" data-fp-csat-sent="${e}" value="${escapeAttr(ap.surveySentOn || '')}"></label>
+        <label for="fp-csat-ans-${s}-${e}" data-fp-csat-ans-wrap="${e}"${ap.surveySentOn ? '' : ' style="display:none"'}>Answered <input type="date" class="dk-in" id="fp-csat-ans-${s}-${e}" data-fp-csat-answered="${e}" value="${escapeAttr(ap.surveyAnsweredOn || '')}"></label>
       </div>`;
 }
 
@@ -12662,7 +12662,7 @@ function renderBeatPanel(beat, dispatchChips){
         <input type="text" id="fp-csat-${escapeAttr(c.id)}" data-fp-csat="${escapeAttr(c.id)}" maxlength="120" placeholder="Contact name for the CSAT survey" value="${escapeAttr(ap.contactName || '')}" style="flex:1; min-width:180px;">
         <button class="btn btn-sm ${ap.done ? '' : 'btn-primary'}" data-fp-toggle="associatedPeopleCSAT|${escapeAttr(c.id)}">${ap.done ? 'Undo' : 'Mark added'}</button>
       </div>
-      ${csatDatesHtml(ap, c.id)}
+      ${csatDatesHtml(ap, c.id, 'pane')}
     </div>
 
     <div class="focus-act">
@@ -14064,7 +14064,7 @@ function renderComplianceSection(c){
         <label>Contact name(s) added</label>
         <input type="text" id="comp-associated-name" placeholder="e.g. Jane Doe, VP Sustainability" value="${escapeAttr(ap.contactName)}">
       </div>
-      ${csatDatesHtml(ap, c.id)}
+      ${csatDatesHtml(ap, c.id, 'details')}
     </div>
   `;
 }
