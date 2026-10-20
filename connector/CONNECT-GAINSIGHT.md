@@ -71,6 +71,7 @@ You need to be a Gainsight Super Admin. This is the longer of the two asks; abou
 5. State files, all in `connector/` and all git-ignored: `dry-run.jsonl` (what dry-run would have sent, with the
    token shown as `Bearer [redacted]`), `sent-record.json` (what has really been sent, so a repeat is never sent
    twice), `gainsight-tokens.json`, `proof.json`.
+   Pushes started at the same time each re-read `sent-record.json` just before saving, so every entry is kept.
 
 ## Vendor facts
 

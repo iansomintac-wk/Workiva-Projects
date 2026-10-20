@@ -194,8 +194,10 @@ export function create(cfg = {}, deps = {}) {
       if (req.kind === 'timeline' && JSON.stringify((e && e.body) || '').includes(DUPLICATE_EXTERNAL_ID)) externalId = it.id;
       else return fail(it, scrubAll(e.message, [lastAccess, cfg.oauth && cfg.oauth.clientSecret]));
     }
-    record[it.id] = { externalId, kind: it.kind, tenant, at: now().toISOString() };
-    try { writeJsonAtomic(join(dir, FILES.sent), record); }
+    // B3b (review): another push may have saved entries while this send was awaited. Re-read and write with no await between (single-threaded JS makes that the serialisation).
+    const entry = { externalId, kind: it.kind, tenant, at: now().toISOString() };
+    record[it.id] = entry;
+    try { const fresh = readJson(join(dir, FILES.sent), {}); fresh[it.id] = entry; writeJsonAtomic(join(dir, FILES.sent), fresh); }
     catch (e) { console.error(`gainsight-rest: item ${it.id} was sent but ${join(dir, FILES.sent)} could not be written (${e.code || e.message}); a repeat Send could duplicate it`); }
     return sentOk(it, externalId);
   }
