@@ -1,0 +1,20 @@
+SESSION (light, debug): Runway sim C5 "differs: 1.1 D3, 1.1 break D3" after the D8/L8 merge (Runway Tracker repo).
+Written 2026-10-20 ~18:27Z by resume lead 944ad859 at its 300k context stop. Run `date -u` before every stamp.
+Read: .ledger/2026-10-20-runway-1.2-usable-resume/progress.md rows "sim2" and "sim3" (in worktree
+.claude/worktrees/runway-1.2-cleanup), then follow the session-name rule for predecessor 944ad859.
+FACTS (measured by 944ad859): master e887f95 (= runway-1.2-d8l8 b8b6ed2 tree). Ian's sim ("run the sim") 17:57-18:24Z:
+C1/C2 1.1 all PASS (D8/L8 fixed), C4 1.1 FLIPPED 22/22, C6-C8 PASS, C5 FAIL: D3 step and D3 break records differ between
+the two full runs. Earlier sims today (sim2 on cf06956, run B baseline) said C5 identical. C5 = JSON of each record with
+timings stripped (tools/sim/osm-day/verify.mjs:120-133). Run data: sim-runs/verify-2026-10-20T17-57-53-542Z in the
+runway-1.2-d8l8 worktree.
+DO (superpowers:systematic-debugging; one fresh helper, read-only first):
+1. Diff the two runs' 1.1 D3 step and D3 break records; name the field that differs (evidence text? a date or count?).
+2. Decide with an experiment, not argument: does D3 vary run to run on master (flaky, existed before) or did the D8/L8
+   change cause it (e.g. D3 now sees confirmed cases staying listed)? Cheapest check: run D3 alone twice on e887f95 and
+   twice on cf06956 (`node tools/sim/osm-day/run.mjs --version 1.1 --part A --only D3`), one Chrome at a time, >= 4.5 GB free.
+3. If D8/L8 caused it: fix test-first on a branch off master, review, merge per the merge rule. If flaky before: record it
+   with the evidence and list for Ian; locked sim files (steps-a.mjs, steps-b.mjs, lib/breaks.mjs) change only with Ian's words.
+4. A full sim only when Ian says so (it was killed twice today for memory).
+Also open for Ian (for-ian.md, resume-run section): 4 wording look calls + the deck blank-room look call.
+NO-GOS: no force flags; $0; no network from code or tests; 1.0 never edited; never read *RESTORE-POINT* files, exports
+or Ian's real CSAT file.
