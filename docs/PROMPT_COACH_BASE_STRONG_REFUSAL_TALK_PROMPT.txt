@@ -1,0 +1,30 @@
+TALK: Prompt coach, does base's own Strong rewrite refuse a definition ask? (Workiva repo)
+
+Written 2026-10-20 by talk session 97031b25 from the hand-off PM draft. Load studio-harness:talk-and-run first.
+Work in C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-decline-line (branch
+worktree-prompt-coach-scope3-decline-line). Never open any heldout/ or sealed file. No push unless Ian says so
+(project CLAUDE.md). Plain words to Ian, one question at a time, recommendation first.
+
+READ FIRST
+- docs/evidence/2026-10-20-prompt-coach-scope3-decline-line-sandbox.md, section "Outcome": the decline line is closed
+  (Ian: "Close, ship nothing (Recommended)"); one assumed risk is left open, below.
+- The risk: base's Strong for ask 3 pins a definition ask to the file and may refuse the way run 6 did.
+  Base Strong text for ask 3 with the made-up CSV, measured by the engine at c22a842 (verbatim):
+  "Use only @FY2025 Scope 3 emissions (tCO2e).csv. This is for [the climate section of the CSRD report or the
+  assurance review]. In plain terms, what does Scope 3 category 15, investments, cover? No numbers needed. Use short
+  bullets. Cite the sources, and say if the requirement is not covered."
+
+DO
+1. Give Ian the time. Ask once (decision card): run one sandbox check of that text? Recommend yes (about 10 minutes).
+2. On yes: this session needs browser tools (launched with --chrome; if none, stop and tell Ian). Load
+   anthropic-skills:chrome-browser. Sandbox ONLY at https://sandbox.wdesk.com/, never app.wdesk.com (production).
+   Re-run the engine first to confirm the text above is still what base produces; use the file in
+   docs/evidence/2026-10-20-scope3-decline-line-file/ (already uploaded to Files > "Prompt coach test - Ian").
+   Fill the [bracket] with "the climate section of the CSRD report". One run, same method as the evidence doc
+   (new chat, @ the file, zoom check before send, copy the answer as text). Retry only a technical failure, once.
+3. Verdict: explains category 15 without saying the file lacks it = risk closed. Refuses = a defect in shipped base;
+   propose a fix to Ian as a new bounded objective, no build in this session.
+4. Append the answer verbatim and the verdict to the evidence doc; commit locally.
+5. Hand-off PM step. Ask before starting any next session.
+Session names: rename only. Do NOT claude rm 97031b25 or 28412002: their cwd is this worktree, which holds the
+git-ignored ledger and unpushed commits, and claude rm deletes the worktree. Same for 7881a242 and 0d1b55ae.
