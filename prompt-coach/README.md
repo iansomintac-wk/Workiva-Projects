@@ -147,5 +147,11 @@ deterministic checks in `tests/customer_check.js` and real prompts (`real-eval/`
 better evidence. The file-attached half is also skewed by the test setup: every second prompt
 got a file of its area whether or not the prompt was about it.
 
-Still open: when the coach rewrites a bare "analyze/review X" it still picks a task format, which
-can be wrong if the task is misread; the reason line for weak prompts is generic.
+Parked (Ian, 2026-10-20): when the coach rewrites a bare "analyze/review X" it can pick a task
+format, which can be wrong if the task is misread. Measured 2026-10-20 on the training rows: 67
+bare asks; the classifier guesses a task on 16 (in-sample, all match the label) and leaves a
+blank on 51; scored out of fold it guesses on 1, wrongly; 0 of 13 live-test cases are bare.
+Published work favours asking only when the task is unclear, which the blank already does. See
+`research/2026-10-20-bare-analyze-format-probe.md`.
+
+Still open: the reason line for weak prompts is generic.
