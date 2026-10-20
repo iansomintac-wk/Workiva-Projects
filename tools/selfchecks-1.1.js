@@ -15,6 +15,10 @@ function runSelfChecks(){
 }
 function _runSelfChecksInner(){
   const results = [];
+  const v13Acct = (id, o) => { const c = Object.assign({id, name:'V13 '+id, module:DATA.config.modules[0],
+    stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+    totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[], riskOverride:'risk'}, o || {});
+    backfillCustomerRecord(c); return c; };
   // v74.5: v74.4 (bottom of this suite) diffs the book's key set at suite
   // ENTRY against suite EXIT, which has a temporal blind spot — a key added
   // mid-suite and cleared before the end is invisible to it.
@@ -9381,6 +9385,30 @@ function _runSelfChecksInner(){
     }catch(e){ detail = 'threw: ' + e.message; }
     finally{ if(had) DATA.gainsightQueue = saved; else delete DATA.gainsightQueue; }
     check('1.2 B3a a sent reply with no external id marks the item sent (id not returned) so it cannot be sent twice', ok, detail);
+  })();
+  (function(){                                   // v13 Step 2a
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    try{
+      const c = v13Acct('__s2a__');
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const items = buildRiskHubList({readOnly: true}).filter(it => it.c.id === c.id);   // real items: Off Track from riskOverride
+      const lab = riskLabel(computeRisk(c)), st = accountStateLabel(c), rr = riskReasonText(c);
+      DATA.riskLog = {'__s2a__|Off Track': {firstSeen: todayISO(), lastActioned: null, verdict: 'confirmed', verdictOn: todayISO(), verdictSev: 3, verdictReason: 'Customer said they will not renew'}};
+      const texts = [buildCallPrepContext(c).text, JSON.stringify(aiCustomerSnapshot(c))]
+        .concat(items.map(buildRiskSummaryPrompt), items.map(buildRiskExecSummary));
+      const forbidden = t => /d+% health|health d+%|healthScore|riskLabel|RISK TYPE: (Off Track|Watch|Behind target|Risk language|Category signal)/.test(t)
+        || t.indexOf(lab) !== -1 || t.indexOf(st) !== -1 || (rr.length > 8 && t.indexOf(rr) !== -1);
+      const bad = texts.map(forbidden);
+      const reasonKept = texts[0].indexOf('Customer said they will not renew') !== -1 && texts[1].indexOf('Customer said they will not renew') !== -1;
+      const facts = texts[0].indexOf(c.name) !== -1 && texts[0].indexOf('Last touchpoint') !== -1 && items.length > 0;
+      ok = bad.every(b => !b) && reasonKept && facts;
+      detail = JSON.stringify({bad, reasonKept, facts, n: items.length, lab, st});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('v13 step 2a: no AI prompt text built for a seeded account carries its health figure, automatic risk level or automatic kind label, and confirmed reasons are included', ok, detail);
   })();
   (function(){                                   // c5c
     let ok = false, detail = '';

@@ -2075,22 +2075,20 @@ function pseudonymFor(customer){
 // per-account Call Prep now sends real account content (like the Session
 // Debrief) and carries the same explicit warning in its UI.
 function aiCustomerSnapshot(c){
-  const risk = computeRisk(c);
   const d = daysSince(lastActivityDate(c.id) || c.implementationDate);
   const nextSession = getNextSessionInfo(c);
   return {
     id: pseudonymFor(c),
     module: c.module,
     stage: c.stage,
-    riskLabel: riskLabel(risk),
-    healthScore: healthScore(c),
     daysSinceLastTouch: d,
     sessionsCompleted: sessionsCompletedCount(c),
     totalSessions: plannedSessionTotal(c),
     missingGates: missingGatesText(c),
     nextSessionTitle: nextSession ? nextSession.template.title : null,
     nextSessionStage: nextSession ? nextSession.template.ttfvStage : null,
-    behindTarget: isBehindTarget(c)
+    behindTarget: isBehindTarget(c),
+    confirmedRisks: confirmedRisksFor(c).map(x => x.reason)
   };
 }
 
@@ -2606,13 +2604,13 @@ const CALLPREP_MAX_ACTIVITIES = 40;
 const CALLPREP_NOTE_CHAR_CAP = 700;
 function buildCallPrepContext(c){
   const lines = [];
-  const risk = computeRisk(c);
   const intg = typeof getIntegration === 'function' ? getIntegration(c) : {};
   lines.push(`ACCOUNT: ${c.name} — module: ${c.module}${c.reportsCSRD ? ' (reports under CSRD)' : ''}, stage: ${c.stage}, implementation started ${fmtDate(c.implementationDate)}, ${c.totalSessions} planned sessions.`);
   if(intg && intg.primaryContact) lines.push(`Primary customer contact: ${intg.primaryContact}`);
-  lines.push(`STATUS: ${riskLabel(risk)} · health ${healthScore(c)}% · ${riskReasonText(c)}`);
   const d = daysSince(lastActivityDate(c.id) || c.implementationDate);
   lines.push(`Last touchpoint: ${d === null ? 'no activity logged yet' : d + ' day(s) ago'}. ${missingGatesText(c)}`);
+  const cr = confirmedRisksFor(c);
+  if(cr.length) lines.push('CONFIRMED RISKS (by the OSM): ' + cr.map(x => x.reason).join('; '));
   if(isPaused(c)) lines.push(`PAUSED until ${fmtDate(c.pause.until)}${c.pause.reason ? ' — ' + c.pause.reason : ''}.`);
   if(c.targetGraduationDate) lines.push(`Target graduation: ${fmtDate(c.targetGraduationDate)}${(()=>{ const p = projectedGraduationDate(c); return p ? `, projected ${fmtDate(p)}` : ''; })()}`);
   const fv = getFirstValue(c);
@@ -10493,6 +10491,11 @@ function classifyRiskText(text){
    while the risk persists -> "Gainsight update likely due". */
 const RISK_UNACTIONED_DAYS = 7;
 const RISK_MAINTENANCE_DAYS = 14;
+// Risks the OSM has confirmed, with the reason they wrote. Read-only: never creates DATA.riskLog.
+function confirmedRisksFor(c){ const log = isRecordObject(DATA.riskLog) ? DATA.riskLog : {}; return Object.keys(log).filter(k => k.split('|')[0] === c.id && isRecordObject(log[k]) && log[k].verdict === 'confirmed' && typeof log[k].verdictReason === 'string' && log[k].verdictReason.trim()).map(k => ({kind: k.split('|').slice(1).join(' ') || 'risk', reason: log[k].verdictReason})); }
+// AI-bound wording: facts only. The automatic level (Off Track / Watch) is not sent as a judgement.
+function aiObservation(item){ if(item.kind === 'Off Track' || item.kind === 'Watch'){ const d = daysSince(lastActivityDate(item.c.id) || item.c.implementationDate); return d === null ? 'No activity logged yet.' : 'Last touchpoint ' + d + ' day(s) ago.'; } return item.detail; }
+function aiKindLabel(item){ return (item.kind === 'Off Track' || item.kind === 'Watch' || item.kind === 'Behind target') ? 'Pacing observation' : (item.kind === 'Risk language' || item.kind === 'Category signal') ? 'Note wording' : item.kind; }
 function getRiskLog(){
   if(!isRecordObject(DATA.riskLog)) DATA.riskLog = {};
   return DATA.riskLog;
@@ -10788,11 +10791,11 @@ function buildRiskExecSummary(item){
   // Ordered most- to least- essential; clauses are dropped from the END when the
   // budget runs out, so the account and the risk itself always survive.
   const parts = [
-    `${c.name} — ${item.kind}${item.category && item.category.label ? ` (${item.category.label})` : ''}.`,
-    String(item.detail || '').replace(/\s+/g, ' ').trim(),
+    `${c.name} — ${aiKindLabel(item)}${item.category && item.category.label ? ` (${item.category.label})` : ''}.`,
+    String(aiObservation(item) || '').replace(/\s+/g, ' ').trim(),
     inImplementation(c)
       ? `In implementation, ${implPhaseLabel(getImplementationState(c).phase)}.`
-      : `${healthScore(c)}% health, ${sessionsCompletedCount(c)}/${plannedSessionTotal(c)} sessions.`,
+      : `${sessionsCompletedCount(c)}/${plannedSessionTotal(c)} sessions.`,
     `Source: ${riskProvenanceLabel(item)}; ${state}.`
   ].filter(Boolean).map(p => /[.!?…]$/.test(p) ? p : p + '.');
   let out = '';
@@ -10829,13 +10832,13 @@ Write ONE paragraph of AT MOST ${RISK_SUMMARY_MAX} characters. No preamble, no h
 Ground every statement in the data below. Do NOT invent causes, dates, people, commitments, or product behaviour. If the notes do not explain WHY something is happening, say what is observable and stop — do not speculate.
 
 ACCOUNT: ${c.name} (${c.module})
-RISK TYPE: ${item.kind}
+RISK TYPE: ${aiKindLabel(item)}
 SUGGESTED CATEGORY: ${item.category ? item.category.label : 'Other'}
-WHAT THE TRACKER OBSERVED: ${item.detail}
+WHAT THE TRACKER OBSERVED: ${aiObservation(item)}
 PROVENANCE: ${riskProvenanceLabel(item)}
 STATUS: ${inImplementation(c)
   ? 'In implementation, phase ' + implPhaseLabel(getImplementationState(c).phase)
-  : accountStateLabel(c) + ', ' + healthScore(c) + '% health, ' + sessionsCompletedCount(c) + '/' + plannedSessionTotal(c) + ' sessions logged'}
+  : sessionsCompletedCount(c) + '/' + plannedSessionTotal(c) + ' sessions logged'}
 
 RECENT NOTES:
 ${notes || '(no recent notes logged)'}
