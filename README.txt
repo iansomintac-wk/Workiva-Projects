@@ -72,6 +72,8 @@ Keeps an OSM's book of business in one place and turns it into a day's work.
               The same overdue surveys are pinned as one line at the top of Today ("Surveys to chase: ..."), outside the ranking.
               Record the two dates ("Survey sent", "Answered") on the account's Details tab (the names in the pinned line and the CSAT follow-up row open it) or in the CSAT block of the call panel.
               The Details tab has two ID boxes: Gainsight ID and Salesforce ID (both optional; the CSAT import matches on them).
+              Settings > Import CSAT dates (CSV): pick the Snowflake CSAT export; a preview shows what would change. Apply downloads a backup file
+              (book-of-business-export.json) first, then writes the dates and shows a report. Undo reverses the import.
               In 1.1, Call prep also shows the closing 30 speech lines of the newest transcript on the
               account, in a scrolling box with a Read the full transcript link; hidden when there is none.
               It also shows a Promises section: the account's open commitments, up to 5, most urgent

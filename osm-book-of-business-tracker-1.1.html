@@ -19737,7 +19737,8 @@ function openCsatImportModal(plan, meta){
   backdrop.querySelector('#csat-cancel').addEventListener('click', close);
   backdrop.querySelector('#csat-apply').addEventListener('click', ()=> {
     const ticked = [...backdrop.querySelectorAll('[data-csat-sug]')].filter(b => b.checked).map(b => Number(b.dataset.csatSug));
-    commitCsatImport(plan, ticked, meta);
+    backdrop.remove();
+    openCsatReportModal(commitCsatImport(plan, ticked, meta));
   });
 }
 function handleCsatFile(e){
@@ -19763,7 +19764,28 @@ function bindCsatFileInput(root){
   const el = root.querySelector('#import-csat-input');
   if(el) el.addEventListener('change', handleCsatFile);
 }
-function commitCsatImport(plan, tickedRows, meta){ return null; }
+function commitCsatImport(plan, tickedRows, meta){
+  exportData();                       // the backup downloads first
+  markUndoable('CSAT import');
+  const res = applyCsatImportPlan(plan, DATA.customers, tickedRows || []);
+  const by = {}; plan.skipped.forEach(s => { by[s.reason] = (by[s.reason] || 0) + 1; });
+  DATA.csatImport = {fileName:meta && meta.fileName || '', fileModified:meta && meta.fileModified || 0, appliedAt:new Date().toISOString(),
+    counts:{matched:plan.matched.length, dateChanges:plan.changes.length, notInRunway:plan.unmatchedRows.length, skipped:plan.skipped.length}};
+  saveData();
+  render();
+  return {accounts:res.accounts, fields:res.fields, idsWritten:res.idsWritten, backupFile:'book-of-business-export.json', skippedByReason:by, ambiguous:plan.ambiguous.length, conflicts:plan.conflicts.length};
+}
+function openCsatReportModal(res){
+  const backdrop = document.createElement('div'); backdrop.className = 'modal-backdrop';
+  const reasons = Object.keys(res.skippedByReason).map(k => `<li>${escapeHtml(k)}: ${res.skippedByReason[k]}</li>`).join('');
+  backdrop.innerHTML = `<div class="modal" style="max-width:420px;"><h3>CSAT import done</h3>
+    <p>Updated ${res.accounts} account${res.accounts === 1 ? '' : 's'} (${res.fields} date${res.fields === 1 ? '' : 's'}).</p>
+    ${reasons || res.ambiguous || res.conflicts ? `<ul style="font-size:var(--text-sm);">${reasons}${res.ambiguous ? `<li>Ambiguous: ${res.ambiguous}</li>` : ''}${res.conflicts ? `<li>Conflict: ${res.conflicts}</li>` : ''}</ul>` : ''}
+    <p style="font-size:var(--text-sm); color:var(--text-dim);">Backup downloaded first: ${escapeHtml(res.backupFile)}. Undo is available.</p>
+    <div class="modal-actions"><button class="btn btn-primary" id="csat-report-close">Close</button></div></div>`;
+  document.body.appendChild(backdrop);
+  backdrop.querySelector('#csat-report-close').addEventListener('click', () => backdrop.remove());
+}
 function guessPartnerColumnMapping(headers){
   // Each guess excludes columns already claimed by an earlier field —
   // otherwise "Update Notes" wins the date guess via its embedded "date"
