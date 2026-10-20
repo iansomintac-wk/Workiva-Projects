@@ -210,7 +210,7 @@ Running the graduation checks headlessly (needs Chrome or Edge):
   tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 491
   step 0 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 34
   step 1 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 65
-  FX1 probe (stale tab, deferred backup write): node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/b2-fx1-probe.js --fn b2Fx1Probe --expect 1
+  FX1 probe (stale tab, deferred backup write): node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/b2-fx1-probe.js --fn b2Fx1Probe --expect 2
   step 1 cold start (C8): node tools/step1-coldstart.mjs
   tools/selfchecks-1.1.js is the 1.1 copy of the suite (475 checks plus 5 gone-quiet checks; three edited, see CHANGELOG).
 
@@ -308,7 +308,7 @@ tools/selfchecks.js (it is not in the shipped file); the guide's is in the page.
   tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 491
   step 0 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 34
   step 1 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 65
-  FX1 probe (stale tab, deferred backup write): node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/b2-fx1-probe.js --fn b2Fx1Probe --expect 1
+  FX1 probe (stale tab, deferred backup write): node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/b2-fx1-probe.js --fn b2Fx1Probe --expect 2
   step 1 cold start (C8): node tools/step1-coldstart.mjs
   tools/selfchecks-1.1.js is the 1.1 copy of the suite (475 checks plus 5 gone-quiet checks; three edited, see CHANGELOG).
   guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
