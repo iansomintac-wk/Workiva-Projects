@@ -6,7 +6,7 @@ function env(win) {
   const h = {}; const els = {}; const log = [];
   const mk = sel => (els[sel] = { style: {}, addEventListener: (ev, fn) => { h[sel + ':' + ev] = fn; } });
   const backdrop = { querySelector: mk, remove: () => log.push('removed') };
-  const c = loadCsat(['bindCsatSettings'], [], { window: win, document: { getElementById: () => ({ click() {} }) },
+  const c = loadCsat(['bindCsatSettings'], [], { window: win, _csatWatch: { note: '' }, document: { getElementById: () => ({ click() {} }) },
     csatWatchUse: async d => log.push(['use', d]), csatWatchRefresh: async r => log.push(['refresh', r]), csatWatchStop: async () => log.push('stop'),
     showToast: m => log.push(['toast', m]) });
   c.bindCsatSettings(backdrop);

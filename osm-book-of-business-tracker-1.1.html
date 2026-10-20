@@ -18300,18 +18300,28 @@ async function csatFolderCheck(dir, request){
 }
 async function csatFolderStore(h){ try{ await fsIdb('readwrite', st => st.put(h, CSAT_FOLDER_KEY)); return true; }catch(e){ return false; } }
 async function csatFolderLoad(){ try{ return await fsIdb('readonly', st => st.get(CSAT_FOLDER_KEY)); }catch(e){ return undefined; } }
-let _csatWatch = {state:'off', dir:null, fileName:'', fileModified:0, plan:null, text:''};
+let _csatWatch = {state:'off', dir:null, fileName:'', fileModified:0, plan:null, text:'', note:'', manual:false};
 async function csatWatchRefresh(request){
+  const w = _csatWatch;                       // 1e: remember which watch this scan belongs to
+  const maxBytes = 8 * 1024 * 1024;           // 1b: same 8 MB limit as the manual import
+  const done = o => { if(_csatWatch !== w) return false; Object.assign(w, o, {manual:!!request}); return true; };
   try{
-    const r = await csatFolderCheck(_csatWatch.dir, request);
-    if(r.state === 'prompt') _csatWatch = Object.assign(_csatWatch, {state:'prompt', plan:null});
+    const r = await csatFolderCheck(w.dir, request);
+    if(_csatWatch !== w) return;
+    if(r.state === 'prompt') done({state:'prompt', plan:null, note:''});
     else if(r.state === 'granted' && r.isNew){
-      const text = await r.file.text();
-      const plan = buildCsatImportPlan(parseCsv(text), DATA.customers, {});
-      _csatWatch = Object.assign(_csatWatch, {state:plan.error ? 'off' : 'new', fileName:r.newest.name, fileModified:r.newest.lastModified, plan:plan, text:text});
-    } else _csatWatch = Object.assign(_csatWatch, {state:'off', plan:null});
-  }catch(e){ _csatWatch = Object.assign(_csatWatch, {state:'off', plan:null}); }
-  render();
+      if(r.file && r.file.size > maxBytes) done({state:'off', plan:null, note:'the newest export is over 8 MB, so it was not read.'});
+      else {
+        const text = await r.file.text();
+        if(_csatWatch !== w) return;           // 1e: stopped or replaced while reading
+        const plan = buildCsatImportPlan(parseCsv(text), DATA.customers, {});
+        if(plan.error) done({state:'off', plan:null, note:'the newest file is not a CSAT export.'});
+        else if(!plan.changes.length && !plan.suggestions.length) done({state:'off', plan:null, note:'nothing new to import.'});   // 1a
+        else done({state:'new', fileName:r.newest.name, fileModified:r.newest.lastModified, plan:plan, text:text, note:''});
+      }
+    } else done({state:'off', plan:null, note: r.state === 'granted' ? 'nothing new to import.' : ''});
+  }catch(e){ done({state:'off', plan:null, note:'could not read that folder. Pick it again in Settings.'}); }
+  if(_csatWatch === w) render();
 }
 async function csatWatchUse(dir){
   _csatWatch.dir = dir;
@@ -18319,7 +18329,7 @@ async function csatWatchUse(dir){
   await csatWatchRefresh(false);
 }
 async function csatWatchStop(){
-  _csatWatch = {state:'off', dir:null, fileName:'', fileModified:0, plan:null, text:''};
+  _csatWatch = {state:'off', dir:null, fileName:'', fileModified:0, plan:null, text:'', note:'', manual:false};
   await csatFolderClear();
   render();
 }
@@ -18347,6 +18357,7 @@ async function csatWatchClick(e){
 function renderCsatWatchLine(){
   const w = _csatWatch;
   if(w.state === 'prompt') return `<div class="section-card" id="csat-watch-line" style="margin-bottom:16px; border-left:3px solid var(--accent-watch);"><div style="font-size:var(--text-sm); color:var(--text-dim);"><strong style="color:var(--text);">CSAT folder:</strong> <button class="link-btn" data-csat-allow style="font-weight:600;">click to allow</button></div></div>`;
+  if(w.state === 'off' && w.note && w.manual) return `<div class="section-card" id="csat-watch-line" style="margin-bottom:16px; border-left:3px solid var(--accent-watch);"><div style="font-size:var(--text-sm); color:var(--text-dim);"><strong style="color:var(--text);">CSAT folder:</strong> ${escapeHtml(w.note)}</div></div>`;
   if(w.state !== 'new' || !w.plan) return '';
   const d = new Date(w.fileModified), mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
   const n = w.plan.changes.length;
@@ -19856,7 +19867,7 @@ function bindCsatSettings(backdrop){
     });
   }
   const chk = backdrop.querySelector('#btn-csat-check');
-  if(chk) chk.addEventListener('click', ()=> csatWatchRefresh(true));
+  if(chk) chk.addEventListener('click', async ()=> { await csatWatchRefresh(true); if(_csatWatch.note) showToast('CSAT folder: ' + _csatWatch.note); });
   const stop = backdrop.querySelector('#btn-csat-unwatch');
   if(stop) stop.addEventListener('click', ()=> csatWatchStop());
 }
