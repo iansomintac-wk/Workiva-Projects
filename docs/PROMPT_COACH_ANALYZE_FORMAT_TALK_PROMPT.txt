@@ -1,0 +1,18 @@
+TALK: Prompt coach, a bare "analyze/review X" gets a guessed task format (Workiva repo).
+
+DRAFT, written 2026-10-20 by session e5d4ebf8 from the hand-off PM step. Not queued: start it only on Ian's yes.
+Load studio-harness:talk-and-run first. Talk only: no engine change, no build, no push.
+Work in a fresh worktree branched from origin/prompt-coach. Never open any heldout/ or sealed file, and never
+probe data/test.jsonl.
+
+SOURCE: prompt-coach/README.md, "Still open": when the coach rewrites a bare "analyze/review X" it still picks a
+task format, which can be wrong if the task is misread; the reason line for weak prompts is generic.
+No docs/research note covers it yet (PM, 2026-10-20; read, not measured).
+
+DO
+1. Give Ian the time.
+2. Read-only probe on non-held-out data only (data/train_*.jsonl, research/live-tests/): count the bare
+   analyze/review asks and how many get a wrong task format in Strong. Write the probe and its counts to a file.
+3. Tell Ian the count in plain words. If it is under about 3 prompts, recommend parking it.
+   Decision card: park, fix the format pick, or add a clarifying blank.
+4. Record his answer verbatim in the run ledger's rulings.md. Hand-off PM step; ask before starting any next session.
