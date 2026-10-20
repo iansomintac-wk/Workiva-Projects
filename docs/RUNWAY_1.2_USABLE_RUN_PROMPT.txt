@@ -1,0 +1,54 @@
+RUN (light): Runway 1.2 usable + connector seam, piece B (Runway Tracker repo)
+Written 2026-10-20 ~05:58Z by the cleanup talk session (NEW - Runway 1.2 cleanup talk). Worktree: this folder
+(.claude/worktrees/runway-1.2-cleanup, branch runway-1.2-cleanup, fast-forwarded to master after run A merged; master
+is on GitHub as branch runway-tracker). Run `date -u` before every stamp. Give the time at start and at each stop.
+Ian is AWAY tonight: every question goes to the PM proxy (the newest "NEW - PM proxy overnight 10-20..." session in ListAgents; at 06:00Z "NEW - PM proxy overnight 10-20 2") by SendMessage as a decision
+card, recommendation first with its cheapest check; never AskUserQuestion. The proxy logs its answer in studio-harness
+.ledger/proxy/decisions.md before replying; check that line exists, then act as on Ian's yes.
+
+SPEC (approved by the PM proxy 2026-10-20T05:53Z, studio-harness .ledger/proxy/decisions.md:77): docs/superpowers/specs/2026-10-20-runway-1.2-
+usable-design.md. Read it whole: Ian's words, the proxy's conditions (Step 2 in its own `v13-step2:` commits; no network
+even by accident; send bugs only with a failing reproduction), evidence, B1 seam, B2 stale tab, B3 send bugs, B4 Step 2
+(S2a-S2e), build rules, success criteria. Probe notes: .ledger/2026-10-20-runway-1.2-cleanup/probe-b1..b4.md.
+
+LEDGER: C:/Users/teasp/Documents/Runway Tracker/.claude/worktrees/runway-1.2-cleanup/.ledger/2026-10-20-runway-1.2-cleanup
+(progress.md: run A's rows are above yours; add rows under a "## Run B" heading). slip.json there was written by Ian:
+never rewrite it. Push own branch yes, merge yes once checks and the final review pass, new sessions yes, no money.
+
+METHOD: studio-harness:talk-and-run, "The run", light. Lead coordinates only; one fresh helper per piece, in order, never in
+parallel.
+1. First check: echo "$STUDIO_RUN_LEDGER"; test -f on its budget.json and slip.json; empty or missing is a stop. Then
+   git status clean, HEAD is master 2a88765 (run A's merge) plus the talk's docs commit.
+2. Baseline, run alone, logs to files: full suite `node --test --test-reporter=spec test/*.test.mjs`, selfcheck
+   (tools/selfcheck.mjs on 1.1 with --seed demo-seed.js --expect 483; run A left 483/483, read from its report), connector tests
+   `node --test connector/test/*.test.mjs` (168/168 after run A, read from its report), sim verify.
+3. Plan by studio-harness:plan-writer at docs/superpowers/plans/2026-10-20-runway-1.2-usable.md: tasks of <= 8 steps,
+   exact files, check command and expected output each. Header `Suite: node --test --test-reporter=spec test/*.test.mjs`,
+   `Data: (none)`, and a `## Expected breaks` section (`<check title> | fixed by Task <n>`). No bin/rehearse.mjs here.
+   Order: B1 seam (2-3 tasks, connector/ only); B2 stale tab; B3 the two reproductions (fix task only if red); B4 S2a,
+   S2b, S2c, S2d, S2e, one task each, every commit subject starting `v13-step2:`. Each html change re-pins the 1.1 sha in
+   docs/HOSTING.md and tools/sim/osm-day/verify.mjs C8, and the selfcheck --expect count, in the same commit.
+4. ONE Codex plan review, read-only: codex exec -c windows.sandbox=unelevated ... < /dev/null. Fold findings in. STOP: the
+   PM proxy approves the plan (decision card by SendMessage).
+5. Build each task test-first (implementer; a fresh checker; the lead re-runs the check line itself and reads only the
+   summary). Write each task's check lines to .ledger/<run>/role-checks.txt before the checker.
+6. ONE full verify, run alone. Headless-Chrome drive of the real UI for B2 (two pages on one profile) and B4 (risk hub,
+   progress report, Call prep prompt preview). Captures: stale-tab banner, Signals to check, the report without Health,
+   the Expansion label; open every capture to check it; the PM proxy makes the look calls, "proxy decided", one batch.
+   Revert check (spec criterion 6) on a scratch branch that is never pushed, then deleted.
+7. Final review: Opus studio-harness:final-reviewer and Codex read-only, merged; fix must-fix; re-check.
+8. Evidence doc docs/evidence/2026-10-20-runway-1.2-usable.md (numbers, measured vs read, predictions vs results, where to
+   look). README/CHANGELOG/VALIDATION/HOSTING and connector docs in the same commits as the behaviour.
+9. Merge into master per the merge rule: push origin/runway-tracker's tip to backup/master-before-runway-1.2-usable-
+   2026-10-20 first; merge in the main checkout (C:/Users/teasp/Documents/Runway Tracker, on master) with --no-ff,
+   conflicts keep both sides; full suite on the result has no failure master lacks; then push master to origin
+   runway-tracker, fast-forward, never force.
+10. Tell the cleanup talk session ("NEW - Runway 1.2 cleanup talk") and the PM proxy by SendMessage: merge commit, suite
+    line, and the for-Ian list path. Then the Hand-off PM step.
+
+Codex on this PC: -c windows.sandbox=unelevated (ledger gotchas 2026-10-14, 2026-10-17).
+NO-GOS: no force flags; $0, no paid tools; no network calls from code or tests; no credentials or real Snowflake/
+Gainsight values anywhere; no ~/.claude writes (session-rename exception only); no publishing; never read *RESTORE-POINT*
+files or exports or Ian's real CSAT file; 1.0 is never edited.
+A refused step: tell the PM proxy at once with the exact line Ian would type; no third try.
+For Ian: .ledger/2026-10-20-runway-1.2-cleanup/for-ian.md (add any send bug that did not reproduce).
