@@ -37,6 +37,11 @@ then by name. The AI read, Needs attention and the next-action list use the same
 "Upsell" and "expansion conversation" in a note are no longer a Sales/Scope risk phrase. They form their own
 Expansion category, shown as a suggestion chip under the note, and never raise a risk or a Risk tab entry.
 
+The Risk tab no longer calls anything a risk until you say so. What the tracker noticed (missing evidence, pacing,
+note wording, a flagged note, implementation risk or a pause) is listed under "Signals to check", each with where it
+came from. "Yes — it's real" now asks why (required, up to 200 characters); only a case confirmed with a reason
+becomes a risk card with its next steps. The Gainsight queue is unchanged.
+
 Hosted: the 1.1 tracker can also be served from a company-sign-in site. Running
 node tools/build-site.mjs makes site/ (two files); docs/HOSTING.md says what a
 host must provide. Nothing here publishes anything.
@@ -202,7 +207,7 @@ Running the graduation checks headlessly (needs Chrome or Edge):
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
-  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 489
+  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 491
   step 0 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 34
   step 1 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 65
   step 1 cold start (C8): node tools/step1-coldstart.mjs
@@ -299,7 +304,7 @@ tools/selfchecks.js (it is not in the shipped file); the guide's is in the page.
 
   tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 475
             must be 475/475 (the suite lives in tools/selfchecks.js and is not shipped)
-  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 489
+  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 491
   step 0 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 34
   step 1 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 65
   step 1 cold start (C8): node tools/step1-coldstart.mjs

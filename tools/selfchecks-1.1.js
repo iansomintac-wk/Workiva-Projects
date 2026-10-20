@@ -1022,6 +1022,50 @@ function _runSelfChecksInner(){
     _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM;
     check('v13 step 2d: upsell and expansion conversation form their own Expansion category and never raise a risk', ok, detail);
   })();
+  (function(){                                   // v13 Step 2e (1): only a reason makes a risk
+    let ok = false, detail = '';
+    const prevLog = DATA.riskLog;
+    const isRisk = typeof riskItemIsRisk === 'function' ? riskItemIsRisk : () => null;   // null (not a throw) on a build without it
+    try{
+      DATA.riskLog = {};
+      const it = {kind: 'Off Track', sev: 3, c: {id: '__s2e__', name: 'S2eCo'}, detail: 'd', date: todayISO()};
+      it.logKey = riskItemKey(it);
+      const noReason = setRiskVerdict(it, 'confirmed') === false && setRiskVerdict(it, 'confirmed', '   ') === false && riskVerdictState(it) === 'unreviewed';
+      const withReason = setRiskVerdict(it, 'confirmed', 'customer told me on the call') === true && riskVerdictState(it) === 'confirmed' && isRisk(it) === true;
+      const signalsOnly = ['Off Track', 'Watch', 'Behind target', 'Risk language', 'Category signal', 'Flagged note', 'Implementation risk', 'Implementation paused']
+        .every(kind => isRisk({kind, tracking: {}}) === false);
+      ok = noReason && withReason && signalsOnly;
+      detail = JSON.stringify({noReason, withReason, signalsOnly});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.riskLog = prevLog;
+    check('v13 step 2e: confirming a risk needs a non-empty reason, and nothing is a risk before that', ok, detail);
+  })();
+  (function(){                                   // v13 Step 2e (2): the hub lists signals apart from risks
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevShow = ui.riskShowDismissed, prevRM = _riskMemo, prevHM = _healthMemo;
+    const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+    try{
+      DATA.riskLog = {}; ui.riskShowDismissed = false;
+      const c = v13Acct('__s2e2__');                       // auto Off Track only: a signal
+      DATA.customers = [c]; DATA.activities = {};
+      reset();
+      const pre_oneCase = buildRiskCases(buildRiskHubList()).length === 1;   // precondition, true on the parent too
+      const before = renderRiskTab();
+      const secStart = before.indexOf('Signals to check');
+      const sig = secStart !== -1;
+      const rowKept = sig && before.indexOf('id="rk-c-' + c.id + '"') > secStart && before.indexOf('data-risk-confirm="' + c.id + '"') > secStart;
+      const noCard = before.indexOf('class="rk3-card') === -1;
+      buildRiskCases(buildRiskHubList()).forEach(k => k.items.forEach(it => setRiskVerdict(it, 'confirmed', 'real: they said so')));
+      reset();
+      const after = renderRiskTab();
+      const guard_cardAfterConfirm = after.indexOf('class="rk3-card') !== -1;   // guard, true on the parent too
+      ok = pre_oneCase && sig && rowKept && noCard && guard_cardAfterConfirm;
+      detail = JSON.stringify({pre_oneCase, sig, rowKept, noCard, guard_cardAfterConfirm});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.riskShowDismissed = prevShow;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM;
+    check('v13 step 2e: a missing-evidence case is listed under Signals to check (keeping its row id and confirm button), not as a risk card, until a reason confirms it', ok, detail);
+  })();
   /* ============ v61: Today unified action ranking ============
      "no Today row renders without a citation" and "Start-here card shows exactly
      todayActionList()[0]" are the load-bearing ones. They are what keep the
@@ -4548,7 +4592,7 @@ function _runSelfChecksInner(){
       const it = {kind:'Risk language', sev:2, c:{id:'__v__', name:'VerdictCo'}, detail:'d', date: todayISO()};
       it.logKey = riskItemKey(it);
       const fresh = riskVerdictState(it) === 'unreviewed';
-      setRiskVerdict(it, 'confirmed');
+      setRiskVerdict(it, 'confirmed', 'told me on the call');
       const confirmed = riskVerdictState(it) === 'confirmed';
       setRiskVerdict(it, 'dismissed', '  the keyword was about   their own tooling  ');
       const dismissed = riskVerdictState(it) === 'dismissed';
@@ -4648,7 +4692,7 @@ function _runSelfChecksInner(){
       // (b) Approving reveals the workspace for THAT account only.
       const cases = buildRiskCases(buildRiskHubList());
       const first = cases.find(k => k.state === 'unreviewed');
-      first.items.forEach(it => setRiskVerdict(it, 'confirmed'));
+      first.items.forEach(it => setRiskVerdict(it, 'confirmed', 'told me on the call'));
       _renderMemoResets.forEach(r => r()); _riskMemo = new Map();
       const afterApprove = renderRiskTab();
       const revealed = (afterApprove.match(/<textarea/g) || []).length === 1
@@ -5904,6 +5948,8 @@ function _runSelfChecksInner(){
         ? [{id:'a'+c.id, date: isoAddDays(todayISO(), -6), type:'Onboarding Session',
             summary:'They raised a blocker and are frustrated.', sessionNumber:1, checklist:[], flagged:true}]
         : []; return m; }, {});
+      // v13 Step 2e: only a case confirmed with a reason is a deck card, so confirm each one first (fixed by Task 11)
+      buildRiskCases(buildRiskHubList()).forEach(k => k.items.forEach(it => setRiskVerdict(it, 'confirmed', 'told me on the call')));
       _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
 
       const html = renderRiskTab();

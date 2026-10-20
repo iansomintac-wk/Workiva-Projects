@@ -40,7 +40,7 @@ test('CHANGELOG.txt: the hosting heading is the FIRST version section and names 
 });
 test('HOSTING.md covers checking a copy from an address and publishing a new version; CHANGELOG names --serve', () => {
   const t = hosting();
-  for (const re of [/--serve site/, /node tools\/selfcheck\.mjs/, /upload/i, /489/]) assert.match(t, re);
+  for (const re of [/--serve site/, /node tools\/selfcheck\.mjs/, /upload/i, /491/]) assert.match(t, re);
   assert.match(firstSection(), /--serve/);
 });
 test('HOSTING.md gives the three Settings storage lines verbatim; CHANGELOG names them', () => {
