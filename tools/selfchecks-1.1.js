@@ -9413,6 +9413,25 @@ function _runSelfChecksInner(){
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
     check('v13 step 2a: no AI prompt text built for a seeded account carries its health figure, automatic risk level or automatic kind label, and confirmed reasons are included', ok, detail);
   })();
+  (function(){                                   // v13 Step 2b
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities;
+    try{
+      DATA.customers = [v13Acct('__s2b__')]; DATA.activities = {};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const model = buildProgressReportModel();
+      const rows = Object.values(model.groups).reduce((a, l) => a.concat(l), []);
+      const noKey = rows.length === 1 && rows.every(r => !('health' in r));
+      const html = buildProgressReportHtml(model);
+      const ths = (html.match(/<th[\s>]/g) || []).length, tds = (html.match(/<td[\s>]/g) || []).length;
+      const noHeader = !/<th[^>]*>\s*Health\s*<\/th>/.test(html);
+      ok = noKey && noHeader && ths === 6 && tds === 6;      // one account: one table, six columns, six cells
+      detail = JSON.stringify({noKey, noHeader, ths, tds, rows: rows.length});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('v13 step 2b: the progress report rows carry no health figure and the table has no Health column', ok, detail);
+  })();
   (function(){                                   // c5c
     let ok = false, detail = '';
     try{

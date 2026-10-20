@@ -18659,7 +18659,6 @@ function buildProgressReportModel(){
     groups[cat.key].push({
       name: c.name, module: c.module,
       stage: impl ? `Implementation · ${implPhaseLabel(getImplementationState(c).phase)}` : (DATA.config.stages.find(s=>s.key===c.stage) || {label:c.stage}).label,
-      health: impl ? null : healthScore(c),
       sessions: `${sessionsCompletedCount(c)}/${plannedSessionTotal(c)}`,
       days: daysSince(lastActivityDate(c.id) || c.implementationDate),
       reason: cat.reason,
@@ -18694,7 +18693,6 @@ function buildProgressReportHtml(model){
         <th style="padding:4px 8px; border-bottom:1px solid #ccc;">Module</th>
         <th style="padding:4px 8px; border-bottom:1px solid #ccc;">Stage</th>
         <th style="padding:4px 8px; border-bottom:1px solid #ccc;">Sessions</th>
-        <th style="padding:4px 8px; border-bottom:1px solid #ccc;">Health</th>
         <th style="padding:4px 8px; border-bottom:1px solid #ccc;">Days since touch</th>
         <th style="padding:4px 8px; border-bottom:1px solid #ccc;">Why it's here / next step</th>
       </tr></thead>
@@ -18704,7 +18702,6 @@ function buildProgressReportHtml(model){
           <td style="padding:5px 8px; border-bottom:1px solid #eee;">${esc(r.module)}</td>
           <td style="padding:5px 8px; border-bottom:1px solid #eee;">${esc(r.stage)}</td>
           <td style="padding:5px 8px; border-bottom:1px solid #eee;">${esc(r.sessions)}</td>
-          <td style="padding:5px 8px; border-bottom:1px solid #eee;">${r.health === null ? '—' : r.health + '%'}</td>
           <td style="padding:5px 8px; border-bottom:1px solid #eee;">${r.days === null ? 'never' : r.days}</td>
           <td style="padding:5px 8px; border-bottom:1px solid #eee; color:#444;">${esc(r.reason)}<br><span style="color:#7c4dbe;">→ ${esc(r.nextAction)}</span></td>
         </tr>`).join('')}
