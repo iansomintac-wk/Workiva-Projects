@@ -232,7 +232,8 @@ export const PART_A = [
     const after = await ctx.ev(card);
     const lastAfter = await ctx.ev(lastActioned);
     const stays = await staysListed(ctx, id);
-    return { passed: stays.ok, evidence: `case ${cls(before)} -> ${after === null ? 'gone from the list' : cls(after)}; ${JSON.stringify(stays)}; lastActioned ${lastBefore} -> ${lastAfter}` };
+    const actioned = !!lastAfter && lastAfter.split(",").every(Boolean);
+    return { passed: stays.ok && actioned, evidence: `actioned ${actioned}; case ${cls(before)} -> ${after === null ? 'gone from the list' : cls(after)}; ${JSON.stringify(stays)}; lastActioned ${lastBefore} -> ${lastAfter}` };
   } },
   { id: 'D9', async run(ctx) {
     await ctx.openOn(DAY);
