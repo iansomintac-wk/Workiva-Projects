@@ -20,3 +20,4 @@ test('CHANGELOG 1.2 task 7: dry-run preview bullet', () => assert.match(s12, /Im
 test('CHANGELOG 1.2 task 8: backup-first apply bullet', () => assert.match(s12, /Apply downloads a backup first/));
 test('README task 8: Settings entry for Import CSAT dates (CSV)', () => assert.match(readFileSync('README.txt', 'utf8'), /Import CSAT dates \(CSV\)/));
 test('CHANGELOG 1.2 task 9: folder watch plumbing bullet', () => assert.match(s12, /Folder watch plumbing: newest csat_runway_export_/));
+test('CHANGELOG 1.2 task 10: Today line bullet', () => assert.match(s12, /Today shows "New CSAT export" with Review; nothing applies without Apply/));

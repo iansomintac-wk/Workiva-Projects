@@ -62,7 +62,7 @@ test('CSAT apply click: reads the ticked suggestion rows, closes the dry run, co
     addEventListener() {}, remove() { removed++; } };
   const doc = { createElement: () => backdrop, body: { appendChild() {} } };
   const c = loadCsat([...PLAN_FNS, 'escapeHtml', 'escapeAttr', 'csatPlanSummary', 'csatSectionHtml', 'openCsatImportModal'], PLAN_CONSTS,
-    { document: doc, commitCsatImport: (...a) => { calls.push(['commit', J(a)]); return { accounts: 1 }; }, openCsatReportModal: r => calls.push(['report', J(r)]), showToast() {} });
+    { document: doc, commitCsatImport: (...a) => { calls.push(['commit', J(a)]); return { accounts: 1 }; }, openCsatReportModal: r => calls.push(['report', J(r)]), csatWatchRefresh() {}, showToast() {} });
   const { table, customers } = makeFixture();
   c.openCsatImportModal(c.buildCsatImportPlan(table, customers, {}), { fileName: 'f.csv', fileModified: 7 });
   applyFn();

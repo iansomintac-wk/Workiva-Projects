@@ -13073,6 +13073,7 @@ function renderToday(){
   return `
     <div>
       ${renderSurveysToChase(DATA.customers)}
+      ${renderCsatWatchLine()}
       ${renderDayStanding(day)}
       ${renderDayBriefBar()}
       ${readiness}
@@ -18292,6 +18293,50 @@ async function csatFolderCheck(dir, request){
 }
 async function csatFolderStore(h){ try{ await fsIdb('readwrite', st => st.put(h, CSAT_FOLDER_KEY)); return true; }catch(e){ return false; } }
 async function csatFolderLoad(){ try{ return await fsIdb('readonly', st => st.get(CSAT_FOLDER_KEY)); }catch(e){ return undefined; } }
+let _csatWatch = {state:'off', dir:null, fileName:'', fileModified:0, plan:null, text:''};
+async function csatWatchRefresh(request){
+  try{
+    const r = await csatFolderCheck(_csatWatch.dir, request);
+    if(r.state === 'prompt') _csatWatch = Object.assign(_csatWatch, {state:'prompt', plan:null});
+    else if(r.state === 'granted' && r.isNew){
+      const text = await r.file.text();
+      const plan = buildCsatImportPlan(parseCsv(text), DATA.customers, {});
+      _csatWatch = Object.assign(_csatWatch, {state:plan.error ? 'off' : 'new', fileName:r.newest.name, fileModified:r.newest.lastModified, plan:plan, text:text});
+    } else _csatWatch = Object.assign(_csatWatch, {state:'off', plan:null});
+  }catch(e){ _csatWatch = Object.assign(_csatWatch, {state:'off', plan:null}); }
+  render();
+}
+async function csatWatchUse(dir){
+  _csatWatch.dir = dir;
+  await csatFolderStore(dir);
+  await csatWatchRefresh(false);
+}
+async function csatWatchStop(){
+  _csatWatch = {state:'off', dir:null, fileName:'', fileModified:0, plan:null, text:''};
+  await csatFolderClear();
+  render();
+}
+async function csatWatchInit(){
+  if(typeof window.showDirectoryPicker !== 'function') return;
+  const h = await csatFolderLoad();
+  if(!h) return;
+  _csatWatch.dir = h;
+  await csatWatchRefresh(false);
+}
+async function csatWatchClick(e){
+  const t = e.target && e.target.closest && e.target.closest('[data-csat-review],[data-csat-allow]');
+  if(!t) return;
+  if(t.hasAttribute('data-csat-allow')) await csatWatchRefresh(true);
+  else if(_csatWatch.plan) openCsatImportModal(_csatWatch.plan, {fileName:_csatWatch.fileName, fileModified:_csatWatch.fileModified});
+}
+function renderCsatWatchLine(){
+  const w = _csatWatch;
+  if(w.state === 'prompt') return `<div class="section-card" id="csat-watch-line" style="margin-bottom:16px; border-left:3px solid var(--accent-watch);"><div style="font-size:var(--text-sm); color:var(--text-dim);"><strong style="color:var(--text);">CSAT folder:</strong> <button class="link-btn" data-csat-allow style="font-weight:600;">click to allow</button></div></div>`;
+  if(w.state !== 'new' || !w.plan) return '';
+  const d = new Date(w.fileModified), mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+  const n = w.plan.changes.length;
+  return `<div class="section-card" id="csat-watch-line" style="margin-bottom:16px; border-left:3px solid var(--accent-watch);"><div style="font-size:var(--text-sm); color:var(--text-dim);"><strong style="color:var(--text);">New CSAT export (${d.getDate()} ${mon}):</strong> ${n} date${n === 1 ? '' : 's'} would change · <button class="link-btn" data-csat-review style="font-weight:600;">Review</button></div></div>`;
+}
 async function csatFolderClear(){ try{ await fsIdb('readwrite', st => st.delete(CSAT_FOLDER_KEY)); return true; }catch(e){ return false; } }
 
 async function fsPermission(handle, request){
@@ -19764,6 +19809,7 @@ function openCsatImportModal(plan, meta){
     const ticked = [...backdrop.querySelectorAll('[data-csat-sug]')].filter(b => b.checked).map(b => Number(b.dataset.csatSug));
     backdrop.remove();
     openCsatReportModal(commitCsatImport(plan, ticked, meta));
+    csatWatchRefresh(false);
   });
 }
 function handleCsatFile(e){
@@ -20804,6 +20850,8 @@ window.__appReadyDone = false;
   snapshotHealthHistory(); // v39: visit-driven weekly snapshot — before first render so trend data includes today
   applyRoute(); // v64: AFTER loadData — the route validates account ids against the loaded book
   render();
+  if(!window.__csatClickBound){ window.__csatClickBound = true; document.addEventListener('click', csatWatchClick); }
+  csatWatchInit();
   initStoragePersistence();  // hosting D3: no await, it never blocks start-up and never throws
   /* v99: resolve the backup handle before deciding whether to nag. fsInit() only
      QUERIES permission — it never prompts, because asking without a gesture would
