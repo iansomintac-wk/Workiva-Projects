@@ -12,6 +12,30 @@ import { summaryLine } from './lib/report.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Ian 2026-10-20 ("D8 looks good and fix L8"): a confirmed case STAYS on the Risk list.
+async function confirmWithReason(ctx, id, text) {
+  await ctx.click(`[data-risk-confirm="${id}"]`);
+  await sleep(300);
+  const typed = await ctx.ev(`(() => { const ta = document.getElementById('rkc-reason'); if (!ta) return false; ta.value = ${JSON.stringify(text)}; ta.dispatchEvent(new Event('input', { bubbles: true })); return !document.getElementById('rkc-ok').disabled; })()`);
+  if (!typed) return false;
+  await ctx.click('#rkc-ok');
+  await sleep(500);
+  return true;
+}
+async function staysListed(ctx, id, reason) {
+  const r = JSON.parse(await ctx.ev(`(() => { const el = document.getElementById('rk-c-${id}');
+    const deck = [...document.querySelectorAll('.rk3-stage .rk3-card')]; const sig = document.querySelector('.rk-signals');
+    return JSON.stringify({ exists: !!el, inDeck: !!el && deck.includes(el), confirmed: !!el && el.classList.contains('confirmed'),
+      work: !!el && !!el.querySelector('.rk-work'),
+      workShown: !!el && !!el.querySelector('.rk-work') && el.querySelector('.rk-work').getBoundingClientRect().height > 0 && el.querySelector('.rk-work').offsetParent !== null,
+      why: !!el && !!el.querySelector('.rk-confirmed-why'),
+      reasonShown: !!el && [...el.querySelectorAll('.rk-confirmed-why')].some(w => w.textContent.includes(${JSON.stringify(reason)})),
+      stillSignal: !!(sig && sig.querySelector('#rk-c-${id}')), deckN: deck.length,
+      deckBeforeSignals: !sig || !deck.length || !!(deck[deck.length - 1].compareDocumentPosition(sig) & Node.DOCUMENT_POSITION_FOLLOWING) }); })()`));
+  r.ok = r.exists && r.inDeck && r.confirmed && r.work && r.workShown && r.why && r.reasonShown && !r.stillSignal && r.deckBeforeSignals;
+  return r;
+}
 const FERN = 'Fernhollow Renewables';
 
 // Part B calendar (fake dates). L10 and L11 days derive from the committed date T (see committedDate, l10Day).
@@ -390,11 +414,14 @@ export const PART_B = [
     if (!before) return { passed: false, evidence: `no Risk tab case for Fernhollow after the note (Product signals ${preSignals} -> ${signals})` };
     const hasConfirm = await ctx.ev(`!!document.querySelector('[data-risk-confirm="${id}"]')`);
     if (!hasConfirm) return { passed: false, evidence: `case listed (${cls(before)}) but no "Yes - it's real" control to action it` };
-    await ctx.click(`[data-risk-confirm="${id}"]`);
-    await sleep(500);
+    const reason = 'SIM-L8 the customer said the product does not behave as scoped';
+    const lastBefore = await ctx.ev(`(() => { const k = buildRiskCases(buildRiskHubList()).find(k => k.c.id === ${JSON.stringify(id)}); return k ? k.items.map(it => (it.tracking && it.tracking.lastActioned) || null).join(',') : null; })()`);
+    if (!(await confirmWithReason(ctx, id, reason))) return { passed: false, evidence: 'the confirm control did not open the reason box, or Confirm stayed disabled after a reason was typed' };
     const after = await ctx.ev(card);
     const lastActioned = await ctx.ev(`(() => { const k = buildRiskCases(buildRiskHubList()).find(k => k.c.id === ${JSON.stringify(id)}); return k ? k.items.map(it => (it.tracking && it.tracking.lastActioned) || null).join(',') : null; })()`);
-    return { passed: signals > preSignals && after === null, evidence: await withBreak(ctx, `Product signal ${preSignals} -> ${signals} after the note; case card ${cls(before)} -> ${after === null ? 'gone from the list' : cls(after) + ' (still listed)'}; lastActioned ${lastActioned}`) };
+    const stays = await staysListed(ctx, id, reason);
+    const actioned = !!lastActioned && lastActioned.split(',').every(Boolean) && (lastActioned !== lastBefore || lastActioned.split(',').every(d => String(d).startsWith(CAL.L8)));
+    return { passed: signals > preSignals && stays.ok && actioned, evidence: await withBreak(ctx, `Product signal ${preSignals} -> ${signals} after the note; case ${cls(before)} -> ${after === null ? 'gone from the list' : cls(after)}; ${JSON.stringify(stays)}; actioned ${actioned}; lastActioned ${lastBefore} -> ${lastActioned}`) };
   } },
   { id: 'L9', async run(ctx) { await l9phase1(ctx); return l9phase2(ctx); }, phase1: l9phase1, phase2: l9phase2 },
   { id: 'L10', async run(ctx) {

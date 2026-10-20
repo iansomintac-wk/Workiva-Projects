@@ -9027,7 +9027,9 @@ function bindRiskDeck(host){
     // section releases. Under-reserving here is what cut the last card off.
     let total = 0;
     cards.forEach((el, i) => { total += (i === cards.length - 1) ? overflowOf(el) : costOf(el); });
-    track.style.height = (total + stageForNatural(naturalOf(cards[cards.length - 1])) + 16) + 'px';
+    const lastStage = stageForNatural(naturalOf(cards[cards.length - 1]));
+    // The last card must be reachable by SCROLLING: the track itself has to provide at least one viewport after the last offset, or a short last card leaves the page out of scroll with the previous card still in front (only content below the track used to hide it).
+    track.style.height = (total + Math.max(lastStage + 16, innerHeight)) + 'px';
   };
   sizeTrack();
 
@@ -9048,7 +9050,8 @@ function bindRiskDeck(host){
     const over = front ? overflowOf(front) : 0;
     // Read the long card first, then hand over to the next one.
     if(front) front.scrollTop = Math.max(0, Math.min(over, within));
-    const p = active + (over > 0 ? Math.max(0, (within - over) / step()) : Math.max(0, within / step()));
+    // The last case has nothing after it to hand over to: progress stops at its own offset, so however far the page scrolls (content below the track, a track that grew) it stays front, fully opaque and live.
+    const p = Math.min(cards.length - 1, active + (over > 0 ? Math.max(0, (within - over) / step()) : Math.max(0, within / step())));
     const H = front ? Math.min(naturalOf(front), stageForNatural(naturalOf(front)) - PEEK) : 0;
     cards.forEach((el, i) => {
       const d = i - p;                       // <0 already decided past, 0 active, >0 still to come

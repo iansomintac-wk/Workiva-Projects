@@ -6481,6 +6481,36 @@ function _runSelfChecksInner(){
   })();
 
   (function(){
+    /* ============ 1.2 D8/L8 THE DECK CAN REACH ITS LAST CASE ============
+       The track must provide, by itself, the scroll distance at which the last card
+       becomes the front card; a short last card used to leave the page out of scroll
+       with the previous card still in front (only content below the track hid it). */
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevView = ui.view, prevFocus = ui.riskFocusId, prevY = scrollY, realSave = saveData;
+    const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+    let ok = false, detail = '';
+    try{
+      saveData = function(){ return true; };
+      const cs = []; for(let i = 0; i < 14; i++) cs.push(v13Acct('__d8l8_' + i, {riskOverride: 'risk'}));
+      DATA.customers = cs; DATA.activities = {}; DATA.riskLog = {};
+      reset();
+      buildRiskCases(buildRiskHubList()).forEach(k => setRiskVerdict(k.items[0], 'confirmed', 'short reason'));
+      reset(); ui.view = 'risk'; render();
+      const track = document.querySelector('.rk3-track'), host = track && track.parentElement;
+      const bound = !!host && typeof host._deckOffsetFor === 'function' && !!host._deckCards && host._deckCards.length === 14 && !host.classList.contains('rk3--flat');
+      if(bound){
+        const last = host._deckCards.length - 1;
+        const reachable = track.offsetHeight - innerHeight;
+        const needed = host._deckOffsetFor(last);
+        ok = reachable >= needed;
+        detail = JSON.stringify({bound, n: host._deckCards.length, reachable, needed, innerHeight});
+      } else detail = JSON.stringify({bound, n: host ? (host._deckCards || []).length : null});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    saveData = realSave; DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.view = prevView; ui.riskFocusId = prevFocus;
+    reset(); render(); scrollTo(0, prevY);
+    check('1.2 D8/L8: the deck track is tall enough for its last case to be brought to the front', ok, detail);
+  })();
+
+  (function(){
     /* ============ v81 THE BAND SHOWS REAL TIME ============
        The attitude dial and the distance tape were replaced: they reported ON the
        book rather than helping anyone work it. What survives is the rule — the
