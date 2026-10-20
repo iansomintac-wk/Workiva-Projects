@@ -1,3 +1,8 @@
+PARKED 2026-10-20 04:32 UTC by Ian: "we can park this for now". Do not launch. Why: no self-serve login works (measured 2026-10-20):
+a PAT is created but refused ("Network policy is required."), and attaching a key-pair needs MODIFY PROGRAMMATIC AUTHENTICATION
+METHODS, which role PUBLIC lacks. Restart only if a Snowflake admin attaches his public key or adds a network policy for his user.
+Notes: docs/research/2026-10-20-snowflake-pat-sql-api.md. Meanwhile 1.2 already covers the manual path (Run -> Download -> Today line -> Review).
+
 TALK: Runway stage 2, automatic CSAT pull from Snowflake (a Snowflake slot in connector/). Runway Tracker repo.
 DRAFT, written 2026-10-20 by the hand-off PM step of the Runway 1.2 run (lead 58d4f186), replacing the 13-line draft of talk 4549483a.
 Not launched: start only on Ian's yes, after 1.2 is merged and pushed. Run `date -u` before every stamp.
