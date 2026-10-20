@@ -18268,6 +18268,31 @@ function fsIdb(mode, fn){
 async function fsLoadHandle(){ try{ return await fsIdb('readonly', st => st.get(FS_KEY)); }catch(e){ return undefined; } }
 async function fsStoreHandle(h){ try{ await fsIdb('readwrite', st => st.put(h, FS_KEY)); return true; }catch(e){ return false; } }
 async function fsClearHandle(){ try{ await fsIdb('readwrite', st => st.delete(FS_KEY)); return true; }catch(e){ return false; } }
+const CSAT_FILE_RE = /^csat_runway_export_.*\.csv$/i;
+const CSAT_FOLDER_KEY = 'csat-folder';
+async function csatNewestFile(dir){
+  let best = null;
+  for await (const h of dir.values()){
+    if(!h || h.kind !== 'file' || !CSAT_FILE_RE.test(h.name)) continue;
+    const f = await h.getFile();
+    if(!best || f.lastModified > best.lastModified) best = {name:h.name, lastModified:f.lastModified, file:f};
+  }
+  return best;
+}
+async function csatFolderCheck(dir, request){
+  if(!dir || typeof dir.queryPermission !== 'function') return {state:'none', newest:null, isNew:false};
+  let st = await dir.queryPermission({mode:'read'});
+  if(st === 'prompt' && request && typeof dir.requestPermission === 'function') st = await dir.requestPermission({mode:'read'});
+  if(st === 'prompt') return {state:'prompt', newest:null, isNew:false};
+  if(st !== 'granted') return {state:'denied', newest:null, isNew:false};
+  const best = await csatNewestFile(dir);
+  if(!best) return {state:'granted', newest:null, isNew:false};
+  const last = (DATA.csatImport && DATA.csatImport.fileModified) || 0;
+  return {state:'granted', newest:{name:best.name, lastModified:best.lastModified}, file:best.file, isNew:best.lastModified > last};
+}
+async function csatFolderStore(h){ try{ await fsIdb('readwrite', st => st.put(h, CSAT_FOLDER_KEY)); return true; }catch(e){ return false; } }
+async function csatFolderLoad(){ try{ return await fsIdb('readonly', st => st.get(CSAT_FOLDER_KEY)); }catch(e){ return undefined; } }
+async function csatFolderClear(){ try{ await fsIdb('readwrite', st => st.delete(CSAT_FOLDER_KEY)); return true; }catch(e){ return false; } }
 
 async function fsPermission(handle, request){
   if(!handle || !handle.queryPermission) return 'denied';
