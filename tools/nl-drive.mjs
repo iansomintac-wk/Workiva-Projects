@@ -1,7 +1,7 @@
 // Dev tooling (not part of the bundle): headless drive of the real 1.1 page for the three small CSAT-round changes.
 //   NL-1 Call prep order, NL-2 backup prompt title/button (another confirm unchanged), NL-3 no "(0 of 0 gates done)" and the Answered box
 //   hidden until a sent date. Synthetic data only; throwaway osmsim-* profile (tools/lib/drive-sim.mjs), never a normal Chrome profile.
-// usage: node tools/nl-drive.mjs [--control] --check   -> "OK|FAIL nl-drive: <evidence>"
+// usage: node tools/nl-drive.mjs [--control] [--sabotage-grad] --check   -> "OK|FAIL nl-drive: <evidence>"
 //        node tools/nl-drive.mjs --captures            -> sim-runs/csat12/{call-prep-order,backup-prompt,csat-block}.{png,txt}
 // --control runs the pre-change tracker (CONTROL_REF) from a temporary csat12ctl file and must FAIL.
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
@@ -20,7 +20,7 @@ export function judgeNl(r) {
     'backup prompt button text': r.promptButtonText === 'Download backup',
     'other confirm title unchanged': r.otherConfirmTitle === 'Are you sure?',
     'other confirm button unchanged': r.otherConfirmButtonClass === 'btn btn-danger',
-    'no "0 of 0" in Graduate': r.gradHasZeroOfZero === false,
+    'no "0 of 0" in Graduate (and the modal opened)': !!r.gradModal && r.gradModal.opened === true && r.gradModal.has === false,
     'Answered hidden without a sent date': r.answeredHiddenNoSent === true,
     'Answered shown after a sent date': r.answeredShownAfterTyping === true
   };
@@ -69,9 +69,10 @@ async function drive(ctx, wantCaptures) {
   r.otherConfirmTitle = del.t === undefined ? null : del.t; r.otherConfirmButtonClass = del.c === undefined ? null : del.c;
   r.nothingDeleted = (await ctx.ev(`DATA.customers.length`)) === before;
   await clearModals(ctx);
+  if (process.argv.includes('--sabotage-grad')) await ctx.ev(`(() => { window.openGraduationConfirmModal = () => {}; return 1; })()`);   // dev control: the modal never opens; the check must then FAIL
   // (d) Graduate modal for a goal with 0 gates (primaryGoal overridden for this one call only)
-  r.gradHasZeroOfZero = await ctx.ev(`(() => { const real = window.primaryGoal; const c = DATA.customers.find(x => x.id === ${J(id)});
-    try { window.primaryGoal = () => ({text: 'x', gates: []}); openGraduationConfirmModal(c); const m = document.querySelector('.modal'); return !!m && m.innerHTML.includes('0 of 0'); }
+  r.gradModal = await ctx.ev(`(() => { const real = window.primaryGoal; const c = DATA.customers.find(x => x.id === ${J(id)});
+    try { window.primaryGoal = () => ({text: 'x', gates: []}); openGraduationConfirmModal(c); const m = document.querySelector('.modal'); return {opened: !!m, has: !!m && m.innerHTML.includes('0 of 0')}; }
     finally { window.primaryGoal = real; document.querySelectorAll('.modal-backdrop').forEach(b => b.remove()); } })()`);
   // (e) Answered box in the beat pane and on the Details tab: hidden with no sent date, visible after typing one
   const setSent = v => ctx.ev(`(() => { const c = DATA.customers.find(x => x.id === ${J(id)}); c.compliance = c.compliance || {};
@@ -113,7 +114,7 @@ async function shot(ctx, c) {
 
 if (isMain(import.meta.url)) {
   const control = process.argv.includes('--control'), wantCaptures = process.argv.includes('--captures');
-  if (!process.argv.includes('--check') && !wantCaptures) { console.error('usage: node tools/nl-drive.mjs [--control] --check | --captures'); process.exit(2); }
+  if (!process.argv.includes('--check') && !wantCaptures) { console.error('usage: node tools/nl-drive.mjs [--control] [--sabotage-grad] --check | --captures'); process.exit(2); }
   let code = 1;
   try {
     const r = await withTracker(control, v => inSimVersion(v, 'csat12', ctx => drive(ctx, wantCaptures)));

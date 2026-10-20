@@ -3885,7 +3885,10 @@ function _runSelfChecksInner(){
        each print exactly once: the last-note text, the open question text,
        and the session-count figure. Counted on the PLAIN TEXT (tags stripped)
        so markup differences between the standing strip and the prep card
-       cannot hide a duplicate fact behind different HTML. */
+       cannot hide a duplicate fact behind different HTML. The Call prep Agenda
+       (a deliberate copy list, d0043f2) repeats the open question on purpose; the
+       question is counted outside the Agenda block. Control: the same predicate
+       run on the panel plus a planted second copy must fail. */
     const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
     let ok = false, detail = '';
     try{
@@ -3906,13 +3909,29 @@ function _runSelfChecksInner(){
       const beat = day.beats.find(b => b.customerId === '__panel1__' && b.kind === 'call');
       if(!beat) throw new Error('no call beat built for the panel duplication check');
       const panel = renderBeatPanel(beat, () => '');
-      const plain = panel.replace(/<[^>]+>/g, '');
       const sessionsFigure = `${sessionsCompletedCount(c)}/${c.totalSessions}`;
-      const noteTimes = plain.split(NOTE).length - 1;
-      const questionTimes = plain.split(QUESTION).length - 1;
-      const sessionsTimes = plain.split(sessionsFigure).length - 1;
-      ok = noteTimes === 1 && questionTimes === 1 && sessionsTimes === 1;
-      detail = JSON.stringify({noteTimes, questionTimes, sessionsTimes, sessionsFigure});
+      // One Agenda boundary, defined once and passed into verdict(): from the Agenda opener to the earlier of </ol> or the next section opener.
+      const AGENDA_RE = /*AGENDA-RE-BEGIN*/(/<div class="bp-sec" data-beat-agenda>[\s\S]*?(?:<\/ol>|(?=<div class="bp-sec"))/)/*AGENDA-RE-END*/;
+      const verdict = /*VERDICT-BEGIN*/(html, NOTE, QUESTION, sessionsFigure, agendaRe) => {
+        const count = (t, n) => t.split(n).length - 1;
+        const text = (h) => h.replace(/<[^>]+>/g, '');
+        // Only the open QUESTION may repeat in the Agenda (item 6); NOTE and the sessions figure are counted over the whole panel.
+        const whole = text(html), outside = text(html.replace(agendaRe, ''));
+        const noteTimes = count(whole, NOTE), questionTimes = count(outside, QUESTION), sessionsTimes = count(whole, sessionsFigure);
+        return {noteTimes, questionTimes, sessionsTimes, ok: noteTimes === 1 && questionTimes === 1 && sessionsTimes === 1};
+      }/*VERDICT-END*/;
+      const real = verdict(panel, NOTE, QUESTION, sessionsFigure, AGENDA_RE);
+      const plantedQ = verdict(panel + '<p>' + QUESTION + '</p>', NOTE, QUESTION, sessionsFigure, AGENDA_RE);
+      const plantedNote = verdict(panel + '<p>' + NOTE + '</p>', NOTE, QUESTION, sessionsFigure, AGENDA_RE);
+      const plantedSess = verdict(panel + '<p>' + sessionsFigure + '</p>', NOTE, QUESTION, sessionsFigure, AGENDA_RE);
+      const plantedNoteInAgenda = verdict(panel.replace(/(data-beat-agenda>)/, '$1' + NOTE), NOTE, QUESTION, sessionsFigure, AGENDA_RE);
+      const noClose = panel.replace(/<\/ol>/, '');
+      const plantedNoClose = verdict(noClose.replace(/(<div class="bp-sec" data-beat-agenda>)/, '$1') + '<div class="bp-sec"><p>' + QUESTION + '</p></div>', NOTE, QUESTION, sessionsFigure, AGENDA_RE);
+      const agendaHasQuestion = ((panel.match(AGENDA_RE) || [''])[0].split(QUESTION).length - 1) === 1;
+      const controlsFail = plantedQ.ok === false && plantedQ.questionTimes === 2 && plantedNote.ok === false
+        && plantedSess.ok === false && plantedNoteInAgenda.ok === false && plantedNoClose.ok === false;
+      ok = real.ok && agendaHasQuestion && controlsFail;
+      detail = JSON.stringify({real, plantedQ, plantedNote, plantedSess, plantedNoteInAgenda, plantedNoClose, agendaHasQuestion, sessionsFigure});
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();

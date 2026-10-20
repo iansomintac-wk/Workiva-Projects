@@ -27,8 +27,8 @@ async function drive(ctx, sabotage) {
   };
   const id = await ctx.ev(`(DATA.customers.find(x => x.name === 'Orion Semiconductor') || {}).id || null`);
   if (!id) throw new Error('account not found: Orion Semiconductor');
-  const boxId = 'fp-csat-sent-' + id;
-  // the same id also exists in the Orion day pane: scope to the Details tab (outside every .day-pane)
+  const boxId = 'fp-csat-sent-details-' + id;
+  // the ids now differ per surface (fp-csat-sent-details-/-pane-); still scope to the Details tab (outside every .day-pane)
   const box = `([...document.querySelectorAll('[data-fp-csat-sent]')].find(w => !w.closest('.day-pane')))`;
   const saved = () => ctx.ev(`(() => { const c = DATA.customers.find(x => x.id === ${J(id)}); const a = c && c.compliance && c.compliance.associatedPeopleCSAT; return a && a.surveySentOn ? a.surveySentOn : null; })()`);
   const opened = await ctx.ev(`(() => { ui.view = 'today'; ui.openCustomerId = ${J(id)}; ui.panelTab = 'details'; render(); return !!${box}; })()`);

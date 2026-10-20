@@ -8277,6 +8277,12 @@ const SIGNAL_DEFS = [
 // Done/Dismiss) from the next_session/steady fallbacks (which don't).
 const SIGNAL_KEY_SET = new Set(SIGNAL_DEFS.map(d => d.key));
 
+function integrationIdLines(intg){
+  const out = [];
+  if(intg.gainsightId) out.push(`Gainsight ID: ${intg.gainsightId}`);
+  if(intg.salesforceId) out.push(`Salesforce ID: ${intg.salesforceId}`);
+  return out;
+}
 // Plain-text summary formatted to paste directly into a Gainsight Timeline
 // entry or task — bundles the ranked next steps, the compliance gate gaps
 // (which are themselves Gainsight-tracked items), and the data-hygiene
@@ -8317,10 +8323,10 @@ function buildGainsightCopyText(c){
   lines.push(`First value: ${fv.definition ? '"' + fv.definition + '"' : 'not defined'} — ${fv.achievedOn ? 'achieved ' + fmtDate(fv.achievedOn) : 'not yet evidenced'}.`);
   // v49: contact + Gainsight identifiers/links, when captured.
   const intg = getIntegration(c);
-  if(intg.primaryContact || intg.gainsightId || intg.gradPlanUrl || intg.onboardingPlanUrl){
+  if(intg.primaryContact || intg.gainsightId || intg.salesforceId || intg.gradPlanUrl || intg.onboardingPlanUrl){
     lines.push('');
     if(intg.primaryContact) lines.push(`Customer contact (CSAT): ${intg.primaryContact}`);
-    if(intg.gainsightId) lines.push(`Gainsight/Salesforce ID: ${intg.gainsightId}`);
+    integrationIdLines(intg).forEach(l => lines.push(l));
     if(intg.gradPlanUrl) lines.push(`Graduation plan: ${intg.gradPlanUrl}`);
     if(intg.onboardingPlanUrl) lines.push(`Onboarding plan: ${intg.onboardingPlanUrl}`);
   }
@@ -11730,11 +11736,11 @@ function normalizeCsatBlock(ap){
     surveyAnsweredOn: isRealISODate(a.surveyAnsweredOn) ? a.surveyAnsweredOn : null});
 }
 /* L12: the two survey dates, printed in the CSAT block. Empty value = not set. */
-function csatDatesHtml(ap, id){
-  const e = escapeAttr(id);
+function csatDatesHtml(ap, id, scope){
+  const e = escapeAttr(id), s = escapeAttr(scope || 'pane');
   return `<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:6px;">
-        <label for="fp-csat-sent-${e}">Survey sent <input type="date" class="dk-in" id="fp-csat-sent-${e}" data-fp-csat-sent="${e}" value="${escapeAttr(ap.surveySentOn || '')}"></label>
-        <label for="fp-csat-ans-${e}" data-fp-csat-ans-wrap="${e}"${ap.surveySentOn ? '' : ' style="display:none"'}>Answered <input type="date" class="dk-in" id="fp-csat-ans-${e}" data-fp-csat-answered="${e}" value="${escapeAttr(ap.surveyAnsweredOn || '')}"></label>
+        <label for="fp-csat-sent-${s}-${e}">Survey sent <input type="date" class="dk-in" id="fp-csat-sent-${s}-${e}" data-fp-csat-sent="${e}" value="${escapeAttr(ap.surveySentOn || '')}"></label>
+        <label for="fp-csat-ans-${s}-${e}" data-fp-csat-ans-wrap="${e}"${ap.surveySentOn ? '' : ' style="display:none"'}>Answered <input type="date" class="dk-in" id="fp-csat-ans-${s}-${e}" data-fp-csat-answered="${e}" value="${escapeAttr(ap.surveyAnsweredOn || '')}"></label>
       </div>`;
 }
 
@@ -12656,7 +12662,7 @@ function renderBeatPanel(beat, dispatchChips){
         <input type="text" id="fp-csat-${escapeAttr(c.id)}" data-fp-csat="${escapeAttr(c.id)}" maxlength="120" placeholder="Contact name for the CSAT survey" value="${escapeAttr(ap.contactName || '')}" style="flex:1; min-width:180px;">
         <button class="btn btn-sm ${ap.done ? '' : 'btn-primary'}" data-fp-toggle="associatedPeopleCSAT|${escapeAttr(c.id)}">${ap.done ? 'Undo' : 'Mark added'}</button>
       </div>
-      ${csatDatesHtml(ap, c.id)}
+      ${csatDatesHtml(ap, c.id, 'pane')}
     </div>
 
     <div class="focus-act">
@@ -14058,7 +14064,7 @@ function renderComplianceSection(c){
         <label>Contact name(s) added</label>
         <input type="text" id="comp-associated-name" placeholder="e.g. Jane Doe, VP Sustainability" value="${escapeAttr(ap.contactName)}">
       </div>
-      ${csatDatesHtml(ap, c.id)}
+      ${csatDatesHtml(ap, c.id, 'details')}
     </div>
   `;
 }
@@ -18266,9 +18272,13 @@ function fsIdb(mode, fn){
       const db = req.result;
       let tx;
       try{ tx = db.transaction(FS_STORE, mode); }catch(e){ db.close(); reject(e); return; }
-      const out = fn(tx.objectStore(FS_STORE));
-      tx.oncomplete = () => { db.close(); resolve(out && out.result !== undefined ? out.result : undefined); };
-      tx.onerror = () => { db.close(); reject(tx.error || new Error('IndexedDB write failed')); };
+      let out;
+      try{ out = fn(tx.objectStore(FS_STORE)); }catch(e){ try{ tx.abort(); }catch(_){} db.close(); reject(e); return; }
+      let settled = false;   // close/reject once: an error is normally followed by an abort event
+      const finish = f => { if(settled) return; settled = true; db.close(); f(); };
+      tx.oncomplete = () => finish(() => resolve(out && out.result !== undefined ? out.result : undefined));
+      tx.onerror = () => finish(() => reject(tx.error || new Error('IndexedDB write failed')));
+      tx.onabort = () => finish(() => reject(tx.error || new Error('IndexedDB transaction aborted')));
     };
   });
 }
@@ -18299,34 +18309,45 @@ async function csatFolderCheck(dir, request){
 }
 async function csatFolderStore(h){ try{ await fsIdb('readwrite', st => st.put(h, CSAT_FOLDER_KEY)); return true; }catch(e){ return false; } }
 async function csatFolderLoad(){ try{ return await fsIdb('readonly', st => st.get(CSAT_FOLDER_KEY)); }catch(e){ return undefined; } }
-let _csatWatch = {state:'off', dir:null, fileName:'', fileModified:0, plan:null, text:''};
+let _csatWatch = {state:'off', dir:null, fileName:'', fileModified:0, plan:null, text:'', note:'', manual:false};
 async function csatWatchRefresh(request){
+  const w = _csatWatch;                       // 1e: remember which watch this scan belongs to
+  const maxBytes = 8 * 1024 * 1024;           // 1b: same 8 MB limit as the manual import
+  const done = o => { if(_csatWatch !== w) return false; Object.assign(w, o, {manual:!!request}); if(!request) w.note = ""; return true; };   // an automatic refresh clears a manual note
   try{
-    const r = await csatFolderCheck(_csatWatch.dir, request);
-    if(r.state === 'prompt') _csatWatch = Object.assign(_csatWatch, {state:'prompt', plan:null});
+    const r = await csatFolderCheck(w.dir, request);
+    if(_csatWatch !== w) return;
+    if(r.state === 'prompt') done({state:'prompt', plan:null, note:''});
     else if(r.state === 'granted' && r.isNew){
-      const text = await r.file.text();
-      const plan = buildCsatImportPlan(parseCsv(text), DATA.customers, {});
-      _csatWatch = Object.assign(_csatWatch, {state:plan.error ? 'off' : 'new', fileName:r.newest.name, fileModified:r.newest.lastModified, plan:plan, text:text});
-    } else _csatWatch = Object.assign(_csatWatch, {state:'off', plan:null});
-  }catch(e){ _csatWatch = Object.assign(_csatWatch, {state:'off', plan:null}); }
-  render();
+      if(r.file && r.file.size > maxBytes) done({state:'off', plan:null, note:'the newest export is over 8 MB, so it was not read.'});
+      else {
+        const text = await r.file.text();
+        if(_csatWatch !== w) return;           // 1e: stopped or replaced while reading
+        const plan = buildCsatImportPlan(parseCsv(text), DATA.customers, {});
+        if(plan.error) done({state:'off', plan:null, note:'the newest file is not a CSAT export.'});
+        else if(!plan.changes.length && !plan.suggestions.length) done({state:'off', plan:null, note:'nothing new to import.'});   // 1a
+        else done({state:'new', fileName:r.newest.name, fileModified:r.newest.lastModified, plan:plan, text:text, note:''});
+      }
+    } else done({state:'off', plan:null, note: r.state === 'granted' ? 'nothing new to import.' : r.state === 'denied' ? 'the browser did not allow access to that folder. Pick it again in Settings.' : ''});
+  }catch(e){ done({state:'off', plan:null, note:'could not read that folder. Pick it again in Settings.'}); }
+  if(_csatWatch === w) render();
 }
 async function csatWatchUse(dir){
-  _csatWatch.dir = dir;
+  _csatWatch = {state:'off', dir:dir, fileName:'', fileModified:0, plan:null, text:'', note:'', manual:false};   // fresh record: an older folder's scan is dropped by the identity guard
   await csatFolderStore(dir);
   await csatWatchRefresh(false);
 }
 async function csatWatchStop(){
-  _csatWatch = {state:'off', dir:null, fileName:'', fileModified:0, plan:null, text:''};
+  _csatWatch = {state:'off', dir:null, fileName:'', fileModified:0, plan:null, text:'', note:'', manual:false};
   await csatFolderClear();
   render();
 }
 async function csatWatchInit(){
   if(typeof window.showDirectoryPicker !== 'function') return;
+  const w = _csatWatch;                        // the record at start: a folder picked while we wait replaces it
   const h = await csatFolderLoad();
-  if(!h) return;
-  _csatWatch.dir = h;
+  if(!h || _csatWatch !== w || w.dir) return;  // nothing saved, or the record changed while waiting: it wins
+  w.dir = h;
   await csatWatchRefresh(false);
 }
 async function csatWatchClick(e){
@@ -18346,6 +18367,7 @@ async function csatWatchClick(e){
 function renderCsatWatchLine(){
   const w = _csatWatch;
   if(w.state === 'prompt') return `<div class="section-card" id="csat-watch-line" style="margin-bottom:16px; border-left:3px solid var(--accent-watch);"><div style="font-size:var(--text-sm); color:var(--text-dim);"><strong style="color:var(--text);">CSAT folder:</strong> <button class="link-btn" data-csat-allow style="font-weight:600;">click to allow</button></div></div>`;
+  if(w.state === 'off' && w.note && w.manual) return `<div class="section-card" id="csat-watch-line" style="margin-bottom:16px; border-left:3px solid var(--accent-watch);"><div style="font-size:var(--text-sm); color:var(--text-dim);"><strong style="color:var(--text);">CSAT folder:</strong> ${escapeHtml(w.note)}</div></div>`;
   if(w.state !== 'new' || !w.plan) return '';
   const d = new Date(w.fileModified), mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
   const n = w.plan.changes.length;
@@ -19415,7 +19437,7 @@ const EXCEL_FIELD_LABELS = {
   stage: 'TTFV stage',
   notes: 'Notes',
   primaryContact: 'Customer contact (CSAT)',
-  gainsightId: 'Gainsight/Salesforce ID',
+  gainsightId: 'Gainsight ID',
   gradPlanUrl: 'Graduation plan link',
   onboardingPlanUrl: 'Onboarding plan link'
 };
@@ -19737,15 +19759,16 @@ function buildCsatImportPlan(table, customers, opts){
   plan.matched.sort((a, b) => a.row - b.row); plan.conflicts.sort((a, b) => a.row - b.row);
   const matchedIds = new Set(plan.matched.concat(plan.conflicts).map(m => m.customerId));
   plan.ambiguous.forEach(a => a.customerIds.forEach(id => matchedIds.add(id)));
-  const rowsByKey = {}, custByKey = {};
-  plan.unmatchedRows.forEach(r => { const k = normalizeCustomerNameKey(r.name); if(k) (rowsByKey[k] = rowsByKey[k] || []).push(r); });
+  const rowsByKey = new Map(), custByKey = new Map();
+  plan.unmatchedRows.forEach(r => { const k = normalizeCustomerNameKey(r.name); if(k){ if(!rowsByKey.has(k)) rowsByKey.set(k, []); rowsByKey.get(k).push(r); } });
   (customers || []).forEach(c => {
     if(matchedIds.has(c.id) || String(c.salesforceId || '').trim() || String(c.gainsightId || '').trim()) return;
-    const k = normalizeCustomerNameKey(c.name); if(k) (custByKey[k] = custByKey[k] || []).push(c);
+    const k = normalizeCustomerNameKey(c.name); if(k){ if(!custByKey.has(k)) custByKey.set(k, []); custByKey.get(k).push(c); }
   });
-  Object.keys(rowsByKey).forEach(k => {
-    if(rowsByKey[k].length !== 1 || !custByKey[k] || custByKey[k].length !== 1) return;
-    const r = rowsByKey[k][0], c = custByKey[k][0];
+  rowsByKey.forEach((rs, k) => {
+    const cs = custByKey.get(k);
+    if(rs.length !== 1 || !cs || cs.length !== 1) return;
+    const r = rs[0], c = cs[0];
     const d = csatDecide((c.compliance && c.compliance.associatedPeopleCSAT) || {}, r.sent, r.answered);
     plan.suggestions.push({row:r.row, customerId:c.id, customerName:c.name, csvName:r.name, sf:r.sf, gs:r.gs, sent:r.sent, answered:r.answered, kind:d.kind, changes:csatChangesFor(c, d)});
   });
@@ -19854,7 +19877,7 @@ function bindCsatSettings(backdrop){
     });
   }
   const chk = backdrop.querySelector('#btn-csat-check');
-  if(chk) chk.addEventListener('click', ()=> csatWatchRefresh(true));
+  if(chk) chk.addEventListener('click', async ()=> { await csatWatchRefresh(true); if(_csatWatch.note) showToast('CSAT folder: ' + _csatWatch.note); });
   const stop = backdrop.querySelector('#btn-csat-unwatch');
   if(stop) stop.addEventListener('click', ()=> csatWatchStop());
 }
@@ -19871,7 +19894,7 @@ function commitCsatImport(plan, tickedRows, meta){
     counts:{matched:plan.matched.length, dateChanges:plan.changes.length, notInRunway:plan.unmatchedRows.length, skipped:plan.skipped.length}};
   const saved = saveData() !== false;
   render();
-  return {saved:saved, accounts:res.accounts, fields:res.fields, idsWritten:res.idsWritten, backupFile:'book-of-business-export.json', skippedByReason:by, ambiguous:plan.ambiguous.length, conflicts:plan.conflicts.length};
+  return {saved:saved, accounts:res.accounts, fields:res.fields, idsWritten:res.idsWritten, backupStarted:true, skippedByReason:by, ambiguous:plan.ambiguous.length, conflicts:plan.conflicts.length};
 }
 function openCsatReportModal(res){
   const backdrop = document.createElement('div'); backdrop.className = 'modal-backdrop';
@@ -19879,7 +19902,7 @@ function openCsatReportModal(res){
   backdrop.innerHTML = `<div class="modal" style="max-width:420px;"><h3>${res.saved === false ? 'CSAT import not saved' : 'CSAT import done'}</h3>
     ${res.saved === false ? '<p>The import could NOT be saved, so your book in this browser is unchanged. Nothing was kept after a reload.</p>' : `<p>Updated ${res.accounts} account${res.accounts === 1 ? '' : 's'} (${res.fields} date${res.fields === 1 ? '' : 's'}).</p>`}
     ${res.saved === false ? '' : reasons || res.ambiguous || res.conflicts ? `<ul style="font-size:var(--text-sm);">${reasons}${res.ambiguous ? `<li>Ambiguous: ${res.ambiguous}</li>` : ''}${res.conflicts ? `<li>Conflict: ${res.conflicts}</li>` : ''}</ul>` : ''}
-    <p style="font-size:var(--text-sm); color:var(--text-dim);">Backup downloaded first: ${escapeHtml(res.backupFile)}.${res.saved === false ? '' : ' Undo is available.'}</p>
+    <p style="font-size:var(--text-sm); color:var(--text-dim);">Backup download started first (check your Downloads folder).${res.saved === false ? '' : ' Undo is available.'}</p>
     <div class="modal-actions"><button class="btn btn-primary" id="csat-report-close">Close</button></div></div>`;
   document.body.appendChild(backdrop);
   backdrop.querySelector('#csat-report-close').addEventListener('click', () => backdrop.remove());
@@ -19904,14 +19927,14 @@ function guessPartnerColumnMapping(headers){
 // parsed date, and duplicate flag. customers = [{id, name}], existingSummaries
 // = {customerId: [summary strings]}.
 function buildPartnerImportRows(headers, dataRows, mapping, customers, existingSummaries){
-  const byName = {};
-  customers.forEach(c => { byName[normalizeCustomerNameKey(c.name)] = c.id; });
+  const byName = new Map();
+  customers.forEach(c => { byName.set(normalizeCustomerNameKey(c.name), c.id); });
   const rows = [];
   dataRows.forEach((row, idx) => {
     const rawName = String(excelRowValue(row, headers, mapping.name) || '').trim();
     const note = String(excelRowValue(row, headers, mapping.note) || '').trim();
     if(!rawName && !note) return; // fully blank on the mapped columns — not a row
-    const matchedCustomerId = byName[normalizeCustomerNameKey(rawName)] || null;
+    const matchedCustomerId = byName.get(normalizeCustomerNameKey(rawName)) || null;
     const rawDate = mapping.date ? excelRowValue(row, headers, mapping.date) : '';
     const dateISO = rawDate ? (parseExcelDateCell(rawDate) || null) : null;
     let duplicate = false;

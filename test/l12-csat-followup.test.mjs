@@ -68,7 +68,7 @@ test('L12 csatDatesHtml: two labelled date inputs, values and ids escaped', () =
   assert.ok(h.includes('type="date"') && h.includes('data-fp-csat-sent="a&quot;b"') && h.includes('data-fp-csat-answered="a&quot;b"'));
   assert.ok(h.includes('value="2026-10-14"'));
   assert.equal((h.match(/value=""/g) || []).length, 1);
-  assert.ok(lf.includes('${csatDatesHtml(ap, c.id)}'), 'the CSAT block must print it');
+  assert.ok(lf.includes("${csatDatesHtml(ap, c.id, 'pane')}"), 'the CSAT block must print it');
 });
 
 test('L12 surveysToChase: every overdue account (graduated too), oldest first, none when nothing is overdue', () => {
@@ -100,7 +100,7 @@ test('L12 F1: pinned line and CSAT row open the Details tab, which carries both 
   assert.match(grab('renderSurveysToChase'), /data-open-tab="details"/);
   assert.match(grab('pushCsatFollowUp'), /panelTab:\s*'details'/);
   const d = grab('renderComplianceSection');
-  assert.ok(d.includes('csatDatesHtml(ap, c.id)'), 'Details CSAT block prints csatDatesHtml');
+  assert.ok(d.includes("csatDatesHtml(ap, c.id, 'details')"), 'Details CSAT block prints csatDatesHtml');
   assert.ok(grab('bindCsatDateInputs').includes("['fpCsatSent', 'surveySentOn']"));
   assert.ok(lf.includes("bindCsatDateInputs(root);") && lf.includes("closest('.compliance-item'))"), 'both the pane and the Details tab bind it');
 });

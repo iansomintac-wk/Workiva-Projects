@@ -42,6 +42,10 @@ OSM Runway — release notes
 
 1.2 — CSAT dates from Snowflake. Fill survey dates from a CSV, plus small fixes.
 
+    - The CSAT import report no longer names a backup file (the browser may rename it); it says a backup download was started.
+    - Fix: a folder picked in Settings while the app is still starting up is no longer overwritten by the previously saved folder, and a failed save to the local store (aborted transaction) now ends cleanly instead of hanging.
+    - Folder watch: a newer export with nothing to change shows no Today line; a file over 8 MB is not read; after Check now a short note says why nothing shows (folder unreadable, browser did not allow access, not a CSAT export, over 8 MB, nothing new; the next automatic refresh clears it); picking a new folder starts a fresh watch, so an old folder's slow scan cannot put its plan back; Stop watching wins over a scan already reading the file.
+    - Fix: a company named like a built-in word (constructor, __proto__) no longer breaks the CSAT import or the Excel partner import; a failure while opening the browser's small store no longer leaves the backup folder step waiting forever.
     - Final review B: each CSAT name suggestion shows what ticking it writes (each date change, the Salesforce ID, the Gainsight ID if it would be filled), so a name suggestion shows what ticking it writes before you tick. The Add Customer box is labelled Gainsight ID (it always wrote the Gainsight field). The not-saved report says your book in this browser is unchanged.
     - CSAT import: buildCsatImportPlan reads a Snowflake CSAT export (header check, test account and bad dates skipped).
     - CSAT import: rows match on Salesforce ID (15 or 18 chars), then Gainsight ID; ambiguous and conflicting rows are listed, never applied; names never match.
@@ -57,6 +61,10 @@ OSM Runway — release notes
     - Backup prompt: title "Back up your book first?" and a normal (not red) Download backup button.
     - Graduate modal omits "(0 of 0 gates done)"; the CSAT Answered box appears once a sent date exists.
     - CSAT import fixes: Review rebuilds the plan from the current book, so a newer Survey sent date or Salesforce ID typed since the scan is never overwritten; and when the book cannot be saved the report says plainly it could NOT be saved (no "Updated", no Undo claim).
+    - Wording: the hand-off text and the Excel column mapping say Gainsight ID; the hand-off text also prints the Salesforce ID when one is set.
+    - Fix: the day pane and the Details tab no longer share element ids for the survey-sent and answered boxes (a label click or a re-focus after an edit could land on the other copy).
+    - Dev tooling: tools/nl-drive.mjs: the Graduate "0 of 0" check now also requires that the modal opened; --sabotage-grad stubs the modal to prove the check fails without it.
+    - Dev tooling: selfcheck 'the beat panel states each fact once' counts the open question outside the Call prep Agenda (the Agenda repeats it on purpose) and proves it still rejects a planted second copy; selfcheck is 483/483.
 
 1.1 — Graduation prompt colour.
     - The line under the graduation confirm box title (#gc-prompt) used var(--warn), which is not defined, so it fell back to grey; it now uses var(--status-watch-text) like the CSAT line.

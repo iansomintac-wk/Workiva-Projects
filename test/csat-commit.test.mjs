@@ -17,10 +17,10 @@ test('CSAT commit: backup first, then undo label, then the writes, then save (st
   e.c.commitCsatImport(plan, [], { fileName: 'f.csv', fileModified: 5 });
   assert.deepEqual(e.calls.filter(x => x !== 'render'), ['exportData', 'markUndoable:CSAT import', 'apply', 'saveData']);
 });
-test('CSAT commit: the result names the backup file, the account count and the skip reasons', () => {
+test('CSAT commit: the result says a backup download was started, the account count and the skip reasons', () => {
   const e = env(); const plan = e.c.buildCsatImportPlan(e.table, e.customers, {});
   const r = J(e.c.commitCsatImport(plan, [], { fileName: 'f.csv', fileModified: 5 }));
-  assert.equal(r.backupFile, 'book-of-business-export.json');
+  assert.equal(r.backupStarted, true); assert.equal('backupFile' in r, false);
   assert.equal(r.accounts, 136);
   assert.deepEqual(r.skippedByReason, { 'Skipped: test account': 1 });
   assert.equal(r.ambiguous, 1);
@@ -48,11 +48,11 @@ test('CSAT commit: applying the same file twice changes 0 dates the second time'
   const r2 = J(e.c.commitCsatImport(e.c.buildCsatImportPlan(e.table, e.customers, {}), [], t));
   assert.equal(r2.fields, 0);
 });
-test('CSAT report: the report modal says "Updated 3 accounts", names the skip reasons and the backup file', () => {
+test('CSAT report: the report modal says "Updated 3 accounts", names the skip reasons and says the backup download started', () => {
   const e = env();
-  e.c.openCsatReportModal({ accounts: 3, fields: 5, idsWritten: 0, backupFile: 'book-of-business-export.json', skippedByReason: { 'Skipped: test account': 1 }, ambiguous: 0, conflicts: 0 });
+  e.c.openCsatReportModal({ accounts: 3, fields: 5, idsWritten: 0, backupStarted: true, skippedByReason: { 'Skipped: test account': 1 }, ambiguous: 0, conflicts: 0 });
   const h = e.html();
-  assert.ok(h.includes('Updated 3 accounts') && h.includes('Skipped: test account') && h.includes('book-of-business-export.json'), h);
+  assert.ok(h.includes('Updated 3 accounts') && h.includes('Skipped: test account') && h.includes('Backup download started') && !h.includes('book-of-business-export.json'), h);
 });
 test('CSAT apply click: reads the ticked suggestion rows, closes the dry run, commits, and opens the report with the commit result', () => {
   const calls = []; let applyFn; let removed = 0;
@@ -76,10 +76,19 @@ test('CSAT commit: when saveData fails the result says saved:false and the repor
   assert.equal(r.saved, false);
   e.c.openCsatReportModal(r);
   const h = e.html();
-  assert.match(h, /could NOT be saved/); assert.ok(!h.includes('Updated') && !h.includes('Undo is available') && h.includes('book-of-business-export.json'), h);
+  assert.match(h, /could NOT be saved/); assert.ok(!h.includes('Updated') && !h.includes('Undo is available') && h.includes('Backup download started'), h);
 });
 test('CSAT commit: a successful save reports saved:true and keeps the "Updated" wording', () => {
   const e = env(); const plan = e.c.buildCsatImportPlan(e.table, e.customers, {});
   const r = J(e.c.commitCsatImport(plan, [], { fileName: 'f.csv', fileModified: 5 }));
   assert.equal(r.saved, true);
+});
+test('CSAT report: the report is filename-independent (a renamed download never makes it name book-of-business-export.json) and a backup was requested', () => {
+  const e = env(); const plan = e.c.buildCsatImportPlan(e.table, e.customers, {});
+  let backups = 0;
+  e.c.exportData = () => { backups++; e.c.__download = 'x (1).json'; };
+  const r = J(e.c.commitCsatImport(plan, [], { fileName: 'f.csv', fileModified: 5 }));
+  assert.ok(backups >= 1, 'a backup request happened');
+  e.c.openCsatReportModal(r);
+  assert.ok(!e.html().includes('book-of-business-export.json'), e.html());
 });

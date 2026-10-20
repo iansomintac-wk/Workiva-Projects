@@ -1,0 +1,50 @@
+TALK: Runway 1.2, cleanup batch, then "completely usable as Bob Tracker and OSM Workspace", plus a connector seam for
+Snowflake and Gainsight. Written 2026-10-20 ~05:35Z by the PM proxy overnight session (01dd41db) from
+studio-harness docs/PM_PROXY_OVERNIGHT_2026-10-20_PROMPT.txt (finish line 3 and Ian's ~05:25Z amendment).
+
+Load studio-harness:talk-and-run first. Run `date -u` before every stamp. Give the time at start and at each stop.
+Worktree: this one, .claude/worktrees/runway-1.2-cleanup (branch runway-1.2-cleanup off origin/runway-tracker 5a83725+).
+Run ledger: .ledger/2026-10-20-runway-1.2-cleanup in THIS worktree (absolute path, forward slashes). slip.json is
+already there, written by Ian: never rewrite it. Every run you launch uses exactly that ledger:
+node C:/Users/teasp/Documents/studio-harness/bin/town-launch.mjs --name <name> --prompt-file <run prompt> --cwd <this
+worktree> --ledger <absolute ledger>. A run with any other ledger has no slip and will stop.
+Ian is away: send every question to the PM proxy ("NEW - PM proxy overnight 10-20") by SendMessage as a decision card
+with your recommendation first and its cheapest check; never AskUserQuestion. The proxy's answer is logged in
+studio-harness .ledger/proxy/decisions.md before it reaches you; it counts as Ian's yes for tonight.
+
+IAN'S WORDS (verbatim)
+05:08Z yes to: the PM proxy may act as Ian on Runway tonight: start the drafted talks, answer their questions, approve
+their plans, make look calls (marked "proxy decided"), let each run push its own branch, merge once checks and review
+pass (pushed the same night), start new sessions when needed; spend no money.
+~05:25Z: "For Runway we can't do anything with Snowflake and Gainsight yet except maybe just ensuring the scaffolding
+is there so if or when we do get the connectors then it'll be easy to setup. Besides those two things, I want to make
+sure that Runway is completely usable as Bob Tracker and OSM Workspace."
+
+PIECE A (first; light process as docs/RUNWAY_1.1_BATCH_RUN_PROMPT.txt: short spec, one plan review, one verify, one
+final review). From docs/evidence/2026-10-19-runway-1.2.md "Next list": items 1 (remaining review SHOULDs), 2 (stale
+"Gainsight/Salesforce ID" wording, ~line 8323 and the Excel mapping label ~19418), 4 (duplicate fp-csat-sent-/ans-<id>
+ids in day pane and Details tab), 6 (selfcheck 482/483, HOSTING.md:36, README.txt:190 and 287 `--expect 483`), and 3
+(fsIdb hang) only if it fits. Probe each item read-only first (still present? exact lines?) and put the numbers in the
+spec. Write spec A, run prompt A and budget.json, ask the proxy to approve, launch run A. Done = merged into master and
+pushed to origin runway-tracker the same night (merge rule: push the target's remote tip to
+backup/<target>-before-<branch>-<date> first; conflicts keep both sides; full suite on the result has no failure the
+target lacks).
+
+PIECE B (while run A works, or after it merges; same ledger).
+1. Read-only probe: what Bob Tracker and OSM Workspace each are and did, read from this repo, never guessed; name the
+   file for each claim (start with the v13 port, docs/superpowers/specs/2026-10-16-osm-day-lifecycle-sim-design.md,
+   docs/EXTENSION_PROGRESS.md, the sim's C1/C2 verify lines). Then a gap list: each thing they did, whether Runway
+   does it today (by a check you ran, not a read), and whether closing it needs Ian's ruling.
+2. Connector seam for Snowflake and Gainsight: scaffolding only. An interface, a stub or fake source, config
+   placeholders, a short doc on how a real connector plugs in, so it later drops in with no rework. No live calls, no
+   credentials, no network. Snowflake stage 2 stays parked (Ian 04:32Z).
+3. Spec B (gaps needing no ruling + the seam), run prompt B, budget.json for run B; proxy approves; launch run B with
+   the same ledger after run A has merged. Same done line as A.
+
+NOT TONIGHT: item 5 (locked steps-a.mjs), item 7 and D8/L8, exportData save-before-download (Ian's rulings), Snowflake
+stage 2, the D3 agenda talk, anything needing Ian's real book (not on this PC). Each goes in a "for Ian" list in the
+ledger with the exact question; the proxy copies it to the morning block.
+
+Never: money or paid tools, force flags, deleting work without a backup, writes under ~/.claude except the
+session-rename exception. A refused step: tell the proxy at once with the exact line Ian would type; no third try.
+End: Hand-off PM step; then follow the session-name rule.
