@@ -1,0 +1,36 @@
+SESSION (bounded build): Runway 1.2 look-call fixes (Runway Tracker repo). Written 2026-10-20 23:55Z by 2680df35 at its 300k stop.
+Run `date -u` before every stamp. Skills: talk-and-run first; superpowers:brainstorming (bounded) for call 3; TDD for code.
+IAN'S WORDS (pasted 2026-10-20 ~22:40Z, ledger precedent 2026-10-20-runway-1-2-five-look-calls, read it):
+ 1. Expansion chip: use "Expansion signal: upsell"
+ 2. Old-confirmed label: drop the repeated "add a reason"
+ 3. Desk Confirm message: other (What can we do to make this look and feel better from a UX/UI perspective?)
+ 4. Desk Dismiss message: accept as is
+ 5. Deck blank room: shorten the room (PM pick; build tests the last case still reaches the front)
+STATE: master c1728fe (local only; backups on origin as backup/master-before-*). Full sim on 6eee19c tree: exit 0, C5 identical.
+Run ledger: runway-1.2-d8l8/.ledger/2026-10-20-runway-sim-c5-d3 (budget.json, slip.json: push/merge/newSessions yes). Ian's list:
+runway-1.2-cleanup/.ledger/2026-10-20-runway-1.2-cleanup/for-ian.md. Look-call page: https://claude.ai/artifact/JoCVXYYdYn6nYNzP5RmsXF
+(source + captures + capture scripts: runway-1.2-d3-race worktree sim-runs/look-calls/; update the page by publishing with that url).
+DO, in order:
+ A. Call 3 first, as a question to Ian (one AskUserQuestion, [Ian] header, recommendation first; PM first pass before, per the taste-call rule).
+    Today an already-confirmed risk's desk Confirm shows the toast at 1.1 html ~10674 (openDeskRiskConfirm). Draft spread, each with its check:
+    a) (recommended) show state, not a dead button: on a confirmed case the desk replaces Confirm with "Confirmed - <reason>, <date>" and an
+       "Edit reason" link that opens the reason box pre-filled (matches the Risk tab's "Confirmed as a risk - reason - date"). Check: headless
+       desk capture of a confirmed case shows 0 buttons that do nothing; Edit reason opens the modal with the saved reason.
+    b) keep the button, rename it "Edit reason" on confirmed cases. Check: click opens the modal pre-filled.
+    c) keep the toast, make it informative: "Confirmed Oct 21: '<reason>'" plus a Change link. Check: toast text carries the reason.
+    d) (breaks "every risk on the desk needs Confirm/Dismiss"; inbox-triage pattern) decided cases leave the desk's action list and sit on one
+       "Confirmed" line under it. Check: desk with a confirmed case renders no action buttons for it.
+    If a/b/d also changes the desk Dismiss button, call 4's accepted toast may disappear: say so in the question.
+ B. Build 1, 2, 5 (and 3 once Ian picks) on a branch off master in a new worktree, test first:
+    1: note chip text (find "Expansion signal:" in osm-book-of-business-tracker-1.1.html) -> "Expansion signal: upsell" style (category word once).
+    2: label at ~9886 -> "Confirmed before reasons were required." + the "Add a reason" link (no repeated words).
+    5: bindRiskDeck sizeTrack (~9027-9032, merged D8/L8 change reserves Math.max(lastStage+16, innerHeight)) -> shorter reserve. The red test is
+       Ian's condition: the last case still reaches the front (tools/d8l8-probe.js, selfchecks-1.1 D8/L8 checks, sim steps D8/L8). Measure the blank
+       px before/after at 1440x900 and a short window; the PM's "about 40% of a screen" is untested.
+ C. Retake captures (scripts above; gotchas: CDP screenshot clip is PAGE coordinates, add scrollX/scrollY; click Cancel on the
+    "Back up your book first?" modal first; the Copilot desk deck does not render on the sim book). Open every capture. Republish the page.
+ D. Suite (node --test --test-reporter=spec "test/*.test.mjs", 413/0/2 on master), selfcheck, review, merge per the merge rule.
+    Full sim only on Ian's word. Look calls go back to Ian as a batch with the PM's pass.
+NO-GOS: no force flags; $0; no network from code or tests; 1.0 never edited; locked sim files (steps-a.mjs, steps-b.mjs, lib/breaks.mjs)
+change only with Ian's words; never read *RESTORE-POINT* files, exports or Ian's real CSAT file.
+Session-name rule: predecessor 2680df35 (its worktree runway-1.2-d8l8 holds the run ledger: keep it unless that ledger is copied elsewhere).
