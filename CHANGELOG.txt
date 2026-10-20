@@ -63,6 +63,7 @@ OSM Runway — release notes
     - Wording: the hand-off text and the Excel column mapping say Gainsight ID; the hand-off text also prints the Salesforce ID when one is set.
     - Fix: the day pane and the Details tab no longer share element ids for the survey-sent and answered boxes (a label click or a re-focus after an edit could land on the other copy).
     - Dev tooling: tools/nl-drive.mjs: the Graduate "0 of 0" check now also requires that the modal opened; --sabotage-grad stubs the modal to prove the check fails without it.
+    - Dev tooling: selfcheck 'the beat panel states each fact once' counts the open question outside the Call prep Agenda (the Agenda repeats it on purpose) and proves it still rejects a planted second copy; selfcheck is 483/483.
 
 1.1 — Graduation prompt colour.
     - The line under the graduation confirm box title (#gc-prompt) used var(--warn), which is not defined, so it fell back to grey; it now uses var(--status-watch-text) like the CSAT line.
