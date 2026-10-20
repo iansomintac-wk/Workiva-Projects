@@ -56,3 +56,11 @@ export function makeFixture() {
   for (let k = 0; k < 5; k++) customers.push(cust('cOnly' + k, `Runway Only ${k}`, { salesforceId: '001ONLY' + String(k).padStart(8, '0') + 'AAA' }));
   return { table: [HEADER, ...rows], customers };
 }
+
+export const NET_RE = /\b(fetch|XMLHttpRequest|sendBeacon|WebSocket)\b/;
+export function csatFnNames(src) {
+  return [...new Set([...src.matchAll(/^(?:async )?function ((?:csat|buildCsat|applyCsat|commitCsat|openCsat|handleCsat|renderCsat|bindCsat)\w*)\(/gm)].map(m => m[1]))];
+}
+export function networkHits(src, names = csatFnNames(src)) {
+  return names.filter(n => NET_RE.test(fnSource(src, n)));
+}
