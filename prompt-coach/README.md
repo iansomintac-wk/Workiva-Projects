@@ -6,7 +6,7 @@ strong version into toggleable SCOPE elements. Everything runs in the browser: n
 server, no uploads. Built for customer-facing use where Claude access can't be provisioned.
 
 ```sh
-node tests/build.js                      # -> dist/prompt-coach.html (single file, 334435 bytes, LF)
+node tests/build.js                      # -> dist/prompt-coach.html (single file, 337684 bytes, LF)
 node tests/pagetest.js                      # real-browser page test of the built page (notes, display grade, off-topic); build first
 node tests/eval.js rulefeat data/test.jsonl          # accuracy on held-out prompts
 node tests/simulate.js data/train_*.jsonl            # rewrite invariants
@@ -154,11 +154,17 @@ blank on 51; scored out of fold it guesses on 1, wrongly; 0 of 13 live-test case
 Published work favours asking only when the task is unclear, which the blank already does. See
 `research/2026-10-20-bare-analyze-format-probe.md`.
 
-Still open: the reason line for weak prompts is generic, and often wrong for the prompt. Measured
+Still open: the reason line for weak prompts was generic, and often wrong for the prompt. Measured
 2026-10-20 on the training rows (in-sample): 430 of 1,080 grade weak; on 147 of them the line names
 something the prompt has (89) or misses its missing source or ask (63); two lines cover 45% of
 them; 0 of 13 live-test cases grade weak. Ian chose (2026-10-20) a line that quotes the prompt's own
-words; not built yet. See `research/2026-10-20-reason-line-probe.md`. Specced 2026-10-20 for the ask only
-(PM proxy for Ian): a quote reaches 55 of 432 weak prompts out of fold, 0 wrong by label, 4 wrong words by eye
-before a field-label skip; a source quote picked the wrong words 12 times in 17 and is out. See
-`research/2026-10-20-quote-line-probe.md`.
+words. Built 2026-10-20 for the ask only (PM proxy for Ian; Ian may overturn): the weak headline on
+"Your prompt" and `stages.weak.verdict` add `The coach read your ask as "<span>"`, only when the
+detector is sure the ask is missing (p < 0.2); a vague verb followed directly by a colon (a field label) is
+skipped. The source is never quoted (a source quote picked the wrong words 12 times in 17). The probe
+counted 55 of 432 weak prompts reached out of fold, 0 wrong by label, 4 wrong words by eye before the
+colon skip (probe counts, not re-measured here). The letters the line names are still the detector's;
+naming only the letters the detector is sure of is still open (Ian's morning list). The earlier
+147-of-430 probe measured the reason line, which no tab shows since 16a49e2; the headline names only
+source and ask. The shipped out-of-fold count is in
+`docs/evidence/2026-10-20-prompt-coach-quote-line.md`. See `research/2026-10-20-quote-line-probe.md`.

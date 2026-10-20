@@ -11,6 +11,7 @@ Talk 2026-10-20, session "NEW - Prompt Coach quote line talk" (job 04bbd630), fr
   C park / D name only the letters the detector is sure of): "B, proxy decided: spec + run prompt + budget.json,
   run via town-launch with the slip ledger, merge into prompt-coach and push under the merge rule; D to Ian's
   morning list". Proxy decided; Ian may overturn. Recorded in the run ledger's rulings.md.
+- PM proxy for Ian, 2026-10-20T06:04Z, on the card (A quote in the visible headline + stages.weak.verdict agrees (Rec.) / B ship as specced, invisible / C park / D bring back a why-it-fails card): "A. Quote in the visible headline on Your prompt, stages.weak.verdict changed to agree, same span rule and no-gos, drop test reads the headline. Add: capture Your prompt for "help with the 10-K" and for one exclusion case (fingerprinted; I open both and make the look call for Ian's morning block). Put the finding ("the 147-of-430 probe measured a line users never see; the headline names only source and ask") in the evidence doc and the for-Ian list. Make your plan fixes, Codex round 2, then send me the plan card." Proxy decided; Ian may overturn.
 
 ## Evidence
 
@@ -63,6 +64,7 @@ example Weak stage shown for a prompt that grades better or strong are unchanged
 | Case | Line |
 |---|---|
 | Span found | `The AI has to guess <core>. The coach read your ask as "<span>": that says what to look at, not what a finished answer looks like. It is also missing <rest>.` The quote replaces today's `A verb like "<verb>" does not say what a finished answer looks like.` sentence; `<core>` and `<rest>` are as today. |
+| Span found, headline (amended 06:04Z) | The same quote sentence is appended to today's weak headline: today's headline text + ` The coach read your ask as "<span>": that says what to look at, not what a finished answer looks like.` The headline is what the page shows on "Your prompt". The drop check and criteria 1 and 3 read the headline as well as `stages.weak.verdict`. |
 | No span | Today's line, byte for byte. |
 | Several asks | No change from the two rows above; the existing stacked note ("You are asking for several things at once...") stays the only place that says so. Why: a split rule reaches 13 of 41 stacked prompts and misses a third ask in 6 of those 13. |
 | Source missing | Never quoted; today's wording. Why: 12 of 17 source quotes were the wrong words. |
@@ -72,6 +74,8 @@ your ask as "help with the 10-K": that says what to look at, not what a finished
 missing who it is for, a format or scope and a rule about invented facts.` Checked 2026-10-20 with the shipped
 detector: this prompt grades weak with an ask probability of 0.000, and today's line for it is the same with
 `A verb like "help with" does not say what a finished answer looks like.` in the middle.
+
+Note: the probe's lead list had "okay"; the shipped rule follows the span rule's list above (no "okay").
 
 ### No-go
 

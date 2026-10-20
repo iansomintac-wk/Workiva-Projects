@@ -65,6 +65,12 @@ async function main() {
     check('haiku: no polished rewrite stages', r.tabs.length === 1 && r.stage === '', r.tabs.join(',') + ' ' + r.stage.slice(0, 40));
     r = await type(PLAIN);
     check('plain work prompt shows none of the new notes', !['calc', 'personal', 'offtopic', 'stacked'].some((k) => has(r, k)), r.notes.slice(0, 80));
+    r = await type('help with the 10-K');
+    check('quote line: "help with the 10-K" headline quotes the ask', r.headline.includes('The coach read your ask as "help with the 10-K"'), r.headline.slice(0, 160));
+    r = await type('Evaluate: carefully');
+    check('quote line: "Evaluate:" label headline has no quote', !r.headline.includes('The coach read your ask'), r.headline.slice(0, 160));
+    r = await type('the 10-K needs a quick look, can you help');
+    check('quote line: no sentence-opening vague verb, headline has no quote', !r.headline.includes('The coach read your ask'), r.headline.slice(0, 160));
     check('no console errors', errors.length === 0, errors.join(' | ').slice(0, 200));
     ws.close();
   } finally { chrome.kill(); }

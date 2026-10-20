@@ -502,3 +502,57 @@ test('unsupported: Upstream T&D is not Downstream T&D, and a truly missing categ
   assert.equal(unsupported(run(askCat(4), [down])).length, 1, 'downstream is not upstream');
   assert.equal(unsupported(run(askCat(11), [up])).length, 1);
 });
+
+// ---- quote line (spec 2026-10-20-prompt-coach-quote-line-design.md): headline AND stages.weak.verdict ----
+const detectP = (p) => { const r = M.predict(p, weights, { mode: weights.mode }); return { on: r.on, prob: r.prob, d: r.rules }; };
+const withO = (x) => (p) => { const r = detectP(p); return { ...r, prob: { ...r.prob, O: x } }; };
+const coachWith = (prompt, det) => W.coach(prompt, { files: [], detect: det, ...C.pick(prompt, CLS) });
+const QUOTED = /The coach read your ask as "/;
+const HELP = 'help with the 10-K';
+const SAYS = ': that says what to look at, not what a finished answer looks like.';
+const quotedBoth = (o) => QUOTED.test(o.headline) && QUOTED.test(o.stages.weak.verdict);
+const quotedNone = (o) => !QUOTED.test(o.headline) && !QUOTED.test(o.stages.weak.verdict);
+
+test('quote line: "help with the 10-K" quotes the ask in headline and verdict; no probability means today\'s text', () => {
+  const o = coachWith(HELP, detectP), old = coachWith(HELP, detect);
+  assert.equal(o.stages.weak.verdict, 'The AI has to guess what to read and the one thing you want back. The coach read your ask as "help with the 10-K"' + SAYS + ' It is also missing who it is for, a format or scope and a rule about invented facts.');
+  assert.equal(o.headline, old.headline + ' The coach read your ask as "help with the 10-K"' + SAYS);
+  assert.ok(quotedNone(old), 'detect without prob must give today\'s headline and verdict');
+});
+
+test('quote line: a field label "Evaluate:" is never quoted', () => {
+  assert.ok(quotedBoth(coachWith(HELP, withO(0))), 'contrast: the same detector quotes a real ask');
+  const p = 'Evaluate: carefully', o = coachWith(p, withO(0));
+  assert.equal(o.grade, 'weak');
+  assert.ok(quotedNone(o), o.headline + ' | ' + o.stages.weak.verdict);
+});
+
+test('quote line: ask probability 0.2 gives no quote, 0.19 does', () => {
+  assert.ok(quotedBoth(coachWith(HELP, withO(0.19))));
+  const o = coachWith(HELP, withO(0.2));
+  assert.ok(quotedNone(o), o.headline);
+  assert.ok(o.stages.weak.verdict.includes('A verb like "help with" does not say what a finished answer looks like.'), o.stages.weak.verdict);
+});
+
+test('quote line: no sentence-opening vague verb gives today\'s headline and verdict byte for byte', () => {
+  assert.ok(quotedBoth(coachWith(HELP, withO(0))), 'contrast: a sentence-opening verb is quoted');
+  // the verb sits mid-sentence after a comma; if this prompt stops grading weak, use another with the verb mid-sentence
+  const p = 'the 10-K needs a quick look, can you help', a = coachWith(p, withO(0)), b = coachWith(p, detect);
+  assert.equal(a.grade, 'weak');
+  assert.equal(a.headline, b.headline);
+  assert.equal(a.stages.weak.verdict, b.stages.weak.verdict);
+});
+
+test('quote line: a prompt that grades better is unchanged', () => {
+  assert.ok(quotedBoth(coachWith(HELP, withO(0))), 'contrast: a weak prompt is quoted');
+  const p = 'Summarize the attached Q3 flux report for the CFO', a = coachWith(p, withO(0)), b = coachWith(p, detect);
+  assert.notEqual(a.grade, 'weak');
+  assert.equal(a.headline, b.headline);
+  assert.deepEqual(a.stages, b.stages);
+});
+
+test('quote line: a long ask is cut to its first 8 words plus "..."', () => {
+  const p = 'Review the 10-K and the proxy and the exhibits and the notes for me today.', o = coachWith(p, withO(0));
+  assert.ok(o.headline.includes('The coach read your ask as "Review the 10-K and the proxy and the..."'), o.headline);
+  assert.ok(o.stages.weak.verdict.includes('"Review the 10-K and the proxy and the..."'), o.stages.weak.verdict);
+});

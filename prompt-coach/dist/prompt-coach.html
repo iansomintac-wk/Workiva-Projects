@@ -1022,7 +1022,8 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     if (stage === 'weak') {
       const core = ['S', 'O'].filter((k) => !on[k]).map((k) => MISSING[k]);
       let v = 'The AI has to guess ' + listify(core.length ? core : miss.map((k) => MISSING[k])) + '. ';
-      if (extra.vague) v += 'A verb like "' + extra.vague + '" does not say what a finished answer looks like. ';
+      if (extra.quote) v += 'The coach read your ask as "' + extra.quote + '"' + QUOTE_SAYS + ' ';
+      else if (extra.vague) v += 'A verb like "' + extra.vague + '" does not say what a finished answer looks like. ';
       const rest = miss.filter((k) => !['S', 'O'].includes(k)).map((k) => MISSING[k]);
       if (rest.length) v += 'It is also missing ' + listify(rest) + '.';
       return v.trim();
@@ -1044,6 +1045,20 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
   const VAGUE_LEAD = /^\s*(?:(?:please|pls|can (?:you|u)|could you)\s+)*(?:analy[sz]e|review|look (?:at|over)|go over|check|help(?: me)?(?: with)?|work on|take a look at)\s+/i;
   const VAGUE_VERB = /\b(?:analy[sz]e|look at|look over|go over|review|check|help|assist|work on|handle|thoughts|improve|clean up|take a look|have a look|figure out|investigate|examine|evaluate|assess|tell me about)\b/i;
   const VAGUE_ONLY = /^\s*(?:(?:please|pls|can (?:you|u)|could you)\s+)*(?:analy[sz]e|review|look (?:at|over)|go over|check|help(?: me)?(?: with)?|work on|take a look at)\b[^?]*$/i;
+  // Quote line: the user's own ask, only for a sentence-opening vague verb (spec 2026-10-20-prompt-coach-quote-line-design.md).
+  const QUOTE_LEAD = /(?:^|[.!?\n]\s*|:\s*)(?:(?:hey|hi|ok|so|just|quick(?:ly)?|please|pls|plz|can (?:you|u)|could (?:you|u)|would you|i need (?:you )?to|i want (?:you )?to|need (?:you )?to|want (?:you )?to|i'?d like (?:you )?to)[\s,]+)*$/i;
+  const QUOTE_SAYS = ': that says what to look at, not what a finished answer looks like.';
+  function askQuote(prompt) {
+    const re = new RegExp(VAGUE_VERB.source, 'gi'); let m;
+    while ((m = re.exec(prompt))) {
+      if (!QUOTE_LEAD.test(prompt.slice(0, m.index))) continue;
+      if (prompt[m.index + m[0].length] === ':') continue; // a field label such as "Evaluate:"
+      let s = prompt.slice(m.index).split(/[.;?!\n]/)[0].replace(/[\s,:-]+$/, '');
+      const w = s.trim().split(/\s+/); if (w.length > 8) s = w.slice(0, 8).join(' ') + '...';
+      return s || null;
+    }
+    return null;
+  }
 
   /* ---------------- the file cannot support the ask (T3 / T6) ---------------- */
   const DECLINE = 'If the file does not contain what this needs, say so instead of estimating.';
@@ -1100,7 +1115,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     opts = opts || {};
     const files = opts.files || [];
     const detect = opts.detect || ((p) => { const d = R.detect(p, { files: files.map((f) => f.name) }); return { on: Object.fromEntries(K.map((k) => [k, d.el[k].on])), d }; });
-    const { on, d } = detect(prompt);
+    const { on, d, prob } = detect(prompt);
     const t = d.text;
     const grade = R.grade(on);
     const chosen = bestSheet(files, t);
@@ -1219,8 +1234,10 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     const betterP = assemble(betterSegs, allOn);
     const vagueVerb = (t.match(/\b(analy[sz]e|look at|review|check|help(?: me)?(?: with)?|go over|improve|work on)\b/) || [])[1];
     const weakP = grade === 'weak' ? prompt.trim() : (vagueVerb ? vagueVerb : 'Look at').replace(/^./, (c) => c.toUpperCase()) + ' ' + (ctx.object ? 'our ' + ctx.object : 'this') + '.';
+    // quote the ask only for the user's own weak prompt, only when the detector says the ask is missing and is sure (p < 0.2); no probability = no quote
+    const quote = grade === 'weak' && !on.O && prob && typeof prob.O === 'number' && prob.O < 0.2 ? askQuote(prompt) : null;
     const stages = {
-      weak: { prompt: grade === 'weak' ? prompt.trim() : weakP, verdict: verdictFor('weak', grade === 'weak' ? on : { S: false, C: false, O: false, P: false, E: false }, { vague: grade === 'weak' && !on.O ? vagueVerb : (grade === 'weak' ? null : vagueVerb || 'look at') }) },
+      weak: { prompt: grade === 'weak' ? prompt.trim() : weakP, verdict: verdictFor('weak', grade === 'weak' ? on : { S: false, C: false, O: false, P: false, E: false }, { vague: grade === 'weak' && !on.O ? vagueVerb : (grade === 'weak' ? null : vagueVerb || 'look at'), quote }) },
       better: { prompt: grade !== 'better' || R.grade(detect(betterP).on) !== 'weak' ? betterP : assemble([{ text: prompt, letter: 'O' }], allOn), verdict: verdictFor('better', grade === 'better' ? on : { ...on, S: true, O: true }, {}) },
       strong: { prompt: grade === 'strong' ? prompt.trim() : strongP, verdict: verdictFor('strong', on, {}) }
     };
@@ -1256,8 +1273,9 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       : grade === 'better' ? 'It has a source and a job; it is missing ' + listify(filled.map((k) => MISSING[k])) + '.'
       : !on.S && files.length ? 'You attached ' + listify(files.map((f) => cleanFile(f.name))) + ', but the prompt does not point to it. Start with ' + files.map((f) => '@' + cleanFile(f.name)).join(' ') + (on.O ? ' so the AI knows what to read.' : ' and say the one thing you want back.')
       : 'The AI would have to guess ' + listify(['S', 'O'].filter((k) => !on[k]).map((k) => MISSING[k])) + '.';
+    const headlineOut = quote ? headline + ' The coach read your ask as "' + quote + '"' + QUOTE_SAYS : headline;
     const placeholders = (strongP.match(/\[[^\]]+\]/g) || []).length;
-    return { grade, detected: on, headline, stages, scope, segments, notes, stacked: stackedAll, offtopic, tips, intent: ctx.intent, domain: ctx.domain, placeholders, hits: d.el };
+    return { grade, detected: on, headline: headlineOut, stages, scope, segments, notes, stacked: stackedAll, offtopic, tips, intent: ctx.intent, domain: ctx.domain, placeholders, hits: d.el };
   }
 
   // Coach notes (T4): additive warnings that never change a grade, weight or rewrite.
@@ -1299,7 +1317,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     return r.grade === 'strong' && r.hits && r.stacked ? 'better' : r.grade;
   }
 
-  const api = { displayGrade, listStacked, sentenceSpans, missingAsk, directVoice, fixTypos, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
+  const api = { askQuote, displayGrade, listStacked, sentenceSpans, missingAsk, directVoice, fixTypos, coach, assemble, domainOf, intentOf, objectOf, INTENTS, DOMAIN };
   if (isNode) module.exports = api; else root.ScopeRewrite = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -1511,7 +1529,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
   const CLS = ScopeClassify.unpack(window.SCOPE_CLS);
   const detect = (p) => {
     const r = ScopeModel.predict(p, weights, { mode: weights.mode });
-    return { on: r.on, d: r.rules };
+    return { on: r.on, prob: r.prob, d: r.rules };
   };
   const state = { files: [], stage: 'mine', on: Object.fromEntries(K.map((k) => [k, true])), result: null };
 

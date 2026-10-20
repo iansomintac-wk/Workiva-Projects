@@ -286,7 +286,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
   const CLS = ScopeClassify.unpack(window.SCOPE_CLS);
   const detect = (p) => {
     const r = ScopeModel.predict(p, weights, { mode: weights.mode });
-    return { on: r.on, d: r.rules };
+    return { on: r.on, prob: r.prob, d: r.rules };
   };
   const state = { files: [], stage: 'mine', on: Object.fromEntries(K.map((k) => [k, true])), result: null };
 
