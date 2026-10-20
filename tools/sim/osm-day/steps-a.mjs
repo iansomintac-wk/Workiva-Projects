@@ -16,6 +16,27 @@ export const DAY = '2026-10-21';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ORION = 'Orion Semiconductor';
 
+// Ian 2026-10-20 ("D8 looks good and fix L8"): a confirmed case STAYS on the Risk list.
+async function confirmWithReason(ctx, id, text) {
+  await ctx.click(`[data-risk-confirm="${id}"]`);
+  await sleep(300);
+  const typed = await ctx.ev(`(() => { const ta = document.getElementById('rkc-reason'); if (!ta) return false; ta.value = ${JSON.stringify(text)}; ta.dispatchEvent(new Event('input', { bubbles: true })); return !document.getElementById('rkc-ok').disabled; })()`);
+  if (!typed) return false;
+  await ctx.click('#rkc-ok');
+  await sleep(500);
+  return true;
+}
+async function staysListed(ctx, id) {
+  const r = JSON.parse(await ctx.ev(`(() => { const el = document.getElementById('rk-c-${id}');
+    const deck = [...document.querySelectorAll('.rk3-stage .rk3-card')]; const sig = document.querySelector('.rk-signals');
+    return JSON.stringify({ exists: !!el, inDeck: !!el && deck.includes(el), confirmed: !!el && el.classList.contains('confirmed'),
+      work: !!el && !!el.querySelector('.rk-work'), why: !!el && !!el.querySelector('.rk-confirmed-why'),
+      stillSignal: !!(sig && sig.querySelector('#rk-c-${id}')), deckN: deck.length,
+      deckBeforeSignals: !sig || !deck.length || !!(deck[deck.length - 1].compareDocumentPosition(sig) & Node.DOCUMENT_POSITION_FOLLOWING) }); })()`));
+  r.ok = r.exists && r.inDeck && r.confirmed && r.work && r.why && !r.stillSignal && r.deckBeforeSignals;
+  return r;
+}
+
 // Text of one account's beat panel as the Today screen renders it, with no click-through.
 const panelText = (ctx, name) => ctx.ev(`(() => {
   const c = DATA.customers.find(x => x.name === ${JSON.stringify(name)});
@@ -206,13 +227,12 @@ export const PART_A = [
     const before = await ctx.ev(card);
     if (!before) return { passed: false, evidence: 'Coastal Water Authority has no case in the Risk tab before actioning' };
     const lastBefore = await ctx.ev(lastActioned);
-    await ctx.click(`[data-risk-confirm="${id}"]`);
-    await sleep(500);
+    const cls = s => s.replace(/rk3-card|is-active|sevd/g, '').trim();
+    if (!(await confirmWithReason(ctx, id, 'SIM-D8 the sponsor said they may not renew'))) return { passed: false, evidence: 'the confirm control did not open the reason box, or Confirm stayed disabled after a reason was typed' };
     const after = await ctx.ev(card);
     const lastAfter = await ctx.ev(lastActioned);
-    const inList = after !== null;
-    const cls = s => s.replace(/rk3-card|is-active|sev\d/g, '').trim();
-    return { passed: !inList, evidence: `case card ${cls(before)} -> ${inList ? cls(after) + ' (still listed)' : 'gone from the list'}; lastActioned ${lastBefore} -> ${lastAfter}` };
+    const stays = await staysListed(ctx, id);
+    return { passed: stays.ok, evidence: `case ${cls(before)} -> ${after === null ? 'gone from the list' : cls(after)}; ${JSON.stringify(stays)}; lastActioned ${lastBefore} -> ${lastAfter}` };
   } },
   { id: 'D9', async run(ctx) {
     await ctx.openOn(DAY);
