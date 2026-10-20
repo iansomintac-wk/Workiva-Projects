@@ -76,7 +76,7 @@ Keeps an OSM's book of business in one place and turns it into a day's work.
               first, then writes the dates and shows a report. Undo reverses the import.
               Settings > Watch a folder for CSAT exports: pick the folder where the export lands (files named csat_runway_export_*.csv); Today shows a
               "New CSAT export" line with Review when a newer file appears. Check now looks again; Stop watching forgets the folder. Nothing applies until you press Apply.
-              A newer file with nothing to change shows no line. Check now says why when nothing shows: folder unreadable, not a CSAT export, over 8 MB, or nothing new.
+              A newer file with nothing to change shows no line. Check now says why when nothing shows: folder unreadable, folder access not allowed by the browser, not a CSAT export, over 8 MB, or nothing new. The note goes at the next automatic refresh.
               In 1.1, Call prep also shows the closing 30 speech lines of the newest transcript on the
               account, in a scrolling box with a Read the full transcript link; hidden when there is none.
               It also shows a Promises section: the account's open commitments, up to 5, most urgent

@@ -18310,7 +18310,7 @@ let _csatWatch = {state:'off', dir:null, fileName:'', fileModified:0, plan:null,
 async function csatWatchRefresh(request){
   const w = _csatWatch;                       // 1e: remember which watch this scan belongs to
   const maxBytes = 8 * 1024 * 1024;           // 1b: same 8 MB limit as the manual import
-  const done = o => { if(_csatWatch !== w) return false; Object.assign(w, o, {manual:!!request}); return true; };
+  const done = o => { if(_csatWatch !== w) return false; Object.assign(w, o, {manual:!!request}); if(!request) w.note = ""; return true; };   // an automatic refresh clears a manual note
   try{
     const r = await csatFolderCheck(w.dir, request);
     if(_csatWatch !== w) return;
@@ -18325,12 +18325,12 @@ async function csatWatchRefresh(request){
         else if(!plan.changes.length && !plan.suggestions.length) done({state:'off', plan:null, note:'nothing new to import.'});   // 1a
         else done({state:'new', fileName:r.newest.name, fileModified:r.newest.lastModified, plan:plan, text:text, note:''});
       }
-    } else done({state:'off', plan:null, note: r.state === 'granted' ? 'nothing new to import.' : ''});
+    } else done({state:'off', plan:null, note: r.state === 'granted' ? 'nothing new to import.' : r.state === 'denied' ? 'the browser did not allow access to that folder. Pick it again in Settings.' : ''});
   }catch(e){ done({state:'off', plan:null, note:'could not read that folder. Pick it again in Settings.'}); }
   if(_csatWatch === w) render();
 }
 async function csatWatchUse(dir){
-  _csatWatch.dir = dir;
+  _csatWatch = {state:'off', dir:dir, fileName:'', fileModified:0, plan:null, text:'', note:'', manual:false};   // fresh record: an older folder's scan is dropped by the identity guard
   await csatFolderStore(dir);
   await csatWatchRefresh(false);
 }

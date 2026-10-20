@@ -72,3 +72,35 @@ test('watch 1c: the Check now button also toasts the note (source check on bindC
   const body = lf.slice(lf.indexOf('function bindCsatSettings('), lf.indexOf('function bindCsatFileInput('));
   assert.match(body, /_csatWatch\.note[\s\S]*showToast|showToast[\s\S]*_csatWatch\.note/);
 });
+
+test('FX2 S1: picking a new folder starts a fresh watch record, so an old folder\'s slow scan cannot put its plan back', async () => {
+  let release; const gate = new Promise(r => { release = r; });
+  const slow = { name: 'csat_runway_export_x.csv', size: 10, lastModified: L, text: async () => { await gate; return csv; } };
+  const { c } = env({ fileModified: L });
+  setDir(c, mkDir(slow));
+  const oldScan = c.csatWatchRefresh(false);
+  await new Promise(r => setTimeout(r, 20));
+  const before = vm.runInContext('_csatWatch', c);
+  await c.csatWatchUse(dirWith(L));                 // new folder: nothing newer than the last import
+  assert.notEqual(vm.runInContext('_csatWatch', c), before);
+  release(); await oldScan;
+  assert.equal(vm.runInContext('_csatWatch.state', c), 'off');
+  assert.equal(vm.runInContext('_csatWatch.plan', c), null);
+  assert.equal(raw(c), '');
+});
+test('FX2 S2: permission denied gives a note after Check now, and stays silent on a quiet refresh', async () => {
+  const dir = { queryPermission: async () => 'denied', requestPermission: async () => 'denied', values: async function* () {} };
+  const { c } = env(); setDir(c, dir);
+  await c.csatWatchRefresh(false); assert.equal(raw(c), '');
+  await c.csatWatchRefresh(true);
+  assert.equal(line(c), 'CSAT folder: the browser did not allow access to that folder. Pick it again in Settings.');
+  assert.equal(vm.runInContext('_csatWatch.note', c), 'the browser did not allow access to that folder. Pick it again in Settings.');
+});
+test('FX2 N1: the next automatic refresh clears a manual note', async () => {
+  const { c } = env({ fileModified: L });
+  await c.csatWatchUse(dirWith(L));
+  await c.csatWatchRefresh(true); assert.match(line(c), /nothing new/);
+  await c.csatWatchRefresh(false);
+  assert.equal(vm.runInContext('_csatWatch.note', c), '');
+  assert.equal(raw(c), '');
+});
