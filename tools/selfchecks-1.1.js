@@ -745,10 +745,10 @@ function _runSelfChecksInner(){
   // suggestion.
   (function(){
     const labels = RISK_TAXONOMY.map(t=>t.label);
-    const expected = ['Adoption/Usage','Other','Customer Team/Loss of Champions','Enablement/Training','Implementation Issue','Partner Experience','Service & Support Risk','Workiva Team/Team Turnover','Past Due Invoices','Product','Lack of Engagement/No Contact','Company Change','Sales/Scope','Value/Shopping Around','Regulatory Changes','No partner/no service','Next Gen GRC Upgrade'];
-    check('v59 taxonomy: 17 team labels verbatim, unique keys, Other is phrase-free fallback',
-      labels.length === 17 && expected.every(l => labels.includes(l))
-      && new Set(RISK_TAXONOMY.map(t=>t.key)).size === 17
+    const expected = ['Adoption/Usage','Other','Customer Team/Loss of Champions','Enablement/Training','Implementation Issue','Partner Experience','Service & Support Risk','Workiva Team/Team Turnover','Past Due Invoices','Product','Lack of Engagement/No Contact','Company Change','Sales/Scope','Value/Shopping Around','Regulatory Changes','No partner/no service','Next Gen GRC Upgrade','Expansion'];
+    check('v59 taxonomy: 18 team labels (17 risk + Expansion) verbatim, unique keys, Other is phrase-free fallback',
+      labels.length === 18 && expected.every(l => labels.includes(l))
+      && new Set(RISK_TAXONOMY.map(t=>t.key)).size === 18
       && RISK_TAXONOMY_BY_KEY.other.phrases.length === 0,
       JSON.stringify(labels));
     const hits = classifyRiskText('Their champion left the company last week, invoice is past due, and there is a bug in the report.');
@@ -1001,6 +1001,27 @@ function _runSelfChecksInner(){
       JSON.stringify(rows.map(r=>({m:r.matchedCustomerId, d:r.duplicate, dt:r.dateISO}))));
   })();
 
+  (function(){                                   // v13 Step 2d
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo;
+    try{
+      const sales = RISK_TAXONOMY_BY_KEY.sales_scope.phrases, exp = RISK_TAXONOMY_BY_KEY.expansion;
+      const moved = !sales.includes('upsell') && !sales.includes('expansion conversation')
+        && !!exp && exp.notRisk === true && exp.phrases.includes('upsell') && exp.phrases.includes('expansion conversation');
+      const hits = classifyRiskText('They want an upsell and an expansion conversation.').map(h => h.key);
+      const classed = hits.includes('expansion') && !hits.includes('sales_scope');
+      const c = v13Acct('__s2d__', {riskOverride: 'ontrack'});
+      DATA.customers = [c]; DATA.riskLog = {};
+      DATA.activities = {__s2d__: [{id:'e1', date: isoAddDays(todayISO(), -2), type:'Onboarding Session', summary:'They asked about an upsell.', sessionNumber:1, checklist:[]}]};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const noRisk = !buildRiskHubList({readOnly: true}).some(it => it.c.id === '__s2d__' && it.kind === 'Category signal');
+      ok = moved && classed && noRisk;
+      detail = JSON.stringify({moved, classed, noRisk, hits});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM;
+    check('v13 step 2d: upsell and expansion conversation form their own Expansion category and never raise a risk', ok, detail);
+  })();
   /* ============ v61: Today unified action ranking ============
      "no Today row renders without a citation" and "Start-here card shows exactly
      todayActionList()[0]" are the load-bearing ones. They are what keep the

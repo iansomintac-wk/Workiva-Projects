@@ -10443,7 +10443,7 @@ const MAX_IMPACT_LOG = 4000;
 /* ---- Risk Hub ---- */
 
 /* ---- v59: team-confirmed risk taxonomy ----
-   The 17 categories below are the team's official risk-reason list (labels
+   The 17 risk categories below (plus Expansion, a non-risk category) are the team's official list (labels
    VERBATIM — they must match what the OSM picks in Gainsight). Each carries
    a curated phrase list scanned with the SAME matcher as the advisor
    keywords (word boundaries, suffix tolerance, negation lookback — "no bug"
@@ -10466,11 +10466,12 @@ const RISK_TAXONOMY = [
   {key:'product', label:'Product', phrases:['product gap','missing feature','feature request','bug','product issue','product limitation','known limitation','workaround','waiting on the roadmap','on the roadmap',"product doesn't"]},
   {key:'no_contact', label:'Lack of Engagement/No Contact', phrases:['no response','unresponsive','went dark','ghosted','no contact','not responding','radio silence','cancelled the meeting','cancelled our meeting','no-show','no show','missed the call','declined the invite','stopped attending']},
   {key:'company_change', label:'Company Change', phrases:['acquisition','acquired','merger','restructuring','reorg','layoff','bankruptcy','leadership change','new cfo','new ceo','divestiture','budget cut','hiring freeze','spun off']},
-  {key:'sales_scope', label:'Sales/Scope', phrases:['out of scope','scope change','scope creep','descope','descoped','contract change','renegotiate','renegotiation','not what we bought','oversold','sold something different','expansion conversation','upsell']},
+  {key:'sales_scope', label:'Sales/Scope', phrases:['out of scope','scope change','scope creep','descope','descoped','contract change','renegotiate','renegotiation','not what we bought','oversold','sold something different']},
   {key:'value_shopping', label:'Value/Shopping Around', phrases:['competitor','evaluating alternatives','shopping around','not seeing value','value concern','questioning the value','cheaper','considering other','switching to','looking at other tools','renewal risk','may not renew','churn']},
   {key:'regulatory', label:'Regulatory Changes', phrases:['regulatory change','regulation changed','requirement changed','no longer required to report','csrd delay','omnibus','sec rule','deregulation','reporting deadline moved','compliance deadline moved']},
   {key:'no_partner', label:'No partner/no service', phrases:['no partner','without a partner','no implementation partner','self-implementing','self implementing','no services','services ended','no sow','sow expired']},
-  {key:'nextgen_grc', label:'Next Gen GRC Upgrade', phrases:['next gen grc','nextgen grc','next-gen grc','classic grc','grc migration','grc upgrade','ai-powered grc']}
+  {key:'nextgen_grc', label:'Next Gen GRC Upgrade', phrases:['next gen grc','nextgen grc','next-gen grc','classic grc','grc migration','grc upgrade','ai-powered grc']},
+  {key:'expansion', label:'Expansion', notRisk:true, phrases:['upsell','expansion conversation']}
 ];
 const RISK_TAXONOMY_BY_KEY = Object.fromEntries(RISK_TAXONOMY.map(t => [t.key, t]));
 // Pure. Returns [{key, label, phrase}] — first matched phrase per category,
@@ -10668,7 +10669,7 @@ function markRiskActioned(it, maintained){
 // genuinely unambiguous; everything else classifies from its own text or
 // falls back to Other. Suggestions, not verdicts.
 function taxonomyForHubItem(item){
-  const fromText = classifyRiskText(item.detail);
+  const fromText = classifyRiskText(item.detail).filter(h => !RISK_TAXONOMY_BY_KEY[h.key].notRisk);
   if(fromText.length) return fromText[0];
   if(item.kind === 'Implementation risk' || item.kind === 'Implementation paused') return {key:'implementation_issue', label: RISK_TAXONOMY_BY_KEY.implementation_issue.label, phrase: null};
   if((item.kind === 'Off Track' || item.kind === 'Watch') && /days since last touchpoint|No activity/i.test(item.detail)) return {key:'no_contact', label: RISK_TAXONOMY_BY_KEY.no_contact.label, phrase: null};
@@ -10713,6 +10714,7 @@ function buildRiskHubList(opts){
     const seenCats = new Set();
     for(const entry of recent){
       for(const hit of classifyRiskText(entry.text)){
+        if(RISK_TAXONOMY_BY_KEY[hit.key].notRisk) continue;
         if(seenCats.has(hit.key) || seenCats.size >= 3) continue;
         seenCats.add(hit.key);
         items.push({kind:'Category signal', sev:2, c, date: entry.date,
