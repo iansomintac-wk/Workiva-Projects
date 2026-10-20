@@ -3910,18 +3910,28 @@ function _runSelfChecksInner(){
       if(!beat) throw new Error('no call beat built for the panel duplication check');
       const panel = renderBeatPanel(beat, () => '');
       const sessionsFigure = `${sessionsCompletedCount(c)}/${c.totalSessions}`;
-      const AGENDA_RE = /<div class="bp-sec" data-beat-agenda>[\s\S]*?<\/ol>/;
-      const verdict = /*VERDICT-BEGIN*/(html, NOTE, QUESTION, sessionsFigure) => {
+      // One Agenda boundary, defined once and passed into verdict(): from the Agenda opener to the earlier of </ol> or the next section opener.
+      const AGENDA_RE = /*AGENDA-RE-BEGIN*/(/<div class="bp-sec" data-beat-agenda>[\s\S]*?(?:<\/ol>|(?=<div class="bp-sec"))/)/*AGENDA-RE-END*/;
+      const verdict = /*VERDICT-BEGIN*/(html, NOTE, QUESTION, sessionsFigure, agendaRe) => {
         const count = (t, n) => t.split(n).length - 1;
-        const plain = html.replace(/<div class="bp-sec" data-beat-agenda>[\s\S]*?<\/ol>/, '').replace(/<[^>]+>/g, '');
-        const noteTimes = count(plain, NOTE), questionTimes = count(plain, QUESTION), sessionsTimes = count(plain, sessionsFigure);
+        const text = (h) => h.replace(/<[^>]+>/g, '');
+        // Only the open QUESTION may repeat in the Agenda (item 6); NOTE and the sessions figure are counted over the whole panel.
+        const whole = text(html), outside = text(html.replace(agendaRe, ''));
+        const noteTimes = count(whole, NOTE), questionTimes = count(outside, QUESTION), sessionsTimes = count(whole, sessionsFigure);
         return {noteTimes, questionTimes, sessionsTimes, ok: noteTimes === 1 && questionTimes === 1 && sessionsTimes === 1};
       }/*VERDICT-END*/;
-      const real = verdict(panel, NOTE, QUESTION, sessionsFigure);
-      const planted = verdict(panel + '<p>' + QUESTION + '</p>', NOTE, QUESTION, sessionsFigure);   // control: the same predicate must reject a second copy outside the Agenda
+      const real = verdict(panel, NOTE, QUESTION, sessionsFigure, AGENDA_RE);
+      const plantedQ = verdict(panel + '<p>' + QUESTION + '</p>', NOTE, QUESTION, sessionsFigure, AGENDA_RE);
+      const plantedNote = verdict(panel + '<p>' + NOTE + '</p>', NOTE, QUESTION, sessionsFigure, AGENDA_RE);
+      const plantedSess = verdict(panel + '<p>' + sessionsFigure + '</p>', NOTE, QUESTION, sessionsFigure, AGENDA_RE);
+      const plantedNoteInAgenda = verdict(panel.replace(/(data-beat-agenda>)/, '$1' + NOTE), NOTE, QUESTION, sessionsFigure, AGENDA_RE);
+      const noClose = panel.replace(/<\/ol>/, '');
+      const plantedNoClose = verdict(noClose.replace(/(<div class="bp-sec" data-beat-agenda>)/, '$1') + '<div class="bp-sec"><p>' + QUESTION + '</p></div>', NOTE, QUESTION, sessionsFigure, AGENDA_RE);
       const agendaHasQuestion = ((panel.match(AGENDA_RE) || [''])[0].split(QUESTION).length - 1) === 1;
-      ok = real.ok && agendaHasQuestion && planted.ok === false && planted.questionTimes === 2;
-      detail = JSON.stringify({real, planted, agendaHasQuestion, sessionsFigure});
+      const controlsFail = plantedQ.ok === false && plantedQ.questionTimes === 2 && plantedNote.ok === false
+        && plantedSess.ok === false && plantedNoteInAgenda.ok === false && plantedNoClose.ok === false;
+      ok = real.ok && agendaHasQuestion && controlsFail;
+      detail = JSON.stringify({real, plantedQ, plantedNote, plantedSess, plantedNoteInAgenda, plantedNoClose, agendaHasQuestion, sessionsFigure});
     }catch(err){ detail = err.message; }
     DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
