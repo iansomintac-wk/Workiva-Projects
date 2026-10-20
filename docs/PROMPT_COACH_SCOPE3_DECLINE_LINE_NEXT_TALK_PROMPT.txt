@@ -1,0 +1,33 @@
+TALK: Prompt coach Scope 3 decline line, after the sandbox FAIL (Workiva repo)
+
+Written 2026-10-20 by sandbox session 28412002 from the hand-off PM draft. Load studio-harness:talk-and-run first.
+This talk decides; no code change, no build. A browser step only if Ian picks a sandbox option (then load
+anthropic-skills:chrome-browser; sandbox ONLY at https://sandbox.wdesk.com/, never app.wdesk.com, which is production).
+Work in C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-decline-line (branch
+worktree-prompt-coach-scope3-decline-line). Never open any heldout/ or sealed file. Plain words to Ian, one question
+at a time, recommendation first (decision card, three usual options plus one that breaks an assumption).
+
+READ FIRST
+- docs/evidence/2026-10-20-prompt-coach-scope3-decline-line-sandbox.md: verdict FAIL. Ask 3 (definition, "No numbers
+  needed") with the line refused: "The file does not contain that information." Ask 2 already declined without the
+  line; ask 1 gave the figure both ways. One run per cell.
+- docs/superpowers/specs/2026-10-20-prompt-coach-scope3-decline-line-design.md section 3 (locked).
+- prompt-coach/engine/rewrite.js lines 434-450 and 574 (where the base adds the line today).
+
+DO
+1. Probe, read-only: run the 3 asks with the made-up CSV (docs/evidence/2026-10-20-scope3-decline-line-file/)
+   through the engine. Report whether the `unsupported` note fires on any of them, ask 3 especially (the PM read
+   rewrite.js:438 as returning null for explain asks; that is a reading, not a run).
+2. Give Ian the result in everyday words, with the spread and each option's cheapest check:
+   (a) close, ship nothing (ask 2 already declines without the line);
+   (b) a narrower line, e.g. "...instead of estimating figures." (assumed): 1 sandbox run each of asks 1-3, same file;
+   (c) repeat ask 3 with the current line a few times to see how often it refuses;
+   (d) breaks "one wording for all asks": add the line only when the ask names a figure to report.
+   Recommend one and wait for his yes.
+3. Record Ian's choice verbatim in .ledger/2026-10-20-prompt-coach-scope3-decline-line/rulings.md (git-ignored;
+   restored by session 28412002 after a PM helper overwrote it, so check it reads right).
+4. Trim the stray lines 41-51 (a pasted heredoc) from docs/PROMPT_COACH_SCOPE3_DECLINE_LINE_SANDBOX_PROMPT.txt.
+   Commit locally; do not push (project CLAUDE.md).
+5. Hand-off PM step. Give Ian the time at start and at each stop. Ask before starting any next session.
+Session names: rename only. Do NOT claude rm 7881a242 or 0d1b55ae (their worktree prompt-coach-scope3-reshape holds
+the git-ignored reshape ledger; claude rm deletes the worktree). 28412002 may be removed once it is done and committed.
