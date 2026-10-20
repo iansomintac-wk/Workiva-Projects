@@ -9877,6 +9877,10 @@ function renderRiskCase(k, idx, active){
   const returned = state === 'returned';
   const open = state === 'confirmed';
   const dismissedItem = k.items.find(it => riskVerdictState(it) === 'dismissed');
+  /* FX2: print the reason the OSM gave; a pre-1.2 confirmation has none, so say so. */
+  const confirmedLines = k.items.filter(it => riskVerdictState(it) === 'confirmed').map(it => riskItemHasReason(it)
+    ? `<p class="rk-confirmed-why">Confirmed as a risk — &ldquo;${escapeHtml(it.tracking.verdictReason)}&rdquo; · ${fmtDate(it.tracking.verdictOn)}</p>`
+    : `<p class="rk-confirmed-why">Confirmed before reasons were required: add a reason <button class="link-btn" data-risk-confirm="${escapeAttr(k.c.id)}">Add a reason</button></p>`).join('');
 
   return `
   <article class="rk3-card ${sevClass} ${state}${active ? ' is-active' : ''}" id="rk-c-${escapeAttr(k.c.id)}"
@@ -9889,6 +9893,8 @@ function renderRiskCase(k, idx, active){
     </div>
 
     ${returned ? `<p class="rk-returned">${icon('warn')} ${escapeHtml(riskReturnReason(k.items.find(it => riskVerdictState(it) === 'returned') || lead))}</p>` : ''}
+
+    ${confirmedLines}
 
     ${state === 'dismissed'
       ? `<p class="rk-dismissed">Not a risk${dismissedItem && dismissedItem.tracking && dismissedItem.tracking.verdictReason ? ` — &ldquo;${escapeHtml(dismissedItem.tracking.verdictReason)}&rdquo;` : ''}${dismissedItem && dismissedItem.tracking ? ` · ${fmtDate(dismissedItem.tracking.verdictOn)}` : ''}. Returns automatically if the account deteriorates, or after ${RISK_DISMISS_EXPIRY_DAYS} days.
@@ -10637,7 +10643,37 @@ function setRiskVerdict(it, verdict, reason){
    risk or pause) is a signal to check. */
 function riskItemIsRisk(it){
   const t = (it && it.tracking) || {};
-  return t.verdict === 'confirmed' && typeof t.verdictReason === 'string' && !!t.verdictReason.trim();
+  return t.verdict === 'confirmed';      // FX2: a pre-1.2 confirmation (no reason) stays a risk; it is labelled until a reason is added
+}
+function riskItemHasReason(it){
+  const t = (it && it.tracking) || {};
+  return typeof t.verdictReason === 'string' && !!t.verdictReason.trim();
+}
+/* FX2: confirm or dismiss a case. Only items that still need a judgement are touched:
+   a confirmed item keeps its first reason and its confirmed state. A legacy
+   confirmation with no reason is the one exception when confirming: it gets the reason. */
+function confirmRiskCase(k, reason){
+  k.items.forEach(it => {
+    if(riskVerdictState(it) === 'confirmed' && riskItemHasReason(it)) return;
+    setRiskVerdict(it, 'confirmed', reason); markRiskActioned(it, false);
+  });
+}
+function dismissRiskCase(k, reason){
+  k.items.forEach(it => { if(riskVerdictState(it) !== 'confirmed') setRiskVerdict(it, 'dismissed', reason); });
+}
+/* FX2: the account desk Confirm opens the same reason modal as the Risk tab. */
+function openDeskRiskConfirm(logKey){
+  const it = buildRiskHubList().find(r => r.logKey === logKey);
+  if(!it) return false;
+  const k = buildRiskCases(buildRiskHubList()).find(x => x.c.id === it.c.id);
+  if(!k) return false;
+  showRiskConfirmModal(k, reason => {
+    markUndoable('risk verdict');
+    confirmRiskCase(k, reason);
+    showToast(`${k.c.name} confirmed as a real risk.`);
+    render();
+  });
+  return true;
 }
 function clearRiskVerdict(it){
   const log = getRiskLog();
@@ -15808,7 +15844,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     if(!k) return;
     showRiskConfirmModal(k, reason => {
       markUndoable('risk verdict');
-      k.items.forEach(it => { setRiskVerdict(it, 'confirmed', reason); markRiskActioned(it, false); });
+      confirmRiskCase(k, reason);
       showToast(`${k.c.name} confirmed as a real risk — next steps and the summary are open.`);
       render();
     });
@@ -15818,7 +15854,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     if(!k) return;
     showRiskDismissModal(k, reason => {
       markUndoable('risk verdict');
-      k.items.forEach(it => setRiskVerdict(it, 'dismissed', reason));
+      dismissRiskCase(k, reason);
       showToast(`Filed as a false positive. It returns by itself if the account worsens, or after ${RISK_DISMISS_EXPIRY_DAYS} days.`);
       render();
     });
@@ -16089,7 +16125,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     const verdict = raw.slice(0, cut), logKey = raw.slice(cut + 1);
     const it = buildRiskHubList().find(r => r.logKey === logKey);
     if(!it) return;
-    if(verdict === 'confirmed'){ showToast('Confirming a risk needs a reason. Open the Risk tab and use "Yes — it\'s real".'); return; }
+    if(verdict === 'confirmed'){ openDeskRiskConfirm(logKey); return; }
     markUndoable('risk verdict');
     if(setRiskVerdict(it, verdict, '')){ render(); showToast(`Risk ${verdict}.`); }
   }));

@@ -1042,7 +1042,7 @@ function _runSelfChecksInner(){
   })();
   (function(){                                   // v13 Step 2e (2): the hub lists signals apart from risks
     let ok = false, detail = '';
-    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevShow = ui.riskShowDismissed, prevRM = _riskMemo, prevHM = _healthMemo;
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevShow = ui.riskShowDismissed, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
     const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
     try{
       DATA.riskLog = {}; ui.riskShowDismissed = false;
@@ -1063,8 +1063,85 @@ function _runSelfChecksInner(){
       detail = JSON.stringify({pre_oneCase, sig, rowKept, noCard, guard_cardAfterConfirm});
     }catch(e){ detail = 'threw: ' + e.message; }
     DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.riskShowDismissed = prevShow;
-    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    ok = ok && _riskHubCache === prevHub;   // FX2: the render swapped _riskHubCache; it must be put back
     check('v13 step 2e: a missing-evidence case is listed under Signals to check (keeping its row id and confirm button), not as a risk card, until a reason confirms it', ok, detail);
+  })();
+  (function(){                                   // FX2 (1): a mixed case keeps the confirmed item's first reason
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+    try{
+      DATA.riskLog = {}; DATA.activities = {};
+      const c = v13Acct('__fx2a__', {riskOverride: 'risk'});
+      DATA.customers = [c];
+      DATA.activities[c.id] = [{id:'afx2', date: isoAddDays(todayISO(), -6), type:'Onboarding Session', summary:'They raised a blocker and are frustrated.', sessionNumber:1, checklist:[], flagged:true}];
+      reset();
+      const caseOf = () => buildRiskCases(buildRiskHubList()).find(k => k.c.id === c.id);
+      const items = () => caseOf().items;
+      const two = items().length >= 2;
+      setRiskVerdict(items()[0], 'confirmed', 'FIRST reason'); reset();
+      const firstKey = items().find(it => riskItemIsRisk(it)).logKey;
+      confirmRiskCase(caseOf(), 'SECOND reason'); reset();
+      const keptFirst = DATA.riskLog[firstKey].verdictReason === 'FIRST reason' && DATA.riskLog[firstKey].verdict === 'confirmed';
+      const others = items().filter(it => it.logKey !== firstKey);
+      const otherGot = others.length > 0 && others.every(it => it.tracking.verdictReason === 'SECOND reason');
+      DATA.riskLog = {}; reset();
+      setRiskVerdict(items()[0], 'confirmed', 'FIRST reason'); reset();
+      dismissRiskCase(caseOf(), 'nope'); reset();
+      const stillConfirmed = items().filter(it => riskItemIsRisk(it)).length === 1 && items().filter(it => riskVerdictState(it) === 'dismissed').length === items().length - 1;
+      ok = two && keptFirst && otherGot && stillConfirmed;
+      detail = JSON.stringify({two, keptFirst, otherGot, stillConfirmed});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX2: confirming a mixed case acts only on unconfirmed items and keeps the first reason; dismissing never drops a confirmed item', ok, detail);
+  })();
+  (function(){                                   // FX2 (2)+(4): pre-1.2 confirmations stay risks, labelled; the card prints the reason
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+    try{
+      const c = v13Acct('__fx2b__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {}; reset();
+      const it0 = buildRiskHubList().find(r => r.c.id === c.id);
+      DATA.riskLog = {}; DATA.riskLog[it0.logKey] = {firstSeen: isoAddDays(todayISO(), -30), lastActioned: isoAddDays(todayISO(), -20), verdict: 'confirmed', verdictOn: isoAddDays(todayISO(), -20), verdictSev: it0.sev};
+      reset();
+      const it = buildRiskHubList().find(r => r.logKey === it0.logKey);
+      const stays = riskItemIsRisk(it) === true && buildRiskCases(buildRiskHubList()).find(k => k.c.id === c.id).isRisk === true;
+      const html = renderRiskTab();
+      const labelled = html.indexOf('Confirmed before reasons were required: add a reason') !== -1 && html.indexOf('class="rk3-card') !== -1;
+      const nag = riskAttention(it).state === 'maintenance_due';
+      DATA.riskLog[it0.logKey].verdictReason = 'PRINTED-REASON-XYZ'; reset();
+      const html2 = renderRiskTab();
+      const prints = html2.indexOf('PRINTED-REASON-XYZ') !== -1 && html2.indexOf('Confirmed before reasons were required') === -1;
+      ok = stays && labelled && nag && prints;
+      detail = JSON.stringify({stays, labelled, nag, prints});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX2: a pre-1.2 confirmation (no reason) stays a risk with the add-a-reason label and still nags; the card prints a reason when there is one', ok, detail);
+  })();
+  (function(){                                   // FX2 (3): the account desk Confirm opens the reason modal
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const closeModals = () => document.querySelectorAll('#rkc-reason').forEach(t => { const bd = t.closest('.modal-backdrop'); if(bd) bd.remove(); });
+    try{
+      const c = v13Acct('__fx2c__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const it = buildRiskHubList().find(r => r.c.id === c.id);
+      const before = document.querySelectorAll('#rkc-reason').length;
+      const returned = openDeskRiskConfirm(it.logKey);
+      const modalOpened = document.querySelectorAll('#rkc-reason').length === before + 1;
+      const noVerdictYet = !(DATA.riskLog[it.logKey] && DATA.riskLog[it.logKey].verdict);
+      ok = returned === true && modalOpened && noVerdictYet;
+      detail = JSON.stringify({returned, modalOpened, noVerdictYet});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    closeModals();
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX2: the account desk Confirm opens the reason modal and writes nothing until a reason is given', ok, detail);
   })();
   /* ============ v61: Today unified action ranking ============
      "no Today row renders without a citation" and "Start-here card shows exactly
