@@ -9027,7 +9027,9 @@ function bindRiskDeck(host){
     // section releases. Under-reserving here is what cut the last card off.
     let total = 0;
     cards.forEach((el, i) => { total += (i === cards.length - 1) ? overflowOf(el) : costOf(el); });
-    track.style.height = (total + stageForNatural(naturalOf(cards[cards.length - 1])) + 16) + 'px';
+    const lastStage = stageForNatural(naturalOf(cards[cards.length - 1]));
+    // The last card must be reachable by SCROLLING: the track itself has to provide at least one viewport after the last offset, or a short last card leaves the page out of scroll with the previous card still in front (only content below the track used to hide it).
+    track.style.height = (total + Math.max(lastStage + 16, innerHeight)) + 'px';
   };
   sizeTrack();
 
