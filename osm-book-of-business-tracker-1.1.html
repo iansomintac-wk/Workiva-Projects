@@ -1699,7 +1699,7 @@
 
 <div class="toast" id="toast"></div>
 <div class="tab-conflict" id="tab-conflict" role="alert">
-  <span>This tracker was changed in another tab or window. Saving here may overwrite those changes.</span>
+  <span>This tracker was changed in another tab or window. Saving is off in this tab until you reload.</span>
   <button type="button" id="tab-conflict-reload">Reload to sync</button>
 </div>
 
@@ -5739,6 +5739,7 @@ function applyDataBackfills(data){
    deliberate, validated replacement (Import JSON) or an explicit confirmed wipe
    (Clear all data) re-enables saving. Both re-arm the block if their commit
    fails, so the protection can't be lost to a storage error. */
+let _staleTab = false, _staleToastShown = false; // 1.2 B2: another tab changed the book; saving is off here until reload
 let _rejectedLoadPayload = null; // non-null blocks saveData(); holds the raw string that failed to load
 const SELF_CHECK_BLOCK_TOKEN = '__selfcheck_block__'; // runSelfChecks uses this to exercise the block without firing the toast
 let _blockToastShown = false; // the explanation toast fires once per session, not on every blocked write
@@ -5898,6 +5899,7 @@ function saveData(opts){
     }
     return false;
   }
+  if(_staleTab){ if(!maintenance && !_staleToastShown){ _staleToastShown = true; showToast('Not saved: another tab changed this book. Reload to sync.'); } return false; }
   /* v82: NO WRITES WHILE THE SUITE IS RUNNING. Checks swap DATA.customers for
      fabricated accounts and then call things that save — setRiskVerdict and
      markRiskActioned both do, and a single run produced thirteen saves, several
@@ -18509,6 +18511,7 @@ async function stageImportedTranscripts(activityLists, fileTranscripts){
 // Why the backup path is refusing right now, or '' when it is not.
 function fsBlockedReason(){
   if(_rejectedLoadPayload !== null) return 'the last load was rejected';
+  if(_staleTab) return 'another tab changed this book, reload to sync';
   if(DATA && DATA.synthetic === true) return 'this is a test book';
   /* a transcript the book points to is not in this browser: the backup file may be the only copy left, so keep it */
   if(DATA && Object.values(DATA.activities || {}).some(list => (list || []).some(a => a && a.transcript && typeof a.transcript.ref === 'string' && a.transcript.ref && !_transcriptMap.has(a.transcript.ref)))) return 'a transcript is missing from this browser';
@@ -20888,6 +20891,7 @@ function initCrossTabGuard(){
     // Only react to real changes of the book key made by another document.
     if(e.key !== STORAGE_KEY) return;
     if(e.newValue === null || e.newValue === e.oldValue) return;
+    _staleTab = true;
     banner.classList.add('show');
   });
 }

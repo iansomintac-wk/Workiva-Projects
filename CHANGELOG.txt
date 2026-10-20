@@ -42,6 +42,7 @@ OSM Runway — release notes
 
 1.2 — CSAT dates from Snowflake. Fill survey dates from a CSV, plus small fixes.
 
+    - Fix: when another tab or window changes the book, this tab now turns saving and the automatic backup off until you reload (banner: "Saving is off in this tab until you reload"), so a stale tab can no longer overwrite newer work (review 2026-10-06 item 2).
     - The CSAT import report no longer names a backup file (the browser may rename it); it says a backup download was started.
     - Fix: a folder picked in Settings while the app is still starting up is no longer overwritten by the previously saved folder, and a failed save to the local store (aborted transaction) now ends cleanly instead of hanging.
     - Folder watch: a newer export with nothing to change shows no Today line; a file over 8 MB is not read; after Check now a short note says why nothing shows (folder unreadable, browser did not allow access, not a CSAT export, over 8 MB, nothing new; the next automatic refresh clears it); picking a new folder starts a fresh watch, so an old folder's slow scan cannot put its plan back; Stop watching wins over a scan already reading the file.

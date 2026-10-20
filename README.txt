@@ -104,6 +104,10 @@ write permission to disk across sessions without a user gesture, so in practice
 it is ONE CLICK PER SESSION, not one click per backup. The header tells you
 which state you are in and says so loudly when the backup is paused.
 
+If you change the book in a second tab or window, the first tab turns saving
+(and the automatic backup) off and says so in a banner, until you reload it.
+This stops an old tab from overwriting newer work.
+
 The guide keeps its own progress — chosen path, checklist, challenge answers,
 reading mode — in separate osm-guide-* keys. It never reads or writes the
 tracker's data.
@@ -188,7 +192,7 @@ Running the graduation checks headlessly (needs Chrome or Edge):
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
-  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 483
+  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 484
   step 0 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 34
   step 1 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 65
   step 1 cold start (C8): node tools/step1-coldstart.mjs
@@ -285,7 +289,7 @@ tools/selfchecks.js (it is not in the shipped file); the guide's is in the page.
 
   tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 475
             must be 475/475 (the suite lives in tools/selfchecks.js and is not shipped)
-  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 483
+  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 484
   step 0 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 34
   step 1 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 65
   step 1 cold start (C8): node tools/step1-coldstart.mjs

@@ -27,13 +27,13 @@ For whoever sets the host's network and security rules. This list comes from a s
 
 ## Check a copy from an address before it goes up
 
-`node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --serve site --seed demo-seed.js --expect 483` serves the `site/` folder from a small local web server (127.0.0.1, GET only, no folder listing) in a throwaway browser profile, opens it by address instead of as a file, and runs the same 483 in-page checks. It refuses to run unless `site/index.html` is the same build as the tracker file, and it prints the address it served and the address the page really had, so a page that was not served by address cannot pass. It also prints a `console errors:` count; for a good build that count is 0 for the file run and the served run.
+`node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --serve site --seed demo-seed.js --expect 484` serves the `site/` folder from a small local web server (127.0.0.1, GET only, no folder listing) in a throwaway browser profile, opens it by address instead of as a file, and runs the same 484 in-page checks. It refuses to run unless `site/index.html` is the same build as the tracker file, and it prints the address it served and the address the page really had, so a page that was not served by address cannot pass. It also prints a `console errors:` count; for a good build that count is 0 for the file run and the served run.
 
 ## Publish a new version
 
 1. Change the tracker file (never the 1.0 file).
 2. `node tools/build-site.mjs` rebuilds `site/` and refuses to run if `site/` holds anything else.
-3. Run the `--serve site` command above and the same command without `--serve site`; both must print 483/483 and `console errors: 0` (selfcheck exits 1 on any console error).
+3. Run the `--serve site` command above and the same command without `--serve site`; both must print 484/484 and `console errors: 0` (selfcheck exits 1 on any console error).
 4. Upload the two files in `site/` only when the owner of the site says yes.
 
 ## Keeping the browser's storage
@@ -55,4 +55,4 @@ A hosted address has its own storage, so its tracker starts with no accounts. Wh
 
 ## Checking what you received
 
-`index.html` in this package is a byte-for-byte copy of the 1.1 tracker. Its sha256 is `9691a02b1a2be5ce31c63e58a09598c62bc2dc52d508b94513fe91dca684c068`. Compare it with `sha256sum index.html` (or `Get-FileHash index.html` in PowerShell) before uploading. This line is updated in the same commit as any change to the tracker.
+`index.html` in this package is a byte-for-byte copy of the 1.1 tracker. Its sha256 is `a7c4aa868d4f74d2d9987bae0c34da11a07a378440ade102c2977e951d522db5`. Compare it with `sha256sum index.html` (or `Get-FileHash index.html` in PowerShell) before uploading. This line is updated in the same commit as any change to the tracker.

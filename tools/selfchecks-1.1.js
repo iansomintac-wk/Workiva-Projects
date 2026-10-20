@@ -4178,6 +4178,26 @@ function _runSelfChecksInner(){
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
     check('phase3 the state label is not paired with a health score', ok, detail);
   })();
+  (function(){                                   // 1.2 B2: a stale tab must not overwrite newer work
+    let ok = false, detail = '';
+    const before = localStorage.getItem(STORAGE_KEY);
+    const banner = document.getElementById('tab-conflict');
+    const bannerWas = banner ? banner.classList.contains('show') : false;
+    const prevStale = (typeof _staleTab !== 'undefined') ? _staleTab : false;
+    try{
+      window.dispatchEvent(new StorageEvent('storage', {key: STORAGE_KEY, oldValue: 'a', newValue: 'b'}));
+      const saved = saveData();
+      const maint = saveData({maintenance: true});
+      const unchanged = localStorage.getItem(STORAGE_KEY) === before;
+      const backupBlocked = fsBlockedReason() !== '';
+      const says = !!banner && banner.textContent.indexOf('Saving is off in this tab') !== -1;
+      ok = saved === false && maint === false && unchanged && backupBlocked && says;
+      detail = JSON.stringify({saved, maint, unchanged, backupBlocked, says});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    if(typeof _staleTab !== 'undefined') _staleTab = prevStale;
+    if(banner) banner.classList.toggle('show', bannerWas);
+    check('1.2 B2 a stale tab refuses saveData and the backup write until reload, and the banner says so', ok, detail);
+  })();
   (function(){
     /* Phase 3 / badge FIX 2. The evidence badge named a band NUMBER (Sev N/4)
        that required already knowing STORY_CHAPTERS to decode — the beat's own
