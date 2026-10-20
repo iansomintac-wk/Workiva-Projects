@@ -10876,6 +10876,7 @@ function buildRiskExecSummary(item){
   // budget runs out, so the account and the risk itself always survive.
   const parts = [
     `${c.name} — ${aiKindLabel(item)}${item.category && item.category.label ? ` (${item.category.label})` : ''}.`,
+    (cr => cr.length ? 'Confirmed by the OSM: ' + cr.map(x => x.reason).join('; ').replace(/\s+/g, ' ').trim() : '')(confirmedRisksFor(c)),
     String(aiObservation(item) || '').replace(/\s+/g, ' ').trim(),
     inImplementation(c)
       ? `In implementation, ${implPhaseLabel(getImplementationState(c).phase)}.`
@@ -10919,7 +10920,7 @@ ACCOUNT: ${c.name} (${c.module})
 RISK TYPE: ${aiKindLabel(item)}
 SUGGESTED CATEGORY: ${item.category ? item.category.label : 'Other'}
 WHAT THE TRACKER OBSERVED: ${aiObservation(item)}
-PROVENANCE: ${riskProvenanceLabel(item)}
+${(cr => cr.length ? 'CONFIRMED RISKS (by the OSM): ' + cr.map(x => x.reason).join('; ') + '\n' : '')(confirmedRisksFor(c))}PROVENANCE: ${riskProvenanceLabel(item)}
 STATUS: ${inImplementation(c)
   ? 'In implementation, phase ' + implPhaseLabel(getImplementationState(c).phase)
   : sessionsCompletedCount(c) + '/' + plannedSessionTotal(c) + ' sessions logged'}
@@ -15182,7 +15183,10 @@ function renderActivityTab(c, acts){
       <div class="activity-summary">${escapeHtml(act.summary)}</div>
       ${(()=>{ // v59: taxonomy phrase hits on this note — a keyword suggestion, not a judgment
         const cats = classifyRiskText(act.summary || '');
-        return cats.length ? `<div style="font-size:var(--text-xs); color:var(--accent-watch-text); margin-bottom:6px;" title="Suggested from the team risk taxonomy by keyword matching — confirm before treating as a real risk.">Possible risk categor${cats.length===1?'y':'ies'}: ${cats.map(x=>`${escapeHtml(x.label)} (“${escapeHtml(x.phrase)}”)`).join(' · ')}</div>` : '';
+        const riskCats = cats.filter(x => !(RISK_TAXONOMY_BY_KEY[x.key] && RISK_TAXONOMY_BY_KEY[x.key].notRisk)), expCats = cats.filter(x => RISK_TAXONOMY_BY_KEY[x.key] && RISK_TAXONOMY_BY_KEY[x.key].notRisk);
+        const chipPart = (x) => `${escapeHtml(x.label)} (“${escapeHtml(x.phrase)}”)`;
+        const chipText = [riskCats.length ? `Possible risk categor${riskCats.length===1?'y':'ies'}: ${riskCats.map(chipPart).join(' · ')}` : '', expCats.length ? `Expansion signal: ${expCats.map(chipPart).join(' · ')}` : ''].filter(Boolean).join(' · ');
+        return cats.length ? `<div style="font-size:var(--text-xs); color:var(--accent-watch-text); margin-bottom:6px;" title="Suggested from the team keyword list by matching — a keyword hit, not a judgment; confirm before treating a risk category as a real risk.">${chipText}</div>` : '';
       })()}
       ${activityIsFirstValueEvidence(c, act.id) ? `
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">

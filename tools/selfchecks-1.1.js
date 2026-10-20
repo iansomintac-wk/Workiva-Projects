@@ -1022,6 +1022,27 @@ function _runSelfChecksInner(){
     _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM;
     check('v13 step 2d: upsell and expansion conversation form their own Expansion category and never raise a risk', ok, detail);
   })();
+  (function(){                                   // v13 Step 2d (FX3): the note chip words expansion as an opportunity, not a risk
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities;
+    try{
+      const c = v13Acct('__s2d3__', {riskOverride: 'ontrack'});
+      const chipOf = (txt) => {
+        DATA.customers = [c];
+        DATA.activities = {__s2d3__: [{id:'e1', date: isoAddDays(todayISO(), -2), type:'Onboarding Session', summary: txt, sessionNumber:1, checklist:[]}]};
+        const m = /<div style="[^"]*accent-watch-text[^"]*"[^>]*>([\s\S]*?)<\/div>/.exec(renderActivityTab(c, DATA.activities.__s2d3__));
+        return m ? m[1] : '';
+      };
+      const exp = chipOf('They asked about an upsell.');
+      const risk = chipOf('They are considering a competitor and may cancel.');
+      const expChip = exp.indexOf('Expansion') !== -1 && !/risk categor/i.test(exp);
+      const riskKept = /Possible risk categor/.test(risk);   // guard: a real risk note keeps its wording
+      ok = expChip && riskKept;
+      detail = JSON.stringify({exp, risk});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('v13 step 2d: the Expansion keyword chip on a note is worded as an expansion signal, not a possible risk category', ok, detail);
+  })();
   (function(){                                   // v13 Step 2e (1): only a reason makes a risk
     let ok = false, detail = '';
     const prevLog = DATA.riskLog;
@@ -9583,6 +9604,25 @@ function _runSelfChecksInner(){
     DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
     check('v13 step 2a: no AI prompt text built for a seeded account carries its health figure, automatic risk level or automatic kind label, and confirmed reasons are included', ok, detail);
+  })();
+  (function(){                                   // v13 Step 2a (FX3): the risk-summary builders carry the confirmed reason
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    try{
+      const c = v13Acct('__s2a3__');
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      DATA.riskLog = {'__s2a3__|Off Track': {firstSeen: todayISO(), lastActioned: null, verdict: 'confirmed', verdictOn: todayISO(), verdictSev: 3, verdictReason: 'Legal hold blocks the renewal signature'}};
+      const items = buildRiskHubList({readOnly: true}).filter(it => it.c.id === c.id);
+      const R = 'Legal hold blocks the renewal signature';
+      const inPrompt = items.length > 0 && items.every(it => buildRiskSummaryPrompt(it).indexOf(R) !== -1);
+      const inExec = items.length > 0 && items.every(it => buildRiskExecSummary(it).indexOf(R) !== -1);
+      ok = inPrompt && inExec;
+      detail = JSON.stringify({inPrompt, inExec, n: items.length});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('v13 step 2a: buildRiskSummaryPrompt and buildRiskExecSummary include the confirmed reason (a reason found in no note)', ok, detail);
   })();
   (function(){                                   // v13 Step 2b
     let ok = false, detail = '';
