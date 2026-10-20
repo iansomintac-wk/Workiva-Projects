@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { d3AgendaJudge } from '../tools/sim/osm-day/steps-a.mjs';
+import { d3AgendaJudge, PART_A } from '../tools/sim/osm-day/steps-a.mjs';
 import { GAPS, classify } from '../tools/sim/osm-day/lib/results.mjs';
 import { BREAKS, AGENDA_OFF } from '../tools/sim/osm-day/lib/breaks.mjs';
 
@@ -36,4 +36,26 @@ test('AGENDA_OFF is an independent break string, not in BREAKS', () => {
   assert.ok(AGENDA_OFF.includes('beatAgendaSection'));
   assert.doesNotThrow(() => new Function(AGENDA_OFF));
   assert.ok(Object.values(BREAKS).every(b => b.js !== AGENDA_OFF));
+});
+test('D3: render and the agenda read share one evaluate, so no frame can swap the pane out', async () => {
+  const d3 = PART_A.find(s => s.id === 'D3');
+  const srcs = [];
+  const ctx = {
+    openOn: async () => {},
+    ev: async (src) => {
+      srcs.push(src);
+      return src.includes('[data-beat-agenda]')
+        ? JSON.stringify({ found: true, text: T, copy: true, clip: T })
+        : 'SIM-OWE checklist SIM-OWE you owe SIM-OWE they owe SIM-QUESTION';
+    },
+  };
+  await d3.run(ctx);
+  const read = srcs.find(s => s.includes('[data-beat-agenda]'));
+  assert.ok(read, 'an evaluate reads the agenda');
+  const focus = read.indexOf('ui.todayFocusId = c.id');
+  const render = read.indexOf('render()');
+  const query = read.indexOf("querySelector('[data-beat-agenda]')");
+  assert.ok(focus >= 0, 'focuses Orion in the same evaluate');
+  assert.ok(render >= 0, 'renders in the same evaluate');
+  assert.ok(query >= 0 && focus < query && render < query, 'render comes before the agenda query');
 });

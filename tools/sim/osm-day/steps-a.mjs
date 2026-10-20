@@ -115,6 +115,7 @@ export const PART_A = [
     const info = JSON.parse(await ctx.ev(`(async () => {
       window.__clip = null; navigator.clipboard.writeText = t => { window.__clip = t; return Promise.resolve(); };
       const c = DATA.customers.find(x => x.name === ${JSON.stringify(ORION)});
+      ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = c.id; render();
       const pane = document.querySelector('.day-pane[data-day-holds="' + c.id + '"]');
       const p = pane && pane.querySelector('[data-beat-agenda]');
       const btn = p && p.querySelector('[data-beat-agenda-copy]');
