@@ -213,3 +213,52 @@ and 3, which is the cell that refused in run 6.
 Not tested (assumed risk, out of this change's scope): base's own Strong for ask 3 reads "Use only @FY2025 Scope 3
 emissions (tCO2e).csv. ... Cite the sources, and say if the requirement is not covered." That pins a definition ask
 to the file and may refuse the same way. Cheapest check: one sandbox run of that exact Strong text with the file.
+
+## Follow-up: base's own Strong for ask 3 (2026-10-20, session acef0bda)
+
+Prompt: `docs/PROMPT_COACH_BASE_STRONG_REFUSAL_TALK_PROMPT.txt`. Ian approved one run ("Yes, run it (Recommended)").
+
+- Engine re-run **measured** at HEAD 43e3329 (ask 3 + the CSV above, read through `engine/files.js` `readFile`,
+  `coach()` with the classifier pick): grade weak, intent explain; Strong text identical to the one quoted in the
+  Outcome section above.
+- Same method as runs 1-6: sandbox `https://sandbox.wdesk.com/` ("Ian Sandbox"), Files page, Workiva AI panel, new
+  chat. Typed "Use only @FY2025" and picked the file from the `@` list, so the `@` reference became the file chip
+  (source count 1); then typed the rest, with the bracket filled as "the climate section of the CSRD report". Zoom
+  check before send showed the whole text and the chip. Answer copied from the panel's DOM (`innerText`). One run, no
+  retry needed.
+
+### Run 7: base Strong, ask 3 (03:51:02Z)
+
+> Use only
+> FY2025 Scope 3 emissions (tCO2e).csv
+>  . This is for the climate section of the CSRD report. In plain terms, what does Scope 3 category 15, investments, cover? No numbers needed. Use short bullets. Cite the sources, and say if the requirement is not covered.
+>
+> Thought
+>
+> Based solely on FY2025 Scope 3 emissions (tCO2e).csv, here is what Scope 3 Category 15 covers — and the coverage gap:
+>
+> What Category 15 – Investments covers
+>
+> Emissions from the operation of investments held by the reporting company — equity investments, debt investments, project finance, and managed investments
+> Applies mainly to financial institutions (banks, insurers, asset managers) but can also apply to corporate entities with significant investment portfolios
+> Covers indirect financed emissions — i.e., the GHG footprint of the businesses or projects the company funds, not direct operations
+> Often the largest Scope 3 category for financial sector companies
+>
+> ⚠️ Requirement not covered
+>
+> Category 15 – Investments is not present in the provided file FY2025 Scope 3 emissions (tCO2e).csv. The file only reports Categories 1, 4, and 6. For your CSRD climate disclosure, you will need to either:
+>
+> Add Category 15 data if it is material to your business, or
+> Explicitly state and justify its omission (e.g., not applicable, or below materiality threshold), as CSRD/ESRS E1 requires disclosure of all material Scope 3 categories or a documented explanation for exclusions.
+>
+> 8:51 PM • Oct 19, 2026
+
+### Verdict: risk closed (Ian: "Risk closed (Recommended)")
+
+- No refusal: it explained category 15 in four bullets, unlike run 6.
+- It also added a "Requirement not covered" note that the file has no category 15 data. The hand-off's pass rule
+  ("explains it without saying the file lacks it") did not cover this mix, so it went to Ian. Reason for closing: the
+  note is true and is what the Strong's "say if the requirement is not covered" asks for; it is the check working, not
+  a refusal.
+- Noted, not acted on: the answer opens "Based solely on" the file, though the definition cannot come from it.
+- Limits: one run; one sandbox; one file layout (CSV). Nothing changed in shipped base.
