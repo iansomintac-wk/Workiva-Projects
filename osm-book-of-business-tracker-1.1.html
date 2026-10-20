@@ -19644,12 +19644,46 @@ function buildCsatImportPlan(table, customers, opts){
     if(ch.length) ch.forEach(k => plan.changes.push(k)); else plan.unchanged.push(c.id);
   });
   plan.matched.sort((a, b) => a.row - b.row); plan.conflicts.sort((a, b) => a.row - b.row);
+  const matchedIds = new Set(plan.matched.concat(plan.conflicts).map(m => m.customerId));
+  plan.ambiguous.forEach(a => a.customerIds.forEach(id => matchedIds.add(id)));
+  const rowsByKey = {}, custByKey = {};
+  plan.unmatchedRows.forEach(r => { const k = normalizeCustomerNameKey(r.name); if(k) (rowsByKey[k] = rowsByKey[k] || []).push(r); });
+  (customers || []).forEach(c => {
+    if(matchedIds.has(c.id) || String(c.salesforceId || '').trim() || String(c.gainsightId || '').trim()) return;
+    const k = normalizeCustomerNameKey(c.name); if(k) (custByKey[k] = custByKey[k] || []).push(c);
+  });
+  Object.keys(rowsByKey).forEach(k => {
+    if(rowsByKey[k].length !== 1 || !custByKey[k] || custByKey[k].length !== 1) return;
+    const r = rowsByKey[k][0], c = custByKey[k][0];
+    const d = csatDecide((c.compliance && c.compliance.associatedPeopleCSAT) || {}, r.sent, r.answered);
+    plan.suggestions.push({row:r.row, customerId:c.id, customerName:c.name, csvName:r.name, sf:r.sf, gs:r.gs, sent:r.sent, answered:r.answered, kind:d.kind, changes:csatChangesFor(c, d)});
+  });
+  plan.suggestions.sort((a, b) => a.row - b.row);
   const touched = new Set();
   plan.matched.forEach(m => touched.add(m.customerId));
   plan.conflicts.forEach(m => touched.add(m.customerId));
   plan.ambiguous.forEach(a => a.customerIds.forEach(id => touched.add(id)));
   (customers || []).forEach(c => { if(!touched.has(c.id)) plan.notInFile.push({customerId:c.id, name:c.name}); });
   return plan;
+}
+function applyCsatImportPlan(plan, customers, tickedRows){
+  const byId = {}; (customers || []).forEach(c => { byId[c.id] = c; });
+  const ticked = new Set(tickedRows || []);
+  const written = new Set(); let fields = 0, idsWritten = 0;
+  const setField = (c, ch) => {
+    c.compliance = c.compliance || {};
+    const ap = c.compliance.associatedPeopleCSAT = c.compliance.associatedPeopleCSAT || {done:false, date:null, contactName:'', surveySentOn:null, surveyAnsweredOn:null};
+    ap[ch.field] = ch.to || null; written.add(c.id); fields++;
+  };
+  plan.changes.forEach(ch => { if(byId[ch.customerId]) setField(byId[ch.customerId], ch); });
+  plan.suggestions.forEach(s => {
+    if(!ticked.has(s.row) || !byId[s.customerId]) return;
+    const c = byId[s.customerId];
+    s.changes.forEach(ch => setField(c, ch));
+    c.salesforceId = s.sf; idsWritten++; written.add(c.id);
+    if(!String(c.gainsightId || '').trim() && s.gs){ c.gainsightId = s.gs; idsWritten++; }
+  });
+  return {accounts:written.size, fields:fields, idsWritten:idsWritten};
 }
 function guessPartnerColumnMapping(headers){
   // Each guess excludes columns already claimed by an earlier field —

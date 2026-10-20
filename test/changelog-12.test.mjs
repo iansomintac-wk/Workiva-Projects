@@ -13,3 +13,4 @@ test('CHANGELOG 1.2: a 1.2 section exists and sits second, under the Hosting sec
 test('CHANGELOG 1.2 task 1: names the CSAT plan builder', () => assert.match(s12, /CSAT import: buildCsatImportPlan/));
 test('CHANGELOG 1.2 task 2: matching bullet names Salesforce ID, Gainsight ID, ambiguous and conflict', () => assert.match(s12, /Salesforce ID \(15 or 18 chars\), then Gainsight ID; ambiguous and conflicting rows/));
 test('CHANGELOG 1.2 task 3: update rules bullet', () => assert.match(s12, /update rules \(newer sent wins/));
+test('CHANGELOG 1.2 task 4: name matches are only suggestions', () => assert.match(s12, /name matches are only suggestions \(unticked\)/));
