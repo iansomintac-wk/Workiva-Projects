@@ -16,3 +16,4 @@ test('CHANGELOG 1.2 task 3: update rules bullet', () => assert.match(s12, /updat
 test('CHANGELOG 1.2 task 4: name matches are only suggestions', () => assert.match(s12, /name matches are only suggestions \(unticked\)/));
 test('CHANGELOG 1.2 task 6: Salesforce ID box bullet', () => assert.match(s12, /new optional Salesforce ID box/));
 test('README task 6: the Details description names both ID boxes', () => { const r = readFileSync('README.txt', 'utf8'); assert.match(r, /Salesforce ID/); assert.match(r, /Gainsight ID/); });
+test('CHANGELOG 1.2 task 7: dry-run preview bullet', () => assert.match(s12, /Import CSAT dates \(CSV\) opens a dry-run preview/));

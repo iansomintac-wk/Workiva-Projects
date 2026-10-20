@@ -9439,6 +9439,7 @@ function renderHeader(){
              library the other importers use — the whole point is that it works
              on a laptop with no internet, from file://. -->
         <input type="file" id="import-values-input" accept=".csv,text/csv" style="display:none;">
+        <input type="file" id="import-csat-input" accept=".csv,text/csv" style="display:none;">
         <button class="btn" id="btn-progress-report" title="Download a manager-ready progress report: who's moving, stagnant, quiet, at risk, and ready for CSM handoff">Progress Report</button>
         <button class="btn btn-primary" id="btn-add-customer">+ Add Customer</button>
       </div>
@@ -15404,6 +15405,7 @@ function attachEvents(){
   $('#import-excel-input') && $('#import-excel-input').addEventListener('change', handleExcelFile);
   $('#import-partner-sheet-input') && $('#import-partner-sheet-input').addEventListener('change', handlePartnerSheetFile);
   $('#import-values-input') && $('#import-values-input').addEventListener('change', handleValuesFile);
+  bindCsatFileInput(document);
   $('#btn-progress-report') && $('#btn-progress-report').addEventListener('click', downloadProgressReport);
   // v58: Risk Hub + Gainsight queue (Copilot tab)
   function openCtaModal(item){
@@ -17913,6 +17915,7 @@ function openSettingsModal(){
         <button class="btn btn-sm" id="btn-import-settings">Import JSON</button>
         <button class="btn btn-sm" id="btn-import-excel-settings">Import Excel</button>
         <button class="btn btn-sm" id="btn-import-values" title="Import tier, contract value and renewal date from a Gainsight CSV export — matched to your accounts by name, previewed before anything is written">Import from Gainsight (CSV)</button>
+        <button class="btn btn-sm" id="btn-import-csat" title="Fill survey sent and answered dates from a Snowflake CSAT export — previewed before anything is written">Import CSAT dates (CSV)</button>
         <button class="btn btn-sm" id="btn-import-partner-sheet" title="Upload a partner's tracker sheet — rows are matched to your accounts by name and staged as Partner Sync notes for your review before anything is logged">Import Partner Notes</button>
         <button class="btn btn-sm" id="btn-restore-archive-settings">Restore Archive</button>
       </div>
@@ -18074,6 +18077,7 @@ function openSettingsModal(){
   backdrop.querySelector('#btn-import-excel-settings').addEventListener('click', ()=> document.getElementById('import-excel-input').click());
   backdrop.querySelector('#btn-import-partner-sheet').addEventListener('click', ()=> { backdrop.remove(); document.getElementById('import-partner-sheet-input').click(); });
   backdrop.querySelector('#btn-import-values').addEventListener('click', ()=> { backdrop.remove(); document.getElementById('import-values-input').click(); });
+  bindCsatSettings(backdrop);
   backdrop.querySelector('#btn-restore-archive-settings').addEventListener('click', ()=> document.getElementById('restore-archive-input').click());
   backdrop.querySelector('#ai-api-key').addEventListener('input', e=>{
     backdrop.querySelector('#ai-model-wrap').innerHTML = renderAiModelField(e.target.value.trim());
@@ -19688,6 +19692,78 @@ function applyCsatImportPlan(plan, customers, tickedRows){
   });
   return {accounts:written.size, fields:fields, idsWritten:idsWritten};
 }
+function csatPlanSummary(plan){
+  let s = `${plan.rowCount} rows: ${plan.matched.length} match, ${plan.changes.length} dates change, ${plan.unmatchedRows.length} not in Runway, ${plan.skipped.length} skipped`;
+  if(plan.ambiguous.length) s += `, ${plan.ambiguous.length} ambiguous`;
+  if(plan.conflicts.length) s += `, ${plan.conflicts.length} in conflict`;
+  return s;
+}
+function csatSectionHtml(title, count, bodyHtml){
+  return `<details style="margin-top:8px;"><summary style="cursor:pointer; font-weight:600;">${escapeHtml(title)} (${count})</summary><div style="font-size:var(--text-sm); color:var(--text-dim); margin-top:4px; max-height:180px; overflow:auto;">${bodyHtml || '<em>none</em>'}</div></details>`;
+}
+function openCsatImportModal(plan, meta){
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const close = () => backdrop.remove();
+  const row = s => `<div>${s}</div>`;
+  if(plan.error){
+    backdrop.innerHTML = `<div class="modal" role="dialog" aria-modal="true" style="width:min(640px,100%); max-width:none;"><h3 style="margin-top:0;">Import CSAT dates</h3><p>${escapeHtml(plan.error)}</p><div class="modal-actions"><button class="btn" id="csat-cancel">Close</button></div></div>`;
+    document.body.appendChild(backdrop);
+    backdrop.querySelector('#csat-cancel').addEventListener('click', close);
+    return;
+  }
+  const fieldLabel = f => f === 'surveySentOn' ? 'Survey sent' : 'Answered';
+  const changes = plan.changes.map(c => row(`${escapeHtml(c.name)}: ${fieldLabel(c.field)} ${escapeHtml(c.from || 'empty')} -> ${escapeHtml(c.to || 'empty')}`)).join('');
+  const newer = plan.runwayNewer.map(r => row(`${escapeHtml(r.name)}: Runway ${escapeHtml(r.runwaySent)}, file ${escapeHtml(r.csvSent)}`)).join('');
+  const sugs = plan.suggestions.map(s => `<div><label><input type="checkbox" data-csat-sug="${escapeAttr(s.row)}"> ${escapeHtml(s.csvName)} -> ${escapeHtml(s.customerName)}</label></div>`).join('');
+  const notIn = plan.unmatchedRows.map(r => row(escapeHtml(r.name))).join('');
+  const notFile = plan.notInFile.map(r => row(escapeHtml(r.name))).join('');
+  const skipped = plan.skipped.map(r => row(`${escapeHtml(r.name)}: ${escapeHtml(r.reason)}`))
+    .concat(plan.ambiguous.map(r => row(`${escapeHtml(r.name)}: Ambiguous`)))
+    .concat(plan.conflicts.map(r => row(`${escapeHtml(r.name)}: Conflict`))).join('');
+  const skipCount = plan.skipped.length + plan.ambiguous.length + plan.conflicts.length;
+  backdrop.innerHTML = `<div class="modal" role="dialog" aria-modal="true" style="width:min(720px,100%); max-width:none;">
+    <h3 style="margin-top:0;">Import CSAT dates</h3>
+    <p id="csat-summary">${escapeHtml(csatPlanSummary(plan))}</p>
+    ${csatSectionHtml('Dates that would change', plan.changes.length, changes)}
+    ${csatSectionHtml('Runway is newer', plan.runwayNewer.length, newer)}
+    ${csatSectionHtml('Possible matches by name', plan.suggestions.length, sugs)}
+    ${csatSectionHtml('Rows not in Runway', plan.unmatchedRows.length, notIn)}
+    ${csatSectionHtml('Runway accounts not in the file', plan.notInFile.length, notFile)}
+    ${csatSectionHtml('Skipped', skipCount, skipped)}
+    <div class="modal-actions" style="margin-top:12px;"><button class="btn" id="csat-cancel">Cancel</button><button class="btn btn-primary" id="csat-apply"${plan.changes.length||plan.suggestions.length ? '' : ' disabled'}>Apply</button></div>
+  </div>`;
+  document.body.appendChild(backdrop);
+  backdrop.querySelector('#csat-cancel').addEventListener('click', close);
+  backdrop.querySelector('#csat-apply').addEventListener('click', ()=> {
+    const ticked = [...backdrop.querySelectorAll('[data-csat-sug]')].filter(b => b.checked).map(b => Number(b.dataset.csatSug));
+    commitCsatImport(plan, ticked, meta);
+  });
+}
+function handleCsatFile(e){
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  if(file.size > 8 * 1024 * 1024){ showToast('That file is over 8 MB — export just the columns you need.'); return; }
+  const reader = new FileReader();
+  reader.onload = evt => {
+    let table;
+    try{ table = parseCsv(String(evt.target.result || '')); }
+    catch(err){ showToast('Could not read that file as CSV.'); return; }
+    openCsatImportModal(buildCsatImportPlan(table, DATA.customers, {}), {fileName:file.name, fileModified:file.lastModified});
+  };
+  reader.onerror = ()=> showToast('Could not read that file.');
+  reader.readAsText(file);
+}
+function bindCsatSettings(backdrop){
+  const imp = backdrop.querySelector('#btn-import-csat');
+  if(imp) imp.addEventListener('click', ()=> { backdrop.remove(); document.getElementById('import-csat-input').click(); });
+}
+function bindCsatFileInput(root){
+  const el = root.querySelector('#import-csat-input');
+  if(el) el.addEventListener('change', handleCsatFile);
+}
+function commitCsatImport(plan, tickedRows, meta){ return null; }
 function guessPartnerColumnMapping(headers){
   // Each guess excludes columns already claimed by an earlier field —
   // otherwise "Update Notes" wins the date guess via its embedded "date"
