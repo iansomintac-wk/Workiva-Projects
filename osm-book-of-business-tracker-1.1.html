@@ -9408,7 +9408,8 @@ function maybePromptBackup(){
       ? `This book has ${DATA.customers.length} account${DATA.customers.length===1?'':'s'} and has never been exported. It exists only in this browser's storage — a profile reset, an IT cleanup, or clearing site data would remove it permanently, and none of it lives in Gainsight. Download a backup now?`
       : `The last backup was ${d} days ago. Everything logged since then exists only in this browser. Download a backup now?`,
     () => exportData(),
-    'Download backup'
+    'Download backup',
+    {title:'Back up your book first?', primary:true}
   );
 }
 
@@ -17006,16 +17007,17 @@ function showDismissModal(c, rec){
   });
 }
 
-function showConfirmModal(message, onConfirm, confirmLabel){
+function showConfirmModal(message, onConfirm, confirmLabel, opts){
+  const o = opts || {};
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   backdrop.innerHTML = `
     <div class="modal" style="max-width:380px;">
-      <h3>Are you sure?</h3>
+      <h3>${escapeHtml(o.title || 'Are you sure?')}</h3>
       <p style="font-size:var(--text-sm); color:var(--text-dim); margin-bottom:0;">${escapeHtml(message)}</p>
       <div class="modal-actions">
         <button class="btn" id="confirm-cancel">Cancel</button>
-        <button class="btn btn-danger" id="confirm-ok">${escapeHtml(confirmLabel || 'Delete')}</button>
+        <button class="btn ${o.primary ? 'btn-primary' : 'btn-danger'}" id="confirm-ok">${escapeHtml(confirmLabel || 'Delete')}</button>
       </div>
     </div>
   `;

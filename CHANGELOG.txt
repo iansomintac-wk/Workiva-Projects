@@ -53,6 +53,7 @@ OSM Runway — release notes
     - Folder watch: Today shows "New CSAT export" with Review; nothing applies without Apply.
     - Settings > Watch a folder for CSAT exports, Check now, Stop watching.
     - Call prep order is now Agenda, Promises, Last transcript, Pending deliverables.
+    - Backup prompt: title "Back up your book first?" and a normal (not red) Download backup button.
 
 1.1 — Graduation prompt colour.
     - The line under the graduation confirm box title (#gc-prompt) used var(--warn), which is not defined, so it fell back to grey; it now uses var(--status-watch-text) like the CSAT line.
