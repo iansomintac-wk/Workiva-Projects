@@ -1,0 +1,18 @@
+TASK: Land the Scope 3 decline-line branch into prompt-coach (Workiva repo).
+
+Written 2026-10-20 by session acef0bda from the hand-off PM draft. Load studio-harness:talk-and-run first.
+Work in C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-scope3-decline-line (branch
+worktree-prompt-coach-scope3-decline-line). Never open any heldout/ or sealed file.
+
+STATE (measured 2026-10-20 at cc725fc): the branch is 8 commits ahead of origin/prompt-coach, 0 behind (the local
+prompt-coach ref is stale; use origin/prompt-coach). The 8 are docs and evidence only for the closed decline line and
+the base-Strong sandbox check (Ian: "Close, ship nothing (Recommended)", "Risk closed (Recommended)"). No engine change.
+
+DO
+1. Give Ian the time. git fetch; re-measure ahead/behind against origin/prompt-coach.
+2. Merge rule (global CLAUDE.md, remote owner iansomintac): push origin/prompt-coach tip to
+   backup/prompt-coach-before-worktree-prompt-coach-scope3-decline-line-<date>; merge, conflicts keep both sides;
+   run the prompt-coach suite (README commands, never on heldout data) on the result and on the target; no failure the
+   target lacks. Then the unforced push of prompt-coach. Anything else: ask Ian.
+3. Do not touch shipped base. Hand-off PM step; ask before starting any next session.
+Session names: rename only; do not claude rm sessions whose cwd is this worktree.
