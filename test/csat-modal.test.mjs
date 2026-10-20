@@ -75,10 +75,10 @@ test('CSAT file: choosing no file does nothing', () => {
 });
 test('CSAT settings wiring: the Import CSAT button closes Settings and clicks the hidden file input; choosing a file calls handleCsatFile', () => {
   const log = []; const handlers = {};
-  const mk = sel => ({ addEventListener: (ev, fn) => { handlers[sel + ':' + ev] = fn; } });
+  const mk = sel => ({ style: {}, addEventListener: (ev, fn) => { handlers[sel + ':' + ev] = fn; } });
   const backdrop = { querySelector: mk, remove: () => log.push('removed') };
   const doc = { getElementById: id => ({ click: () => log.push('click:' + id) }) };
-  const c = loadCsat(['bindCsatSettings', 'bindCsatFileInput', 'handleCsatFile'], [], { document: doc });
+  const c = loadCsat(['bindCsatSettings', 'bindCsatFileInput', 'handleCsatFile'], [], { document: doc, window: {}, csatWatchUse() {}, csatWatchRefresh() {}, csatWatchStop() {} });
   c.bindCsatSettings(backdrop);
   handlers['#btn-import-csat:click']();
   assert.deepEqual(log, ['removed', 'click:import-csat-input']);

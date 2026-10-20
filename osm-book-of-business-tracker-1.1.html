@@ -17917,6 +17917,9 @@ function openSettingsModal(){
         <button class="btn btn-sm" id="btn-import-excel-settings">Import Excel</button>
         <button class="btn btn-sm" id="btn-import-values" title="Import tier, contract value and renewal date from a Gainsight CSV export — matched to your accounts by name, previewed before anything is written">Import from Gainsight (CSV)</button>
         <button class="btn btn-sm" id="btn-import-csat" title="Fill survey sent and answered dates from a Snowflake CSAT export — previewed before anything is written">Import CSAT dates (CSV)</button>
+        <button class="btn btn-sm" id="btn-csat-watch" title="Read a folder for new csat_runway_export_*.csv files; nothing is applied until you press Apply">Watch a folder for CSAT exports</button>
+        <button class="btn btn-sm" id="btn-csat-check">Check now</button>
+        <button class="btn btn-sm" id="btn-csat-unwatch">Stop watching</button>
         <button class="btn btn-sm" id="btn-import-partner-sheet" title="Upload a partner's tracker sheet — rows are matched to your accounts by name and staged as Partner Sync notes for your review before anything is logged">Import Partner Notes</button>
         <button class="btn btn-sm" id="btn-restore-archive-settings">Restore Archive</button>
       </div>
@@ -19830,6 +19833,18 @@ function handleCsatFile(e){
 function bindCsatSettings(backdrop){
   const imp = backdrop.querySelector('#btn-import-csat');
   if(imp) imp.addEventListener('click', ()=> { backdrop.remove(); document.getElementById('import-csat-input').click(); });
+  const watch = backdrop.querySelector('#btn-csat-watch');
+  if(watch){
+    if(typeof window.showDirectoryPicker !== 'function') watch.style.display = 'none';
+    else watch.addEventListener('click', async ()=> {
+      try{ const h = await window.showDirectoryPicker({mode:'read'}); await csatWatchUse(h); }
+      catch(err){ if(!err || err.name !== 'AbortError') showToast('Could not open that folder.'); }
+    });
+  }
+  const chk = backdrop.querySelector('#btn-csat-check');
+  if(chk) chk.addEventListener('click', ()=> csatWatchRefresh(true));
+  const stop = backdrop.querySelector('#btn-csat-unwatch');
+  if(stop) stop.addEventListener('click', ()=> csatWatchStop());
 }
 function bindCsatFileInput(root){
   const el = root.querySelector('#import-csat-input');

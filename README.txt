@@ -74,6 +74,8 @@ Keeps an OSM's book of business in one place and turns it into a day's work.
               The Details tab has two ID boxes: Gainsight ID and Salesforce ID (both optional; the CSAT import matches on them).
               Settings > Import CSAT dates (CSV): pick the Snowflake CSAT export; a preview shows what would change. Apply downloads a backup file
               (book-of-business-export.json) first, then writes the dates and shows a report. Undo reverses the import.
+              Settings > Watch a folder for CSAT exports: pick the folder where the export lands (files named csat_runway_export_*.csv); Today shows a
+              "New CSAT export" line with Review when a newer file appears. Check now looks again; Stop watching forgets the folder. Nothing applies until you press Apply.
               In 1.1, Call prep also shows the closing 30 speech lines of the newest transcript on the
               account, in a scrolling box with a Read the full transcript link; hidden when there is none.
               It also shows a Promises section: the account's open commitments, up to 5, most urgent
