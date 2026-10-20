@@ -24,3 +24,4 @@ test('CHANGELOG 1.2 task 10: Today line bullet', () => assert.match(s12, /Today 
 test('README task 11: Settings controls and the file-name pattern', () => { const r = readFileSync('README.txt', 'utf8'); for (const re of [/Watch a folder for CSAT exports/, /csat_runway_export_/]) assert.match(r, re); });
 test('VALIDATION task 11: the two checks Ian runs on his computer', () => { const v = readFileSync('VALIDATION.txt', 'utf8'); assert.match(v, /Allow on every visit/); assert.match(v, /dry-run/i); });
 test('CHANGELOG 1.2 task 11: Settings watch controls bullet', () => assert.match(s12, /Settings > Watch a folder for CSAT exports/));
+test('CHANGELOG 1.2 task 13: Call prep order bullet', () => assert.match(s12, /Call prep order is now Agenda, Promises, Last transcript, Pending deliverables/));

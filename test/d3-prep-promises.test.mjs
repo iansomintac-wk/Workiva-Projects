@@ -123,11 +123,11 @@ test('beatPromisesSection: 7 open show 5 rows and a more line to the Coordinatio
   assert.ok(!sec(mk(5)).html.includes('data-beat-promises-more'));
 });
 
-test('renderBeatPrep: Promises sits after Pending deliverables and before Time on your calendar', () => {
+test('renderBeatPrep: Promises sits right after the agenda, before Last transcript and Pending deliverables', () => {
   const ctx = ctxFor('2026-10-21', ['escapeHtml', 'escapeAttr', 'fmtDate', 'closingStretch', 'beatTranscriptSection', 'rankedPromises', 'promiseCue', 'beatPromisesSection', 'getOpenThreads', 'unresolvedThreads', 'collectOpenQuestions', 'commitmentIsOverdue', 'beatAgendaItems', 'beatAgendaText', 'beatAgendaSection', 'renderBeatPrep']);
-  vm.runInContext(`var DATA = {activities: {c1: []}}; function fmtDayTime(){ return ''; } function getNextSessionTime(){ return ''; }
-    function isLoggedPastDate(){ return false; } function activityTranscript(){ return null; }`, ctx);
-  const html = ctx.renderBeatPrep({ call: { c: { id: 'c1', commitments: [K('p1', 'i_owe')] }, at: null, next: null, prepped: false } });
-  const p = html.indexOf('Pending deliverables'), s = html.indexOf('data-beat-promises-sec'), t = html.indexOf('Time on your calendar');
-  assert.ok(p >= 0 && p < s && s < t);
+  vm.runInContext(`var DATA = {activities: {c1: [{date: '2026-10-01', transcript: {text: 'We agreed to send the plan.'}}]}}; function fmtDayTime(){ return ''; } function getNextSessionTime(){ return ''; }
+    function isLoggedPastDate(){ return true; } function activityTranscript(a){ return a.transcript; }`, ctx);
+  const html = ctx.renderBeatPrep({ call: { c: { id: 'c1', commitments: [K('p1', 'i_owe', '2026-10-20')] }, at: null, next: null, prepped: false } });
+  const a = html.indexOf('data-beat-agenda'), p = html.indexOf('data-beat-promises-sec'), t = html.indexOf('data-beat-transcript'), d = html.indexOf('Pending deliverables'), tm = html.indexOf('Time on your calendar');
+  assert.ok(a >= 0 && a < p && p < t && t < d && d < tm, [a, p, t, d, tm].join(' '));
 });

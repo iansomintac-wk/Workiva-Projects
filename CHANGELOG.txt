@@ -52,6 +52,7 @@ OSM Runway — release notes
     - Folder watch plumbing: newest csat_runway_export_*.csv by modified time, read-permission handling, handle stored under key csat-folder.
     - Folder watch: Today shows "New CSAT export" with Review; nothing applies without Apply.
     - Settings > Watch a folder for CSAT exports, Check now, Stop watching.
+    - Call prep order is now Agenda, Promises, Last transcript, Pending deliverables.
 
 1.1 — Graduation prompt colour.
     - The line under the graduation confirm box title (#gc-prompt) used var(--warn), which is not defined, so it fell back to grey; it now uses var(--status-watch-text) like the CSAT line.

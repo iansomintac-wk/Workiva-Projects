@@ -12781,6 +12781,7 @@ function renderBeatPrep(beat){
     <div class="focus-act">
       <h5>${x.at ? escapeHtml(fmtDayTime(x.at)) + ' · ' : ''}Call prep${x.next ? ` · Session ${x.next.number}` : ''} ${x.prepped ? '<span class="badge badge-ontrack">prep notes logged</span>' : '<span class="badge badge-watch">no prep notes</span>'}</h5>
       ${beatAgendaSection(c, pendingItems)}
+      ${beatPromisesSection(c)}
       ${beatTranscriptSection(c)}
 
       <div class="bp-sec">
@@ -12790,8 +12791,6 @@ function renderBeatPrep(beat){
         ${deliverables.length ? `<div class="bp-basis" style="margin-top:6px;">This session should produce: ${escapeHtml(deliverables.join('; '))}</div>` : ''}
         ${(!pendingItems.length && !deliverables.length) ? `<div class="bp-body" style="color:var(--text-faint);">Nothing outstanding.</div>` : ''}
       </div>
-
-      ${beatPromisesSection(c)}
 
       <div class="bp-sec bp-time">
         <label class="lbl" for="bp-time-${escapeAttr(c.id)}">Time on your calendar</label>
