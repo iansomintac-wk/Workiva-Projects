@@ -26,3 +26,4 @@ test('VALIDATION task 11: the two checks Ian runs on his computer', () => { cons
 test('CHANGELOG 1.2 task 11: Settings watch controls bullet', () => assert.match(s12, /Settings > Watch a folder for CSAT exports/));
 test('CHANGELOG 1.2 task 13: Call prep order bullet', () => assert.match(s12, /Call prep order is now Agenda, Promises, Last transcript, Pending deliverables/));
 test('CHANGELOG 1.2 task 14: backup prompt bullet', () => assert.match(s12, /Back up your book first\?/));
+test('CHANGELOG 1.2 task 15: nits bullet', () => assert.match(s12, /Graduate modal omits "\(0 of 0 gates done\)"/));

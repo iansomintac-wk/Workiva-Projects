@@ -11734,7 +11734,7 @@ function csatDatesHtml(ap, id){
   const e = escapeAttr(id);
   return `<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:6px;">
         <label for="fp-csat-sent-${e}">Survey sent <input type="date" class="dk-in" id="fp-csat-sent-${e}" data-fp-csat-sent="${e}" value="${escapeAttr(ap.surveySentOn || '')}"></label>
-        <label for="fp-csat-ans-${e}">Answered <input type="date" class="dk-in" id="fp-csat-ans-${e}" data-fp-csat-answered="${e}" value="${escapeAttr(ap.surveyAnsweredOn || '')}"></label>
+        <label for="fp-csat-ans-${e}" data-fp-csat-ans-wrap="${e}"${ap.surveySentOn ? '' : ' style="display:none"'}>Answered <input type="date" class="dk-in" id="fp-csat-ans-${e}" data-fp-csat-answered="${e}" value="${escapeAttr(ap.surveyAnsweredOn || '')}"></label>
       </div>`;
 }
 
@@ -15246,6 +15246,8 @@ function bindCsatDateInputs(root){
         const keepId = inp.id;
         markUndoable('CSAT survey date');
         c.compliance.associatedPeopleCSAT[key] = isRealISODate(inp.value) ? inp.value : null;
+        const w = root.querySelector('[data-fp-csat-ans-wrap="' + cssEscape(inp.dataset[ds]) + '"]');
+        if(w) w.style.display = c.compliance.associatedPeopleCSAT.surveySentOn ? '' : 'none';
         saveData(); render();
         const again = keepId && document.getElementById(keepId); if(again) again.focus();
       });
@@ -17113,7 +17115,7 @@ function openGraduationConfirmModal(c){
     <div class="modal" style="max-width:480px;">
       <h3>Graduate ${escapeHtml(c.name)}</h3>
       ${csatWarn ? `<p id="gc-csat" class="gp-meta" style="margin:0 0 10px; color:var(--status-watch-text, var(--text-dim));">${escapeHtml(csatWarn)}</p>` : ''}
-      ${p ? `<p class="gp-meta" style="margin:0 0 10px;">Primary goal: ${escapeHtml(p.text)} (${p.gates.filter(g => g.done).length} of ${p.gates.length} gates done)</p>` : `
+      ${p ? `<p class="gp-meta" style="margin:0 0 10px;">Primary goal: ${escapeHtml(p.text)}${p.gates.length ? ` (${p.gates.filter(g => g.done).length} of ${p.gates.length} gates done)` : ''}</p>` : `
       <p class="gp-meta" style="margin:0 0 10px;">No hand-off goal is set. Add one now, or graduate without one.</p>
       <div id="gc-nogoal-wrap">
         <div class="field" style="margin-bottom:10px;"><label for="gc-gtype">Goal type</label>
