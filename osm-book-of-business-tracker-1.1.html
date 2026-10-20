@@ -19693,7 +19693,7 @@ function applyCsatImportPlan(plan, customers, tickedRows){
   return {accounts:written.size, fields:fields, idsWritten:idsWritten};
 }
 function csatPlanSummary(plan){
-  let s = `${plan.rowCount} rows: ${plan.matched.length} match, ${plan.changes.length} dates change, ${plan.unmatchedRows.length} not in Runway, ${plan.skipped.length} skipped`;
+  let s = `${plan.rowCount} ${plan.rowCount === 1 ? 'row' : 'rows'}: ${plan.matched.length} match, ${plan.changes.length} ${plan.changes.length === 1 ? 'date changes' : 'dates change'}, ${plan.unmatchedRows.length} not in Runway, ${plan.skipped.length} skipped`;
   if(plan.ambiguous.length) s += `, ${plan.ambiguous.length} ambiguous`;
   if(plan.conflicts.length) s += `, ${plan.conflicts.length} in conflict`;
   return s;

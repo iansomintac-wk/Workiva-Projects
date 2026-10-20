@@ -92,3 +92,23 @@ test('CSAT settings wiring (source presence; the headless drive clicks the real 
   assert.ok(src.includes('bindCsatFileInput(document)'));
   assert.ok(src.includes('id="btn-import-csat"') && src.includes('id="import-csat-input"'));
 });
+
+test('CSAT modal: the summary is singular-aware when counts are 1', () => {
+  const one = { rowCount: 1, matched: [1], changes: [1], unmatchedRows: [], skipped: [], ambiguous: [], conflicts: [] };
+  const { c } = fixturePlan();
+  const c2 = loadCsat([...PLAN_FNS, ...UI_FNS], PLAN_CONSTS, {});
+  assert.equal(c2.csatPlanSummary(one), '1 row: 1 match, 1 date changes, 0 not in Runway, 0 skipped');
+  assert.equal(c2.csatPlanSummary({ ...one, rowCount: 2, matched: [1, 2], changes: [1, 2] }), '2 rows: 2 match, 2 dates change, 0 not in Runway, 0 skipped');
+});
+test('CSAT modal: a company name with <b>&"\' is escaped in suggestions, Runway-is-newer, not-in-file and skipped', () => {
+  const bad = `<b>&"'`, esc = '&lt;b&gt;&amp;&quot;&#39;';
+  const plan = { error: null, rowCount: 4, matched: [], changes: [], unchanged: [], runwayNewer: [{ customerId: 'a', name: bad, runwaySent: '2026-09-02', csvSent: '2026-09-01' }],
+    unmatchedRows: [], notInFile: [{ customerId: 'b', name: bad }], ambiguous: [], conflicts: [],
+    suggestions: [{ row: 5, customerId: 'c', customerName: bad, csvName: bad, sf: '', gs: '', sent: '', answered: '', kind: 'x', changes: [] }],
+    skipped: [{ row: 6, name: bad, reason: bad }] };
+  const { html } = open(plan);
+  assert.ok(!html.includes('<b>'), 'raw <b> leaked');
+  assert.ok(!html.includes(`${bad}`), 'raw name leaked');
+  const count = html.split(esc).length - 1;
+  assert.ok(count >= 6, 'escaped occurrences: ' + count + ' ' + html.slice(0, 300));
+});
