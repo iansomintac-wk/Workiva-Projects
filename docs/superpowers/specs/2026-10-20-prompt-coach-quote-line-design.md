@@ -12,6 +12,7 @@ Talk 2026-10-20, session "NEW - Prompt Coach quote line talk" (job 04bbd630), fr
   run via town-launch with the slip ledger, merge into prompt-coach and push under the merge rule; D to Ian's
   morning list". Proxy decided; Ian may overturn. Recorded in the run ledger's rulings.md.
 - PM proxy for Ian, 2026-10-20T06:04Z, on the card (A quote in the visible headline + stages.weak.verdict agrees (Rec.) / B ship as specced, invisible / C park / D bring back a why-it-fails card): "A. Quote in the visible headline on Your prompt, stages.weak.verdict changed to agree, same span rule and no-gos, drop test reads the headline. Add: capture Your prompt for "help with the 10-K" and for one exclusion case (fingerprinted; I open both and make the look call for Ian's morning block). Put the finding ("the 147-of-430 probe measured a line users never see; the headline names only source and ask") in the evidence doc and the for-Ian list. Make your plan fixes, Codex round 2, then send me the plan card." Proxy decided; Ian may overturn.
+- PM proxy for Ian, 2026-10-20 ~08:10Z (decisions.md), final-review card (A fix task / B merge now / C one-word only / D new sentence): "A, one fix task, then merge. Change to your fallback: if A fails its checks twice, do C alone (one-word span -> no quote) with the same re-measure; if C also fails, do NOT merge a headline that makes a false sentence: leave the branch pushed but unmerged and list all five for Ian. Not B. Same 10% bar on the new rule, by-eye read included; re-capture quote.png only if the headline for "help with the 10-K" changes. Then merge into prompt-coach and push under the merge rule and send me one line." Proxy decided. Recorded in the run ledger's rulings.md (last entry).
 
 ## Evidence
 
@@ -55,8 +56,10 @@ example Weak stage shown for a prompt that grades better or strong are unchanged
    start, or after `. ! ?`, a line break or `:`, with only lead words between (hey, hi, ok, so, just, quick(ly),
    please, pls, plz, can/could you/u, would you, I need (you) to, I want (you) to, need (you) to, want (you) to,
    I'd like (you) to). Skip a match followed directly by `:` (a field label such as "Evaluate:").
-3. The span runs from the verb to the first `. ; ? !` or line break; trailing spaces, commas, colons and dashes
-   are trimmed. Over 8 words: the first 8, then `...`.
+3. The span runs from the verb to the first `. ; ? !` that is followed by whitespace or the end of the text (so "$1.2M" and
+   "FY2025_Emissions.xlsx" stay whole), or to the first line break; trailing spaces, commas, colons, hyphens and en and em
+   dashes are trimmed. Over 8 words: the first 8, then `...`. A span of one word (after trimming) gives no quote.
+   Leading whitespace before the first sentence is allowed (amended after the final review, fix round A).
 4. No match: no quote.
 
 ### The line, by case

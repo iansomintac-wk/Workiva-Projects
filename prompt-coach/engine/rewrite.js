@@ -405,15 +405,16 @@
   const VAGUE_VERB = /\b(?:analy[sz]e|look at|look over|go over|review|check|help|assist|work on|handle|thoughts|improve|clean up|take a look|have a look|figure out|investigate|examine|evaluate|assess|tell me about)\b/i;
   const VAGUE_ONLY = /^\s*(?:(?:please|pls|can (?:you|u)|could you)\s+)*(?:analy[sz]e|review|look (?:at|over)|go over|check|help(?: me)?(?: with)?|work on|take a look at)\b[^?]*$/i;
   // Quote line: the user's own ask, only for a sentence-opening vague verb (spec 2026-10-20-prompt-coach-quote-line-design.md).
-  const QUOTE_LEAD = /(?:^|[.!?\n]\s*|:\s*)(?:(?:hey|hi|ok|so|just|quick(?:ly)?|please|pls|plz|can (?:you|u)|could (?:you|u)|would you|i need (?:you )?to|i want (?:you )?to|need (?:you )?to|want (?:you )?to|i'?d like (?:you )?to)[\s,]+)*$/i;
+  const QUOTE_LEAD = /(?:^\s*|[.!?\n]\s*|:\s*)(?:(?:hey|hi|ok|so|just|quick(?:ly)?|please|pls|plz|can (?:you|u)|could (?:you|u)|would you|i need (?:you )?to|i want (?:you )?to|need (?:you )?to|want (?:you )?to|i'?d like (?:you )?to)[\s,]+)*$/i;
   const QUOTE_SAYS = ': that says what to look at, not what a finished answer looks like.';
   function askQuote(prompt) {
     const re = new RegExp(VAGUE_VERB.source, 'gi'); let m;
     while ((m = re.exec(prompt))) {
       if (!QUOTE_LEAD.test(prompt.slice(0, m.index))) continue;
       if (prompt[m.index + m[0].length] === ':') continue; // a field label such as "Evaluate:"
-      let s = prompt.slice(m.index).split(/[.;?!\n]/)[0].replace(/[\s,:-]+$/, '');
-      const w = s.trim().split(/\s+/); if (w.length > 8) s = w.slice(0, 8).join(' ') + '...';
+      let s = prompt.slice(m.index).split(/[.;?!](?=\s|$)|[\r\n]/)[0].replace(/[\s,:\u2013\u2014-]+$/, '');
+      const w = s.trim().split(/\s+/); if (w.length < 2) return null; // one word: no quote
+      if (w.length > 8) s = w.slice(0, 8).join(' ') + '...';
       return s || null;
     }
     return null;

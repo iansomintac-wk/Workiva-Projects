@@ -556,3 +556,29 @@ test('quote line: a long ask is cut to its first 8 words plus "..."', () => {
   assert.ok(o.headline.includes('The coach read your ask as "Review the 10-K and the proxy and the..."'), o.headline);
   assert.ok(o.stages.weak.verdict.includes('"Review the 10-K and the proxy and the..."'), o.stages.weak.verdict);
 });
+
+// ---- quote line fix round A (rulings.md last entry): one word, sentence ends, leading space, dashes ----
+test('quote line A1: a one-word span gives no quote (askQuote and through coach), a longer ask still does', () => {
+  for (const p of ['help', 'Analyze', 'Thoughts', 'help.']) assert.equal(W.askQuote(p), null, p);
+  assert.ok(quotedNone(coachWith('help', withO(0))), 'one word: today\'s headline and verdict');
+  assert.ok(quotedBoth(coachWith(HELP, withO(0))), 'contrast: a longer ask quotes');
+});
+
+test('quote line A2: the span ends at . ; ? ! only before whitespace or end, or at a line break', () => {
+  assert.equal(W.askQuote('Can you take a look at FY2025_Emissions.xlsx for me?'), 'take a look at FY2025_Emissions.xlsx for me');
+  assert.equal(W.askQuote('Review the $1.2M variance'), 'Review the $1.2M variance');
+  assert.equal(W.askQuote('Review the plan. Then send it'), 'Review the plan');
+  assert.equal(W.askQuote('Review the plan; then send it'), 'Review the plan');
+  assert.equal(W.askQuote('Review the plan\nthen send it'), 'Review the plan');
+});
+
+test('quote line A3: leading whitespace before the first sentence is allowed', () => {
+  assert.equal(W.askQuote('  help with the 10-K'), 'help with the 10-K');
+  assert.equal(W.askQuote('\n  Please help with the 10-K'), 'help with the 10-K');
+});
+
+test('quote line A4: trailing en and em dashes are trimmed like a hyphen', () => {
+  assert.equal(W.askQuote('help with the 10-K \u2013'), 'help with the 10-K');
+  assert.equal(W.askQuote('help with the 10-K \u2014'), 'help with the 10-K');
+  assert.equal(W.askQuote('help with the 10-K -'), 'help with the 10-K');
+});
