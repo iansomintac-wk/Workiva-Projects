@@ -117,19 +117,28 @@ test('X1 verify: spawnSync calls carry a timeout', () => {
   for (const c of calls) assert.match(c, /timeout:/);
 });
 test('X1 spawn error: invalid Chrome path rejects, profile folder removed, run exits 2', async () => {
-  const { launch } = await import('../tools/sim/osm-day/lib/browser.mjs');
-  const before = countLeftovers(['osmsim-'], tmpdir());
-  const runDir = mkdtempSync(join(tmpdir(), 'x1run-'));
+  const realTmp = tmpdir();
+  const priv = mkdtempSync(join(realTmp, 'x1priv-'));
+  const saved = { TMP: process.env.TMP, TEMP: process.env.TEMP, TMPDIR: process.env.TMPDIR };
+  process.env.TMP = process.env.TEMP = process.env.TMPDIR = priv;
   try {
-    await assert.rejects(launch({ version: '1.0', startDay: '2026-10-21', runDir, part: 'x1', chromePath: join(runDir, 'no-such-chrome.exe') }));
-    assert.equal(countLeftovers(['osmsim-'], tmpdir()), before);
-  } finally { rmSync(runDir, { recursive: true, force: true }); }
-  const { spawnSync } = await import('node:child_process');
-  const out = mkdtempSync(join(ROOT, 'sim-runs-x1-'));
-  try {
-    const r = spawnSync(process.execPath, [join(SIM, 'run.mjs'), '--version', '1.0', '--part', 'A', '--only', 'D1', '--no-breaks', '--out', join(ROOT, 'sim-runs', 'ext', 'x1-spawnerr')],
-      { env: { ...process.env, OSM_SIM_CHROME: join(out, 'nope.exe') }, encoding: 'utf8', timeout: 60000 });
-    assert.equal(r.status, 2);
-    assert.equal(countLeftovers(['osmsim-'], tmpdir()), before);
-  } finally { rmSync(out, { recursive: true, force: true }); }
+    const { launch } = await import('../tools/sim/osm-day/lib/browser.mjs');
+    const before = countLeftovers(['osmsim-'], tmpdir());
+    const runDir = mkdtempSync(join(tmpdir(), 'x1run-'));
+    try {
+      await assert.rejects(launch({ version: '1.0', startDay: '2026-10-21', runDir, part: 'x1', chromePath: join(runDir, 'no-such-chrome.exe') }));
+      assert.equal(countLeftovers(['osmsim-'], tmpdir()), before);
+    } finally { rmSync(runDir, { recursive: true, force: true }); }
+    const { spawnSync } = await import('node:child_process');
+    const out = mkdtempSync(join(ROOT, 'sim-runs-x1-'));
+    try {
+      const r = spawnSync(process.execPath, [join(SIM, 'run.mjs'), '--version', '1.0', '--part', 'A', '--only', 'D1', '--no-breaks', '--out', join(ROOT, 'sim-runs', 'ext', 'x1-spawnerr')],
+        { env: { ...process.env, OSM_SIM_CHROME: join(out, 'nope.exe') }, encoding: 'utf8', timeout: 60000 });
+      assert.equal(r.status, 2);
+      assert.equal(countLeftovers(['osmsim-'], tmpdir()), before);
+    } finally { rmSync(out, { recursive: true, force: true }); }
+  } finally {
+    for (const k of Object.keys(saved)) { if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k]; }
+    rmSync(priv, { recursive: true, force: true });
+  }
 });
