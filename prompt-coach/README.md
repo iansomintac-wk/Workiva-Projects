@@ -154,4 +154,8 @@ blank on 51; scored out of fold it guesses on 1, wrongly; 0 of 13 live-test case
 Published work favours asking only when the task is unclear, which the blank already does. See
 `research/2026-10-20-bare-analyze-format-probe.md`.
 
-Still open: the reason line for weak prompts is generic.
+Still open: the reason line for weak prompts is generic, and often wrong for the prompt. Measured
+2026-10-20 on the training rows (in-sample): 430 of 1,080 grade weak; on 147 of them the line names
+something the prompt has (89) or misses its missing source or ask (63); two lines cover 45% of
+them; 0 of 13 live-test cases grade weak. Ian chose (2026-10-20) a line that quotes the prompt's own
+words; not built yet. See `research/2026-10-20-reason-line-probe.md`.

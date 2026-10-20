@@ -1,0 +1,32 @@
+TALK: Prompt coach, spec for a weak-prompt reason line that quotes the prompt's own words (Workiva repo).
+
+DRAFT, written 2026-10-20 by the reason-line talk session from the hand-off PM step. Not queued: start it only on Ian's yes.
+Load studio-harness:talk-and-run first. Talk only: no engine change, no build, no push.
+Work in a fresh worktree branched from the LOCAL branch worktree-prompt-coach-reason-line (not pushed; it holds the
+probe, Ian's ruling and this prompt): from the main checkout run
+git worktree add -b worktree-prompt-coach-quote-line .claude/worktrees/prompt-coach-quote-line worktree-prompt-coach-reason-line
+then EnterWorktree with that path. Never open any heldout/ or sealed file, and never read or probe data/test.jsonl.
+
+SOURCE: Ian's ruling 2026-10-20 (.ledger/2026-10-20-prompt-coach-reason-line/rulings.md in the reason-line
+worktree; the ledger is git-ignored, so read it there): "Quote the prompt (Recommended)". Probe:
+prompt-coach/research/2026-10-20-reason-line-probe.md (430 weak of 1,080 train rows; line wrong on 147, in-sample;
+36 templates; only the vague verb is ever quoted; 0 of 13 live prompts weak). README "Still open".
+The detector gives letters, not spans; verdictFor (engine/rewrite.js, about line 379) quotes only the vague verb.
+
+DO
+1. Give Ian the time.
+2. Read-only probe (data/train_*.jsonl and research/live-tests/ only; script and counts to prompt-coach/research/):
+   (a) for each weak prompt, which span a simple rule can quote for the ask (O) and the source (S), and how often
+   that span is the labeled gap; (b) the same scored out of fold (reuse the 5-fold method in
+   research/2026-10-20-bare-analyze-format-probe.js), not in-sample; (c) how many weak prompts yield no reliable
+   span; (d) how many of the 40 stacked-ask weak prompts can be quoted. Read 20 quoted lines by eye; report misquotes.
+3. Spec: for each case (span found / not found / several asks) the exact line wording, the fallback (today's line
+   or none), and the no-go: never quote a span the detector is not sure of; the wording must not claim the coach is
+   sure. Include the check that proves it wrong: rerun the probe on a scratch branch and count lines quoting the
+   wrong words; state the drop number before measuring (suggest: more than 10% of quoted lines misquote out of fold).
+   Note the counter-evidence (Hoang & Storch 2024, snippet only; Chen et al. 2024) in the spec.
+4. Tell Ian the counts in plain words. Decision card: build as specced, build for the ask only, or park.
+   Recommendation first.
+5. Write the spec and the run prompt, record his answer verbatim in the run ledger's rulings.md, commit locally on
+   the branch. Hand-off PM step; ask before starting any next session.
+Appetite: one short talk; stop and ask if the span rule needs more than one probe pass.
