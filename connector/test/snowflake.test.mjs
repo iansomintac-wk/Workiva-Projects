@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { installNetGuard } from '../lib/test-net-guard.mjs';
+import { installNetGuard, blocked } from '../lib/test-net-guard.mjs';
 import { loadAdapters } from '../adapters/index.mjs';
 import { createConnector } from '../server.mjs';
 import { validate } from '../lib/validate.mjs';
@@ -93,4 +93,31 @@ test('health lists snowflake fake and validates health.json', async () => {
     assert.equal(body.adapters.snowflake, 'fake');
     assert.deepEqual(validate(JSON.parse(readFileSync(join(root, 'schemas', 'health.json'), 'utf8')), body), []);
   } finally { await s.close(); }
+});
+
+test('snowflake: the fake and /v1/csat answer with the network blocked, with zero non-loopback attempts', async () => {
+  blocked.length = 0;
+  const ad = loadAdapters({});
+  const rows = await ad.snowflake.listCsat();
+  assert.ok(rows.length >= 3);
+  const s = await start();
+  try {
+    const r = await fetch(`${s.base}/v1/csat`, { headers: auth });
+    assert.equal(r.status, 200);
+  } finally { await s.close(); }
+  assert.equal(blocked.length, 0, 'non-loopback attempts');
+  await assert.rejects(fetch('https://example.invalid/x'));
+  assert.equal(blocked.length, 1, 'the guard is live');
+  blocked.length = 0;
+});
+test('docs: CONNECT-SNOWFLAKE.md and CONNECTORS.md exist with the required sections', () => {
+  const sf = readFileSync(join(root, 'CONNECT-SNOWFLAKE.md'), 'utf8');
+  for (const h of ['## What stage 2 fills in', '## Column mapping', '## Token handling', 'stage 2 (parked)']) assert.ok(sf.includes(h), h);
+  const cs = readFileSync(join(root, 'CONNECTORS.md'), 'utf8');
+  for (const h of ['## Plugging in a real adapter', 'BUILT', 'config.example.json', 'connector/fixtures/vendor', 'test-net-guard', 'CONNECT-GAINSIGHT.md', 'dry-run']) assert.ok(cs.includes(h), h);
+});
+test('gainsight default is dry-run', () => {
+  const cfg = JSON.parse(readFileSync(join(root, 'config.example.json'), 'utf8'));
+  assert.equal(cfg.gainsight.dryRun, true,
+    "pinned at adapter level by gainsight-push.test.mjs: 'push dry-run (the default): nothing is sent, each item fails with the dry-run error, the request is logged'");
 });
