@@ -1,0 +1,20 @@
+TALK PROMPT: Fit Finder after the no-card park, three choices for Ian. Drafted 2026-10-20 by the hand-off PM step of the
+no-card talk (session "NEW - Fit Finder no-card talk" [9d1195]). Load studio-harness:talk-and-run first; this is a talk
+with Ian, not a run. Do not launch it without Ian's (or the PM proxy's) yes.
+
+Read: docs/evidence/2026-10-20-fit-finder-no-card-probe.md (probe, the park decision, the For-Ian list).
+Standing: the no-card fallback is parked (PM proxy as Ian, 2026-10-20T05:34Z, proxy decided). Revive only on Ian's yes to A
+plus a fresh blind set scored before and after.
+
+Ian decides, one at a time, recommendation first:
+B. Locked-file test fixes: the scorer counts "rightly none" apart, with an empty-gold test; synth-score.test gets a
+   rank 3 / rank 4 boundary; sandbox-kit.test checks the first card, not .some; MADE-UP tag on the prior-year section of
+   fr-yoy-narrative.txt. Recommended: yes. Test-only, and it shows the X41 inflation (tune: 23 of 35 is 17 of 29 right
+   feature first plus 6 rightly none).
+C. X41: after B, may the 10-18 holdout (10 such rows) and the 10-19 blind set (12) be re-scored with the split line? They
+   are sealed from re-scoring today. No engine change.
+A. Option 4: fix card step lists where a keyword hits but the steps disagree (13 of 25 misses on tuned sets). Unfreezes
+   card ops. Recommended only with a fresh ~40-sentence blind set (helper never sees the engine or match patterns),
+   scored before and after; revert if it moves nothing.
+Order if all yes: B, C, then A. Frozen until Ian says yes: fit-finder/engine/, every card's id/area/ops/match.
+Work repo: write nothing to the brain or studio-harness. Do not open fit-finder/data/real/ or data/top3/.
