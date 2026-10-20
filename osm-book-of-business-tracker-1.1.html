@@ -6882,7 +6882,7 @@ function getFirstValue(c){
 }
 
 /* ---- Integration fields (v49, additive) ----
-   c.primaryContact / c.gradPlanUrl / c.onboardingPlanUrl / c.gainsightId are all
+   c.primaryContact / c.gradPlanUrl / c.onboardingPlanUrl / c.gainsightId / c.salesforceId are all
    purely ADDITIVE optional strings — absent means unused. Read through
    getIntegration() (never assume they exist); written only when non-empty; same
    contract as c.firstValue — deliberately NOT backfilled, no schema bump. These
@@ -6901,6 +6901,7 @@ function getIntegration(c){
   return {
     primaryContact:   clean(c.primaryContact),
     gainsightId:      clean(c.gainsightId),
+    salesforceId:     clean(c.salesforceId),
     gradPlanUrl:      safeHttpUrl(c.gradPlanUrl),
     onboardingPlanUrl:safeHttpUrl(c.onboardingPlanUrl)
   };
@@ -14653,7 +14654,8 @@ function renderDetailsTab(c, risk){
     <div class="section-title">Customer Contact &amp; Gainsight Links</div>
     <div class="field-row">
       <div class="field"><label>Customer contact (CSAT)</label><input type="text" id="cust-contact" maxlength="200" value="${escapeAttr(getIntegration(c).primaryContact||'')}" placeholder="Contact name / email"></div>
-      <div class="field"><label>Gainsight / Salesforce ID</label><input type="text" id="cust-gainsight-id" maxlength="120" value="${escapeAttr(getIntegration(c).gainsightId||'')}" placeholder="record ID — key for future sync"></div>
+      <div class="field"><label>Gainsight ID</label><input type="text" id="cust-gainsight-id" maxlength="120" value="${escapeAttr(getIntegration(c).gainsightId||'')}" placeholder="record ID — key for future sync"></div>
+      <div class="field"><label>Salesforce ID</label><input type="text" id="cust-salesforce-id" maxlength="120" value="${escapeAttr(getIntegration(c).salesforceId||'')}" placeholder="18-character Salesforce account ID"></div>
     </div>
     <div class="field-row">
       <div class="field"><label>Graduation plan link</label><input type="url" id="cust-grad-plan" value="${escapeAttr(c.gradPlanUrl||'')}" placeholder="https://…"></div>
@@ -16499,6 +16501,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     function applyIntegrationInputs(cust){
       const contactEl = $('#cust-contact'); if(contactEl) setOptionalField(cust, 'primaryContact', contactEl.value);
       const gidEl = $('#cust-gainsight-id'); if(gidEl) setOptionalField(cust, 'gainsightId', gidEl.value);
+      const sidEl = $('#cust-salesforce-id'); if(sidEl) setOptionalField(cust, 'salesforceId', sidEl.value);
       const gradEl = $('#cust-grad-plan');
       if(gradEl){ const v = gradEl.value.trim(); if(!v) delete cust.gradPlanUrl; else { const u = safeHttpUrl(v); if(u) cust.gradPlanUrl = u; else showToast('Graduation plan link must start with http:// or https:// — not saved.'); } }
       const onbEl = $('#cust-onboarding-plan');
@@ -16533,7 +16536,7 @@ The draft is discarded. The risk itself stays open.`)) return;
     }
     $$('[data-cust-component]').forEach(el => el.addEventListener('change', ()=>{ applyIntegrationInputs(c); saveData(); render(); }));
     $('#cust-cadence') && $('#cust-cadence').addEventListener('change', ()=>{ applyIntegrationInputs(c); saveData(); render(); });
-    ['#cust-contact','#cust-gainsight-id','#cust-grad-plan','#cust-onboarding-plan','#cust-next-session','#cust-next-session-time'].forEach(sel=>{
+    ['#cust-contact','#cust-gainsight-id','#cust-salesforce-id','#cust-grad-plan','#cust-onboarding-plan','#cust-next-session','#cust-next-session-time'].forEach(sel=>{
       const el = $(sel);
       if(el) el.addEventListener('change', ()=>{ applyIntegrationInputs(c); saveData(); });
     });

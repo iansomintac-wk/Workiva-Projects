@@ -46,6 +46,7 @@ OSM Runway — release notes
     - CSAT import: rows match on Salesforce ID (15 or 18 chars), then Gainsight ID; ambiguous and conflicting rows are listed, never applied; names never match.
     - CSAT import: update rules (newer sent wins, same sent only fills answered, Runway-newer is listed and left alone).
     - CSAT import: name matches are only suggestions (unticked); applying twice changes nothing.
+    - Details tab: new optional Salesforce ID box; the old combined box is now labelled Gainsight ID (stored data unchanged).
 
 1.1 — Graduation prompt colour.
     - The line under the graduation confirm box title (#gc-prompt) used var(--warn), which is not defined, so it fell back to grey; it now uses var(--status-watch-text) like the CSAT line.

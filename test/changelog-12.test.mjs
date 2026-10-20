@@ -14,3 +14,5 @@ test('CHANGELOG 1.2 task 1: names the CSAT plan builder', () => assert.match(s12
 test('CHANGELOG 1.2 task 2: matching bullet names Salesforce ID, Gainsight ID, ambiguous and conflict', () => assert.match(s12, /Salesforce ID \(15 or 18 chars\), then Gainsight ID; ambiguous and conflicting rows/));
 test('CHANGELOG 1.2 task 3: update rules bullet', () => assert.match(s12, /update rules \(newer sent wins/));
 test('CHANGELOG 1.2 task 4: name matches are only suggestions', () => assert.match(s12, /name matches are only suggestions \(unticked\)/));
+test('CHANGELOG 1.2 task 6: Salesforce ID box bullet', () => assert.match(s12, /new optional Salesforce ID box/));
+test('README task 6: the Details description names both ID boxes', () => { const r = readFileSync('README.txt', 'utf8'); assert.match(r, /Salesforce ID/); assert.match(r, /Gainsight ID/); });
