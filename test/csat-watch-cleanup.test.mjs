@@ -104,3 +104,13 @@ test('FX2 N1: the next automatic refresh clears a manual note', async () => {
   assert.equal(vm.runInContext('_csatWatch.note', c), '');
   assert.equal(raw(c), '');
 });
+test('FX3 init: a folder picked while startup is still loading the saved one wins (the record is not overwritten)', async () => {
+  let release; const gate = new Promise(r => { release = r; });
+  const saved = dirWith(L), picked = dirWith(L);
+  const { c } = env({ fileModified: L }, { csatFolderLoad: async () => { await gate; return saved; } });
+  const init = c.csatWatchInit();
+  await new Promise(r => setTimeout(r, 20));
+  await c.csatWatchUse(picked);
+  release(); await init;
+  assert.equal(vm.runInContext('_csatWatch.dir', c), picked);
+});

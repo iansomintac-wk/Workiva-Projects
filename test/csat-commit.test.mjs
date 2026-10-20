@@ -83,10 +83,12 @@ test('CSAT commit: a successful save reports saved:true and keeps the "Updated" 
   const r = J(e.c.commitCsatImport(plan, [], { fileName: 'f.csv', fileModified: 5 }));
   assert.equal(r.saved, true);
 });
-test('CSAT report: with a renamed download (x (1).json) the report never names book-of-business-export.json', () => {
+test('CSAT report: the report is filename-independent (a renamed download never makes it name book-of-business-export.json) and a backup was requested', () => {
   const e = env(); const plan = e.c.buildCsatImportPlan(e.table, e.customers, {});
-  e.c.exportData = () => { e.c.__download = 'x (1).json'; };
+  let backups = 0;
+  e.c.exportData = () => { backups++; e.c.__download = 'x (1).json'; };
   const r = J(e.c.commitCsatImport(plan, [], { fileName: 'f.csv', fileModified: 5 }));
+  assert.ok(backups >= 1, 'a backup request happened');
   e.c.openCsatReportModal(r);
   assert.ok(!e.html().includes('book-of-business-export.json'), e.html());
 });

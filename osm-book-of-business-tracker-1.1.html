@@ -8277,16 +8277,16 @@ const SIGNAL_DEFS = [
 // Done/Dismiss) from the next_session/steady fallbacks (which don't).
 const SIGNAL_KEY_SET = new Set(SIGNAL_DEFS.map(d => d.key));
 
-// Plain-text summary formatted to paste directly into a Gainsight Timeline
-// entry or task — bundles the ranked next steps, the compliance gate gaps
-// (which are themselves Gainsight-tracked items), and the data-hygiene
-// reminder, since none of this currently exists in Gainsight automatically.
 function integrationIdLines(intg){
   const out = [];
   if(intg.gainsightId) out.push(`Gainsight ID: ${intg.gainsightId}`);
   if(intg.salesforceId) out.push(`Salesforce ID: ${intg.salesforceId}`);
   return out;
 }
+// Plain-text summary formatted to paste directly into a Gainsight Timeline
+// entry or task — bundles the ranked next steps, the compliance gate gaps
+// (which are themselves Gainsight-tracked items), and the data-hygiene
+// reminder, since none of this currently exists in Gainsight automatically.
 function buildGainsightCopyText(c){
   const lines = [];
   lines.push(`OSM Tracker summary for ${c.name} — ${fmtDate(todayISO())}`);
@@ -18274,8 +18274,11 @@ function fsIdb(mode, fn){
       try{ tx = db.transaction(FS_STORE, mode); }catch(e){ db.close(); reject(e); return; }
       let out;
       try{ out = fn(tx.objectStore(FS_STORE)); }catch(e){ try{ tx.abort(); }catch(_){} db.close(); reject(e); return; }
-      tx.oncomplete = () => { db.close(); resolve(out && out.result !== undefined ? out.result : undefined); };
-      tx.onerror = () => { db.close(); reject(tx.error || new Error('IndexedDB write failed')); };
+      let settled = false;   // close/reject once: an error is normally followed by an abort event
+      const finish = f => { if(settled) return; settled = true; db.close(); f(); };
+      tx.oncomplete = () => finish(() => resolve(out && out.result !== undefined ? out.result : undefined));
+      tx.onerror = () => finish(() => reject(tx.error || new Error('IndexedDB write failed')));
+      tx.onabort = () => finish(() => reject(tx.error || new Error('IndexedDB transaction aborted')));
     };
   });
 }
@@ -18341,9 +18344,10 @@ async function csatWatchStop(){
 }
 async function csatWatchInit(){
   if(typeof window.showDirectoryPicker !== 'function') return;
+  const w = _csatWatch;                        // the record at start: a folder picked while we wait replaces it
   const h = await csatFolderLoad();
-  if(!h) return;
-  _csatWatch.dir = h;
+  if(!h || _csatWatch !== w || w.dir) return;  // nothing saved, or the record changed while waiting: it wins
+  w.dir = h;
   await csatWatchRefresh(false);
 }
 async function csatWatchClick(e){

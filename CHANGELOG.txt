@@ -2,6 +2,7 @@ OSM Runway — release notes
 ==========================
 
 1.1 — Hosting. A site you can put behind company sign-in (nothing is published).
+    - Fix: a folder picked in Settings while the app is still starting up is no longer overwritten by the previously saved folder, and a failed save to the local store (aborted transaction) now ends cleanly instead of hanging.
 
     - 1.1 - Surveys to chase: one short line at the top of Today, outside the ranking: "Surveys to chase: Fernhollow (sent 9 days
       ago, no answer)". It lists every account (graduated too) whose CSAT survey was sent 7 or more days ago with no answer date, shows however

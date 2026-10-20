@@ -1892,7 +1892,7 @@ TRIM R4 - FINAL-REVIEW FIXES M-6 TO M-10 AND THE R3 CHECKER ITEMS (suite 468 -> 
 
   - CSAT folder watch (1.2), two checks Ian runs on his computer: (1) Settings > Watch a folder for CSAT exports, pick the folder, tick "Allow on every visit" once, reopen the page and see the New CSAT export line return; (2) press Review on a real export and read the dry-run counts before pressing Apply.
 
-1.2 CLEANUP BATCH A (2026-10-19)
+1.2 CLEANUP BATCH A (2026-10-20)
   - Task 1, name indexes and fsIdb: buildCsatImportPlan and buildPartnerImportRows use Map for name lookups (a company named "constructor" or "__proto__" no longer throws or mis-matches); fsIdb closes the db and rejects when its callback throws. Test: test/csat-cleanup-pure.test.mjs (measured: red on parent 01394c7 5 of 5 fail, then green 5 of 5 pass).
   - Task 2, CSAT folder watch (1a 1b 1c 1e): test/csat-watch-cleanup.test.mjs, 7 tests; measured red on the parent 0acaa78: 7 fail of 7, then green 7 pass of 7 (with csat-today-line, csat-settings-watch, csat-folder, csat-modal: 52 pass, 0 fail). Look-call wording (proxy decided): the four notes in the plan.
   - Task 3, import report (1d): test/csat-commit.test.mjs, 3 assertions updated + 1 new test; measured red on the parent 51e7872: 4 fail of 10, then green 10 pass of 10 (csat-commit + csat-modal 25 pass, 0 fail). The report says "Backup download started first (check your Downloads folder)." and no longer names a file.

@@ -33,3 +33,21 @@ test('fsIdb item 3: a throw inside fn() closes the db and rejects (no uncaught t
   assert.deepEqual(uncaught.map(e => e.message), []);
   assert.equal(closed, 1);
 });
+test('fsIdb O-N8: a transaction abort closes the db and rejects (no pending promise)', async () => {
+  let closed = 0; let tx;
+  const db = { transaction: () => (tx = { objectStore: () => ({}), abort() {} }), close: () => { closed++; } };
+  const indexedDB = { open: () => { const req = { result: db }; queueMicrotask(() => { req.onsuccess(); queueMicrotask(() => { if (typeof tx.onabort === 'function') tx.onabort(); }); }); return req; } };
+  const c = loadCsat(['fsIdb'], [], { indexedDB, FS_DB: 'd', FS_STORE: 's' });
+  const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('fsIdb promise stayed pending')), 300));
+  await assert.rejects(Promise.race([c.fsIdb('readwrite', () => ({})), timeout]), /abort/i);
+  assert.equal(closed, 1);
+});
+test('fsIdb O-N8: on the item-3 catch path an abort event after tx.abort() does not close or reject twice', async () => {
+  let closed = 0; let tx;
+  const db = { transaction: () => (tx = { objectStore: () => ({}), abort() { queueMicrotask(() => { if (typeof tx.onabort === 'function') tx.onabort(); }); } }), close: () => { closed++; } };
+  const indexedDB = { open: () => { const req = { result: db }; queueMicrotask(() => req.onsuccess()); return req; } };
+  const c = loadCsat(['fsIdb'], [], { indexedDB, FS_DB: 'd', FS_STORE: 's' });
+  await assert.rejects(c.fsIdb('readwrite', () => { throw new Error('boom'); }), /boom/);
+  await new Promise(r => setTimeout(r, 20));
+  assert.equal(closed, 1);
+});
