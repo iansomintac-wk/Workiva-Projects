@@ -42,12 +42,13 @@ test('fsIdb O-N8: a transaction abort closes the db and rejects (no pending prom
   await assert.rejects(Promise.race([c.fsIdb('readwrite', () => ({})), timeout]), /abort/i);
   assert.equal(closed, 1);
 });
-test('fsIdb O-N8: on the item-3 catch path an abort event after tx.abort() does not close or reject twice', async () => {
+test('fsIdb O-N8: an error event followed by its abort event closes the db once and rejects with the first error', async () => {
   let closed = 0; let tx;
-  const db = { transaction: () => (tx = { objectStore: () => ({}), abort() { queueMicrotask(() => { if (typeof tx.onabort === 'function') tx.onabort(); }); } }), close: () => { closed++; } };
-  const indexedDB = { open: () => { const req = { result: db }; queueMicrotask(() => req.onsuccess()); return req; } };
+  const db = { transaction: () => (tx = { objectStore: () => ({}), abort() {}, error: new Error('write failed') }), close: () => { closed++; } };
+  const indexedDB = { open: () => { const req = { result: db }; queueMicrotask(() => { req.onsuccess(); queueMicrotask(() => { tx.onerror(); tx.onabort(); }); }); return req; } };
   const c = loadCsat(['fsIdb'], [], { indexedDB, FS_DB: 'd', FS_STORE: 's' });
-  await assert.rejects(c.fsIdb('readwrite', () => { throw new Error('boom'); }), /boom/);
+  const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('fsIdb promise stayed pending')), 300));
+  await assert.rejects(Promise.race([c.fsIdb('readwrite', () => ({})), timeout]), /write failed/);
   await new Promise(r => setTimeout(r, 20));
   assert.equal(closed, 1);
 });
