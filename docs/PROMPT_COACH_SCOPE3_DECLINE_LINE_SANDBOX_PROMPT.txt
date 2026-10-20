@@ -35,6 +35,9 @@ FACTS (measured in talk 7881a242)
 - Rulings recorded in studio-harness commit 6f83760; this talk's rulings are in
   .ledger/2026-10-20-prompt-coach-scope3-decline-line/rulings.md.
 Give Ian the time at start and at each stop.
+Session names: rename only. Do NOT claude rm predecessor 7881a242 (or 0d1b55ae): their cwd is worktree
+prompt-coach-scope3-reshape, which holds the git-ignored reshape ledger, and claude rm deletes the worktree
+(gotcha 2026-10-16-claude-rm-predecessor-shares-the-worktree). Keep them and tell Ian.
 </content>
 </invoke>
 <invoke name="Bash">
