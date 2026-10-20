@@ -9398,13 +9398,16 @@ function _runSelfChecksInner(){
       DATA.riskLog = {'__s2a__|Off Track': {firstSeen: todayISO(), lastActioned: null, verdict: 'confirmed', verdictOn: todayISO(), verdictSev: 3, verdictReason: 'Customer said they will not renew'}};
       const texts = [buildCallPrepContext(c).text, JSON.stringify(aiCustomerSnapshot(c))]
         .concat(items.map(buildRiskSummaryPrompt), items.map(buildRiskExecSummary));
-      const forbidden = t => /d+% health|health d+%|healthScore|riskLabel|RISK TYPE: (Off Track|Watch|Behind target|Risk language|Category signal)/.test(t)
+      const h = healthScore(c);
+      const hRe = new RegExp('(' + h + '\\s*%|health\\D{0,12}' + h + '(\\D|$))', 'i');
+      const forbidden = t => /\d+\s*%\s*health|health\D{0,12}\d+|healthScore|riskLabel|RISK TYPE: (Off Track|Watch|Behind target|Risk language|Category signal)/i.test(t)
         || t.indexOf(lab) !== -1 || t.indexOf(st) !== -1 || (rr.length > 8 && t.indexOf(rr) !== -1);
       const bad = texts.map(forbidden);
+      const healthNum = texts.some(t => hRe.test(t));
       const reasonKept = texts[0].indexOf('Customer said they will not renew') !== -1 && texts[1].indexOf('Customer said they will not renew') !== -1;
       const facts = texts[0].indexOf(c.name) !== -1 && texts[0].indexOf('Last touchpoint') !== -1 && items.length > 0;
-      ok = bad.every(b => !b) && reasonKept && facts;
-      detail = JSON.stringify({bad, reasonKept, facts, n: items.length, lab, st});
+      ok = bad.every(b => !b) && !healthNum && reasonKept && facts;
+      detail = JSON.stringify({bad, healthNum, h, reasonKept, facts, n: items.length, lab, st});
     }catch(e){ detail = 'threw: ' + e.message; }
     DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
