@@ -9432,6 +9432,45 @@ function _runSelfChecksInner(){
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
     check('v13 step 2b: the progress report rows carry no health figure and the table has no Health column', ok, detail);
   })();
+  (function(){                                   // v13 Step 2c
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevSort = ui.sortBy;
+    const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+    const act = (id, d, o) => ({[id]: [Object.assign({id: 'a'+id, date: isoAddDays(todayISO(), -d), type: 'Onboarding Session', summary: 's', sessionNumber: 1, checklist: []}, o || {})]});
+    try{
+      // (1) sortCustomers and the AI read: confirmed first, then quiet longest, whatever the auto risk says
+      const A = v13Acct('__a__', {riskOverride: 'ontrack'}), B = v13Acct('__b__', {riskOverride: 'risk'}), C = v13Acct('__c__', {riskOverride: 'ontrack'});
+      DATA.customers = [A, B, C];
+      DATA.activities = Object.assign({}, act('__a__', 40), act('__b__', 5), act('__c__', 1));
+      DATA.riskLog = {'__c__|Flagged note': {firstSeen: todayISO(), lastActioned: null, verdict: 'confirmed', verdictOn: todayISO(), verdictSev: 3, verdictReason: 'customer said they will not renew'}};
+      reset(); ui.sortBy = 'risk';
+      const order = sortCustomers(DATA.customers.slice()).map(c => c.id).join();
+      const brief = typeof copilotBriefedAccounts === 'function' ? copilotBriefedAccounts(DATA.customers).map(c => c.id).join() : 'missing';
+      // (2) needsAttentionList: X (watch, confirmed) before Y (risk), behaviourally
+      const X = v13Acct('__x__', {riskOverride: 'watch'}), Y = v13Acct('__y__', {riskOverride: 'risk'});
+      DATA.customers = [Y, X];
+      DATA.activities = Object.assign({}, act('__x__', 3), act('__y__', 3));
+      DATA.riskLog = {'__x__|Watch': {firstSeen: todayISO(), lastActioned: null, verdict: 'confirmed', verdictOn: todayISO(), verdictSev: 1, verdictReason: 'they told me'}};
+      reset();
+      const needs = needsAttentionList().map(r => r.c.id).join();
+      // (3) nextActionList: facts primary, even when the other account has the higher auto severity
+      const K = v13Acct('__k__', {riskOverride: 'ontrack'}), H = v13Acct('__h__', {riskOverride: 'risk'});
+      DATA.customers = [H, K];
+      DATA.activities = Object.assign({}, act('__k__', 2, {openThreads: [{id: 'tk', q: 'When is the go-live date?', a: null, answeredOn: null, resolvedOn: null}]}), act('__h__', 30, {flagged: true, summary: 'They raised a blocker and are frustrated.'}));
+      DATA.riskLog = {'__k__|Flagged note': {firstSeen: todayISO(), lastActioned: null, verdict: 'confirmed', verdictOn: todayISO(), verdictSev: 3, verdictReason: 'they told me'}};
+      reset();
+      const sevs = [accountNextAction(K).sev, accountNextAction(H).sev];
+      const nxt = nextActionList().map(x => x.c.id).join();
+      const sevDiffers = sevs[0] !== sevs[1];            // precondition: the seeds must give different auto severities
+      const src = String(nextActionList) + (typeof copilotBriefedAccounts === 'function' ? String(copilotBriefedAccounts) : '') + String(sortCustomers);
+      const noScore = !/healthScore\(|healthTrendDelta\(|computeRisk\(/.test(src);
+      const noPromptHealth = String(generateCopilotRead).indexOf('lowest health') === -1 && String(generateCopilotRead).indexOf('healthScore(') === -1;
+      ok = order === '__c__,__a__,__b__' && brief === order && needs === '__x__,__y__' && nxt === '__k__,__h__' && sevDiffers && noScore && noPromptHealth;
+      detail = JSON.stringify({order, brief, needs, nxt, sevs, sevDiffers, noScore, noPromptHealth});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.sortBy = prevSort; reset();
+    check('v13 step 2c: Sort: Risk, the AI read, Needs attention and the next-action list order accounts by confirmed risk, then days quiet, then name, not by health or auto risk', ok, detail);
+  })();
   (function(){                                   // c5c
     let ok = false, detail = '';
     try{

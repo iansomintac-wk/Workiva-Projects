@@ -2292,9 +2292,7 @@ async function generateCopilotRead(){
   render();
   try{
     const live = DATA.customers.filter(c => c.stage !== 'graduated');
-    const briefed = live.slice()
-      .sort((a, b) => healthScore(a) - healthScore(b))
-      .slice(0, 20);
+    const briefed = copilotBriefedAccounts(live);
     if(!briefed.length){
       if(ui.aiChapters.req !== myReq) return;
       ui.aiChapters = {loading:false, sections:{}, error:'', req:myReq, legend:null,
@@ -2308,7 +2306,7 @@ async function generateCopilotRead(){
       daysInPhase: r.daysInPhase, quietFor: r.quietFor, hasGoLive: !!r.targetGoLive}));
     const prompt = `You are advising an Onboarding Success Manager at Workiva. Read this book of business through four lenses and answer in four labelled sections.
 
-Accounts are PSEUDONYMIZED — refer to them only by their "id". ${briefed.length} of ${live.length} live accounts are included, lowest health first.
+Accounts are PSEUDONYMIZED — refer to them only by their "id". ${briefed.length} of ${live.length} live accounts are included, confirmed risks first, then longest since last contact.
 
 ACCOUNTS:
 ${JSON.stringify(snapshots, null, 2)}
@@ -6378,13 +6376,14 @@ function accountNextAction(c){
   return out;
 }
 function nextActionList(){
+  const ord = factsAccountOrder();
   return DATA.customers
     .filter(c => c.stage !== 'graduated' && !isPaused(c) && !inImplementation(c))
     .map(accountNextAction)
     .filter(x => x.sev >= 2 || x.questions.length || x.route || x.transition)
     .sort((a, b) => {
       const w = x => (x.transition ? 2 : 0) + (x.route ? 1 : 0);
-      return (b.sev - a.sev) || (w(b) - w(a)) || (healthScore(a.c) - healthScore(b.c));
+      return ord(a.c, b.c) || (b.sev - a.sev) || (w(b) - w(a));
     });
 }
 
@@ -9989,11 +9988,28 @@ function renderAccounts(){
 }
 
 /* ============ RENDER: DASHBOARD ============ */
+/* v13 Step 2c: the order is facts only. OSM-confirmed risk first, then days
+   since last contact (oldest first; never touched counts as oldest), then name.
+   Proxy decided (decisions.md:77); Ian may overturn. */
+function confirmedRiskAccountIds(){
+  const ids = new Set(), log = isRecordObject(DATA.riskLog) ? DATA.riskLog : {};
+  Object.keys(log).forEach(k => { const e = log[k]; if(isRecordObject(e) && e.verdict === 'confirmed' && typeof e.verdictReason === 'string' && e.verdictReason.trim()) ids.add(k.split('|')[0]); });
+  return ids;
+}
+function factsAccountOrder(){
+  const conf = confirmedRiskAccountIds();
+  const quiet = c => { const d = daysSince(lastActivityDate(c.id) || c.implementationDate); return d === null ? Infinity : d; };
+  return (a, b) => {
+    const ca = conf.has(a.id) ? 0 : 1, cb = conf.has(b.id) ? 0 : 1;
+    if(ca !== cb) return ca - cb;
+    const qa = quiet(a), qb = quiet(b);
+    if(qa !== qb) return qa > qb ? -1 : 1;
+    return String(a.name).localeCompare(String(b.name));
+  };
+}
+function copilotBriefedAccounts(live){ return live.filter(c => c.stage !== 'graduated').sort(factsAccountOrder()).slice(0, 20); }
 function sortCustomers(list){
-  const riskOrder = {risk:0, watch:1, ontrack:2};
-  if(ui.sortBy === 'risk'){
-    list.sort((a,b)=> riskOrder[computeRisk(a)] - riskOrder[computeRisk(b)]);
-  } else if(ui.sortBy === 'name'){
+  if(ui.sortBy === 'name'){
     list.sort((a,b)=> a.name.localeCompare(b.name));
   } else if(ui.sortBy === 'lastActivity'){
     list.sort((a,b)=>{
@@ -10009,19 +10025,9 @@ function sortCustomers(list){
       const db = b.targetGraduationDate || projectedGraduationDate(b);
       return da < db ? -1 : 1;
     });
-  } else if(ui.sortBy === 'declining'){
-    // Most-negative trend first (raw delta — the display dead zone is a
-    // rendering concern, not a ranking one). Accounts without a qualifying
-    // >=21-day snapshot pair sink below ALL trending accounts in existing
-    // risk order — no fabricated zero-trends.
-    const deltas = new Map(list.map(c=>{ const t = healthTrendDelta(c); return [c.id, t ? t.delta : null]; }));
-    list.sort((a,b)=>{
-      const ta = deltas.get(a.id), tb = deltas.get(b.id);
-      if(ta !== null && tb !== null) return ta - tb;
-      if(ta !== null) return -1;
-      if(tb !== null) return 1;
-      return riskOrder[computeRisk(a)] - riskOrder[computeRisk(b)];
-    });
+  } else {
+    // 'risk', and a stored 'declining' from an older version, both land here.
+    list.sort(factsAccountOrder());
   }
   return list;
 }
@@ -10053,8 +10059,7 @@ function renderToolbar(opts){
       </select>
       ${withSort ? `
       <select id="sort-by">
-        <option value="risk" ${ui.sortBy==='risk'?'selected':''}>Sort: Risk</option>
-        <option value="declining" ${ui.sortBy==='declining'?'selected':''}>Sort: Declining Fastest</option>
+        <option value="risk" ${ui.sortBy==='risk'?'selected':''}>Sort: Confirmed risk, then quiet longest</option>
         <option value="lastActivity" ${ui.sortBy==='lastActivity'?'selected':''}>Sort: Last Activity</option>
         <option value="stage" ${ui.sortBy==='stage'?'selected':''}>Sort: TTFV Stage</option>
         <option value="graduation" ${ui.sortBy==='graduation'?'selected':''}>Sort: Graduation Date</option>
@@ -11597,9 +11602,10 @@ function needsAttentionList(){
     .filter(c => !inImplementation(c) &&
                  (c.stage === 'graduated' || computeRisk(c) === 'ontrack') &&
                  (hasFlaggedActivity(c) || (isPaused(c) && !!customerEscalatingRiskSignal(c))));
+  const ord = factsAccountOrder();
   return [...riskBased, ...piercedOnly]
     .map(c => ({c, risk: computeRisk(c), health: healthScore(c), days: daysSince(lastActivityDate(c.id) || c.implementationDate), flaggedActivities: getFlaggedActivities(c)}))
-    .sort((a,b)=> (a.risk==='risk'?0:a.risk==='watch'?1:2) - (b.risk==='risk'?0:b.risk==='watch'?1:2) || a.health - b.health);
+    .sort((a, b) => ord(a.c, b.c));
 }
 function dueForSessionList(){
   return DATA.customers
