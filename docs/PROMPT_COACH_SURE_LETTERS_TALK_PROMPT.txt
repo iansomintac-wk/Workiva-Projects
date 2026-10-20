@@ -7,6 +7,14 @@ Work in a fresh worktree branched from prompt-coach once the quote-line run has 
 branch worktree-prompt-coach-analyze-format). Never open any heldout/ or sealed file, and never read or probe
 data/test.jsonl.
 
+UPDATE from the quote-line run (lead job 0a79ea3b, 2026-10-20; evidence docs/evidence/2026-10-20-prompt-coach-quote-line.md):
+- Measured in headless Chrome: stages.weak.verdict (the "reason line" the 147-of-430 probe scored) is shown on NO tab
+  since 16a49e2 (2026-10-14). Users see the headline on Your prompt, which names only source and ask. Restate this
+  talk's target as the visible headline before probing; the 147-of-430 figure does not describe what users see.
+- Shipped (wording D, PM proxy, Ian may overturn): the weak headline ends 'The coach read your ask as "<span>".'
+  Out of fold 45 quoted, 0 wrong words, 1 of 45 false: row 12 "look at cell F12" gets "guess what to read" although
+  it names a cell, a detector error on S. That row is this talk's first test case.
+
 SOURCE: the reason-line probe (prompt-coach/research/2026-10-20-reason-line-probe.md: the line is wrong for 147
 of 430 weak prompts in-sample; 89 name something the prompt has, 63 miss its missing source or ask) and the
 quote-line probe (research/2026-10-20-quote-line-probe.md: the ask quote fixes none of the 147, because they are
