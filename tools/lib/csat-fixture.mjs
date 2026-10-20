@@ -27,7 +27,7 @@ export function loadCsat(fnNames, constNames = [], extra = {}) {
   vm.runInContext([...constNames.map(grabConst), ...fnNames.map(grab)].join('\n'), ctx);
   return ctx;
 }
-export const PLAN_FNS = ['parseCsv', 'localDateISO', 'isRealISODate', 'csatDateChangeOk', 'csatSentOk', 'buildCsatImportPlan'];
+export const PLAN_FNS = ['parseCsv', 'localDateISO', 'isRealISODate', 'csatDateChangeOk', 'csatSentOk', 'buildCsatImportPlan', 'csatIdsMatch'];
 export const PLAN_CONSTS = ['ISO_DATE_RE', 'CSAT_SKIP_IDS', 'CSAT_COLS'];
 export const SKIP_ID = '0014000000YgdVaAAJ';
 export const HEADER = ['SALESFORCE_ACCOUNT_ID', 'GAINSIGHT_COMPANY_ID', 'COMPANY_NAME', 'CSAT_SENT_DATE', 'CSAT_ANSWERED_DATE'];

@@ -11,3 +11,4 @@ test('CHANGELOG 1.2: a 1.2 section exists and sits second, under the Hosting sec
   assert.equal(sections.indexOf(s12), 2);
 });
 test('CHANGELOG 1.2 task 1: names the CSAT plan builder', () => assert.match(s12, /CSAT import: buildCsatImportPlan/));
+test('CHANGELOG 1.2 task 2: matching bullet names Salesforce ID, Gainsight ID, ambiguous and conflict', () => assert.match(s12, /Salesforce ID \(15 or 18 chars\), then Gainsight ID; ambiguous and conflicting rows/));

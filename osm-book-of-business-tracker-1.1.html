@@ -19577,6 +19577,12 @@ const CSAT_COLS = ['SALESFORCE_ACCOUNT_ID','GAINSIGHT_COMPANY_ID','COMPANY_NAME'
 function csatSentOk(v){
   return !!v && csatDateChangeOk(v);
 }
+function csatIdsMatch(a, b){
+  a = String(a == null ? '' : a).trim(); b = String(b == null ? '' : b).trim();
+  if(a.length < 15 || b.length < 15) return false;
+  if(a === b) return true;
+  return (a.length === 15 || b.length === 15) && a.slice(0, 15) === b.slice(0, 15);
+}
 function buildCsatImportPlan(table, customers, opts){
   const skipIds = (opts && opts.skipIds) || CSAT_SKIP_IDS;
   const plan = {error:null, rowCount:0, matched:[], changes:[], unchanged:[], runwayNewer:[], unmatchedRows:[], notInFile:[], ambiguous:[], conflicts:[], suggestions:[], skipped:[]};
@@ -19591,11 +19597,32 @@ function buildCsatImportPlan(table, customers, opts){
     rows.push({row:i + 2, sf:cell(r,'SALESFORCE_ACCOUNT_ID'), gs:cell(r,'GAINSIGHT_COMPANY_ID'), name:cell(r,'COMPANY_NAME'), sent:cell(r,'CSAT_SENT_DATE'), answered:cell(r,'CSAT_ANSWERED_DATE')});
   });
   plan.rowCount = rows.length;
+  const steps = [
+    (o, c) => csatIdsMatch(c.salesforceId, o.sf),
+    (o, c) => csatIdsMatch(c.gainsightId, o.sf),
+    (o, c) => !!o.gs && String(c.gainsightId == null ? '' : c.gainsightId).trim() === o.gs
+  ];
+  const live = [];
   rows.forEach(o => {
     if(skipIds.includes(o.sf)){ plan.skipped.push({row:o.row, name:o.name, reason:'Skipped: test account'}); return; }
     if(!csatSentOk(o.sent) || !csatDateChangeOk(o.answered)){ plan.skipped.push({row:o.row, name:o.name, reason:'Skipped: bad date'}); return; }
-    plan.unmatchedRows.push({row:o.row, name:o.name, sf:o.sf, gs:o.gs, sent:o.sent, answered:o.answered});   // Task 2 replaces this with matching
+    let found = null, amb = null;
+    for(const step of steps){
+      const hits = (customers || []).filter(c => step(o, c));
+      if(hits.length === 1){ found = hits[0]; break; }
+      if(hits.length > 1){ amb = hits; break; }
+    }
+    if(amb){ plan.ambiguous.push({row:o.row, name:o.name, customerIds:amb.map(c => c.id)}); return; }
+    if(!found){ plan.unmatchedRows.push({row:o.row, name:o.name, sf:o.sf, gs:o.gs, sent:o.sent, answered:o.answered}); return; }
+    live.push({o, c:found});
   });
+  const perCustomer = {};
+  live.forEach(x => { (perCustomer[x.c.id] = perCustomer[x.c.id] || []).push(x); });
+  live.forEach(x => {
+    if(perCustomer[x.c.id].length > 1){ plan.conflicts.push({row:x.o.row, name:x.o.name, customerId:x.c.id}); return; }
+    plan.matched.push({row:x.o.row, customerId:x.c.id, name:x.c.name, csvName:x.o.name, sent:x.o.sent, answered:x.o.answered});
+  });
+  plan.matched.sort((a, b) => a.row - b.row); plan.conflicts.sort((a, b) => a.row - b.row);
   return plan;
 }
 function guessPartnerColumnMapping(headers){
