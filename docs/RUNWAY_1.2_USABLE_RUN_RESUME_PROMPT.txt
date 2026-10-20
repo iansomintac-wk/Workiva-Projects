@@ -1,0 +1,39 @@
+RUN (light, resume): Runway 1.2 usable, piece B, review fixes FX2 + FX3 then merge (Runway Tracker repo)
+Written 2026-10-20 ~10:00Z by "NEW - Runway 1.2 usable run B" (job b20c37b1), which stopped at its helper token cap.
+Worktree: .claude/worktrees/runway-1.2-cleanup, branch runway-1.2-cleanup (pushed to origin, UNMERGED). Run `date -u`
+before every stamp. Give the time at start and at each stop. Questions go to Ian, or to the PM proxy when one is named
+for the night, as decision cards (recommendation first, cheapest check).
+
+BEFORE LAUNCH (Ian's decision, not the run's): a helper budget. Give this run its OWN ledger folder
+(.ledger/2026-10-2x-runway-1.2-usable-resume/) with budget.json (est. ~350k helper tokens) and slip.json, because the
+budget guard sums every row of helper-rows.md and a shared ledger inherits earlier runs' spend (run B lost 1.35M to
+run A's rows). Launch with STUDIO_RUN_LEDGER set to that folder through --settings.
+
+READ: spec docs/superpowers/specs/2026-10-20-runway-1.2-usable-design.md; plan docs/superpowers/plans/2026-10-20-
+runway-1.2-usable.md ("Shared recipes"); run B's ledger .ledger/2026-10-20-runway-1.2-cleanup/progress.md ("## Run B")
+and reviews/merged-fixes-B.md (FX2, FX3 lines; FX1 is done); for-ian.md (run B sections). Proxy decisions to keep:
+nothing new becomes a risk without a reason; risks confirmed BEFORE 1.2 (no reason) STAY risks, labelled "Confirmed
+before reasons were required: add a reason", and keep counting toward the Gainsight-update nag (overnight.md:76);
+Today/Risk-tab ordering and stale-tab export are held for Ian.
+
+DO, one fresh helper per piece, test-first, red on the parent, lead re-runs each check:
+1. FX2 (one `v13-step2:` commit): mixed confirmed+new-signal case keeps its first reason and confirmed state, dismissing
+   never drops a confirmed item; pre-1.2 confirmations stay risks with the label (fix riskItemIsRisk + the T11 checks
+   that assume otherwise, naming each); account desk Confirm (data-dk-risk) opens the reason modal; the risk card prints
+   its reason; S2e render selfcheck restores _riskHubCache. Checker after.
+2. FX3 (one `v13-step2:` commit): buildRiskSummaryPrompt + buildRiskExecSummary carry confirmed reasons (test with a
+   reason absent from every note); the Expansion chip on a note does not say "risk category". Checker after.
+3. Re-review the fix diff (Sonnet final-reviewer override + Codex read-only), fix must-fix, re-check.
+4. One full verify, run alone (commands in run B's verify-B/exits.txt), the UI drive
+   .ledger/2026-10-20-runway-1.2-cleanup/driveB/drive-usable.mjs (re-take captures, open each), sim verify, the revert
+   rehearsal on a detached HEAD (revert every v13-step2: commit newest-first; only sha/count pin conflicts allowed,
+   resolved with tools/repin.mjs; suite green), then git switch back. Look calls in one batch, proxy decided or Ian's.
+5. Evidence: update docs/evidence/2026-10-20-runway-1.2-usable.md; VALIDATION numbers in the same commit.
+6. Merge per the merge rule: push origin/runway-tracker's tip to backup/master-before-runway-1.2-usable-<date>; merge in
+   the main checkout (C:/Users/teasp/Documents/Runway Tracker, on master) --no-ff, conflicts keep both sides; full suite
+   on the result has no failure master lacks; push master to origin runway-tracker, fast-forward, never force.
+7. Tell "NEW - Runway 1.2 cleanup talk" (or its successor) the merge commit and suite line; the Hand-off PM step.
+
+NO-GOS: no force flags; $0; no network from code or tests; no credentials or real Snowflake/Gainsight values; no
+~/.claude writes (session-rename exception only); no publishing; never read *RESTORE-POINT* files, exports or Ian's real
+CSAT file; 1.0 is never edited; locked sim files (steps-a.mjs, steps-b.mjs, lib/breaks.mjs) never change.
