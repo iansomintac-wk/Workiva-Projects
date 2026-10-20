@@ -1,0 +1,48 @@
+RESUME: Runway 1.2 run (successor run lead). Written 2026-10-20 by run lead 5782a40e at its context hand-off.
+Worktree: this folder (.claude/worktrees/runway-1.2, branch runway-1.2). Run `date -u` before every stamp.
+
+READ FIRST, in order: docs/RUNWAY_1.2_RUN_PROMPT.txt (the whole method, safety rules and steps 5-10 still apply),
+the spec docs/superpowers/specs/2026-10-19-runway-1.2-design.md, the APPROVED plan docs/superpowers/plans/2026-10-19-runway-1.2.md
+(Ian approved 2026-10-20, "Approve (Recommended)", 21 tasks), and the ledger .ledger/2026-10-19-runway-1.2/progress.md (one row per
+dispatch; the memory of this run). Open items for the final review: .ledger/2026-10-19-runway-1.2/final-review-items.md.
+
+FIRST CHECK: echo "$STUDIO_RUN_LEDGER"; test -f on its budget.json and slip.json; empty or missing is a stop.
+Budget: runTokenCap raised 1.6M -> 2.2M by the first lead (standing slip; backup budget.json.bak-1600k). Update tasksLeft as you go.
+
+STATE AT HAND-OFF
+- Done and checked (implementer + fresh checker + lead re-run): Tasks 0-6 (commits 1dd8aa8, 418d875, 224bae2, d046a60, fc4eb71,
+  e5dc367, cad3438). Task 7 built (c251624); its checker found 2 gaps (singular-aware counts line; escaping untested in 4 sections);
+  the fix round landed as b7cf6e9 (plurals red->green; repin 817b645b). NEXT ACTION: a fresh checker on b7cf6e9 (parent c251624).
+  Its escaping test was NEVER red (all 4 sections already escaped), so the checker must also run a mutant that removes escapeHtml
+  from one of those sections via tools/mutant-check.mjs (--find/--replace on a copy) and see MUTANT KILLED. Checker gap 2 (Cancel
+  untested) is covered by Task 12's drive.
+- Next: Task 8, then 9-20 in order, one at a time, never in parallel.
+
+LEAD TOOLS (in the ledger, not the repo):
+- bash .ledger/2026-10-19-runway-1.2/bin/runlines.sh <N>  -> prints Task N's Run:/Expected: lines from the plan.
+- bash .ledger/2026-10-19-runway-1.2/bin/taskcheck.sh <N> <parent> <commit>  -> exports <parent> to YOUR job tmp (outside the
+  worktree: bare node --test would run tests left inside it), overlays the commit's test/ and tools/lib/ files, writes
+  role-checks.txt (line 1 green incl. pin tests, line 2 red-on-parent, line 3 diff stat) and re-runs lines 1-2. Append extra
+  lines (drives, mutants, --control) after it. Empty role-checks.txt when a task is done.
+- Checker packets: say "run each line alone, one call per line, exactly as written (do not join lines or add pipes; if one is
+  refused reply NEEDS COMMAND)". A checker that joined lines was refused twice on Task 4.
+
+MEASURED FACTS THIS RUN (do not re-derive)
+- Suite command is bare `node --test --test-reporter=spec` (395 tests at base = test/ + connector/test/; `test/*.test.mjs` alone
+  is 224). Baseline on 56206c4: 395 / 390 pass / 3 fail / 2 skipped; fails = 2 line-ending pins (fixed by Task 0) + X1 (passes
+  alone: load; Task 18 fixes).
+- Sim verify baseline (25m19s, run alone): C1 1.1 PASS 9 FAIL 1 [D8]; C2 1.1 PASS 11 FAIL 1 [L8] GAP 0; C8 failed only from CRLF.
+- Selfcheck 1.1 `--expect 483` is 482/483 ALREADY on the base 56206c4 (FAIL phase3 the beat panel states each fact once,
+  questionTimes 2). Pre-existing, outside the approved scope: report it in the evidence doc and the next list; do not widen the plan.
+- Line endings: .gitattributes now pins trackers to LF. After merge, the MAIN checkout needs `rm` + `git restore` of both trackers
+  (git checkout -- <path> is guard-blocked) or its hashes stay CRLF.
+- Codex on this PC: codex exec -s read-only -c windows.sandbox=unelevated --skip-git-repo-check -o <out> - < <prompt> (246s for
+  the plan review).
+
+PREDECESSOR CLEANUP: talk session 4549483a (state done, named COMPLETED) shares THIS worktree; `claude rm` deletes a session AND
+its worktree, so remove it (and run lead 5782a40e) only after the merge and push, when nothing in this worktree is needed, and only
+if rm needs no --discard-unpushed / --force-remove-worktree. Else keep them and say why.
+
+Then steps 6-10 of the run prompt: one full verify run alone; headless drives; captures -> PM first look pass -> Ian in one batch
+(check, then route); final review Opus final-reviewer + Codex read-only, merged; evidence doc; merge per the merge rule; push;
+hand-off PM step; stage-2 Snowflake talk prompt drafted, not launched without Ian's yes.
