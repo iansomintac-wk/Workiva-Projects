@@ -42,6 +42,7 @@ OSM Runway — release notes
 
 1.2 — CSAT dates from Snowflake. Fill survey dates from a CSV, plus small fixes.
 
+    - The CSAT import report no longer names a backup file (the browser may rename it); it says a backup download was started.
     - Folder watch: a newer export with nothing to change shows no Today line; a file over 8 MB is not read; after Check now a short note says why nothing shows (folder unreadable, not a CSAT export, over 8 MB, nothing new); Stop watching wins over a scan already reading the file.
     - Fix: a company named like a built-in word (constructor, __proto__) no longer breaks the CSAT import or the Excel partner import; a failure while opening the browser's small store no longer leaves the backup folder step waiting forever.
     - Final review B: each CSAT name suggestion shows what ticking it writes (each date change, the Salesforce ID, the Gainsight ID if it would be filled), so a name suggestion shows what ticking it writes before you tick. The Add Customer box is labelled Gainsight ID (it always wrote the Gainsight field). The not-saved report says your book in this browser is unchanged.

@@ -19884,7 +19884,7 @@ function commitCsatImport(plan, tickedRows, meta){
     counts:{matched:plan.matched.length, dateChanges:plan.changes.length, notInRunway:plan.unmatchedRows.length, skipped:plan.skipped.length}};
   const saved = saveData() !== false;
   render();
-  return {saved:saved, accounts:res.accounts, fields:res.fields, idsWritten:res.idsWritten, backupFile:'book-of-business-export.json', skippedByReason:by, ambiguous:plan.ambiguous.length, conflicts:plan.conflicts.length};
+  return {saved:saved, accounts:res.accounts, fields:res.fields, idsWritten:res.idsWritten, backupStarted:true, skippedByReason:by, ambiguous:plan.ambiguous.length, conflicts:plan.conflicts.length};
 }
 function openCsatReportModal(res){
   const backdrop = document.createElement('div'); backdrop.className = 'modal-backdrop';
@@ -19892,7 +19892,7 @@ function openCsatReportModal(res){
   backdrop.innerHTML = `<div class="modal" style="max-width:420px;"><h3>${res.saved === false ? 'CSAT import not saved' : 'CSAT import done'}</h3>
     ${res.saved === false ? '<p>The import could NOT be saved, so your book in this browser is unchanged. Nothing was kept after a reload.</p>' : `<p>Updated ${res.accounts} account${res.accounts === 1 ? '' : 's'} (${res.fields} date${res.fields === 1 ? '' : 's'}).</p>`}
     ${res.saved === false ? '' : reasons || res.ambiguous || res.conflicts ? `<ul style="font-size:var(--text-sm);">${reasons}${res.ambiguous ? `<li>Ambiguous: ${res.ambiguous}</li>` : ''}${res.conflicts ? `<li>Conflict: ${res.conflicts}</li>` : ''}</ul>` : ''}
-    <p style="font-size:var(--text-sm); color:var(--text-dim);">Backup downloaded first: ${escapeHtml(res.backupFile)}.${res.saved === false ? '' : ' Undo is available.'}</p>
+    <p style="font-size:var(--text-sm); color:var(--text-dim);">Backup download started first (check your Downloads folder).${res.saved === false ? '' : ' Undo is available.'}</p>
     <div class="modal-actions"><button class="btn btn-primary" id="csat-report-close">Close</button></div></div>`;
   document.body.appendChild(backdrop);
   backdrop.querySelector('#csat-report-close').addEventListener('click', () => backdrop.remove());

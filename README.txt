@@ -72,8 +72,8 @@ Keeps an OSM's book of business in one place and turns it into a day's work.
               The same overdue surveys are pinned as one line at the top of Today ("Surveys to chase: ..."), outside the ranking.
               Record the two dates ("Survey sent", "Answered") on the account's Details tab (the names in the pinned line and the CSAT follow-up row open it) or in the CSAT block of the call panel.
               The Details tab has two ID boxes: Gainsight ID and Salesforce ID (both optional; the CSAT import matches on them).
-              Settings > Import CSAT dates (CSV): pick the Snowflake CSAT export; a preview shows what would change. Apply downloads a backup file
-              (book-of-business-export.json) first, then writes the dates and shows a report. Undo reverses the import.
+              Settings > Import CSAT dates (CSV): pick the Snowflake CSAT export; a preview shows what would change. Apply starts a backup download
+              first, then writes the dates and shows a report. Undo reverses the import.
               Settings > Watch a folder for CSAT exports: pick the folder where the export lands (files named csat_runway_export_*.csv); Today shows a
               "New CSAT export" line with Review when a newer file appears. Check now looks again; Stop watching forgets the folder. Nothing applies until you press Apply.
               A newer file with nothing to change shows no line. Check now says why when nothing shows: folder unreadable, not a CSAT export, over 8 MB, or nothing new.
