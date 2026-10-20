@@ -1,0 +1,53 @@
+RUN (light): Runway 1.2 cleanup batch, piece A (Runway Tracker repo)
+Written 2026-10-20 ~05:50Z by the cleanup talk session (NEW - Runway 1.2 cleanup talk). Worktree: this folder
+(.claude/worktrees/runway-1.2-cleanup, branch runway-1.2-cleanup from master 5a83725, which is on GitHub as branch
+runway-tracker). Run `date -u` before every stamp. Give the time at start and at each stop.
+Ian is AWAY tonight: every question goes to the PM proxy ("NEW - PM proxy overnight 10-20") by SendMessage as a decision
+card, recommendation first with its cheapest check; never AskUserQuestion. The proxy logs its answer in studio-harness
+.ledger/proxy/decisions.md before replying; check that line exists, then act as on Ian's yes.
+
+SPEC (approved by the PM proxy 2026-10-20T05:43Z, studio-harness .ledger/proxy/decisions.md:74): docs/superpowers/specs/2026-10-20-runway-1.2-cleanup-design.md. Read it
+whole: Ian's words, the probe evidence (measured / read), the batch table (items 1a-1g, 2, 3, 4, 6), the item 6 decision,
+build rules, success criteria with predictions.
+Probe notes with fix and red-test ideas per item: .ledger/2026-10-20-runway-1.2-cleanup/probe-a.md.
+
+LEDGER: C:/Users/teasp/Documents/Runway Tracker/.claude/worktrees/runway-1.2-cleanup/.ledger/2026-10-20-runway-1.2-cleanup
+(progress.md, one row per dispatch, talk-and-run Ledger format). slip.json there was written by Ian: never rewrite it.
+It says push own branch yes, merge yes once checks and the final review pass, new sessions yes, no money.
+
+METHOD: studio-harness:talk-and-run, "The run", light. Lead coordinates only; one fresh helper per piece, in order, never in
+parallel.
+1. First check: echo "$STUDIO_RUN_LEDGER"; test -f on its budget.json and slip.json; empty or missing is a stop.
+2. Baseline, run alone, logs to files: full suite `node --test --test-reporter=spec test/*.test.mjs` (read: 552 tests,
+   550 pass, 0 fail, 2 skipped at 38c800d; reproduce it), selfcheck (measured 482/483 at ff01984), connector tests
+   `node --test connector/test/*.test.mjs` (measured 168/168), and the sim's full verify (tools/sim/osm-day/verify.mjs).
+3. Plan by studio-harness:plan-writer at docs/superpowers/plans/2026-10-20-runway-1.2-cleanup.md: tasks of <= 8 steps,
+   exact files, check command and expected output each. Header `Suite: node --test --test-reporter=spec test/*.test.mjs`
+   and `Data: (none)`. No bin/rehearse.mjs here: skip the rehearsal. Suggested grouping: T1 item 1f + item 3 (pure
+   functions); T2 items 1a, 1b, 1c, 1e (watch); T3 item 1d; T4 item 2; T5 item 4; T6 item 1g (tools/nl-drive.mjs);
+   T7 item 6 as the proxy decided. Each html change re-pins the 1.1 sha in docs/HOSTING.md:58 and tools/sim/osm-day/
+   verify.mjs C8 in the same commit, and the selfcheck --expect count (HOSTING.md:30/36, README.txt:190/287) if it moves.
+   Locked sim files (steps-a.mjs, steps-b.mjs, lib/breaks.mjs) do not change in this run.
+4. ONE Codex plan review, read-only: codex exec -c windows.sandbox=unelevated ... < /dev/null (stdin hang: ledger
+   2026-10-19). Fold findings in. STOP: the PM proxy approves the plan (decision card by SendMessage).
+5. Build each task test-first (implementer; a fresh checker; the lead re-runs the check line itself and reads only the
+   summary). Write each task's check lines to .ledger/<run>/role-checks.txt before the checker.
+6. ONE full verify, run alone: no helper edits the worktree while it runs. Headless-Chrome drive of the real UI (the
+   spec's rule) for items 1a-1e (fake folder), 2 and 4 before anything is shown. Captures of the watch line with a note
+   (1c), the import report sentence (1d) and the hand-off text (2): open every capture to check it shows what it claims;
+   the PM proxy makes the look calls, marked "proxy decided", in one batch.
+7. Final review: Opus studio-harness:final-reviewer and Codex read-only, merged; fix must-fix; re-check.
+8. Evidence doc docs/evidence/2026-10-20-runway-1.2-cleanup.md (numbers, measured vs read, predictions vs results, where
+   to look for each change). README/CHANGELOG/VALIDATION/HOSTING in the same commits as the behaviour.
+9. Merge into master per the merge rule: push origin/runway-tracker's tip to
+   backup/master-before-runway-1.2-cleanup-2026-10-20 first; merge in the main checkout (C:/Users/teasp/Documents/Runway
+   Tracker, on master) with --no-ff, conflicts keep both sides; full suite on the result has no failure master lacks
+   (fix on the branch first); then push master to origin runway-tracker, fast-forward, never force.
+10. Tell the cleanup talk session ("NEW - Runway 1.2 cleanup talk") by SendMessage the merge commit and the suite line, so
+    it can launch run B. Then the Hand-off PM step; the next queued prompt is piece B's run prompt, launched by the talk.
+
+Codex on this PC: -c windows.sandbox=unelevated (ledger gotchas 2026-10-14, 2026-10-17).
+NO-GOS: no force flags; $0, no paid tools; no network calls from code or tests; no ~/.claude writes (session-rename
+exception only); no publishing; never read *RESTORE-POINT* files or exports; 1.0 is never edited.
+A refused step: tell the PM proxy at once with the exact line Ian would type; no third try.
+For Ian (not tonight; copy to the ledger's for-ian.md): item 5, item 7 and D8/L8, exportData save-before-download.
