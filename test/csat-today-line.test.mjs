@@ -48,6 +48,15 @@ test('CSAT today line: denied, or no folder at all, shows no line', async () => 
   const a = env(); await a.c.csatWatchUse(dirWith(L, 'denied')); assert.equal(line(a.c), '');
   const b = env(); await b.c.csatWatchRefresh(false); assert.equal(line(b.c), '');
 });
+test('CSAT today line: a newest file that is not a CSAT export (header missing columns) leaves the watch off and shows no line', async () => {
+  const bad = 'Name,Notes\nFake Co,hello\n';
+  const dir = { queryPermission: async () => 'granted', requestPermission: async () => 'granted',
+    values: async function* () { yield { kind: 'file', name: 'csat_runway_export_bad.csv', getFile: async () => ({ name: 'csat_runway_export_bad.csv', lastModified: L, text: async () => bad }) }; } };
+  const { c } = env();
+  await c.csatWatchUse(dir);
+  assert.equal(vm.runInContext('_csatWatch.state', c), 'off');
+  assert.equal(raw(c), '');
+});
 test('CSAT today line: Stop watching deletes the stored handle (csatFolderClear called once) and clears the line', async () => {
   const { c, calls } = env();
   await c.csatWatchUse(dirWith(L));
