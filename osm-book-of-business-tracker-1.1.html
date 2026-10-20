@@ -17234,7 +17234,7 @@ function openAddCustomerModal(){
       </div>
       <div class="field-row">
         <div class="field"><label>Customer contact (optional)</label><input type="text" id="new-contact" maxlength="200" placeholder="CSAT contact name / email"></div>
-        <div class="field"><label>Gainsight / Salesforce ID (optional)</label><input type="text" id="new-gainsight-id" maxlength="120" placeholder="e.g. a27Nu0000013HBqIAM"></div>
+        <div class="field"><label>Gainsight ID (optional)</label><input type="text" id="new-gainsight-id" maxlength="120" placeholder="e.g. 1I0054UPVHSV1BM8NR3GQ5YXNBW2G9ZLXD1K"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Graduation plan link (optional)</label><input type="url" id="new-grad-plan" placeholder="https://…"></div>
@@ -19799,7 +19799,8 @@ function openCsatImportModal(plan, meta){
   const fieldLabel = f => f === 'surveySentOn' ? 'Survey sent' : 'Answered';
   const changes = plan.changes.map(c => row(`${escapeHtml(c.name)}: ${fieldLabel(c.field)} ${escapeHtml(c.from || 'empty')} -> ${escapeHtml(c.to || 'empty')}`)).join('');
   const newer = plan.runwayNewer.map(r => row(`${escapeHtml(r.name)}: Runway ${escapeHtml(r.runwaySent)}, file ${escapeHtml(r.csvSent)}`)).join('');
-  const sugs = plan.suggestions.map(s => `<div><label><input type="checkbox" data-csat-sug="${escapeAttr(s.row)}"> ${escapeHtml(s.csvName)} -> ${escapeHtml(s.customerName)}</label></div>`).join('');
+  const sugWrites = s => s.changes.map(c => `${fieldLabel(c.field)} ${escapeHtml(c.from || 'empty')} -> ${escapeHtml(c.to || 'empty')}`).concat(['Salesforce ID ' + escapeHtml(s.sf)], s.gs ? ['Gainsight ID ' + escapeHtml(s.gs) + ' (if empty)'] : []).join('; ');
+  const sugs = plan.suggestions.map(s => `<div><label><input type="checkbox" data-csat-sug="${escapeAttr(s.row)}"> ${escapeHtml(s.csvName)} -> ${escapeHtml(s.customerName)}</label><div style="font-size:var(--text-xs); color:var(--text-faint); margin-left:22px;">Ticking writes: ${sugWrites(s)}</div></div>`).join('');
   const notIn = plan.unmatchedRows.map(r => row(escapeHtml(r.name))).join('');
   const notFile = plan.notInFile.map(r => row(escapeHtml(r.name))).join('');
   const skipped = plan.skipped.map(r => row(`${escapeHtml(r.name)}: ${escapeHtml(r.reason)}`))
@@ -19876,7 +19877,7 @@ function openCsatReportModal(res){
   const backdrop = document.createElement('div'); backdrop.className = 'modal-backdrop';
   const reasons = Object.keys(res.skippedByReason).map(k => `<li>${escapeHtml(k)}: ${res.skippedByReason[k]}</li>`).join('');
   backdrop.innerHTML = `<div class="modal" style="max-width:420px;"><h3>${res.saved === false ? 'CSAT import not saved' : 'CSAT import done'}</h3>
-    ${res.saved === false ? '<p>The import could NOT be saved, so your book on disk is unchanged. Nothing was kept after a reload.</p>' : `<p>Updated ${res.accounts} account${res.accounts === 1 ? '' : 's'} (${res.fields} date${res.fields === 1 ? '' : 's'}).</p>`}
+    ${res.saved === false ? '<p>The import could NOT be saved, so your book in this browser is unchanged. Nothing was kept after a reload.</p>' : `<p>Updated ${res.accounts} account${res.accounts === 1 ? '' : 's'} (${res.fields} date${res.fields === 1 ? '' : 's'}).</p>`}
     ${res.saved === false ? '' : reasons || res.ambiguous || res.conflicts ? `<ul style="font-size:var(--text-sm);">${reasons}${res.ambiguous ? `<li>Ambiguous: ${res.ambiguous}</li>` : ''}${res.conflicts ? `<li>Conflict: ${res.conflicts}</li>` : ''}</ul>` : ''}
     <p style="font-size:var(--text-sm); color:var(--text-dim);">Backup downloaded first: ${escapeHtml(res.backupFile)}.${res.saved === false ? '' : ' Undo is available.'}</p>
     <div class="modal-actions"><button class="btn btn-primary" id="csat-report-close">Close</button></div></div>`;

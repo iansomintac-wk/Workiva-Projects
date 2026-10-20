@@ -30,3 +30,6 @@ test('CHANGELOG 1.2 task 15: nits bullet', () => assert.match(s12, /Graduate mod
 test('CHANGELOG 1.2 final review: Review rebuilds the plan from current data; a failed save is reported as not saved', () => {
   assert.match(s12, /Review rebuilds the plan from the current book/); assert.match(s12, /says plainly it could NOT be saved/);
 });
+test('CHANGELOG 1.2 final review B: suggestions show what they write; Add Customer says Gainsight ID', () => {
+  assert.match(s12, /name suggestion shows what ticking it writes/); assert.match(s12, /Add Customer box is labelled Gainsight ID/);
+});

@@ -42,6 +42,7 @@ OSM Runway — release notes
 
 1.2 — CSAT dates from Snowflake. Fill survey dates from a CSV, plus small fixes.
 
+    - Final review B: each CSAT name suggestion shows what ticking it writes (each date change, the Salesforce ID, the Gainsight ID if it would be filled), so a name suggestion shows what ticking it writes before you tick. The Add Customer box is labelled Gainsight ID (it always wrote the Gainsight field). The not-saved report says your book in this browser is unchanged.
     - CSAT import: buildCsatImportPlan reads a Snowflake CSAT export (header check, test account and bad dates skipped).
     - CSAT import: rows match on Salesforce ID (15 or 18 chars), then Gainsight ID; ambiguous and conflicting rows are listed, never applied; names never match.
     - CSAT import: update rules (newer sent wins, same sent only fills answered, Runway-newer is listed and left alone).

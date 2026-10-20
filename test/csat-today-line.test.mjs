@@ -128,5 +128,6 @@ test('CSAT click: a Salesforce ID typed after the scan means the name suggestion
   DATA.customers[0].salesforceId = sf(9);
   await clickReview(c);
   assert.equal(got, undefined);   // nothing left to do, so no modal offering the stale name match
+  assert.equal(DATA.customers[0].salesforceId, sf(9));   // and Review left the typed value alone
   assert.equal(vm.runInContext('_csatWatch.state', c), 'off');
 });

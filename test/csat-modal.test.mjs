@@ -112,3 +112,21 @@ test('CSAT modal: a company name with <b>&"\' is escaped in suggestions, Runway-
   const count = html.split(esc).length - 1;
   assert.ok(count >= 6, 'escaped occurrences: ' + count + ' ' + html.slice(0, 300));
 });
+
+test('CSAT modal: a name suggestion shows what ticking it writes (each date change, the Salesforce ID and the Gainsight ID), escaped', () => {
+  const bad = `<b>&"'`, esc = '&lt;b&gt;&amp;&quot;&#39;';
+  const plan = { error: null, rowCount: 1, matched: [], changes: [], unchanged: [], runwayNewer: [], unmatchedRows: [], notInFile: [], ambiguous: [], conflicts: [],
+    suggestions: [{ row: 5, customerId: 'c', customerName: bad, csvName: 'Csv Co', sf: '001SFID000000000AA', gs: '1I00GSID', sent: '2026-09-01', answered: '2026-09-09', kind: 'set',
+      changes: [{ customerId: 'c', name: bad, field: 'surveySentOn', from: '', to: '2026-09-01' }, { customerId: 'c', name: bad, field: 'surveyAnsweredOn', from: '2026-08-01', to: '2026-09-09' }] }], skipped: [] };
+  const { html } = open(plan);
+  const row = html.slice(html.indexOf('data-csat-sug'));
+  assert.ok(row.includes('Survey sent empty -> 2026-09-01'), row.slice(0, 600));
+  assert.ok(row.includes('Answered 2026-08-01 -> 2026-09-09'), row.slice(0, 600));
+  assert.ok(row.includes('Salesforce ID 001SFID000000000AA') && row.includes('Gainsight ID 1I00GSID'), row.slice(0, 600));
+  assert.ok(!html.includes('<b>') && !html.includes(bad) && html.includes(esc));
+});
+test('CSAT modal: the not-saved report says plainly the book lives in this browser, not "on disk"', () => {
+  const h = htmlLF();
+  assert.ok(h.includes('could NOT be saved, so your book in this browser is unchanged'));
+  assert.ok(!h.includes('your book on disk is unchanged'));
+});

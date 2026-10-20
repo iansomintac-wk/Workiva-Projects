@@ -18,7 +18,8 @@ test('Salesforce ID: the Details tab labels the existing box Gainsight ID, adds 
   assert.match(src, /<label>Gainsight ID<\/label><input type="text" id="cust-gainsight-id"/);
   assert.match(src, /<label>Salesforce ID<\/label><input type="text" id="cust-salesforce-id"/);
   assert.ok(src.indexOf('id="cust-gainsight-id"') < src.indexOf('id="cust-salesforce-id"'));
-  assert.doesNotMatch(src, /<label>Gainsight \/ Salesforce ID<\/label>/);
+  assert.doesNotMatch(src, /<label>Gainsight \/ Salesforce ID[^<]*<\/label>/);   // also the "(optional)" form in Add Customer
+  assert.match(src, /<label>Gainsight ID \(optional\)<\/label><input type="text" id="new-gainsight-id"[^>]*placeholder="e\.g\. 1I00[A-Z0-9]+"/);
 });
 test('Salesforce ID: applyIntegrationInputs writes salesforceId and the box is in the change-listener list (source presence; the headless drive proves the behaviour)', () => {
   assert.match(src, /setOptionalField\(cust, 'salesforceId', sidEl\.value\)/);
