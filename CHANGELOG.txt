@@ -40,6 +40,10 @@ OSM Runway — release notes
       docs/HOSTING.md says what the page loads (outside hosts, no integrity attribute on the
       xlsx script, inline script and style needed) instead of "works with no network".
 
+1.2 — CSAT dates from Snowflake. Fill survey dates from a CSV, plus small fixes.
+
+    - CSAT import: buildCsatImportPlan reads a Snowflake CSAT export (header check, test account and bad dates skipped).
+
 1.1 — Graduation prompt colour.
     - The line under the graduation confirm box title (#gc-prompt) used var(--warn), which is not defined, so it fell back to grey; it now uses var(--status-watch-text) like the CSAT line.
 

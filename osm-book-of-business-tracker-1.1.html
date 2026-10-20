@@ -19570,6 +19570,34 @@ function applyValueImport(rows){
 function normalizeCustomerNameKey(s){
   return String(s || '').toLowerCase().replace(/\s+/g,' ').trim();
 }
+/* ============ 1.2: CSAT import from a Snowflake export. Pure: no DOM, no storage, no network. ============ */
+// WF Test account: its Salesforce ID is skipped.
+const CSAT_SKIP_IDS = ['0014000000YgdVaAAJ'];
+const CSAT_COLS = ['SALESFORCE_ACCOUNT_ID','GAINSIGHT_COMPANY_ID','COMPANY_NAME','CSAT_SENT_DATE','CSAT_ANSWERED_DATE'];
+function csatSentOk(v){
+  return !!v && csatDateChangeOk(v);
+}
+function buildCsatImportPlan(table, customers, opts){
+  const skipIds = (opts && opts.skipIds) || CSAT_SKIP_IDS;
+  const plan = {error:null, rowCount:0, matched:[], changes:[], unchanged:[], runwayNewer:[], unmatchedRows:[], notInFile:[], ambiguous:[], conflicts:[], suggestions:[], skipped:[]};
+  const head = ((table && table[0]) || []).map(h => String(h == null ? '' : h).trim().toUpperCase());
+  const idx = {}, missing = [];
+  CSAT_COLS.forEach(n => { const i = head.indexOf(n); if(i < 0) missing.push(n); else idx[n] = i; });
+  if(missing.length){ plan.error = "This isn't a CSAT export (missing " + missing.join(', ') + ")"; return plan; }
+  const cell = (r, n) => String(r[idx[n]] == null ? '' : r[idx[n]]).trim();
+  const rows = [];
+  table.slice(1).forEach((r, i) => {
+    if(!r.some(v => String(v == null ? '' : v).trim())) return;   // blank line
+    rows.push({row:i + 2, sf:cell(r,'SALESFORCE_ACCOUNT_ID'), gs:cell(r,'GAINSIGHT_COMPANY_ID'), name:cell(r,'COMPANY_NAME'), sent:cell(r,'CSAT_SENT_DATE'), answered:cell(r,'CSAT_ANSWERED_DATE')});
+  });
+  plan.rowCount = rows.length;
+  rows.forEach(o => {
+    if(skipIds.includes(o.sf)){ plan.skipped.push({row:o.row, name:o.name, reason:'Skipped: test account'}); return; }
+    if(!csatSentOk(o.sent) || !csatDateChangeOk(o.answered)){ plan.skipped.push({row:o.row, name:o.name, reason:'Skipped: bad date'}); return; }
+    plan.unmatchedRows.push({row:o.row, name:o.name, sf:o.sf, gs:o.gs, sent:o.sent, answered:o.answered});   // Task 2 replaces this with matching
+  });
+  return plan;
+}
 function guessPartnerColumnMapping(headers){
   // Each guess excludes columns already claimed by an earlier field —
   // otherwise "Update Notes" wins the date guess via its embedded "date"
