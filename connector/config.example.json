@@ -8,5 +8,6 @@
     "fieldMap": { "tier": "", "arr": "", "renewalDate": "", "csmOwner": "", "healthScore": "" },
     "gateFieldMap": { "readinessAssessment": "", "csatContact": "", "successPlan": "" },
     "contactQuery": { "object": "", "companyField": "", "nameField": "", "emailField": "", "roleField": "" } },
-  "ai": { "adapter": "fake", "model": "", "apiKey": "" }
+  "ai": { "adapter": "fake", "model": "", "apiKey": "" },
+  "snowflake": { "adapter": "fake", "account": "", "warehouse": "", "database": "", "schema": "", "table": "", "tokenFile": "" }
 }

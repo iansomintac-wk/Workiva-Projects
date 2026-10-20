@@ -46,7 +46,7 @@ export function createConnector({ config = {}, adapters, token, logPath, oauthCa
       return send(200, body);
     };
     if (m === 'GET' && p === '/v1/health') {
-      return ok('health', { version: '1', adapters: { gong: ad.gong.name, gainsight: ad.gainsight.name, ai: ad.ai.name } });
+      return ok('health', { version: '1', adapters: { gong: ad.gong.name, gainsight: ad.gainsight.name, ai: ad.ai.name, snowflake: ad.snowflake.name } });
     }
     if (m === 'GET' && p === '/v1/calls') {
       const since = url.searchParams.get('since');
@@ -54,6 +54,13 @@ export function createConnector({ config = {}, adapters, token, logPath, oauthCa
         return send(400, { error: 'since must be an ISO 8601 date-time' });
       }
       return ok('calls', { calls: await ad.gong.listCalls({ since: since || undefined }) });
+    }
+    if (m === 'GET' && p === '/v1/csat') {
+      const since = url.searchParams.get('since');
+      if (since !== null && validate({ type: 'string', format: 'date-time' }, since).length) {
+        return send(400, { error: 'since must be an ISO 8601 date-time' });
+      }
+      return ok('csat', { rows: await ad.snowflake.listCsat({ since: since || undefined }) });
     }
     if (m === 'GET' && p === '/v1/accounts') {
       return ok('accounts', { accounts: await ad.gainsight.listAccounts() });

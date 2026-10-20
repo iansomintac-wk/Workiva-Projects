@@ -201,3 +201,15 @@ test('push: a data.failures entry with GS_TL_10_0107 alongside other codes count
   assert.deepEqual(r, { id: 'q-timeline-1', status: 'sent', externalId: 'q-timeline-1', error: null });
   assert.ok(JSON.parse(readFileSync(join(stateDir, 'sent-record.json'), 'utf8'))['q-timeline-1']);
 });
+test('push B3b: two pushes started together keep both send-record entries', async () => {
+  // Deterministic interleave: the fake fetch holds every reply until BOTH requests are in flight, then releases them together.
+  let release; const gate = new Promise((r) => { release = r; });
+  let inFlight = 0;
+  const s = stub(() => { inFlight++; if (inFlight === 2) release(); return gate.then(() => json(200, TIMELINE_OK)); });
+  const { a, stateDir } = adapter(s);
+  const [r1, r2] = await Promise.all([a.push([TL]), a.push([CTA])]);
+  assert.equal(inFlight, 2);
+  assert.equal(r1[0].status, 'sent'); assert.equal(r2[0].status, 'sent');
+  const rec = JSON.parse(readFileSync(join(stateDir, 'sent-record.json'), 'utf8'));
+  assert.deepEqual(Object.keys(rec).sort(), ['q-cta-1', 'q-timeline-1']);
+});

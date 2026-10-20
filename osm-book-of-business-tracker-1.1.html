@@ -1699,7 +1699,7 @@
 
 <div class="toast" id="toast"></div>
 <div class="tab-conflict" id="tab-conflict" role="alert">
-  <span>This tracker was changed in another tab or window. Saving here may overwrite those changes.</span>
+  <span>This tracker was changed in another tab or window. Saving is off in this tab until you reload.</span>
   <button type="button" id="tab-conflict-reload">Reload to sync</button>
 </div>
 
@@ -2075,22 +2075,20 @@ function pseudonymFor(customer){
 // per-account Call Prep now sends real account content (like the Session
 // Debrief) and carries the same explicit warning in its UI.
 function aiCustomerSnapshot(c){
-  const risk = computeRisk(c);
   const d = daysSince(lastActivityDate(c.id) || c.implementationDate);
   const nextSession = getNextSessionInfo(c);
   return {
     id: pseudonymFor(c),
     module: c.module,
     stage: c.stage,
-    riskLabel: riskLabel(risk),
-    healthScore: healthScore(c),
     daysSinceLastTouch: d,
     sessionsCompleted: sessionsCompletedCount(c),
     totalSessions: plannedSessionTotal(c),
     missingGates: missingGatesText(c),
     nextSessionTitle: nextSession ? nextSession.template.title : null,
     nextSessionStage: nextSession ? nextSession.template.ttfvStage : null,
-    behindTarget: isBehindTarget(c)
+    behindTarget: isBehindTarget(c),
+    confirmedRisks: confirmedRisksFor(c).map(x => x.reason)
   };
 }
 
@@ -2294,9 +2292,7 @@ async function generateCopilotRead(){
   render();
   try{
     const live = DATA.customers.filter(c => c.stage !== 'graduated');
-    const briefed = live.slice()
-      .sort((a, b) => healthScore(a) - healthScore(b))
-      .slice(0, 20);
+    const briefed = copilotBriefedAccounts(live);
     if(!briefed.length){
       if(ui.aiChapters.req !== myReq) return;
       ui.aiChapters = {loading:false, sections:{}, error:'', req:myReq, legend:null,
@@ -2310,7 +2306,7 @@ async function generateCopilotRead(){
       daysInPhase: r.daysInPhase, quietFor: r.quietFor, hasGoLive: !!r.targetGoLive}));
     const prompt = `You are advising an Onboarding Success Manager at Workiva. Read this book of business through four lenses and answer in four labelled sections.
 
-Accounts are PSEUDONYMIZED — refer to them only by their "id". ${briefed.length} of ${live.length} live accounts are included, lowest health first.
+Accounts are PSEUDONYMIZED — refer to them only by their "id". ${briefed.length} of ${live.length} live accounts are included, confirmed risks first, then longest since last contact.
 
 ACCOUNTS:
 ${JSON.stringify(snapshots, null, 2)}
@@ -2606,13 +2602,13 @@ const CALLPREP_MAX_ACTIVITIES = 40;
 const CALLPREP_NOTE_CHAR_CAP = 700;
 function buildCallPrepContext(c){
   const lines = [];
-  const risk = computeRisk(c);
   const intg = typeof getIntegration === 'function' ? getIntegration(c) : {};
   lines.push(`ACCOUNT: ${c.name} — module: ${c.module}${c.reportsCSRD ? ' (reports under CSRD)' : ''}, stage: ${c.stage}, implementation started ${fmtDate(c.implementationDate)}, ${c.totalSessions} planned sessions.`);
   if(intg && intg.primaryContact) lines.push(`Primary customer contact: ${intg.primaryContact}`);
-  lines.push(`STATUS: ${riskLabel(risk)} · health ${healthScore(c)}% · ${riskReasonText(c)}`);
   const d = daysSince(lastActivityDate(c.id) || c.implementationDate);
   lines.push(`Last touchpoint: ${d === null ? 'no activity logged yet' : d + ' day(s) ago'}. ${missingGatesText(c)}`);
+  const cr = confirmedRisksFor(c);
+  if(cr.length) lines.push('CONFIRMED RISKS (by the OSM): ' + cr.map(x => x.reason).join('; '));
   if(isPaused(c)) lines.push(`PAUSED until ${fmtDate(c.pause.until)}${c.pause.reason ? ' — ' + c.pause.reason : ''}.`);
   if(c.targetGraduationDate) lines.push(`Target graduation: ${fmtDate(c.targetGraduationDate)}${(()=>{ const p = projectedGraduationDate(c); return p ? `, projected ${fmtDate(p)}` : ''; })()}`);
   const fv = getFirstValue(c);
@@ -5739,6 +5735,7 @@ function applyDataBackfills(data){
    deliberate, validated replacement (Import JSON) or an explicit confirmed wipe
    (Clear all data) re-enables saving. Both re-arm the block if their commit
    fails, so the protection can't be lost to a storage error. */
+let _staleTab = false, _staleToastShown = false; // 1.2 B2: another tab changed the book; saving is off here until reload
 let _rejectedLoadPayload = null; // non-null blocks saveData(); holds the raw string that failed to load
 const SELF_CHECK_BLOCK_TOKEN = '__selfcheck_block__'; // runSelfChecks uses this to exercise the block without firing the toast
 let _blockToastShown = false; // the explanation toast fires once per session, not on every blocked write
@@ -5898,6 +5895,7 @@ function saveData(opts){
     }
     return false;
   }
+  if(_staleTab){ if(!maintenance && !_staleToastShown){ _staleToastShown = true; showToast('Not saved: another tab changed this book. Reload to sync.'); } return false; }
   /* v82: NO WRITES WHILE THE SUITE IS RUNNING. Checks swap DATA.customers for
      fabricated accounts and then call things that save — setRiskVerdict and
      markRiskActioned both do, and a single run produced thirteen saves, several
@@ -6378,13 +6376,14 @@ function accountNextAction(c){
   return out;
 }
 function nextActionList(){
+  const ord = factsAccountOrder();
   return DATA.customers
     .filter(c => c.stage !== 'graduated' && !isPaused(c) && !inImplementation(c))
     .map(accountNextAction)
     .filter(x => x.sev >= 2 || x.questions.length || x.route || x.transition)
     .sort((a, b) => {
       const w = x => (x.transition ? 2 : 0) + (x.route ? 1 : 0);
-      return (b.sev - a.sev) || (w(b) - w(a)) || (healthScore(a.c) - healthScore(b.c));
+      return ord(a.c, b.c) || (b.sev - a.sev) || (w(b) - w(a));
     });
 }
 
@@ -9878,6 +9877,10 @@ function renderRiskCase(k, idx, active){
   const returned = state === 'returned';
   const open = state === 'confirmed';
   const dismissedItem = k.items.find(it => riskVerdictState(it) === 'dismissed');
+  /* FX2: print the reason the OSM gave; a pre-1.2 confirmation has none, so say so. */
+  const confirmedLines = k.items.filter(it => riskVerdictState(it) === 'confirmed').map(it => riskItemHasReason(it)
+    ? `<p class="rk-confirmed-why">Confirmed as a risk — &ldquo;${escapeHtml(it.tracking.verdictReason)}&rdquo; · ${fmtDate(it.tracking.verdictOn)}</p>`
+    : `<p class="rk-confirmed-why">Confirmed before reasons were required: add a reason <button class="link-btn" data-risk-confirm="${escapeAttr(k.c.id)}">Add a reason</button></p>`).join('');
 
   return `
   <article class="rk3-card ${sevClass} ${state}${active ? ' is-active' : ''}" id="rk-c-${escapeAttr(k.c.id)}"
@@ -9890,6 +9893,8 @@ function renderRiskCase(k, idx, active){
     </div>
 
     ${returned ? `<p class="rk-returned">${icon('warn')} ${escapeHtml(riskReturnReason(k.items.find(it => riskVerdictState(it) === 'returned') || lead))}</p>` : ''}
+
+    ${confirmedLines}
 
     ${state === 'dismissed'
       ? `<p class="rk-dismissed">Not a risk${dismissedItem && dismissedItem.tracking && dismissedItem.tracking.verdictReason ? ` — &ldquo;${escapeHtml(dismissedItem.tracking.verdictReason)}&rdquo;` : ''}${dismissedItem && dismissedItem.tracking ? ` · ${fmtDate(dismissedItem.tracking.verdictOn)}` : ''}. Returns automatically if the account deteriorates, or after ${RISK_DISMISS_EXPIRY_DAYS} days.
@@ -9907,6 +9912,34 @@ function renderRiskCase(k, idx, active){
   </article>`;
 }
 
+/* v13 Step 2e: cases with no confirmed-with-reason item. Each row keeps the
+   case anchor id and the confirm button (now opens the reason modal) so the
+   Risk-tab selectors the day simulation reads still resolve. */
+function renderSignalsToCheck(list){
+  if(!list.length) return '';
+  return `
+    <section class="rk-signals">
+      <h3>Signals to check</h3>
+      <p class="rk-group-note">The tracker noticed these from missing evidence, pacing, note wording or a flag. They are not risks until you say so and give a reason.</p>
+      <ul>
+        ${list.map(k => {
+          const lead = k.lead;
+          const sevClass = k.sev >= 3 ? 'sev3' : k.sev === 2 ? 'sev2' : 'sev1';
+          const dismissed = k.state === 'dismissed';
+          const dismissedItemOf = kk => { const d = kk.items.find(it => riskVerdictState(it) === 'dismissed'); return (d && d.tracking && d.tracking.verdictReason) || ''; };
+          return `<li class="rk-signal-row ${sevClass}" id="rk-c-${escapeAttr(k.c.id)}" data-risk-case="${escapeAttr(k.c.id)}">
+            <button class="link-btn" data-open-cust="${escapeAttr(k.c.id)}" data-open-tab="overview">${escapeHtml(k.c.name)}</button>
+            <span class="rk-meta">${escapeHtml(riskProvenanceLabel(lead))} · ${escapeHtml(lead.detail || '')}${k.items.length > 1 ? ` · ${k.items.length} signals` : ''}</span>
+            ${dismissed
+              ? `<span class="rk-meta">Not a risk${dismissedItemOf(k) ? ` — &ldquo;${escapeHtml(dismissedItemOf(k))}&rdquo;` : ''} (you ruled it out).</span> <button class="link-btn" data-risk-reopen="${escapeAttr(k.c.id)}">Reopen</button>`
+              : `<button class="btn btn-primary btn-sm" data-risk-confirm="${escapeAttr(k.c.id)}">Yes — it's real</button>
+            <button class="btn btn-sm" data-risk-dismiss="${escapeAttr(k.c.id)}">No — false positive</button>`}
+          </li>`;
+        }).join('')}
+      </ul>
+    </section>`;
+}
+
 function renderRiskTab(){
   _riskHubCache = buildRiskHubList();
   const cases = buildRiskCases(_riskHubCache);
@@ -9915,7 +9948,9 @@ function renderRiskTab(){
   const showDismissed = ui.riskShowDismissed;
   const visible = ordered.filter(k => k.state !== 'dismissed' || showDismissed);
   const hiddenDismissed = ordered.length - visible.length;
-  const activeId = visible.some(k => k.c.id === ui.riskFocusId) ? ui.riskFocusId : (visible[0] ? visible[0].c.id : null);
+  const riskVisible = visible.filter(k => k.isRisk);          // v13 Step 2e: only a confirmed-with-reason case is a risk
+  const signalCases = visible.filter(k => !k.isRisk);
+  const activeId = riskVisible.some(k => k.c.id === ui.riskFocusId) ? ui.riskFocusId : (riskVisible[0] ? riskVisible[0].c.id : null);
   const queue = getGainsightQueue();
 
   if(!cases.length){
@@ -9927,16 +9962,17 @@ function renderRiskTab(){
 
   return `
     <p class="rk-intro">One case at a time, hardest first. What is still waiting sits behind the card you are on — decide what is real before you work it, and nothing asks for an owner, a date or a summary until you have.</p>
-    <div class="rk3" data-scrolly="risk">
-      ${renderRiskSpine(visible, activeId)}
+    ${riskVisible.length ? `<div class="rk3" data-scrolly="risk">
+      ${renderRiskSpine(riskVisible, activeId)}
       <div class="rk3-track">
         <div class="rk3-stage">
-          ${visible.map((k, i) => renderRiskCase(k, i, k.c.id === activeId)).join('')}
-          <p class="rk3-behind">${visible.length - 1} more behind this one</p>
+          ${riskVisible.map((k, i) => renderRiskCase(k, i, k.c.id === activeId)).join('')}
+          <p class="rk3-behind">${riskVisible.length - 1} more behind this one</p>
           <i class="rk3-threshold" aria-hidden="true"></i>
         </div>
       </div>
-    </div>
+    </div>` : '<p class="rk-group-note">No confirmed risks yet.</p>'}
+    ${renderSignalsToCheck(signalCases)}
     ${hiddenDismissed ? `<p class="rk-group-note" style="margin-top:var(--space-3);">${hiddenDismissed} case${hiddenDismissed===1?'':'s'} you ruled out ${hiddenDismissed===1?'is':'are'} hidden. Each returns by itself if the account deteriorates past the point you dismissed it, or after ${RISK_DISMISS_EXPIRY_DAYS} days. <button class="link-btn" data-risk-show-dismissed>Show them</button></p>`
       : (ordered.some(k => k.state === 'dismissed') ? `<p class="rk-group-note" style="margin-top:var(--space-3);"><button class="link-btn" data-risk-show-dismissed>Hide the cases you ruled out</button></p>` : '')}
     ${renderGainsightQueueBlock(queue)}
@@ -9949,7 +9985,7 @@ function renderRiskTab(){
 /* C-5: one queue row. A sent item shows its Gainsight id and nothing to do; a failed one shows why and a Retry; a queued one is as it was. */
 function renderGainsightQueueRow(q, i){
   const canRetry = q.status === 'failed';   // a failed item can only exist after a connector push; offline, Retry just says so
-  const state = q.status === 'sent' ? `<span class="badge badge-ontrack">✓ sent · ${escapeHtml(q.externalId || '')}</span>`
+  const state = q.status === 'sent' ? `<span class="badge badge-ontrack">✓ sent · ${escapeHtml(q.externalId || 'id not returned')}</span>`
     : q.status === 'failed' ? `<span class="badge badge-risk">failed</span> <span class="rk-meta">${escapeHtml(q.error || 'The connector could not send this item.')}</span>`
     : `<span class="rk-meta">${escapeHtml(q.status)}</span>`;
   return `
@@ -9989,11 +10025,28 @@ function renderAccounts(){
 }
 
 /* ============ RENDER: DASHBOARD ============ */
+/* v13 Step 2c: the order is facts only. OSM-confirmed risk first, then days
+   since last contact (oldest first; never touched counts as oldest), then name.
+   Proxy decided (decisions.md:77); Ian may overturn. */
+function confirmedRiskAccountIds(){
+  const ids = new Set(), log = isRecordObject(DATA.riskLog) ? DATA.riskLog : {};
+  Object.keys(log).forEach(k => { const e = log[k]; if(isRecordObject(e) && e.verdict === 'confirmed' && typeof e.verdictReason === 'string' && e.verdictReason.trim()) ids.add(k.split('|')[0]); });
+  return ids;
+}
+function factsAccountOrder(){
+  const conf = confirmedRiskAccountIds();
+  const quiet = c => { const d = daysSince(lastActivityDate(c.id) || c.implementationDate); return d === null ? Infinity : d; };
+  return (a, b) => {
+    const ca = conf.has(a.id) ? 0 : 1, cb = conf.has(b.id) ? 0 : 1;
+    if(ca !== cb) return ca - cb;
+    const qa = quiet(a), qb = quiet(b);
+    if(qa !== qb) return qa > qb ? -1 : 1;
+    return String(a.name).localeCompare(String(b.name));
+  };
+}
+function copilotBriefedAccounts(live){ return live.filter(c => c.stage !== 'graduated').sort(factsAccountOrder()).slice(0, 20); }
 function sortCustomers(list){
-  const riskOrder = {risk:0, watch:1, ontrack:2};
-  if(ui.sortBy === 'risk'){
-    list.sort((a,b)=> riskOrder[computeRisk(a)] - riskOrder[computeRisk(b)]);
-  } else if(ui.sortBy === 'name'){
+  if(ui.sortBy === 'name'){
     list.sort((a,b)=> a.name.localeCompare(b.name));
   } else if(ui.sortBy === 'lastActivity'){
     list.sort((a,b)=>{
@@ -10009,19 +10062,9 @@ function sortCustomers(list){
       const db = b.targetGraduationDate || projectedGraduationDate(b);
       return da < db ? -1 : 1;
     });
-  } else if(ui.sortBy === 'declining'){
-    // Most-negative trend first (raw delta — the display dead zone is a
-    // rendering concern, not a ranking one). Accounts without a qualifying
-    // >=21-day snapshot pair sink below ALL trending accounts in existing
-    // risk order — no fabricated zero-trends.
-    const deltas = new Map(list.map(c=>{ const t = healthTrendDelta(c); return [c.id, t ? t.delta : null]; }));
-    list.sort((a,b)=>{
-      const ta = deltas.get(a.id), tb = deltas.get(b.id);
-      if(ta !== null && tb !== null) return ta - tb;
-      if(ta !== null) return -1;
-      if(tb !== null) return 1;
-      return riskOrder[computeRisk(a)] - riskOrder[computeRisk(b)];
-    });
+  } else {
+    // 'risk', and a stored 'declining' from an older version, both land here.
+    list.sort(factsAccountOrder());
   }
   return list;
 }
@@ -10053,8 +10096,7 @@ function renderToolbar(opts){
       </select>
       ${withSort ? `
       <select id="sort-by">
-        <option value="risk" ${ui.sortBy==='risk'?'selected':''}>Sort: Risk</option>
-        <option value="declining" ${ui.sortBy==='declining'?'selected':''}>Sort: Declining Fastest</option>
+        <option value="risk" ${ui.sortBy==='risk'?'selected':''}>Sort: Confirmed risk, then quiet longest</option>
         <option value="lastActivity" ${ui.sortBy==='lastActivity'?'selected':''}>Sort: Last Activity</option>
         <option value="stage" ${ui.sortBy==='stage'?'selected':''}>Sort: TTFV Stage</option>
         <option value="graduation" ${ui.sortBy==='graduation'?'selected':''}>Sort: Graduation Date</option>
@@ -10438,7 +10480,7 @@ const MAX_IMPACT_LOG = 4000;
 /* ---- Risk Hub ---- */
 
 /* ---- v59: team-confirmed risk taxonomy ----
-   The 17 categories below are the team's official risk-reason list (labels
+   The 17 risk categories below (plus Expansion, a non-risk category) are the team's official list (labels
    VERBATIM — they must match what the OSM picks in Gainsight). Each carries
    a curated phrase list scanned with the SAME matcher as the advisor
    keywords (word boundaries, suffix tolerance, negation lookback — "no bug"
@@ -10461,11 +10503,12 @@ const RISK_TAXONOMY = [
   {key:'product', label:'Product', phrases:['product gap','missing feature','feature request','bug','product issue','product limitation','known limitation','workaround','waiting on the roadmap','on the roadmap',"product doesn't"]},
   {key:'no_contact', label:'Lack of Engagement/No Contact', phrases:['no response','unresponsive','went dark','ghosted','no contact','not responding','radio silence','cancelled the meeting','cancelled our meeting','no-show','no show','missed the call','declined the invite','stopped attending']},
   {key:'company_change', label:'Company Change', phrases:['acquisition','acquired','merger','restructuring','reorg','layoff','bankruptcy','leadership change','new cfo','new ceo','divestiture','budget cut','hiring freeze','spun off']},
-  {key:'sales_scope', label:'Sales/Scope', phrases:['out of scope','scope change','scope creep','descope','descoped','contract change','renegotiate','renegotiation','not what we bought','oversold','sold something different','expansion conversation','upsell']},
+  {key:'sales_scope', label:'Sales/Scope', phrases:['out of scope','scope change','scope creep','descope','descoped','contract change','renegotiate','renegotiation','not what we bought','oversold','sold something different']},
   {key:'value_shopping', label:'Value/Shopping Around', phrases:['competitor','evaluating alternatives','shopping around','not seeing value','value concern','questioning the value','cheaper','considering other','switching to','looking at other tools','renewal risk','may not renew','churn']},
   {key:'regulatory', label:'Regulatory Changes', phrases:['regulatory change','regulation changed','requirement changed','no longer required to report','csrd delay','omnibus','sec rule','deregulation','reporting deadline moved','compliance deadline moved']},
   {key:'no_partner', label:'No partner/no service', phrases:['no partner','without a partner','no implementation partner','self-implementing','self implementing','no services','services ended','no sow','sow expired']},
-  {key:'nextgen_grc', label:'Next Gen GRC Upgrade', phrases:['next gen grc','nextgen grc','next-gen grc','classic grc','grc migration','grc upgrade','ai-powered grc']}
+  {key:'nextgen_grc', label:'Next Gen GRC Upgrade', phrases:['next gen grc','nextgen grc','next-gen grc','classic grc','grc migration','grc upgrade','ai-powered grc']},
+  {key:'expansion', label:'Expansion', notRisk:true, phrases:['upsell','expansion conversation']}
 ];
 const RISK_TAXONOMY_BY_KEY = Object.fromEntries(RISK_TAXONOMY.map(t => [t.key, t]));
 // Pure. Returns [{key, label, phrase}] — first matched phrase per category,
@@ -10491,6 +10534,11 @@ function classifyRiskText(text){
    while the risk persists -> "Gainsight update likely due". */
 const RISK_UNACTIONED_DAYS = 7;
 const RISK_MAINTENANCE_DAYS = 14;
+// Risks the OSM has confirmed, with the reason they wrote. Read-only: never creates DATA.riskLog.
+function confirmedRisksFor(c){ const log = isRecordObject(DATA.riskLog) ? DATA.riskLog : {}; return Object.keys(log).filter(k => k.split('|')[0] === c.id && isRecordObject(log[k]) && log[k].verdict === 'confirmed' && typeof log[k].verdictReason === 'string' && log[k].verdictReason.trim()).map(k => ({kind: k.split('|').slice(1).join(' ') || 'risk', reason: log[k].verdictReason})).filter((x, i, a) => a.findIndex(y => y.reason.replace(/\s+/g, ' ').trim() === x.reason.replace(/\s+/g, ' ').trim()) === i); }   // FX4: one case's items share a reason; say it once
+// AI-bound wording: facts only. The automatic level (Off Track / Watch) is not sent as a judgement.
+function aiObservation(item){ if(item.kind === 'Off Track' || item.kind === 'Watch'){ const d = daysSince(lastActivityDate(item.c.id) || item.c.implementationDate); return d === null ? 'No activity logged yet.' : 'Last touchpoint ' + d + ' day(s) ago.'; } return item.detail; }
+function aiKindLabel(item){ return (item.kind === 'Off Track' || item.kind === 'Watch' || item.kind === 'Behind target') ? 'Pacing observation' : (item.kind === 'Risk language' || item.kind === 'Category signal') ? 'Note wording' : item.kind; }
 function getRiskLog(){
   if(!isRecordObject(DATA.riskLog)) DATA.riskLog = {};
   return DATA.riskLog;
@@ -10576,6 +10624,8 @@ function riskReturnReason(it){
 }
 function setRiskVerdict(it, verdict, reason){
   if(!RISK_VERDICTS.includes(verdict)) return false;
+  /* v13 Step 2e: a risk is confirmed only with a reason in the OSM's words. */
+  if(verdict === 'confirmed' && !(typeof reason === 'string' && reason.replace(/\s+/g, ' ').trim())) return false;
   const log = getRiskLog();
   const k = it.logKey || riskItemKey(it);
   if(!isRecordObject(log[k])) log[k] = {firstSeen: todayISO(), lastActioned: null};
@@ -10586,6 +10636,45 @@ function setRiskVerdict(it, verdict, reason){
   if(clean) log[k].verdictReason = clean; else delete log[k].verdictReason;
   it.tracking = log[k];
   saveData();
+  return true;
+}
+/* v13 Step 2e: nothing is a risk unless the OSM confirmed it AND gave a reason.
+   Everything else (auto Off Track, Watch, language, a flagged note, implementation
+   risk or pause) is a signal to check. */
+function riskItemIsRisk(it){
+  const t = (it && it.tracking) || {};
+  return t.verdict === 'confirmed';      // FX2: a pre-1.2 confirmation (no reason) stays a risk; it is labelled until a reason is added
+}
+function riskItemHasReason(it){
+  const t = (it && it.tracking) || {};
+  return typeof t.verdictReason === 'string' && !!t.verdictReason.trim();
+}
+/* FX2: confirm or dismiss a case. Only items that still need a judgement are touched:
+   a confirmed item keeps its first reason and its confirmed state. A legacy
+   confirmation with no reason is the one exception when confirming: it gets the reason. */
+function confirmRiskCase(k, reason){
+  k.items.forEach(it => {
+    if(riskVerdictState(it) === 'confirmed' && riskItemHasReason(it)) return;
+    setRiskVerdict(it, 'confirmed', reason); markRiskActioned(it, false);
+  });
+}
+function dismissRiskCase(k, reason){
+  k.items.forEach(it => { if(riskVerdictState(it) !== 'confirmed') setRiskVerdict(it, 'dismissed', reason); });
+}
+/* FX2: the account desk Confirm opens the same reason modal as the Risk tab. */
+function openDeskRiskConfirm(logKey){
+  const it = buildRiskHubList().find(r => r.logKey === logKey);
+  if(!it) return false;
+  const k = buildRiskCases(buildRiskHubList()).find(x => x.c.id === it.c.id);
+  if(!k) return false;
+  // FX4: nothing left to confirm: say so, and do not open a modal that would toast "confirmed" for a no-op.
+  if(k.items.every(x => riskVerdictState(x) === 'confirmed' && riskItemHasReason(x))){ showToast('Already confirmed as a real risk.'); return true; }
+  showRiskConfirmModal(k, reason => {
+    markUndoable('risk verdict');
+    confirmRiskCase(k, reason);
+    showToast(`${k.c.name} confirmed as a real risk.`);
+    render();
+  });
   return true;
 }
 function clearRiskVerdict(it){
@@ -10632,6 +10721,7 @@ function buildRiskCases(list){
         ? it.tracking.firstSeen : min, null);
     return Object.assign(k, {
       state,
+      isRisk: k.items.some(riskItemIsRisk),
       daysOpen: oldest ? daysSince(oldest) : 0,
       // The lead item carries the case: highest severity, asserted before inferred.
       lead: k.items.slice().sort((a,b)=>
@@ -10658,7 +10748,7 @@ function markRiskActioned(it, maintained){
 // genuinely unambiguous; everything else classifies from its own text or
 // falls back to Other. Suggestions, not verdicts.
 function taxonomyForHubItem(item){
-  const fromText = classifyRiskText(item.detail);
+  const fromText = classifyRiskText(item.detail).filter(h => !RISK_TAXONOMY_BY_KEY[h.key].notRisk);
   if(fromText.length) return fromText[0];
   if(item.kind === 'Implementation risk' || item.kind === 'Implementation paused') return {key:'implementation_issue', label: RISK_TAXONOMY_BY_KEY.implementation_issue.label, phrase: null};
   if((item.kind === 'Off Track' || item.kind === 'Watch') && /days since last touchpoint|No activity/i.test(item.detail)) return {key:'no_contact', label: RISK_TAXONOMY_BY_KEY.no_contact.label, phrase: null};
@@ -10703,6 +10793,7 @@ function buildRiskHubList(opts){
     const seenCats = new Set();
     for(const entry of recent){
       for(const hit of classifyRiskText(entry.text)){
+        if(RISK_TAXONOMY_BY_KEY[hit.key].notRisk) continue;
         if(seenCats.has(hit.key) || seenCats.size >= 3) continue;
         seenCats.add(hit.key);
         items.push({kind:'Category signal', sev:2, c, date: entry.date,
@@ -10785,12 +10876,24 @@ function buildRiskExecSummary(item){
     : `actioned ${a.days === 0 ? 'today' : a.days + 'd ago'}`;
   // Ordered most- to least- essential; clauses are dropped from the END when the
   // budget runs out, so the account and the risk itself always survive.
+  const head = `${c.name} — ${aiKindLabel(item)}${item.category && item.category.label ? ` (${item.category.label})` : ''}.`;
+  // FX4: when the reasons do not fit, trim each to an equal share of what is left instead of dropping them all.
+  const confirmedClause = (cr => {
+    if(!cr.length) return '';
+    const pre = 'Confirmed by the OSM: ', rs = cr.map(x => x.reason.replace(/\s+/g, ' ').trim());
+    const full = pre + rs.join('; ');
+    const room = RISK_SUMMARY_MAX - head.length - 2;           // a space and the closing full stop
+    if(full.length <= room) return full;
+    const share = Math.floor((room - pre.length - 2 * (rs.length - 1)) / rs.length);
+    return share >= 12 ? pre + rs.map(r => trimToLength(r, share)).join('; ') : '';
+  })(confirmedRisksFor(c));
   const parts = [
-    `${c.name} — ${item.kind}${item.category && item.category.label ? ` (${item.category.label})` : ''}.`,
-    String(item.detail || '').replace(/\s+/g, ' ').trim(),
+    head,
+    confirmedClause,
+    String(aiObservation(item) || '').replace(/\s+/g, ' ').trim(),
     inImplementation(c)
       ? `In implementation, ${implPhaseLabel(getImplementationState(c).phase)}.`
-      : `${healthScore(c)}% health, ${sessionsCompletedCount(c)}/${plannedSessionTotal(c)} sessions.`,
+      : `${sessionsCompletedCount(c)}/${plannedSessionTotal(c)} sessions.`,
     `Source: ${riskProvenanceLabel(item)}; ${state}.`
   ].filter(Boolean).map(p => /[.!?…]$/.test(p) ? p : p + '.');
   let out = '';
@@ -10827,13 +10930,13 @@ Write ONE paragraph of AT MOST ${RISK_SUMMARY_MAX} characters. No preamble, no h
 Ground every statement in the data below. Do NOT invent causes, dates, people, commitments, or product behaviour. If the notes do not explain WHY something is happening, say what is observable and stop — do not speculate.
 
 ACCOUNT: ${c.name} (${c.module})
-RISK TYPE: ${item.kind}
+RISK TYPE: ${aiKindLabel(item)}
 SUGGESTED CATEGORY: ${item.category ? item.category.label : 'Other'}
-WHAT THE TRACKER OBSERVED: ${item.detail}
-PROVENANCE: ${riskProvenanceLabel(item)}
+WHAT THE TRACKER OBSERVED: ${aiObservation(item)}
+${(cr => cr.length ? 'CONFIRMED RISKS (by the OSM): ' + cr.map(x => x.reason).join('; ') + '\n' : '')(confirmedRisksFor(c))}PROVENANCE: ${riskProvenanceLabel(item)}
 STATUS: ${inImplementation(c)
   ? 'In implementation, phase ' + implPhaseLabel(getImplementationState(c).phase)
-  : accountStateLabel(c) + ', ' + healthScore(c) + '% health, ' + sessionsCompletedCount(c) + '/' + plannedSessionTotal(c) + ' sessions logged'}
+  : sessionsCompletedCount(c) + '/' + plannedSessionTotal(c) + ' sessions logged'}
 
 RECENT NOTES:
 ${notes || '(no recent notes logged)'}
@@ -10947,7 +11050,7 @@ function buildPushRequest(items){
     customerRef: {gainsightId: ((DATA.customers.find(c => c.id === q.customerId) || {}).gainsightId || '').trim() || null, name: q.customerName},
     fields: isRecordObject(q.fields) ? q.fields : {}}))};
 }
-/* C-5: one result per item, matched by id. Nothing becomes sent without an externalId from the connector, and an item that is
+/* C-5: one result per item, matched by id. Nothing becomes sent unless the connector gives a non-empty string id or an explicit null, and an item that is
    already sent is never rewritten. Unknown ids are ignored. Does not save; the caller saves once. */
 function applyPushResults(results, sentIds){
   const out = {sent: 0, failed: 0};
@@ -10956,8 +11059,8 @@ function applyPushResults(results, sentIds){
   (Array.isArray(results) ? results : []).forEach(r => {
     const q = isRecordObject(r) ? (sentIds.has(r.id) ? queue.find(x => x.id === r.id) : null) : null;
     if(!q || q.status === 'sent') return;
-    if(r.status === 'sent' && typeof r.externalId === 'string' && r.externalId){
-      q.status = 'sent'; q.externalId = r.externalId.slice(0, 200); q.sentAt = new Date().toISOString(); q.error = null; out.sent++;
+    if(r.status === 'sent' && (r.externalId === null || (typeof r.externalId === 'string' && r.externalId))){   // 1.2 B3a: an explicit null id is still sent; undefined, numbers, objects and '' stay queued
+      q.status = 'sent'; q.externalId = r.externalId ? r.externalId.slice(0, 200) : null; q.sentAt = new Date().toISOString(); q.error = null; out.sent++;
     }else if(r.status === 'failed'){
       q.status = 'failed'; q.error = (typeof r.error === 'string' && r.error ? r.error : 'The connector could not send this item.').slice(0, 500); out.failed++;
     }
@@ -11592,9 +11695,10 @@ function needsAttentionList(){
     .filter(c => !inImplementation(c) &&
                  (c.stage === 'graduated' || computeRisk(c) === 'ontrack') &&
                  (hasFlaggedActivity(c) || (isPaused(c) && !!customerEscalatingRiskSignal(c))));
+  const ord = factsAccountOrder();
   return [...riskBased, ...piercedOnly]
     .map(c => ({c, risk: computeRisk(c), health: healthScore(c), days: daysSince(lastActivityDate(c.id) || c.implementationDate), flaggedActivities: getFlaggedActivities(c)}))
-    .sort((a,b)=> (a.risk==='risk'?0:a.risk==='watch'?1:2) - (b.risk==='risk'?0:b.risk==='watch'?1:2) || a.health - b.health);
+    .sort((a, b) => ord(a.c, b.c));
 }
 function dueForSessionList(){
   return DATA.customers
@@ -15092,7 +15196,10 @@ function renderActivityTab(c, acts){
       <div class="activity-summary">${escapeHtml(act.summary)}</div>
       ${(()=>{ // v59: taxonomy phrase hits on this note — a keyword suggestion, not a judgment
         const cats = classifyRiskText(act.summary || '');
-        return cats.length ? `<div style="font-size:var(--text-xs); color:var(--accent-watch-text); margin-bottom:6px;" title="Suggested from the team risk taxonomy by keyword matching — confirm before treating as a real risk.">Possible risk categor${cats.length===1?'y':'ies'}: ${cats.map(x=>`${escapeHtml(x.label)} (“${escapeHtml(x.phrase)}”)`).join(' · ')}</div>` : '';
+        const riskCats = cats.filter(x => !(RISK_TAXONOMY_BY_KEY[x.key] && RISK_TAXONOMY_BY_KEY[x.key].notRisk)), expCats = cats.filter(x => RISK_TAXONOMY_BY_KEY[x.key] && RISK_TAXONOMY_BY_KEY[x.key].notRisk);
+        const chipPart = (x) => `${escapeHtml(x.label)} (“${escapeHtml(x.phrase)}”)`;
+        const chipText = [riskCats.length ? `Possible risk categor${riskCats.length===1?'y':'ies'}: ${riskCats.map(chipPart).join(' · ')}` : '', expCats.length ? `Expansion signal: ${expCats.map(chipPart).join(' · ')}` : ''].filter(Boolean).join(' · ');
+        return cats.length ? `<div style="font-size:var(--text-xs); color:var(--accent-watch-text); margin-bottom:6px;" title="Suggested from the team keyword list by matching — a keyword hit, not a judgment; confirm before treating a risk category as a real risk.">${chipText}</div>` : '';
       })()}
       ${activityIsFirstValueEvidence(c, act.id) ? `
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
@@ -15752,17 +15859,19 @@ The draft is discarded. The risk itself stays open.`)) return;
   $$('[data-risk-confirm]').forEach(btn => btn.addEventListener('click', ()=>{
     const k = casesById(btn.dataset.riskConfirm);
     if(!k) return;
-    markUndoable('risk verdict');
-    k.items.forEach(it => { setRiskVerdict(it, 'confirmed'); markRiskActioned(it, false); });
-    showToast(`${k.c.name} confirmed as a real risk — next steps and the summary are open.`);
-    render();
+    showRiskConfirmModal(k, reason => {
+      markUndoable('risk verdict');
+      confirmRiskCase(k, reason);
+      showToast(`${k.c.name} confirmed as a real risk — next steps and the summary are open.`);
+      render();
+    });
   }));
   $$('[data-risk-dismiss]').forEach(btn => btn.addEventListener('click', ()=>{
     const k = casesById(btn.dataset.riskDismiss);
     if(!k) return;
     showRiskDismissModal(k, reason => {
       markUndoable('risk verdict');
-      k.items.forEach(it => setRiskVerdict(it, 'dismissed', reason));
+      dismissRiskCase(k, reason);
       showToast(`Filed as a false positive. It returns by itself if the account worsens, or after ${RISK_DISMISS_EXPIRY_DAYS} days.`);
       render();
     });
@@ -16033,6 +16142,8 @@ The draft is discarded. The risk itself stays open.`)) return;
     const verdict = raw.slice(0, cut), logKey = raw.slice(cut + 1);
     const it = buildRiskHubList().find(r => r.logKey === logKey);
     if(!it) return;
+    if(verdict === 'confirmed'){ openDeskRiskConfirm(logKey); return; }
+    if(riskVerdictState(it) === 'confirmed'){ showToast('Already confirmed as a real risk. Its reason is kept.'); return; }   // FX4: a confirmed item is never dismissed
     markUndoable('risk verdict');
     if(setRiskVerdict(it, verdict, '')){ render(); showToast(`Risk ${verdict}.`); }
   }));
@@ -17871,6 +17982,50 @@ function showRiskDismissModal(k, onConfirm){
   ta.focus();
 }
 
+/* v13 Step 2e: confirming a risk asks why. OK stays disabled until the trimmed
+   text is non-empty; Cancel and Escape change nothing. */
+function showRiskConfirmModal(k, onConfirm){
+  const prev = document.activeElement;
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rkc-title" aria-describedby="rkc-help">
+      <h3 id="rkc-title">Confirm a risk, ${escapeHtml(k.c.name)}</h3>
+      <p id="rkc-help" class="rk-group-note">A risk is something you say is real. Give the reason in your own words; it is shown beside the account.</p>
+      <div class="rk-evidence-recap">${renderRiskEvidence(k)}</div>
+      <label class="lbl" for="rkc-reason">Why this is a real risk (required)</label>
+      <textarea id="rkc-reason" rows="3" maxlength="200" placeholder="e.g. the sponsor told me on the call they may not renew"></textarea>
+      <p class="rk-group-note" id="rkc-count" style="margin:4px 0 0;">0/200</p>
+      <div class="modal-actions">
+        <button class="btn" id="rkc-cancel">Cancel</button>
+        <button class="btn btn-primary" id="rkc-ok" disabled>Confirm as a risk</button>
+      </div>
+    </div>`;
+  document.body.appendChild(backdrop);
+  const ta = backdrop.querySelector('#rkc-reason');
+  const count = backdrop.querySelector('#rkc-count');
+  const ok = backdrop.querySelector('#rkc-ok');
+  const close = ()=>{
+    document.removeEventListener('keydown', onKey, true);
+    backdrop.remove();
+    if(prev && prev.focus) prev.focus();
+  };
+  const onKey = e => {
+    if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); close(); }
+  };
+  document.addEventListener('keydown', onKey, true);
+  ta.addEventListener('input', ()=>{ count.textContent = `${ta.value.length}/200`; ok.disabled = !ta.value.trim(); });
+  backdrop.querySelector('#rkc-cancel').addEventListener('click', close);
+  ok.addEventListener('click', ()=>{
+    const reason = ta.value.trim();
+    if(!reason) return;
+    close();
+    onConfirm(reason);
+  });
+  backdrop.addEventListener('click', e=>{ if(e.target === backdrop) close(); });
+  ta.focus();
+}
+
 function showWrapUpModal(rec){
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
@@ -18509,6 +18664,7 @@ async function stageImportedTranscripts(activityLists, fileTranscripts){
 // Why the backup path is refusing right now, or '' when it is not.
 function fsBlockedReason(){
   if(_rejectedLoadPayload !== null) return 'the last load was rejected';
+  if(_staleTab) return 'another tab changed this book, reload to sync';
   if(DATA && DATA.synthetic === true) return 'this is a test book';
   /* a transcript the book points to is not in this browser: the backup file may be the only copy left, so keep it */
   if(DATA && Object.values(DATA.activities || {}).some(list => (list || []).some(a => a && a.transcript && typeof a.transcript.ref === 'string' && a.transcript.ref && !_transcriptMap.has(a.transcript.ref)))) return 'a transcript is missing from this browser';
@@ -18529,9 +18685,20 @@ async function fsWriteNow(silent){
   }
   _fsWriting = true;
   try{
+    /* 1.2 FX1: another tab can change the book while any of these awaits is pending.
+       Re-check right before each write and drop an uncommitted file (abort leaves
+       the backup file as it was) instead of landing an older copy over newer work. */
+    const dropIfStale = async w => {
+      if(!_staleTab) return false;
+      try{ if(w && typeof w.abort === 'function') await w.abort(); }catch(e){}
+      return true;
+    };
     const w = await _fsHandle.createWritable();
+    if(await dropIfStale(w)) return false;
     await w.write(serializeBackup(DATA, serializeBook(DATA)));
+    if(await dropIfStale(w)) return false;
     await w.close();
+    if(_staleTab) return false;   // committed already; do not stamp storage over the newer book
     _fsLastWriteAt = Date.now();
     _fsError = '';
     /* An automatic backup IS an export, so it stamps the same field the manual
@@ -18539,7 +18706,7 @@ async function fsWriteNow(silent){
        backed up every few seconds. Stamped at most once a day, and written
        straight to storage rather than through saveData(), because saveData()
        schedules a backup and that would loop. */
-    if(DATA.lastExportedAt !== todayISO()){
+    if(DATA.lastExportedAt !== todayISO() && !_staleTab){
       DATA.lastExportedAt = todayISO();
       try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); }catch(e){}
       render();
@@ -18653,7 +18820,6 @@ function buildProgressReportModel(){
     groups[cat.key].push({
       name: c.name, module: c.module,
       stage: impl ? `Implementation · ${implPhaseLabel(getImplementationState(c).phase)}` : (DATA.config.stages.find(s=>s.key===c.stage) || {label:c.stage}).label,
-      health: impl ? null : healthScore(c),
       sessions: `${sessionsCompletedCount(c)}/${plannedSessionTotal(c)}`,
       days: daysSince(lastActivityDate(c.id) || c.implementationDate),
       reason: cat.reason,
@@ -18688,7 +18854,6 @@ function buildProgressReportHtml(model){
         <th style="padding:4px 8px; border-bottom:1px solid #ccc;">Module</th>
         <th style="padding:4px 8px; border-bottom:1px solid #ccc;">Stage</th>
         <th style="padding:4px 8px; border-bottom:1px solid #ccc;">Sessions</th>
-        <th style="padding:4px 8px; border-bottom:1px solid #ccc;">Health</th>
         <th style="padding:4px 8px; border-bottom:1px solid #ccc;">Days since touch</th>
         <th style="padding:4px 8px; border-bottom:1px solid #ccc;">Why it's here / next step</th>
       </tr></thead>
@@ -18698,7 +18863,6 @@ function buildProgressReportHtml(model){
           <td style="padding:5px 8px; border-bottom:1px solid #eee;">${esc(r.module)}</td>
           <td style="padding:5px 8px; border-bottom:1px solid #eee;">${esc(r.stage)}</td>
           <td style="padding:5px 8px; border-bottom:1px solid #eee;">${esc(r.sessions)}</td>
-          <td style="padding:5px 8px; border-bottom:1px solid #eee;">${r.health === null ? '—' : r.health + '%'}</td>
           <td style="padding:5px 8px; border-bottom:1px solid #eee;">${r.days === null ? 'never' : r.days}</td>
           <td style="padding:5px 8px; border-bottom:1px solid #eee; color:#444;">${esc(r.reason)}<br><span style="color:#7c4dbe;">→ ${esc(r.nextAction)}</span></td>
         </tr>`).join('')}
@@ -20888,6 +21052,7 @@ function initCrossTabGuard(){
     // Only react to real changes of the book key made by another document.
     if(e.key !== STORAGE_KEY) return;
     if(e.newValue === null || e.newValue === e.oldValue) return;
+    _staleTab = true;
     banner.classList.add('show');
   });
 }

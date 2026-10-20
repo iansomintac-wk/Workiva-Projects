@@ -26,6 +26,21 @@ Copilot features are the exception: they send a prompt to an AI provider
 (Anthropic, OpenAI or Gemini) either from the browser with a key entered in
 Settings or through the optional local connector, and need a network
 connection. Everything else works offline.
+The prompts carry facts (last touchpoint, sessions, notes) and the risks you have confirmed with your reasons;
+The progress report likewise no longer shows a health figure or column.
+they no longer carry the health figure, the automatic risk level or automatic risk labels.
+Account lists are ordered by facts: "Sort: Confirmed risk, then quiet longest" puts accounts whose risk you
+confirmed first, then the ones with the longest time since last contact (never touched counts as longest),
+then by name. The AI read, Needs attention and the next-action list use the same order. The
+"Declining Fastest" sort is removed (a saved choice of it now shows this order).
+
+"Upsell" and "expansion conversation" in a note are no longer a Sales/Scope risk phrase. They form their own
+Expansion category, shown as a suggestion chip under the note, and never raise a risk or a Risk tab entry.
+
+The Risk tab no longer calls anything a risk until you say so. What the tracker noticed (missing evidence, pacing,
+note wording, a flagged note, implementation risk or a pause) is listed under "Signals to check", each with where it
+came from. "Yes — it's real" now asks why (required, up to 200 characters); only a case confirmed with a reason
+becomes a risk card with its next steps. The Gainsight queue is unchanged.
 
 Hosted: the 1.1 tracker can also be served from a company-sign-in site. Running
 node tools/build-site.mjs makes site/ (two files); docs/HOSTING.md says what a
@@ -103,6 +118,10 @@ Be clear about the limit of that second one: browsers will not let a page hold
 write permission to disk across sessions without a user gesture, so in practice
 it is ONE CLICK PER SESSION, not one click per backup. The header tells you
 which state you are in and says so loudly when the backup is paused.
+
+If you change the book in a second tab or window, the first tab turns saving
+(and the automatic backup) off and says so in a banner, until you reload it.
+This stops an old tab from overwriting newer work.
 
 The guide keeps its own progress — chosen path, checklist, challenge answers,
 reading mode — in separate osm-guide-* keys. It never reads or writes the
@@ -188,9 +207,10 @@ Running the graduation checks headlessly (needs Chrome or Edge):
   node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html \
        --seed demo-seed.js,tools/graduation-scenarios-seed.js \
        --fn runGraduationScenarios --verbose --expect 6
-  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 483
+  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 501
   step 0 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 34
   step 1 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 65
+  FX1 probe (stale tab, deferred backup write): node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/b2-fx1-probe.js --fn b2Fx1Probe --expect 2
   step 1 cold start (C8): node tools/step1-coldstart.mjs
   tools/selfchecks-1.1.js is the 1.1 copy of the suite (475 checks plus 5 gone-quiet checks; three edited, see CHANGELOG).
 
@@ -285,9 +305,10 @@ tools/selfchecks.js (it is not in the shipped file); the guide's is in the page.
 
   tracker:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 475
             must be 475/475 (the suite lives in tools/selfchecks.js and is not shipped)
-  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 483
+  tracker 1.1:  node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 501
   step 0 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 34
   step 1 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 65
+  FX1 probe (stale tab, deferred backup write): node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/b2-fx1-probe.js --fn b2Fx1Probe --expect 2
   step 1 cold start (C8): node tools/step1-coldstart.mjs
   tools/selfchecks-1.1.js is the 1.1 copy of the suite (475 checks plus 5 gone-quiet checks; three edited, see CHANGELOG).
   guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18

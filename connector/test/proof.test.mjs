@@ -60,7 +60,7 @@ test('health: /v1/health carries the suffix strings and still validates health.j
   try {
     const r = await fetch(`http://127.0.0.1:${server.address().port}/v1/health`, { headers: { Authorization: `Bearer ${token}` } });
     const b = await r.json();
-    assert.deepEqual(b.adapters, { gong: 'gong-rest (unproven)', gainsight: 'gainsight-rest (unproven, dry-run)', ai: 'fake' });
+    assert.deepEqual(b.adapters, { gong: 'gong-rest (unproven)', gainsight: 'gainsight-rest (unproven, dry-run)', ai: 'fake', snowflake: 'fake' });
     assert.deepEqual(validate(JSON.parse(readFileSync(join(root, 'schemas', 'health.json'), 'utf8')), b), []);
   } finally { server.closeAllConnections?.(); await new Promise((r) => server.close(r)); }
 });
@@ -97,6 +97,6 @@ test('health F7: a corrupt proof.json gives 200 with both real adapters unproven
     const r = await fetch(`http://127.0.0.1:${server.address().port}/v1/health`, { headers: { Authorization: `Bearer ${token}` } });
     assert.equal(r.status, 200);
     const b = await r.json();
-    assert.deepEqual(b.adapters, { gong: 'gong-rest (unproven)', gainsight: 'gainsight-rest (unproven, dry-run)', ai: 'fake' });
+    assert.deepEqual(b.adapters, { gong: 'gong-rest (unproven)', gainsight: 'gainsight-rest (unproven, dry-run)', ai: 'fake', snowflake: 'fake' });
   } finally { server.closeAllConnections?.(); await new Promise((r) => server.close(r)); }
 });

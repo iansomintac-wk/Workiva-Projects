@@ -15,6 +15,10 @@ function runSelfChecks(){
 }
 function _runSelfChecksInner(){
   const results = [];
+  const v13Acct = (id, o) => { const c = Object.assign({id, name:'V13 '+id, module:DATA.config.modules[0],
+    stage:DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200),
+    totalSessions:8, domainScores:{}, sessionNotes:{}, stageHistory:[], riskOverride:'risk'}, o || {});
+    backfillCustomerRecord(c); return c; };
   // v74.5: v74.4 (bottom of this suite) diffs the book's key set at suite
   // ENTRY against suite EXIT, which has a temporal blind spot — a key added
   // mid-suite and cleared before the end is invisible to it.
@@ -741,10 +745,10 @@ function _runSelfChecksInner(){
   // suggestion.
   (function(){
     const labels = RISK_TAXONOMY.map(t=>t.label);
-    const expected = ['Adoption/Usage','Other','Customer Team/Loss of Champions','Enablement/Training','Implementation Issue','Partner Experience','Service & Support Risk','Workiva Team/Team Turnover','Past Due Invoices','Product','Lack of Engagement/No Contact','Company Change','Sales/Scope','Value/Shopping Around','Regulatory Changes','No partner/no service','Next Gen GRC Upgrade'];
-    check('v59 taxonomy: 17 team labels verbatim, unique keys, Other is phrase-free fallback',
-      labels.length === 17 && expected.every(l => labels.includes(l))
-      && new Set(RISK_TAXONOMY.map(t=>t.key)).size === 17
+    const expected = ['Adoption/Usage','Other','Customer Team/Loss of Champions','Enablement/Training','Implementation Issue','Partner Experience','Service & Support Risk','Workiva Team/Team Turnover','Past Due Invoices','Product','Lack of Engagement/No Contact','Company Change','Sales/Scope','Value/Shopping Around','Regulatory Changes','No partner/no service','Next Gen GRC Upgrade','Expansion'];
+    check('v59 taxonomy: 18 team labels (17 risk + Expansion) verbatim, unique keys, Other is phrase-free fallback',
+      labels.length === 18 && expected.every(l => labels.includes(l))
+      && new Set(RISK_TAXONOMY.map(t=>t.key)).size === 18
       && RISK_TAXONOMY_BY_KEY.other.phrases.length === 0,
       JSON.stringify(labels));
     const hits = classifyRiskText('Their champion left the company last week, invoice is past due, and there is a bug in the report.');
@@ -997,6 +1001,351 @@ function _runSelfChecksInner(){
       JSON.stringify(rows.map(r=>({m:r.matchedCustomerId, d:r.duplicate, dt:r.dateISO}))));
   })();
 
+  (function(){                                   // v13 Step 2d
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo;
+    try{
+      const sales = RISK_TAXONOMY_BY_KEY.sales_scope.phrases, exp = RISK_TAXONOMY_BY_KEY.expansion;
+      const moved = !sales.includes('upsell') && !sales.includes('expansion conversation')
+        && !!exp && exp.notRisk === true && exp.phrases.includes('upsell') && exp.phrases.includes('expansion conversation');
+      const hits = classifyRiskText('They want an upsell and an expansion conversation.').map(h => h.key);
+      const classed = hits.includes('expansion') && !hits.includes('sales_scope');
+      const c = v13Acct('__s2d__', {riskOverride: 'ontrack'});
+      DATA.customers = [c]; DATA.riskLog = {};
+      DATA.activities = {__s2d__: [{id:'e1', date: isoAddDays(todayISO(), -2), type:'Onboarding Session', summary:'They asked about an upsell.', sessionNumber:1, checklist:[]}]};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const noRisk = !buildRiskHubList({readOnly: true}).some(it => it.c.id === '__s2d__' && it.kind === 'Category signal');
+      ok = moved && classed && noRisk;
+      detail = JSON.stringify({moved, classed, noRisk, hits});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM;
+    check('v13 step 2d: upsell and expansion conversation form their own Expansion category and never raise a risk', ok, detail);
+  })();
+  (function(){                                   // v13 Step 2d (FX3): the note chip words expansion as an opportunity, not a risk
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities;
+    try{
+      const c = v13Acct('__s2d3__', {riskOverride: 'ontrack'});
+      const chipOf = (txt) => {
+        DATA.customers = [c];
+        DATA.activities = {__s2d3__: [{id:'e1', date: isoAddDays(todayISO(), -2), type:'Onboarding Session', summary: txt, sessionNumber:1, checklist:[]}]};
+        const m = /<div style="[^"]*accent-watch-text[^"]*"[^>]*>([\s\S]*?)<\/div>/.exec(renderActivityTab(c, DATA.activities.__s2d3__));
+        return m ? m[1] : '';
+      };
+      const exp = chipOf('They asked about an upsell.');
+      const risk = chipOf('They are considering a competitor and may cancel.');
+      const expChip = exp.indexOf('Expansion') !== -1 && !/risk categor/i.test(exp);
+      const riskKept = /Possible risk categor/.test(risk);   // guard: a real risk note keeps its wording
+      ok = expChip && riskKept;
+      detail = JSON.stringify({exp, risk});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    check('v13 step 2d: the Expansion keyword chip on a note is worded as an expansion signal, not a possible risk category', ok, detail);
+  })();
+  (function(){                                   // v13 Step 2e (1): only a reason makes a risk
+    let ok = false, detail = '';
+    const prevLog = DATA.riskLog;
+    const isRisk = typeof riskItemIsRisk === 'function' ? riskItemIsRisk : () => null;   // null (not a throw) on a build without it
+    try{
+      DATA.riskLog = {};
+      const it = {kind: 'Off Track', sev: 3, c: {id: '__s2e__', name: 'S2eCo'}, detail: 'd', date: todayISO()};
+      it.logKey = riskItemKey(it);
+      const noReason = setRiskVerdict(it, 'confirmed') === false && setRiskVerdict(it, 'confirmed', '   ') === false && riskVerdictState(it) === 'unreviewed';
+      const withReason = setRiskVerdict(it, 'confirmed', 'customer told me on the call') === true && riskVerdictState(it) === 'confirmed' && isRisk(it) === true;
+      const signalsOnly = ['Off Track', 'Watch', 'Behind target', 'Risk language', 'Category signal', 'Flagged note', 'Implementation risk', 'Implementation paused']
+        .every(kind => isRisk({kind, tracking: {}}) === false);
+      ok = noReason && withReason && signalsOnly;
+      detail = JSON.stringify({noReason, withReason, signalsOnly});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.riskLog = prevLog;
+    check('v13 step 2e: confirming a risk needs a non-empty reason, and nothing is a risk before that', ok, detail);
+  })();
+  (function(){                                   // v13 Step 2e (2): the hub lists signals apart from risks
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevShow = ui.riskShowDismissed, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+    try{
+      DATA.riskLog = {}; ui.riskShowDismissed = false;
+      const c = v13Acct('__s2e2__');                       // auto Off Track only: a signal
+      DATA.customers = [c]; DATA.activities = {};
+      reset();
+      const pre_oneCase = buildRiskCases(buildRiskHubList()).length === 1;   // precondition, true on the parent too
+      const before = renderRiskTab();
+      const secStart = before.indexOf('Signals to check');
+      const sig = secStart !== -1;
+      const rowKept = sig && before.indexOf('id="rk-c-' + c.id + '"') > secStart && before.indexOf('data-risk-confirm="' + c.id + '"') > secStart;
+      const noCard = before.indexOf('class="rk3-card') === -1;
+      buildRiskCases(buildRiskHubList()).forEach(k => k.items.forEach(it => setRiskVerdict(it, 'confirmed', 'real: they said so')));
+      reset();
+      const after = renderRiskTab();
+      const guard_cardAfterConfirm = after.indexOf('class="rk3-card') !== -1;   // guard, true on the parent too
+      ok = pre_oneCase && sig && rowKept && noCard && guard_cardAfterConfirm;
+      detail = JSON.stringify({pre_oneCase, sig, rowKept, noCard, guard_cardAfterConfirm});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.riskShowDismissed = prevShow;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    ok = ok && _riskHubCache === prevHub;   // FX2: the render swapped _riskHubCache; it must be put back
+    check('v13 step 2e: a missing-evidence case is listed under Signals to check (keeping its row id and confirm button), not as a risk card, until a reason confirms it', ok, detail);
+  })();
+  (function(){                                   // FX2 (1): a mixed case, driven through the real confirm and dismiss controls
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const prevView = ui.view, prevOpen = ui.openCustomerId, prevTab = ui.panelTab, realSave = saveData, prevUL = _undoLabel;
+    const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+    const preModals = new Set(document.querySelectorAll('.modal-backdrop'));
+    const closeModals = () => document.querySelectorAll('.modal-backdrop').forEach(el => { if(preModals.has(el)) return; const b = el.querySelector('#rkc-cancel'); if(b) b.click(); else el.remove(); });
+    try{
+      saveData = function(){ return true; };
+      DATA.riskLog = {}; DATA.activities = {};
+      const c = v13Acct('__fx2a__', {riskOverride: 'risk'});
+      DATA.customers = [c];
+      DATA.activities[c.id] = [{id:'afx2', date: isoAddDays(todayISO(), -6), type:'Onboarding Session', summary:'They raised a blocker and are frustrated.', sessionNumber:1, checklist:[], flagged:true}];
+      reset(); ui.view = 'risk'; ui.openCustomerId = null;
+      const items = () => { reset(); return buildRiskCases(buildRiskHubList()).find(k => k.c.id === c.id).items; };
+      const two = items().length >= 2;
+      setRiskVerdict(items()[0], 'confirmed', 'FIRST reason');
+      const firstKey = items().find(it => riskItemIsRisk(it)).logKey;
+      const submit = (btnSel, taSel, okSel, text) => {
+        render();
+        const btn = document.querySelector(btnSel);
+        if(!btn) return false;
+        btn.click();
+        const ta = document.querySelector(taSel);
+        if(!ta) return false;
+        ta.value = text; ta.dispatchEvent(new Event('input', {bubbles: true}));
+        document.querySelector(okSel).click();
+        return true;
+      };
+      const clicked = submit('[data-risk-confirm="' + c.id + '"]', '#rkc-reason', '#rkc-ok', 'SECOND reason');
+      const keptFirst = DATA.riskLog[firstKey].verdictReason === 'FIRST reason' && DATA.riskLog[firstKey].verdict === 'confirmed';
+      const others = items().filter(it => it.logKey !== firstKey);
+      const otherGot = others.length > 0 && others.every(it => it.tracking.verdictReason === 'SECOND reason');
+      closeModals();
+      DATA.riskLog = {};
+      setRiskVerdict(items()[0], 'confirmed', 'FIRST reason');
+      const clicked2 = submit('[data-risk-dismiss="' + c.id + '"]', '#rkd-reason', '#rkd-ok', 'nope');
+      const stillConfirmed = items().filter(it => riskItemIsRisk(it)).length === 1 && items().filter(it => riskVerdictState(it) === 'dismissed').length === items().length - 1;
+      ok = two && clicked && clicked2 && keptFirst && otherGot && stillConfirmed;
+      detail = JSON.stringify({two, clicked, clicked2, keptFirst, otherGot, stillConfirmed});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    closeModals(); saveData = realSave; _undoLabel = prevUL;
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    ui.view = prevView; ui.openCustomerId = prevOpen; ui.panelTab = prevTab;
+    try{ render(); }catch(e){}
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX2: confirming a mixed case through the real controls acts only on unconfirmed items and keeps the first reason; dismissing never drops a confirmed item', ok, detail);
+  })();
+  (function(){                                   // FX2 (2)+(4): pre-1.2 confirmations stay risks, labelled; the card prints the reason
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+    try{
+      const c = v13Acct('__fx2b__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {}; reset();
+      const it0 = buildRiskHubList().find(r => r.c.id === c.id);
+      DATA.riskLog = {}; DATA.riskLog[it0.logKey] = {firstSeen: isoAddDays(todayISO(), -30), lastActioned: isoAddDays(todayISO(), -20), verdict: 'confirmed', verdictOn: isoAddDays(todayISO(), -20), verdictSev: it0.sev};
+      reset();
+      const it = buildRiskHubList().find(r => r.logKey === it0.logKey);
+      const stays = riskItemIsRisk(it) === true && buildRiskCases(buildRiskHubList()).find(k => k.c.id === c.id).isRisk === true;
+      const html = renderRiskTab();
+      const labelled = html.indexOf('Confirmed before reasons were required: add a reason') !== -1 && html.indexOf('class="rk3-card') !== -1;
+      const nag = riskAttention(it).state === 'maintenance_due';
+      DATA.riskLog[it0.logKey].verdictReason = 'PRINTED-REASON-XYZ'; reset();
+      const html2 = renderRiskTab();
+      const prints = html2.indexOf('PRINTED-REASON-XYZ') !== -1 && html2.indexOf('Confirmed before reasons were required') === -1;
+      ok = stays && labelled && nag && prints;
+      detail = JSON.stringify({stays, labelled, nag, prints});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX2: a pre-1.2 confirmation (no reason) stays a risk with the add-a-reason label and still nags; the card prints a reason when there is one', ok, detail);
+  })();
+  (function(){                                   // FX2 (3): a real click on the account desk Confirm opens the reason modal
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const prevView = ui.view, prevOpen = ui.openCustomerId, prevTab = ui.panelTab, realSave = saveData, prevUL = _undoLabel, prevSnap = DATA.weeklySnapshot;
+    const preModals = new Set(document.querySelectorAll('.modal-backdrop'));
+    const closeModals = () => document.querySelectorAll('.modal-backdrop').forEach(el => { if(preModals.has(el)) return; const b = el.querySelector('#rkc-cancel'); if(b) b.click(); else el.remove(); });
+    try{
+      saveData = function(){ return true; };
+      const c = v13Acct('__fx2c__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      DATA.weeklySnapshot = {date: isoAddDays(todayISO(), -7), ids: []};   // so the Joined Needs Attention deck (editor risk) renders
+      ui.openCustomerId = null; ui.view = 'copilot';
+      render();
+      const btn = document.querySelector('[data-dk-risk^="confirmed|"]');
+      const found = !!btn;
+      const before = document.querySelectorAll('#rkc-reason').length;
+      if(btn) btn.click();
+      const modalOpened = document.querySelectorAll('#rkc-reason').length === before + 1;
+      const noVerdictYet = Object.keys(DATA.riskLog).every(k => !DATA.riskLog[k].verdict);
+      ok = found && modalOpened && noVerdictYet;
+      detail = JSON.stringify({found, modalOpened, noVerdictYet});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    closeModals(); saveData = realSave; _undoLabel = prevUL;
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    if(prevSnap === undefined) delete DATA.weeklySnapshot; else DATA.weeklySnapshot = prevSnap;
+    ui.view = prevView; ui.openCustomerId = prevOpen; ui.panelTab = prevTab;
+    try{ render(); }catch(e){}
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX2: a real click on the account desk Confirm opens the reason modal and writes no verdict', ok, detail);
+  })();
+  (function(){                                   // FX4 (1): a real click on the desk Dismiss / Confirm of an already-confirmed item
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const prevView = ui.view, prevOpen = ui.openCustomerId, prevTab = ui.panelTab, realSave = saveData, prevUL = _undoLabel, prevSnap = DATA.weeklySnapshot, realToast = showToast;
+    const pre = new Set(document.querySelectorAll('.modal-backdrop'));
+    const closeOwn = () => document.querySelectorAll('.modal-backdrop').forEach(el => { if(pre.has(el)) return; const b = el.querySelector('#rkc-cancel'); if(b) b.click(); else el.remove(); });
+    const toasts = [];
+    try{
+      saveData = function(){ return true; };
+      showToast = function(m){ toasts.push(String(m)); };
+      const c = v13Acct('__fx4a__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const it0 = buildRiskHubList().find(r => r.c.id === c.id);
+      setRiskVerdict(it0, 'confirmed', 'FX4A-KEEP-THIS-REASON');
+      const key = it0.logKey;
+      DATA.weeklySnapshot = {date: isoAddDays(todayISO(), -7), ids: []};
+      ui.openCustomerId = null; ui.view = 'copilot';
+      render();
+      const dis = document.querySelector('[data-dk-risk="dismissed|' + key + '"]');
+      const found = !!dis;
+      if(dis) dis.click();
+      const kept = DATA.riskLog[key].verdict === 'confirmed' && DATA.riskLog[key].verdictReason === 'FX4A-KEEP-THIS-REASON';
+      const noDismissToast = !toasts.some(t => /dismissed/i.test(t));
+      toasts.length = 0; render();
+      const conf = document.querySelector('[data-dk-risk="confirmed|' + key + '"]');
+      const modals0 = document.querySelectorAll('#rkc-reason').length;
+      if(conf) conf.click();
+      const noModal = document.querySelectorAll('#rkc-reason').length === modals0;
+      const noFalseToast = !toasts.some(t => /confirmed as a real risk/i.test(t) && !/^already/i.test(t));
+      ok = found && kept && noDismissToast && noModal && noFalseToast;
+      detail = JSON.stringify({found, kept, noDismissToast, noModal, noFalseToast, toasts});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    closeOwn(); saveData = realSave; showToast = realToast; _undoLabel = prevUL;
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    if(prevSnap === undefined) delete DATA.weeklySnapshot; else DATA.weeklySnapshot = prevSnap;
+    ui.view = prevView; ui.openCustomerId = prevOpen; ui.panelTab = prevTab;
+    try{ render(); }catch(e){}
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX4: a real click on the desk Dismiss of an already-confirmed item keeps its verdict and reason, and desk Confirm on it neither opens the modal nor toasts "confirmed"', ok, detail);
+  })();
+  (function(){                                   // FX4 (2): only confirmed reasons reach the AI risk-summary text
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    try{
+      const c = v13Acct('__fx4b__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      DATA.activities[c.id] = [{id:'a__fx4b__', date: isoAddDays(todayISO(), -6), type:'Onboarding Session', summary:'They raised a blocker and are frustrated.', sessionNumber:1, checklist:[], flagged:true}];
+      const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+      reset();
+      const items = () => { reset(); return buildRiskHubList().filter(r => r.c.id === c.id); };
+      const n3 = items().length >= 3;
+      const keys = items().map(r => r.logKey);
+      setRiskVerdict(items()[0], 'confirmed', 'FX4B-CONFIRMED-REASON');
+      setRiskVerdict(items()[1], 'dismissed', 'FX4B-DISMISSED-REASON');
+      DATA.riskLog[keys[2]] = Object.assign(DATA.riskLog[keys[2]] || {firstSeen: todayISO(), lastActioned: null}, {verdictReason: 'FX4B-UNREVIEWED-REASON'});
+      const item = items().find(r => r.logKey === keys[0]);
+      const texts = [buildRiskSummaryPrompt(item), buildRiskExecSummary(item), buildCallPrepContext(c).text, JSON.stringify(aiCustomerSnapshot(c))];
+      const hasConf = texts.every(x => x.indexOf('FX4B-CONFIRMED-REASON') !== -1);
+      const noDis = texts.every(x => x.indexOf('FX4B-DISMISSED-REASON') === -1);
+      const noUnrev = texts.every(x => x.indexOf('FX4B-UNREVIEWED-REASON') === -1);
+      ok = n3 && hasConf && noDis && noUnrev;
+      detail = JSON.stringify({n3, hasConf, noDis, noUnrev});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX4: a dismissed or unreviewed item\'s reason never appears in the risk-summary prompt, the exec summary, the call-prep text or the AI snapshot', ok, detail);
+  })();
+  (function(){                                   // FX4 (3): two long reasons are trimmed, not dropped, in the exec summary
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    try{
+      const c = v13Acct('__fx4c__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      DATA.activities[c.id] = [{id:'a__fx4c__', date: isoAddDays(todayISO(), -6), type:'Onboarding Session', summary:'They raised a blocker and are frustrated.', sessionNumber:1, checklist:[], flagged:true}];
+      const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+      reset();
+      const items = () => { reset(); return buildRiskHubList().filter(r => r.c.id === c.id); };
+      const pad = n => new Array(n + 1).join('x');
+      const k0 = items()[0].logKey;
+      setRiskVerdict(items()[0], 'confirmed', ('ALPHA-REASON-' + pad(200)).slice(0, 200));
+      setRiskVerdict(items()[1], 'confirmed', ('BRAVO-REASON-' + pad(200)).slice(0, 200));
+      const s = buildRiskExecSummary(items().find(r => r.logKey === k0));
+      const both = s.indexOf('ALPHA-REASON-') !== -1 && s.indexOf('BRAVO-REASON-') !== -1;
+      const fits = s.length <= RISK_SUMMARY_MAX;
+      ok = both && fits;
+      detail = JSON.stringify({both, fits, len: s.length});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX4: the exec summary keeps both of two 200-character confirmed reasons (trimmed) and stays within its length cap', ok, detail);
+  })();
+  (function(){                                   // FX4 (5): a reason shared by several items is written once
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    try{
+      const c = v13Acct('__fx4d__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      DATA.activities[c.id] = [{id:'a__fx4d__', date: isoAddDays(todayISO(), -6), type:'Onboarding Session', summary:'They raised a blocker and are frustrated.', sessionNumber:1, checklist:[], flagged:true}];
+      const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+      reset();
+      const items = () => { reset(); return buildRiskHubList().filter(r => r.c.id === c.id); };
+      const R = 'FX4D-ONCE-ONLY';
+      const k0 = items()[0].logKey;
+      const nItems = items().length;
+      items().forEach(it => setRiskVerdict(it, 'confirmed', R));
+      const item = items().find(r => r.logKey === k0);
+      const count = s => s.split(R).length - 1;
+      const counts = [buildRiskSummaryPrompt(item), buildRiskExecSummary(item), buildCallPrepContext(c).text, JSON.stringify(aiCustomerSnapshot(c))].map(count);
+      // the prompt embeds the exec-summary draft, so it carries the reason once in its own section and once in the draft; the others exactly once
+      ok = nItems >= 2 && counts[1] === 1 && counts[2] === 1 && counts[3] === 1 && counts[0] === 2;
+      detail = JSON.stringify({counts, nItems});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX4: a reason shared by several confirmed items appears once per text, not once per item', ok, detail);
+  })();
+  (function(){                                   // FX4 (4): closing a check-opened modal leaks no keydown listener and spares others
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const prevView = ui.view, prevOpen = ui.openCustomerId, prevSnap = DATA.weeklySnapshot, realSave = saveData, prevUL = _undoLabel;
+    const realAdd = document.addEventListener, realRem = document.removeEventListener;
+    const sentinel = document.createElement('div'); sentinel.className = 'modal-backdrop'; sentinel.id = 'fx4-sentinel';
+    document.body.appendChild(sentinel);
+    const pre = new Set(document.querySelectorAll('.modal-backdrop'));
+    let adds = 0, rems = 0;
+    try{
+      saveData = function(){ return true; };
+      document.addEventListener = function(t){ if(t === 'keydown') adds++; return realAdd.apply(document, arguments); };
+      document.removeEventListener = function(t){ if(t === 'keydown') rems++; return realRem.apply(document, arguments); };
+      const c = v13Acct('__fx4e__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      DATA.weeklySnapshot = {date: isoAddDays(todayISO(), -7), ids: []};
+      ui.openCustomerId = null; ui.view = 'copilot';
+      render();
+      const addsBefore = adds;
+      const btn = document.querySelector('[data-dk-risk^="confirmed|"]');
+      if(btn) btn.click();
+      const opened = document.querySelectorAll('.modal-backdrop').length === pre.size + 1;
+      document.querySelectorAll('.modal-backdrop').forEach(el => { if(pre.has(el)) return; const b = el.querySelector('#rkc-cancel'); if(b) b.click(); else el.remove(); });
+      const spared = document.body.contains(sentinel);
+      const closedOwn = document.querySelectorAll('.modal-backdrop').length === pre.size;
+      ok = !!btn && opened && spared && closedOwn && adds - addsBefore === 1 && rems >= 1;
+      detail = JSON.stringify({btn: !!btn, opened, spared, closedOwn, adds, addsBefore, rems});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    document.addEventListener = realAdd; document.removeEventListener = realRem;
+    sentinel.remove(); document.querySelectorAll('.modal-backdrop').forEach(el => { if(!pre.has(el)) el.remove(); });
+    saveData = realSave; _undoLabel = prevUL;
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    if(prevSnap === undefined) delete DATA.weeklySnapshot; else DATA.weeklySnapshot = prevSnap;
+    ui.view = prevView; ui.openCustomerId = prevOpen;
+    try{ render(); }catch(e){}
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('FX4: closing the desk Confirm modal through its own Cancel leaks no keydown listener and removes no modal the check did not open', ok, detail);
+  })();
   /* ============ v61: Today unified action ranking ============
      "no Today row renders without a citation" and "Start-here card shows exactly
      todayActionList()[0]" are the load-bearing ones. They are what keep the
@@ -4178,6 +4527,37 @@ function _runSelfChecksInner(){
     _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
     check('phase3 the state label is not paired with a health score', ok, detail);
   })();
+  (function(){                                   // 1.2 B2: a stale tab must not overwrite newer work
+    let ok = false, detail = '';
+    const before = localStorage.getItem(STORAGE_KEY);
+    const banner = document.getElementById('tab-conflict');
+    const bannerWas = banner ? banner.classList.contains('show') : false;
+    const prevStale = (typeof _staleTab !== 'undefined') ? _staleTab : false;
+    const prevToast = (typeof _staleToastShown !== 'undefined') ? _staleToastShown : false;
+    const prevSuite = _suiteRunning, prevUndo = _undoSnapshot, prevLabel = _undoLabel;
+    try{
+      /* The suite normally blocks every write, which would make "unchanged" true
+         on any code. Lift that block for this one probe and change the book first,
+         so a save that is not refused really would write; storage is put back below. */
+      _suiteRunning = false;
+      DATA.__b2probe = 1;
+      window.dispatchEvent(new StorageEvent('storage', {key: STORAGE_KEY, oldValue: 'a', newValue: 'b'}));
+      const saved = saveData();
+      const maint = saveData({maintenance: true});
+      const unchanged = localStorage.getItem(STORAGE_KEY) === before;
+      const backupBlocked = fsBlockedReason().indexOf('another tab') !== -1;
+      const says = !!banner && banner.textContent.indexOf('Saving is off in this tab') !== -1;
+      ok = saved === false && maint === false && unchanged && backupBlocked && says;
+      detail = JSON.stringify({saved, maint, unchanged, backupBlocked, says});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    delete DATA.__b2probe;
+    _suiteRunning = prevSuite; _undoSnapshot = prevUndo; _undoLabel = prevLabel;
+    try{ if(before === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, before); }catch(e){}
+    if(typeof _staleTab !== 'undefined') _staleTab = prevStale;
+    if(typeof _staleToastShown !== 'undefined') _staleToastShown = prevToast;
+    if(banner) banner.classList.toggle('show', bannerWas);
+    check('1.2 B2 a stale tab refuses saveData and the backup write until reload, and the banner says so', ok, detail);
+  })();
   (function(){
     /* Phase 3 / badge FIX 2. The evidence badge named a band NUMBER (Sev N/4)
        that required already knowing STORY_CHAPTERS to decode — the beat's own
@@ -4494,7 +4874,7 @@ function _runSelfChecksInner(){
       const it = {kind:'Risk language', sev:2, c:{id:'__v__', name:'VerdictCo'}, detail:'d', date: todayISO()};
       it.logKey = riskItemKey(it);
       const fresh = riskVerdictState(it) === 'unreviewed';
-      setRiskVerdict(it, 'confirmed');
+      setRiskVerdict(it, 'confirmed', 'told me on the call');
       const confirmed = riskVerdictState(it) === 'confirmed';
       setRiskVerdict(it, 'dismissed', '  the keyword was about   their own tooling  ');
       const dismissed = riskVerdictState(it) === 'dismissed';
@@ -4594,7 +4974,7 @@ function _runSelfChecksInner(){
       // (b) Approving reveals the workspace for THAT account only.
       const cases = buildRiskCases(buildRiskHubList());
       const first = cases.find(k => k.state === 'unreviewed');
-      first.items.forEach(it => setRiskVerdict(it, 'confirmed'));
+      first.items.forEach(it => setRiskVerdict(it, 'confirmed', 'told me on the call'));
       _renderMemoResets.forEach(r => r()); _riskMemo = new Map();
       const afterApprove = renderRiskTab();
       const revealed = (afterApprove.match(/<textarea/g) || []).length === 1
@@ -5850,6 +6230,8 @@ function _runSelfChecksInner(){
         ? [{id:'a'+c.id, date: isoAddDays(todayISO(), -6), type:'Onboarding Session',
             summary:'They raised a blocker and are frustrated.', sessionNumber:1, checklist:[], flagged:true}]
         : []; return m; }, {});
+      // v13 Step 2e: only a case confirmed with a reason is a deck card, so confirm each one first (fixed by Task 11)
+      buildRiskCases(buildRiskHubList()).forEach(k => k.items.forEach(it => setRiskVerdict(it, 'confirmed', 'told me on the call')));
       _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
 
       const html = renderRiskTab();
@@ -9311,28 +9693,151 @@ function _runSelfChecksInner(){
     let ok = false, detail = '';
     const had = Object.prototype.hasOwnProperty.call(DATA, 'gainsightQueue'), saved = DATA.gainsightQueue;
     try{
-      DATA.gainsightQueue = [c5Item('A'), c5Item('B'), c5Item('C'), c5Item('D', {status: 'sent', externalId: 'KEEP', sentAt: '2026-01-01T00:00:00.000Z'})];
+      DATA.gainsightQueue = [c5Item('A'), c5Item('B'), c5Item('C'), c5Item('D', {status: 'sent', externalId: 'KEEP', sentAt: '2026-01-01T00:00:00.000Z'}), c5Item('E'), c5Item('F')];
       const r = applyPushResults([{id: 'A', status: 'sent', externalId: 'X-1', error: null}, {id: 'B', status: 'failed', externalId: null, error: 'boom'},
-        {id: 'ZZ', status: 'sent', externalId: 'Q'}, {id: 'C', status: 'sent', externalId: null}, {id: 'D', status: 'failed', error: 'late'}], new Set(['A', 'B', 'C', 'D']));
-      const q = DATA.gainsightQueue, A = q[0], B = q[1], C = q[2], D = q[3];
+        {id: 'ZZ', status: 'sent', externalId: 'Q'}, {id: 'C', status: 'sent', externalId: null}, {id: 'D', status: 'failed', error: 'late'},
+        {id: 'E', status: 'sent', externalId: 42}, {id: 'F', status: 'sent'}], new Set(['A', 'B', 'C', 'D', 'E', 'F']));
+      const q = DATA.gainsightQueue, A = q[0], B = q[1], C = q[2], D = q[3], E = q[4], F = q[5];
       const stateOk = A.status === 'sent' && A.externalId === 'X-1' && !!A.sentAt && A.error === null
         && B.status === 'failed' && B.error === 'boom' && B.externalId === null && B.sentAt === null
-        && C.status === 'queued' && C.externalId === null          // "sent" with no externalId is never believed
+        && C.status === 'sent' && C.externalId === null && !!C.sentAt          // 1.2 B3a: an explicit null id is believed
+        && E.status === 'queued' && E.externalId === null && F.status === 'queued' && F.externalId === null   // a numeric id and a missing id key are malformed, never believed
         && D.status === 'sent' && D.externalId === 'KEEP' && D.sentAt === '2026-01-01T00:00:00.000Z'   // a sent item is never overwritten
-        && q.length === 4;
-      const countOk = r.sent === 1 && r.failed === 1;
+        && q.length === 6;
+      const countOk = r.sent === 2 && r.failed === 1;
       const htmlA = renderGainsightQueueRow(A, 0), htmlB = renderGainsightQueueRow(B, 1), htmlC = renderGainsightQueueRow(C, 2);
       const renderOk = htmlA.indexOf('✓ sent') !== -1 && htmlA.indexOf('X-1') !== -1 && htmlA.indexOf('data-queue-retry') === -1
         && htmlB.indexOf('data-queue-retry="B"') !== -1 && htmlB.indexOf('boom') !== -1 && /Retry/.test(htmlB)
-        && htmlC.indexOf('data-queue-retry') === -1 && htmlC.indexOf('boom') === -1;
+        && htmlC.indexOf('data-queue-retry') === -1 && htmlC.indexOf('boom') === -1 && htmlC.indexOf('id not returned') !== -1;
       B.error = '<img src=x onerror=1>';
       const esc = renderGainsightQueueRow(B, 1).indexOf('<img') === -1;
       const req2 = buildPushRequest(q).items.map(i => i.id).join();
-      ok = stateOk && countOk && renderOk && esc && req2 === 'B,C';
+      ok = stateOk && countOk && renderOk && esc && req2 === 'B,E,F';
       detail = JSON.stringify({stateOk, countOk, renderOk, esc, req2, r});
     }catch(e){ detail = 'threw: ' + e.message; }
     finally{ if(had) DATA.gainsightQueue = saved; else delete DATA.gainsightQueue; }
-    check('gainsight c5b: applyPushResults sets sent+externalId+sentAt / failed+error by id, ignores unknown ids, never marks sent without an externalId and never touches an already-sent item; a failed row shows its error and Retry, a sent row shows ✓ sent and its id', ok, detail);
+    check('gainsight c5b: applyPushResults sets sent+externalId+sentAt / failed+error by id, ignores unknown ids, marks sent only for a non-empty string id or an explicit null and never touches an already-sent item; a failed row shows its error and Retry, a sent row shows ✓ sent and its id', ok, detail);
+  })();
+  (function(){                                   // 1.2 B3a: a sent reply with no id is still sent
+    let ok = false, detail = '';
+    const had = Object.prototype.hasOwnProperty.call(DATA, 'gainsightQueue'), saved = DATA.gainsightQueue;
+    try{
+      DATA.gainsightQueue = [c5Item('N1')];
+      const r = applyPushResults([{id: 'N1', status: 'sent', externalId: null, error: null}], new Set(['N1']));
+      const q = DATA.gainsightQueue[0];
+      const marked = q.status === 'sent' && q.externalId === null && !!q.sentAt && q.error === null && r.sent === 1;
+      const notAgain = buildPushRequest(DATA.gainsightQueue).items.length === 0;
+      const row = renderGainsightQueueRow(q, 0);
+      const shows = row.indexOf('✓ sent') !== -1 && row.indexOf('id not returned') !== -1 && row.indexOf('data-queue-retry') === -1;
+      ok = marked && notAgain && shows;
+      detail = JSON.stringify({marked, notAgain, shows, r});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    finally{ if(had) DATA.gainsightQueue = saved; else delete DATA.gainsightQueue; }
+    check('1.2 B3a a sent reply with no external id marks the item sent (id not returned) so it cannot be sent twice', ok, detail);
+  })();
+  (function(){                                   // v13 Step 2a
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    try{
+      const c = v13Acct('__s2a__');
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const items = buildRiskHubList({readOnly: true}).filter(it => it.c.id === c.id);   // real items: Off Track from riskOverride
+      const lab = riskLabel(computeRisk(c)), st = accountStateLabel(c), rr = riskReasonText(c);
+      DATA.riskLog = {'__s2a__|Off Track': {firstSeen: todayISO(), lastActioned: null, verdict: 'confirmed', verdictOn: todayISO(), verdictSev: 3, verdictReason: 'Customer said they will not renew'}};
+      const texts = [buildCallPrepContext(c).text, JSON.stringify(aiCustomerSnapshot(c))]
+        .concat(items.map(buildRiskSummaryPrompt), items.map(buildRiskExecSummary));
+      const h = healthScore(c);
+      const hRe = new RegExp('(' + h + '\\s*%|health\\D{0,12}' + h + '(\\D|$))', 'i');
+      const forbidden = t => /\d+\s*%\s*health|health\D{0,12}\d+|healthScore|riskLabel|RISK TYPE: (Off Track|Watch|Behind target|Risk language|Category signal)/i.test(t)
+        || t.indexOf(lab) !== -1 || t.indexOf(st) !== -1 || (rr.length > 8 && t.indexOf(rr) !== -1);
+      const bad = texts.map(forbidden);
+      const healthNum = texts.some(t => hRe.test(t));
+      const reasonKept = texts[0].indexOf('Customer said they will not renew') !== -1 && texts[1].indexOf('Customer said they will not renew') !== -1;
+      const facts = texts[0].indexOf(c.name) !== -1 && texts[0].indexOf('Last touchpoint') !== -1 && items.length > 0;
+      ok = bad.every(b => !b) && !healthNum && reasonKept && facts;
+      detail = JSON.stringify({bad, healthNum, h, reasonKept, facts, n: items.length, lab, st});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('v13 step 2a: no AI prompt text built for a seeded account carries its health figure, automatic risk level or automatic kind label, and confirmed reasons are included', ok, detail);
+  })();
+  (function(){                                   // v13 Step 2a (FX3): the risk-summary builders carry the confirmed reason
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog;
+    try{
+      const c = v13Acct('__s2a3__');
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      DATA.riskLog = {'__s2a3__|Off Track': {firstSeen: todayISO(), lastActioned: null, verdict: 'confirmed', verdictOn: todayISO(), verdictSev: 3, verdictReason: 'Legal hold blocks the renewal signature'}};
+      const items = buildRiskHubList({readOnly: true}).filter(it => it.c.id === c.id);
+      const R = 'Legal hold blocks the renewal signature';
+      const inPrompt = items.length > 0 && items.every(it => buildRiskSummaryPrompt(it).indexOf(R) !== -1);
+      const inExec = items.length > 0 && items.every(it => buildRiskExecSummary(it).indexOf(R) !== -1);
+      ok = inPrompt && inExec;
+      detail = JSON.stringify({inPrompt, inExec, n: items.length});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('v13 step 2a: buildRiskSummaryPrompt and buildRiskExecSummary include the confirmed reason (a reason found in no note)', ok, detail);
+  })();
+  (function(){                                   // v13 Step 2b
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities;
+    try{
+      DATA.customers = [v13Acct('__s2b__')]; DATA.activities = {};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const model = buildProgressReportModel();
+      const rows = Object.values(model.groups).reduce((a, l) => a.concat(l), []);
+      const noKey = rows.length === 1 && rows.every(r => !('health' in r));
+      const html = buildProgressReportHtml(model);
+      const ths = (html.match(/<th[\s>]/g) || []).length, tds = (html.match(/<td[\s>]/g) || []).length;
+      const noHeader = !/<th[^>]*>\s*Health\s*<\/th>/.test(html);
+      ok = noKey && noHeader && ths === 6 && tds === 6;      // one account: one table, six columns, six cells
+      detail = JSON.stringify({noKey, noHeader, ths, tds, rows: rows.length});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA;
+    _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+    check('v13 step 2b: the progress report rows carry no health figure and the table has no Health column', ok, detail);
+  })();
+  (function(){                                   // v13 Step 2c
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevSort = ui.sortBy;
+    const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+    const act = (id, d, o) => ({[id]: [Object.assign({id: 'a'+id, date: isoAddDays(todayISO(), -d), type: 'Onboarding Session', summary: 's', sessionNumber: 1, checklist: []}, o || {})]});
+    try{
+      // (1) sortCustomers and the AI read: confirmed first, then quiet longest, whatever the auto risk says
+      const A = v13Acct('__a__', {riskOverride: 'ontrack'}), B = v13Acct('__b__', {riskOverride: 'risk'}), C = v13Acct('__c__', {riskOverride: 'ontrack'});
+      DATA.customers = [A, B, C];
+      DATA.activities = Object.assign({}, act('__a__', 40), act('__b__', 5), act('__c__', 1));
+      DATA.riskLog = {'__c__|Flagged note': {firstSeen: todayISO(), lastActioned: null, verdict: 'confirmed', verdictOn: todayISO(), verdictSev: 3, verdictReason: 'customer said they will not renew'}};
+      reset(); ui.sortBy = 'risk';
+      const order = sortCustomers(DATA.customers.slice()).map(c => c.id).join();
+      const brief = typeof copilotBriefedAccounts === 'function' ? copilotBriefedAccounts(DATA.customers).map(c => c.id).join() : 'missing';
+      // (2) needsAttentionList: X (watch, confirmed) before Y (risk), behaviourally
+      const X = v13Acct('__x__', {riskOverride: 'watch'}), Y = v13Acct('__y__', {riskOverride: 'risk'});
+      DATA.customers = [Y, X];
+      DATA.activities = Object.assign({}, act('__x__', 3), act('__y__', 3));
+      DATA.riskLog = {'__x__|Watch': {firstSeen: todayISO(), lastActioned: null, verdict: 'confirmed', verdictOn: todayISO(), verdictSev: 1, verdictReason: 'they told me'}};
+      reset();
+      const needs = needsAttentionList().map(r => r.c.id).join();
+      // (3) nextActionList: facts primary, even when the other account has the higher auto severity
+      const K = v13Acct('__k__', {riskOverride: 'ontrack'}), H = v13Acct('__h__', {riskOverride: 'risk'});
+      DATA.customers = [H, K];
+      DATA.activities = Object.assign({}, act('__k__', 2, {openThreads: [{id: 'tk', q: 'When is the go-live date?', a: null, answeredOn: null, resolvedOn: null}]}), act('__h__', 30, {flagged: true, summary: 'They raised a blocker and are frustrated.'}));
+      DATA.riskLog = {'__k__|Flagged note': {firstSeen: todayISO(), lastActioned: null, verdict: 'confirmed', verdictOn: todayISO(), verdictSev: 3, verdictReason: 'they told me'}};
+      reset();
+      const sevs = [accountNextAction(K).sev, accountNextAction(H).sev];
+      const nxt = nextActionList().map(x => x.c.id).join();
+      const sevDiffers = sevs[0] !== sevs[1];            // precondition: the seeds must give different auto severities
+      const src = String(nextActionList) + (typeof copilotBriefedAccounts === 'function' ? String(copilotBriefedAccounts) : '') + String(sortCustomers);
+      const noScore = !/healthScore\(|healthTrendDelta\(|computeRisk\(/.test(src);
+      const noPromptHealth = String(generateCopilotRead).indexOf('lowest health') === -1 && String(generateCopilotRead).indexOf('healthScore(') === -1;
+      ok = order === '__c__,__a__,__b__' && brief === order && needs === '__x__,__y__' && nxt === '__k__,__h__' && sevDiffers && noScore && noPromptHealth;
+      detail = JSON.stringify({order, brief, needs, nxt, sevs, sevDiffers, noScore, noPromptHealth});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.sortBy = prevSort; reset();
+    check('v13 step 2c: Sort: Risk, the AI read, Needs attention and the next-action list order accounts by confirmed risk, then days quiet, then name, not by health or auto risk', ok, detail);
   })();
   (function(){                                   // c5c
     let ok = false, detail = '';
