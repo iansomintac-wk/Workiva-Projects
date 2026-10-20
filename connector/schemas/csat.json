@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GET /v1/csat response",
+  "type": "object",
+  "required": ["rows"],
+  "properties": {
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["SALESFORCE_ACCOUNT_ID", "GAINSIGHT_COMPANY_ID", "COMPANY_NAME", "CSAT_SENT_DATE", "CSAT_ANSWERED_DATE"],
+        "properties": {
+          "SALESFORCE_ACCOUNT_ID": { "type": "string", "minLength": 18 },
+          "GAINSIGHT_COMPANY_ID": { "type": "string", "minLength": 36 },
+          "COMPANY_NAME": { "type": "string", "minLength": 1 },
+          "CSAT_SENT_DATE": { "type": "string" },
+          "CSAT_ANSWERED_DATE": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

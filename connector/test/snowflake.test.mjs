@@ -5,6 +5,10 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { installNetGuard } from '../lib/test-net-guard.mjs';
 import { loadAdapters } from '../adapters/index.mjs';
+import { createConnector } from '../server.mjs';
+import { validate } from '../lib/validate.mjs';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 
 installNetGuard();
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -37,4 +41,56 @@ test('snowflake: config.example.json has a snowflake block with adapter fake and
   const cfg = JSON.parse(readFileSync(join(root, 'config.example.json'), 'utf8'));
   assert.equal(cfg.snowflake.adapter, 'fake');
   for (const k of ['account', 'warehouse', 'database', 'schema', 'table', 'tokenFile']) assert.equal(cfg.snowflake[k], '', k);
+});
+
+const TOKEN = 'test-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab';
+const tmp = mkdtempSync(join(tmpdir(), 'sf-csat-'));
+let seq = 0;
+async function start() {
+  const logPath = join(tmp, `log-${seq++}.jsonl`);
+  const server = createConnector({ config: {}, adapters: loadAdapters({}), token: TOKEN, logPath });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  return { base, close: () => new Promise((r) => server.close(r)) };
+}
+const auth = { Authorization: `Bearer ${TOKEN}` };
+const csatSchema = () => JSON.parse(readFileSync(join(root, 'schemas', 'csat.json'), 'utf8'));
+
+test('csat route: 200 validates csat.json and equals the fixture; no token 401; bad since 400', async () => {
+  const s = await start();
+  try {
+    const r = await fetch(s.base + '/v1/csat', { headers: auth });
+    assert.equal(r.status, 200);
+    const body = await r.json();
+    assert.deepEqual(validate(csatSchema(), body), []);
+    assert.deepEqual(body.rows, JSON.parse(readFileSync(join(root, 'fixtures', 'snowflake-csat.json'), 'utf8')).rows);
+    assert.equal((await fetch(s.base + '/v1/csat')).status, 401);
+    const bad = await fetch(s.base + '/v1/csat?since=not-a-date', { headers: auth });
+    assert.equal(bad.status, 400);
+    assert.equal((await bad.json()).error, 'since must be an ISO 8601 date-time');
+  } finally { await s.close(); }
+});
+test('csat route: since returns the same subset as the adapter', async () => {
+  const s = await start();
+  try {
+    const since = '2026-09-10T00:00:00Z';
+    const r = await fetch(s.base + '/v1/csat?since=' + encodeURIComponent(since), { headers: auth });
+    assert.equal(r.status, 200);
+    const want = await loadAdapters({}).snowflake.listCsat({ since });
+    assert.deepEqual((await r.json()).rows, want);
+  } finally { await s.close(); }
+});
+test('csat schema rejects a row missing COMPANY_NAME and a row with an empty SALESFORCE_ACCOUNT_ID', async () => {
+  const good = (await loadAdapters({}).snowflake.listCsat())[0];
+  const { COMPANY_NAME, ...noName } = good;
+  assert.ok(validate(csatSchema(), { rows: [noName] }).length > 0);
+  assert.ok(validate(csatSchema(), { rows: [{ ...good, SALESFORCE_ACCOUNT_ID: '' }] }).length > 0);
+});
+test('health lists snowflake fake and validates health.json', async () => {
+  const s = await start();
+  try {
+    const body = await (await fetch(s.base + '/v1/health', { headers: auth })).json();
+    assert.equal(body.adapters.snowflake, 'fake');
+    assert.deepEqual(validate(JSON.parse(readFileSync(join(root, 'schemas', 'health.json'), 'utf8')), body), []);
+  } finally { await s.close(); }
 });

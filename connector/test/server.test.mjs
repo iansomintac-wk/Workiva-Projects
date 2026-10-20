@@ -39,7 +39,7 @@ test('t1 health with token validates, adapters all fake', async () => {
     assert.equal(r.status, 200);
     const b = await r.json();
     assert.deepEqual(validate(schema('health'), b), []);
-    assert.deepEqual(b.adapters, { gong: 'fake', gainsight: 'fake', ai: 'fake' });
+    assert.deepEqual(b.adapters, { gong: 'fake', gainsight: 'fake', ai: 'fake', snowflake: 'fake' });
   } finally { await s.close(); }
 });
 

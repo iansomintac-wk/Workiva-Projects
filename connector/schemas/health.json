@@ -11,7 +11,8 @@
       "properties": {
         "gong": { "type": "string", "minLength": 1 },
         "gainsight": { "type": "string", "minLength": 1 },
-        "ai": { "type": "string", "minLength": 1 }
+        "ai": { "type": "string", "minLength": 1 },
+        "snowflake": { "type": "string", "minLength": 1 }
       }
     }
   }

@@ -243,7 +243,7 @@ If the connector is unset or unreachable, the tracker behaves exactly as it does
 
 `version` is `"1"`. Within v1, changes are additive only: new optional response fields, new
 `fields` keys, new `task` values only with a version note here. A breaking change means `"2"`.
-v1 additions beyond the original design: the optional call `kind` field.
+v1 additions beyond the original design: the optional call `kind` field; `GET /v1/csat[?since=<ISO 8601 date-time>]` returning `{rows:[...]}` (`schemas/csat.json`: the five tracker CSAT import columns `SALESFORCE_ACCOUNT_ID`, `GAINSIGHT_COMPANY_ID`, `COMPANY_NAME`, `CSAT_SENT_DATE`, `CSAT_ANSWERED_DATE`; `since` keeps rows whose newest CSAT date is on or after it; 400 `since must be an ISO 8601 date-time` on a bad value); the optional `snowflake` entry under `adapters` in `/v1/health` (`fake` today; additive, not required).
 Adapter state suffixes in `/v1/health` (connect-ready, 2026-10-02): string values only, no shape change.
 
 ## Local state files (git-ignored)
