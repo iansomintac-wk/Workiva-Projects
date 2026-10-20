@@ -1,0 +1,44 @@
+SANDBOX CHECK: Prompt coach Scope 3 decline line (Workiva repo)
+
+Written 2026-10-20 by talk 7881a242. Load studio-harness:talk-and-run first, then anthropic-skills:chrome-browser
+before the first browser step. This session runs ONE check and reports. Do not change code, build or tune.
+Launched with --chrome (memory bg-browser-driver-needs-chrome-flag); if no mcp__claude-in-chrome__* tools load,
+stop and tell Ian.
+
+READ FIRST
+- docs/superpowers/specs/2026-10-20-prompt-coach-scope3-decline-line-design.md, section 3 (the check, pass rule,
+  prediction). Section 3 is locked: do not change the file, the asks, the line or the pass rule.
+- Never open any heldout/ or sealed file, or the reshape ledger's heldout/ folder.
+
+DO
+1. Ask Ian (AskUserQuestion) to confirm he is logged in to the Workiva sandbox in Chrome. Work in a new tab.
+2. Create the made-up file exactly as section 3 says (made-up data only; nothing customer-specific, ever).
+3. Run the 6 prompts: asks 1-3 without the line, then asks 1-3 with this line appended after one space, verbatim:
+   If the file does not contain what this needs, say so instead of estimating.
+   Each run in a fresh Workiva AI conversation with only that file attached.
+4. Copy each answer as text, verbatim, into docs/evidence/2026-10-20-prompt-coach-scope3-decline-line-sandbox.md
+   (no screenshots), with the time each run was made. Mark each run against the pass rule: states the right figure /
+   says category 15 is missing with no number / explains without refusing.
+5. Verdict line: PASS-SHIP (pass AND the line changed something), NO-CHANGE (pass, but the without-line runs already
+   behaved), or FAIL (any with-line run misses). Compare with the spec's prediction and say if it was disproved.
+6. Commit the evidence doc on branch worktree-prompt-coach-scope3-decline-line. Do not push (project CLAUDE.md).
+7. Hand-off PM step (talk-and-run). On PASS-SHIP the next prompt is a run for spec section 4; on NO-CHANGE or
+   FAIL the next prompt is a talk for Ian. Ask Ian before starting any next session.
+
+FACTS (measured in talk 7881a242)
+- Base 59b09c1 already adds the line only when the `unsupported` note fires (prompt-coach/engine/rewrite.js:574).
+- The reshape branch is dropped (Ian: "Drop branch, research next (Recommended)"); it stays on origin, unmerged.
+- Rulings recorded in studio-harness commit 6f83760; this talk's rulings are in
+  .ledger/2026-10-20-prompt-coach-scope3-decline-line/rulings.md.
+Give Ian the time at start and at each stop.
+</content>
+</invoke>
+<invoke name="Bash">
+<parameter name="command">cat > .ledger/2026-10-20-prompt-coach-scope3-decline-line/rulings.md <<'EOF'
+# Rulings, talk 7881a242 (2026-10-19/20), verbatim, AskUserQuestion typed by Ian
+- 2026-10-19T23:5xZ records: "Yes, record and commit (Recommended)"
+- 2026-10-20T00:4xZ branch: "would deep targeted research help understand how we could do this best?" then "Drop branch, research next (Recommended)"
+- 2026-10-20T00:5xZ next attempt: "Prompt line, no detection (Recommended)"
+- 2026-10-20T01:0xZ design: "Approve, sandbox first (Recommended)"
+EOF
+date -u +%H:%M
