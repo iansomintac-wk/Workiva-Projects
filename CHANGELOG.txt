@@ -60,6 +60,7 @@ OSM Runway — release notes
     - Backup prompt: title "Back up your book first?" and a normal (not red) Download backup button.
     - Graduate modal omits "(0 of 0 gates done)"; the CSAT Answered box appears once a sent date exists.
     - CSAT import fixes: Review rebuilds the plan from the current book, so a newer Survey sent date or Salesforce ID typed since the scan is never overwritten; and when the book cannot be saved the report says plainly it could NOT be saved (no "Updated", no Undo claim).
+    - Wording: the hand-off text and the Excel column mapping say Gainsight ID; the hand-off text also prints the Salesforce ID when one is set.
 
 1.1 — Graduation prompt colour.
     - The line under the graduation confirm box title (#gc-prompt) used var(--warn), which is not defined, so it fell back to grey; it now uses var(--status-watch-text) like the CSAT line.

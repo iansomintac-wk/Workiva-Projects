@@ -8281,6 +8281,12 @@ const SIGNAL_KEY_SET = new Set(SIGNAL_DEFS.map(d => d.key));
 // entry or task — bundles the ranked next steps, the compliance gate gaps
 // (which are themselves Gainsight-tracked items), and the data-hygiene
 // reminder, since none of this currently exists in Gainsight automatically.
+function integrationIdLines(intg){
+  const out = [];
+  if(intg.gainsightId) out.push(`Gainsight ID: ${intg.gainsightId}`);
+  if(intg.salesforceId) out.push(`Salesforce ID: ${intg.salesforceId}`);
+  return out;
+}
 function buildGainsightCopyText(c){
   const lines = [];
   lines.push(`OSM Tracker summary for ${c.name} — ${fmtDate(todayISO())}`);
@@ -8317,10 +8323,10 @@ function buildGainsightCopyText(c){
   lines.push(`First value: ${fv.definition ? '"' + fv.definition + '"' : 'not defined'} — ${fv.achievedOn ? 'achieved ' + fmtDate(fv.achievedOn) : 'not yet evidenced'}.`);
   // v49: contact + Gainsight identifiers/links, when captured.
   const intg = getIntegration(c);
-  if(intg.primaryContact || intg.gainsightId || intg.gradPlanUrl || intg.onboardingPlanUrl){
+  if(intg.primaryContact || intg.gainsightId || intg.salesforceId || intg.gradPlanUrl || intg.onboardingPlanUrl){
     lines.push('');
     if(intg.primaryContact) lines.push(`Customer contact (CSAT): ${intg.primaryContact}`);
-    if(intg.gainsightId) lines.push(`Gainsight/Salesforce ID: ${intg.gainsightId}`);
+    integrationIdLines(intg).forEach(l => lines.push(l));
     if(intg.gradPlanUrl) lines.push(`Graduation plan: ${intg.gradPlanUrl}`);
     if(intg.onboardingPlanUrl) lines.push(`Onboarding plan: ${intg.onboardingPlanUrl}`);
   }
@@ -19427,7 +19433,7 @@ const EXCEL_FIELD_LABELS = {
   stage: 'TTFV stage',
   notes: 'Notes',
   primaryContact: 'Customer contact (CSAT)',
-  gainsightId: 'Gainsight/Salesforce ID',
+  gainsightId: 'Gainsight ID',
   gradPlanUrl: 'Graduation plan link',
   onboardingPlanUrl: 'Onboarding plan link'
 };

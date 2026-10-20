@@ -25,3 +25,16 @@ test('Salesforce ID: applyIntegrationInputs writes salesforceId and the box is i
   assert.match(src, /setOptionalField\(cust, 'salesforceId', sidEl\.value\)/);
   assert.match(src, /\['#cust-contact','#cust-gainsight-id','#cust-salesforce-id',/);
 });
+
+test('item 2: the hand-off text prints "Gainsight ID: <id>" and, when set, "Salesforce ID: <id>"; never the combined label', () => {
+  const c = loadCsat(['integrationIdLines']);
+  assert.deepEqual(J(c.integrationIdLines({ gainsightId: 'G1', salesforceId: 'S1' })), ['Gainsight ID: G1', 'Salesforce ID: S1']);
+  assert.deepEqual(J(c.integrationIdLines({ gainsightId: 'G1', salesforceId: null })), ['Gainsight ID: G1']);
+  assert.deepEqual(J(c.integrationIdLines({ gainsightId: null, salesforceId: 'S1' })), ['Salesforce ID: S1']);
+  assert.deepEqual(J(c.integrationIdLines({})), []);
+  assert.doesNotMatch(src, /Gainsight\/Salesforce ID/);
+});
+test('item 2: the Excel mapping label says Gainsight ID, and the hand-off block opens when only a Salesforce ID is set', () => {
+  assert.match(src, /gainsightId: 'Gainsight ID',/);
+  assert.match(src, /intg\.gainsightId \|\| intg\.salesforceId \|\| intg\.gradPlanUrl/);
+});
