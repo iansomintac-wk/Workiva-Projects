@@ -1,0 +1,54 @@
+RUN: Prompt coach, the weak-prompt reason line quotes the user's ask (Workiva repo)
+
+Written 2026-10-20 by talk session "NEW - Prompt Coach quote line talk" (job 04bbd630). Load
+studio-harness:talk-and-run first and follow "The run". You are the run lead: coordinate only, never plan or
+build in your own context.
+
+WHERE
+- Worktree: C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-analyze-format
+  Branch: worktree-prompt-coach-analyze-format (local, unpushed; holds the parked analyze-format probe, the
+  reason-line probe, this talk's probe and spec). Work only here. Merge target: prompt-coach.
+- Spec (approved by the PM proxy for Ian, proxy decided; its words are in the spec's Rulings):
+  docs/superpowers/specs/2026-10-20-prompt-coach-quote-line-design.md
+- Probe: prompt-coach/research/2026-10-20-quote-line-probe.{md,js,tsv}. The probe script is the drop check:
+  extend it (or copy it under research/ with a new date) to score the SHIPPED line, never edit its counts.
+- Ledger (git-ignored): .ledger/2026-10-20-prompt-coach-reason-line/ with slip.json (Ian's overnight slip,
+  scope "overnight 2026-10-20 only"), rulings.md, budget.json. Write progress.md there.
+- Project rules: CLAUDE.md (repo root) and prompt-coach/README.md.
+
+ORDER
+1. First check (talk-and-run): STUDIO_RUN_LEDGER set, budget.json and slip.json exist; else stop.
+2. Plan by studio-harness:plan-writer -> docs/superpowers/plans/2026-10-20-prompt-coach-quote-line.md.
+   Header: Data: (none). Suggested tasks: (a) failing unit tests for spec check 1 in tests/rewrite_unit.test.js;
+   (b) the span rule and the line in engine/rewrite.js (the coach needs the ask probability: the page's detect
+   in web/template.html and the probes pass it; no probability means no quote); (c) rebuild
+   dist/prompt-coach.html, README "Still open" and any byte count in the same commit; (d) the drop check and
+   evidence doc docs/evidence/2026-10-20-prompt-coach-quote-line.md. Plan review: frontier model plus Codex
+   (claudex-loop:codex-review); if Codex cannot run, record it and say so at the plan stop. Plan approval:
+   send the plan to the PM proxy (SendMessage to "NEW - PM proxy overnight 10-20", recommendation +
+   evidence), wait, and check its line in the proxy decisions.md before acting. Do not use AskUserQuestion
+   tonight (nobody answers it).
+3. Each task one at a time: implementer (test first: the new check fails on the parent, passes after),
+   checker, lead re-runs the check, ledger row.
+4. Must stay green (spec check 4): the plan writer first measures on the parent commit and writes into the
+   plan: node --test --test-reporter=tap tests/rewrite_unit.test.js; simulate.js data/train_*.jsonl;
+   customer_check.js; eval.js rulefeat (read the current invocations from README or the last evidence doc).
+   Spec check 3: dump every train row's three stages before and after; only rows with a quote change, and only
+   their Weak verdict. pagetest.js/filetest.js: "not run" unless a working path exists; install nothing.
+5. Drop check (spec check 2), stated before measuring: rerun out of fold, read every quoted line by eye; more
+   than 10% wrong words (by label or by eye) means revert the change and park the item. Predicted: about 51
+   quoted, 0 wrong by label, at most 2 by eye.
+6. Final whole-branch review: studio-harness:final-reviewer plus a read-only Codex review; merge the findings;
+   where they disagree on must-fix, the PM proxy decides for Ian. Fix round, re-check.
+7. Evidence doc with numbers (measured vs read).
+8. Push and merge: slip.json says yes for tonight (Ian's words in it) once checks and review pass; follow the
+   merge rule (backup/<target>-before-<branch>-<date> first, no force). If the slip's night has passed, ask the
+   PM proxy and record its yes under laterYes in slip.json first.
+9. Hand-off PM step; ask the PM proxy before starting any next session.
+
+SAFETY
+- Never open any heldout/ or sealed file, and never read or probe data/test.jsonl except through eval.js as the
+  suite already runs it.
+- No detector or classifier retraining that writes engine/*.json. No source quote, no stacked quote (out of
+  scope in the spec).
+- Customer-facing wording: the line says what the coach read, never that it is sure.

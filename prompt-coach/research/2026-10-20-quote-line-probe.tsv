@@ -1,0 +1,884 @@
+set	src	label SCOPE	stacked	pO	pS	quote any	quote p<0.2	quote p<0.1	ask span strict	ask span loose	source span	prompt
+in-sample	train_fr:1	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	summarize pls
+in-sample	train_fr:2	-COP-	1	0.42	0.05	-/-	-/-	-/-	-	-	-	give me a summary of our Q3 results for the board and also fix the font on the cover page
+in-sample	train_fr:3	-C-PE	0	0.58	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	key stuff	You're a seasoned SEC reporting manager. Summarize the key stuff in a table, no fluff, and don't make anything up.
+in-sample	train_fr:4	--O--	0	0.43	0.01	-/-	-/-	-/-	-	-	-	whats the gist of the earnings release
+in-sample	train_fr:5	--O--	0	0.74	0.01	-/-	-/-	-/-	-	-	-	can u sum up the footnotes
+in-sample	train_fr:6	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	thoughts on the selected paragraph	thoughts on the selected paragraph	-	thoughts on the selected paragraph?
+in-sample	train_fr:7	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	Look over the attached Q2 board deck	Look over the attached Q2 board deck	-	Look over the attached Q2 board deck.
+in-sample	train_fr:20	--O--	0	0.15	0.02	-/-	-/-	-/-	-	-	-	why did revenue go up
+in-sample	train_fr:21	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	flux analysis
+in-sample	train_fr:22	-COP-	1	0.90	0.05	-/-	-/-	-/-	-	-	-	As a controller, do a variance analysis on our opex vs last year, top 5 by $ in a table; also remind me what the 10-Q deadline is
+in-sample	train_fr:23	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	look at the selected revenue rows	look at the selected revenue rows	revenue rows	look at the selected revenue rows
+in-sample	train_fr:24	--O-E	0	0.80	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	variances	explain the variances in the numbers, don't guess at reasons
+in-sample	train_fr:25	S----	0	0.00	0.84	askOK/-	askOK/-	askOK/-	check the flux on the income statement tab	check the flux on the income statement tab	-	Can you check the flux on the income statement tab
+in-sample	train_fr:26	---P-	0	0.08	0.01	-/-	-/-	-/-	-	-	-	big swings in SG&A Q2 vs Q3??
+in-sample	train_fr:27	-C-P-	0	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	help with the flux for the 10-Q, for...	help with the flux for the 10-Q, for...	flux	pls help with the flux for the 10-Q, for the audit committee, bullets
+in-sample	train_fr:39	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	anything weird?
+in-sample	train_fr:40	--O--	1	0.84	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	duplicates	find duplicates in our AP data and then write the email to the AP clerk too
+in-sample	train_fr:41	-COPE	0	0.96	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	missing values	As an internal reviewer for the 10-K, list missing values in a table and flag anything you're unsure of
+in-sample	train_fr:43	--O--	0	0.43	0.01	-/-	-/-	-/-	-	-	-	are there any outliers in the revenue numbers
+in-sample	train_fr:44	-----	0	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	check the XBRL tags	check the XBRL tags	XBRL tags	check the XBRL tags
+in-sample	train_fr:45	-----	0	0.23	0.02	askOK/srcOK	-/srcOK	-/srcOK	help me find problems	help me find problems	problems	help me find problems
+in-sample	train_fr:58	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	tie out
+in-sample	train_fr:59	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	does everything tie?
+in-sample	train_fr:60	--O--	0	0.50	0.01	-/-	-/-	-/-	-	-	-	make sure our 10-Q numbers match the press release
+in-sample	train_fr:61	-C-PE	0	0.76	0.05	-/-	-/-	-/-	-	-	-	You are a tie-out specialist for an SEC filer. Output as a table with a status column. Cite each source page.
+in-sample	train_fr:62	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	check the selected footnote	check the selected footnote	footnote	check the selected footnote
+in-sample	train_fr:63	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	can you see if the numbers line up between the docs
+in-sample	train_fr:64	--O--	0	0.08	0.01	-/-	-/-	-/-	-	-	-	teh MD&A and the financials consistent?
+in-sample	train_fr:77	--O--	0	0.26	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	footnote	write a footnote
+in-sample	train_fr:78	--O--	0	0.55	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	MD&A	draft MD&A
+in-sample	train_fr:79	-COPE	0	0.72	0.06	-/srcOK	-/srcOK	-/srcOK	-	-	revenue recognition policy footnote	You are a senior SEC reporting manager writing for investors who follow our sector closely. Draft a revenue recognition policy footnote for the annual report covering our subscription, professional services, and hardware revenue streams. Keep it to roughly 200 words, use the same structure most large-cap software companies use (performance obligations, timing, variable consideration, contract balances), avoid boilerplate where you can, and don't invent any policies or numbers we haven't told you about. If something would normally be disclosed but you don't have the facts, leave a bracketed placeholder.
+in-sample	train_fr:80	-C---	1	0.14	0.01	askOK/-	askOK/-	-/-	help me write something for the board, and...	help me write something for the board, and...	-	help me write something for the board, and also check the XBRL
+in-sample	train_fr:81	--O--	0	0.86	0.01	-/-	-/-	-/-	-	-	-	Draft the subsequent events note based on what we discussed
+in-sample	train_fr:82	--O--	0	0.61	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	earnings release quote	can you write the earnings release quote from our CEO
+in-sample	train_fr:83	S----	0	0.02	0.99	-/-	-/-	-/-	-	-	attached	write up the attached.
+in-sample	train_fr:96	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	make it better
+in-sample	train_fr:97	--OPE	0	0.73	0.01	-/-	-/-	-/-	-	-	-	shorten it by 30%, keep the numbers
+in-sample	train_fr:98	-COP-	1	0.99	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	risk factors	Rewrite our risk factors in plain English for retail investors and pull the KPI list too
+in-sample	train_fr:99	-----	0	0.09	0.02	-/-	-/-	-/-	-	-	-	fix the tone
+in-sample	train_fr:100	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	clean up the selected paragraph	clean up the selected paragraph	paragraph	clean up the selected paragraph
+in-sample	train_fr:101	--OP-	0	0.92	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	CEO letter	can u rewrite the CEO letter so it sounds less corporate
+in-sample	train_fr:102	-C-PE	0	0.48	0.05	-/-	-/-	-/-	-	-	-	As our general counsel, polish the language, keep it under 200 words, don't change any figures
+in-sample	train_fr:103	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	reword
+in-sample	train_fr:108	S-OP-	0	0.08	1.00	-/-	-/-	-/-	-	-	-	Make the attached earnings release headline section more concise — two sentences.
+in-sample	train_fr:115	--O--	0	0.64	0.02	-/-	-/-	-/-	-	-	-	pull the KPIs
+in-sample	train_fr:116	--O--	0	0.49	0.02	-/-	-/-	-/-	-	-	-	get me all the dates
+in-sample	train_fr:117	-COPE	0	0.96	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	every contractual obligation	Act as a financial analyst and list every contractual obligation in a table with amount and due date. Include a source page for each.
+in-sample	train_fr:118	S----	0	0.00	0.99	-/-	-/-	-/-	-	-	-	extract stuff from the attached
+in-sample	train_fr:119	--O--	0	0.43	0.01	-/-	-/-	-/-	-	-	-	what covenants do we have in our credit agreement
+in-sample	train_fr:120	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	grab numbers from the 10-K
+in-sample	train_fr:121	--O--	1	0.90	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	the commitments please	list all the commitments please, plus can you tell me how to do a pivot table
+in-sample	train_fr:134	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	how do we stack up vs peers
+in-sample	train_fr:135	-----	0	0.22	0.02	-/-	-/-	-/-	-	-	-	compare to last year
+in-sample	train_fr:136	-COPE	0	0.83	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	margins	You're an equity analyst. Compare our margins to peers in a table and cite sources.
+in-sample	train_fr:137	S----	0	0.22	1.00	-/-	-/-	-/-	-	-	two attached docs	compare the two attached docs
+in-sample	train_fr:138	-----	0	0.23	0.02	-/-	-/-	-/-	-	-	-	benchmark our disclosures
+in-sample	train_fr:139	--O--	0	0.43	0.01	-/-	-/-	-/-	-	-	-	is our revenue note as detailed as competitors'?
+in-sample	train_fr:140	-C-P-	1	0.90	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	Q3	compare Q3 vs Q2 for the board, bullets, and also explain what ASC 606 is
+in-sample	train_fr:152	--O--	0	0.02	0.02	-/-	-/-	-/-	-	-	-	what is XBRL
+in-sample	train_fr:153	--O--	0	0.46	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	ASC 842	explain ASC 842
+in-sample	train_fr:155	S----	0	0.00	0.99	-/-	-/-	-/-	-	-	-	explain the selected stuff
+in-sample	train_fr:156	--O--	1	0.87	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	response	whats a comment letter and why do we keep getting them, also write the response
+in-sample	train_fr:157	--O--	0	0.43	0.01	-/-	-/-	-/-	-	-	-	what does the tax footnote even mean
+in-sample	train_fr:158	--O--	0	0.49	0.02	-/-	-/-	-/-	help me understand non-GAAP	help me understand non-GAAP	-	help me understand non-GAAP
+in-sample	train_fr:159	--O--	0	0.46	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	dilution	explian dilution
+in-sample	train_fr:170	-----	0	0.17	0.02	-/-	-/-	-/-	-	-	-	give me questions
+in-sample	train_fr:171	--O--	0	0.15	0.02	-/-	-/-	-/-	-	-	-	what should the auditors ask
+in-sample	train_fr:172	-COP-	0	0.87	0.05	-/-	-/-	-/-	-	-	-	You're an audit committee member. Write 10 tough questions about the quarter in a numbered list.
+in-sample	train_fr:173	S----	0	0.02	0.99	-/-	-/-	-/-	-	-	-	questions about the selected flux?
+in-sample	train_fr:174	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	prep me for the SEC's questions
+in-sample	train_fr:175	--O--	0	0.43	0.01	-/-	-/-	-/-	-	-	-	what would a reviewer push back on in our MD&A
+in-sample	train_fr:176	--O--	0	0.08	0.01	-/-	-/-	-/-	-	-	-	what wuld you ask the CFO
+in-sample	train_fr:179	S-OP-	0	0.23	0.99	-/-	-/-	-/-	-	-	-	What questions should I ask FP&A about the variances in the 'Opex Flux' tab? Only ask about things the sheet can't explain.
+in-sample	train_fr:188	--O--	0	0.34	0.02	-/-	-/-	-/-	-	-	-	map these to the taxonomy
+in-sample	train_fr:189	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	tag everything
+in-sample	train_fr:190	-COPE	0	0.91	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	line items	As an XBRL specialist, map line items to US GAAP taxonomy elements in a table with element name and period type, and say which you're unsure about.
+in-sample	train_fr:191	S----	0	0.08	1.00	-/-	-/-	-/-	-	-	-	do the mapping for the attached
+in-sample	train_fr:192	--O--	0	0.43	0.01	-/-	-/-	-/-	-	-	-	which XBRL elements should we use
+in-sample	train_fr:193	--O--	1	0.91	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	disclosures	map our disclosures to S-K, then tie out the 10-Q and summarize the comment letter
+in-sample	train_fr:194	-----	0	0.00	0.01	-/-	-/-	-/-	-	help	-	xbrl mapping help?
+in-sample	train_fr:206	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	close checklist
+in-sample	train_fr:207	--O--	0	0.43	0.01	-/-	-/-	-/-	-	-	-	what are the steps to file a 10-Q
+in-sample	train_fr:208	-COPE	0	0.77	0.05	-/-	-/-	-/-	-	-	-	You're a controller at a newly public company. Give me a 10-K disclosure checklist as a table and note anything you're not certain applies.
+in-sample	train_fr:209	--O--	0	0.86	0.01	-/-	-/-	-/-	-	-	-	make a to-do list for close
+in-sample	train_fr:210	-----	0	0.00	0.01	askOK/-	askOK/-	askOK/-	help me get organized for year end	help me get organized for year end	-	help me get organized for year end
+in-sample	train_fr:211	-----	0	0.56	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	steps	list the steps
+in-sample	train_fr:212	--O--	0	0.44	0.01	-/-	-/-	-/-	-	-	-	tie-out procedures pls for the board deck
+in-sample	train_fr:224	-----	0	0.00	0.01	-/-	-/-	-/-	-	help	-	formula help
+in-sample	train_fr:225	--O--	0	0.08	0.01	-/-	-/-	-/-	-	-	-	how do I do a vlookup
+in-sample	train_fr:226	-COPE	0	0.87	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	formula	As a close analyst, write a formula that flags variances over 10% and explain it in two sentences. Don't assume column letters, ask me.
+in-sample	train_fr:227	-----	0	0.09	0.02	-/-	-/-	-/-	-	-	-	fix the formula
+in-sample	train_fr:228	--O--	1	0.80	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	board minutes	why is my sumif broken and also can you summarize the board minutes
+in-sample	train_fr:229	--O--	0	0.02	0.02	-/-	-/-	-/-	-	-	-	xlookup vs index match?
+in-sample	train_fr:230	S----	0	0.00	0.57	askOK/srcMIS	askOK/-	askOK/-	look at cell F12	look at cell F12	cell F12	can you look at cell F12
+in-sample	train_fr:242	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	hi
+in-sample	train_fr:243	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	can you make a chart
+in-sample	train_fr:244	-C-PE	0	0.48	0.05	-/-	-/-	-/-	-	-	-	You are a Workiva power user. Make it look nice in a table. Don't change any numbers.
+in-sample	train_fr:245	S----	0	0.23	1.00	-/-	-/-	-/-	-	-	-	format the attached deck
+in-sample	train_fr:246	--OP-	0	0.49	0.02	-/-	-/-	-/-	-	-	-	convert the numbers to thousands
+in-sample	train_fr:247	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	what can you do
+in-sample	train_fr:248	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	do the thing from yesterday
+in-sample	train_fr:249	-C-PE	0	0.38	0.06	-/-	-/-	-/-	help me get ahead of all this	help me get ahead of all this	-	So we're heading into Q3 close next week and honestly the team is stretched — two people out, the auditors want the flux package two days earlier than last quarter, and the CFO wants the board deck refreshed with the new segment view. I'm the assistant controller and I report to the audit committee indirectly through the CFO. Whatever you put together should be in bullet form, no more than a page, and please don't invent dates or owners; ask me if you need them. Can you just help me get ahead of all this?
+in-sample	train_grc:1	-----	0	0.10	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	audit stuff	summarize our audit stuff
+in-sample	train_grc:5	--O--	0	0.45	0.01	-/-	-/-	-/-	-	-	-	Give me a summary of the deficiencies.
+in-sample	train_grc:7	-COP-	0	0.80	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	risk register	Summarize our risk register in 3 bullets for the board.
+in-sample	train_grc:10	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	summarize
+in-sample	train_grc:15	-CO--	0	0.08	0.01	-/-	-/-	-/-	-	-	-	Our external auditors want a recap of where remediation stands. Summarize it.
+in-sample	train_grc:16	--O--	0	0.46	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	the controls	Summarize all the controls
+in-sample	train_grc:19	-CO--	0	0.08	0.01	-/-	-/-	-/-	-	-	-	Give the board a summary of cyber risk
+in-sample	train_grc:23	--O--	0	0.80	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	change	explain the change in deficiency counts
+in-sample	train_grc:26	--O--	0	0.43	0.01	-/-	-/-	-/-	-	-	-	why did our control failures go up
+in-sample	train_grc:27	-----	0	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	Look at the deficiencies year over year	Look at the deficiencies year over year	deficiencies year over year	Look at the deficiencies year over year.
+in-sample	train_grc:30	---P-	0	0.65	0.01	-/-	-/-	-/-	-	-	-	variance in test exceptions Q1 to Q2??
+in-sample	train_grc:32	-CO--	0	0.94	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	changes	You are a SOX compliance analyst. Explain the changes in key control counts by process.
+in-sample	train_grc:33	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	risk scores went up a lot this year, what happened
+in-sample	train_grc:35	-----	0	0.02	0.82	-/-	-/-	-/-	-	-	-	Track movement in open findings
+in-sample	train_grc:39	-----	0	0.56	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	anything weird	find anything weird in the access list
+in-sample	train_grc:42	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	any gaps in our evidence?
+in-sample	train_grc:43	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	Review the selected controls	Review the selected controls	controls	Review the selected controls.
+in-sample	train_grc:45	--O--	1	0.91	0.05	-/srcOK	-/srcOK	-/srcOK	-	review schedule and email IT about the admin...	schedule	Look for segregation of duties conflicts, also redo the access review schedule and email IT about the admin accounts
+in-sample	train_grc:46	-COPE	0	0.43	0.05	-/-	-/-	-/-	-	-	-	You're a SOX tester. Flag any journal entries over $250K posted on weekends, in a table, no speculation.
+in-sample	train_grc:49	-----	0	0.23	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	outliers	Find outliers.
+in-sample	train_grc:53	----E	0	0.92	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	unusual patterns	Identify unusual patterns in firewall rule changes, and don't guess if you can't tell
+in-sample	train_grc:59	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	do the numbers match
+in-sample	train_grc:62	--O--	0	0.43	0.01	-/-	-/-	-/-	-	-	-	Is the internal audit report consistent with the workpapers?
+in-sample	train_grc:64	S----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	chekc this pls
+in-sample	train_grc:66	----E	0	0.50	0.01	-/-	-/-	-/-	-	-	-	Make sure everything ties — I'll make the final call on any differences
+in-sample	train_grc:70	-C---	0	0.48	0.01	-/-	-/-	-/-	Check whether the management responses are consistent	Check whether the management responses are consistent	-	You are an external auditor. Check whether the management responses are consistent.
+in-sample	train_grc:72	--O--	0	0.76	0.01	-/-	-/-	-/-	-	-	-	Do the SOC 2 control numbers in our system description match the controls matrix?
+in-sample	train_grc:73	--O--	1	0.51	0.05	-/-	-/-	-/-	-	-	-	Compare control owners between the RACI and the RCM, then also fix the formatting and send me a list of who's missing
+in-sample	train_grc:77	--O--	1	0.85	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	control description	write a control description for user access reviews and also a policy for it and test steps
+in-sample	train_grc:79	--O--	0	0.55	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	finding	Draft a finding
+in-sample	train_grc:80	-COP-	0	0.87	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	executive summary	You're an internal auditor. Write an executive summary for our IT audit report, 200 words, formal tone.
+in-sample	train_grc:81	--O--	1	0.96	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	conclusion paragraph	Draft the conclusion paragraph for the workpaper and then also write the email to the auditors about the sample selection
+in-sample	train_grc:83	-----	0	0.55	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	policy	Draft a policy.
+in-sample	train_grc:84	-COP-	0	0.96	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	Acceptable Use Policy	Can you draft an Acceptable Use Policy for a 300-person SaaS company preparing for SOC 2? Keep it under two pages.
+in-sample	train_grc:86	-COP-	0	0.86	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	email	Draft an email to control owners reminding them about Q4 evidence
+in-sample	train_grc:89	-----	0	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	Help me with the audit report	Help me with the audit report	audit report	Help me with the audit report.
+in-sample	train_grc:93	SCO--	1	0.87	0.05	-/srcMIS	-/srcMIS	-/srcMIS	-	-	slide	Draft an internal audit report section on the ITGC results in Sheet3 for the CAE. Also update the issue tracker and write the slide for next week's AC meeting.
+in-sample	train_grc:94	--O--	1	0.86	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	business continuity policy	Draft a business continuity policy, a vendor management policy, and a data retention policy
+in-sample	train_grc:96	S----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	make this better
+in-sample	train_grc:98	--O--	0	0.92	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	control description	rewrite the control description to be clearer
+in-sample	train_grc:100	SCOP-	0	0.98	0.05	-/srcMIS	-/srcMIS	-/srcMIS	-	-	deficiency	Can you rewrite this deficiency in a more neutral tone? Management thinks it reads as accusatory.
+in-sample	train_grc:102	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	polish
+in-sample	train_grc:103	--O-E	0	0.98	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	access control policy	Rewrite our access control policy to align with ISO 27001:2022, keeping every existing requirement word for word
+in-sample	train_grc:105	SC---	0	0.00	0.82	askOK/-	askOK/-	askOK/-	Clean up this narrative	Clean up this narrative	narrative	You are a technical writer for a compliance team. Clean up this narrative.
+in-sample	train_grc:106	S-OP-	0	0.08	0.95	-/-	-/-	-/-	-	-	-	pls make the selected finding sound less harsh, 2 sentences max
+in-sample	train_grc:108	-CO--	0	0.69	0.02	-/-	-/-	-/-	-	-	-	rewrite for execs
+in-sample	train_grc:110	-CO--	1	0.90	0.05	-/-	-/-	-/-	-	-	-	Simplify our ITGC policy for new hires and also make a quiz and a training deck from it
+in-sample	train_grc:111	S----	0	0.27	0.92	-/-	-/-	-/-	-	-	-	can you fix the wording on these findings?
+in-sample	train_grc:116	--O--	0	0.45	0.02	-/-	-/-	-/-	-	-	-	pull out the controls
+in-sample	train_grc:119	--O--	0	0.49	0.02	-/-	-/-	-/-	-	-	-	get me the deficiencies
+in-sample	train_grc:120	--O--	1	0.97	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	findings	Extract the findings from the IA reports, then rank them and also write the audit committee summary.
+in-sample	train_grc:122	-CO--	0	0.82	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	risks	You are a GRC analyst. Extract the risks.
+in-sample	train_grc:123	S----	0	0.11	0.98	-/-	-/-	-/-	-	-	-	extract stuff from this doc
+in-sample	train_grc:126	-----	0	0.56	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	exceptions	list exceptions
+in-sample	train_grc:129	--O--	0	0.90	0.01	-/-	-/-	-/-	-	-	-	Pull all the SOC 2 exceptions from vendor reports
+in-sample	train_grc:133	-----	0	0.54	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	controls	Compare our controls to NIST CSF
+in-sample	train_grc:135	--O--	0	0.54	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	two policy versions	compare the two policy versions and list what changed
+in-sample	train_grc:136	-----	0	0.54	0.01	-/srcOK	-/srcOK	-/srcOK	-	review process compare to best practice	process compare	How does our access review process compare to best practice?
+in-sample	train_grc:139	-----	0	0.43	0.01	-/-	-/-	-/-	-	-	-	Is our risk register missing anything compared to peers?
+in-sample	train_grc:141	-COPE	0	0.83	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	ISMS docs	You're an ISO lead auditor. compare our ISMS docs to clause 6 and 8, table format, cite clause numbers
+in-sample	train_grc:142	-----	0	0.22	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	policies	compare policies
+in-sample	train_grc:145	-COP-	0	0.54	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	deficiency rate	Compare our deficiency rate with industry averages in a short table for the AC
+in-sample	train_grc:151	--O--	0	0.15	0.02	-/-	-/-	-/-	-	-	-	what is a material weakness
+in-sample	train_grc:152	-COP-	0	0.80	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	COSO principle 12	Explain COSO principle 12 to a new staff auditor in plain English, 100 words.
+in-sample	train_grc:154	--O--	0	0.46	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	ITGCs	explain ITGCs
+in-sample	train_grc:157	-COPE	0	0.94	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	ISO 27001 2022 changes	explain the ISO 27001 2022 changes vs 2013 for our steering committee, bullets, don't overstate anything
+in-sample	train_grc:159	-----	0	0.43	0.01	-/-	-/-	-/-	-	-	-	What's the deal with ICFR?
+in-sample	train_grc:162	--O--	0	0.43	0.01	-/-	-/-	-/-	-	-	-	Why does the auditor care about IPE?
+in-sample	train_grc:165	-----	0	0.46	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	control	explain the control
+in-sample	train_grc:169	--O--	1	0.90	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	meeting invite	Give me walkthrough questions for the payroll process, and while you're at it draft the meeting invite and a RACI for payroll.
+in-sample	train_grc:171	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	what should i ask IT
+in-sample	train_grc:172	-COP-	0	0.87	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	8 interview questions	You are a seasoned IT auditor. Write 8 interview questions for the change management walkthrough.
+in-sample	train_grc:173	-CO--	0	0.08	0.01	-/-	-/-	-/-	-	-	-	Questions for the audit committee about cyber?
+in-sample	train_grc:175	-----	1	0.86	0.01	-/srcOK	-/srcOK	-/srcOK	help me prep for the walkthrough, make the...	help me prep for the walkthrough, make the...	follow-up email	help me prep for the walkthrough, make the slides, and draft the follow-up email
+in-sample	train_grc:180	-COP-	0	0.45	0.01	-/-	-/-	-/-	-	-	-	Give me 5 tough questions an external auditor might raise on our SoD matrix
+in-sample	train_grc:182	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	questions about ITGC
+in-sample	train_grc:184	S----	0	0.43	0.01	-/-	-/-	-/-	-	-	-	What do I need to ask about this?
+in-sample	train_grc:188	-----	0	0.34	0.02	-/-	-/-	-/-	-	-	-	map to COSO
+in-sample	train_grc:189	--O--	0	0.69	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	controls	Map our controls to NIST CSF 2.0
+in-sample	train_grc:191	--O--	0	0.69	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	SOC 2 criteria	Can you map the SOC 2 criteria to ISO 27001 controls?
+in-sample	train_grc:195	S----	0	0.02	0.02	-/srcMIS	-/srcMIS	-/srcMIS	-	-	these	please map these
+in-sample	train_grc:198	-----	0	0.34	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	controls	Map controls to frameworks
+in-sample	train_grc:199	-COP-	0	0.90	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	security policies	As the CISO's chief of staff, map our security policies to the CIS Controls v8 for the board, bullet format
+in-sample	train_grc:204	S----	0	0.34	0.02	-/-	-/-	-/-	-	-	-	map this to the framework
+in-sample	train_grc:207	--O--	0	0.61	0.01	-/srcOK	-/srcOK	-/srcOK	-	review control	test steps	Write test steps for a user access review control
+in-sample	train_grc:209	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	make a SOX checklist
+in-sample	train_grc:210	-COP-	0	0.77	0.05	-/-	-/-	-/-	-	-	-	You're a Big 4 IT auditor. Give me test steps for change management controls, numbered, 10 max.
+in-sample	train_grc:212	--O--	0	0.65	0.01	-/-	-/-	-/-	-	-	-	what are the steps to test a three-way match
+in-sample	train_grc:215	--O--	0	0.08	0.01	-/-	-/-	-/-	-	-	-	checklist for SOC 2 readiness pls
+in-sample	train_grc:217	-CO--	0	0.86	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	testing approach	We're a pre-IPO company starting SOX — can you draft a testing approach?
+in-sample	train_grc:219	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	steps??
+in-sample	train_grc:222	-COP-	0	0.77	0.05	-/-	-/-	-/-	-	-	-	Give me an evidence request list for ITGC testing for the external auditors, Q4, in a table
+in-sample	train_grc:225	--O--	0	0.76	0.01	-/-	-/-	-/-	-	-	-	excel formula to count controls by owner
+in-sample	train_grc:227	-----	0	0.00	0.01	-/-	-/-	-/-	-	help	-	formula help
+in-sample	train_grc:229	--O--	0	0.49	0.01	-/-	-/-	-/-	-	-	-	How do I calculate sample size for a monthly control?
+in-sample	train_grc:230	-CO--	0	0.61	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	XLOOKUP	You are an Excel expert. Write an XLOOKUP that pulls owner names.
+in-sample	train_grc:232	-----	0	0.09	0.02	-/-	-/-	-/-	-	-	-	fix my formula
+in-sample	train_grc:238	-CO--	0	0.61	0.01	-/-	-/-	-/-	-	-	-	As our SOX analyst, write an IF formula for the control rating column
+in-sample	train_grc:244	S-O--	0	0.02	0.02	-/-	-/-	-/-	-	-	-	is this a material weakness?
+in-sample	train_grc:245	-----	0	0.00	0.01	askOK/-	askOK/-	askOK/-	help	help	-	help
+in-sample	train_grc:247	--O--	1	0.95	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	risk appetite memo	Score the inherent risk for each risk in our register, then build a heat map and write the risk appetite memo
+in-sample	train_grc:251	-----	0	0.43	0.01	-/-	-/-	-/-	-	-	-	what should our risk appetite be
+in-sample	train_grc:254	-----	0	0.37	0.01	-/-	-/-	-/-	-	-	-	Can you sort out the controls?
+in-sample	train_grc:258	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	plan the SOX program
+in-sample	train_sus:92	S-OP-	0	0.08	1.00	-/-	-/-	-/-	-	-	-	Top 3 Scope 3 categories in the selected table, as bullets
+in-sample	train_sus:116	S-O--	0	0.08	0.99	-/-	-/-	-/-	-	-	-	highlighted rows -> ESRS datapoints pls
+in-sample	train_sus:121	-----	1	0.61	0.01	-/srcOK	-/srcOK	-/srcOK	analyze our emissions data and also write the...	analyze our emissions data and also write the...	emissions data	analyze our emissions data and also write the board memo and fix the charts
+in-sample	train_sus:122	-----	0	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	help with CSRD	help with CSRD	CSRD	help with CSRD
+in-sample	train_sus:123	-----	0	0.00	0.01	askOK/-	askOK/-	askOK/-	thoughts on our scope 3	thoughts on our scope 3	-	thoughts on our scope 3?
+in-sample	train_sus:124	-----	0	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	review our ESRS disclosures	review our ESRS disclosures	ESRS disclosures	Can you review our ESRS disclosures?
+in-sample	train_sus:125	-C-P-	0	0.45	0.01	-/-	-/-	-/-	-	-	-	You are a CSRD expert. Give me a table of our gaps.
+in-sample	train_sus:126	-COPE	0	0.87	0.05	-/-	-/-	-/-	-	-	-	As an assurance reviewer, write 10 questions about our Scope 1 data in bullets, and don't speculate.
+in-sample	train_sus:127	-COPE	0	0.86	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	150-word transition plan summary	Draft a 150-word transition plan summary for the board. Don't invent any numbers.
+in-sample	train_sus:128	S----	0	0.00	0.98	askOK/-	askOK/-	askOK/-	look at the highlighted Scope 3 rows	look at the highlighted Scope 3 rows	Scope 3 rows	look at the highlighted Scope 3 rows
+in-sample	train_sus:129	S----	0	0.00	0.82	askOK/-	askOK/-	askOK/-	check this sheet	check this sheet	sheet	check this sheet
+in-sample	train_sus:130	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	summarize
+in-sample	train_sus:131	--O--	0	0.46	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	sustainability report	summarize our sustainability report
+in-sample	train_sus:132	--OP-	0	0.78	0.01	-/-	-/-	-/-	-	-	-	what's our scope 1 2 3 total for 2025?
+in-sample	train_sus:133	--O--	0	0.46	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	double materiality	explain double materiality
+in-sample	train_sus:134	-COP-	0	0.80	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	ESRS E1-6	explain ESRS E1-6 in plain english for our board
+in-sample	train_sus:135	S----	0	0.00	0.77	askOK/-	askOK/-	askOK/-	help me with the transition plan stuff	help me with the transition plan stuff	transition plan stuff	ESRS / ISSB Intelligence: help me with the transition plan stuff
+in-sample	train_sus:137	S---E	0	0.00	0.88	askOK/-	askOK/-	askOK/-	take a look at FY2025_Emissions	take a look at FY2025_Emissions	-	Can you take a look at FY2025_Emissions.xlsx for me? cite cells
+in-sample	train_sus:138	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	make the scope 3 section better
+in-sample	train_sus:139	-----	0	0.09	0.02	-/-	-/-	-/-	-	-	-	fix the formula
+in-sample	train_sus:140	--O--	0	0.61	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	formula	write a formula to calc emissions
+in-sample	train_sus:141	--OP-	0	0.61	0.35	-/srcOK	-/-	-/-	-	-	Wdata query	Write a Wdata query for our supplier emissions, grouped by region, top 10 only
+in-sample	train_sus:142	--OP-	0	0.54	0.01	-/-	-/-	-/-	-	-	-	compare us to peers on scope 1 and 2 intensity
+in-sample	train_sus:143	-C---	0	0.01	0.03	askOK/srcOK	askOK/srcOK	askOK/srcOK	Review the controls	Review the controls	controls	We're going through assurance next month and the auditors are picky. Review the controls.
+in-sample	train_sus:144	-C-PE	0	0.43	0.05	-/srcOK	-/srcOK	-/srcOK	Review our GHG numbers	Review our GHG numbers	GHG numbers	Act as an ESG auditor. Review our GHG numbers. Don't make anything up, flag what you're unsure about, use bullets.
+in-sample	train_sus:145	--O--	0	0.56	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	missing data	list missing data
+in-sample	train_sus:146	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	anything weird in the supplier data?
+in-sample	train_sus:147	--O--	0	0.55	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	ESRS E1 disclosures	Draft ESRS E1 disclosures
+in-sample	train_sus:148	--OPE	0	0.86	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	CDP climate response	draft our CDP climate response for 2025, sections C1 to C4, with citations
+in-sample	train_sus:149	--O--	0	0.15	0.02	-/-	-/-	-/-	-	-	-	What does ISSB require?
+in-sample	train_sus:150	--O--	0	0.34	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	data	map our data to ESRS
+in-sample	train_sus:151	--OP-	0	0.88	0.01	-/-	-/-	-/-	-	-	-	create checklist for assurance readiness, numbered, 15 items
+in-sample	train_sus:152	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	variance analysis on emissions pls
+in-sample	train_sus:153	--O--	1	0.87	0.05	-/-	-/-	-/-	-	-	-	Why did our Scope 2 go up? Also can you write a LinkedIn post about our net zero target?
+in-sample	train_sus:154	-COPE	0	0.94	0.05	-/-	-/-	-/-	-	-	-	explain why scope 3 cat 1 jumped 18% vs last year, phrase as hypotheses, for the CSO
+in-sample	train_sus:155	S----	0	0.02	1.00	-/-	-/-	-/-	-	thoughts	-	In the selected cells, thoughts?
+in-sample	train_sus:156	S----	0	0.08	1.00	-/-	-/-	-/-	-	-	-	Using the attached supplier file, do the needful
+in-sample	train_sus:158	SC-P-	0	0.01	1.00	askOK/-	askOK/-	askOK/-	help with the double materiality assessment in the...	help with the double materiality assessment in the...	double materiality assessment	Please help with the double materiality assessment in the attached DMA.xlsx. Some background: this is our first year under CSRD, we ran stakeholder interviews over the summer with about forty people across procurement, HR and operations, and the scores were entered by three different people, so I'm not confident they're consistent. It's going to the audit committee at the end of the month and they've asked for everything in a table they can read on one page. I'd really appreciate anything you can do with it, the team is stretched thin right now.
+in-sample	train_sus:159	-C-PE	0	0.01	0.04	askOK/-	askOK/-	askOK/-	help us get ready for all of this	help us get ready for all of this	-	So we're in the middle of our first CSRD cycle and honestly it's a mess. The sustainability team has been pulling data from like six different systems, nobody agrees on which version of the energy numbers is final, and the people from our assurance provider are coming in two weeks to start limited assurance on E1 and S1. My boss wants a plan on her desk by Friday. I need you to help us get ready for all of this. Keep it concise and in bullets, and please don't invent anything since this will be looked at closely.
+in-sample	train_sus:160	--O--	0	0.71	0.01	-/-	-/-	-/-	-	-	-	Translate our sustainability report into French
+in-sample	train_sus:161	-----	0	0.09	0.02	-/-	-/-	-/-	-	-	-	fix teh scope 1 numbers
+in-sample	train_sus:162	S----	0	0.08	0.99	-/-	-/-	-/-	-	-	-	can you do somethign with the highlighted cdp rows
+in-sample	train_sus:163	--OP-	1	0.98	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	methodology note	tie out the Scope 1-3 numbers, then rewrite the methodology note and make a checklist for assurance
+in-sample	train_sus:164	-C---	0	0.26	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	questions	Write questions for the auditor
+in-sample	train_sus:165	--O--	0	0.80	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	difference between location-based	explain the difference between location-based and market-based scope 2
+in-sample	train_sus:166	-----	0	0.45	0.01	-/-	-/-	-/-	-	-	-	Give me a checklist for CSRD.
+in-sample	train_sus:167	-C---	1	0.78	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	topics	Act as a sustainability consultant and tell me what to do about scope 3, and also map our topics to ESRS and draft the CDP intro
+in-sample	train_sus:168	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	compare
+in-sample	train_sus:171	--OPE	0	0.90	0.01	-/-	-/-	-/-	-	-	-	Pull scope 3 numbers into a table, 2023-2025, cite where each came from
+in-sample	train_sus:172	-----	0	0.34	0.02	-/-	-/-	-/-	-	-	-	map to ESRS
+in-sample	train_sus:173	-CO--	0	0.08	0.01	-/-	-/-	-/-	-	-	-	Make a Scope 1 formula for the board deck
+in-sample	train_sus:174	--O--	0	0.49	0.02	-/-	-/-	-/-	Help me understand IFRS S1	Help me understand IFRS S1	-	Help me understand IFRS S1
+in-sample	train_sus:175	--OP-	0	0.74	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	anomalies	Identify anomalies in our facility data and rank by severity, top 5
+in-sample	train_sus:176	--OP-	0	0.45	0.01	-/-	-/-	-/-	-	-	-	Questions about the limited assurance process? Give me 10
+in-sample	train_sus:177	-----	0	0.13	0.02	-/-	-/-	-/-	-	-	-	update the transition plan
+in-sample	train_sus:178	--O--	1	0.82	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	CDP response	summarize our CDP response, update the targets slide and draft an email to procurement about supplier data
+in-sample	train_sus:180	--O-E	0	0.86	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	biggest emitters	Using only real data, list our biggest emitters
+in-sample	train_sus:181	-----	0	0.00	0.02	-/-	-/-	-/-	-	-	-	is our ESRS stuff ok?
+in-sample	train_sus:182	SC-P-	0	0.00	0.99	askOK/-	askOK/-	askOK/-	Analyze the Wdata query 'Emissions_FY25' for executives, keep...	Analyze the Wdata query 'Emissions_FY25' for executives, keep...	-	Analyze the Wdata query 'Emissions_FY25' for executives, keep it under 100 words
+in-sample	train_sus:183	-----	0	0.15	0.02	-/-	-/-	-/-	-	-	-	What does this mean?
+in-sample	train_sus:184	-----	0	0.00	0.01	askOK/-	askOK/-	askOK/-	help w/ supplier data request email	help w/ supplier data request email	-	help w/ supplier data request email
+in-sample	train_sus:185	-CO--	1	0.92	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	email asking suppliers	draft email asking suppliers for scope 3 data + summarize last week's call + update the DMA slide
+in-sample	train_sus:186	--O--	0	0.48	0.01	-/-	-/-	-/-	check whether our targets are SBTi aligned	check whether our targets are SBTi aligned	-	Can you please check whether our targets are SBTi aligned? Thank you!
+in-sample	train_sus:187	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	TCFD to ISSB?
+in-sample	train_sus:188	--OP-	0	0.88	0.01	-/-	-/-	-/-	-	-	-	Generate a CSRD to-do list for Q4, bullets, max 10
+in-sample	train_sus:189	--O--	0	0.23	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	duplicates	Find duplicates
+in-sample	train_sus:190	-C-P-	0	0.77	0.05	-/-	-/-	-/-	-	-	-	You are an expert. Do the materiality thing for the CSRD report in bullet points.
+in-sample	train_sus:192	--OP-	0	0.54	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	against peers	Compare against peers, top 5, table
+in-sample	train_sus:193	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	Look at the numbers I selected and let...	Look at the numbers I selected and let...	numbers I selected	Look at the numbers I selected and let me know
+in-sample	train_sus:194	-CO-E	0	0.82	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	scope 1 data	Extract our scope 1 data for the auditors, don't round anything
+in-sample	train_sus:195	-C-PE	0	0.00	0.02	askOK/srcOK	askOK/srcOK	askOK/srcOK	go over our CSRD stuff	go over our CSRD stuff	CSRD stuff	hey can you go over our CSRD stuff? we have limited assurance coming up in Q1 and the CFO is nervous. a table would be good. and no guessing pls
+in-sample	train_sus:196	--OP-	0	0.69	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	controls	Map our controls to ESRS 2 GOV-5, in a table, ignore anything outside Europe
+in-sample	train_sus:197	-----	0	0.46	0.01	-/-	-/-	-/-	-	-	-	I need the Scope 3 Cat 6 business travel numbers checked
+in-sample	train_sus:198	-COP-	0	0.61	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	question list	write a question list for our DMA workshop, 12 questions, for the leadership team
+in-sample	train_sus:199	--O-E	0	0.77	0.05	-/-	-/-	-/-	-	-	-	What formula do I use for location-based Scope 2? Please don't guess the grid factor.
+in-sample	train_sus:200	-COP-	0	0.98	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	climate risk section	Rewrite our climate risk section so it sounds less greenwashy, keep it under 200 words, for investors
+in-sample	train_sus:230	S-O--	0	0.08	0.99	-/-	-/-	-/-	-	-	-	can you make a checklist from the onboarding section of this doc?
+in-sample	train_sus:237	-----	1	0.42	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	email	write an email, fix the slides, and summarize the notes
+in-sample	train_sus:238	-----	0	0.15	0.02	-/-	-/-	-/-	-	-	-	make this look nicer
+in-sample	train_sus:239	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	meeting notes pls
+in-sample	train_sus:240	-----	1	0.61	0.01	-/srcOK	-/srcOK	-/srcOK	Help me plan the project	Help me plan the project	kickoff email	Help me plan the project. Also write the kickoff email and summarize yesterday's notes.
+in-sample	train_sus:241	-COP-	0	0.37	0.01	-/-	-/-	-/-	-	-	-	You are a project manager. Create a project plan in a table, 6 phases.
+in-sample	train_sus:242	-COPE	0	0.96	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	email	Draft an email to my team about the new process, friendly tone, under 150 words, don't make up dates.
+in-sample	train_sus:243	-----	0	0.35	0.02	-/-	-/-	-/-	-	-	-	translate to french
+in-sample	train_sus:244	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	Look over the attached slides	Look over the attached slides	-	Look over the attached slides
+in-sample	train_sus:245	S----	0	0.08	1.00	-/-	-/-	-/-	-	-	-	Can you take a pass at the selected paragraph?
+in-sample	train_sus:246	--O--	0	0.46	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	notes	Summarize my notes
+in-sample	train_sus:247	-COP-	0	0.88	0.01	-/-	-/-	-/-	-	-	-	Create a presentation about Q3 for the execs, 10 slides
+in-sample	train_sus:248	--O--	0	0.02	0.02	-/-	-/-	-/-	-	-	-	excel formula for vlookup
+in-sample	train_sus:249	-----	0	0.00	0.01	-/-	-/-	-/-	-	help	-	formatting help
+in-sample	train_sus:250	-COPE	0	0.61	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	status update	Write a status update for leadership, bullet points, don't speculate on dates
+in-sample	train_sus:252	-----	0	0.00	0.67	askOK/-	askOK/-	askOK/-	Thoughts on the deck	Thoughts on the deck	-	Thoughts on the deck?
+in-sample	train_sus:253	-----	0	0.43	0.01	-/-	-/-	-/-	-	-	-	What should I say in the meeting?
+in-sample	train_sus:254	-----	0	0.09	0.02	-/-	-/-	-/-	-	-	-	Fix grammer
+in-sample	train_sus:255	SC---	0	0.00	0.99	-/-	-/-	-/-	-	review	-	Using the selected table, do something useful for the ops review
+in-sample	train_sus:256	-CO--	0	0.86	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	questions	List questions for the vendor meeting
+in-sample	train_sus:257	-----	0	0.22	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	options	Compare the options
+in-sample	train_sus:258	--O--	1	0.61	0.01	-/srcOK	-/srcOK	-/srcOK	-	figure out the timeline	agenda	write the agenda, take notes from last week's call, and figure out the timeline
+in-sample	train_sus:259	--O--	0	0.80	0.01	-/-	-/-	-/-	-	-	-	explain how the approval process works
+in-sample	train_hard:4	-C---	0	0.77	0.05	-/-	-/-	-/-	-	-	-	Regulators are circling on our non-GAAP measures. Can you take a pass at the reconciliation and make it read better?
+in-sample	train_hard:10	SCO--	0	0.71	0.05	-/-	-/-	-/-	-	-	-	can you sort out the debt footnote so it's not so clunky? the lender folks read it closely
+in-sample	train_hard:11	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	I just need a feel for how revenue's trending.
+in-sample	train_hard:13	-----	0	0.01	0.01	-/-	-/-	-/-	-	-	-	the stuff from the close call - anything weird jump out?
+in-sample	train_hard:18	-C---	0	0.24	0.04	askOK/srcOK	-/srcOK	-/srcOK	Look at the gross margin bridge and tell...	Look at the gross margin bridge and tell...	gross margin bridge	Investors grilled us last quarter on margins. Look at the gross margin bridge and tell me something useful.
+in-sample	train_hard:21	-C---	0	0.00	0.01	askOK/-	askOK/-	askOK/-	help me make the earnings script land better...	help me make the earnings script land better...	-	help me make the earnings script land better with analysts
+in-sample	train_hard:26	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	go through the footnotes and see if anything's off
+in-sample	train_hard:29	---P-	0	0.08	0.01	-/-	-/-	-/-	-	-	-	Can you make sense of the variance and put it in plain English?
+in-sample	train_hard:31	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	Peer comparison for opex - where do we stand?
+in-sample	train_hard:35	-----	0	0.00	0.01	askOK/-	askOK/-	askOK/-	Thoughts on the cash section	Thoughts on the cash section	-	Thoughts on the cash section?
+in-sample	train_hard:37	S----	0	0.01	0.99	-/-	-/-	-/-	-	-	-	Off the selected rows, fix whatever's broken.
+in-sample	train_hard:44	-C---	0	0.43	0.01	-/-	-/-	-/-	-	-	-	regulators are sniffing around our access reviews. what should I worry about?
+in-sample	train_hard:47	--O--	0	0.34	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	controls	Map our controls to NIST.
+in-sample	train_hard:50	-----	0	0.01	0.01	-/-	-/-	-/-	-	-	-	can you give the ITGC stuff a once-over
+in-sample	train_hard:55	-----	0	0.43	0.01	-/-	-/-	-/-	-	-	-	what's the deal with segregation of duties
+in-sample	train_hard:58	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	tidy up the access policy so it reads better
+in-sample	train_hard:61	-----	0	0.01	0.01	-/-	-/-	-/-	-	-	-	Any red flags in the risk stuff?
+in-sample	train_hard:65	-C---	0	0.00	0.01	askOK/-	askOK/-	askOK/-	help me get the evidence together	help me get the evidence together	-	pre-audit nerves. help me get the evidence together.
+in-sample	train_hard:68	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	Can you see if our controls are any good?
+in-sample	train_hard:71	-CO--	0	0.43	0.01	-/-	-/-	-/-	-	-	-	Got a regulator visit coming - what do they usually ask about third-party risk?
+in-sample	train_hard:74	-----	0	0.45	0.01	-/-	-/-	-/-	-	-	-	give me the gist of how the audit went
+in-sample	train_hard:77	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	make the RCM better
+in-sample	train_hard:86	-----	0	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	help with the CDP response	help with the CDP response	CDP response	help with the CDP response
+in-sample	train_hard:88	-C---	0	0.08	0.01	-/-	-/-	-/-	-	-	-	We're under pressure from investors on greenwashing. Can you tidy the net-zero claims?
+in-sample	train_hard:90	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	anything off in the GHG numbers?
+in-sample	train_hard:94	-C---	0	0.08	0.01	-/-	-/-	-/-	-	-	-	we have assurance coming and our scope 3 is a mess
+in-sample	train_hard:97	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	can you look into our carbon footprint
+in-sample	train_hard:103	-C---	0	0.01	0.01	-/-	-/-	-/-	-	-	-	Our board wants the climate risk story. Draft something.
+in-sample	train_hard:106	-----	0	0.43	0.01	-/-	-/-	-/-	-	-	-	Is our transition plan any good?
+in-sample	train_hard:109	-----	0	0.12	0.01	-/-	-/-	-/-	-	-	-	Pull together the emissions stuff for the report
+in-sample	train_hard:112	-C---	0	0.43	0.01	-/-	-/-	-/-	-	-	-	regulators are watching ESG claims closely now - what should we be careful saying?
+in-sample	train_hard:115	-----	0	0.00	0.01	askOK/-	askOK/-	askOK/-	Thoughts on the TCFD scenario stuff	Thoughts on the TCFD scenario stuff	-	Thoughts on the TCFD scenario stuff?
+in-sample	train_hard:119	S-O--	0	0.16	1.00	-/-	-/-	-/-	-	-	-	From the selected supplier rows, flag which ones say they have SBTi targets.
+in-sample	train_hard:123	-----	0	0.14	0.01	askOK/-	askOK/-	-/-	help me write something to the team	help me write something to the team	-	help me write something to the team
+in-sample	train_hard:128	-----	0	0.43	0.01	-/-	-/-	-/-	-	-	-	what's a good way to organize all this
+in-sample	train_hard:131	-C-PE	0	0.43	0.05	-/srcOK	-/srcOK	-/srcOK	-	analyze thoroughly in a table, top 5, cite...	thoroughly	You are a world-class SEC reporting expert. For the audit committee. Using our data, analyze thoroughly in a table, top 5, cite sources, don't make anything up, flag assumptions.
+in-sample	train_hard:132	-C-PE	0	0.48	0.05	-/-	-/-	-/-	-	-	-	Act as a CFO. Context: board meeting. Objective: insights. Format: bullets. Constraints: 100 words. Evaluation: verify everything.
+in-sample	train_hard:134	-COPE	0	0.48	0.05	-/-	-/-	-/-	-	-	-	Revenue variance analysis. Top 3. Table. FY2025 vs FY2026. For the board. Don't make anything up. Cite cells.
+in-sample	train_hard:135	-C-PE	0	0.38	0.09	-/srcOK	-/srcOK	-/srcOK	help with the 10-K	help with the 10-K	10-K	As a Big Four partner advising the audit committee of a first-year filer under SEC scrutiny, with rigorous attention to accuracy, citing everything and never speculating, in a concise board-ready bullet format: help with the 10-K.
+in-sample	train_hard:136	-C-P-	0	0.00	0.01	askOK/-	askOK/-	askOK/-	review	review	-	SOURCE: our financials. CONTEXT: Q3 close. OBJECTIVE: review. PARAMETERS: brief. EVALUATE: be accurate.
+in-sample	train_hard:137	S---E	0	0.01	1.00	askOK/-	askOK/-	askOK/-	Look at the selected table	Look at the selected table	table	Look at the selected table. Be thorough, be precise, be accurate, cite, verify, double-check, no hallucinations.
+in-sample	train_hard:138	--OPE	0	0.86	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	MD&A	Draft the MD&A. Use our numbers. Board level. Under 300 words. Preserve every number.
+in-sample	train_hard:140	-C-PE	0	0.08	0.01	-/-	-/-	-/-	-	-	-	Earnings release: give insights. Executives. Bullets. Cite. Don't guess.
+in-sample	train_hard:142	-C-PE	0	0.77	0.05	-/-	-/-	-/-	-	-	-	Strictly using our revenue data and only the facts, with sources cited and every assumption listed, in exactly five bullets, give me revenue insights for the board.
+in-sample	train_hard:143	----E	0	0.00	0.01	askOK/-	askOK/-	askOK/-	Analyze	Analyze	-	Please be accurate and don't hallucinate. Analyze.
+in-sample	train_hard:145	-C-PE	0	0.08	0.01	-/-	-/-	-/-	-	-	-	Comprehensive, accurate, cited, structured, executive-ready, concise yet thorough analysis of our cash position.
+in-sample	train_hard:147	-COPE	0	0.08	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	please	Footnote rewrite please, keep numbers, cite sources, plain English, for investors.
+in-sample	train_hard:149	-C-PE	0	0.01	0.03	-/srcOK	-/srcOK	-/srcOK	-	review the controls	controls	As a SOX auditor for the audit committee, using our controls, in a table, with citations and no assumptions, review the controls.
+in-sample	train_hard:150	-C-PE	0	0.08	0.01	-/-	-/-	-/-	-	-	-	RCM. COSO. Table. Cite. Don't guess. For auditors.
+in-sample	train_hard:151	SC--E	0	0.01	1.00	-/-	-/-	-/-	-	check everything	-	Using the attached RCM, as an expert auditor, rigorously and thoroughly and accurately, without any speculation whatsoever, check everything.
+in-sample	train_hard:152	-C-P-	0	0.00	0.01	askOK/-	askOK/-	askOK/-	Evaluate: carefully	Evaluate: carefully	-	Objective: compliance. Source: our policies. Context: audit. Parameters: short. Evaluate: carefully.
+in-sample	train_hard:154	-C-PE	0	0.02	0.01	-/-	-/-	-/-	-	-	-	Be a NIST expert. Our security stuff. Gaps. Bullet points. Flag uncertainties.
+in-sample	train_hard:155	-C-PE	0	0.00	0.01	-/srcOK	-/srcOK	-/srcOK	-	help with audit findings	audit findings	In 5 bullets for the board, without speculating, help with audit findings.
+in-sample	train_hard:157	----E	0	0.41	0.01	-/-	-/-	-/-	-	assess our risk posture	-	Please carefully, accurately, completely and with full citations assess our risk posture.
+in-sample	train_hard:158	S---E	0	0.08	0.93	askOK/-	askOK/-	askOK/-	thoughts	thoughts	-	From the open testing tracker: thoughts? (be accurate, cite cells, don't assume)
+in-sample	train_hard:159	-COPE	0	0.90	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	controls	As a world-class GRC consultant writing for the audit committee, ensuring zero hallucinations, in a crisp table, map our controls to ISO 27001.
+in-sample	train_hard:160	-COP-	0	0.65	0.01	-/-	-/-	-/-	-	-	-	Test steps for the controls. Numbered. Auditor-ready. Don't skip anything.
+in-sample	train_hard:161	-----	0	0.40	0.01	-/-	-/-	-/-	Evaluate the controls	Evaluate the controls	-	Evaluate the controls. Evaluate the evidence. Evaluate the risks. Flag everything.
+in-sample	train_hard:163	-C---	0	0.76	0.05	-/-	-/-	-/-	-	-	-	Act like an audit expert with 30 years' experience who never makes mistakes, and tell me if we're compliant.
+in-sample	train_hard:164	SC-P-	0	0.00	0.99	askOK/-	askOK/-	askOK/-	Evaluate: verify	Evaluate: verify	-	Context: regulators. Source: the attached. Objective: fix. Parameters: bullet. Evaluate: verify.
+in-sample	train_hard:166	-C-PE	0	0.08	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	audit stuff	Cite your sources and flag assumptions when you summarize our audit stuff for the board in bullets.
+in-sample	train_hard:167	-C-PE	0	0.01	0.03	-/srcOK	-/srcOK	-/srcOK	-	analyze Scope 3	Scope 3	As an ESRS expert, for our CSRD report, using our emissions data, in a table, citing sources and without speculating, analyze Scope 3.
+in-sample	train_hard:168	-C-PE	0	0.08	0.01	-/-	-/-	-/-	-	-	-	Scope 1 2 3. Board. Bullets. Cite. No guessing. Insights.
+in-sample	train_hard:169	SC---	0	0.08	0.94	-/-	-/-	-/-	-	-	-	Using ESRS / ISSB Intelligence, as an assurance reviewer, rigorously, thoroughly, explain.
+in-sample	train_hard:170	----E	0	0.08	0.01	askOK/-	askOK/-	askOK/-	Thoughts	Thoughts	-	Be accurate. Be precise. Don't hallucinate. Our GHG numbers. Thoughts?
+in-sample	train_hard:172	-C-P-	0	0.00	0.01	askOK/-	askOK/-	askOK/-	Evaluate: carefully	Evaluate: carefully	-	Objective: CSRD readiness. Context: assurance. Source: our data. Parameters: concise. Evaluate: carefully.
+in-sample	train_hard:174	-C--E	0	0.16	0.01	-/-	-/-	-/-	-	-	-	Our ESG data - make it assurance-ready. Cite, verify, flag assumptions.
+in-sample	train_hard:175	-C-PE	0	0.48	0.05	-/-	-/-	-/-	-	-	-	As a TCFD specialist for investors, in plain English, under 200 words, no speculation: climate risk.
+in-sample	train_hard:177	-C-PE	0	0.08	0.01	-/-	-/-	-/-	-	-	-	Rigorous double materiality analysis of our topics, mapped, cited, formatted, board-ready.
+in-sample	train_hard:178	-C--E	0	0.01	0.03	-/srcOK	-/srcOK	-/srcOK	-	check everything is fine, cite page numbers	everything is fine	Expert sustainability reviewer here. Using our sustainability report, check everything is fine, cite page numbers.
+in-sample	train_hard:179	--OPE	0	0.69	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	data	Map our data to ESRS. Table. Don't guess.
+in-sample	train_hard:180	----E	0	0.43	0.05	-/srcOK	-/srcOK	-/srcOK	Check it over	Check it over	it over	Check it over. Flag what you inferred vs read, keep me honest, I'd rather see a gap than a guess.
+in-sample	train_hard:182	-COPE	0	0.61	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	net-zero section	Write the net-zero section. Investor audience. 150 words. Don't overclaim.
+in-sample	train_hard:183	---PE	0	0.43	0.05	-/-	-/-	-/-	-	-	-	Please use only verified data, cite every source, and flag uncertainties, in a summary table, about Scope 3.
+in-sample	train_hard:184	SC---	0	0.08	0.93	-/-	-/-	-/-	-	-	-	Using the GHG inventory workbook, as an expert, verify.
+in-sample	train_hard:185	-C-PE	0	0.00	0.01	askOK/-	askOK/-	askOK/-	Help	Help	-	Act as an expert. Be concise, accurate, cite sources, no assumptions, bullet points. Help.
+in-sample	train_hard:187	-C---	0	0.00	0.01	askOK/-	askOK/-	askOK/-	Evaluate: correct	Evaluate: correct	-	Context: meeting. Objective: notes. Format: good. Evaluate: correct.
+in-sample	train_hard:189	-C---	0	0.61	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	amazing	You are the world's best writer. Write an amazing, perfect, accurate email.
+in-sample	train_hard:190	-----	0	0.00	0.01	-/-	-/-	-/-	-	help	-	Formula help. Excel. Accurate. No errors. Cite.
+in-sample	train_hard:191	-COPE	0	1.00	0.17	-/srcOK	-/srcOK	-/-	-	-	three segments	You're helping our controller prep for the audit committee. Using our revenue data, identify the three segments with the largest year-over-year decline in FY2026, as a table, and say if the data doesn't support a cause.
+in-sample	train_hard:193	SC-PE	0	0.01	1.00	-/-	-/-	-/-	-	look at the revenue for the board, in...	revenue	Using the selected table, look at the revenue for the board, in three bullets, citing cells.
+in-sample	train_hard:196	SC-PE	0	0.27	1.00	-/-	-/-	-/-	-	-	-	For the CFO: from the earnings release open here, give me your take, in five bullets, and flag anything forward-looking.
+in-sample	train_hard:197	-COPE	0	0.96	0.05	-/-	-/-	-/-	-	-	-	Using our Q3 numbers, draft the MD&A results of operations paragraph for the 10-Q, under 200 words, and preserve every figure.
+in-sample	train_hard:200	SC-PE	0	0.01	1.00	askOK/-	askOK/-	askOK/-	Check the selected footnote for the audit committee,...	Check the selected footnote for the audit committee,...	footnote	Check the selected footnote for the audit committee, in a short memo, don't add facts.
+in-sample	train_hard:202	-COPE	0	0.92	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	accounts	Our auditors start Monday. Using our TB, identify accounts that moved more than 10% vs. prior month, as a table, and don't guess at reasons.
+in-sample	train_hard:206	-COPE	0	0.70	0.05	-/-	-/-	-/-	-	review, as a table, and flag anything you...	-	As a SOX auditor, using our controls, list the key controls lacking evidence of review, as a table, and flag anything you can't confirm.
+in-sample	train_hard:211	-COPE	0	0.98	0.05	-/srcOK	-/srcOK	-/srcOK	-	review control, numbered, and list assumptions	test steps	We have SOX testing next month. Draft test steps for the user access review control, numbered, and list assumptions.
+in-sample	train_hard:214	SC-PE	0	0.01	1.00	-/-	-/-	-/-	-	-	-	Using the access listing I attached, for the IT audit team, deal with the terminated users, in a table, and don't assume.
+in-sample	train_hard:216	-COPE	0	0.96	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	subcategories scored below 3	Act as a NIST CSF assessor. Using our security assessment, list subcategories scored below 3, grouped by function, and note where the score lacks support.
+in-sample	train_hard:221	-COPE	0	0.92	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	sites	For our first CSRD assurance, using our emissions data, identify sites with Scope 2 increases over 20% YoY, as a table, and don't backfill missing years.
+in-sample	train_hard:223	SC-PE	0	0.01	1.00	-/-	-/-	-/-	-	go over the Scope 3 data, in a...	Scope 3 data	Using the attached supplier file, for the procurement team, go over the Scope 3 data, in a table, and note anything you're unsure of.
+in-sample	train_hard:227	-COPE	0	0.96	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	net-zero progress paragraph	For investors, draft our net-zero progress paragraph, 150 words, using only facts we've already reported.
+in-sample	train_hard:228	SC-PE	0	0.01	1.00	-/-	-/-	-/-	-	review the water data, in bullets, without speculation	water data	Using the selected rows, for the CDP response, review the water data, in bullets, without speculation.
+in-sample	train_hard:233	-COPE	0	0.97	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	category coverage	For the board, using our Scope 3 numbers, summarize category coverage in a table, and mark anything not stated.
+in-sample	train_hard:235	SC-PE	0	0.01	1.00	-/-	-/-	-/-	-	handle the scenario analysis, in 5 bullets, and...	-	Using the attached TCFD report, for investors, handle the scenario analysis, in 5 bullets, and cite pages.
+in-sample	train_hard:236	-COPE	0	0.87	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	weekly status email	For my manager, using my notes, write a weekly status email, five bullets, and don't add anything I didn't write.
+in-sample	train_hard:238	SC-PE	0	0.10	1.00	-/-	-/-	-/-	-	-	-	Using the project plan open here, for the steering committee, sort out the timeline, in a table, flag uncertainty.
+in-sample	train_hard:242	-CO--	0	0.80	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	10Q	SUMMARIZE THE 10Q FOR THE BOARD
+in-sample	train_hard:244	---P-	0	0.02	0.02	-/-	-/-	-/-	-	-	-	variance?? q3
+in-sample	train_hard:246	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	can u chck the footnotes
+in-sample	train_hard:248	S-O--	0	0.84	0.05	-/srcMIS	-/srcMIS	-/srcMIS	-	-	where	earnings release in doc open... the eps numbers dont match the IS i think?? find where
+in-sample	train_hard:249	S-OP-	0	0.69	0.01	-/-	-/-	-/-	-	-	-	RCM ATTACHED. MAP TO COSO. TABLE.
+in-sample	train_hard:250	-CO--	0	0.65	0.01	-/srcOK	-/srcOK	-/srcOK	-	review ctrl auditors here mon	ctrl auditors here mon	need test steps fr the access review ctrl auditors here mon
+in-sample	train_hard:251	-----	0	0.43	0.01	-/-	-/-	-/-	-	-	-	whats wrong with our controls
+in-sample	train_hard:254	-C---	0	0.02	0.02	-/-	-/-	-/-	-	-	-	risk register,,, top risks,,, board
+in-sample	train_hard:256	-----	0	0.00	0.01	askOK/-	askOK/-	askOK/-	help w sox	help w sox	-	help w sox
+in-sample	train_hard:257	-----	0	0.00	0.01	-/-	-/-	-/-	-	help	-	scope 3 is a MESS help
+in-sample	train_hard:258	S-OP-	0	0.08	0.93	-/-	-/-	-/-	-	-	-	frm the scope 2 tab which sites up more than 20% yoy table pls
+in-sample	train_hard:260	SCOPE	0	0.96	0.05	-/srcMIS	-/srcMIS	-/srcMIS	-	-	SUPPLIERS	ASSURANCE NEXT MONTH. SUPPLIER FILE ATTACHED. LIST SUPPLIERS WITH NO SCOPE 3 DATA. TABLE. DO NOT ESTIMATE ANYTHING.
+in-sample	train_hard:261	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	ghg numbers look off??
+in-sample	train_hard:262	-CO--	0	0.55	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	climate section csrd	draft climate section csrd
+in-sample	train_hard:264	S-OP-	0	0.54	0.01	-/-	-/-	-/-	-	-	-	pls compare renewables % fy25 v fy26 frm renewables sheet
+in-sample	train_hard:265	-----	0	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	check the emissions	check the emissions	emissions	can u check the emissions
+in-sample	train_hard:267	--O--	0	0.02	0.02	-/-	-/-	-/-	-	-	-	EMAIL TO TEAM ABT DEADLINE
+in-sample	train_hard:269	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	idk where to start w this
+in-sample	train_hard:273	-----	1	0.07	0.01	-/-	-/-	-/-	-	-	-	Fix the footnotes, update the MD&A, and tell me what XBRL is.
+in-sample	train_hard:275	--O--	1	0.97	0.05	-/srcOK	-/srcOK	-/srcOK	-	check our tie-out	ASC 606 step 5	Can you explain ASC 606 step 5, then draft the revenue footnote, plus check our tie-out?
+in-sample	train_hard:278	-----	1	0.10	0.01	askOK/srcOK	askOK/srcOK	-/srcOK	Look at our revenue and our expenses and...	Look at our revenue and our expenses and...	revenue	Look at our revenue and our expenses and our headcount and tell me stuff.
+in-sample	train_hard:281	-----	1	0.37	0.01	-/srcOK	-/srcOK	-/srcOK	Review our controls, update the risk register and...	Review our controls, update the risk register and...	controls	Review our controls, update the risk register and draft the audit plan.
+in-sample	train_hard:283	--OP-	1	0.78	0.05	-/-	-/-	-/-	-	-	-	I need the deficiency log summarized by severity, a new NIST mapping, and a slide on our vendor risk program.
+in-sample	train_hard:286	-----	1	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	Help with access reviews and change management and...	Help with access reviews and change management and...	access reviews	Help with access reviews and change management and our ISO certification.
+in-sample	train_hard:290	-----	1	0.62	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	ESRS E1	Explain ESRS E1, calculate our Scope 3, and write the CDP response.
+in-sample	train_hard:293	-----	1	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	Help me with materiality and the supplier survey...	Help me with materiality and the supplier survey...	materiality	Help me with materiality and the supplier survey and the sustainability report.
+in-sample	train_hard:295	-C---	1	0.96	0.05	-/srcOK	-/srcOK	-/srcOK	-	check our Scope 1 numbers, and map our...	one	Investors want a climate update: draft one, check our Scope 1 numbers, and map our data to ISSB.
+in-sample	train_hard:297	-----	1	0.87	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	thank-you note	Write a thank-you note to the team and also explain what a VLOOKUP does and plan my week.
+oof	train_fr:1	-----	0	0.01	0.02	-/-	-/-	-/-	-	-	-	summarize pls
+oof	train_fr:2	-COP-	1	0.49	0.04	-/-	-/-	-/-	-	-	-	give me a summary of our Q3 results for the board and also fix the font on the cover page
+oof	train_fr:3	-C-PE	0	0.79	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	key stuff	You're a seasoned SEC reporting manager. Summarize the key stuff in a table, no fluff, and don't make anything up.
+oof	train_fr:4	--O--	0	0.39	0.00	-/-	-/-	-/-	-	-	-	whats the gist of the earnings release
+oof	train_fr:5	--O--	0	0.63	0.01	-/-	-/-	-/-	-	-	-	can u sum up the footnotes
+oof	train_fr:6	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	thoughts on the selected paragraph	thoughts on the selected paragraph	-	thoughts on the selected paragraph?
+oof	train_fr:7	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	Look over the attached Q2 board deck	Look over the attached Q2 board deck	-	Look over the attached Q2 board deck.
+oof	train_fr:20	--O--	0	0.11	0.02	-/-	-/-	-/-	-	-	-	why did revenue go up
+oof	train_fr:21	-----	0	0.01	0.02	-/-	-/-	-/-	-	-	-	flux analysis
+oof	train_fr:22	-COP-	1	0.89	0.04	-/-	-/-	-/-	-	-	-	As a controller, do a variance analysis on our opex vs last year, top 5 by $ in a table; also remind me what the 10-Q deadline is
+oof	train_fr:23	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	look at the selected revenue rows	look at the selected revenue rows	revenue rows	look at the selected revenue rows
+oof	train_fr:24	--O-E	0	0.70	0.00	-/srcOK	-/srcOK	-/srcOK	-	-	variances	explain the variances in the numbers, don't guess at reasons
+oof	train_fr:25	S----	0	0.00	0.78	askOK/-	askOK/-	askOK/-	check the flux on the income statement tab	check the flux on the income statement tab	-	Can you check the flux on the income statement tab
+oof	train_fr:26	---P-	0	0.08	0.01	-/-	-/-	-/-	-	-	-	big swings in SG&A Q2 vs Q3??
+oof	train_fr:27	-C-P-	0	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	help with the flux for the 10-Q, for...	help with the flux for the 10-Q, for...	flux	pls help with the flux for the 10-Q, for the audit committee, bullets
+oof	train_fr:39	-----	0	0.01	0.01	-/-	-/-	-/-	-	-	-	anything weird?
+oof	train_fr:40	--O--	1	0.80	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	duplicates	find duplicates in our AP data and then write the email to the AP clerk too
+oof	train_fr:41	-COPE	0	0.97	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	missing values	As an internal reviewer for the 10-K, list missing values in a table and flag anything you're unsure of
+oof	train_fr:43	--O--	0	0.32	0.01	-/-	-/-	-/-	-	-	-	are there any outliers in the revenue numbers
+oof	train_fr:44	-----	0	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	check the XBRL tags	check the XBRL tags	XBRL tags	check the XBRL tags
+oof	train_fr:45	-----	0	0.19	0.02	askOK/srcOK	askOK/srcOK	-/srcOK	help me find problems	help me find problems	problems	help me find problems
+oof	train_fr:58	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	tie out
+oof	train_fr:59	-----	0	0.01	0.01	-/-	-/-	-/-	-	-	-	does everything tie?
+oof	train_fr:60	--O--	0	0.36	0.01	-/-	-/-	-/-	-	-	-	make sure our 10-Q numbers match the press release
+oof	train_fr:61	-C-PE	0	0.93	0.05	-/-	-/-	-/-	-	-	-	You are a tie-out specialist for an SEC filer. Output as a table with a status column. Cite each source page.
+oof	train_fr:62	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	check the selected footnote	check the selected footnote	footnote	check the selected footnote
+oof	train_fr:63	-----	0	0.05	0.01	-/-	-/-	-/-	-	-	-	can you see if the numbers line up between the docs
+oof	train_fr:64	--O--	0	0.07	0.00	-/-	-/-	-/-	-	-	-	teh MD&A and the financials consistent?
+oof	train_fr:77	--O--	0	0.25	0.03	-/srcOK	-/srcOK	-/srcOK	-	-	footnote	write a footnote
+oof	train_fr:78	--O--	0	0.49	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	MD&A	draft MD&A
+oof	train_fr:79	-COPE	0	0.63	0.10	-/srcOK	-/srcOK	-/srcOK	-	-	revenue recognition policy footnote	You are a senior SEC reporting manager writing for investors who follow our sector closely. Draft a revenue recognition policy footnote for the annual report covering our subscription, professional services, and hardware revenue streams. Keep it to roughly 200 words, use the same structure most large-cap software companies use (performance obligations, timing, variable consideration, contract balances), avoid boilerplate where you can, and don't invent any policies or numbers we haven't told you about. If something would normally be disclosed but you don't have the facts, leave a bracketed placeholder.
+oof	train_fr:80	-C---	1	0.11	0.01	askOK/-	askOK/-	-/-	help me write something for the board, and...	help me write something for the board, and...	-	help me write something for the board, and also check the XBRL
+oof	train_fr:81	--O--	0	0.83	0.01	-/-	-/-	-/-	-	-	-	Draft the subsequent events note based on what we discussed
+oof	train_fr:82	--O--	0	0.59	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	earnings release quote	can you write the earnings release quote from our CEO
+oof	train_fr:83	S----	0	0.02	0.99	-/-	-/-	-/-	-	-	attached	write up the attached.
+oof	train_fr:96	-----	0	0.01	0.02	-/-	-/-	-/-	-	-	-	make it better
+oof	train_fr:97	--OPE	0	0.65	0.01	-/-	-/-	-/-	-	-	-	shorten it by 30%, keep the numbers
+oof	train_fr:98	-COP-	1	0.98	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	risk factors	Rewrite our risk factors in plain English for retail investors and pull the KPI list too
+oof	train_fr:99	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	fix the tone
+oof	train_fr:100	S----	0	0.00	1.00	askOK/-	askOK/-	askOK/-	clean up the selected paragraph	clean up the selected paragraph	paragraph	clean up the selected paragraph
+oof	train_fr:101	--OP-	0	0.91	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	CEO letter	can u rewrite the CEO letter so it sounds less corporate
+oof	train_fr:102	-C-PE	0	0.46	0.04	-/-	-/-	-/-	-	-	-	As our general counsel, polish the language, keep it under 200 words, don't change any figures
+oof	train_fr:103	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	reword
+oof	train_fr:108	S-OP-	0	0.05	1.00	-/-	-/-	-/-	-	-	-	Make the attached earnings release headline section more concise — two sentences.
+oof	train_fr:112	SCOPE	0	0.20	0.72	-/-	-/-	-/-	-	-	-	For the board deck: rewrite slide 8's speaker notes into 4 crisp bullets, board-level tone. If something reads as forward-looking, flag it rather than rewording it.
+oof	train_fr:115	--O--	0	0.50	0.02	-/-	-/-	-/-	-	-	-	pull the KPIs
+oof	train_fr:116	--O--	0	0.38	0.02	-/-	-/-	-/-	-	-	-	get me all the dates
+oof	train_fr:117	-COPE	0	0.95	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	every contractual obligation	Act as a financial analyst and list every contractual obligation in a table with amount and due date. Include a source page for each.
+oof	train_fr:118	S----	0	0.00	0.99	-/-	-/-	-/-	-	-	-	extract stuff from the attached
+oof	train_fr:119	--O--	0	0.39	0.00	-/-	-/-	-/-	-	-	-	what covenants do we have in our credit agreement
+oof	train_fr:120	-----	0	0.01	0.02	-/-	-/-	-/-	-	-	-	grab numbers from the 10-K
+oof	train_fr:121	--O--	1	0.89	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	the commitments please	list all the commitments please, plus can you tell me how to do a pivot table
+oof	train_fr:134	-----	0	0.07	0.00	-/-	-/-	-/-	-	-	-	how do we stack up vs peers
+oof	train_fr:135	-----	0	0.21	0.02	-/-	-/-	-/-	-	-	-	compare to last year
+oof	train_fr:136	-COPE	0	0.81	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	margins	You're an equity analyst. Compare our margins to peers in a table and cite sources.
+oof	train_fr:137	S----	0	0.19	1.00	-/-	-/-	-/-	-	-	two attached docs	compare the two attached docs
+oof	train_fr:138	-----	0	0.29	0.02	-/-	-/-	-/-	-	-	-	benchmark our disclosures
+oof	train_fr:139	--O--	0	0.39	0.00	-/-	-/-	-/-	-	-	-	is our revenue note as detailed as competitors'?
+oof	train_fr:140	-C-P-	1	0.95	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	Q3	compare Q3 vs Q2 for the board, bullets, and also explain what ASC 606 is
+oof	train_fr:152	--O--	0	0.01	0.03	-/-	-/-	-/-	-	-	-	what is XBRL
+oof	train_fr:153	--O--	0	0.45	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	ASC 842	explain ASC 842
+oof	train_fr:155	S----	0	0.00	0.99	-/-	-/-	-/-	-	-	-	explain the selected stuff
+oof	train_fr:156	--O--	1	0.84	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	response	whats a comment letter and why do we keep getting them, also write the response
+oof	train_fr:157	--O--	0	0.34	0.01	-/-	-/-	-/-	-	-	-	what does the tax footnote even mean
+oof	train_fr:158	--O--	0	0.35	0.02	-/-	-/-	-/-	help me understand non-GAAP	help me understand non-GAAP	-	help me understand non-GAAP
+oof	train_fr:159	--O--	0	0.31	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	dilution	explian dilution
+oof	train_fr:170	-----	0	0.12	0.02	-/-	-/-	-/-	-	-	-	give me questions
+oof	train_fr:171	--O--	0	0.12	0.02	-/-	-/-	-/-	-	-	-	what should the auditors ask
+oof	train_fr:172	-COP-	0	0.87	0.04	-/-	-/-	-/-	-	-	-	You're an audit committee member. Write 10 tough questions about the quarter in a numbered list.
+oof	train_fr:173	S----	0	0.02	0.99	-/-	-/-	-/-	-	-	-	questions about the selected flux?
+oof	train_fr:174	-----	0	0.07	0.00	-/-	-/-	-/-	-	-	-	prep me for the SEC's questions
+oof	train_fr:175	--O--	0	0.34	0.01	-/-	-/-	-/-	-	-	-	what would a reviewer push back on in our MD&A
+oof	train_fr:176	--O--	0	0.08	0.01	-/-	-/-	-/-	-	-	-	what wuld you ask the CFO
+oof	train_fr:179	S-OP-	0	0.18	1.00	-/-	-/-	-/-	-	-	-	What questions should I ask FP&A about the variances in the 'Opex Flux' tab? Only ask about things the sheet can't explain.
+oof	train_fr:188	--O--	0	0.26	0.02	-/-	-/-	-/-	-	-	-	map these to the taxonomy
+oof	train_fr:189	-----	0	0.01	0.01	-/-	-/-	-/-	-	-	-	tag everything
+oof	train_fr:190	-COPE	0	0.88	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	line items	As an XBRL specialist, map line items to US GAAP taxonomy elements in a table with element name and period type, and say which you're unsure about.
+oof	train_fr:191	S----	0	0.08	0.99	-/-	-/-	-/-	-	-	-	do the mapping for the attached
+oof	train_fr:192	--O--	0	0.34	0.01	-/-	-/-	-/-	-	-	-	which XBRL elements should we use
+oof	train_fr:193	--O--	1	0.84	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	disclosures	map our disclosures to S-K, then tie out the 10-Q and summarize the comment letter
+oof	train_fr:194	-----	0	0.00	0.01	-/-	-/-	-/-	-	help	-	xbrl mapping help?
+oof	train_fr:206	-----	0	0.01	0.02	-/-	-/-	-/-	-	-	-	close checklist
+oof	train_fr:207	--O--	0	0.34	0.01	-/-	-/-	-/-	-	-	-	what are the steps to file a 10-Q
+oof	train_fr:208	-COPE	0	0.70	0.04	-/-	-/-	-/-	-	-	-	You're a controller at a newly public company. Give me a 10-K disclosure checklist as a table and note anything you're not certain applies.
+oof	train_fr:209	--O--	0	0.82	0.00	-/-	-/-	-/-	-	-	-	make a to-do list for close
+oof	train_fr:210	-----	0	0.00	0.00	askOK/-	askOK/-	askOK/-	help me get organized for year end	help me get organized for year end	-	help me get organized for year end
+oof	train_fr:211	-----	0	0.60	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	steps	list the steps
+oof	train_fr:212	--O--	0	0.26	0.01	-/-	-/-	-/-	-	-	-	tie-out procedures pls for the board deck
+oof	train_fr:224	-----	0	0.00	0.01	-/-	-/-	-/-	-	help	-	formula help
+oof	train_fr:225	--O--	0	0.06	0.01	-/-	-/-	-/-	-	-	-	how do I do a vlookup
+oof	train_fr:226	-COPE	0	0.84	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	formula	As a close analyst, write a formula that flags variances over 10% and explain it in two sentences. Don't assume column letters, ask me.
+oof	train_fr:227	-----	0	0.10	0.03	-/-	-/-	-/-	-	-	-	fix the formula
+oof	train_fr:228	--O--	1	0.81	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	board minutes	why is my sumif broken and also can you summarize the board minutes
+oof	train_fr:229	--O--	0	0.01	0.01	-/-	-/-	-/-	-	-	-	xlookup vs index match?
+oof	train_fr:230	S----	0	0.00	0.46	askOK/srcMIS	askOK/-	askOK/-	look at cell F12	look at cell F12	cell F12	can you look at cell F12
+oof	train_fr:242	-----	0	0.01	0.03	-/-	-/-	-/-	-	-	-	hi
+oof	train_fr:243	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	can you make a chart
+oof	train_fr:244	-C-PE	0	0.38	0.04	-/-	-/-	-/-	-	-	-	You are a Workiva power user. Make it look nice in a table. Don't change any numbers.
+oof	train_fr:245	S----	0	0.27	1.00	-/-	-/-	-/-	-	-	-	format the attached deck
+oof	train_fr:246	--OP-	0	0.37	0.02	-/-	-/-	-/-	-	-	-	convert the numbers to thousands
+oof	train_fr:247	-----	0	0.01	0.03	-/-	-/-	-/-	-	-	-	what can you do
+oof	train_fr:248	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	do the thing from yesterday
+oof	train_fr:249	-C-PE	0	0.65	0.10	-/-	-/-	-/-	help me get ahead of all this	help me get ahead of all this	-	So we're heading into Q3 close next week and honestly the team is stretched — two people out, the auditors want the flux package two days earlier than last quarter, and the CFO wants the board deck refreshed with the new segment view. I'm the assistant controller and I report to the audit committee indirectly through the CFO. Whatever you put together should be in bullet form, no more than a page, and please don't invent dates or owners; ask me if you need them. Can you just help me get ahead of all this?
+oof	train_grc:1	-----	0	0.07	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	audit stuff	summarize our audit stuff
+oof	train_grc:5	--O--	0	0.37	0.01	-/-	-/-	-/-	-	-	-	Give me a summary of the deficiencies.
+oof	train_grc:7	-COP-	0	0.75	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	risk register	Summarize our risk register in 3 bullets for the board.
+oof	train_grc:10	-----	0	0.01	0.02	-/-	-/-	-/-	-	-	-	summarize
+oof	train_grc:15	-CO--	0	0.06	0.01	-/-	-/-	-/-	-	-	-	Our external auditors want a recap of where remediation stands. Summarize it.
+oof	train_grc:16	--O--	0	0.34	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	the controls	Summarize all the controls
+oof	train_grc:19	-CO--	0	0.07	0.00	-/-	-/-	-/-	-	-	-	Give the board a summary of cyber risk
+oof	train_grc:23	--O--	0	0.75	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	change	explain the change in deficiency counts
+oof	train_grc:26	--O--	0	0.40	0.01	-/-	-/-	-/-	-	-	-	why did our control failures go up
+oof	train_grc:27	-----	0	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	Look at the deficiencies year over year	Look at the deficiencies year over year	deficiencies year over year	Look at the deficiencies year over year.
+oof	train_grc:30	---P-	0	0.71	0.01	-/-	-/-	-/-	-	-	-	variance in test exceptions Q1 to Q2??
+oof	train_grc:32	-CO--	0	0.93	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	changes	You are a SOX compliance analyst. Explain the changes in key control counts by process.
+oof	train_grc:33	-----	0	0.05	0.01	-/-	-/-	-/-	-	-	-	risk scores went up a lot this year, what happened
+oof	train_grc:35	-----	0	0.01	0.93	-/-	-/-	-/-	-	-	-	Track movement in open findings
+oof	train_grc:39	-----	0	0.61	0.00	-/srcOK	-/srcOK	-/srcOK	-	-	anything weird	find anything weird in the access list
+oof	train_grc:42	-----	0	0.01	0.03	-/-	-/-	-/-	-	-	-	any gaps in our evidence?
+oof	train_grc:43	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	Review the selected controls	Review the selected controls	controls	Review the selected controls.
+oof	train_grc:45	--O--	1	0.86	0.02	-/srcOK	-/srcOK	-/srcOK	-	review schedule and email IT about the admin...	schedule	Look for segregation of duties conflicts, also redo the access review schedule and email IT about the admin accounts
+oof	train_grc:46	-COPE	0	0.42	0.05	-/-	-/-	-/-	-	-	-	You're a SOX tester. Flag any journal entries over $250K posted on weekends, in a table, no speculation.
+oof	train_grc:49	-----	0	0.24	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	outliers	Find outliers.
+oof	train_grc:53	----E	0	0.96	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	unusual patterns	Identify unusual patterns in firewall rule changes, and don't guess if you can't tell
+oof	train_grc:59	-----	0	0.01	0.01	-/-	-/-	-/-	-	-	-	do the numbers match
+oof	train_grc:62	--O--	0	0.34	0.01	-/-	-/-	-/-	-	-	-	Is the internal audit report consistent with the workpapers?
+oof	train_grc:64	S----	0	0.01	0.01	-/-	-/-	-/-	-	-	-	chekc this pls
+oof	train_grc:66	----E	0	0.74	0.01	-/-	-/-	-/-	-	-	-	Make sure everything ties — I'll make the final call on any differences
+oof	train_grc:67	--O--	0	0.26	0.96	-/-	-/-	-/-	-	-	-	tie-out pls: risk register totals vs the ERM dashboard slide
+oof	train_grc:70	-C---	0	0.66	0.01	-/-	-/-	-/-	Check whether the management responses are consistent	Check whether the management responses are consistent	-	You are an external auditor. Check whether the management responses are consistent.
+oof	train_grc:72	--O--	0	0.69	0.01	-/-	-/-	-/-	-	-	-	Do the SOC 2 control numbers in our system description match the controls matrix?
+oof	train_grc:73	--O--	1	0.42	0.04	-/-	-/-	-/-	-	-	-	Compare control owners between the RACI and the RCM, then also fix the formatting and send me a list of who's missing
+oof	train_grc:77	--O--	1	0.83	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	control description	write a control description for user access reviews and also a policy for it and test steps
+oof	train_grc:79	--O--	0	0.39	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	finding	Draft a finding
+oof	train_grc:80	-COP-	0	0.84	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	executive summary	You're an internal auditor. Write an executive summary for our IT audit report, 200 words, formal tone.
+oof	train_grc:81	--O--	1	0.95	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	conclusion paragraph	Draft the conclusion paragraph for the workpaper and then also write the email to the auditors about the sample selection
+oof	train_grc:83	-----	0	0.49	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	policy	Draft a policy.
+oof	train_grc:84	-COP-	0	0.93	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	Acceptable Use Policy	Can you draft an Acceptable Use Policy for a 300-person SaaS company preparing for SOC 2? Keep it under two pages.
+oof	train_grc:86	-COP-	0	0.83	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	email	Draft an email to control owners reminding them about Q4 evidence
+oof	train_grc:89	-----	0	0.00	0.00	askOK/srcOK	askOK/srcOK	askOK/srcOK	Help me with the audit report	Help me with the audit report	audit report	Help me with the audit report.
+oof	train_grc:93	SCO--	1	0.83	0.04	-/srcMIS	-/srcMIS	-/srcMIS	-	-	slide	Draft an internal audit report section on the ITGC results in Sheet3 for the CAE. Also update the issue tracker and write the slide for next week's AC meeting.
+oof	train_grc:94	--O--	1	0.78	0.00	-/srcOK	-/srcOK	-/srcOK	-	-	business continuity policy	Draft a business continuity policy, a vendor management policy, and a data retention policy
+oof	train_grc:96	S----	0	0.01	0.02	-/-	-/-	-/-	-	-	-	make this better
+oof	train_grc:98	--O--	0	0.83	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	control description	rewrite the control description to be clearer
+oof	train_grc:100	SCOP-	0	0.98	0.02	-/srcMIS	-/srcMIS	-/srcMIS	-	-	deficiency	Can you rewrite this deficiency in a more neutral tone? Management thinks it reads as accusatory.
+oof	train_grc:102	-----	0	0.01	0.03	-/-	-/-	-/-	-	-	-	polish
+oof	train_grc:103	--O-E	0	0.96	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	access control policy	Rewrite our access control policy to align with ISO 27001:2022, keeping every existing requirement word for word
+oof	train_grc:105	SC---	0	0.00	0.85	askOK/-	askOK/-	askOK/-	Clean up this narrative	Clean up this narrative	narrative	You are a technical writer for a compliance team. Clean up this narrative.
+oof	train_grc:106	S-OP-	0	0.08	0.92	-/-	-/-	-/-	-	-	-	pls make the selected finding sound less harsh, 2 sentences max
+oof	train_grc:108	-CO--	0	0.56	0.02	-/-	-/-	-/-	-	-	-	rewrite for execs
+oof	train_grc:110	-CO--	1	0.85	0.02	-/-	-/-	-/-	-	-	-	Simplify our ITGC policy for new hires and also make a quiz and a training deck from it
+oof	train_grc:116	--O--	0	0.31	0.02	-/-	-/-	-/-	-	-	-	pull out the controls
+oof	train_grc:119	--O--	0	0.33	0.01	-/-	-/-	-/-	-	-	-	get me the deficiencies
+oof	train_grc:120	--O--	1	0.94	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	findings	Extract the findings from the IA reports, then rank them and also write the audit committee summary.
+oof	train_grc:122	-CO--	0	0.69	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	risks	You are a GRC analyst. Extract the risks.
+oof	train_grc:123	S----	0	0.16	0.93	-/-	-/-	-/-	-	-	-	extract stuff from this doc
+oof	train_grc:126	-----	0	0.60	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	exceptions	list exceptions
+oof	train_grc:129	--O--	0	0.86	0.00	-/-	-/-	-/-	-	-	-	Pull all the SOC 2 exceptions from vendor reports
+oof	train_grc:133	-----	0	0.45	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	controls	Compare our controls to NIST CSF
+oof	train_grc:135	--O--	0	0.54	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	two policy versions	compare the two policy versions and list what changed
+oof	train_grc:136	-----	0	0.53	0.01	-/srcOK	-/srcOK	-/srcOK	-	review process compare to best practice	process compare	How does our access review process compare to best practice?
+oof	train_grc:139	-----	0	0.39	0.00	-/-	-/-	-/-	-	-	-	Is our risk register missing anything compared to peers?
+oof	train_grc:141	-COPE	0	0.81	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	ISMS docs	You're an ISO lead auditor. compare our ISMS docs to clause 6 and 8, table format, cite clause numbers
+oof	train_grc:142	-----	0	0.19	0.03	-/srcOK	-/srcOK	-/srcOK	-	-	policies	compare policies
+oof	train_grc:145	-COP-	0	0.54	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	deficiency rate	Compare our deficiency rate with industry averages in a short table for the AC
+oof	train_grc:151	--O--	0	0.12	0.02	-/-	-/-	-/-	-	-	-	what is a material weakness
+oof	train_grc:152	-COP-	0	0.75	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	COSO principle 12	Explain COSO principle 12 to a new staff auditor in plain English, 100 words.
+oof	train_grc:154	--O--	0	0.31	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	ITGCs	explain ITGCs
+oof	train_grc:157	-COPE	0	0.93	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	ISO 27001 2022 changes	explain the ISO 27001 2022 changes vs 2013 for our steering committee, bullets, don't overstate anything
+oof	train_grc:159	-----	0	0.39	0.00	-/-	-/-	-/-	-	-	-	What's the deal with ICFR?
+oof	train_grc:162	--O--	0	0.34	0.01	-/-	-/-	-/-	-	-	-	Why does the auditor care about IPE?
+oof	train_grc:165	-----	0	0.61	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	control	explain the control
+oof	train_grc:169	--O--	1	0.84	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	meeting invite	Give me walkthrough questions for the payroll process, and while you're at it draft the meeting invite and a RACI for payroll.
+oof	train_grc:171	-----	0	0.01	0.02	-/-	-/-	-/-	-	-	-	what should i ask IT
+oof	train_grc:172	-COP-	0	0.87	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	8 interview questions	You are a seasoned IT auditor. Write 8 interview questions for the change management walkthrough.
+oof	train_grc:173	-CO--	0	0.05	0.01	-/-	-/-	-/-	-	-	-	Questions for the audit committee about cyber?
+oof	train_grc:175	-----	1	0.93	0.01	-/srcOK	-/srcOK	-/srcOK	help me prep for the walkthrough, make the...	help me prep for the walkthrough, make the...	follow-up email	help me prep for the walkthrough, make the slides, and draft the follow-up email
+oof	train_grc:180	-COP-	0	0.37	0.01	-/-	-/-	-/-	-	-	-	Give me 5 tough questions an external auditor might raise on our SoD matrix
+oof	train_grc:182	-----	0	0.01	0.03	-/-	-/-	-/-	-	-	-	questions about ITGC
+oof	train_grc:184	S----	0	0.39	0.00	-/-	-/-	-/-	-	-	-	What do I need to ask about this?
+oof	train_grc:188	-----	0	0.26	0.02	-/-	-/-	-/-	-	-	-	map to COSO
+oof	train_grc:189	--O--	0	0.64	0.00	-/srcOK	-/srcOK	-/srcOK	-	-	controls	Map our controls to NIST CSF 2.0
+oof	train_grc:191	--O--	0	0.67	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	SOC 2 criteria	Can you map the SOC 2 criteria to ISO 27001 controls?
+oof	train_grc:195	S----	0	0.01	0.02	-/srcMIS	-/srcMIS	-/srcMIS	-	-	these	please map these
+oof	train_grc:198	-----	0	0.26	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	controls	Map controls to frameworks
+oof	train_grc:199	-COP-	0	0.87	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	security policies	As the CISO's chief of staff, map our security policies to the CIS Controls v8 for the board, bullet format
+oof	train_grc:204	S----	0	0.26	0.01	-/-	-/-	-/-	-	-	-	map this to the framework
+oof	train_grc:207	--O--	0	0.59	0.01	-/srcOK	-/srcOK	-/srcOK	-	review control	test steps	Write test steps for a user access review control
+oof	train_grc:209	-----	0	0.01	0.01	-/-	-/-	-/-	-	-	-	make a SOX checklist
+oof	train_grc:210	-COP-	0	0.68	0.02	-/-	-/-	-/-	-	-	-	You're a Big 4 IT auditor. Give me test steps for change management controls, numbered, 10 max.
+oof	train_grc:212	--O--	0	0.57	0.01	-/-	-/-	-/-	-	-	-	what are the steps to test a three-way match
+oof	train_grc:215	--O--	0	0.06	0.01	-/-	-/-	-/-	-	-	-	checklist for SOC 2 readiness pls
+oof	train_grc:217	-CO--	0	0.79	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	testing approach	We're a pre-IPO company starting SOX — can you draft a testing approach?
+oof	train_grc:219	-----	0	0.01	0.01	-/-	-/-	-/-	-	-	-	steps??
+oof	train_grc:222	-COP-	0	0.79	0.04	-/-	-/-	-/-	-	-	-	Give me an evidence request list for ITGC testing for the external auditors, Q4, in a table
+oof	train_grc:225	--O--	0	0.63	0.01	-/-	-/-	-/-	-	-	-	excel formula to count controls by owner
+oof	train_grc:227	-----	0	0.00	0.02	-/-	-/-	-/-	-	help	-	formula help
+oof	train_grc:229	--O--	0	0.39	0.00	-/-	-/-	-/-	-	-	-	How do I calculate sample size for a monthly control?
+oof	train_grc:230	-CO--	0	0.58	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	XLOOKUP	You are an Excel expert. Write an XLOOKUP that pulls owner names.
+oof	train_grc:232	-----	0	0.10	0.03	-/-	-/-	-/-	-	-	-	fix my formula
+oof	train_grc:238	-CO--	0	0.45	0.01	-/-	-/-	-/-	-	-	-	As our SOX analyst, write an IF formula for the control rating column
+oof	train_grc:244	S-O--	0	0.01	0.01	-/-	-/-	-/-	-	-	-	is this a material weakness?
+oof	train_grc:245	-----	0	0.00	0.01	askOK/-	askOK/-	askOK/-	help	help	-	help
+oof	train_grc:247	--O--	1	0.94	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	risk appetite memo	Score the inherent risk for each risk in our register, then build a heat map and write the risk appetite memo
+oof	train_grc:251	-----	0	0.40	0.01	-/-	-/-	-/-	-	-	-	what should our risk appetite be
+oof	train_grc:254	-----	0	0.53	0.00	-/-	-/-	-/-	-	-	-	Can you sort out the controls?
+oof	train_grc:258	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	plan the SOX program
+oof	train_sus:92	S-OP-	0	0.06	1.00	-/-	-/-	-/-	-	-	-	Top 3 Scope 3 categories in the selected table, as bullets
+oof	train_sus:116	S-O--	0	0.08	0.99	-/-	-/-	-/-	-	-	-	highlighted rows -> ESRS datapoints pls
+oof	train_sus:121	-----	1	0.58	0.01	-/srcOK	-/srcOK	-/srcOK	analyze our emissions data and also write the...	analyze our emissions data and also write the...	emissions data	analyze our emissions data and also write the board memo and fix the charts
+oof	train_sus:122	-----	0	0.00	0.02	askOK/srcOK	askOK/srcOK	askOK/srcOK	help with CSRD	help with CSRD	CSRD	help with CSRD
+oof	train_sus:123	-----	0	0.00	0.01	askOK/-	askOK/-	askOK/-	thoughts on our scope 3	thoughts on our scope 3	-	thoughts on our scope 3?
+oof	train_sus:124	-----	0	0.00	0.00	askOK/srcOK	askOK/srcOK	askOK/srcOK	review our ESRS disclosures	review our ESRS disclosures	ESRS disclosures	Can you review our ESRS disclosures?
+oof	train_sus:125	-C-P-	0	0.37	0.01	-/-	-/-	-/-	-	-	-	You are a CSRD expert. Give me a table of our gaps.
+oof	train_sus:126	-COPE	0	0.84	0.05	-/-	-/-	-/-	-	-	-	As an assurance reviewer, write 10 questions about our Scope 1 data in bullets, and don't speculate.
+oof	train_sus:127	-COPE	0	0.79	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	150-word transition plan summary	Draft a 150-word transition plan summary for the board. Don't invent any numbers.
+oof	train_sus:128	S----	0	0.00	0.97	askOK/-	askOK/-	askOK/-	look at the highlighted Scope 3 rows	look at the highlighted Scope 3 rows	Scope 3 rows	look at the highlighted Scope 3 rows
+oof	train_sus:129	S----	0	0.00	0.76	askOK/-	askOK/-	askOK/-	check this sheet	check this sheet	sheet	check this sheet
+oof	train_sus:130	-----	0	0.01	0.02	-/-	-/-	-/-	-	-	-	summarize
+oof	train_sus:131	--O--	0	0.34	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	sustainability report	summarize our sustainability report
+oof	train_sus:132	--OP-	0	0.71	0.01	-/-	-/-	-/-	-	-	-	what's our scope 1 2 3 total for 2025?
+oof	train_sus:133	--O--	0	0.45	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	double materiality	explain double materiality
+oof	train_sus:134	-COP-	0	0.70	0.00	-/srcOK	-/srcOK	-/srcOK	-	-	ESRS E1-6	explain ESRS E1-6 in plain english for our board
+oof	train_sus:135	S----	0	0.00	0.72	askOK/-	askOK/-	askOK/-	help me with the transition plan stuff	help me with the transition plan stuff	transition plan stuff	ESRS / ISSB Intelligence: help me with the transition plan stuff
+oof	train_sus:137	S---E	0	0.00	0.85	askOK/-	askOK/-	askOK/-	take a look at FY2025_Emissions	take a look at FY2025_Emissions	-	Can you take a look at FY2025_Emissions.xlsx for me? cite cells
+oof	train_sus:138	-----	0	0.05	0.01	-/-	-/-	-/-	-	-	-	make the scope 3 section better
+oof	train_sus:139	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	fix the formula
+oof	train_sus:140	--O--	0	0.58	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	formula	write a formula to calc emissions
+oof	train_sus:141	--OP-	0	0.58	0.60	-/srcOK	-/-	-/-	-	-	Wdata query	Write a Wdata query for our supplier emissions, grouped by region, top 10 only
+oof	train_sus:142	--OP-	0	0.50	0.01	-/-	-/-	-/-	-	-	-	compare us to peers on scope 1 and 2 intensity
+oof	train_sus:143	-C---	0	0.01	0.02	askOK/srcOK	askOK/srcOK	askOK/srcOK	Review the controls	Review the controls	controls	We're going through assurance next month and the auditors are picky. Review the controls.
+oof	train_sus:144	-C-PE	0	0.35	0.04	-/srcOK	-/srcOK	-/srcOK	Review our GHG numbers	Review our GHG numbers	GHG numbers	Act as an ESG auditor. Review our GHG numbers. Don't make anything up, flag what you're unsure about, use bullets.
+oof	train_sus:145	--O--	0	0.57	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	missing data	list missing data
+oof	train_sus:146	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	anything weird in the supplier data?
+oof	train_sus:147	--O--	0	0.45	0.03	-/srcOK	-/srcOK	-/srcOK	-	-	ESRS E1 disclosures	Draft ESRS E1 disclosures
+oof	train_sus:148	--OPE	0	0.79	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	CDP climate response	draft our CDP climate response for 2025, sections C1 to C4, with citations
+oof	train_sus:149	--O--	0	0.12	0.01	-/-	-/-	-/-	-	-	-	What does ISSB require?
+oof	train_sus:150	--O--	0	0.31	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	data	map our data to ESRS
+oof	train_sus:151	--OP-	0	0.84	0.01	-/-	-/-	-/-	-	-	-	create checklist for assurance readiness, numbered, 15 items
+oof	train_sus:152	-----	0	0.01	0.03	-/-	-/-	-/-	-	-	-	variance analysis on emissions pls
+oof	train_sus:153	--O--	1	0.80	0.04	-/-	-/-	-/-	-	-	-	Why did our Scope 2 go up? Also can you write a LinkedIn post about our net zero target?
+oof	train_sus:154	-COPE	0	0.90	0.04	-/-	-/-	-/-	-	-	-	explain why scope 3 cat 1 jumped 18% vs last year, phrase as hypotheses, for the CSO
+oof	train_sus:155	S----	0	0.01	1.00	-/-	-/-	-/-	-	thoughts	-	In the selected cells, thoughts?
+oof	train_sus:156	S----	0	0.08	1.00	-/-	-/-	-/-	-	-	-	Using the attached supplier file, do the needful
+oof	train_sus:158	SC-P-	0	0.01	1.00	askOK/-	askOK/-	askOK/-	help with the double materiality assessment in the...	help with the double materiality assessment in the...	double materiality assessment	Please help with the double materiality assessment in the attached DMA.xlsx. Some background: this is our first year under CSRD, we ran stakeholder interviews over the summer with about forty people across procurement, HR and operations, and the scores were entered by three different people, so I'm not confident they're consistent. It's going to the audit committee at the end of the month and they've asked for everything in a table they can read on one page. I'd really appreciate anything you can do with it, the team is stretched thin right now.
+oof	train_sus:159	-C-PE	0	0.01	0.07	askOK/-	askOK/-	askOK/-	help us get ready for all of this	help us get ready for all of this	-	So we're in the middle of our first CSRD cycle and honestly it's a mess. The sustainability team has been pulling data from like six different systems, nobody agrees on which version of the energy numbers is final, and the people from our assurance provider are coming in two weeks to start limited assurance on E1 and S1. My boss wants a plan on her desk by Friday. I need you to help us get ready for all of this. Keep it concise and in bullets, and please don't invent anything since this will be looked at closely.
+oof	train_sus:160	--O--	0	0.58	0.01	-/-	-/-	-/-	-	-	-	Translate our sustainability report into French
+oof	train_sus:161	-----	0	0.10	0.02	-/-	-/-	-/-	-	-	-	fix teh scope 1 numbers
+oof	train_sus:162	S----	0	0.06	0.99	-/-	-/-	-/-	-	-	-	can you do somethign with the highlighted cdp rows
+oof	train_sus:163	--OP-	1	0.95	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	methodology note	tie out the Scope 1-3 numbers, then rewrite the methodology note and make a checklist for assurance
+oof	train_sus:164	-C---	0	0.23	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	questions	Write questions for the auditor
+oof	train_sus:165	--O--	0	0.89	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	difference between location-based	explain the difference between location-based and market-based scope 2
+oof	train_sus:166	-----	0	0.46	0.01	-/-	-/-	-/-	-	-	-	Give me a checklist for CSRD.
+oof	train_sus:167	-C---	1	0.85	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	topics	Act as a sustainability consultant and tell me what to do about scope 3, and also map our topics to ESRS and draft the CDP intro
+oof	train_sus:168	-----	0	0.02	0.02	-/-	-/-	-/-	-	-	-	compare
+oof	train_sus:171	--OPE	0	0.87	0.01	-/-	-/-	-/-	-	-	-	Pull scope 3 numbers into a table, 2023-2025, cite where each came from
+oof	train_sus:172	-----	0	0.36	0.03	-/-	-/-	-/-	-	-	-	map to ESRS
+oof	train_sus:173	-CO--	0	0.05	0.01	-/-	-/-	-/-	-	-	-	Make a Scope 1 formula for the board deck
+oof	train_sus:174	--O--	0	0.33	0.01	-/-	-/-	-/-	Help me understand IFRS S1	Help me understand IFRS S1	-	Help me understand IFRS S1
+oof	train_sus:175	--OP-	0	0.58	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	anomalies	Identify anomalies in our facility data and rank by severity, top 5
+oof	train_sus:176	--OP-	0	0.46	0.01	-/-	-/-	-/-	-	-	-	Questions about the limited assurance process? Give me 10
+oof	train_sus:177	-----	0	0.13	0.03	-/-	-/-	-/-	-	-	-	update the transition plan
+oof	train_sus:178	--O--	1	0.85	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	CDP response	summarize our CDP response, update the targets slide and draft an email to procurement about supplier data
+oof	train_sus:180	--O-E	0	0.87	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	biggest emitters	Using only real data, list our biggest emitters
+oof	train_sus:181	-----	0	0.00	0.02	-/-	-/-	-/-	-	-	-	is our ESRS stuff ok?
+oof	train_sus:182	SC-P-	0	0.00	0.99	askOK/-	askOK/-	askOK/-	Analyze the Wdata query 'Emissions_FY25' for executives, keep...	Analyze the Wdata query 'Emissions_FY25' for executives, keep...	-	Analyze the Wdata query 'Emissions_FY25' for executives, keep it under 100 words
+oof	train_sus:183	-----	0	0.12	0.02	-/-	-/-	-/-	-	-	-	What does this mean?
+oof	train_sus:184	-----	0	0.00	0.00	askOK/-	askOK/-	askOK/-	help w/ supplier data request email	help w/ supplier data request email	-	help w/ supplier data request email
+oof	train_sus:185	-CO--	1	0.96	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	email asking suppliers	draft email asking suppliers for scope 3 data + summarize last week's call + update the DMA slide
+oof	train_sus:186	--O--	0	0.43	0.01	-/-	-/-	-/-	check whether our targets are SBTi aligned	check whether our targets are SBTi aligned	-	Can you please check whether our targets are SBTi aligned? Thank you!
+oof	train_sus:187	-----	0	0.01	0.03	-/-	-/-	-/-	-	-	-	TCFD to ISSB?
+oof	train_sus:188	--OP-	0	0.79	0.01	-/-	-/-	-/-	-	-	-	Generate a CSRD to-do list for Q4, bullets, max 10
+oof	train_sus:189	--O--	0	0.24	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	duplicates	Find duplicates
+oof	train_sus:190	-C-P-	0	0.67	0.02	-/-	-/-	-/-	-	-	-	You are an expert. Do the materiality thing for the CSRD report in bullet points.
+oof	train_sus:192	--OP-	0	0.50	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	against peers	Compare against peers, top 5, table
+oof	train_sus:193	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	Look at the numbers I selected and let...	Look at the numbers I selected and let...	numbers I selected	Look at the numbers I selected and let me know
+oof	train_sus:194	-CO-E	0	0.84	0.00	-/srcOK	-/srcOK	-/srcOK	-	-	scope 1 data	Extract our scope 1 data for the auditors, don't round anything
+oof	train_sus:195	-C-PE	0	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	go over our CSRD stuff	go over our CSRD stuff	CSRD stuff	hey can you go over our CSRD stuff? we have limited assurance coming up in Q1 and the CFO is nervous. a table would be good. and no guessing pls
+oof	train_sus:196	--OP-	0	0.67	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	controls	Map our controls to ESRS 2 GOV-5, in a table, ignore anything outside Europe
+oof	train_sus:197	-----	0	0.67	0.01	-/-	-/-	-/-	-	-	-	I need the Scope 3 Cat 6 business travel numbers checked
+oof	train_sus:198	-COP-	0	0.45	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	question list	write a question list for our DMA workshop, 12 questions, for the leadership team
+oof	train_sus:199	--O-E	0	0.72	0.04	-/-	-/-	-/-	-	-	-	What formula do I use for location-based Scope 2? Please don't guess the grid factor.
+oof	train_sus:200	-COP-	0	0.98	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	climate risk section	Rewrite our climate risk section so it sounds less greenwashy, keep it under 200 words, for investors
+oof	train_sus:230	S-O--	0	0.06	0.98	-/-	-/-	-/-	-	-	-	can you make a checklist from the onboarding section of this doc?
+oof	train_sus:237	-----	1	0.42	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	email	write an email, fix the slides, and summarize the notes
+oof	train_sus:238	-----	0	0.12	0.02	-/-	-/-	-/-	-	-	-	make this look nicer
+oof	train_sus:239	-----	0	0.01	0.01	-/-	-/-	-/-	-	-	-	meeting notes pls
+oof	train_sus:240	-----	1	0.58	0.01	-/srcOK	-/srcOK	-/srcOK	Help me plan the project	Help me plan the project	kickoff email	Help me plan the project. Also write the kickoff email and summarize yesterday's notes.
+oof	train_sus:241	-COP-	0	0.60	0.01	-/-	-/-	-/-	-	-	-	You are a project manager. Create a project plan in a table, 6 phases.
+oof	train_sus:242	-COPE	0	0.95	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	email	Draft an email to my team about the new process, friendly tone, under 150 words, don't make up dates.
+oof	train_sus:243	-----	0	0.39	0.02	-/-	-/-	-/-	-	-	-	translate to french
+oof	train_sus:244	S----	0	0.00	0.99	askOK/-	askOK/-	askOK/-	Look over the attached slides	Look over the attached slides	-	Look over the attached slides
+oof	train_sus:245	S----	0	0.06	1.00	-/-	-/-	-/-	-	-	-	Can you take a pass at the selected paragraph?
+oof	train_sus:246	--O--	0	0.34	0.02	-/srcOK	-/srcOK	-/srcOK	-	-	notes	Summarize my notes
+oof	train_sus:247	-COP-	0	0.83	0.01	-/-	-/-	-/-	-	-	-	Create a presentation about Q3 for the execs, 10 slides
+oof	train_sus:248	--O--	0	0.02	0.02	-/-	-/-	-/-	-	-	-	excel formula for vlookup
+oof	train_sus:249	-----	0	0.00	0.01	-/-	-/-	-/-	-	help	-	formatting help
+oof	train_sus:250	-COPE	0	0.58	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	status update	Write a status update for leadership, bullet points, don't speculate on dates
+oof	train_sus:252	-----	0	0.00	0.27	askOK/-	askOK/-	askOK/-	Thoughts on the deck	Thoughts on the deck	-	Thoughts on the deck?
+oof	train_sus:253	-----	0	0.32	0.01	-/-	-/-	-/-	-	-	-	What should I say in the meeting?
+oof	train_sus:254	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	Fix grammer
+oof	train_sus:255	SC---	0	0.00	0.99	-/-	-/-	-/-	-	review	-	Using the selected table, do something useful for the ops review
+oof	train_sus:256	-CO--	0	0.89	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	questions	List questions for the vendor meeting
+oof	train_sus:257	-----	0	0.19	0.03	-/srcOK	-/srcOK	-/srcOK	-	-	options	Compare the options
+oof	train_sus:258	--O--	1	0.45	0.01	-/srcOK	-/srcOK	-/srcOK	-	figure out the timeline	agenda	write the agenda, take notes from last week's call, and figure out the timeline
+oof	train_sus:259	--O--	0	0.70	0.00	-/-	-/-	-/-	-	-	-	explain how the approval process works
+oof	train_hard:4	-C---	0	0.72	0.04	-/-	-/-	-/-	-	-	-	Regulators are circling on our non-GAAP measures. Can you take a pass at the reconciliation and make it read better?
+oof	train_hard:10	SCO--	0	0.56	0.02	-/-	-/-	-/-	-	-	-	can you sort out the debt footnote so it's not so clunky? the lender folks read it closely
+oof	train_hard:11	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	I just need a feel for how revenue's trending.
+oof	train_hard:13	-----	0	0.01	0.01	-/-	-/-	-/-	-	-	-	the stuff from the close call - anything weird jump out?
+oof	train_hard:18	-C---	0	0.51	0.04	-/srcOK	-/srcOK	-/srcOK	Look at the gross margin bridge and tell...	Look at the gross margin bridge and tell...	gross margin bridge	Investors grilled us last quarter on margins. Look at the gross margin bridge and tell me something useful.
+oof	train_hard:21	-C---	0	0.00	0.01	askOK/-	askOK/-	askOK/-	help me make the earnings script land better...	help me make the earnings script land better...	-	help me make the earnings script land better with analysts
+oof	train_hard:26	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	go through the footnotes and see if anything's off
+oof	train_hard:29	---P-	0	0.07	0.00	-/-	-/-	-/-	-	-	-	Can you make sense of the variance and put it in plain English?
+oof	train_hard:31	-----	0	0.08	0.01	-/-	-/-	-/-	-	-	-	Peer comparison for opex - where do we stand?
+oof	train_hard:35	-----	0	0.00	0.01	askOK/-	askOK/-	askOK/-	Thoughts on the cash section	Thoughts on the cash section	-	Thoughts on the cash section?
+oof	train_hard:37	S----	0	0.00	0.99	-/-	-/-	-/-	-	-	-	Off the selected rows, fix whatever's broken.
+oof	train_hard:44	-C---	0	0.39	0.00	-/-	-/-	-/-	-	-	-	regulators are sniffing around our access reviews. what should I worry about?
+oof	train_hard:47	--O--	0	0.36	0.03	-/srcOK	-/srcOK	-/srcOK	-	-	controls	Map our controls to NIST.
+oof	train_hard:50	-----	0	0.00	0.01	-/-	-/-	-/-	-	-	-	can you give the ITGC stuff a once-over
+oof	train_hard:55	-----	0	0.34	0.01	-/-	-/-	-/-	-	-	-	what's the deal with segregation of duties
+oof	train_hard:58	-----	0	0.05	0.01	-/-	-/-	-/-	-	-	-	tidy up the access policy so it reads better
+oof	train_hard:61	-----	0	0.01	0.01	-/-	-/-	-/-	-	-	-	Any red flags in the risk stuff?
+oof	train_hard:65	-C---	0	0.00	0.00	askOK/-	askOK/-	askOK/-	help me get the evidence together	help me get the evidence together	-	pre-audit nerves. help me get the evidence together.
+oof	train_hard:68	-----	0	0.05	0.01	-/-	-/-	-/-	-	-	-	Can you see if our controls are any good?
+oof	train_hard:71	-CO--	0	0.40	0.01	-/-	-/-	-/-	-	-	-	Got a regulator visit coming - what do they usually ask about third-party risk?
+oof	train_hard:74	-----	0	0.43	0.00	-/-	-/-	-/-	-	-	-	give me the gist of how the audit went
+oof	train_hard:77	-----	0	0.01	0.03	-/-	-/-	-/-	-	-	-	make the RCM better
+oof	train_hard:86	-----	0	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	help with the CDP response	help with the CDP response	CDP response	help with the CDP response
+oof	train_hard:88	-C---	0	0.05	0.01	-/-	-/-	-/-	-	-	-	We're under pressure from investors on greenwashing. Can you tidy the net-zero claims?
+oof	train_hard:90	-----	0	0.06	0.01	-/-	-/-	-/-	-	-	-	anything off in the GHG numbers?
+oof	train_hard:94	-C---	0	0.07	0.00	-/-	-/-	-/-	-	-	-	we have assurance coming and our scope 3 is a mess
+oof	train_hard:97	-----	0	0.06	0.01	-/-	-/-	-/-	-	-	-	can you look into our carbon footprint
+oof	train_hard:103	-C---	0	0.01	0.01	-/-	-/-	-/-	-	-	-	Our board wants the climate risk story. Draft something.
+oof	train_hard:106	-----	0	0.40	0.01	-/-	-/-	-/-	-	-	-	Is our transition plan any good?
+oof	train_hard:109	-----	0	0.13	0.00	-/-	-/-	-/-	-	-	-	Pull together the emissions stuff for the report
+oof	train_hard:112	-C---	0	0.34	0.01	-/-	-/-	-/-	-	-	-	regulators are watching ESG claims closely now - what should we be careful saying?
+oof	train_hard:115	-----	0	0.00	0.01	askOK/-	askOK/-	askOK/-	Thoughts on the TCFD scenario stuff	Thoughts on the TCFD scenario stuff	-	Thoughts on the TCFD scenario stuff?
+oof	train_hard:119	S-O--	0	0.13	1.00	-/-	-/-	-/-	-	-	-	From the selected supplier rows, flag which ones say they have SBTi targets.
+oof	train_hard:123	-----	0	0.16	0.01	askOK/-	askOK/-	-/-	help me write something to the team	help me write something to the team	-	help me write something to the team
+oof	train_hard:128	-----	0	0.32	0.01	-/-	-/-	-/-	-	-	-	what's a good way to organize all this
+oof	train_hard:131	-C-PE	0	0.42	0.05	-/srcOK	-/srcOK	-/srcOK	-	analyze thoroughly in a table, top 5, cite...	thoroughly	You are a world-class SEC reporting expert. For the audit committee. Using our data, analyze thoroughly in a table, top 5, cite sources, don't make anything up, flag assumptions.
+oof	train_hard:132	-C-PE	0	0.46	0.04	-/-	-/-	-/-	-	-	-	Act as a CFO. Context: board meeting. Objective: insights. Format: bullets. Constraints: 100 words. Evaluation: verify everything.
+oof	train_hard:134	-COPE	0	0.38	0.04	-/-	-/-	-/-	-	-	-	Revenue variance analysis. Top 3. Table. FY2025 vs FY2026. For the board. Don't make anything up. Cite cells.
+oof	train_hard:135	-C-PE	0	0.72	0.05	-/srcOK	-/srcOK	-/srcOK	help with the 10-K	help with the 10-K	10-K	As a Big Four partner advising the audit committee of a first-year filer under SEC scrutiny, with rigorous attention to accuracy, citing everything and never speculating, in a concise board-ready bullet format: help with the 10-K.
+oof	train_hard:136	-C-P-	0	0.00	0.01	askOK/-	askOK/-	askOK/-	review	review	-	SOURCE: our financials. CONTEXT: Q3 close. OBJECTIVE: review. PARAMETERS: brief. EVALUATE: be accurate.
+oof	train_hard:137	S---E	0	0.01	1.00	askOK/-	askOK/-	askOK/-	Look at the selected table	Look at the selected table	table	Look at the selected table. Be thorough, be precise, be accurate, cite, verify, double-check, no hallucinations.
+oof	train_hard:138	--OPE	0	0.79	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	MD&A	Draft the MD&A. Use our numbers. Board level. Under 300 words. Preserve every number.
+oof	train_hard:140	-C-PE	0	0.06	0.01	-/-	-/-	-/-	-	-	-	Earnings release: give insights. Executives. Bullets. Cite. Don't guess.
+oof	train_hard:142	-C-PE	0	0.79	0.04	-/-	-/-	-/-	-	-	-	Strictly using our revenue data and only the facts, with sources cited and every assumption listed, in exactly five bullets, give me revenue insights for the board.
+oof	train_hard:143	----E	0	0.00	0.01	askOK/-	askOK/-	askOK/-	Analyze	Analyze	-	Please be accurate and don't hallucinate. Analyze.
+oof	train_hard:145	-C-PE	0	0.06	0.01	-/-	-/-	-/-	-	-	-	Comprehensive, accurate, cited, structured, executive-ready, concise yet thorough analysis of our cash position.
+oof	train_hard:147	-COPE	0	0.06	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	please	Footnote rewrite please, keep numbers, cite sources, plain English, for investors.
+oof	train_hard:149	-C-PE	0	0.01	0.04	-/srcOK	-/srcOK	-/srcOK	-	review the controls	controls	As a SOX auditor for the audit committee, using our controls, in a table, with citations and no assumptions, review the controls.
+oof	train_hard:150	-C-PE	0	0.06	0.01	-/-	-/-	-/-	-	-	-	RCM. COSO. Table. Cite. Don't guess. For auditors.
+oof	train_hard:151	SC--E	0	0.01	1.00	-/-	-/-	-/-	-	check everything	-	Using the attached RCM, as an expert auditor, rigorously and thoroughly and accurately, without any speculation whatsoever, check everything.
+oof	train_hard:152	-C-P-	0	0.00	0.01	askOK/-	askOK/-	askOK/-	Evaluate: carefully	Evaluate: carefully	-	Objective: compliance. Source: our policies. Context: audit. Parameters: short. Evaluate: carefully.
+oof	train_hard:154	-C-PE	0	0.02	0.00	-/-	-/-	-/-	-	-	-	Be a NIST expert. Our security stuff. Gaps. Bullet points. Flag uncertainties.
+oof	train_hard:155	-C-PE	0	0.00	0.00	-/srcOK	-/srcOK	-/srcOK	-	help with audit findings	audit findings	In 5 bullets for the board, without speculating, help with audit findings.
+oof	train_hard:157	----E	0	0.63	0.01	-/-	-/-	-/-	-	assess our risk posture	-	Please carefully, accurately, completely and with full citations assess our risk posture.
+oof	train_hard:158	S---E	0	0.05	0.89	askOK/-	askOK/-	askOK/-	thoughts	thoughts	-	From the open testing tracker: thoughts? (be accurate, cite cells, don't assume)
+oof	train_hard:159	-COPE	0	0.87	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	controls	As a world-class GRC consultant writing for the audit committee, ensuring zero hallucinations, in a crisp table, map our controls to ISO 27001.
+oof	train_hard:160	-COP-	0	0.71	0.01	-/-	-/-	-/-	-	-	-	Test steps for the controls. Numbered. Auditor-ready. Don't skip anything.
+oof	train_hard:161	-----	0	0.67	0.01	-/-	-/-	-/-	Evaluate the controls	Evaluate the controls	-	Evaluate the controls. Evaluate the evidence. Evaluate the risks. Flag everything.
+oof	train_hard:163	-C---	0	0.84	0.04	-/-	-/-	-/-	-	-	-	Act like an audit expert with 30 years' experience who never makes mistakes, and tell me if we're compliant.
+oof	train_hard:164	SC-P-	0	0.00	0.99	askOK/-	askOK/-	askOK/-	Evaluate: verify	Evaluate: verify	-	Context: regulators. Source: the attached. Objective: fix. Parameters: bullet. Evaluate: verify.
+oof	train_hard:166	-C-PE	0	0.08	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	audit stuff	Cite your sources and flag assumptions when you summarize our audit stuff for the board in bullets.
+oof	train_hard:167	-C-PE	0	0.01	0.03	-/srcOK	-/srcOK	-/srcOK	-	analyze Scope 3	Scope 3	As an ESRS expert, for our CSRD report, using our emissions data, in a table, citing sources and without speculating, analyze Scope 3.
+oof	train_hard:168	-C-PE	0	0.05	0.01	-/-	-/-	-/-	-	-	-	Scope 1 2 3. Board. Bullets. Cite. No guessing. Insights.
+oof	train_hard:169	SC---	0	0.07	0.86	-/-	-/-	-/-	-	-	-	Using ESRS / ISSB Intelligence, as an assurance reviewer, rigorously, thoroughly, explain.
+oof	train_hard:170	----E	0	0.06	0.01	askOK/-	askOK/-	askOK/-	Thoughts	Thoughts	-	Be accurate. Be precise. Don't hallucinate. Our GHG numbers. Thoughts?
+oof	train_hard:172	-C-P-	0	0.00	0.01	askOK/-	askOK/-	askOK/-	Evaluate: carefully	Evaluate: carefully	-	Objective: CSRD readiness. Context: assurance. Source: our data. Parameters: concise. Evaluate: carefully.
+oof	train_hard:174	-C--E	0	0.13	0.00	-/-	-/-	-/-	-	-	-	Our ESG data - make it assurance-ready. Cite, verify, flag assumptions.
+oof	train_hard:175	-C-PE	0	0.36	0.02	-/-	-/-	-/-	-	-	-	As a TCFD specialist for investors, in plain English, under 200 words, no speculation: climate risk.
+oof	train_hard:177	-C-PE	0	0.06	0.01	-/-	-/-	-/-	-	-	-	Rigorous double materiality analysis of our topics, mapped, cited, formatted, board-ready.
+oof	train_hard:178	-C--E	0	0.01	0.02	-/srcOK	-/srcOK	-/srcOK	-	check everything is fine, cite page numbers	everything is fine	Expert sustainability reviewer here. Using our sustainability report, check everything is fine, cite page numbers.
+oof	train_hard:179	--OPE	0	0.64	0.00	-/srcOK	-/srcOK	-/srcOK	-	-	data	Map our data to ESRS. Table. Don't guess.
+oof	train_hard:180	----E	0	0.43	0.02	-/srcOK	-/srcOK	-/srcOK	Check it over	Check it over	it over	Check it over. Flag what you inferred vs read, keep me honest, I'd rather see a gap than a guess.
+oof	train_hard:182	-COPE	0	0.59	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	net-zero section	Write the net-zero section. Investor audience. 150 words. Don't overclaim.
+oof	train_hard:183	---PE	0	0.37	0.04	-/-	-/-	-/-	-	-	-	Please use only verified data, cite every source, and flag uncertainties, in a summary table, about Scope 3.
+oof	train_hard:184	SC---	0	0.07	0.87	-/-	-/-	-/-	-	-	-	Using the GHG inventory workbook, as an expert, verify.
+oof	train_hard:185	-C-PE	0	0.00	0.00	askOK/-	askOK/-	askOK/-	Help	Help	-	Act as an expert. Be concise, accurate, cite sources, no assumptions, bullet points. Help.
+oof	train_hard:187	-C---	0	0.00	0.01	askOK/-	askOK/-	askOK/-	Evaluate: correct	Evaluate: correct	-	Context: meeting. Objective: notes. Format: good. Evaluate: correct.
+oof	train_hard:189	-C---	0	0.59	0.00	-/srcOK	-/srcOK	-/srcOK	-	-	amazing	You are the world's best writer. Write an amazing, perfect, accurate email.
+oof	train_hard:190	-----	0	0.00	0.00	-/-	-/-	-/-	-	help	-	Formula help. Excel. Accurate. No errors. Cite.
+oof	train_hard:191	-COPE	0	0.99	0.27	-/srcOK	-/-	-/-	-	-	three segments	You're helping our controller prep for the audit committee. Using our revenue data, identify the three segments with the largest year-over-year decline in FY2026, as a table, and say if the data doesn't support a cause.
+oof	train_hard:193	SC-PE	0	0.01	1.00	-/-	-/-	-/-	-	look at the revenue for the board, in...	revenue	Using the selected table, look at the revenue for the board, in three bullets, citing cells.
+oof	train_hard:196	SC-PE	0	0.25	1.00	-/-	-/-	-/-	-	-	-	For the CFO: from the earnings release open here, give me your take, in five bullets, and flag anything forward-looking.
+oof	train_hard:197	-COPE	0	0.95	0.04	-/-	-/-	-/-	-	-	-	Using our Q3 numbers, draft the MD&A results of operations paragraph for the 10-Q, under 200 words, and preserve every figure.
+oof	train_hard:200	SC-PE	0	0.02	1.00	askOK/-	askOK/-	askOK/-	Check the selected footnote for the audit committee,...	Check the selected footnote for the audit committee,...	footnote	Check the selected footnote for the audit committee, in a short memo, don't add facts.
+oof	train_hard:202	-COPE	0	0.91	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	accounts	Our auditors start Monday. Using our TB, identify accounts that moved more than 10% vs. prior month, as a table, and don't guess at reasons.
+oof	train_hard:206	-COPE	0	0.74	0.05	-/-	-/-	-/-	-	review, as a table, and flag anything you...	-	As a SOX auditor, using our controls, list the key controls lacking evidence of review, as a table, and flag anything you can't confirm.
+oof	train_hard:211	-COPE	0	0.98	0.05	-/srcOK	-/srcOK	-/srcOK	-	review control, numbered, and list assumptions	test steps	We have SOX testing next month. Draft test steps for the user access review control, numbered, and list assumptions.
+oof	train_hard:214	SC-PE	0	0.01	1.00	-/-	-/-	-/-	-	-	-	Using the access listing I attached, for the IT audit team, deal with the terminated users, in a table, and don't assume.
+oof	train_hard:216	-COPE	0	0.96	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	subcategories scored below 3	Act as a NIST CSF assessor. Using our security assessment, list subcategories scored below 3, grouped by function, and note where the score lacks support.
+oof	train_hard:221	-COPE	0	0.89	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	sites	For our first CSRD assurance, using our emissions data, identify sites with Scope 2 increases over 20% YoY, as a table, and don't backfill missing years.
+oof	train_hard:223	SC-PE	0	0.01	1.00	-/-	-/-	-/-	-	go over the Scope 3 data, in a...	Scope 3 data	Using the attached supplier file, for the procurement team, go over the Scope 3 data, in a table, and note anything you're unsure of.
+oof	train_hard:227	-COPE	0	0.95	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	net-zero progress paragraph	For investors, draft our net-zero progress paragraph, 150 words, using only facts we've already reported.
+oof	train_hard:228	SC-PE	0	0.01	1.00	-/-	-/-	-/-	-	review the water data, in bullets, without speculation	water data	Using the selected rows, for the CDP response, review the water data, in bullets, without speculation.
+oof	train_hard:233	-COPE	0	0.97	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	category coverage	For the board, using our Scope 3 numbers, summarize category coverage in a table, and mark anything not stated.
+oof	train_hard:235	SC-PE	0	0.02	1.00	-/-	-/-	-/-	-	handle the scenario analysis, in 5 bullets, and...	-	Using the attached TCFD report, for investors, handle the scenario analysis, in 5 bullets, and cite pages.
+oof	train_hard:236	-COPE	0	0.84	0.05	-/srcOK	-/srcOK	-/srcOK	-	-	weekly status email	For my manager, using my notes, write a weekly status email, five bullets, and don't add anything I didn't write.
+oof	train_hard:238	SC-PE	0	0.14	0.99	-/-	-/-	-/-	-	-	-	Using the project plan open here, for the steering committee, sort out the timeline, in a table, flag uncertainty.
+oof	train_hard:242	-CO--	0	0.75	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	10Q	SUMMARIZE THE 10Q FOR THE BOARD
+oof	train_hard:244	---P-	0	0.01	0.01	-/-	-/-	-/-	-	-	-	variance?? q3
+oof	train_hard:246	-----	0	0.01	0.02	-/-	-/-	-/-	-	-	-	can u chck the footnotes
+oof	train_hard:248	S-O--	0	0.76	0.04	-/srcMIS	-/srcMIS	-/srcMIS	-	-	where	earnings release in doc open... the eps numbers dont match the IS i think?? find where
+oof	train_hard:249	S-OP-	0	0.64	0.00	-/-	-/-	-/-	-	-	-	RCM ATTACHED. MAP TO COSO. TABLE.
+oof	train_hard:250	-CO--	0	0.71	0.01	-/srcOK	-/srcOK	-/srcOK	-	review ctrl auditors here mon	ctrl auditors here mon	need test steps fr the access review ctrl auditors here mon
+oof	train_hard:251	-----	0	0.40	0.01	-/-	-/-	-/-	-	-	-	whats wrong with our controls
+oof	train_hard:254	-C---	0	0.01	0.01	-/-	-/-	-/-	-	-	-	risk register,,, top risks,,, board
+oof	train_hard:256	-----	0	0.00	0.01	askOK/-	askOK/-	askOK/-	help w sox	help w sox	-	help w sox
+oof	train_hard:257	-----	0	0.00	0.01	-/-	-/-	-/-	-	help	-	scope 3 is a MESS help
+oof	train_hard:258	S-OP-	0	0.05	0.91	-/-	-/-	-/-	-	-	-	frm the scope 2 tab which sites up more than 20% yoy table pls
+oof	train_hard:260	SCOPE	0	0.96	0.02	-/srcMIS	-/srcMIS	-/srcMIS	-	-	SUPPLIERS	ASSURANCE NEXT MONTH. SUPPLIER FILE ATTACHED. LIST SUPPLIERS WITH NO SCOPE 3 DATA. TABLE. DO NOT ESTIMATE ANYTHING.
+oof	train_hard:261	-----	0	0.01	0.02	-/-	-/-	-/-	-	-	-	ghg numbers look off??
+oof	train_hard:262	-CO--	0	0.45	0.03	-/srcOK	-/srcOK	-/srcOK	-	-	climate section csrd	draft climate section csrd
+oof	train_hard:264	S-OP-	0	0.48	0.00	-/-	-/-	-/-	-	-	-	pls compare renewables % fy25 v fy26 frm renewables sheet
+oof	train_hard:265	-----	0	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	check the emissions	check the emissions	emissions	can u check the emissions
+oof	train_hard:267	--O--	0	0.01	0.03	-/-	-/-	-/-	-	-	-	EMAIL TO TEAM ABT DEADLINE
+oof	train_hard:269	-----	0	0.07	0.00	-/-	-/-	-/-	-	-	-	idk where to start w this
+oof	train_hard:273	-----	1	0.08	0.01	-/-	-/-	-/-	-	-	-	Fix the footnotes, update the MD&A, and tell me what XBRL is.
+oof	train_hard:275	--O--	1	0.99	0.02	-/srcOK	-/srcOK	-/srcOK	-	check our tie-out	ASC 606 step 5	Can you explain ASC 606 step 5, then draft the revenue footnote, plus check our tie-out?
+oof	train_hard:278	-----	1	0.19	0.01	askOK/srcOK	askOK/srcOK	-/srcOK	Look at our revenue and our expenses and...	Look at our revenue and our expenses and...	revenue	Look at our revenue and our expenses and our headcount and tell me stuff.
+oof	train_hard:281	-----	1	0.56	0.01	-/srcOK	-/srcOK	-/srcOK	Review our controls, update the risk register and...	Review our controls, update the risk register and...	controls	Review our controls, update the risk register and draft the audit plan.
+oof	train_hard:283	--OP-	1	0.69	0.04	-/-	-/-	-/-	-	-	-	I need the deficiency log summarized by severity, a new NIST mapping, and a slide on our vendor risk program.
+oof	train_hard:286	-----	1	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	Help with access reviews and change management and...	Help with access reviews and change management and...	access reviews	Help with access reviews and change management and our ISO certification.
+oof	train_hard:290	-----	1	0.89	0.01	-/srcOK	-/srcOK	-/srcOK	-	-	ESRS E1	Explain ESRS E1, calculate our Scope 3, and write the CDP response.
+oof	train_hard:293	-----	1	0.00	0.01	askOK/srcOK	askOK/srcOK	askOK/srcOK	Help me with materiality and the supplier survey...	Help me with materiality and the supplier survey...	materiality	Help me with materiality and the supplier survey and the sustainability report.
+oof	train_hard:295	-C---	1	0.98	0.02	-/srcOK	-/srcOK	-/srcOK	-	check our Scope 1 numbers, and map our...	one	Investors want a climate update: draft one, check our Scope 1 numbers, and map our data to ISSB.
+oof	train_hard:297	-----	1	0.87	0.04	-/srcOK	-/srcOK	-/srcOK	-	-	thank-you note	Write a thank-you note to the team and also explain what a VLOOKUP does and plan my week.
+oof	train_hard:300	-----	1	0.80	0.50	-/srcOK	-/-	-/-	Clean up my inbox, summarize the doc, and...	Clean up my inbox, summarize the doc, and...	inbox	Clean up my inbox, summarize the doc, and make a spreadsheet.
+# live	FR-1	better	look at the attached flux file and tell...	flux file
+# live	FR-2	better	check that the numbers in the attached revenue...	that the numbers
+# live	FR-3	better	-	liquidity paragraph
+# live	FR-4	better	-	unusual accruals
+# live	GRC-1	better	-	key controls
+# live	GRC-2	better	review the attached access policy for gaps against...	access policy
+# live	GRC-3	better	-	-
+# live	GRC-4	better	-	-
+# live	SUS-1	better	-	-
+# live	SUS-2	better	check the attached GHG inventory for outliers in...	GHG inventory
+# live	SUS-3	better	-	every supplier
+# live	SUS-4	better	-	climate policy
+# live	SUS-5	better	-	-
+# in-sample: weak stacked 40, of them with 2+ ask clauses a rule can quote: 13
+# in-sample any: {"weak":430,"askClaim":206,"askStrict":56,"askLoose":73,"askRight":56,"askMis":0,"srcClaim":375,"srcSpan":151,"srcRight":145,"srcMis":6,"quoted":207,"mis":6,"noQuote":239}
+# in-sample p<0.2: {"weak":430,"askClaim":206,"askStrict":56,"askLoose":73,"askRight":54,"askMis":0,"srcClaim":375,"srcSpan":151,"srcRight":144,"srcMis":5,"quoted":203,"mis":5,"noQuote":240}
+# in-sample p<0.1: {"weak":430,"askClaim":206,"askStrict":56,"askLoose":73,"askRight":51,"askMis":0,"srcClaim":375,"srcSpan":151,"srcRight":143,"srcMis":5,"quoted":199,"mis":5,"noQuote":243}
+# out of fold: weak stacked 41, of them with 2+ ask clauses a rule can quote: 13
+# out of fold any: {"weak":432,"askClaim":211,"askStrict":55,"askLoose":72,"askRight":55,"askMis":0,"srcClaim":377,"srcSpan":152,"srcRight":146,"srcMis":6,"quoted":207,"mis":6,"noQuote":240}
+# out of fold p<0.2: {"weak":432,"askClaim":211,"askStrict":55,"askLoose":72,"askRight":55,"askMis":0,"srcClaim":377,"srcSpan":152,"srcRight":143,"srcMis":5,"quoted":203,"mis":5,"noQuote":243}
+# out of fold p<0.1: {"weak":432,"askClaim":211,"askStrict":55,"askLoose":72,"askRight":51,"askMis":0,"srcClaim":377,"srcSpan":152,"srcRight":143,"srcMis":5,"quoted":199,"mis":5,"noQuote":245}

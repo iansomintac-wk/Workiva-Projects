@@ -158,4 +158,7 @@ Still open: the reason line for weak prompts is generic, and often wrong for the
 2026-10-20 on the training rows (in-sample): 430 of 1,080 grade weak; on 147 of them the line names
 something the prompt has (89) or misses its missing source or ask (63); two lines cover 45% of
 them; 0 of 13 live-test cases grade weak. Ian chose (2026-10-20) a line that quotes the prompt's own
-words; not built yet. See `research/2026-10-20-reason-line-probe.md`.
+words; not built yet. See `research/2026-10-20-reason-line-probe.md`. Specced 2026-10-20 for the ask only
+(PM proxy for Ian): a quote reaches 55 of 432 weak prompts out of fold, 0 wrong by label, 4 wrong words by eye
+before a field-label skip; a source quote picked the wrong words 12 times in 17 and is out. See
+`research/2026-10-20-quote-line-probe.md`.

@@ -1,0 +1,29 @@
+TALK: Prompt coach, the weak-prompt reason line names only the letters the detector is sure of (Workiva repo).
+
+DRAFT, written 2026-10-20 by the quote-line talk (job 04bbd630), option D on its card. Not queued: the PM proxy
+put it on Ian's morning list ("D to Ian's morning list", 2026-10-20T05:40Z). Start it only on Ian's yes.
+Load studio-harness:talk-and-run first. Talk only: no engine change, no build, no push.
+Work in a fresh worktree branched from prompt-coach once the quote-line run has merged (else from the local
+branch worktree-prompt-coach-analyze-format). Never open any heldout/ or sealed file, and never read or probe
+data/test.jsonl.
+
+SOURCE: the reason-line probe (prompt-coach/research/2026-10-20-reason-line-probe.md: the line is wrong for 147
+of 430 weak prompts in-sample; 89 name something the prompt has, 63 miss its missing source or ask) and the
+quote-line probe (research/2026-10-20-quote-line-probe.md: the ask quote fixes none of the 147, because they are
+detector errors on which letter is missing). Assumption this breaks: the line must name every letter the
+detector calls missing.
+
+DO
+1. Give Ian the time.
+2. Read-only probe (data/train_*.jsonl and research/live-tests/ only; script and counts to prompt-coach/research/;
+   out of fold, reusing the fold retraining in research/2026-10-20-quote-line-probe.js): at sure cuts (for
+   example p < 0.2 for missing, p > 0.8 for present), how many of the 147 wrong lines go away, how many right
+   lines lose a letter they named correctly, and how many weak prompts would name no letter at all (what the line
+   says then). Read 20 changed lines by eye.
+3. Spec: the line wording per case, the fallback when no letter is sure, the no-go (never name a letter the
+   detector is not sure of; never claim the coach is sure), and the check that proves it wrong, with the drop
+   number stated before measuring.
+4. Tell Ian the counts in plain words. Decision card: build, park, or a narrower cut. Recommendation first.
+5. Write the spec and the run prompt, record his answer verbatim in the run ledger's rulings.md, commit locally.
+   Hand-off PM step; ask before starting any next session.
+Appetite: one short talk; stop and ask if it needs more than one probe pass.
