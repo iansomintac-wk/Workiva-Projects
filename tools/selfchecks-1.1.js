@@ -9340,28 +9340,47 @@ function _runSelfChecksInner(){
     let ok = false, detail = '';
     const had = Object.prototype.hasOwnProperty.call(DATA, 'gainsightQueue'), saved = DATA.gainsightQueue;
     try{
-      DATA.gainsightQueue = [c5Item('A'), c5Item('B'), c5Item('C'), c5Item('D', {status: 'sent', externalId: 'KEEP', sentAt: '2026-01-01T00:00:00.000Z'})];
+      DATA.gainsightQueue = [c5Item('A'), c5Item('B'), c5Item('C'), c5Item('D', {status: 'sent', externalId: 'KEEP', sentAt: '2026-01-01T00:00:00.000Z'}), c5Item('E'), c5Item('F')];
       const r = applyPushResults([{id: 'A', status: 'sent', externalId: 'X-1', error: null}, {id: 'B', status: 'failed', externalId: null, error: 'boom'},
-        {id: 'ZZ', status: 'sent', externalId: 'Q'}, {id: 'C', status: 'sent', externalId: null}, {id: 'D', status: 'failed', error: 'late'}], new Set(['A', 'B', 'C', 'D']));
-      const q = DATA.gainsightQueue, A = q[0], B = q[1], C = q[2], D = q[3];
+        {id: 'ZZ', status: 'sent', externalId: 'Q'}, {id: 'C', status: 'sent', externalId: null}, {id: 'D', status: 'failed', error: 'late'},
+        {id: 'E', status: 'sent', externalId: 42}, {id: 'F', status: 'sent'}], new Set(['A', 'B', 'C', 'D', 'E', 'F']));
+      const q = DATA.gainsightQueue, A = q[0], B = q[1], C = q[2], D = q[3], E = q[4], F = q[5];
       const stateOk = A.status === 'sent' && A.externalId === 'X-1' && !!A.sentAt && A.error === null
         && B.status === 'failed' && B.error === 'boom' && B.externalId === null && B.sentAt === null
-        && C.status === 'queued' && C.externalId === null          // "sent" with no externalId is never believed
+        && C.status === 'sent' && C.externalId === null && !!C.sentAt          // 1.2 B3a: an explicit null id is believed
+        && E.status === 'queued' && E.externalId === null && F.status === 'queued' && F.externalId === null   // a numeric id and a missing id key are malformed, never believed
         && D.status === 'sent' && D.externalId === 'KEEP' && D.sentAt === '2026-01-01T00:00:00.000Z'   // a sent item is never overwritten
-        && q.length === 4;
-      const countOk = r.sent === 1 && r.failed === 1;
+        && q.length === 6;
+      const countOk = r.sent === 2 && r.failed === 1;
       const htmlA = renderGainsightQueueRow(A, 0), htmlB = renderGainsightQueueRow(B, 1), htmlC = renderGainsightQueueRow(C, 2);
       const renderOk = htmlA.indexOf('✓ sent') !== -1 && htmlA.indexOf('X-1') !== -1 && htmlA.indexOf('data-queue-retry') === -1
         && htmlB.indexOf('data-queue-retry="B"') !== -1 && htmlB.indexOf('boom') !== -1 && /Retry/.test(htmlB)
-        && htmlC.indexOf('data-queue-retry') === -1 && htmlC.indexOf('boom') === -1;
+        && htmlC.indexOf('data-queue-retry') === -1 && htmlC.indexOf('boom') === -1 && htmlC.indexOf('id not returned') !== -1;
       B.error = '<img src=x onerror=1>';
       const esc = renderGainsightQueueRow(B, 1).indexOf('<img') === -1;
       const req2 = buildPushRequest(q).items.map(i => i.id).join();
-      ok = stateOk && countOk && renderOk && esc && req2 === 'B,C';
+      ok = stateOk && countOk && renderOk && esc && req2 === 'B,E,F';
       detail = JSON.stringify({stateOk, countOk, renderOk, esc, req2, r});
     }catch(e){ detail = 'threw: ' + e.message; }
     finally{ if(had) DATA.gainsightQueue = saved; else delete DATA.gainsightQueue; }
-    check('gainsight c5b: applyPushResults sets sent+externalId+sentAt / failed+error by id, ignores unknown ids, never marks sent without an externalId and never touches an already-sent item; a failed row shows its error and Retry, a sent row shows ✓ sent and its id', ok, detail);
+    check('gainsight c5b: applyPushResults sets sent+externalId+sentAt / failed+error by id, ignores unknown ids, marks sent only for a non-empty string id or an explicit null and never touches an already-sent item; a failed row shows its error and Retry, a sent row shows ✓ sent and its id', ok, detail);
+  })();
+  (function(){                                   // 1.2 B3a: a sent reply with no id is still sent
+    let ok = false, detail = '';
+    const had = Object.prototype.hasOwnProperty.call(DATA, 'gainsightQueue'), saved = DATA.gainsightQueue;
+    try{
+      DATA.gainsightQueue = [c5Item('N1')];
+      const r = applyPushResults([{id: 'N1', status: 'sent', externalId: null, error: null}], new Set(['N1']));
+      const q = DATA.gainsightQueue[0];
+      const marked = q.status === 'sent' && q.externalId === null && !!q.sentAt && q.error === null && r.sent === 1;
+      const notAgain = buildPushRequest(DATA.gainsightQueue).items.length === 0;
+      const row = renderGainsightQueueRow(q, 0);
+      const shows = row.indexOf('✓ sent') !== -1 && row.indexOf('id not returned') !== -1 && row.indexOf('data-queue-retry') === -1;
+      ok = marked && notAgain && shows;
+      detail = JSON.stringify({marked, notAgain, shows, r});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    finally{ if(had) DATA.gainsightQueue = saved; else delete DATA.gainsightQueue; }
+    check('1.2 B3a a sent reply with no external id marks the item sent (id not returned) so it cannot be sent twice', ok, detail);
   })();
   (function(){                                   // c5c
     let ok = false, detail = '';

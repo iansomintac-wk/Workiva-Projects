@@ -9951,7 +9951,7 @@ function renderRiskTab(){
 /* C-5: one queue row. A sent item shows its Gainsight id and nothing to do; a failed one shows why and a Retry; a queued one is as it was. */
 function renderGainsightQueueRow(q, i){
   const canRetry = q.status === 'failed';   // a failed item can only exist after a connector push; offline, Retry just says so
-  const state = q.status === 'sent' ? `<span class="badge badge-ontrack">✓ sent · ${escapeHtml(q.externalId || '')}</span>`
+  const state = q.status === 'sent' ? `<span class="badge badge-ontrack">✓ sent · ${escapeHtml(q.externalId || 'id not returned')}</span>`
     : q.status === 'failed' ? `<span class="badge badge-risk">failed</span> <span class="rk-meta">${escapeHtml(q.error || 'The connector could not send this item.')}</span>`
     : `<span class="rk-meta">${escapeHtml(q.status)}</span>`;
   return `
@@ -10949,7 +10949,7 @@ function buildPushRequest(items){
     customerRef: {gainsightId: ((DATA.customers.find(c => c.id === q.customerId) || {}).gainsightId || '').trim() || null, name: q.customerName},
     fields: isRecordObject(q.fields) ? q.fields : {}}))};
 }
-/* C-5: one result per item, matched by id. Nothing becomes sent without an externalId from the connector, and an item that is
+/* C-5: one result per item, matched by id. Nothing becomes sent unless the connector gives a non-empty string id or an explicit null, and an item that is
    already sent is never rewritten. Unknown ids are ignored. Does not save; the caller saves once. */
 function applyPushResults(results, sentIds){
   const out = {sent: 0, failed: 0};
@@ -10958,8 +10958,8 @@ function applyPushResults(results, sentIds){
   (Array.isArray(results) ? results : []).forEach(r => {
     const q = isRecordObject(r) ? (sentIds.has(r.id) ? queue.find(x => x.id === r.id) : null) : null;
     if(!q || q.status === 'sent') return;
-    if(r.status === 'sent' && typeof r.externalId === 'string' && r.externalId){
-      q.status = 'sent'; q.externalId = r.externalId.slice(0, 200); q.sentAt = new Date().toISOString(); q.error = null; out.sent++;
+    if(r.status === 'sent' && (r.externalId === null || (typeof r.externalId === 'string' && r.externalId))){   // 1.2 B3a: an explicit null id is still sent; undefined, numbers, objects and '' stay queued
+      q.status = 'sent'; q.externalId = r.externalId ? r.externalId.slice(0, 200) : null; q.sentAt = new Date().toISOString(); q.error = null; out.sent++;
     }else if(r.status === 'failed'){
       q.status = 'failed'; q.error = (typeof r.error === 'string' && r.error ? r.error : 'The connector could not send this item.').slice(0, 500); out.failed++;
     }
