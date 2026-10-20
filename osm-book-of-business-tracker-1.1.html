@@ -18266,7 +18266,8 @@ function fsIdb(mode, fn){
       const db = req.result;
       let tx;
       try{ tx = db.transaction(FS_STORE, mode); }catch(e){ db.close(); reject(e); return; }
-      const out = fn(tx.objectStore(FS_STORE));
+      let out;
+      try{ out = fn(tx.objectStore(FS_STORE)); }catch(e){ try{ tx.abort(); }catch(_){} db.close(); reject(e); return; }
       tx.oncomplete = () => { db.close(); resolve(out && out.result !== undefined ? out.result : undefined); };
       tx.onerror = () => { db.close(); reject(tx.error || new Error('IndexedDB write failed')); };
     };
@@ -19737,15 +19738,16 @@ function buildCsatImportPlan(table, customers, opts){
   plan.matched.sort((a, b) => a.row - b.row); plan.conflicts.sort((a, b) => a.row - b.row);
   const matchedIds = new Set(plan.matched.concat(plan.conflicts).map(m => m.customerId));
   plan.ambiguous.forEach(a => a.customerIds.forEach(id => matchedIds.add(id)));
-  const rowsByKey = {}, custByKey = {};
-  plan.unmatchedRows.forEach(r => { const k = normalizeCustomerNameKey(r.name); if(k) (rowsByKey[k] = rowsByKey[k] || []).push(r); });
+  const rowsByKey = new Map(), custByKey = new Map();
+  plan.unmatchedRows.forEach(r => { const k = normalizeCustomerNameKey(r.name); if(k){ if(!rowsByKey.has(k)) rowsByKey.set(k, []); rowsByKey.get(k).push(r); } });
   (customers || []).forEach(c => {
     if(matchedIds.has(c.id) || String(c.salesforceId || '').trim() || String(c.gainsightId || '').trim()) return;
-    const k = normalizeCustomerNameKey(c.name); if(k) (custByKey[k] = custByKey[k] || []).push(c);
+    const k = normalizeCustomerNameKey(c.name); if(k){ if(!custByKey.has(k)) custByKey.set(k, []); custByKey.get(k).push(c); }
   });
-  Object.keys(rowsByKey).forEach(k => {
-    if(rowsByKey[k].length !== 1 || !custByKey[k] || custByKey[k].length !== 1) return;
-    const r = rowsByKey[k][0], c = custByKey[k][0];
+  rowsByKey.forEach((rs, k) => {
+    const cs = custByKey.get(k);
+    if(rs.length !== 1 || !cs || cs.length !== 1) return;
+    const r = rs[0], c = cs[0];
     const d = csatDecide((c.compliance && c.compliance.associatedPeopleCSAT) || {}, r.sent, r.answered);
     plan.suggestions.push({row:r.row, customerId:c.id, customerName:c.name, csvName:r.name, sf:r.sf, gs:r.gs, sent:r.sent, answered:r.answered, kind:d.kind, changes:csatChangesFor(c, d)});
   });
@@ -19904,14 +19906,14 @@ function guessPartnerColumnMapping(headers){
 // parsed date, and duplicate flag. customers = [{id, name}], existingSummaries
 // = {customerId: [summary strings]}.
 function buildPartnerImportRows(headers, dataRows, mapping, customers, existingSummaries){
-  const byName = {};
-  customers.forEach(c => { byName[normalizeCustomerNameKey(c.name)] = c.id; });
+  const byName = new Map();
+  customers.forEach(c => { byName.set(normalizeCustomerNameKey(c.name), c.id); });
   const rows = [];
   dataRows.forEach((row, idx) => {
     const rawName = String(excelRowValue(row, headers, mapping.name) || '').trim();
     const note = String(excelRowValue(row, headers, mapping.note) || '').trim();
     if(!rawName && !note) return; // fully blank on the mapped columns — not a row
-    const matchedCustomerId = byName[normalizeCustomerNameKey(rawName)] || null;
+    const matchedCustomerId = byName.get(normalizeCustomerNameKey(rawName)) || null;
     const rawDate = mapping.date ? excelRowValue(row, headers, mapping.date) : '';
     const dateISO = rawDate ? (parseExcelDateCell(rawDate) || null) : null;
     let duplicate = false;
