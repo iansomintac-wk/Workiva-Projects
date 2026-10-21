@@ -1,6 +1,6 @@
 TALK: Prompt coach, find and fix training labels that contradict each other (Workiva repo).
 
-Written 2026-10-21 by the sure-letters talk (job a42b31bc). Ian picked this, typed selection "New talk: fix the
+Written 2026-10-20 (local; 2026-10-21 UTC) by the sure-letters talk (job a42b31bc). Ian picked this, typed selection "New talk: fix the
 labels" (2026-10-21T01:27Z) on the card that parked sure letters (spec
 docs/superpowers/specs/2026-10-20-prompt-coach-sure-letters-design.md; probe
 prompt-coach/research/2026-10-20-sure-letters-probe.md).
@@ -9,10 +9,12 @@ Work in a fresh worktree branched from origin/prompt-coach (or from branch workt
 it is not merged yet: it carries the probe and this prompt).
 Never open any heldout/ or sealed file, and never read or probe data/test.jsonl.
 Labels are labeled data: any relabel judgement runs on the top model, never Haiku. Changing a label is Ian's call.
-Session-name rule: rename predecessor a42b31bc only; do not claude rm it, 0a79ea3b or 04bbd630.
+Session-name rule: rename predecessor a42b31bc only; do not claude rm it, 0a79ea3b or 04bbd630 (worktree
+prompt-coach-analyze-format holds the git-ignored run ledger with the rulings); leave removal to Ian.
 
 SOURCE (measured 2026-10-20, sure-letters probe): the weak headline is wrong for 105 of 432 weak prompts out of
-fold; 33 of its 46 false letters come with p < 0.1, so the detector is sure when it is wrong. By eye, the 0.2-0.3
+fold (45 of them name a letter the prompt has, 46 such letters in all); 33 of the 46 false letters come with
+p < 0.1, so the detector is sure when it is wrong. By eye, the 0.2-0.3
 band of the ask holds near-identical prompts with opposite labels: "Find duplicates" (train_sus:189, O=1) vs
 "Find outliers." (train_grc:49, O=0); "map these to the taxonomy" (train_fr:188, O=1) vs "map to COSO"
 (train_grc:188, O=0). Assumption to test: contradictions like these are common enough to explain a real share of
