@@ -11348,14 +11348,24 @@ const CARD_EDITORS = {
     render: c => {
       const risks = buildRiskHubList({readOnly:true}).filter(r => r.c.id === c.id).slice(0, 3);
       if(!risks.length) return `<p class="dk-hint">Nothing open. Flagging a note on the Activity Log raises one here.</p>`;
-      return risks.map(r => `
+      return risks.map(r => {
+        const confirmed = riskVerdictState(r) === 'confirmed';
+        const hasReason = riskItemHasReason(r);
+        const actions = confirmed && hasReason
+          ? `<p class="dk-hint">Confirmed as a risk — &ldquo;${escapeHtml(r.tracking.verdictReason)}&rdquo; · ${fmtDate(r.tracking.verdictOn)}</p>`
+          : confirmed
+            ? `<p class="dk-hint">Confirmed before reasons were required.</p>
+            <button class="btn btn-sm" data-dk-risk="confirmed|${escapeAttr(r.logKey)}">Add a reason</button>`
+            : `<button class="btn btn-sm" data-dk-risk="confirmed|${escapeAttr(r.logKey)}">Confirm</button>
+            <button class="btn btn-sm" data-dk-risk="dismissed|${escapeAttr(r.logKey)}">Dismiss</button>`;
+        return `
         <div class="dk-risk">
           <div class="dk-risk-t"><span class="badge ${r.sev>=3?'badge-risk':r.sev===2?'badge-watch':'badge-module'}">${escapeHtml(r.kind)}</span> ${escapeHtml(trimToLength(r.detail, 110))}</div>
           <div class="dk-risk-a">
-            <button class="btn btn-sm" data-dk-risk="confirmed|${escapeAttr(r.logKey)}">Confirm</button>
-            <button class="btn btn-sm" data-dk-risk="dismissed|${escapeAttr(r.logKey)}">Dismiss</button>
+            ${actions}
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     }
   }
 };

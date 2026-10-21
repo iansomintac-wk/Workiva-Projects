@@ -1191,6 +1191,32 @@ function _runSelfChecksInner(){
     _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
     check('FX2: a real click on the account desk Confirm opens the reason modal and writes no verdict', ok, detail);
   })();
+  (function(){                                   // Call 3: the desk Open risks card shows a status line for a confirmed item instead of Confirm/Dismiss
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+    try{
+      const cs = ['__c3a__', '__c3b__', '__c3c__'].map(id => v13Acct(id, {riskOverride: 'risk'}));
+      DATA.customers = cs; DATA.activities = {}; DATA.riskLog = {}; reset();
+      const keys = cs.map(c => buildRiskHubList().find(r => r.c.id === c.id).logKey);
+      const on = isoAddDays(todayISO(), -5);
+      DATA.riskLog = {};
+      DATA.riskLog[keys[0]] = {firstSeen: on, lastActioned: on, verdict: 'confirmed', verdictOn: on, verdictSev: 3, verdictReason: 'DESK-REASON-QQ'};
+      DATA.riskLog[keys[1]] = {firstSeen: on, lastActioned: on, verdict: 'confirmed', verdictOn: on, verdictSev: 3};
+      reset();
+      const h = cs.map(c => CARD_EDITORS.risk.render(c));
+      const btns = s => (s.match(/data-dk-risk="[^"]*"/g) || []);
+      const r1 = h[0].indexOf('Confirmed as a risk') !== -1 && h[0].indexOf('DESK-REASON-QQ') !== -1 && btns(h[0]).length === 0;
+      const b2 = btns(h[1]);
+      const r2 = h[1].indexOf('Confirmed before reasons were required.') !== -1 && b2.length === 1 && b2[0].indexOf('data-dk-risk="confirmed|') === 0 && h[1].indexOf('Add a reason') !== -1;
+      const r3 = btns(h[2]).length === 2 && h[2].indexOf('>Confirm<') !== -1 && h[2].indexOf('>Dismiss<') !== -1;
+      ok = r1 && r2 && r3;
+      detail = JSON.stringify({r1, r2, r3});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('Call 3: the desk Open risks card prints the verdict line for a confirmed item (reason, or add-a-reason for a pre-1.2 one) and keeps both buttons for an unconfirmed one', ok, detail);
+  })();
   (function(){                                   // FX4 (1): a real click on the desk Dismiss / Confirm of an already-confirmed item
     let ok = false, detail = '';
     const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
@@ -1211,7 +1237,7 @@ function _runSelfChecksInner(){
       ui.openCustomerId = null; ui.view = 'copilot';
       render();
       const dis = document.querySelector('[data-dk-risk="dismissed|' + key + '"]');
-      const found = !!dis;
+      const found = !dis && !document.querySelector('[data-dk-risk="confirmed|' + key + '"]');   // Call 3: a confirmed item with a reason has no desk buttons at all; the handlers stay as fallbacks
       if(dis) dis.click();
       const kept = DATA.riskLog[key].verdict === 'confirmed' && DATA.riskLog[key].verdictReason === 'FX4A-KEEP-THIS-REASON';
       const noDismissToast = !toasts.some(t => /dismissed/i.test(t));
