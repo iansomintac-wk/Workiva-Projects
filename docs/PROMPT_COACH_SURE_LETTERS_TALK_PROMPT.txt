@@ -1,11 +1,14 @@
 TALK: Prompt coach, the weak-prompt reason line names only the letters the detector is sure of (Workiva repo).
 
-DRAFT, written 2026-10-20 by the quote-line talk (job 04bbd630), option D on its card. Not queued: the PM proxy
-put it on Ian's morning list ("D to Ian's morning list", 2026-10-20T05:40Z). Start it only on Ian's yes.
+Written 2026-10-20 by the quote-line talk (job 04bbd630), option D on its card; the PM proxy put it on Ian's
+morning list ("D to Ian's morning list", 2026-10-20T05:40Z). APPROVED by Ian 2026-10-20, typed "yes" in session
+0a79ea3b to "Should I start the sure-letters talk?". Launched by the quote-line run lead (job 0a79ea3b).
 Load studio-harness:talk-and-run first. Talk only: no engine change, no build, no push.
-Work in a fresh worktree branched from prompt-coach once the quote-line run has merged (else from the local
-branch worktree-prompt-coach-analyze-format). Never open any heldout/ or sealed file, and never read or probe
-data/test.jsonl.
+Work in a fresh worktree branched from origin/prompt-coach (the quote-line run is merged there at 902fbff).
+Never open any heldout/ or sealed file, and never read or probe data/test.jsonl.
+Session-name rule: rename predecessor 0a79ea3b only; do NOT claude rm 0a79ea3b or 04bbd630: their shared worktree
+.claude/worktrees/prompt-coach-analyze-format holds the git-ignored run ledger (.ledger/2026-10-20-prompt-coach-reason-line);
+leave removal to Ian.
 
 UPDATE from the quote-line run (lead job 0a79ea3b, 2026-10-20; evidence docs/evidence/2026-10-20-prompt-coach-quote-line.md):
 - Measured in headless Chrome: stages.weak.verdict (the "reason line" the 147-of-430 probe scored) is shown on NO tab
