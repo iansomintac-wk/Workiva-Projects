@@ -1,6 +1,6 @@
 /* 1.2 D8/L8 probe: clicking the last case on the Risk rail must bring it to the front, even when nothing
    sits below the deck to make up the scroll. Asynchronous, so it is not in the main suite:
-     node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/d8l8-probe.js --fn d8l8Probe --expect 3
+     node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/d8l8-probe.js --fn d8l8Probe --expect 5
    It hides whatever follows the track while it runs, and restores (saveData is stubbed so nothing persists): saveData, DATA.customers, DATA.activities, DATA.riskLog,
    ui.view, ui.riskFocusId, the scroll position. */
 window.d8l8Probe = async function d8l8Probe(){
@@ -104,6 +104,29 @@ window.d8l8Probe = async function d8l8Probe(){
     }
   }catch(e){ roomRes.detail = 'threw: ' + e.message; }
   extra.push(['1.2 call 5 Deck blank room: with page content below, the blank under the stage where the last case arrives is at most 32px and the case is front', roomRes]);
+  /* first paint after a jump: the last card, taller than the first card's cap, is drawn at its resting place (no stale offset) */
+  let staleRes = {ok: false, detail: ''};
+  try{
+    const mkS = id => { const c = {id, name: 'D8L8 ' + id, module: DATA.config.modules[0], stage: DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200), totalSessions: 8, domainScores: {}, sessionNotes: {}, stageHistory: [], riskOverride: 'risk'}; backfillCustomerRecord(c); return c; };
+    const csS = []; for(let i = 0; i < 6; i++) csS.push(mkS('__d8l8s_' + i));
+    DATA.customers = csS; DATA.activities = {}; DATA.riskLog = {};
+    reset();
+    buildRiskCases(buildRiskHubList()).forEach((k, i) => setRiskVerdict(k.items[0], 'confirmed', i === 0 ? 'short reason' : 'the sponsor said they may not renew and the budget owner has gone quiet. '.repeat(12)));
+    reset(); ui.view = 'risk'; ui.riskFocusId = null; render(); await frame(); await frame();
+    scrollTo(0, 0); await sleep(300); await frame();
+    const trS = document.querySelector('.rk3-track'), hostS = trS && trS.parentElement, stS = trS && trS.querySelector('.rk3-stage');
+    if(!stS || !hostS._deckCards) staleRes.detail = 'deck not bound';
+    else {
+      const lastS = hostS._deckCards[hostS._deckCards.length - 1];
+      scrollTo({top: trS.getBoundingClientRect().top + scrollY + hostS._deckOffsetFor(hostS._deckCards.length - 1), behavior: 'instant'});
+      await frame(); await frame();
+      const m = /translate3d\(0px, ([-\d.]+)px/.exec(lastS.style.transform), ty = m ? +m[1] : NaN;
+      const lb = lastS.getBoundingClientRect().bottom, sb = stS.getBoundingClientRect().bottom;
+      staleRes.ok = ty === 0 && lb <= sb + 1;
+      staleRes.detail = JSON.stringify({transform: lastS.style.transform, cardBottom: Math.round(lb), stageBottom: Math.round(sb), maxH: lastS.style.maxHeight});
+    }
+  }catch(e){ staleRes.detail = 'threw: ' + e.message; }
+  extra.push(['1.2 deck first paint after a jump: the last case sits at translate 0 and inside the stage, not one paint stale', staleRes]);
   saveData = realSave; DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.view = prevView; ui.riskFocusId = prevFocus;
   reset(); render();
   scrollTo(0, prevY);

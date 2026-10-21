@@ -9054,6 +9054,11 @@ function bindRiskDeck(host){
     // The last case has nothing after it to hand over to: progress stops at its own offset, so however far the page scrolls (content below the track, a track that grew) it stays front, fully opaque and live.
     const p = Math.min(cards.length - 1, active + (over > 0 ? Math.max(0, (within - over) / step()) : Math.max(0, within / step())));
     const H = front ? Math.min(naturalOf(front), stageForNatural(naturalOf(front)) - PEEK) : 0;
+    // Sized (before the transforms read offsetHeight) from the card's NATURAL height, capped to what the viewport can show.
+    if(front){
+      stage.style.height = stageForNatural(naturalOf(front)) + 'px';
+      cards.forEach(el => { el.style.maxHeight = (stageForNatural(naturalOf(front)) - PEEK) + 'px'; });
+    }
     cards.forEach((el, i) => {
       const d = i - p;                       // <0 already decided past, 0 active, >0 still to come
       if(d <= -1 || d > RK_DEPTH + .5){ el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.style.zIndex = '0'; return; }
@@ -9076,11 +9081,6 @@ function bindRiskDeck(host){
         el.style.zIndex = String(100 - i);
       }
     });
-    // Sized from the card's NATURAL height, capped to what the viewport can show.
-    if(front){
-      stage.style.height = stageForNatural(naturalOf(front)) + 'px';
-      cards.forEach(el => { el.style.maxHeight = (stageForNatural(naturalOf(front)) - PEEK) + 'px'; });
-    }
     if(active !== lastActive){
       lastActive = active;
       const el = cards[active];
