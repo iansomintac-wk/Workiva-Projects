@@ -9883,7 +9883,7 @@ function renderRiskCase(k, idx, active){
   /* FX2: print the reason the OSM gave; a pre-1.2 confirmation has none, so say so. */
   const confirmedLines = k.items.filter(it => riskVerdictState(it) === 'confirmed').map(it => riskItemHasReason(it)
     ? `<p class="rk-confirmed-why">Confirmed as a risk — &ldquo;${escapeHtml(it.tracking.verdictReason)}&rdquo; · ${fmtDate(it.tracking.verdictOn)}</p>`
-    : `<p class="rk-confirmed-why">Confirmed before reasons were required: add a reason <button class="link-btn" data-risk-confirm="${escapeAttr(k.c.id)}">Add a reason</button></p>`).join('');
+    : `<p class="rk-confirmed-why">Confirmed before reasons were required. <button class="link-btn" data-risk-confirm="${escapeAttr(k.c.id)}">Add a reason</button></p>`).join('');
 
   return `
   <article class="rk3-card ${sevClass} ${state}${active ? ' is-active' : ''}" id="rk-c-${escapeAttr(k.c.id)}"
@@ -15201,7 +15201,7 @@ function renderActivityTab(c, acts){
         const cats = classifyRiskText(act.summary || '');
         const riskCats = cats.filter(x => !(RISK_TAXONOMY_BY_KEY[x.key] && RISK_TAXONOMY_BY_KEY[x.key].notRisk)), expCats = cats.filter(x => RISK_TAXONOMY_BY_KEY[x.key] && RISK_TAXONOMY_BY_KEY[x.key].notRisk);
         const chipPart = (x) => `${escapeHtml(x.label)} (“${escapeHtml(x.phrase)}”)`;
-        const chipText = [riskCats.length ? `Possible risk categor${riskCats.length===1?'y':'ies'}: ${riskCats.map(chipPart).join(' · ')}` : '', expCats.length ? `Expansion signal: ${expCats.map(chipPart).join(' · ')}` : ''].filter(Boolean).join(' · ');
+        const chipText = [riskCats.length ? `Possible risk categor${riskCats.length===1?'y':'ies'}: ${riskCats.map(chipPart).join(' · ')}` : '', expCats.length ? `Expansion signal: ${expCats.map(x => escapeHtml(x.phrase)).join(' · ')}` : ''].filter(Boolean).join(' · ');
         return cats.length ? `<div style="font-size:var(--text-xs); color:var(--accent-watch-text); margin-bottom:6px;" title="Suggested from the team keyword list by matching — a keyword hit, not a judgment; confirm before treating a risk category as a real risk.">${chipText}</div>` : '';
       })()}
       ${activityIsFirstValueEvidence(c, act.id) ? `

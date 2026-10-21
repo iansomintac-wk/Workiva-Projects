@@ -1149,7 +1149,7 @@ function _runSelfChecksInner(){
       const it = buildRiskHubList().find(r => r.logKey === it0.logKey);
       const stays = riskItemIsRisk(it) === true && buildRiskCases(buildRiskHubList()).find(k => k.c.id === c.id).isRisk === true;
       const html = renderRiskTab();
-      const labelled = html.indexOf('Confirmed before reasons were required: add a reason') !== -1 && html.indexOf('class="rk3-card') !== -1;
+      const labelled = html.indexOf('Confirmed before reasons were required.') !== -1 && html.indexOf('class="rk3-card') !== -1;
       const nag = riskAttention(it).state === 'maintenance_due';
       DATA.riskLog[it0.logKey].verdictReason = 'PRINTED-REASON-XYZ'; reset();
       const html2 = renderRiskTab();
