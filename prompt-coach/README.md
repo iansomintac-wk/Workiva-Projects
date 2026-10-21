@@ -164,7 +164,11 @@ wording D), only when the detector is sure the ask is missing (p < 0.2); a one-w
 followed directly by a colon (a field label) give no quote. Internal dots (file names like FY2025_Emissions.xlsx, decimals) are kept inside the quote: the span cuts at . ; ? ! only before whitespace or end, or at a line break. The quote is appended to the headline and inserted in the weak verdict before its "It is also missing ..." sentence. The source is
 never quoted. Shipped check out of fold: 432 weak, 45 quoted, 0 wrong by label, 0 wrong words by eye,
 1 of 45 false by eye (row 12, a detector error the quote exposes). The letters the line names are still the
-detector's; naming only the letters the detector is sure of is still open (Ian's morning list). The
-earlier 147-of-430 probe measured the reason line, which no tab shows since 16a49e2; the headline names only
-source and ask. Details, history and the final numbers are in
+detector's. The earlier 147-of-430 probe measured the reason line, which no tab shows since 16a49e2; the
+headline names only source and ask, and is wrong for 102 of 430 weak prompts in-sample, 105 of 432 out of
+fold. Naming only the letters the detector is sure of was probed and parked (Ian, 2026-10-21): at p < 0.2
+the headline gets worse out of fold (105 to 110 wrong; 7 false letters removed, 13 correct ones dropped),
+because 33 of the 46 false letters are named at p < 0.1. The detector is sure when it is wrong, often on
+rows whose training labels contradict each other ("Find duplicates" vs "Find outliers."); fixing those labels
+is the next talk. See `research/2026-10-20-sure-letters-probe.md`. Details, history and the final numbers are in
 `docs/evidence/2026-10-20-prompt-coach-quote-line.md`. See `research/2026-10-20-quote-line-probe.md`.
