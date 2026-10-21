@@ -6525,7 +6525,8 @@ function _runSelfChecksInner(){
       const bound = !!host && typeof host._deckOffsetFor === 'function' && !!host._deckCards && host._deckCards.length === 14 && !host.classList.contains('rk3--flat');
       if(bound){
         const last = host._deckCards.length - 1;
-        const reachable = track.offsetHeight - innerHeight;
+        const belowTrack = Math.max(0, document.documentElement.scrollHeight - (track.getBoundingClientRect().bottom + scrollY));
+        const reachable = track.offsetHeight - innerHeight + belowTrack;
         const needed = host._deckOffsetFor(last);
         ok = reachable >= needed;
         detail = JSON.stringify({bound, n: host._deckCards.length, reachable, needed, innerHeight});

@@ -9028,8 +9028,9 @@ function bindRiskDeck(host){
     let total = 0;
     cards.forEach((el, i) => { total += (i === cards.length - 1) ? overflowOf(el) : costOf(el); });
     const lastStage = stageForNatural(naturalOf(cards[cards.length - 1]));
-    // The last card must be reachable by SCROLLING: the track itself has to provide at least one viewport after the last offset, or a short last card leaves the page out of scroll with the previous card still in front (only content below the track used to hide it).
-    track.style.height = (total + Math.max(lastStage + 16, innerHeight)) + 'px';
+    // The last card must be reachable by SCROLLING: the last offset only has to be scrollable, and any page content below the track already provides scroll. So the track reserves a viewport minus what sits below it (never less than one stage), which keeps the blank room under the last case short. `below` is measured when sizeTrack runs (bind and resize); it is not re-run if the content below changes later.
+    const below = Math.max(0, document.documentElement.scrollHeight - (track.getBoundingClientRect().bottom + scrollY));
+    track.style.height = (total + Math.max(lastStage + 16, innerHeight - below)) + 'px';
   };
   sizeTrack();
 
