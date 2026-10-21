@@ -1,6 +1,6 @@
 /* 1.2 D8/L8 probe: clicking the last case on the Risk rail must bring it to the front, even when nothing
    sits below the deck to make up the scroll. Asynchronous, so it is not in the main suite:
-     node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/d8l8-probe.js --fn d8l8Probe --expect 5
+     node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/d8l8-probe.js --fn d8l8Probe --expect 6
    It hides whatever follows the track while it runs, and restores (saveData is stubbed so nothing persists): saveData, DATA.customers, DATA.activities, DATA.riskLog,
    ui.view, ui.riskFocusId, the scroll position. */
 window.d8l8Probe = async function d8l8Probe(){
@@ -82,6 +82,42 @@ window.d8l8Probe = async function d8l8Probe(){
   extra.push(['1.2 D8/L8 page scrolled to the very bottom: a single short case stays front with live buttons, no more blank than needed', await bottomPart(1, 'one card')]);
   extra.push(['1.2 D8/L8 page scrolled to the very bottom: the last of many cases stays front with live buttons, no more blank than needed', await bottomPart(14, 'many cards')]);
   hidden.forEach(h => { h[0].style.display = h[1]; });
+  /* a jump that lands under a pixel short of a card's slot (1280x863: step() is fractional, the track top sits at .75 and the page scrolls whole pixels) still makes that card the front and focused card */
+  let nearRes = {ok: false, detail: ''}, nearTrack = null;
+  try{
+    const mkN = id => { const c = {id, name: 'D8L8 ' + id, module: DATA.config.modules[0], stage: DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200), totalSessions: 8, domainScores: {}, sessionNotes: {}, stageHistory: [], riskOverride: 'risk'}; backfillCustomerRecord(c); return c; };
+    const csN = []; for(let i = 0; i < 14; i++) csN.push(mkN('__d8l8n_' + i));
+    DATA.customers = csN; DATA.activities = {}; DATA.riskLog = {};
+    reset();
+    buildRiskCases(buildRiskHubList()).forEach(k => setRiskVerdict(k.items[0], 'confirmed', 'short reason'));
+    reset(); ui.view = 'risk'; ui.riskFocusId = null; render(); await frame(); await frame();
+    const trN = document.querySelector('.rk3-track'), hostN = trN && trN.parentElement;
+    if(!hostN || !hostN._deckCards || hostN._deckCards.length !== 14) nearRes.detail = 'deck not bound';
+    else {
+      nearTrack = trN; trN.style.marginTop = '0.75px'; /* a fractional track top, as at 1280x863, so the whole-pixel scroll can fall short */
+      dispatchEvent(new Event('resize')); await frame(); await frame();
+      const parts = [], bad = [];
+      for(const idx of [13, 7]){
+        const card = hostN._deckCards[idx], cid = card.dataset.riskCase, need = hostN._deckOffsetFor(idx);
+        const arrive = trN.getBoundingClientRect().top + scrollY + need;
+        let y = NaN, hit = false;
+        for(const d of [0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 0.9]){
+          scrollTo({top: arrive - d, behavior: 'instant'}); await frame(); await frame();
+          y = -trN.getBoundingClientRect().top;
+          if(need - y > 0 && need - y < 1){ hit = true; break; }
+        }
+        const gap = need - y;
+        if(!hit){ bad.push('card ' + idx + ' precondition 0 < need - y < 1 not met: ' + JSON.stringify({need, y, gap, arrive})); continue; }
+        const r = {idx, gap: +gap.toFixed(3), focus: ui.riskFocusId === cid, behind: card.classList.contains('is-behind'), opacity: +getComputedStyle(card).opacity};
+        parts.push(r);
+        if(!(r.focus && !r.behind && r.opacity >= 0.99)) bad.push('card ' + idx + ' not front: ' + JSON.stringify(r));
+      }
+      nearRes.ok = bad.length === 0;
+      nearRes.detail = bad.length ? bad.join('; ') : JSON.stringify(parts);
+    }
+  }catch(e){ nearRes.detail = 'threw: ' + e.message; }
+  if(nearTrack){ nearTrack.style.marginTop = ''; }
+  extra.push(['1.2 D8/L8 a jump landing under a pixel short of a case slot still brings that case to the front and focused (last and a middle one)', nearRes]);
   /* call 5: with the real page below the deck, the blank under the stage at the scroll where the last case arrives is small */
   let roomRes = {ok: false, detail: ''};
   try{

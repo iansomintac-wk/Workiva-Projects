@@ -9044,7 +9044,8 @@ function bindRiskDeck(host){
     let acc = 0, active = cards.length - 1, within = 0;
     for(let i = 0; i < cards.length; i++){
       const cost = i === cards.length - 1 ? Number.POSITIVE_INFINITY : costOf(cards[i]);
-      if(y < acc + cost){ active = i; within = y - acc; break; }
+      // A slot counts as reached within 1px: step() is fractional and the page scrolls whole pixels, so a jump can land just short of a slot (at 1280x863 a rail click on the last case lands y=14699.25 against 14699.4999) and would leave the card before it in front.
+      if(y < acc + cost - 1){ active = i; within = Math.max(0, y - acc); break; }
       acc += cost;
     }
     const front = cards[active];
