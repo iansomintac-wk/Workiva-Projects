@@ -1,0 +1,31 @@
+src	S	O	prompt
+train_fr:50	1	1	Identify any accounts in this trial balance with an unusual sign (e.g., credit balance in a receivable).
+train_fr:96	0	0	make it better
+train_fr:97	0	1	shorten it by 30%, keep the numbers
+train_fr:102	0	0	As our general counsel, polish the language, keep it under 200 words, don't change any figures
+train_fr:188	0	1	map these to the taxonomy
+train_grc:15	0	1	Our external auditors want a recap of where remediation stands. Summarize it.
+train_grc:33	0	0	risk scores went up a lot this year, what happened
+train_grc:52	1	0	Find the controls that seem off in this matrix
+train_grc:64	1	0	chekc this pls
+train_grc:96	1	0	make this better
+train_grc:124	1	1	From this ISO 27001 Statement of Applicability, pull the controls marked 'Not applicable' and their justifications into two columns. If a ju
+train_grc:171	0	0	what should i ask IT
+train_grc:172	0	1	You are a seasoned IT auditor. Write 8 interview questions for the change management walkthrough.
+train_grc:184	1	0	What do I need to ask about this?
+train_grc:195	1	0	please map these
+train_grc:204	1	0	map this to the framework
+train_grc:210	0	1	You're a Big 4 IT auditor. Give me test steps for change management controls, numbered, 10 max.
+train_grc:244	1	1	is this a material weakness?
+train_sus:183	0	0	What does this mean?
+train_sus:238	0	0	make this look nicer
+train_hard:4	0	0	Regulators are circling on our non-GAAP measures. Can you take a pass at the reconciliation and make it read better?
+train_hard:29	0	0	Can you make sense of the variance and put it in plain English?
+train_hard:72	1	1	Using the ISO 27001 knowledge base, what does clause 9.2 actually require from us on internal audits? Keep it under 120 words.
+train_hard:79	1	1	We're doing a NIST CSF 2.0 refresh. From the current-state assessment open in front of you, which subcategories are scored 2 or below? Give 
+train_hard:102	1	1	Assurance people will dig into this. Going off the Scope 1 & 2 calc workbook, check that every emission factor cites a source year, tell me 
+train_hard:128	0	0	what's a good way to organize all this
+train_hard:139	1	0	You are an expert accountant. Do the reconciliation from this workbook properly.
+train_hard:174	0	0	Our ESG data - make it assurance-ready. Cite, verify, flag assumptions.
+train_hard:180	0	0	Check it over. Flag what you inferred vs read, keep me honest, I'd rather see a gap than a guess.
+train_hard:269	0	0	idk where to start w this

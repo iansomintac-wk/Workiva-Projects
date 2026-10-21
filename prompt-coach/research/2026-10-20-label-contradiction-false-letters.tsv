@@ -1,0 +1,47 @@
+src	letter	p	strict group disagrees	loose twin	jaccard	twin label	prompt	twin prompt
+train_fr:20	O	0.11	no				why did revenue go up	
+train_fr:64	O	0.07	no				teh MD&A and the financials consistent?	
+train_fr:77	O	0.25	no	train_fr:83	0.33	S1O0	write a footnote	write up the attached.
+train_fr:108	O	0.05	no				Make the attached earnings release headline section more concise — two sentences.	
+train_fr:112	O	0.20	no				For the board deck: rewrite slide 8's speaker notes into 4 crisp bullets, board-level tone. If something reads as forward-looking, flag it r	
+train_fr:152	O	0.01	no	train_fr:247	0.50	S0O0	what is XBRL	what can you do
+train_fr:171	O	0.12	yes	train_grc:171	0.75	S0O0	what should the auditors ask	what should i ask IT
+train_fr:176	O	0.08	no	train_grc:171	0.40	S0O0	what wuld you ask the CFO	what should i ask IT
+train_fr:179	O	0.18	no				What questions should I ask FP&A about the variances in the 'Opex Flux' tab? Only ask about things the sheet can't explain.	
+train_fr:188	O	0.26	no	train_grc:195	0.50	S1O0	map these to the taxonomy	please map these
+train_fr:212	O	0.26	no				tie-out procedures pls for the board deck	
+train_fr:225	O	0.06	no				how do I do a vlookup	
+train_fr:229	O	0.01	no				xlookup vs index match?	
+train_fr:230	S	0.46	no				can you look at cell F12	
+train_grc:15	O	0.06	no				Our external auditors want a recap of where remediation stands. Summarize it.	
+train_grc:19	O	0.07	no				Give the board a summary of cyber risk	
+train_grc:64	S	0.01	no				chekc this pls	
+train_grc:67	O	0.26	no				tie-out pls: risk register totals vs the ERM dashboard slide	
+train_grc:93	S	0.04	no				Draft an internal audit report section on the ITGC results in Sheet3 for the CAE. Also update the issue tracker and write the slide for next	
+train_grc:96	S	0.02	yes	train_fr:96	1.00	S0O0	make this better	make it better
+train_grc:100	S	0.02	no				Can you rewrite this deficiency in a more neutral tone? Management thinks it reads as accusatory.	
+train_grc:106	O	0.08	no				pls make the selected finding sound less harsh, 2 sentences max	
+train_grc:151	O	0.12	no	train_fr:247	0.33	S0O0	what is a material weakness	what can you do
+train_grc:173	O	0.05	no				Questions for the audit committee about cyber?	
+train_grc:184	S	0.00	no	train_grc:171	0.50	S0O0	What do I need to ask about this?	what should i ask IT
+train_grc:195	S	0.02	no	train_fr:188	0.50	S0O1	please map these	map these to the taxonomy
+train_grc:204	S	0.01	no	train_fr:188	0.33	S0O1	map this to the framework	map these to the taxonomy
+train_grc:215	O	0.06	no				checklist for SOC 2 readiness pls	
+train_grc:244	S	0.01	no				is this a material weakness?	
+train_grc:244	O	0.01	no				is this a material weakness?	
+train_sus:92	O	0.06	no				Top 3 Scope 3 categories in the selected table, as bullets	
+train_sus:116	O	0.08	no				highlighted rows -> ESRS datapoints pls	
+train_sus:149	O	0.12	no	train_fr:247	0.33	S0O0	What does ISSB require?	what can you do
+train_sus:173	O	0.05	yes				Make a Scope 1 formula for the board deck	
+train_sus:189	O	0.24	no	train_fr:45	0.33	S0O0	Find duplicates	help me find problems
+train_sus:230	O	0.06	no				can you make a checklist from the onboarding section of this doc?	
+train_sus:248	O	0.02	no				excel formula for vlookup	
+train_hard:10	S	0.02	no				can you sort out the debt footnote so it's not so clunky? the lender folks read it closely	
+train_hard:119	O	0.13	no				From the selected supplier rows, flag which ones say they have SBTi targets.	
+train_hard:147	O	0.06	no				Footnote rewrite please, keep numbers, cite sources, plain English, for investors.	
+train_hard:248	S	0.04	yes				earnings release in doc open... the eps numbers dont match the IS i think?? find where	
+train_hard:249	S	0.00	no				RCM ATTACHED. MAP TO COSO. TABLE.	
+train_hard:258	O	0.05	no				frm the scope 2 tab which sites up more than 20% yoy table pls	
+train_hard:260	S	0.02	no				ASSURANCE NEXT MONTH. SUPPLIER FILE ATTACHED. LIST SUPPLIERS WITH NO SCOPE 3 DATA. TABLE. DO NOT ESTIMATE ANYTHING.	
+train_hard:264	S	0.00	no				pls compare renewables % fy25 v fy26 frm renewables sheet	
+train_hard:267	O	0.01	no				EMAIL TO TEAM ABT DEADLINE	
