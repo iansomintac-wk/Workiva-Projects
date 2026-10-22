@@ -14,3 +14,7 @@
 | 2026-10-22T06:58:07.808Z | 3 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; console errors: 0 (exceptions 0, console.error 0, log 0, network 0; favicon requests ignored 0) |
 | 2026-10-22T06:58:30.916Z | 3 | checker | pass | 51220 | 0.046957200000000004 | 23 | 0 | PASS: the commit does what Task 3 asks, and the file is unchanged against the parent commit. - **Seed ids:** `demo-seed. |
 | 2026-10-22T06:58:30.923Z | 3 | task | done | 0 | 0 | 0 | 0 | attempt 1 |
+| 2026-10-22T07:00:31.028Z | 4 | build | ok | 285181 | 0.19297760000000003 | 120 | 0 |  |
+| 2026-10-22T07:00:35.638Z | 4 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; locked-files-untouched |
+| 2026-10-22T07:00:58.941Z | 4 | checker | pass | 35170 | 0.0410812 | 23 | 0 | PASS: The commit adds the 1.1 button (gated by `connectorConfigured()`), `surveyRowsToTable`, and `checkSurveyDatesViaCo |
+| 2026-10-22T07:00:58.953Z | 4 | task | done | 0 | 0 | 0 | 0 | attempt 1 |
