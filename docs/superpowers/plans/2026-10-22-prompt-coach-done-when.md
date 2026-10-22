@@ -14,13 +14,13 @@ Suite: cd prompt-coach && node tests/build.js && node tests/c5_gate.js && node t
 Data: (none)
 Spend: $0
 
-Data note: `Data: (none)` because no task edits or deletes existing data. Task 2 adds new files; Task 3 regenerates `tests/fixtures/rewrites/blank_baseline.json` and edits `tests/fixtures/rewrites/ian_strong.txt` (derived test fixtures, not source data); Task 5 adds a `sure` key to `engine/weights.json` (no retrain). No task runs `tests/train.js` without `--tune-sure`, and none runs `tests/train_cls.js`.
+Data note: `Data: (none)` because no task edits or deletes existing data. Task 2 adds new files; Task 3 regenerates `tests/fixtures/rewrites/blank_baseline.json` and edits `tests/fixtures/rewrites/ian_strong.txt` (derived test fixtures, not source data); Tasks 5 and 9 write only the `sure` key of `engine/weights.json` (no retrain). No task runs `tests/train.js` without `--tune-sure`, and none runs `tests/train_cls.js`. The move of the first strong-30 set to `data/done_when_strong_r1.jsonl` and the fresh `data/done_when_strong.jsonl` are lead steps before launch, not tasks.
 
 ## Global Constraints
 
 - Cost is $0. No paid call, no LLM, no network call, from the coach or from any script in this plan.
 - Made-up data only. No real customer, company or personal data in prompts, fixtures or keys. Use "Example Co" style names.
-- Never tune on `prompt-coach/data/test.jsonl`, `prompt-coach/data/sim_customers.jsonl` or `prompt-coach/data/done_when_strong.jsonl`. Only `data/train_*.jsonl` may be used to choose a cut-off. Held-out sets are read only to measure; a held-out miss is reported, never tuned on, and a retrain is Ian's call.
+- Never tune on `prompt-coach/data/test.jsonl`, `prompt-coach/data/sim_customers.jsonl` or `prompt-coach/data/done_when_strong.jsonl` (the fresh held-out set). Only `data/train_*.jsonl` may be used to choose a cut-off. Held-out sets are read only to measure; a held-out miss is reported, never tuned on, and a retrain is Ian's call. `data/done_when_strong_r1.jsonl` (the first, seen strong-30) is dev data: it may serve as regression fixtures, never as the basis for choosing a cut-off.
 - Name test files, never folders: `node --test tests/rewrite_unit.test.js` (node 26 runs nothing for a folder).
 - The README (`prompt-coach/README.md`) is updated in the same commit as whatever it describes, including any count, byte size or name nearby prose gets wrong (the README says the built page is 337042 bytes; fix it when `dist` is rebuilt).
 - Tests first: every new test or check must fail before the code that satisfies it, and the worker must run it and see the failure before writing the code.
@@ -188,24 +188,56 @@ Tokens: 400000
 
 ---
 
-### Task 6: C1 measurement on strong-30
+### Task 9: C1 fix round
+
+Ian approved exactly this (2026-10-22 13:31:26Z, card "[Ian] C1 miss": "Fix + fresh test"). Task 6 measured C1 17/30 on the first strong-30 set (measured by the lead at 4158145; C2 2.0% test / 2.7% sim PASS; C4 0 blanks PASS). That set is now seen: before launch the lead moves it to `data/done_when_strong_r1.jsonl` (dev data) and replaces `data/done_when_strong.jsonl` with a fresh held-out set. This task never reads or runs against `data/done_when_strong.jsonl`, `data/test.jsonl` or `data/sim_customers.jsonl`; it uses `data/train_*.jsonl` and, for regression fixtures only, `data/done_when_strong_r1.jsonl`.
+
+Misses on the old set, measured by the lead (labels FR6 etc. are the lead's names for rows of the r1 file): 9 had Context probability 0.66, below `sure.C` 0.70 (FR6 FR7 GRC9 SUS18 SUS21 SUS24 GEN26 GEN27 GEN28); FR3 and GEN29 graded strong with Strong text unchanged, but the Better stage edited the text; GRC14 hit the stacked-list rule; SUS22 had Context not detected. GRC14 and SUS22 are out of scope here; Task 7's evidence doc notes them as open.
+
+**Files:**
+- Modify: `prompt-coach/engine/rewrite.js` (the `better:` entry of `stages`, line ~593: when `grade === 'strong'` the Better prompt is `prompt.trim()`)
+- Modify: `prompt-coach/tests/train.js` (the `--tune-sure` cut-off rule, Step 3)
+- Modify: `prompt-coach/engine/weights.json` (the `sure` values only)
+- Modify: `prompt-coach/tests/rewrite_unit.test.js` (new tests only)
+- Modify: `prompt-coach/README.md` (cut-off values and rule); rebuild `prompt-coach/dist/prompt-coach.html`
+
+**Interfaces:**
+- Consumes: Task 5's `noChanges`, `weights.sure` and `--tune-sure`; `data/done_when_strong_r1.jsonl` (the FR3 and GEN29 rows as regression fixtures).
+- Produces: for every prompt graded strong, `stages.better.prompt === stages.strong.prompt === prompt.trim()` whether or not `noChanges` is true; a re-picked `sure` object. Task 6 measures the result on the fresh set.
+
+- [ ] **Step 1:** Red test first. Find the two regression prompts: run `coach` over the rows of `data/done_when_strong_r1.jsonl` and list the rows with `grade === 'strong'` and `stages.better.prompt !== prompt.trim()` (these are FR3 and GEN29). Copy their texts into `tests/rewrite_unit.test.js` as inline strings so the test does not depend on a data file. Add `better stage: a prompt graded strong is returned untouched in Better` (asserts `grade === 'strong'` and `stages.better.prompt === text.trim()` for both) and `better stage: a strong prompt that is not sure still has Better equal to Strong`. Run `node --test tests/rewrite_unit.test.js` and see the first one fail.
+- [ ] **Step 2:** Make the fix in `engine/rewrite.js` (line ~593) and run the same file until it passes. Grades and every other stage stay as they are.
+- [ ] **Step 3:** Re-pick the cut-offs from training data only, by a stated rule. Change `--tune-sure` in `tests/train.js` and write the rule in its header comment and in the README: on the out-of-fold probabilities of `data/train_*.jsonl`, keep the cap (false sure at or below 3% of non-strong training rows); among the 0.01-grid cut-offs of a letter that meet the cap, take the centre of the longest run of grid values with the same false-sure count (the middle of a flat stretch), so the cut-off does not sit at the edge of a probability cluster. Apply the same rule to every letter and write back only the `sure` values. Print, per letter, old and new cut-off, the false-sure rate, and how many strong training rows are sure, before and after. Choose nothing by looking at either strong set.
+- [ ] **Step 4:** Run `node tests/train.js rulefeat --tune-sure data/train_*.jsonl` (no `--tune`, no other trainer). Prove only `sure` changed with the `node -e` check from Task 5 Step 2 (exit 0). Keep the printed train-side numbers for the commit message and README.
+- [ ] **Step 5:** `node tests/build.js && node tests/done_when.js --only C2,C4`. If C2 is above 5% on either set, do not adjust and do not run another round: commit, write the numbers in the message, and end with the Check failing so Ian is told.
+- [ ] **Step 6:** `node tests/c5_gate.js` must be green. Update the README (cut-offs, the rule, built-page byte size) and commit with the train-side numbers.
+
+Check: `cd prompt-coach && node tests/build.js && node --test tests/rewrite_unit.test.js && node tests/c5_gate.js && node tests/done_when.js --only C2,C4 | grep -c PASS | grep -x 3`
+Expect: 3
+Depends: 5
+Timeout: 40m
+Tokens: 350000
+
+---
+
+### Task 6: C1 measurement on the fresh set
 
 **Files:**
 - Create: `prompt-coach/research/2026-10-22-done-when-c1.txt` (the run output, kept for Task 7)
 
-Measurement only. No other file changes, no retrain, no new training rows, no edits to the strong-30 set.
+Measures the fresh held-out set (`data/done_when_strong.jsonl`, replaced by the lead before launch) once, after Task 9. Measurement only. No other file changes, no retrain, no new training rows, no edits to the set.
 
 **Interfaces:**
-- Consumes: `data/done_when_strong.jsonl` (committed by the lead; labels are drafts until Ian confirms them in Task 8) and Task 5's `noChanges`.
-- Produces: the measured C1 count that Task 7 quotes.
+- Consumes: `data/done_when_strong.jsonl` (the fresh set, committed by the lead; labels are drafts until Ian confirms them in Task 8) and the work of Tasks 5 and 9 (`noChanges`, Better untouched for strong, re-picked `sure`).
+- Produces: the measured fresh-set C1 count that Task 7 quotes.
 
 - [ ] **Step 1:** Run `node tests/done_when.js --only C1 | tee research/2026-10-22-done-when-c1.txt` (keep the exit code).
 - [ ] **Step 2:** Commit the output file whether C1 passes or misses. The bar is 27 of 30 or more with the prompt untouched.
-- [ ] **Step 3:** On a miss, do not tune on strong-30, do not edit the set, do not retrain. Write the count and the ids of the missed prompts into the commit message and end the task with its Check failing, so Ian gets the numbers (spec: no AI model; a retrain is Ian's call).
+- [ ] **Step 3:** On a miss, do not tune on the fresh set, do not edit it, do not retrain. Write the count and the ids of the missed prompts into the commit message and end the task with its Check failing, so Ian gets the numbers (spec: no AI model; a retrain is Ian's call).
 
-Check: `cd prompt-coach && node tests/done_when.js --only C1 | tee /dev/stderr | grep -E '^C1 .*(2[7-9]|30) of 30.*PASS'`
+Check: `cd prompt-coach && node tests/done_when.js --only C1 | grep -E '^C1 .*(2[7-9]|30) of 30.*PASS'`
 Expect: of 30
-Depends: 2, 5
+Depends: 2, 5, 9
 Timeout: 10m
 Tokens: 100000
 
@@ -226,7 +258,7 @@ This task never runs `tests/train.js` or `tests/train_cls.js` (the first, run wi
 
 - [ ] **Step 1:** Verify the frozen artifacts without training: `git diff --quiet <task-1-parent> -- prompt-coach/engine/cls-weights.json prompt-coach/engine/rules.js prompt-coach/engine/classify.js` exits 0 (`<task-1-parent>` is the commit before Task 1's), and `engine/weights.json` differs from that commit only by the `sure` key (the `node -e` check from Task 5 Step 2).
 - [ ] **Step 2:** Run `node tests/c5_gate.js` and `node tests/done_when.js` fresh; keep each result line. These are the C5 and C1/C2/C4 numbers; quote only what you just measured.
-- [ ] **Step 3:** Write the evidence doc: a table of C1, C2, C4, C5 (today, bar, measured now, pass or miss), each marked "measured now" or "read", with the result lines pasted verbatim; a line `C3 pending: needs the sandbox session (see After the driver)`; the yardstick mapping listed as not done. State the test-set caveat (strong-30 and weak-12 are drafts until Ian confirms in Task 8). List the expected test changes made in Task 3 by file and what each now asserts.
+- [ ] **Step 3:** Write the evidence doc: a table of C1, C2, C4, C5 (today, bar, measured now, pass or miss), each marked "measured now" or "read", with the result lines pasted verbatim. C1 reports both numbers: the first round, 17/30 on the first strong-30 set (now `data/done_when_strong_r1.jsonl`, seen and dev data; marked "read", from Task 6's first run and the progress ledger), and the fresh-set result (measured now, Task 6). List the open misses from that first round that Task 9 did not address (GRC14 stacked list, SUS22 Context not detected). A line `C3 pending: needs the sandbox session (see After the driver)`; the yardstick mapping listed as not done. State the test-set caveat (the fresh strong-30 and weak-12 are drafts until Ian confirms in Task 8). List the expected test changes made in Task 3 by file and what each now asserts.
 - [ ] **Step 4:** Write `tests/check_evidence.js` per the interface and run it against the doc; fix the doc, not the checker, if it fails.
 - [ ] **Step 5:** Update the README: test block final form (includes `done_when.js`, `c5_gate.js` and the validator; trainer lines marked retrain only), a short "Done when" section (what "No changes needed" means, the questions list, "ready to paste"), the `Still open` list (C3, yardstick page, label confirmation), and every count or size that changed (`wc -c < dist/prompt-coach.html`).
 - [ ] **Step 6:** Check the doc against the README for the same numbers; commit.
@@ -248,9 +280,9 @@ Leaf task. Nothing depends on it. It gathers what Ian must confirm, in one place
 - Create: `prompt-coach/research/captures/2026-10-22-done-when-look-batch.md`
 
 **Interfaces:**
-- Consumes: `data/done_when_strong.jsonl`, `research/live-tests/weak12/prompts.json` and `answer_key.json` (the 42 prompts and 12 keys); Task 3's new `tests/fixtures/rewrites/ian_strong.txt`; Task 4's `research/captures/done-when-questions.md` page captures; Task 6's `research/2026-10-22-done-when-c1.txt`.
+- Consumes: `data/done_when_strong.jsonl` (the fresh 30), `research/live-tests/weak12/prompts.json` and `answer_key.json` (the 12 weak prompts and 12 keys); Task 3's new `tests/fixtures/rewrites/ian_strong.txt`; Task 4's `research/captures/done-when-questions.md` page captures; Task 6's `research/2026-10-22-done-when-c1.txt`.
 
-- [ ] **Step 1:** Write `tests/make_look_batch.js` that assembles four sections into the batch file: (1) the 42 prompts (id, domain, text, the label or the key) with a line per set saying "labels are drafts, Ian confirms"; (2) the new `ian_strong.txt` text next to the old (from `git show`) with the changed span marked, and the sentence "Ian-approved text changed because blanks are gone"; (3) the contents of `done-when-questions.md`; (4) the C1 line.
+- [ ] **Step 1:** Write `tests/make_look_batch.js` that assembles four sections into the batch file: (1) the 42 prompts (the fresh 30 plus weak-12; id, domain, text, the label or the key) with a line per set saying "labels are drafts, Ian confirms"; (2) the new `ian_strong.txt` text next to the old (from `git show`) with the changed span marked, and the sentence "Ian-approved text changed because blanks are gone"; (3) the contents of `done-when-questions.md`; (4) the C1 line (fresh set).
 - [ ] **Step 2:** Run it. Open the output and check each section has content (a green run that wrote empty sections is not a pass).
 - [ ] **Step 3:** Commit. Ian confirms in one batch (PM first pass first); do not edit the sets after the Look without re-running Task 6.
 
@@ -266,13 +298,13 @@ Tokens: 40000
 
 ## Groups and tuning
 
-- Group A (no data wait): Tasks 1, 3, 4, 5, 6, 7 run in order with no human gate; Task 2 is independent and Task 6 waits for it. Task 8 is the only Look and the only task with Ian's hands; nothing depends on it.
-- Task 5 is the one tune task (it moves one number, C2, by choosing the `sure` cut-offs out of fold on training data); run it under the tune-loop skill, one metric, held-out sets read only to measure, one measurement, no second round.
-- Locked files (no edits beyond those named): `prompt-coach/data/test.jsonl`, `prompt-coach/data/sim_customers.jsonl`, `prompt-coach/data/done_when_strong.jsonl` (committed by the lead before launch), `prompt-coach/engine/rules.js`, `prompt-coach/engine/classify.js`, `prompt-coach/engine/cls-weights.json`, `prompt-coach/tests/eval.js`, `prompt-coach/tests/simulate.js`, and `prompt-coach/engine/weights.json` apart from the added `sure` key.
+- Group A (no data wait): Tasks 1, 3, 4, 5, 9, 6, 7 run in order with no human gate; Task 2 is independent and Task 6 waits for it. Task 8 is the only Look and the only task with Ian's hands; nothing depends on it.
+- Tasks 5 and 9 are the tune tasks (each moves one number by choosing the `sure` cut-offs out of fold on training data; Task 5 moves C2, Task 9 re-picks by a plateau-centre rule to lift C1 without raising C2 above 5%); run each under the tune-loop skill, one metric, held-out sets read only to measure, one measurement, no second round.
+- Locked files (no edits beyond those named): `prompt-coach/data/test.jsonl`, `prompt-coach/data/sim_customers.jsonl`, `prompt-coach/data/done_when_strong.jsonl` (the fresh set, committed by the lead before launch), `prompt-coach/data/done_when_strong_r1.jsonl` (moved by the lead, read-only fixtures), `prompt-coach/engine/rules.js`, `prompt-coach/engine/classify.js`, `prompt-coach/engine/cls-weights.json`, `prompt-coach/tests/eval.js`, `prompt-coach/tests/simulate.js`, and `prompt-coach/engine/weights.json` apart from the `sure` key.
 
 ## Token estimates (helper tokens, my estimate, not measured)
 
-Task 1: 130k. Task 2: 300k. Task 3: 300k. Task 4: 300k. Task 5: 400k. Task 6: 100k. Task 7: 120k. Task 8: 40k. Run total: about 1.69M helper tokens. Wall time estimate: about 3h20m of timeouts.
+Task 1: 130k. Task 2: 300k. Task 3: 300k. Task 4: 300k. Task 5: 400k. Task 9: 350k. Task 6: 100k. Task 7: 120k. Task 8: 40k. Run total: about 2.04M helper tokens. Wall time estimate: about 4h of timeouts.
 
 ## Paid calls
 
@@ -284,7 +316,7 @@ None. $0.
 - context: only Context missing means exactly one blank, even when a kept sentence has a Context cue | fixed by Task 3
 - context: Ian case gets the approved Strong and Better text, with and without the file | fixed by Task 3
 
-Note on titles: the first two are `node --test` titles whose blank lines Task 3 edits (lines 133-137, 143, 146, 149, 155); the third stays unchanged in the test file and fails only until `ian_strong.txt` is updated. The new `ian_strong.txt` wording goes to Ian in Task 8's batch. Also broken and fixed by Task 3 but not `node --test` titles: `tests/customer_check.js` buckets `blankOnlyC`, `blankMore`, `unsureTask` (line 71) and `ianCase`.
+Note on titles: the first two are `node --test` titles whose blank lines Task 3 edits (lines 133-137, 143, 146, 149, 155); the third stays unchanged in the test file and fails only until `ian_strong.txt` is updated. The new `ian_strong.txt` wording goes to Ian in Task 8's batch. Also broken and fixed by Task 3 but not `node --test` titles: `tests/customer_check.js` buckets `blankOnlyC`, `blankMore`, `unsureTask` (line 71) and `ianCase`. Task 9 breaks no named test (Better equals Strong for strong prompts only adds a new assertion; the C5 gate and the C2/C4 checks are re-run in its Check).
 
 ## After the driver
 
