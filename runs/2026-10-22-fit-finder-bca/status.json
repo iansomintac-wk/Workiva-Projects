@@ -4,7 +4,7 @@
   "pid": 2988,
   "task": 14,
   "of": 15,
-  "step": "check",
+  "step": "review",
   "attempts": [
     {
       "attempt": 1,
@@ -40,8 +40,8 @@
   "peakWorkerMb": 1080,
   "minFreeGb": 5.2,
   "startedAt": "2026-10-22T07:01:50.439Z",
-  "updatedAt": "2026-10-22T08:06:03.016Z",
-  "elapsedSec": 3853,
+  "updatedAt": "2026-10-22T08:06:08.802Z",
+  "elapsedSec": 3858,
   "tokens": 3841102,
   "usage_cost_usd": 3.8664,
   "usage_cost_note": "summed total_cost_usd of the workers: subscription usage, not money",
