@@ -1,0 +1,339 @@
+[
+  {
+    "id": "FR-W1",
+    "domain": "FR",
+    "missing": "S",
+    "prompt": "what drove the jump in freight costs this quarter?",
+    "fixture": {
+      "file": "fr_w1_freight_q3.xlsx",
+      "type": "xlsx",
+      "sheet": "Freight",
+      "rows": [
+        ["Cost line", "Q2 FY26", "Q3 FY26", "Change", "Note"],
+        ["Ground freight", 410, 432, 22, ""],
+        ["Air freight", 60, 118, 58, "Includes 45 expedited air for one customer recovery (one-time)"],
+        ["Fuel surcharge", 38, 52, 14, "Carrier surcharge rate raised from 9% to 12% on Aug 1"],
+        ["Warehousing", 120, 121, 1, ""],
+        ["Total freight", 628, 723, 95, ""]
+      ],
+      "units": "USD thousands, stated in cell A8 as 'All amounts USD 000'",
+      "seeded": ["Total freight up 95 (628 to 723)", "Air freight +58, of which 45 is a one-time expedited charge", "Fuel surcharge +14 from a rate rise 9% to 12% on Aug 1", "Ground freight +22 with no note"]
+    },
+    "intended_output": "Short ranked explanation of the Q2 to Q3 FY26 freight increase from the attached file: total +95, air freight +58 (45 one-time expedite), ground +22 (no reason given in the file), fuel surcharge +14 (rate rise), warehousing flat.",
+    "requested_format": "Table: cost line, Q2, Q3, change, driver per the file's note; ranked by change; under 120 words of commentary",
+    "key": {
+      "findings": ["Total freight +95 (628 to 723)", "Air freight +58, 45 of it a one-time expedited charge", "Ground freight +22 with no explanation in the file", "Fuel surcharge +14 from the 9% to 12% rate rise on Aug 1"],
+      "hard": "Ground freight +22 has no stated cause",
+      "must_not_invent": ["a cause for the ground freight rise (volume, new lanes, carrier rate) stated as fact", "carrier or customer names", "fuel prices or diesel index levels", "any Q4 outlook"]
+    }
+  },
+  {
+    "id": "FR-W2",
+    "domain": "FR",
+    "missing": "O",
+    "prompt": "Can you look at the attached accruals rollforward?",
+    "fixture": {
+      "file": "fr_w2_accruals_rollforward.xlsx",
+      "type": "xlsx",
+      "sheet": "Rollforward Q3",
+      "rows": [
+        ["Account", "Opening", "Additions", "Releases", "Utilised", "Closing", "Note"],
+        ["Accrued audit fees", 120, 60, 0, 90, 95, ""],
+        ["Accrued bonus", 300, 0, 30, 0, 270, "Q3 true-up"],
+        ["Accrued utilities", 18, 22, 0, 44, -4, ""],
+        ["Accrued legal", 75, 15, 0, 20, 70, ""],
+        ["Accrued freight", 40, 35, 0, 38, 37, ""]
+      ],
+      "units": "USD thousands",
+      "seeded": ["Accrued audit fees does not foot: 120+60-0-90 = 90, file shows 95 (difference 5)", "Accrued utilities closes negative (-4): utilised 44 exceeds opening plus additions 40", "Accrued bonus has a release of 30 with no additions in the quarter (note says Q3 true-up)"]
+    },
+    "intended_output": "A check that each line foots (opening + additions - releases - utilised = closing) and a short list of lines that fail or look unusual, with the arithmetic shown.",
+    "requested_format": "Table: account, expected closing, file closing, difference, issue; only lines with an issue; one sentence each",
+    "key": {
+      "findings": ["Accrued audit fees: computed 90 vs stated 95, off by 5", "Accrued utilities closes at -4 (debit balance in an accrual)", "Accrued bonus: 30 released, no additions"],
+      "hard": "Accrued audit fees footing error of 5",
+      "must_not_invent": ["a reason for the bonus true-up beyond the note", "journal entry numbers", "who approved any entry", "prior-quarter balances"]
+    }
+  },
+  {
+    "id": "FR-W3",
+    "domain": "FR",
+    "missing": "S",
+    "prompt": "write up the lease maturity disclosure for the 10-K",
+    "fixture": {
+      "file": "fr_w3_lease_maturity.xlsx",
+      "type": "xlsx",
+      "sheet": "Maturity",
+      "rows": [
+        ["Year ending Dec 31", "Operating leases"],
+        ["2027", 1240],
+        ["2028", 1180],
+        ["2029", 950],
+        ["2030", 720],
+        ["2031", 410],
+        ["Thereafter", 1600],
+        ["Total undiscounted lease payments", 6200],
+        ["Less: imputed interest", -820],
+        ["Present value of lease liabilities", 5380],
+        ["Weighted-average remaining lease term (years)", 6.2],
+        ["Weighted-average discount rate", "4.9%"]
+      ],
+      "units": "USD thousands",
+      "seeded": ["Year rows sum to 6,100 but the total line says 6,200 (off by 100)", "Present value 5,380 follows the wrong total; from the year rows it would be 5,280"]
+    },
+    "intended_output": "A draft operating lease maturity table and one short lead-in sentence in 10-K style, using the file's figures, with the footing difference flagged instead of silently corrected.",
+    "requested_format": "Maturity table (year, amount) plus one or two sentences with the weighted-average term and rate; a note listing the footing issue",
+    "key": {
+      "findings": ["Year rows sum to 6,100, total line shows 6,200", "Present value 5,380 is consistent with the stated total, not with the year rows (5,280)", "Weighted-average remaining term 6.2 years and rate 4.9% carried exactly"],
+      "hard": "Total undiscounted payments do not foot (6,100 vs 6,200)",
+      "must_not_invent": ["finance lease amounts", "lessor names or lease locations", "short-term or variable lease cost", "the company's ASC 842 policy elections"]
+    }
+  },
+  {
+    "id": "FR-W4",
+    "domain": "FR",
+    "missing": "S+O",
+    "prompt": "Can you help with the revenue numbers for the board deck?",
+    "fixture": {
+      "file": "fr_w4_revenue_by_region.xlsx",
+      "type": "xlsx",
+      "sheet": "Revenue",
+      "rows": [
+        ["Region", "Q3 FY25", "Q3 FY26", "YoY %"],
+        ["North America", 820, 902, "10.0%"],
+        ["EMEA", 410, 443, "12.0%"],
+        ["APAC", 260, "", ""],
+        ["LATAM", 95, 104, "9.5%"],
+        ["Total", 1585, "", ""]
+      ],
+      "units": "USD millions",
+      "seeded": ["EMEA YoY stated 12.0% but 410 to 443 is 8.0%", "APAC Q3 FY26 is blank, so Total Q3 FY26 and total growth cannot be computed"]
+    },
+    "intended_output": "A short board-ready summary of Q3 FY26 revenue by region with YoY growth, flagging the wrong EMEA percentage and the missing APAC figure rather than filling them in.",
+    "requested_format": "Table: region, Q3 FY25, Q3 FY26, YoY % (recomputed), plus up to three bullets for the board; issues listed separately",
+    "key": {
+      "findings": ["EMEA YoY should be 8.0%, not 12.0%", "APAC Q3 FY26 missing", "Total Q3 FY26 cannot be stated because APAC is missing", "North America +10.0% and LATAM +9.5% check out"],
+      "hard": "EMEA YoY misstated (8.0% vs 12.0%)",
+      "must_not_invent": ["an APAC Q3 FY26 value or a total", "reasons for regional growth", "full-year or guidance figures", "currency effects"]
+    }
+  },
+  {
+    "id": "GRC-W1",
+    "domain": "GRC",
+    "missing": "S+O",
+    "prompt": "anything wrong with our AP controls?",
+    "fixture": {
+      "file": "grc_w1_rcm_ap.xlsx",
+      "type": "xlsx",
+      "sheet": "AP Controls",
+      "rows": [
+        ["Control ID", "Description", "Owner", "Frequency", "Type", "Key control"],
+        ["AP-01", "Three-way match of invoice, PO and receipt before payment", "AP Supervisor", "Per transaction", "Automated", "Yes"],
+        ["AP-02", "Review of vendor master changes against change request forms", "Controller", "Monthly", "Manual", "Yes"],
+        ["AP-03", "Approval of invoices above USD 10,000", "", "Per transaction", "Manual", "Yes"],
+        ["AP-04", "Review of vendor master changes against change request forms", "Controller", "Monthly", "Manual", "No"],
+        ["AP-05", "Review of duplicate payment report", "AP Manager", "As needed", "Manual", "Yes"],
+        ["AP-06", "Payment run approval", "AP Clerk", "Weekly", "Manual", "Yes"]
+      ],
+      "seeded": ["AP-03 has no owner", "AP-05 is a key control with frequency 'As needed'", "AP-02 and AP-04 have identical descriptions (duplicate control)", "AP-06 payment run approved by the AP Clerk, the role that prepares payments (segregation of duties concern)"]
+    },
+    "intended_output": "A list of design gaps in the AP risk and control matrix: missing owner, undefined frequency on a key control, duplicate control, and the segregation-of-duties concern, each with the control ID.",
+    "requested_format": "Table: control ID, issue, why it matters (one sentence); no more than one row per issue",
+    "key": {
+      "findings": ["AP-03 no owner", "AP-05 key control with 'As needed' frequency", "AP-02 and AP-04 duplicate descriptions", "AP-06 approved by AP Clerk (SoD)"],
+      "hard": "AP-06 segregation of duties concern",
+      "must_not_invent": ["test results or deficiencies not in the file", "the name of any person", "an approval limit other than USD 10,000", "IT general control issues"]
+    }
+  },
+  {
+    "id": "GRC-W2",
+    "domain": "GRC",
+    "missing": "O",
+    "prompt": "Please review the attached SoD conflicts report.",
+    "fixture": {
+      "file": "grc_w2_sod_conflicts.xlsx",
+      "type": "xlsx",
+      "sheet": "Conflicts",
+      "rows": [
+        ["User ID", "Name", "Status", "Role 1", "Role 2", "Conflict rule", "Mitigating control"],
+        ["U1001", "Sample User A", "Active", "Create vendor", "Approve payment", "R-01 Vendor and payment", "MC-04 monthly vendor payment review"],
+        ["U1002", "Sample User B", "Active", "Post journal entry", "Approve journal entry", "R-03 Post and approve JE", ""],
+        ["U1003", "Sample User C", "Terminated", "Create vendor", "Approve payment", "R-01 Vendor and payment", ""],
+        ["U1004", "Sample User D", "Active", "Create PO", "Receive goods", "R-02 Purchase and receive", "MC-02 receiving log review"],
+        ["U1005", "Sample User E", "Active", "Maintain payroll", "Approve payroll", "R-05 Payroll maintain and approve", ""]
+      ],
+      "seeded": ["U1002, U1003 and U1005 have conflicts with no mitigating control", "U1003 is Terminated but still holds conflicting roles", "U1001 and U1004 are mitigated"]
+    },
+    "intended_output": "The conflicts that remain unmitigated, with the terminated user called out first as an access removal issue.",
+    "requested_format": "Table: user ID, conflict rule, status, mitigating control (or 'none'), suggested next step; unmitigated rows only",
+    "key": {
+      "findings": ["U1002 R-03 unmitigated", "U1003 R-01 unmitigated", "U1005 R-05 unmitigated", "U1003 terminated with active conflicting roles"],
+      "hard": "U1003 terminated user still holds roles",
+      "must_not_invent": ["last login dates", "the system or ERP name", "whether any mitigating control operated effectively", "termination dates"]
+    }
+  },
+  {
+    "id": "GRC-W3",
+    "domain": "GRC",
+    "missing": "S",
+    "prompt": "summarize the audit findings for the committee",
+    "fixture": {
+      "file": "grc_w3_ia_findings.docx",
+      "type": "docx",
+      "title": "Internal Audit Report: Vendor Management (report date 30 September 2026)",
+      "paragraphs": [
+        "Overall rating: Needs improvement.",
+        "Finding 1 (High): Changes to vendor bank details were not independently reviewed in 4 of 25 samples. Management response: a second reviewer will approve all bank detail changes. Owner: AP Manager. Due: 31 August 2026. Status: Open.",
+        "Finding 2 (Medium): 6 of 40 active vendors had no signed contract on file. Due: 31 December 2026. Status: Open.",
+        "Finding 3 (Low): The vendor onboarding checklist was last updated in 2023. Management response: the checklist will be refreshed. Owner: Procurement Lead. Due: 30 November 2026. Status: Open."
+      ],
+      "seeded": ["Finding 1 due date 31 August 2026 is before the report date and still Open (overdue)", "Finding 2 has no management response and no owner"]
+    },
+    "intended_output": "A committee-ready summary: overall rating, findings by severity, each finding in one line with owner and due date, and the two issues called out (Finding 1 overdue, Finding 2 has no response or owner).",
+    "requested_format": "Five to seven bullets, under 150 words, for the audit committee",
+    "key": {
+      "findings": ["Overall rating Needs improvement", "1 High, 1 Medium, 1 Low", "Finding 1 overdue (due 31 Aug 2026, Open at 30 Sep 2026)", "Finding 2 has no management response or owner"],
+      "hard": "Finding 1 is overdue",
+      "must_not_invent": ["a management response for Finding 2", "dollar amounts or losses from the bank detail changes", "vendor names", "prior audit ratings"]
+    }
+  },
+  {
+    "id": "GRC-W4",
+    "domain": "GRC",
+    "missing": "O",
+    "prompt": "Could you go over the attached vendor onboarding policy?",
+    "fixture": {
+      "file": "grc_w4_vendor_policy.docx",
+      "type": "docx",
+      "title": "Vendor Onboarding Policy (v2.1)",
+      "paragraphs": [
+        "1. Purpose. This policy sets the steps for adding new vendors to the vendor master file.",
+        "2. Approval. New vendors with expected annual spend above USD 25,000 require approval by the Procurement Director.",
+        "3. Due diligence. Procurement checks each new vendor against the sanctions list before setup.",
+        "4. Exceptions. Vendors with expected annual spend below USD 50,000 may be set up with Procurement Manager approval only.",
+        "5. Maintenance. Vendor master data is reviewed periodically.",
+        "6. Changes. Vendors may update their address or contact details by email to the AP inbox."
+      ],
+      "seeded": ["Approval threshold conflict: section 2 says above USD 25,000 needs Director approval; section 4 lets vendors below USD 50,000 through with Manager approval only", "Section 5 'periodically' sets no review frequency", "No control over bank detail changes; section 6 allows changes by email with no verification"]
+    },
+    "intended_output": "A list of gaps and inconsistencies in the policy with section references, ranked by risk.",
+    "requested_format": "Table: section, issue, risk (high/medium/low), suggested fix in one sentence",
+    "key": {
+      "findings": ["Sections 2 and 4 conflict on the 25,000 / 50,000 thresholds", "Section 5 has no review frequency", "No verification for bank detail changes (section 6 allows changes by email)"],
+      "hard": "Threshold conflict between sections 2 and 4",
+      "must_not_invent": ["the company's actual practice beyond the policy text", "a regulation the policy is required to meet", "past fraud or incidents", "policy owner or effective date"]
+    }
+  },
+  {
+    "id": "SUS-W1",
+    "domain": "SUS",
+    "missing": "S",
+    "prompt": "how did our emissions change last year",
+    "fixture": {
+      "file": "sus_w1_scope12_by_site.xlsx",
+      "type": "xlsx",
+      "sheet": "Scope 1 and 2",
+      "rows": [
+        ["Site", "Scope", "FY2024 (tCO2e)", "FY2025 (tCO2e)", "Note"],
+        ["Plant A", "Scope 1", 1850, 1790, ""],
+        ["Plant A", "Scope 2", 2400, 2310, ""],
+        ["Plant B", "Scope 1", 620, 1880, "Includes refrigerant leak, Jul 2025"],
+        ["Plant B", "Scope 2", 1500, 1460, ""],
+        ["Office C", "Scope 2", 410, 95, "Switched to renewable tariff Mar 2025"],
+        ["Warehouse D", "Scope 1", 300, "", "FY2025 data not received"]
+      ],
+      "seeded": ["Plant B Scope 1 tripled (620 to 1,880), note says refrigerant leak", "Office C Scope 2 fell 315 after a renewable tariff switch", "Warehouse D FY2025 missing, so a full FY2025 total cannot be stated"]
+    },
+    "intended_output": "FY2024 to FY2025 change by scope from the attached file, the main drivers named from the notes, and the Warehouse D gap flagged instead of estimated.",
+    "requested_format": "Table: scope, FY2024, FY2025 (sites with data), change; then three bullets on drivers; gap note",
+    "key": {
+      "findings": ["Plant B Scope 1 +1,260 (refrigerant leak per note)", "Office C Scope 2 -315 (renewable tariff per note)", "Warehouse D FY2025 missing", "Scope 1 total like-for-like (excluding D) 2,470 to 3,670; Scope 2 total 4,310 to 3,865"],
+      "hard": "Warehouse D FY2025 is missing, so totals are partial",
+      "must_not_invent": ["a FY2025 value for Warehouse D", "Scope 3 figures", "a reduction target or baseline year", "the refrigerant type or leak quantity"]
+    }
+  },
+  {
+    "id": "SUS-W2",
+    "domain": "SUS",
+    "missing": "O",
+    "prompt": "check the attached water data",
+    "fixture": {
+      "file": "sus_w2_water_withdrawal.xlsx",
+      "type": "xlsx",
+      "sheet": "Withdrawal",
+      "rows": [
+        ["Site", "Month", "Source", "Withdrawal (m3)"],
+        ["Site 1", "2025-04", "Municipal", 1210],
+        ["Site 1", "2025-05", "Municipal", 1185],
+        ["Site 1", "2025-06", "Municipal", 1240],
+        ["Site 2", "2025-04", "Groundwater", 860],
+        ["Site 2", "2025-05", "Groundwater", 845000],
+        ["Site 2", "2025-05", "Groundwater", 845000],
+        ["Site 3", "2025-04", "Municipal", 430],
+        ["Site 3", "2025-05", "Municipal", 445],
+        ["Site 3", "2025-06", "Municipal", 438]
+      ],
+      "seeded": ["Site 2 May 845,000 is about 1,000 times its April value (likely litres entered as m3)", "Site 2 May row appears twice (duplicate)", "Site 2 June is missing"]
+    },
+    "intended_output": "A data quality check of the withdrawal sheet: unit outlier, duplicate row and missing month, each with the site and month.",
+    "requested_format": "Table: site, month, issue, value as entered; no corrected values",
+    "key": {
+      "findings": ["Site 2 2025-05 value 845,000 looks like a unit error", "Site 2 2025-05 duplicated", "Site 2 2025-06 missing"],
+      "hard": "Site 2 June missing",
+      "must_not_invent": ["a corrected value for Site 2 May", "water stress or basin information", "discharge or consumption figures", "site locations"]
+    }
+  },
+  {
+    "id": "SUS-W3",
+    "domain": "SUS",
+    "missing": "S+O",
+    "prompt": "write something on supplier engagement for the report",
+    "fixture": {
+      "file": "sus_w3_supplier_engagement.docx",
+      "type": "docx",
+      "title": "Supplier Engagement Programme: FY2025 summary",
+      "paragraphs": [
+        "In FY2025 we sent our climate survey to 120 key suppliers.",
+        "78 suppliers responded, a response rate of 70%.",
+        "Of the suppliers that responded, 31 have set an emissions reduction target and 12 have targets validated by SBTi.",
+        "Suppliers that responded represent 58% of our purchased goods spend."
+      ],
+      "seeded": ["Response rate stated as 70% but 78 of 120 is 65%"]
+    },
+    "intended_output": "A 150 to 200 word report paragraph on supplier engagement using only the stated figures, with the response rate corrected to 65% or flagged.",
+    "requested_format": "One or two paragraphs, 150 to 200 words, report tone; any figure issue listed after the text",
+    "key": {
+      "findings": ["Response rate 78/120 = 65%, not 70%", "31 with targets, 12 SBTi-validated", "Respondents cover 58% of purchased goods spend"],
+      "hard": "Response rate misstated (65% vs 70%)",
+      "must_not_invent": ["supplier names", "a Scope 3 emissions total", "a future supplier engagement target", "prior-year survey results"]
+    }
+  },
+  {
+    "id": "SUS-W4",
+    "domain": "SUS",
+    "missing": "O",
+    "prompt": "Can you take a look at the attached fleet sheet?",
+    "fixture": {
+      "file": "sus_w4_fleet_energy.xlsx",
+      "type": "xlsx",
+      "sheet": "Fleet FY2025",
+      "rows": [
+        ["Vehicle ID", "Type", "Region", "Diesel (litres)", "Electricity (kWh)"],
+        ["V-101", "ICE", "North", 4200, ""],
+        ["V-102", "EV", "North", "", 6100],
+        ["V-103", "EV", "South", 380, 5900],
+        ["V-104", "ICE", "South", 3900, ""],
+        ["V-105", "ICE", "East", "", 2100],
+        ["V-102", "EV", "North", "", 6100]
+      ],
+      "seeded": ["V-103 is an EV with 380 litres of diesel", "V-105 is ICE with electricity and no diesel", "V-102 appears twice"]
+    },
+    "intended_output": "A data quality list for the fleet energy sheet before it goes into Scope 1 and 2: type/fuel mismatches and the duplicate vehicle.",
+    "requested_format": "Table: vehicle ID, issue, value as entered; no corrected values",
+    "key": {
+      "findings": ["V-103 EV with diesel", "V-105 ICE with electricity only", "V-102 duplicated"],
+      "hard": "V-105 ICE with no diesel",
+      "must_not_invent": ["emission factors or tCO2e totals", "vehicle makes or models", "corrected fuel values", "reasons for the mismatches stated as fact"]
+    }
+  }
+]

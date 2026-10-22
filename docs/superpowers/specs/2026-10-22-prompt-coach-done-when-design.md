@@ -91,9 +91,13 @@ At the start of the run, a `--chrome` session opens Workiva's "Tips for getting 
 `prompt-coach/research/2026-10-22-workiva-tips.md`. Each rewrite rule in the README is mapped to a line of that page
 or of SCOPE; a rule that conflicts with the page is listed for Ian, not changed silently.
 
+Order changed by the driver ruling (Ian 06:40:56Z, '[Ian] Driver'): the build runs in `bin/driver.mjs`, which has no
+browser tasks. So this yardstick capture and the C3 sandbox runs move to after the driver, in a separate `--chrome`
+session (one sandbox browser driver at a time). The driver's evidence doc marks C3 pending until then.
+
 ### 5. Test sets (drafted by us, Ian confirms in one batch)
 
-- strong-30 (`data/done_when_strong.jsonl`): 30 new strong prompts across FR, GRC, SUS and general, written fresh
+- strong-30 (`data/done_when_strong.jsonl`): 30 new strong prompts across FR, GRC, SUS and GEN, written fresh
   (not copied from training or test), labeled S/C/O/P/E = 1, not stacked. Drafted on the top model (labeled data).
 - weak-12 (`research/live-tests/weak12/`): 12 new weak prompts (4 FR, 4 GRC, 4 SUS), each with a made-up fixture
   file, the output Ian would want, and an answer key (keyed findings, requested format, facts that must not be
@@ -125,8 +129,12 @@ Today's tests require blanks: `tests/customer_check.js` fails a run when only Co
 output has other than exactly 1 blank (`blankOnlyC`), and caps blanks per prompt at
 `tests/fixtures/rewrites/blank_baseline.json` (`blankMore`); `tests/rewrite_unit.test.js` has 6 blank or
 placeholder lines. Ruling 3 replaces "adds blanks, not facts" with "adds safe general wording, not facts", so
-these checks change to "0 blanks, and no new facts", in the same task as the rewrite change. Every other assertion in
-these files is locked.
+these checks change to "0 blanks, and no new facts", in the same task as the rewrite change. Two more change with
+them (found by the plan reviews, 2026-10-22): `tests/customer_check.js:71` (`unsureTask`) requires the Strong text to
+contain `identify and list [what you want back`, so it asserts the safe wording instead; and
+`tests/fixtures/rewrites/ian_strong.txt` (Ian-approved text, compared exactly by `rewrite_unit.test.js:164` and
+`customer_check.js:84-87`) has the blank `[what it is for, such as our Scope 2 inventory]`, so it is rewritten
+blank-free and the new text goes to Ian's Look batch. Every other assertion in these files is locked.
 
 If a bar is missed after one build round and one two-strikes round, the run stops and brings Ian the numbers
 (ruling 2). It does not add an AI model.
@@ -143,3 +151,16 @@ If a bar is missed after one build round and one two-strikes round, the run stop
 $0 (usage only). Workiva data stays in the workiva repo. Plain English to Ian. Feature branch from
 `origin/prompt-coach`; merge and push under the merge rule (Ian 2026-10-21, Workiva repos clear), with the backup
 branch, full suite and final review. The sandbox driver is launched with `--chrome`.
+
+## Amendment 2026-10-22 ~07:10Z (talk 97edf2ce, PM proxy condition on plan approval)
+
+After Ian's approval, the plan reviews and the driver ruling changed two things. The PM proxy approved the plan on
+the condition that they are recorded here (proxy decided, Ian may overturn). Goal, bars C1-C5 and no-gos are unchanged.
+- Order: the yardstick capture (section 4) and the C3 sandbox runs move to after the driver, in a separate `--chrome`
+  session. The driver's evidence doc marks C3 pending.
+- Expected test changes also cover `customer_check.js:71` (`unsureTask`) and `ian_strong.txt` (see that section).
+  Task 3 edits `ian_strong.txt` on the run branch only. Ian's approved wording stays on `prompt-coach` until he rules on
+  the new wording in the Task 8 Look batch: the driver stops at `awaiting-ian` before its review and merge while a Look
+  task awaits (`lib/driver/finish.mjs:93-97` in rules-main, read, not run).
+- The 42 test prompts are drafted by an Opus helper and committed before the driver launches (PM proxy decision A);
+  Task 2 builds fixtures, keys and the validator from those drafts.
