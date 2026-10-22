@@ -6,3 +6,7 @@
 | 2026-10-22T07:02:31.883Z | 0 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; 1 |
 | 2026-10-22T07:02:49.382Z | 0 | checker | pass | 29062 | 0.0335788 | 17 | 0 | PASS: HEAD is an empty commit, so nothing tracked changed. The baseline log has 8 `== … exit` lines, all exit 0, and no  |
 | 2026-10-22T07:02:49.388Z | 0 | task | done | 0 | 0 | 0 | 0 | attempt 1 |
+| 2026-10-22T07:03:38.406Z | 1 | build | ok | 141772 | 0.1002011 | 45 | 0 |  |
+| 2026-10-22T07:03:42.470Z | 1 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; score 16; split: right feature first 17 of 29, rightly none 6 (N27,N59,N65,N73,N80,N86) |
+| 2026-10-22T07:04:33.101Z | 1 | checker | pass | 23646 | 0.0390835 | 10 | 0 | PASS: The commit changes only `synth-score.js` and `synth-score.test.js`. It adds the split suffix as specified, and no  |
+| 2026-10-22T07:04:33.106Z | 1 | task | done | 0 | 0 | 0 | 0 | attempt 1 |
