@@ -10,9 +10,9 @@ WHERE IT STANDS
   = one task fixes the Better step editing strong prompts + re-picks the Context sure cut-off from data/train_*.jsonl only;
   an Opus helper writes 30 NEW strong prompts; C1 measured once on them; then Tasks 7, 8.
 - At hand-off two helpers were finishing (check their outputs; they do not report to you):
-  a) plan-writer adding `### Task 9: C1 fix round` BEFORE Task 6 in docs/superpowers/plans/2026-10-22-prompt-coach-done-when.md,
+  a) DONE, committed e5d1539: plan-writer added `### Task 9: C1 fix round` BEFORE Task 6 in docs/superpowers/plans/2026-10-22-prompt-coach-done-when.md,
      Task 6 Depends: 2, 5, 9, tee removed from Task 6 Check, Tasks 7/8 updated. Verify: grep -n "^### Task\|^Depends" the plan.
-  b) Opus drafter writing C:/Users/teasp/.claude/jobs/97edf2ce/tmp/done_when_strong_fresh.jsonl (30 rows, FR8 GRC8 SUS8 GEN6,
+  b) DONE: Opus drafter wrote .ledger/2026-10-22-prompt-coach-done-when/done_when_strong_fresh.jsonl (copied from the drafter tmp; verified 30 rows FR8 GRC8 SUS8 GEN6, all five letters 1) (30 rows, FR8 GRC8 SUS8 GEN6,
      tag done-when-strong-fresh; NOT graded with the engine on purpose). If either is missing/incomplete, redo it with a fresh helper.
   The driver's plan parser keeps file order (lib/driver/plan.mjs, read), so Task 9 before Task 6 runs first.
 
