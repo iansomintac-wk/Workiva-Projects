@@ -946,10 +946,11 @@
     border-radius:50%; background:var(--accent-risk, var(--status-risk-text));}
 
   /* Movement marker, travelling with you like the guide's floating pill. */
-  /* Left, not right: bottom-right is where the working panel's buttons live, and
-     a floating pill that covers a control is worse than no pill. Under the track
-     column is also where the movement label belongs. */
-  .day-marker{position:sticky; bottom:14px; margin-right:auto; width:max-content;
+  /* It rides at the head of the pinned stage, not floating: bottom-right is where
+     the working panel's buttons live, and the floating bottom-left pill covered
+     the track column's text (Ian's look call, 2026-10-22). The stage is sticky,
+     so the marker still travels with you, in a space of its own. */
+  .day-marker{position:static; margin:0 0 10px; margin-right:auto; width:max-content;
     background:var(--ink); color:var(--bg-panel); border-radius:999px; padding:7px 14px;
     font-family:var(--font-mono); font-size:var(--text-xs); letter-spacing:.06em; text-transform:uppercase;
     box-shadow:var(--shadow-md,0 12px 30px rgba(7,17,15,.2)); z-index:2;}
@@ -1275,6 +1276,11 @@
   .bf-wrap{max-height:52vh; overflow:auto; border:1px solid var(--border-soft); border-radius:10px;
     margin-bottom:var(--space-1);}
   .bf-wrap .dense-table th{position:sticky; top:0; background:var(--bg-panel); z-index:1;}
+  /* The call and Gainsight review tables must fit their modal: with .dense-table's
+     nowrap cells the last column (Session, Tracker has) sat behind a sideways
+     scrollbar. Here cells wrap and selects may shrink to their column. */
+  .bf-fit .dense-table td{white-space:normal;}
+  .bf-fit .dense-table select{max-width:100%; min-width:0;}
   .bf-sub{color:var(--text-faint); font-size:var(--text-xs); margin-top:2px; white-space:normal;}
   .bf-in{font-size:var(--text-sm); padding:4px 6px; border-radius:6px; border:1px solid var(--border);
     background:var(--bg-panel); color:var(--text); font-family:var(--font-body);}
@@ -13110,9 +13116,8 @@ function renderDay(day, dispatchChips){
       </div>
       <div class="day-wrap">
         <div class="day-track">${trackHtml}</div>
-        <div class="day-stage">${pool}</div>
+        <div class="day-stage"><div class="day-marker" id="day-marker">${activeIdx + 1} of ${day.beats.length}</div>${pool}</div>
       </div>
-      <div class="day-marker" id="day-marker">${activeIdx + 1} of ${day.beats.length}</div>
     </div>`;
 }
 
@@ -20424,7 +20429,7 @@ function openCallPreviewModal(preview){
   function render(){
     const confirmed = rows.filter(r => r.on && r.customerId);
     const matchedRows = rows.filter(r => r.key.charAt(0) === 'm'), unmatchedRows = rows.filter(r => r.key.charAt(0) === 'u');
-    const table = list => `<div class="bf-wrap"><table class="dense-table"><thead><tr><th>Add</th><th>Call</th><th>Account</th><th>Type</th><th>Session</th></tr></thead><tbody>${list.map(rowHtml).join('')}</tbody></table></div>`;
+    const table = list => `<div class="bf-wrap bf-fit"><table class="dense-table"><thead><tr><th>Add</th><th>Call</th><th>Account</th><th>Type</th><th>Session</th></tr></thead><tbody>${list.map(rowHtml).join('')}</tbody></table></div>`;
     backdrop.innerHTML = `
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cp-title" style="width:min(1000px,100%); max-width:none;">
         <h3 id="cp-title" style="margin-top:0;">Calls since ${escapeHtml(fmtDate(callSinceISO().slice(0, 10)))}</h3>
@@ -20603,7 +20608,7 @@ function openGainsightPullModal(diff){
       .filter(x => x.fields.length || x.gates.length);
     const nTicks = chosen.reduce((n, x) => n + x.fields.length + x.gates.length, 0);
     const tick = (key, label) => `<input type="checkbox" data-gp-on="${escapeAttr(key)}" aria-label="${escapeAttr(label)}"${on.has(key) ? ' checked' : ''}>`;
-    const acctTable = e => `<div class="bf-wrap"><table class="dense-table"><thead><tr><th>Use</th><th>${escapeHtml(e.name)}</th><th>Gainsight says</th><th>Tracker has</th></tr></thead><tbody>
+    const acctTable = e => `<div class="bf-wrap bf-fit"><table class="dense-table"><thead><tr><th>Use</th><th>${escapeHtml(e.name)}</th><th>Gainsight says</th><th>Tracker has</th></tr></thead><tbody>
       ${e.rows.filter(r => r.differs).map(r => `<tr>
         <td>${r.writable ? tick(e.customerId + '|' + r.field, 'Use Gainsight ' + r.label) : ''}</td>
         <td>${escapeHtml(r.label)}</td><td>${gainsightValueHtml(r.field, r.gainsight)}</td>
