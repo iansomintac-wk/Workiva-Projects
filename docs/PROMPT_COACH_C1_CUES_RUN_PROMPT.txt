@@ -17,7 +17,9 @@ WHERE
   tmp folder; r1 is renamed into the fresh set's slot inside the copy only, so done_when.js C1 there scores r1).
 
 FIRST CHECK: echo "$STUDIO_RUN_LEDGER"; test -f "$STUDIO_RUN_LEDGER/budget.json"; test -f "$STUDIO_RUN_LEDGER/slip.json".
-Empty or missing is a stop for Ian.
+Empty or missing is a stop for Ian. Then create $STUDIO_RUN_LEDGER/progress.md (one row per dispatch, talk-and-run Ledger).
+CAPS: the run's cap is 2M tokens across all helpers (budget.json). CLAUDE_STOP_AT_TOKENS=300000 is only YOUR context
+stop: at it, write docs/PROMPT_COACH_C1_CUES_RUN_RESUME_PROMPT.txt, commit, and start a successor lead; it is not the run cap.
 
 ORDER OF WORK (the plan writer turns this into tasks of <= 8 steps; the PM proxy approves the plan)
 1. Small fixes (spec Design 1), test first, one task.
