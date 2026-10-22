@@ -25,5 +25,7 @@ for (const c of cards) {
   ok(c.id + ': prompt has no [bracket] left', !hasBracket(c.prompt), (c.prompt.match(BR) || []).join(' '));
   ok(c.id + ': prompt has no planted-item text', !(c.planted || []).some((p) => c.prompt.includes(p.find)));
 }
+const yoyLine = fs.readFileSync(path.join(__dirname, '../sandbox/fr-yoy-narrative.txt'), 'utf8').split(String.fromCharCode(10)).find((l) => l.startsWith('PRIOR YEAR')) || '';
+ok('fr-yoy-narrative: PRIOR YEAR heading is tagged MADE-UP', yoyLine.includes('MADE-UP'), yoyLine);
 console.log(fails ? `sandbox-kit tests FAILED: ${fails} of ${n}` : `sandbox-kit tests pass: ${n}`);
 process.exit(fails ? 1 : 0);
