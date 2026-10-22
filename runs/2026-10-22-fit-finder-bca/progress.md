@@ -36,3 +36,5 @@
 | 2026-10-22T07:10:02.178Z | 12 | task | blocked | 0 | 0 | 0 | 0 | depends on a task that is parked or not done |
 | 2026-10-22T07:10:06.134Z | 13 | task | blocked | 0 | 0 | 0 | 0 | depends on a task that is parked or not done |
 | 2026-10-22T07:10:10.053Z | 14 | task | blocked | 0 | 0 | 0 | 0 | depends on a task that is parked or not done |
+| 2026-10-22T07:11:02.593Z | 5 | debug | ok | 121437 | 0.2638362 | 49 | 0 |  |
+| 2026-10-22T07:11:03.520Z | 5 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; |
