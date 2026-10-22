@@ -1,0 +1,40 @@
+{"id":"F1","area":"FR","task":"Tidy up the wording in our quarterly management commentary so it reads consistently from section to section."}
+{"id":"F2","area":"FR","task":"Summarise the key movements in the revenue footnote for the audit committee pack."}
+{"id":"F3","area":"FR","task":"Spot any places where the tone in the MD&A contradicts what the notes to the accounts say."}
+{"id":"F4","area":"FR","task":"Draft a short plain-English explanation of why our lease liabilities went up this year. Keep it to a paragraph."}
+{"id":"F5","area":"FR","task":"Compare this year's risk factors text with last year's and tell me what changed."}
+{"id":"F6","area":"FR","task":"Approve the final 10-K draft so it can go to the printer."}
+{"id":"F7","area":"FR","task":"Add up all the segment revenue figures in the table and tell me the exact total to the cent."}
+{"id":"F8","area":"FR","task":"Email the controllers and nag everyone who hasn't signed off their section yet."}
+{"id":"F9","area":"FR","task":"Rewrite the going concern paragraph so it's clearer and less defensive. Chatty is fine, I'll polish after."}
+{"id":"F10","area":"FR","task":"Check the footnote cross-references in the narrative: do the note numbers cited match the headings?"}
+{"id":"F11","area":"GRC","task":"Turn these rough control descriptions into consistent, well-formed control statements."}
+{"id":"F12","area":"GRC","task":"Read the incident write-up and pull out the root cause and the follow-up actions in a short list."}
+{"id":"F13","area":"GRC","task":"Draft a plain-language summary of our access review policy for new starters."}
+{"id":"F14","area":"GRC","task":"Does this vendor questionnaire answer contradict anything in our security policy text?"}
+{"id":"F15","area":"GRC","task":"Book a meeting room and invite the whole risk committee for Thursday at 2."}
+{"id":"F16","area":"GRC","task":"Sign off the risk register as reviewed for this quarter."}
+{"id":"F17","area":"GRC","task":"Suggest cleaner wording for the audit finding so management can't misread it."}
+{"id":"F18","area":"GRC","task":"Give me a quick digest of what the new regulation says that touches our third-party risk process."}
+{"id":"F19","area":"GRC","task":"Chase the process owners who still haven't replied to the control testing requests."}
+{"id":"F20","area":"GRC","task":"Make the issue descriptions across these remediation items shorter and uniform in style."}
+{"id":"F21","area":"SUS","task":"Help me write the narrative for our climate transition plan section; I have bullet notes only."}
+{"id":"F22","area":"SUS","task":"Summarise the supplier code of conduct responses into the main themes."}
+{"id":"F23","area":"SUS","task":"Is the way we describe our emissions targets in the report consistent from the intro to the data pages?"}
+{"id":"F24","area":"SUS","task":"Calculate our total Scope 3 emissions precisely from the spreadsheet figures and give me the number to two decimals."}
+{"id":"F25","area":"SUS","task":"Rephrase the materiality assessment description so a non-specialist board member can follow it."}
+{"id":"F26","area":"SUS","task":"Send the finished sustainability report to the external assurance provider."}
+{"id":"F27","area":"SUS","task":"Draft a few sentences about our water use policy for the website."}
+{"id":"F28","area":"SUS","task":"Compare the wording of our human rights statement against the draft disclosure requirements and flag gaps."}
+{"id":"F29","area":"SUS","task":"Approve the energy data submitted by the plant managers as final."}
+{"id":"F30","area":"SUS","task":"Pull the main commitments out of this long stakeholder engagement document."}
+{"id":"F31","area":"GEN","task":"Proofread this board memo."}
+{"id":"F32","area":"GEN","task":"Turn my messy meeting notes into a neat summary with actions at the bottom."}
+{"id":"F33","area":"GEN","task":"Make this report introduction shorter without losing the main point. It's rambling a bit and I need it on one page."}
+{"id":"F34","area":"GEN","task":"Write a first draft of a project update for the leadership team based on the bullets I've pasted."}
+{"id":"F35","area":"GEN","task":"Schedule a reminder to follow up with legal on Monday morning."}
+{"id":"F36","area":"GEN","task":"Translate the tone of this announcement from stiff and formal to friendly."}
+{"id":"F37","area":"GEN","task":"Find the places in this long document where the same term is spelled or capitalised differently."}
+{"id":"F38","area":"GEN","task":"Multiply the quantities by the unit prices in the appendix table and give me the exact totals."}
+{"id":"F39","area":"GEN","task":"Write a short executive summary of the attached twelve-page proposal."}
+{"id":"F40","area":"GEN","task":"Ping the team on chat every day until they have all uploaded their pages."}

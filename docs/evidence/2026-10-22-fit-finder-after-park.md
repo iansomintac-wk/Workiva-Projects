@@ -16,3 +16,5 @@ Notes:
 - Prediction (assumed): K near 10 on the holdout, reading K as the "rightly none" count. The holdout gave 10, so it matched. The blind set was predicted near 12 and gave 8, so it did not match.
 - The Workiva AI sandbox copy that was already uploaded is unchanged.
 - B2 control deviation: the control was used instead of a red-on-parent run, because the engine already cuts at 3 (see DEVIATION at the top).
+AGREEMENT: N 40 D 0 agreement 100.0% PASS
+NOTE: PM labels are one card per row and no partial level; see the plan's deviations
