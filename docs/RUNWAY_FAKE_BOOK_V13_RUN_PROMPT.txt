@@ -1,0 +1,28 @@
+RUNWAY FAKE-BOOK ON V13: RUN. From ef392aa7 (NEW - Runway v13 fixes resume 2), 2026-10-22 ~19:30Z.
+
+IAN, 2026-10-22, verbatim: "Do the fake-book run then because it is expected that the live connection to gainsight and snowflake with tracker will  be parked until we get that from my internal team. I want to ensure everything else besides that part is good to go."
+So: the LIVE connection (real Gainsight push/pull, real Snowflake pull, real credentials, network) is PARKED until Ian's internal team supplies it. Everything else must be good to go on the v13 look.
+
+WHERE: worktree C:/Users/teasp/Documents/Runway Tracker/.claude/worktrees/runway-fake-book-v13, branch runway-fake-book-v13 (= runway-fake-book 3bb39f3, not yet pushed). Work there.
+Ledger: .ledger/2026-10-22-runway-fake-book-v13/ (git-ignored): budget.json, slip.json (standing slip: push own branch, merge by the merge rule, new sessions: yes). Write progress.md there, one row per dispatch.
+Load studio-harness:talk-and-run first. Lead coordinates; helpers build (implementer, checker, plan-writer role agents); logs to files.
+
+STATE (measured by ef392aa7 just now unless marked read):
+- runway-v13-look = f086a14 (v13 look + Ian's look rulings; sc 560/560, tests 597/595/0 fail/2 skip, sim 1.1 22/22 exit 0). master fd3a09c is Ian's: do not touch; it is inside both branches.
+- Fake-book run (runs/2026-10-22-runway-fake-book/ in the OLD worktree .claude/worktrees/runway-fake-book; read): plan docs/superpowers/plans/2026-10-22-runway-fake-book.md; tasks 1-9 and 11-16 done; Task 10 (team-demo captures docs/evidence/team-demo-captures/01..06, looks/10.md) awaiting Ian's look; his call ~15:17Z "Fix the 3, reshoot" (see that run's RUNWAY_LOOK_FIX_PROMPT.txt); layout fix d05176a is on the branch; stopped by Ian's v13-first ruling. No final review, never merged. The old worktree has an uncommitted 06-how-its-built.png and untracked runs/ files: leave them.
+- Dry merge (git 2.30 merge-tree, base fd3a09c) of runway-v13-look into runway-fake-book: 6 files changed on both sides, only 4 conflict hunks: README.txt x2 (counts), docs/HOSTING.md x1 and tools/sim/osm-day/verify.mjs x1 (sha256 pins). The 1.1 html and selfchecks merge without text conflict, BUT fake-book's tracker features were built on the OLD screens (T4 Check CSAT button, T14 desk card S1, T16 desk reason handler): whether they are reachable and working on the v13 Desk is UNTESTED (assumed risk #1).
+
+TO DO:
+1. Plan (plan-writer, docs/superpowers/plans/2026-10-22-runway-fake-book-v13.md, tasks <=8 steps, Data: (none) unless measured otherwise). PM proxy approves (studio-harness:pm). Tasks, in order:
+   a. Merge origin/runway-v13-look into runway-fake-book-v13; resolve the 4 hunks keeping both sides; counts re-measured, not added; pins via node tools/repin.mjs (read its header).
+   b. Full checks on the merge and record every number: 1.1 selfcheck (expect = measured), `node --test "test/*.test.mjs" "connector/test/*.test.mjs"`, default day sim (1.1 must be 22/22 exit 0; 1.0's 7 known FAIL stay), connector suite, connector-e2e, step0/step1 probes, d2/d3/l11/l12 --check tools, the M3 launcher/walkthrough (127.0.0.1:8801, never 8790/8800).
+   c. For each fake-book tracker feature (T4, T14, T16, plus anything (b) shows broken): make it work on the v13 screens, red-first self-check, one helper task each.
+   d. Task 10: reshoot the team-demo captures on the v13 look; check whether Ian's 3 issues still apply; open every capture; look critic; PM first pass; batch to Ian at the end (AskUserQuestion, header [Ian]); keep building meanwhile.
+   e. Parked-live audit: the docs (README, CONNECT-*.md, HOSTING.md, the walkthrough) say plainly that live Gainsight/Snowflake waits on Ian's internal team; the tracker works fully offline/by file import without them; no code path makes a network call to Gainsight or Snowflake by default (cite the test that proves it).
+   f. "Good to go" evidence doc docs/evidence/2026-10-22-runway-fake-book-v13.md: every feature area with the check that shows it works, measured numbers, what is parked (live connection) and deferred (the v13 features Ian deferred 2026-10-22, listed in docs/evidence/2026-10-22-runway-v13-fixes.md on runway-v13-look).
+2. Final whole-branch review: final-reviewer (Opus) + Codex read-only (worked today as `codex exec` read-only, codex-cli 0.163.0: see the "final review codex" row in runway-v13-fixes' .ledger/2026-10-22-runway-v13-fixes/progress.md; read ledger traps 2026-10-14-codex-shell-blocked-on-windows and 2026-10-17-codex-unelevated-sandbox-runs-on-windows first); merge findings; fix round; re-check.
+3. Merge runway-fake-book-v13 -> runway-v13-look by the merge rule (push backup/runway-v13-look-before-runway-fake-book-v13-2026-10-22 of look's remote tip first; unforced; full suite on the result). Never master.
+4. Report to Ian in plain English: what is good to go, the numbers, the one thing parked (live connection), and his remaining decision (when to merge runway-v13-look into master).
+
+SAFETY: $0 spend; no installs; no network except 127.0.0.1; no real Gainsight/Snowflake/Gong credentials or calls; never Ian's normal Chrome profile (fresh --user-data-dir only); never his real book, RESTORE-POINT files or real CSAT file; stop processes by PID only; publish nothing. Run-lead context stop 300k: hand off via ledger + resume prompt, start the successor yourself.
+Predecessor ef392aa7 runs in the runway-v13-fixes worktree; rename it COMPLETED when you run; do not claude rm it (shared worktree with 0e0cbb80 and 2055468c).
