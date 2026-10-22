@@ -9464,7 +9464,265 @@ function v13Body(){
    Owned by the Desk port. Everything for the Desk screen goes between this
    marker and the end marker below: v13Desk() and its helpers.
    Keep the end marker and do not edit outside it. */
-function v13Desk(){ return renderToday(); }
+/* v13 Desk: Today heading, snapshot chips, day/week timeline, "Your book" and the
+   selected account with its four work tabs. Reads only. Browser-memory state lives
+   on ui (v13DeskId, v13DeskTab, v13DeskLens, v13DeskFilter), never in DATA. */
+const V13_DESK_TONE = {gap:['var(--warn)','var(--warn-bg)','Evidence to check'], risk:['var(--risk)','var(--risk-bg)','Confirmed risk'],
+  ready:['var(--demo)','var(--demo-bg)','Ready for session'], partner:['var(--partner)','var(--partner-bg)','In implementation'],
+  handoff:['var(--plum)','var(--plum-bg)','Handoff decision'], handed:['var(--faint)','var(--well)','Handed off']};
+const V13_DESK_TABS = [['prepare','Prepare'],['capture','Capture'],['evidence','Evidence'],['record','Record']];
+function v13DeskSeg(on){ return `background:${on ? 'var(--sheet)' : 'transparent'};color:${on ? 'var(--ink)' : 'var(--muted)'};box-shadow:${on ? 'var(--sh1)' : 'none'}`; }
+function v13DeskShort(name){ return String(name || '').split(/\s+/)[0]; }
+function v13DeskMin(c){ const m = dayTimeToMinutes(getNextSessionTime(c)); return m === null ? null : m; }
+function v13DeskWhen(c){
+  if(c.stage === 'graduated') return 'Handed off';
+  const d = getNextSessionScheduled(c);
+  if(!d) return 'Not booked';
+  const t = getNextSessionTime(c) || '';
+  const diff = calendarDayDiff(d, todayISO());
+  if(diff === 0) return ('Today ' + t).trim();
+  if(diff !== null && diff > 0 && diff <= 6) return (new Date(d + 'T00:00:00').toLocaleDateString('en-GB', {weekday:'short'}) + ' ' + t).trim();
+  return fmtDate(d);
+}
+function v13DeskOrder(){
+  const list = DATA.customers.slice();
+  sortCustomers(list);
+  const pos = new Map(list.map((c, i) => [c.id, i]));
+  const key = c => {
+    if(c.stage === 'graduated') return [2, '', 0];
+    const d = getNextSessionScheduled(c);
+    return d ? [0, d, v13DeskMin(c) === null ? 9999 : v13DeskMin(c)] : [1, '', 0];
+  };
+  return list.slice().sort((a, b) => {
+    const x = key(a), y = key(b);
+    return (x[0] - y[0]) || (x[1] < y[1] ? -1 : x[1] > y[1] ? 1 : 0) || (x[2] - y[2]) || (pos.get(a.id) - pos.get(b.id));
+  });
+}
+function v13DeskCtx(){
+  const cases = buildRiskCases(buildRiskHubList({readOnly:true})).filter(k => k.state !== 'dismissed');
+  const risks = cases.filter(k => k.isRisk), sigs = cases.filter(k => !k.isRisk);
+  const caseOf = new Map(cases.map(k => [k.c.id, k]));
+  const today = todayISO();
+  const owed = [];
+  DATA.customers.forEach(c => openCommitments(c).forEach(x => { if(x.direction === 'i_owe' && isRealISODate(x.due) && x.due <= today) owed.push({c, x}); }));
+  const overdue = owed.filter(o => commitmentIsOverdue(o.x));
+  const impl = DATA.customers.filter(c => c.stage !== 'graduated' && inImplementation(c));
+  const grad = DATA.customers.filter(c => customerReadyToGraduateSignal(c));
+  const post = DATA.customers.filter(c => c.stage !== 'graduated' && !inImplementation(c) && !customerReadyToGraduateSignal(c));
+  const ids = l => new Set(l.map(o => (o.c || o).id));
+  const kind = c => c.stage === 'graduated' ? 'handed' : inImplementation(c) ? 'partner'
+    : (caseOf.get(c.id) && caseOf.get(c.id).isRisk) ? 'risk' : caseOf.get(c.id) ? 'gap' : customerReadyToGraduateSignal(c) ? 'handoff' : 'ready';
+  return {cases, risks, sigs, caseOf, owed, overdue, impl, grad, post, kind, calls: callsScheduledToday(),
+    fil: {watch: ids(sigs), risk: ids(risks), owe: ids(owed), impl: ids(impl), post: ids(post), grad: ids(grad)}};
+}
+function v13DeskStrip(x){
+  const names = l => Array.from(new Set(l.map(k => v13DeskShort(k.c.name)))).join(', ');
+  return [
+    {key:'watch', k:'Signals to check', v: x.sigs.length + (x.sigs.length ? ' · ' + names(x.sigs) : ''), c:'var(--obs)'},
+    {key:'risk', k:'Confirmed risk', v: x.risks.length + (x.risks.length ? ' · ' + names(x.risks) : ''), c:'var(--risk)'},
+    {key:'owe', k:'You owe today', v: x.owed.length + ' · ' + x.overdue.length + ' overdue', c:'var(--plum)'},
+    {key:'impl', k:'In implementation', v: x.impl.length + ' · before go-live', c:'var(--partner)'},
+    {key:'post', k:'Post-implementation', v: x.post.length + ' in curriculum', c:'var(--runway)'},
+    {key:'grad', k:'Ready for graduation', v: x.grad.length + (x.grad.length ? ' · ' + x.grad.map(c => v13DeskShort(c.name)).join(', ') : ''), c:'var(--demo-t)'}
+  ];
+}
+function v13DeskTimeline(x, selId){
+  const pct = m => (Math.max(0, Math.min(540, m - 480)) / 540 * 100).toFixed(2) + '%';
+  if(ui.v13DeskLens === 'week'){
+    const t = todayISO(), dow = new Date(t + 'T00:00:00').getDay();
+    const mon = isoAddDays(t, dow === 0 ? -6 : 1 - dow);
+    const days = [0,1,2,3,4].map(i => isoAddDays(mon, i));
+    return `<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:12px">${days.map(d => {
+      const on = d === t;
+      const items = DATA.customers.filter(c => c.stage !== 'graduated' && getNextSessionScheduled(c) === d)
+        .sort((a, b) => (v13DeskMin(a) === null ? 9999 : v13DeskMin(a)) - (v13DeskMin(b) === null ? 9999 : v13DeskMin(b)));
+      const label = new Date(d + 'T00:00:00').toLocaleDateString('en-GB', {weekday:'short', day:'numeric'});
+      return `<div data-v13-desk-day="${escapeAttr(d)}" style="padding:10px;border-radius:12px;background:${on ? 'var(--sheet2)' : 'transparent'};min-width:0">
+        <p style="font-size:13px;font-weight:800;color:${on ? 'var(--ink)' : 'var(--muted)'};margin-bottom:6px">${escapeHtml(label)}</p>
+        <div style="display:flex;flex-direction:column;gap:4px">${items.map(c => `<button type="button" data-v13-desk-call="${escapeAttr(c.id)}" style="display:flex;align-items:center;gap:6px;border:0;border-radius:8px;background:var(--sheet);box-shadow:var(--sh1);padding:4px 8px;text-align:left;min-width:0"><span style="width:6px;height:6px;border-radius:50%;background:${V13_DESK_TONE[x.kind(c)][0]};flex:none"></span><span style="font-family:var(--mono);font-size:10px;color:var(--muted)">${escapeHtml(getNextSessionTime(c) || '--:--')}</span><span style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(c.name)}</span></button>`).join('') || '<span style="font-size:12px;color:var(--faint)">No sessions booked</span>'}</div>
+      </div>`; }).join('')}</div>`;
+  }
+  const hours = [8,9,10,11,12,13,14,15,16,17].map(h => {
+    const l = ((h - 8) / 9 * 100).toFixed(2) + '%';
+    return `<span style="position:absolute;top:0;left:${l};transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:var(--faint)">${String(h).padStart(2,'0')}:00</span><span style="position:absolute;top:18px;bottom:16px;left:${l};border-left:1px solid var(--line)"></span>`;
+  }).join('');
+  const now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes(), nowL = pct(nowMin);
+  const nowTxt = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const untimed = [];
+  const blocks = x.calls.map(k => {
+    const m = dayTimeToMinutes(k.at);
+    if(m === null){ untimed.push(k); return ''; }
+    const sel = k.c.id === selId, tone = V13_DESK_TONE[x.kind(k.c)][0];
+    return `<button type="button" data-v13-desk-call="${escapeAttr(k.c.id)}" aria-pressed="${sel}" style="position:absolute;top:26px;height:48px;left:${pct(m)};width:max(150px,${(DAY_CALL_LENGTH_MIN / 540 * 100).toFixed(2)}%);box-sizing:border-box;text-align:left;padding:5px 10px;border:0;border-radius:10px;background:${sel ? 'var(--sheet)' : 'var(--sheet2)'};box-shadow:${sel ? 'var(--sh2)' : 'var(--sh1)'};overflow:hidden">
+      <span style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:${tone};flex:none"></span>${escapeHtml(fmtDayTime(k.at))} · ${DAY_CALL_LENGTH_MIN} min</span>
+      <span style="display:block;font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(k.c.name)}</span></button>`;
+  }).join('');
+  const untimedRow = untimed.length ? `<p style="font-size:12px;color:var(--muted);margin:0 20px 8px">Time not set · ${untimed.map(k => `<button type="button" data-v13-desk-call="${escapeAttr(k.c.id)}" style="border:0;background:transparent;padding:0 4px;font-size:12px;font-weight:700;color:var(--acc)">${escapeHtml(k.c.name)}</button>`).join(' ')}</p>` : '';
+  return `<div style="overflow-x:auto;overflow-y:hidden"><div style="position:relative;min-width:720px;height:96px;margin:0 20px 10px">${hours}
+      <div aria-hidden="true" style="position:absolute;top:18px;bottom:16px;left:0;width:${nowL};background:var(--well);border-radius:6px 0 0 6px"></div>
+      <div aria-hidden="true" style="position:absolute;top:14px;bottom:0;left:${nowL};border-left:2px solid var(--ink)"><span style="position:absolute;bottom:-2px;left:6px;font-family:var(--mono);font-size:10px;white-space:nowrap">${nowTxt} now</span></div>
+      ${blocks}</div></div>${untimedRow}`;
+}
+function v13DeskBookRow(c, x, selId){
+  const sel = c.id === selId, k = x.caseOf.get(c.id);
+  const used = new Set((DATA.activities[c.id] || []).map(a => a.sessionNumber).filter(Boolean));
+  const next = c.stage === 'graduated' ? null : getNextSessionInfo(c);
+  const total = Math.max(c.totalSessions || 0, minimumPlannedSessions(c));
+  const cells = Array.from({length: total}, (_, i) => used.has(i + 1) ? 'var(--runway)' : (next && next.number === i + 1) ? 'var(--acc)' : 'var(--line2)');
+  const noteC = k && k.isRisk ? 'var(--risk)' : k ? 'var(--warn)' : 'var(--muted)';
+  return `<button type="button" data-v13-desk-pick="${escapeAttr(c.id)}" aria-pressed="${sel}" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 8px;align-items:center;width:100%;text-align:left;border:0;border-radius:12px;padding:8px 12px;background:${sel ? 'var(--sheet)' : 'transparent'};box-shadow:${sel ? 'var(--sh1)' : 'none'}">
+    <span style="display:flex;align-items:center;gap:7px;min-width:0"><span style="width:6px;height:6px;border-radius:50%;background:${V13_DESK_TONE[x.kind(c)][0]};flex:none"></span><span style="font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(c.name)}</span></span>
+    <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:${noteC};white-space:nowrap">${escapeHtml(v13DeskWhen(c))}</span>
+    <span aria-hidden="true" style="grid-column:1 / -1;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px;margin-top:6px">${cells.map(col => `<span style="height:3px;border-radius:2px;background:${col}"></span>`).join('')}</span>
+  </button>`;
+}
+function v13DeskFacts(c){
+  const next = c.stage === 'graduated' ? null : getNextSessionInfo(c);
+  const v = outcomeVerdict(c);
+  const met = v.ttfv1.met + v.ttfv2.met + v.other.met, tot = v.ttfv1.total + v.ttfv2.total + v.other.total;
+  const total = Math.max(c.totalSessions || 0, minimumPlannedSessions(c));
+  const facts = [
+    inImplementation(c)
+      ? {label:'Next planned session', value:'S1', unit:' of ' + total, color:'var(--partner)', note:'In implementation · sessions start after go-live'}
+      : c.stage === 'graduated' ? {label:'Next planned session', value:'Done', unit:'', color:'var(--acc)', note:'Handed off'}
+      : {label:'Next planned session', value: next ? 'S' + next.number : 'None', unit: next ? ' of ' + total : '', color:'var(--acc)', note: next && next.template ? next.template.title : 'Every session is logged'},
+    {label:'Meetings held', value: String(sessionsCompletedCount(c)), unit:'', color:'var(--ink)', note:'Attendance, not ability'},
+    {label:'Customer demonstrated', value: String(met), unit:' of ' + tot, color:'var(--demo-t)', note: tot ? (tot - met) + ' not yet evidenced' + (v.undated ? ' · ' + v.undated + ' undated' : '') : 'No success criteria authored'}
+  ];
+  return facts.map(f => `<div data-v13-desk-fact style="background:var(--sheet2);border-radius:14px;padding:14px 18px">
+    <p style="font-size:12px;color:var(--muted)">${escapeHtml(f.label)}</p>
+    <p style="margin-top:4px;line-height:1"><span style="font-size:32px;font-weight:900;letter-spacing:-0.03em;color:${f.color}">${escapeHtml(f.value)}</span><span style="font-size:14px;color:var(--muted);font-weight:600">${escapeHtml(f.unit)}</span></p>
+    <p style="font-size:12px;color:var(--muted);margin-top:6px">${escapeHtml(f.note)}</p></div>`).join('');
+}
+function v13DeskTabBody(c, tab){
+  if(ui.openCustomerId) return `<p style="font-size:13px;color:var(--muted)">This account is open in the full account panel. Close it to work here.</p>`;
+  const call = (fn) => { try{ return fn(); }catch(e){ console.warn('v13 desk tab', e); return ''; } };
+  const acts = (DATA.activities[c.id] || []).slice().sort((a, b) => a.date < b.date ? 1 : -1);
+  const next = getNextSessionInfo(c);
+  const heads = {
+    prepare: [c.name + (next ? ' · S' + next.number + ' ' + (next.template && next.template.title || '') : ' · session plan'), 'From the session plan'],
+    capture: ['Capture · log what happened', 'Writes to the activity log'],
+    evidence: ['Outcomes and handoff', 'From the success criteria'],
+    record: ['The record', 'Activity log + Gainsight']
+  };
+  const body = tab === 'capture' ? call(() => renderLogActivityTab(c))
+    : tab === 'evidence' ? call(() => {
+        // renderOverviewTab stamps lastShownRecommendation; the Desk only reads, so put it back.
+        const had = Object.prototype.hasOwnProperty.call(c, 'lastShownRecommendation'), was = c.lastShownRecommendation;
+        try{ return renderOverviewTab(c, computeRisk(c)); }
+        finally{ if(had) c.lastShownRecommendation = was; else delete c.lastShownRecommendation; }
+      }) + call(() => renderHandoffTab(c))
+    : tab === 'record' ? call(() => renderActivityTab(c, acts)) + call(() => renderCustomerGainsightTab(c))
+    : call(() => renderSessionPlanTab(c));
+  const h = heads[tab] || heads.prepare;
+  return `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <h3 style="font-size:20px;font-weight:900;letter-spacing:-0.01em">${escapeHtml(h[0])}</h3>
+      <span style="display:flex;gap:12px;align-items:baseline"><span style="font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">${escapeHtml(h[1])}</span>
+      <button type="button" data-v13-desk-open style="border:1px solid var(--line2);background:var(--sheet);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700">Edit in the full account</button></span></div>
+    <div data-v13-desk-panel="${escapeAttr(tab)}" inert title="Read here; edit in the full account">${body}</div>`;
+}
+function v13Desk(){
+  const x = v13DeskCtx();
+  const order = v13DeskOrder();
+  const filter = ui.v13DeskFilter && x.fil[ui.v13DeskFilter] ? ui.v13DeskFilter : null;
+  const rows = filter ? order.filter(c => x.fil[filter].has(c.id)) : order;
+  const a = DATA.customers.find(c => c.id === ui.v13DeskId) || rows[0] || order[0];
+  const strip = v13DeskStrip(x);
+  const firstCall = x.calls.find(k => k.at) || x.calls[0];
+  const head = `<section aria-label="Today">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+      <div><h1 style="font-size:clamp(38px,4vw,58px);font-weight:900;letter-spacing:-0.035em;line-height:1">Today</h1>
+        <p style="font-size:15px;color:var(--muted);margin-top:8px">${x.calls.length} call${x.calls.length === 1 ? '' : 's'} · ${x.risks.length} confirmed risk · ${x.sigs.length} signal${x.sigs.length === 1 ? '' : 's'} to check · ${x.owed.length} thing${x.owed.length === 1 ? '' : 's'} you owe today</p></div>
+      <div role="tablist" aria-label="Time lens" style="display:flex;gap:2px;padding:3px;background:var(--well);border-radius:999px">${[['day','Day'],['week','Week']].map(([k, l]) => {
+        const on = (ui.v13DeskLens || 'day') === k;
+        return `<button type="button" role="tab" aria-selected="${on}" data-v13-desk-lens="${k}" style="border:0;border-radius:999px;padding:7px 18px;font-size:13px;font-weight:700;${v13DeskSeg(on)}">${l}</button>`; }).join('')}</div>
+    </div>
+    <div role="group" aria-label="Book snapshot" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:16px">${strip.map(t => {
+      const on = filter === t.key;
+      return `<button type="button" data-v13-desk-chip="${t.key}" aria-pressed="${on}" title="${on ? 'Clear the filter' : 'Filter the book to these accounts'}" style="display:flex;align-items:center;gap:8px;border:1px solid ${on ? 'var(--ink)' : 'var(--line2)'};background:${on ? 'var(--well)' : 'var(--sheet)'};border-radius:5px;padding:6px 11px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink)"><span style="width:8px;height:8px;border-radius:2px;background:${t.c};flex:none"></span><span style="color:var(--muted);white-space:nowrap">${escapeHtml(t.k)}</span><span style="font-weight:700;white-space:nowrap">${escapeHtml(t.v)}</span></button>`; }).join('')}</div>
+    <div style="margin-top:12px;background:var(--sheet);border-radius:18px;box-shadow:var(--sh1);padding:16px 20px">
+      ${v13DeskTimeline(x, a && a.id)}
+      <div style="display:flex;flex-wrap:wrap;gap:6px 26px;font-size:12px;color:var(--muted)">
+        ${firstCall ? `<span><b style="color:var(--ink)">Before ${escapeHtml(firstCall.at ? fmtDayTime(firstCall.at) : 'the first call')}</b> · prep ${escapeHtml(firstCall.c.name)}${firstCall.next && firstCall.next.template ? ', S' + firstCall.next.number + ' ' + escapeHtml(firstCall.next.template.title) : ''}${firstCall.prepped ? '' : ' (no prep notes yet)'}</span>` : '<span><b style="color:var(--ink)">No calls booked today</b> · work the book below</span>'}
+        <span><b style="color:var(--ink)">After each call</b> · capture, then review the co-pilot pass</span>
+      </div>
+    </div></section>`;
+  const filterLabel = filter ? strip.find(t => t.key === filter).k : '';
+  const aside = `<aside aria-label="Your book" style="position:sticky;top:72px;min-width:0;max-height:calc(100vh - 96px);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:12px;padding:0 4px;flex:none"><h2 style="font-size:16px;font-weight:900">Your book</h2><span style="font-size:12px;color:var(--muted);white-space:nowrap">${filter ? rows.length + ' of ' + DATA.customers.length : DATA.customers.length + ' accounts'}</span></div>
+    ${filter ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:-4px 12px 10px 0;padding:6px 10px;border-radius:10px;background:var(--well);flex:none"><span style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Filtered · <b>${escapeHtml(filterLabel)}</b></span><button type="button" data-v13-desk-clear style="flex:none;border:0;background:transparent;padding:0;font-size:12px;font-weight:700;color:var(--acc)">Clear</button></div>` : ''}
+    <div style="display:flex;flex-direction:column;gap:4px;overflow-y:auto;scrollbar-width:thin;padding:2px 12px 8px 2px;min-height:0">${rows.map(c => v13DeskBookRow(c, x, a && a.id)).join('') || '<p style="font-size:12px;color:var(--muted);padding:0 4px">No accounts match.</p>'}</div>
+    <p style="font-size:11px;color:var(--muted);margin-top:8px;padding:0 4px">Track · sessions held (grey) and next planned (blue). Session count isn’t readiness.</p></aside>`;
+  if(!a) return `${head}<div style="margin-top:30px">${aside}</div>`;
+  const kd = x.kind(a), tone = V13_DESK_TONE[kd];
+  const sh = getStakeholders(a)[0];
+  const role = sh ? (STAKEHOLDER_ROLES.find(r => r.key === sh.role) || {}).label : '';
+  const contact = sh ? sh.name : '';
+  const open = openCommitments(a), youOwe = open.filter(o => o.direction === 'i_owe'), custOwe = open.filter(o => o.direction !== 'i_owe');
+  const over = open.filter(commitmentIsOverdue).length;
+  const k = x.caseOf.get(a.id), sigN = k && !k.isRisk ? k.items.length : 0, riskN = k && k.isRisk ? k.items.length : 0;
+  const chip = (kick, c, big, go) => `<button type="button" data-v13-desk-go="${go}" style="display:flex;align-items:baseline;gap:8px;border:1px solid var(--line2);background:var(--sheet);border-radius:12px;padding:7px 12px;text-align:left"><span style="font-family:var(--mono);font-size:10px;font-weight:700;color:${c};white-space:nowrap;text-transform:uppercase">${escapeHtml(kick)}</span><span style="font-size:14px;font-weight:800;white-space:nowrap">${escapeHtml(big)}</span></button>`;
+  const chips = [
+    riskN ? chip('Confirmed risk', 'var(--risk)', riskN + ' risk item' + (riskN === 1 ? '' : 's'), 'risk') : chip('Signals to check', 'var(--warn)', sigN ? sigN + ' gap' + (sigN === 1 ? '' : 's') + ' to check' : 'Nothing to check', 'risk'),
+    chip('You owe · from previous conversations', 'var(--acc)', youOwe.length + ' owed' + (contact ? ' to ' + v13DeskShort(contact) : ''), 'record'),
+    chip((contact ? v13DeskShort(contact) : 'Customer') + ' owes you', 'var(--demo-t)', custOwe.length + ' customer commitment' + (custOwe.length === 1 ? '' : 's'), 'record')
+  ].join('');
+  const co = (k ? k.items.map(it => ({tier: k.isRisk ? 'Risk' : 'Signal', tc: k.isRisk ? 'var(--risk)' : 'var(--warn)', t: it.kind + (it.detail ? ': ' + it.detail : ''), go:'risk'})) : [])
+    .concat(pendingGainsightItems().filter(it => it.customerId === a.id).map(it => ({tier:'Gainsight', tc:'var(--acc)', t: it.label, go:'copilot'})));
+  const coStrip = co.length ? `<section aria-label="Co-pilot for this account" style="margin:18px 28px 0;padding:10px 14px;border-radius:14px;background:var(--acc-bg);display:grid;gap:6px">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><p style="font-size:13px;font-weight:900">Co-pilot · ${co.length} for ${escapeHtml(a.name)}</p><p style="font-size:12px;color:var(--muted)">Drafts and checks. Nothing changes until you review.</p></div>
+    ${co.slice(0, 3).map(m => `<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)"><span style="min-width:0;flex:1;display:flex;gap:8px;align-items:center"><span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.05em;color:${m.tc};background:var(--sheet);border-radius:999px;padding:1px 7px;white-space:nowrap;flex:none;text-transform:uppercase">${m.tier}</span><span style="min-width:0;flex:1;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(m.t)}</span></span><button type="button" data-v13-desk-go="${m.go}" style="border:0;background:transparent;padding:5px 6px;font-size:12px;font-weight:700;white-space:nowrap;color:var(--acc);flex:none">Review</button></div>`).join('')}
+    ${co.length > 3 ? `<button type="button" data-v13-desk-go="copilot" style="border:0;background:transparent;padding:5px 0;font-size:12px;font-weight:700;color:var(--acc);justify-self:start">${co.length - 3} more in the co-pilot</button>` : ''}</section>` : '';
+  const tab = V13_DESK_TABS.some(t => t[0] === ui.v13DeskTab) ? ui.v13DeskTab : 'prepare';
+  const art = `<article aria-label="Selected customer" style="min-width:0;background:var(--sheet);border-radius:22px;box-shadow:var(--sh2)">
+    <header style="padding:24px 28px 18px;display:flex;flex-wrap:wrap;gap:12px 20px;justify-content:space-between;align-items:flex-start">
+      <div style="min-width:0"><p style="font-size:13px;color:var(--muted)">${escapeHtml([a.module, contact ? contact + (role ? ', ' + role : '') : ''].filter(Boolean).join(' · '))}</p>
+        <h2 style="font-size:clamp(32px,3.4vw,48px);font-weight:900;letter-spacing:-0.035em;line-height:1;margin-top:6px">${escapeHtml(a.name)}</h2></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:${tone[0]};background:${tone[1]};border-radius:999px;padding:5px 12px;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:${tone[0]}"></span>${tone[2]}</span>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap">${escapeHtml(v13DeskWhen(a))}</span>
+        <button type="button" data-v13-desk-open style="border:0;border-radius:10px;background:var(--ink);color:var(--sheet);padding:7px 13px;font-size:12px;font-weight:800">Open full account</button>
+      </div></header>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:0 28px">${v13DeskFacts(a)}</div>
+    <section aria-label="Since the last conversation" style="margin:18px 28px 0">
+      <div style="display:flex;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line2)">
+        <h3 style="font-size:16px;font-weight:900">Since the last conversation</h3>
+        <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><p style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted)"><span><b style="color:var(--ink)">${youOwe.length}</b> you owe</span><span><b style="color:var(--ink)">${custOwe.length}</b> customer owes</span><span style="color:${over ? 'var(--risk)' : 'var(--muted)'}"><b>${over}</b> overdue</span></p>
+        <button type="button" data-v13-desk-go="record" style="border:0;background:transparent;padding:0;font-size:12px;font-weight:700;color:var(--acc)">Show the full story</button></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;padding:10px 0">${chips}</div>
+    </section>
+    ${coStrip}
+    <div role="tablist" aria-label="Customer work" style="display:flex;gap:4px;margin:20px 28px 0;padding:3px;background:var(--well);border-radius:12px">${V13_DESK_TABS.map(([kk, l]) =>
+      `<button type="button" role="tab" aria-selected="${tab === kk}" data-v13-desk-tab="${kk}" style="flex:1;border:0;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;white-space:nowrap;${v13DeskSeg(tab === kk)}">${l}</button>`).join('')}</div>
+    <div role="tabpanel" data-v13-desk-body style="padding:22px 28px 30px">${v13DeskTabBody(a, tab)}</div>
+  </article>`;
+  return `${head}<div style="display:grid;grid-template-columns:260px minmax(0,1fr);gap:24px;align-items:start;margin-top:30px">${aside}<div style="min-width:0">${art}</div></div>`;
+}
+V13_BINDERS.desk = box => {
+  if(ui.view !== 'today') return;
+  const sel = () => { const a = box.querySelector('article[aria-label="Selected customer"] h2'); return ui.v13DeskId || (box.querySelector('[data-v13-desk-pick][aria-pressed="true"]') || {dataset:{}}).dataset.v13DeskPick; };
+  box.querySelectorAll('[data-v13-desk-pick],[data-v13-desk-call]').forEach(b => b.addEventListener('click', () => {
+    ui.v13DeskId = b.dataset.v13DeskPick || b.dataset.v13DeskCall; render();
+  }));
+  box.querySelectorAll('[data-v13-desk-lens]').forEach(b => b.addEventListener('click', () => { ui.v13DeskLens = b.dataset.v13DeskLens; render(); }));
+  box.querySelectorAll('[data-v13-desk-tab]').forEach(b => b.addEventListener('click', () => { ui.v13DeskTab = b.dataset.v13DeskTab; render(); }));
+  box.querySelectorAll('[data-v13-desk-chip]').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.v13DeskChip;
+    ui.v13DeskFilter = ui.v13DeskFilter === k ? null : k;
+    if(ui.v13DeskFilter){ const first = v13DeskOrder().find(c => v13DeskCtx().fil[k].has(c.id)); if(first) ui.v13DeskId = first.id; }
+    render();
+  }));
+  box.querySelectorAll('[data-v13-desk-clear]').forEach(b => b.addEventListener('click', () => { ui.v13DeskFilter = null; render(); }));
+  box.querySelectorAll('[data-v13-desk-open]').forEach(b => b.addEventListener('click', () => {
+    const id = sel(); if(!id) return; ui.v13DeskId = id; ui.openCustomerId = id; ui.panelTab = 'overview'; render();
+  }));
+  box.querySelectorAll('[data-v13-desk-go]').forEach(b => b.addEventListener('click', () => {
+    const g = b.dataset.v13DeskGo;
+    if(g === 'risk' || g === 'copilot') v13SwitchView(g);
+    else { ui.v13DeskTab = g; render(); }
+  }));
+};
 /* ==== end v13 screen: Desk ==== */
 /* (spacer: keeps each screen's block apart so parallel ports merge cleanly)
    (spacer)

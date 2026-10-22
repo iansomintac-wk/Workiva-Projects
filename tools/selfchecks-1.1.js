@@ -10170,6 +10170,106 @@ function _runSelfChecksInner(){
     ui.view = prevView; ui.openCustomerId = prevOpen; render();
   })();
   /* ==== v13 checks: Desk ==== (owned by the Desk port; put its checks here, switch on, restore state after) */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prev = {view: ui.view, open: ui.openCustomerId, tab: ui.panelTab, id: ui.v13DeskId, wt: ui.v13DeskTab, lens: ui.v13DeskLens, fil: ui.v13DeskFilter};
+    const hadSeen = 'todayLastSeenIds' in DATA, prevSeen = JSON.stringify(DATA.todayLastSeenIds);
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevSwitch = null; try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const bookBefore = JSON.stringify(DATA);
+    // Opening the existing panel (check 5) draws its Overview, which stamps lastShownRecommendation; put it back.
+    const lastShown = DATA.customers.map(c => [c, Object.prototype.hasOwnProperty.call(c, 'lastShownRecommendation'), c.lastShownRecommendation]);
+    const box = () => document.querySelector('#app [data-osm]');
+    let ok, detail;
+    try{
+      localStorage.removeItem(KEY); ui.openCustomerId = null; ui.view = 'today';
+      ui.v13DeskId = null; ui.v13DeskTab = null; ui.v13DeskLens = null; ui.v13DeskFilter = null; render();
+      // 1. heading, summary, lens, strip, no old day track
+      ok = false; detail = '';
+      try{
+        const sec = box().querySelector('section[aria-label="Today"]');
+        const h1 = sec && sec.querySelector('h1');
+        const sub = sec && sec.querySelector('h1 + p');
+        const lens = sec && [...sec.querySelectorAll('[role="tablist"][aria-label="Time lens"] [role="tab"]')].map(b => b.textContent.trim());
+        const chips = sec ? sec.querySelectorAll('[role="group"][aria-label="Book snapshot"] button').length : 0;
+        const calls = callsScheduledToday().length;
+        ok = !!h1 && h1.textContent.trim() === 'Today' && !!sub && sub.textContent.indexOf(calls + ' call') === 0
+          && (lens || []).join('|') === 'Day|Week' && chips === 6 && !box().querySelector('#day');
+        detail = JSON.stringify({h1: h1 && h1.textContent, sub: sub && sub.textContent, lens, chips, calls, oldDay: !!box().querySelector('#day')});
+      }catch(e){ detail = e.message; }
+      check('v13 Desk draws the Today heading, the summary line from today\'s calls, the Day/Week lens and six snapshot chips, not the old day track', ok, detail);
+      // 2. timeline: one block per call today; Week shows five days
+      ok = false; detail = '';
+      try{
+        const n = box().querySelectorAll('[data-v13-desk-call]').length, want = callsScheduledToday().length;
+        [...box().querySelectorAll('[aria-label="Time lens"] [role="tab"]')].find(b => b.textContent.trim() === 'Week').click();
+        const days = box().querySelectorAll('[data-v13-desk-day]').length;
+        ok = n === want && ui.v13DeskLens === 'week' && days === 5;
+        detail = JSON.stringify({n, want, lens: ui.v13DeskLens, days});
+        ui.v13DeskLens = null; render();
+      }catch(e){ detail = e.message; }
+      check('v13 Desk timeline draws one block per call scheduled today, and Week switches to five day columns', ok, detail);
+      // 3. book list: every account, first selected by default
+      ok = false; detail = '';
+      try{
+        const aside = box().querySelector('aside[aria-label="Your book"]');
+        const rows = aside ? [...aside.querySelectorAll('[data-v13-desk-pick]')] : [];
+        const sel = rows.filter(r => r.getAttribute('aria-pressed') === 'true');
+        const art = box().querySelector('article[aria-label="Selected customer"]');
+        const name = art && art.querySelector('h2');
+        ok = rows.length === DATA.customers.length && sel.length === 1 && sel[0] === rows[0]
+          && !!name && name.textContent.trim() === DATA.customers.find(c => c.id === rows[0].dataset.v13DeskPick).name
+          && aside.textContent.indexOf(DATA.customers.length + ' accounts') !== -1;
+        detail = JSON.stringify({rows: rows.length, want: DATA.customers.length, sel: sel.length, name: name && name.textContent});
+      }catch(e){ detail = e.message; }
+      check('v13 Desk "Your book" lists every account with the first one selected and drawn as the big name', ok, detail);
+      // 4. picking a row selects it, three fact cards, since-last-conversation, nothing written
+      ok = false; detail = '';
+      try{
+        const rows = [...box().querySelectorAll('[data-v13-desk-pick]')];
+        const pick = rows[Math.min(2, rows.length - 1)], id = pick.dataset.v13DeskPick;
+        pick.click();
+        const art = box().querySelector('article[aria-label="Selected customer"]');
+        const facts = art ? art.querySelectorAll('[data-v13-desk-fact]').length : 0;
+        const since = art && art.querySelector('section[aria-label="Since the last conversation"] h3');
+        const clean = JSON.stringify(DATA) === bookBefore && String(localStorage.getItem(STORAGE_KEY) || '').indexOf('v13DeskId') === -1;
+        ok = ui.v13DeskId === id && art.querySelector('h2').textContent.trim() === DATA.customers.find(c => c.id === id).name
+          && facts === 3 && !!since && clean;
+        detail = JSON.stringify({id, got: ui.v13DeskId, facts, since: !!since, clean});
+      }catch(e){ detail = e.message; }
+      check('v13 Desk picking a book row selects that account (browser memory only), with three fact cards and "Since the last conversation"', ok, detail);
+      // 5. work tabs + open full account
+      ok = false; detail = '';
+      try{
+        const tl = box().querySelector('[role="tablist"][aria-label="Customer work"]');
+        const labels = tl ? [...tl.querySelectorAll('[role="tab"]')].map(b => b.textContent.trim()) : [];
+        [...tl.querySelectorAll('[role="tab"]')].find(b => b.textContent.trim() === 'Capture').click();
+        const cap = box().querySelector('[role="tablist"][aria-label="Customer work"] [aria-selected="true"]');
+        const panelHas = !!box().querySelector('[data-v13-desk-panel="capture"]');
+        // Drawing every tab body for every account writes nothing.
+        const dirty = [];
+        DATA.customers.forEach(c => ['prepare','capture','evidence','record'].forEach(t => {
+          ui.v13DeskId = c.id; ui.v13DeskTab = t; render();
+          if(JSON.stringify(DATA) !== bookBefore && !dirty.length) dirty.push(c.id + ':' + t);
+        }));
+        ui.v13DeskTab = 'capture'; render();
+        const id = ui.v13DeskId;
+        box().querySelector('[data-v13-desk-open]').click();
+        ok = labels.join('|') === 'Prepare|Capture|Evidence|Record' && cap && cap.textContent.trim() === 'Capture' && panelHas
+          && ui.openCustomerId === id && !!document.querySelector('.overlay .panel') && !dirty.length;
+        detail = JSON.stringify({labels, cap: cap && cap.textContent, panelHas, open: ui.openCustomerId, id, dirty});
+      }catch(e){ detail = e.message; }
+      check('v13 Desk work tabs are Prepare/Capture/Evidence/Record, switch the body, and "Open full account" opens the existing panel', ok, detail);
+    } finally {
+      try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+      if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
+      try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+      ui.view = prev.view; ui.openCustomerId = prev.open; ui.panelTab = prev.tab; ui.v13DeskId = prev.id; ui.v13DeskTab = prev.wt;
+      ui.v13DeskLens = prev.lens; ui.v13DeskFilter = prev.fil;
+      lastShown.forEach(([c, had, was]) => { if(had) c.lastShownRecommendation = was; else delete c.lastShownRecommendation; });
+      render();
+    }
+  })();
   /* ==== end v13 checks: Desk ==== */
   /* (spacer)
      (spacer)
