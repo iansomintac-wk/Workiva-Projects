@@ -9,5 +9,5 @@
     "gateFieldMap": { "readinessAssessment": "", "csatContact": "", "successPlan": "" },
     "contactQuery": { "object": "", "companyField": "", "nameField": "", "emailField": "", "roleField": "" } },
   "ai": { "adapter": "fake", "model": "", "apiKey": "" },
-  "snowflake": { "adapter": "fake", "account": "", "warehouse": "", "database": "", "schema": "", "table": "", "tokenFile": "" }
+  "snowflake": { "adapter": "fake", "account": "", "user": "", "role": "", "privateKeyFile": "", "sqlFile": "", "warehouse": "", "database": "", "schema": "", "table": "", "tokenFile": "" }
 }

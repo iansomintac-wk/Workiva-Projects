@@ -225,7 +225,7 @@ Connector (Stage B)
 -------------------
 connector/CONTRACT.md defines the HTTP+JSON contract v1 the tracker will use for Gong, Gainsight and
 AI (schemas in connector/schemas/). Only FAKE fixtures exist (connector/fixtures/, and gainsightIds
-GS-DEMO-001..017 in demo-seed.js); gong-rest and gainsight-rest are built and unproven until `--check`; Snowflake is the fake only. Nothing is sent anywhere by the fakes. Contract
+GS-DEMO-001..017 in demo-seed.js); gong-rest and gainsight-rest are built and unproven until `--check`; snowflake-sql is built (zero dependencies) and unproven until `--check`. Nothing is sent anywhere by the fakes. Contract
 tests: node --test --test-reporter=tap "connector/test/*.test.mjs"
 
 Run it (task B2): node connector/server.mjs starts it on 127.0.0.1:8787 (127.0.0.1 only), creates

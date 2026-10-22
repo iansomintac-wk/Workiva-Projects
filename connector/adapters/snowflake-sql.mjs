@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { randomUUID, randomInt } from 'node:crypto';
 import { VendorError, scrubAll } from '../lib/vendor-http.mjs';
 import { buildSnowflakeJwt } from '../lib/snowflake-jwt.mjs';
+import { loadProofSafe, isProven, tenantOf, healthName } from '../lib/state.mjs';
 import { assertReadOnlySql } from '../lib/snowflake-guard.mjs';
 
 const FIELDS = ['SALESFORCE_ACCOUNT_ID', 'GAINSIGHT_COMPANY_ID', 'COMPANY_NAME', 'CSAT_SENT_DATE', 'CSAT_ANSWERED_DATE'];
@@ -90,5 +91,5 @@ export function create(cfg = {}, deps = {}) {
     return rows;
   }
 
-  return { name: 'snowflake-sql (unproven)', listCsat };
+  return { get name() { return healthName('snowflake-sql', { proven: isProven(loadProofSafe(deps.stateDir), 'snowflake', 'read', tenantOf('snowflake', cfg)) }); }, listCsat };
 }

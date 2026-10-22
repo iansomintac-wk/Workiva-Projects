@@ -17,6 +17,10 @@ Each external system is a slot with a small set of methods. Today every slot is 
 4. Write tests that run under `test-net-guard` (`installNetGuard()`), which blocks non-loopback `fetch` so a test cannot reach the real network.
 5. Give each response a schema in `connector/schemas`.
 
+## Snowflake
+
+See `CONNECT-SNOWFLAKE.md`. `snowflake-sql` is built with no dependencies and is unproven until `--check` reads a row count from your account.
+
 ## Gainsight
 
 See `CONNECT-GAINSIGHT.md`. Dry-run is the default: with `dryRun` true (as in `config.example.json`) nothing is sent, each item fails with the dry-run error, and the request is logged.

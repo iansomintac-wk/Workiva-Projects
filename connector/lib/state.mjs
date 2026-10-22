@@ -25,6 +25,7 @@ export function tenantOf(slot, cfg = {}) {
   if (slot === 'gainsight') {
     return { appUrl: String(cfg.appUrl || '').replace(/\/+$/, ''), apiBaseUrl: String(cfg.apiBaseUrl || cfg.appUrl || '').replace(/\/+$/, ''), tenantId: String(cfg.tenantId || '') };
   }
+  if (slot === 'snowflake') return { account: String(cfg.account || ''), user: String(cfg.user || '') };
   throw new Error(`no tenant for slot ${slot}`);
 }
 export const sameTenant = (a, b) => !!a && !!b && JSON.stringify(a) === JSON.stringify(b);

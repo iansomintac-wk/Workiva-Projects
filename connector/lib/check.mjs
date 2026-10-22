@@ -2,6 +2,8 @@
 // PASS, FAIL <step>: <what to fix>; who fixes it: <who>, or SKIP. Exit 0 when nothing FAILs. Node built-ins only.
 import { loadAdapters } from '../adapters/index.mjs';
 import { FIELD_KEYS, GATE_KEYS } from '../adapters/gainsight-rest.mjs';
+import { readFileSync } from 'node:fs';
+import { buildSnowflakeJwt } from './snowflake-jwt.mjs';
 import { recordProof, tenantOf } from './state.mjs';
 
 const blank = (v) => !String(v == null ? '' : v).trim();
@@ -16,6 +18,7 @@ export async function runCheck({ config = {}, stateDir, deps = {}, out = console
   const ad = loadAdapters(config, { ...deps, stateDir });
   await checkGong(config.gong || {}, ad.gong, o, stateDir, now);
   await checkGainsight(config.gainsight || {}, ad.gainsight, o, stateDir, now, write, config, deps);
+  await checkSnowflake(config.snowflake || {}, ad.snowflake, o, stateDir, now, deps);
   return fails ? 1 : 0;
 }
 
@@ -43,6 +46,28 @@ async function checkGong(cfg, gong, o, stateDir, now) {
     pageKeys: Object.keys(page), callKeys: Object.keys(c), metaDataKeys: Object.keys(c.metaData || {}),
     contentKeys: Object.keys(c.content || {}), briefType: typeof (c.content || {}).brief } });
   o.pass('gong proof recorded', 'health now reports gong-rest');
+}
+
+// Row COUNT only: no row value, key text or token is ever printed.
+async function checkSnowflake(cfg, sf, o, stateDir, now, deps) {
+  if (cfg.adapter !== 'snowflake-sql') return o.skip('snowflake', `not configured (adapter is "${cfg.adapter || 'fake'}")`);
+  const missing = ['account', 'user', 'privateKeyFile', 'sqlFile'].filter((k) => blank(cfg[k]));
+  if (missing.length) return o.fail('snowflake config', `missing snowflake.${missing.join(', snowflake.')}; see CONNECT-SNOWFLAKE.md`, 'Ian');
+  o.pass('snowflake config');
+  let pem;
+  try { pem = readFileSync(cfg.privateKeyFile, 'utf8'); } catch { return o.fail('snowflake key file', 'snowflake.privateKeyFile cannot be read', 'Ian (check the path)'); }
+  try { buildSnowflakeJwt({ account: cfg.account, user: cfg.user, privateKeyPem: pem, now: Math.floor(now().getTime() / 1000) }); } catch {
+    return o.fail('snowflake jwt', 'the key file is not an unencrypted PKCS#8 RSA private key', 'Ian (or the Snowflake admin: regenerate the key pair)');
+  }
+  o.pass('snowflake key file');
+  o.pass('snowflake jwt');
+  let rows;
+  try { rows = await sf.listCsat(); } catch (e) {
+    return o.fail('snowflake read', e.message, e.status === 401 || e.status === 403 ? 'Snowflake admin (public key on the user, read-only role, network policy)' : 'Ian');
+  }
+  o.pass('snowflake read', `${rows.length} row(s)`);
+  recordProof(stateDir, 'snowflake', 'read', { tenant: tenantOf('snowflake', cfg), now: now(), shapes: { rowCount: rows.length } });
+  o.pass('snowflake proof recorded', 'health now reports snowflake-sql');
 }
 
 async function checkGainsight(cfg, gs, o, stateDir, now, write, config, deps) {
