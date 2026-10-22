@@ -55,7 +55,7 @@
       { // T4: drawing and tab clicks
         let clicked = 0;                                // how many tabs were really found and clicked
         const clickTabs = async () => { for(const v of ['today','accounts','risk','copilot','today']){
-          const t = document.querySelector(`.tab[data-view="${v}"]`); if(t){ t.click(); clicked++; } await settle(); } };
+          const t = document.querySelector(`.tab[data-view="${v}"], [data-v13-nav="${v === 'today' ? 'desk' : v}"]`); if(t){ t.click(); clicked++; } await settle(); } };
         await clickTabs();                              // first round may stamp genuinely new state
         const c1 = clicked;
         const w0 = bookWrites();

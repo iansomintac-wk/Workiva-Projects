@@ -212,7 +212,7 @@ Running the graduation checks headlessly (needs Chrome or Edge):
   step 1 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 72
   FX1 probe (stale tab, deferred backup write): node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/b2-fx1-probe.js --fn b2Fx1Probe --expect 2
   step 1 cold start (C8): node tools/step1-coldstart.mjs
-  tools/selfchecks-1.1.js is the 1.1 copy of the suite (475 checks plus 5 gone-quiet checks, three edited, plus the two v72 beat-pane checks Task 6 of the v13 fixes edited and one tightened, see CHANGELOG; with the later 1.1 and v13 screen checks and the four v13 look2 checks, 560 in all).
+  tools/selfchecks-1.1.js is the 1.1 copy of the suite (475 checks plus 5 gone-quiet checks, three edited, plus the two v72 beat-pane checks Task 6 of the v13 fixes edited and one tightened, see CHANGELOG; with the later 1.1 and v13 screen checks and the four v13 look2 checks, 564 in all).
 
 The second runs six end-to-end scenarios (A3-A8) and prints the measured value
 for each. --seed takes a comma-separated list, run in order; --verbose also
@@ -312,7 +312,7 @@ tools/selfchecks.js (it is not in the shipped file); the guide's is in the page.
   step 1 probe: node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 72
   FX1 probe (stale tab, deferred backup write): node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/b2-fx1-probe.js --fn b2Fx1Probe --expect 2
   step 1 cold start (C8): node tools/step1-coldstart.mjs
-  tools/selfchecks-1.1.js is the 1.1 copy of the suite (475 checks plus 5 gone-quiet checks, three edited, plus the two v72 beat-pane checks Task 6 of the v13 fixes edited and one tightened, see CHANGELOG; with the later 1.1 and v13 screen checks and the four v13 look2 checks, 560 in all).
+  tools/selfchecks-1.1.js is the 1.1 copy of the suite (475 checks plus 5 gone-quiet checks, three edited, plus the two v72 beat-pane checks Task 6 of the v13 fixes edited and one tightened, see CHANGELOG; with the later 1.1 and v13 screen checks and the four v13 look2 checks, 564 in all).
   guide:    node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18
             must be 18/18 (window.runGuideSelfChecks() also works in the console)
 

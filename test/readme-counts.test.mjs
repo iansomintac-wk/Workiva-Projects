@@ -30,3 +30,10 @@ test('README Connector section names the built adapters as unproven', () => {
   const sec = readme.slice(readme.indexOf('Connector (Stage B)'));
   for (const w of ['gong-rest', 'gainsight-rest', 'unproven']) assert.ok(sec.includes(w), w);
 });
+test('prose counts ("N in all", "N in-page checks") equal the --expect number', () => {
+  const n = readme.match(/osm-book-of-business-tracker-1\.1\.html --seed demo-seed\.js --expect (\d+)/)[1];
+  const prose = [...readme.matchAll(/\b(\d+) in all\b/g)].map(m => m[1])
+    .concat([...hosting.matchAll(/\b(\d+) in-page checks\b/g)].map(m => m[1]));
+  assert.ok(prose.length >= 3, 'expected 2 README + 1 HOSTING prose counts, found ' + prose.length);
+  for (const p of prose) assert.equal(p, n, `prose count ${p} != --expect ${n}`);
+});
