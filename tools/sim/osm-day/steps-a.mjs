@@ -27,25 +27,28 @@ async function confirmWithReason(ctx, id, text) {
   return true;
 }
 async function staysListed(ctx, id, reason) {
-  const r = JSON.parse(await ctx.ev(`(() => { const el = document.getElementById('rk-c-${id}');
-    const deck = [...document.querySelectorAll('.rk3-stage .rk3-card')]; const sig = document.querySelector('.rk-signals');
-    return JSON.stringify({ exists: !!el, inDeck: !!el && deck.includes(el), confirmed: !!el && el.classList.contains('confirmed'),
-      work: !!el && !!el.querySelector('.rk-work'),
-      workShown: !!el && !!el.querySelector('.rk-work') && el.querySelector('.rk-work').getBoundingClientRect().height > 0 && el.querySelector('.rk-work').offsetParent !== null,
-      why: !!el && !!el.querySelector('.rk-confirmed-why'),
-      reasonShown: !!el && [...el.querySelectorAll('.rk-confirmed-why')].some(w => w.textContent.includes(${JSON.stringify(reason)})),
-      stillSignal: !!(sig && sig.querySelector('#rk-c-${id}')), deckN: deck.length,
-      deckBeforeSignals: !sig || !deck.length || !!(deck[deck.length - 1].compareDocumentPosition(sig) & Node.DOCUMENT_POSITION_FOLLOWING) }); })()`));
-  r.ok = r.exists && r.inDeck && r.confirmed && r.work && r.workShown && r.why && r.reasonShown && !r.stillSignal && r.deckBeforeSignals;
+  // v13 Risk: a confirmed case is a card in the Confirmed risks sheet (with the user's reason and a visible Open commitments
+  // route) and is no longer a row in the Signals to check sheet.
+  const r = JSON.parse(await ctx.ev(`(() => { const card = document.querySelector('[data-v13-risk-confirmed] [data-v13-risk-card="${id}"]');
+    const sig = document.querySelector('[data-v13-risk-signals] [data-v13-signal="${id}"]');
+    const open = card && card.querySelector('[data-open-cust="${id}"]');
+    return JSON.stringify({ exists: !!card, confirmed: !!card, work: !!open, workShown: !!open && open.getBoundingClientRect().height > 0 && open.offsetParent !== null,
+      reasonShown: !!card && card.textContent.includes(${JSON.stringify(reason)}), stillSignal: !!sig }); })()`));
+  r.ok = r.exists && r.confirmed && r.work && r.workShown && r.reasonShown && !r.stillSignal;
   return r;
 }
 
-// Text of one account's beat panel as the Today screen renders it, with no click-through.
+// Everything the v13 Desk shows for one account with no overlay: the selected account's four work tabs, read tab by tab.
+// (v13 has no beat panel: Call prep, the agenda, the promises block, Sentiment and the Go-Live gates note are not drawn
+// anywhere, so a step that wants them reports FAIL against this text rather than being loosened.)
 const panelText = (ctx, name) => ctx.ev(`(() => {
   const c = DATA.customers.find(x => x.name === ${JSON.stringify(name)});
-  ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = c.id; render();
-  const p = document.querySelector('.day-pane[data-day-holds="' + c.id + '"]');
-  return p ? p.textContent.replace(/\\s+/g, ' ').trim() : null; })()`);
+  ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = c.id; ui.v13DeskFilter = null;
+  let all = '';
+  for (const t of ['prepare', 'capture', 'evidence', 'record']) { ui.v13DeskTab = t; render();
+    const p = document.querySelector('[data-v13-desk-body]'); all += ' ' + (p ? p.textContent : ''); }
+  ui.v13DeskTab = 'prepare'; render();
+  return all.trim() ? all.replace(/\\s+/g, ' ').trim() : null; })()`);
 
 const checkTexts = (text, wanted) => wanted.filter(w => !(text || '').includes(w));
 
@@ -85,17 +88,21 @@ export function d3AgendaJudge({ found, text = '', items, copy, clip = '' } = {})
 export const PART_A = [
   { id: 'D1', async run(ctx) {
     await ctx.openOn(DAY);
-    await ctx.ev(`ui.view = 'today'; render(); true`);
-    const beats = JSON.parse(await ctx.ev(`JSON.stringify([...document.querySelectorAll('[data-day-step]')].map(s => ({
-      name: s.querySelector('h4').textContent.trim(), eyebrow: s.querySelector('.ds-eyebrow').textContent.trim() }))
-      .filter(b => /call/.test(b.eyebrow)))`));
+    // v13 Desk, Day lens: one [data-v13-desk-call] row per call booked today ("10:00am · 60 min Orion ...", no time when unset).
+    await ctx.ev(`ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskLens = 'day'; ui.v13DeskFilter = null; render(); true`);
     const impl = ctx.state.setup.implAccount;
+    const names = [ORION, 'Aurora Renewables', impl];
+    const beats = JSON.parse(await ctx.ev(`JSON.stringify([...document.querySelectorAll('[data-v13-desk-call]')].map(s => s.textContent.replace(/\\s+/g, ' ').trim()))`));
     const want = { [ORION]: '10:00am', 'Aurora Renewables': '1:30pm', [impl]: 'time not set' };
-    const got = Object.fromEntries(beats.map(b => [b.name, b.eyebrow]));
     const problems = [];
-    for (const n of Object.keys(want)) if (!(n in got)) problems.push(`missing ${n}`); else if (!got[n].includes(want[n])) problems.push(`${n} shows "${got[n]}"`);
-    for (const n of Object.keys(got)) if (!(n in want)) problems.push(`unexpected ${n}`);
-    return { passed: !problems.length && beats.length === 3, evidence: `${beats.length} call beats: ${beats.map(b => b.name + ' (' + b.eyebrow.replace(/^\d+ of \d+ . /, '') + ')').join('; ')}${problems.length ? ' | ' + problems.join('; ') : ''}` };
+    const rowOf = n => beats.find(b => b.includes(n));
+    for (const n of names) {
+      const row = rowOf(n);
+      if (!row) problems.push(`missing ${n}`);
+      else if (want[n] === 'time not set' ? /\d{1,2}:\d\d\s*[ap]m/i.test(row) : !row.includes(want[n])) problems.push(`${n} shows "${row}"`);
+    }
+    for (const b of beats) if (!names.some(n => b.includes(n))) problems.push(`unexpected ${b}`);
+    return { passed: !problems.length && beats.length === 3, evidence: `${beats.length} call rows: ${beats.join('; ')}${problems.length ? ' | ' + problems.join('; ') : ''}` };
   } },
   { id: 'D2', async run(ctx) {
     const text = await orionPanel(ctx);
@@ -115,8 +122,8 @@ export const PART_A = [
     const info = JSON.parse(await ctx.ev(`(async () => {
       window.__clip = null; navigator.clipboard.writeText = t => { window.__clip = t; return Promise.resolve(); };
       const c = DATA.customers.find(x => x.name === ${JSON.stringify(ORION)});
-      ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = c.id; render();
-      const pane = document.querySelector('.day-pane[data-day-holds="' + c.id + '"]');
+      ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = c.id; ui.v13DeskTab = 'prepare'; render();
+      const pane = document.querySelector('[data-v13-desk-body]');
       const p = pane && pane.querySelector('[data-beat-agenda]');
       const btn = p && p.querySelector('[data-beat-agenda-copy]');
       const text = p ? p.innerText : '';
@@ -224,7 +231,7 @@ export const PART_A = [
   { id: 'D8', async run(ctx) {
     await ctx.openOn(DAY);
     const id = await ctx.ev(`DATA.customers.find(x => x.name === 'Coastal Water Authority').id`);
-    const card = `(() => { const el = document.getElementById('rk-c-${id}'); return el ? el.className : null; })()`;
+    const card = `(() => { const el = document.querySelector('[data-v13-risk-card="${id}"],[data-v13-signal="${id}"]'); return el ? (el.hasAttribute('data-v13-risk-card') ? 'confirmed' : 'signal') : null; })()`;
     const lastActioned = `(() => { const k = buildRiskCases(buildRiskHubList()).find(k => k.c.id === ${JSON.stringify(id)}); return k ? k.items.map(it => (it.tracking && it.tracking.lastActioned) || null).join(',') : null; })()`;
     await ctx.ev(`ui.view = 'risk'; ui.openCustomerId = null; render(); true`);
     await sleep(300);
@@ -245,9 +252,13 @@ export const PART_A = [
     await ctx.openOn(DAY);
     const impl = ctx.state.setup.implAccount;
     const heads = name => ctx.ev(`(() => { const c = DATA.customers.find(x => x.name === ${JSON.stringify(name)});
-      ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = c.id; render();
-      const p = document.querySelector('.day-pane[data-day-holds="' + c.id + '"]');
-      return p ? JSON.stringify([...p.querySelectorAll('h5')].map(h => h.textContent.replace(/\\s+/g, ' ').trim())) : null; })()`);
+      ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = c.id; ui.v13DeskFilter = null;
+      const out = []; let any = false;
+      for (const t of ['prepare', 'capture', 'evidence', 'record']) { ui.v13DeskTab = t; render();
+        const p = document.querySelector('[data-v13-desk-body]'); if (p) any = true;
+        if (p) out.push(...[...p.querySelectorAll('h5')].map(h => h.textContent.replace(/\\s+/g, ' ').trim())); }
+      ui.v13DeskTab = 'prepare'; render();
+      return any ? JSON.stringify(out) : null; })()`);
     const implHeads = JSON.parse(await heads(impl) || 'null');
     if (!implHeads) return { passed: false, evidence: `${impl} has no beat panel on Today` };
     const implOk = implHeads.some(h => h.includes('Gainsight gates start at Go-Live')) && !implHeads.some(h => h.startsWith('Sentiment'));
@@ -259,8 +270,8 @@ export const PART_A = [
     const id = await ctx.ev(`DATA.customers.find(x => x.name === ${JSON.stringify(ORION)}).id`);
     let after = null, done = null;
     if (before) {
-      await ctx.ev(`(() => { const c = DATA.customers.find(x => x.name === ${JSON.stringify(ORION)}); ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = c.id; render();
-        const b = document.querySelector('.day-pane[data-day-holds="' + c.id + '"] [data-fp-toggle="sentiment|' + c.id + '"]'); if (!b) throw new Error('no sentiment toggle in the Orion pane'); b.click(); return true; })()`);
+      await ctx.ev(`(() => { const c = DATA.customers.find(x => x.name === ${JSON.stringify(ORION)}); ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = c.id; render();
+        const b = document.querySelector('[data-v13-desk-body] [data-fp-toggle="sentiment|' + c.id + '"]'); if (!b) throw new Error('no sentiment toggle in the Orion pane'); b.click(); return true; })()`);
       await sleep(400);
       after = sent(JSON.parse(await heads(ORION) || '[]'));
       done = await ctx.ev(`!!DATA.customers.find(x => x.name === ${JSON.stringify(ORION)}).compliance.sentiment.done`);
@@ -273,6 +284,8 @@ export const PART_A = [
     await ctx.ev(`ui.view = 'today'; ui.openCustomerId = null; render(); true`);
     await sleep(300);
     if (await ctx.ev(`dayIsClosed()`)) throw new Error('D10: the day was already closed before wrap-up');
+    // v13 draws neither "Wrap up the day" nor a "Back up the book" button on its screens; a missing control is a FAIL, not a throw.
+    if (!(await ctx.ev(`!!document.querySelector('[data-wrap-day]')`))) return { passed: false, evidence: 'v13 has no "Wrap up the day" control on any screen, so the day cannot be closed from the UI' };
     await ctx.click('[data-wrap-day]');
     await sleep(500);
     const closed = await ctx.ev(`dayIsClosed() && getDayClose().date === todayISO()`);
