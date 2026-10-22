@@ -2,11 +2,12 @@
 // Team demo launcher: a fake-adapter connector plus a 127.0.0.1:8801 server for the 1.1 tracker.
 //   node tools/team-demo.mjs [--headless] [--no-open] [--exit-after-ready]
 // Chrome opens the walkthrough with a fresh --user-data-dir under the temp folder (--headless adds --headless=new and a debugging port; --no-open skips Chrome).
+// /built shows how it is built: the connector suite runs live at launch; counts come from docs/evidence/team-demo-counts.json.
 // Everything is loopback and fake (no key, no external network). Temp files live in os.tmpdir()/team-demo-XXXX.
 // Ctrl+C, SIGTERM, a crash, Chrome exiting or GET /__stop (from 127.0.0.1) stop every child by PID and delete the temp folder.
 // Never touches ports 8790 or 8800. NOT part of the distributable bundle.
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -30,7 +31,7 @@ const FILES = {
   '/demo-seed.js': ['demo-seed.js', 'text/javascript; charset=utf-8'],
 };
 
-let tmp = null, connector = null, chrome = null, server = null, stopping = null, connectorUrl = '', connectorToken = '';
+let tmp = null, connector = null, chrome = null, server = null, stopping = null, connectorUrl = '', connectorToken = '', suite = { tests: 0, pass: 0, fail: 0, ranAt: '' };
 
 function killTree(child) {
   if (!child || !child.pid || child.exitCode !== null || child.signalCode !== null) return;
@@ -76,8 +77,46 @@ function startConnector() {
   });
 }
 
+// Runs the connector tests once, with an explicit file list (no glob), and reads the spec summary.
+function runConnectorSuite() {
+  const files = readdirSync(join(root, 'connector', 'test')).filter((f) => f.endsWith('.test.mjs')).sort().map((f) => join('connector', 'test', f));
+  const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => k !== 'NODE_TEST_CONTEXT'));
+  return new Promise((resolve) => {
+    const p = spawn(process.execPath, ['--test', '--test-reporter=spec', ...files], { cwd: root, env, stdio: ['ignore', 'pipe', 'pipe'] });
+    let out = '';
+    p.stdout.on('data', (d) => { out += d; }); p.stderr.on('data', (d) => { out += d; });
+    const n = (k) => Number((out.match(new RegExp('^ℹ ' + k + ' (\\d+)$', 'm')) || [])[1] || 0);
+    p.on('close', () => { suite = { tests: n('tests'), pass: n('pass'), fail: n('fail'), ranAt: new Date().toISOString() }; resolve(); });
+  });
+}
+
+const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+async function builtData() {
+  let adapters = { gong: 'unknown (unproven)', gainsight: 'unknown (unproven)', ai: 'unknown (unproven)', snowflake: 'unknown (unproven)' };
+  try {
+    const r = await fetch(connectorUrl + '/v1/health', { headers: { authorization: 'Bearer ' + connectorToken } });
+    const j = await r.json();
+    const a = (j && j.adapters) || {};
+    for (const k of Object.keys(adapters)) if (a[k]) adapters[k] = String(a[k]);
+  } catch {}
+  let evidence = [];
+  try { evidence = JSON.parse(readFileSync(join(root, 'docs', 'evidence', 'team-demo-counts.json'), 'utf8')).entries.map((e) => ({ label: e.label, count: e.count, commit: e.commit, date: e.date })); } catch {}
+  return { connector: suite, adapters, evidence };
+}
+
+function builtPage(d) {
+  const tag = (n) => (n === 'fake' ? 'fake' : /unproven/i.test(n) ? n : n + ' (unproven)');
+  const adapters = Object.keys(d.adapters).map((k) => `<li data-adapter="${k}">${esc(k)}: ${esc(tag(d.adapters[k]))}</li>`).join('\n');
+  const evidence = d.evidence.map((e) => `<tr><td>${esc(e.label)}</td><td>${esc(e.count)}</td><td>${esc(e.commit)}</td><td>${esc(e.date)}</td></tr>`).join('\n');
+  const c = d.connector;
+  const line = `${c.pass} of ${c.tests} passed, ${c.fail} failed (ran ${esc(c.ranAt)}).`;
+  return readFileSync(join(root, 'tools', 'team-demo', 'built.html'), 'utf8')
+    .replace('<!--SUITE-->', () => line).replace('<!--ADAPTERS-->', () => adapters).replace('<!--EVIDENCE-->', () => evidence);
+}
+
 function listen() {
-  server = createServer((req, res) => {
+  server = createServer(async (req, res) => {
     const path = (req.url || '/').split('?')[0];
     const local = req.socket.remoteAddress === '127.0.0.1' || req.socket.remoteAddress === '::ffff:127.0.0.1';
     if (path === '/__stop') {
@@ -89,6 +128,12 @@ function listen() {
     if (path === '/demo-connector-seed.js') {
       const body = `try{localStorage.setItem('obm-connector-settings-v1',${JSON.stringify(JSON.stringify({ url: connectorUrl, token: connectorToken }))});}catch(e){}\n`;
       res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-store' }).end(body);
+      return;
+    }
+    if ((path === '/built' || path === '/built.json') && (req.method === 'GET' || req.method === 'HEAD')) {
+      const d = await builtData();
+      if (path === '/built.json') res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }).end(JSON.stringify(d));
+      else res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' }).end(builtPage(d));
       return;
     }
     const f = FILES[path];
@@ -108,7 +153,7 @@ async function main() {
     throw e;
   }
   tmp = mkdtempSync(join(tmpdir(), 'team-demo-'));
-  const c = await startConnector();
+  const [c] = await Promise.all([startConnector(), runConnectorSuite()]);
   connectorUrl = c.url; connectorToken = c.token;
   const base = `http://127.0.0.1:${PORT}/`;
   const profile = join(tmp, 'chrome-profile');
@@ -121,7 +166,7 @@ async function main() {
     } else console.error('team-demo: no Chrome or Edge found; open ' + base + 'walkthrough yourself');
   }
   const pids = [process.pid, connector.pid, chrome && chrome.pid].filter(Boolean).join(',');
-  console.log(`team-demo: ready ${base} walkthrough=${base}walkthrough built=${base}osm-book-of-business-tracker-1.1.html connector-pid=${connector.pid} pids=${pids} tmp=${tmp} chrome-profile=${profile} connector=${connectorUrl}`);
+  console.log(`team-demo: ready ${base} walkthrough=${base}walkthrough built=${base}built connector-pid=${connector.pid} pids=${pids} tmp=${tmp} chrome-profile=${profile} connector=${connectorUrl}`);
   if (args.has('--exit-after-ready')) await shutdown(0);
 }
 

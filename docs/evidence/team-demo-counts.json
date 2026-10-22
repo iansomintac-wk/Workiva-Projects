@@ -1,0 +1,40 @@
+{
+  "note": "Measured by running each command once; read by tools/team-demo.mjs for the /built page.",
+  "entries": [
+    {
+      "label": "Tracker 1.1 self-check",
+      "command": "node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 503",
+      "count": 503,
+      "commit": "2f6ff23",
+      "date": "2026-10-22"
+    },
+    {
+      "label": "Step 1 probe",
+      "command": "node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/step1-fixture.js,tools/step1-probe.js --fn step1Probe --expect 72",
+      "count": 72,
+      "commit": "2f6ff23",
+      "date": "2026-10-22"
+    },
+    {
+      "label": "Tracker 1.0 self-check",
+      "command": "node tools/selfcheck.mjs osm-book-of-business-tracker-1.0.html --seed demo-seed.js --expect 475",
+      "count": 475,
+      "commit": "2f6ff23",
+      "date": "2026-10-22"
+    },
+    {
+      "label": "Onboarding guide self-check",
+      "command": "node tools/selfcheck.mjs osm-runway-onboarding-1.0.html --fn runGuideSelfChecks --expect 18",
+      "count": 18,
+      "commit": "2f6ff23",
+      "date": "2026-10-22"
+    },
+    {
+      "label": "Main test suite (passed)",
+      "command": "node --test --test-reporter=spec test/*.test.mjs",
+      "count": 433,
+      "commit": "2f6ff23",
+      "date": "2026-10-22"
+    }
+  ]
+}

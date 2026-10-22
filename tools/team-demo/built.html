@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>How the team demo is built</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --ink: #1d2433;
+  --muted: #5b6475;
+  --line: #d9dde5;
+  --accent: #1f5fbf;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 24px; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 760px; margin: 0 auto; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+h2 { font-size: 17px; margin: 0 0 6px; color: var(--accent); }
+.sub { color: var(--muted); margin: 0 0 16px; }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+ul { margin: 0; padding-left: 20px; }
+table { border-collapse: collapse; width: 100%; }
+td, th { text-align: left; padding: 3px 8px 3px 0; border-bottom: 1px solid var(--line); }
+.muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+<h1>How it's built</h1>
+<p class="sub">What is running behind the walkthrough, and what has been measured. <a href="/walkthrough">Back to the walkthrough</a></p>
+<section id="suite">
+  <h2>Connector tests, run live at launch</h2>
+  <p><!--SUITE--></p>
+</section>
+<section id="adapters">
+  <h2>Adapters</h2>
+  <p class="muted">Read live from the connector's health line. Anything that is not fake is unproven against a real tenant.</p>
+  <ul><!--ADAPTERS--></ul>
+</section>
+<section id="rails">
+  <h2>Safety rails</h2>
+  <ul>
+    <li>127.0.0.1 only: the connector and this page listen on the loopback address and nothing else.</li>
+    <li>Bearer token: every connector call must carry the token written to a private temp folder.</li>
+    <li>Dry-run by default: sends are previewed and nothing is written until you confirm.</li>
+    <li>Write gate: writes to Gainsight stay off unless the gate is switched on in the connector's config.</li>
+    <li>Sandbox first: the first real writes go to a sandbox tenant, never production.</li>
+    <li>Idempotent item ids: each update carries a stable id, so a retry cannot apply it twice.</li>
+    <li>Offline rule: when the connector is down, the tracker changes nothing.</li>
+  </ul>
+</section>
+<section id="evidence">
+  <h2>Evidence counts</h2>
+  <p class="muted">Read from docs/evidence/team-demo-counts.json; each count was measured at the commit and date shown.</p>
+  <table><thead><tr><th>Check</th><th>Count</th><th>Commit</th><th>Date</th></tr></thead><tbody><!--EVIDENCE--></tbody></table>
+</section>
+</main>
+</body>
+</html>

@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import net from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -102,4 +102,50 @@ test('walkthrough page has five steps, fake/unproven health, and only loopback U
     await new Promise((r) => { if (child.exitCode !== null) r(); else { child.once('exit', r); setTimeout(r, 20000); } });
     await assertGone(info);
   } finally { if (child.exitCode === null && child.pid) spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' }); }
+});
+
+function connectorPassCount() {
+  const dir = join(root, 'connector', 'test');
+  const files = readdirSync(dir).filter((f) => f.endsWith('.test.mjs')).sort().map((f) => join('connector', 'test', f));
+  const r = spawnSync(process.execPath, ['--test', '--test-reporter=spec', ...files], { cwd: root, encoding: 'utf8', timeout: 120000, env });
+  const out = (r.stdout || '') + (r.stderr || '');
+  return { pass: Number((out.match(/^ℹ pass (\d+)$/m) || [])[1]), fail: Number((out.match(/^ℹ fail (\d+)$/m) || [])[1]) };
+}
+
+test('/built and /built.json show the live connector suite, the adapters and dated evidence counts', { skip }, async () => {
+  const child = spawn(process.execPath, [launcher, '--headless', '--no-open'], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+  let out = '';
+  child.stdout.on('data', (d) => { out += d; }); child.stderr.on('data', (d) => { out += d; });
+  try {
+    for (let i = 0; i < 240 && !/team-demo: ready/.test(out); i++) await sleep(250);
+    const info = parseReady(out);
+    assert.match(out, /built=http:\/\/127\.0\.0\.1:8801\/built(\s|$)/);
+    const second = connectorPassCount();
+    const j = await (await fetch('http://127.0.0.1:8801/built.json')).json();
+    assert.ok(j.connector.tests > 0);
+    assert.equal(j.connector.pass, second.pass);
+    assert.equal(j.connector.fail, 0);
+    assert.ok(j.connector.ranAt);
+    for (const k of ['gong', 'gainsight', 'ai', 'snowflake']) assert.equal(typeof j.adapters[k], 'string', k);
+    assert.ok(j.evidence.length >= 5);
+    for (const e of j.evidence) { assert.ok(e.label && e.commit && e.date, JSON.stringify(e)); assert.equal(typeof e.count, 'number'); }
+    const res = await fetch('http://127.0.0.1:8801/built');
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type'), /text\/html/);
+    const html = await res.text();
+    for (const phrase of ['127.0.0.1 only', 'bearer token', 'dry-run by default', 'write gate', 'sandbox first', 'idempotent item ids', 'offline rule']) {
+      assert.ok(html.toLowerCase().includes(phrase), 'missing rail: ' + phrase);
+    }
+    for (const k of ['gong', 'gainsight', 'ai', 'snowflake']) assert.match(html, new RegExp(`data-adapter="${k}"[^>]*>[^<]*\\b(fake|unproven)\\b`), k);
+    for (const e of j.evidence) assert.ok(html.includes(e.commit) && html.includes(e.date) && html.includes(String(e.count)), e.label);
+    await fetch('http://127.0.0.1:8801/__stop').catch(() => {});
+    await new Promise((r) => { if (child.exitCode !== null) r(); else { child.once('exit', r); setTimeout(r, 20000); } });
+    await assertGone(info);
+  } finally { if (child.exitCode === null && child.pid) spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' }); }
+});
+
+test('built.html has no typed count literals; counts come from the evidence file', () => {
+  const p = join(root, 'tools', 'team-demo', 'built.html');
+  assert.ok(existsSync(p), 'built.html missing');
+  assert.doesNotMatch(readFileSync(p, 'utf8'), /\b(503|475|180|72)\b/);
 });
