@@ -10367,6 +10367,43 @@ function _runSelfChecksInner(){
       }
     }catch(e){ detail = e.message; }
     check('v13 Co-pilot "Start this play" starts the suggested play through 1.1\'s startPlaybook', pbOk, detail);
+    // 7-8. fixture: a call booked today with prep owed, and an overdue commitment. Built in-page, restored after.
+    const FIXTURE_ON = true; // control run: set false and both checks below must fail
+    const live = DATA.customers.filter(c => c.stage !== 'graduated' && !isPaused(c));
+    const callC = live[0], dueC = live[1];
+    const snap = c => ({s: c.nextSessionScheduledOn, hadS: 'nextSessionScheduledOn' in c, k: JSON.stringify(c.commitments), hadK: 'commitments' in c});
+    const undo = (c, s) => { if(s.hadS) c.nextSessionScheduledOn = s.s; else delete c.nextSessionScheduledOn; if(s.hadK) c.commitments = JSON.parse(s.k); else delete c.commitments; };
+    const sCall = callC && snap(callC), sDue = dueC && snap(dueC);
+    const groupOf = (box, name) => box ? box.querySelector('[data-v13-co-group="' + name + '"]') : null;
+    const countOf = g => g ? Number(g.querySelector('p span').textContent) : 0;
+    const base = (function(){ const b = draw(); return {before: countOf(groupOf(b, BK[0])), overdue: countOf(groupOf(b, BK[2])), overdueCard: !!(b && b.querySelector('[data-v13-co-card][data-cust="' + (dueC && dueC.id) + '"][data-kind="row"]') && /FIXTURE-OVERDUE/.test(b.textContent))}; })();
+    if(FIXTURE_ON && callC && dueC){
+      callC.nextSessionScheduledOn = todayISO();
+      dueC.commitments = [{id: 'fx-overdue', text: 'FIXTURE-OVERDUE send the rollout note', direction: 'i_owe', due: isoAddDays(todayISO(), -3), doneOn: null}];
+    }
+    let bfOk = false; detail = '';
+    try{
+      const box = draw();
+      const g = groupOf(box, BK[0]);
+      const cards = g ? [...g.querySelectorAll('[data-v13-co-card][data-kind="brief"]')] : [];
+      const mine = cards.filter(cd => cd.getAttribute('data-cust') === (callC && callC.id));
+      const n = callsToPrepare(0).length;
+      bfOk = !!g && base.before === 0 && countOf(g) === n && cards.length === n && mine.length === 1 && /Goal:/.test(mine[0].textContent)
+        && box.querySelector('[data-v13-co-group]').getAttribute('data-v13-co-group') === BK[0];
+      detail = JSON.stringify({baseBefore: base.before, group: !!g, count: g && countOf(g), calls: n, cards: cards.length, mine: mine.length});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot "Before today’s calls" shows a brief card for the account booked today, with the right count, first in the list, and the group is absent without a call booked today', bfOk, detail);
+    let odOk = false; detail = '';
+    try{
+      const box = draw();
+      const g = groupOf(box, BK[2]);
+      const mine = g ? [...g.querySelectorAll('[data-v13-co-card][data-kind="row"]')].filter(cd => cd.getAttribute('data-cust') === (dueC && dueC.id) && /FIXTURE-OVERDUE/.test(cd.textContent)) : [];
+      const total = g ? g.querySelectorAll('[data-v13-co-card]').length : 0;
+      odOk = !!g && !base.overdueCard && mine.length === 1 && countOf(g) === total && countOf(g) === base.overdue + 1;
+      detail = JSON.stringify({baseOverdue: base.overdue, baseHadCard: base.overdueCard, group: !!g, count: g && countOf(g), total, mine: mine.length});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot "Overdue" shows the overdue commitment as a card in the group, the count goes up by one, and the card is absent without the commitment', odOk, detail);
+    if(callC) undo(callC, sCall); if(dueC) undo(dueC, sDue);
     try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
     if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
     try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
