@@ -9377,6 +9377,9 @@ function renderHostedEmptyHint(){
 const V13_SWITCH_KEY = 'obm-next-screens-v1';
 const V13_THEME_KEY = 'obm-theme-v1';
 const V13_NAV = [['desk','Desk','today'],['copilot','Co-pilot','copilot'],['accounts','Accounts','accounts'],['risk','Risk','risk'],['system','System','system']];
+// Each screen's block registers its own click wiring here: V13_BINDERS.desk = box => {...}.
+// v13Bind runs every registered binder on each render, inside the v13 container only.
+const V13_BINDERS = {};
 function v13On(){
   try{ return localStorage.getItem(V13_SWITCH_KEY) !== '0'; }catch(e){ return true; }
 }
@@ -9522,6 +9525,7 @@ function v13SwitchView(newView){
 function v13Bind(root){
   const box = root.querySelector('[data-osm]');
   if(!box) return;
+  Object.keys(V13_BINDERS).forEach(k => { try{ V13_BINDERS[k](box); }catch(e){ console.warn('v13 binder ' + k, e); } });
   box.querySelectorAll('[data-v13-nav]').forEach(b => b.addEventListener('click', () => {
     const n = V13_NAV.find(x => x[0] === b.dataset.v13Nav);
     if(n) v13SwitchView(n[2]);
