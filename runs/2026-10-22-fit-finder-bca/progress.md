@@ -27,3 +27,4 @@
 | 2026-10-22T07:09:34.024Z | 5 | build | ok | 41965 | 0.0227773 | 25 | 0 |  |
 | 2026-10-22T07:09:34.924Z | 5 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; |
 | 2026-10-22T07:09:34.929Z | 5 | task | parked | 0 | 0 | 0 | 0 | two strikes |
+| 2026-10-22T07:09:38.791Z | 6 | task | blocked | 0 | 0 | 0 | 0 | depends on a task that is parked or not done |
