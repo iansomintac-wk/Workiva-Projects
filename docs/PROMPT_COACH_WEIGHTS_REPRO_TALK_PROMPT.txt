@@ -1,0 +1,48 @@
+TALK: Prompt Coach, make the weights reproducible. Written 2026-10-22 ~19:05Z by the hand-off PM step of run "Prompt Coach C1 cues"
+(lead 02598fea, stopped by the PM proxy at Task 4; proxy decided, Ian may overturn).
+Load studio-harness:talk-and-run (this is a talk, Ian present), then superpowers:brainstorming, then superpowers:systematic-debugging for the probes.
+Make your own worktree from prompt-coach (or from branch prompt-coach-c1-cues if you want the C1 cues; its HEAD fails rewrite_unit #13,
+so it must not merge as is). Workiva repo: write nothing to the brain or studio-harness; tell Ian instead. The merge-gate suite cannot
+run here (memory merge-gate-no-npm-test).
+
+PROBLEM
+Retraining does not reproduce the shipped prompt-coach weights, so no cue change can be checked cleanly.
+- The shipped engine/weights.json predates the Source cue rt:S:the-document, added in a46f7bb (weights unchanged since dfe2c65).
+- Any retrain learns rt:S:the-document at -4.396; the shipped file has no entry, so rewrite_unit #76 and #77 fail on every retrain.
+- --tune cannot reproduce the shipped thresholds S .625 C .575 (a retrain gives S .625 C .3; at dfe2c65 it gives S .4 C .3).
+- rewrite_unit #13 fails on any retrain, and also with shipped weights plus the new feeds-into cue. Its fixture has gold Context=1
+  (S1C1O1P1E1), so it pins a known miss.
+Source: docs/evidence/2026-10-22-prompt-coach-c1-cues.md (stop report) and .ledger/2026-10-22-prompt-coach-c1-cues/ on that branch
+(git-ignored; local only). Debug copies and scripts: C:/Users/teasp/.claude/jobs/02598fea/tmp/dbg/ (may be cleaned with that job).
+
+C1 NUMBERS FROM THAT RUN (helper-measured on copies; the lead re-ran baseline and D1 only)
+Context cues: training Context=1 rows with zero hits 99 -> 12/532.
+r1 (seen, dev data only): control 14/30; A (shipped weights + new cues) 23/30; B (retrain, shipped Source restored) 23/30;
+C (A + tune-sure cut-offs S .98 C .58) 28/30.
+C2 test/sim: control 2.0%/1.8%; A 2.8%/3.6%; B 3.2%/3.6%; C 3.6%/14.4% (sim fails the 5% bar). C4: 0 blanks in all states.
+rewrite_unit: A, B, C all 76/1 (#13). eval: A 0.869, B 0.866 (floor 0.856).
+The fresh strong-30 was never read. C1 itself is NOT measured. The bar is >= 27 of 30.
+
+HARD RULES
+- data/done_when_strong.jsonl stays UNREAD. Do not run tests/done_when.js --only C1 or tests/validate_done_when_sets.js outside a copy
+  made by prompt-coach/docs/research/c1-probes/mkcopy.sh. Use r1 and training only, and say r1 was seen.
+- Locked: the data files, the C1-C5 bars, the 3% cap and the training-only check in train.js. Cues come from training, never r1.
+- Keep it AI-free (standing ruling). $0. No installs.
+- Ian is present. One question at a time, plain words, recommendation first; the spread (three usual options plus one that breaks an
+  assumption), each with its cheapest check.
+
+PROBES FIRST (read-only, cheapest first, numbers before options)
+1. git log -S on rt:S:the-document and on weights.json: which commit made the shipped file stale, and where did S .625 C .575 come from?
+2. Is --tune deterministic? Run it twice on one commit. Can any commit reproduce S .625 C .575?
+3. Retrain at a46f7bb^ and at the cue-free HEAD. Which feature set gives the shipped weights?
+4. What does #13 test, and what does each choice cost: re-point its fixture, drop it, or keep it?
+
+WHAT THIS TALK DECIDES (Ian)
+a) Ship retrained weights as the new baseline, or recover the old ones? Recommend whichever the probes show one command reproduces.
+b) What happens to #13? Changing a locked fixture is a spec amendment and is Ian's.
+c) Then, as a separate step, whether to reshape C1 (state C's cut-offs, the C2 sim risk, or capping the cues).
+Do not read the fresh set in this talk.
+
+OUTPUT
+A spec docs/superpowers/specs/2026-10-22-prompt-coach-weights-repro-design.md with done-when: one command reproduces the shipped
+weights and thresholds; rewrite_unit 77/0 or a stated reason; eval >= 0.856; predictions with disproved-by values. Then a run prompt.
