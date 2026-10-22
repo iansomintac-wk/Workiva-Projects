@@ -95,8 +95,8 @@ export function l6Remaining(evidence) {
 const GUARD = {
   D3: {
     capture: async ctx => { await ctx.openOn(DAY); return ctx.ev(`(() => { const c = DATA.customers.find(x => x.name === 'Orion Semiconductor');
-      ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = c.id; render();
-      const p = document.querySelector('.day-pane[data-day-holds="' + c.id + '"]'); return p ? p.innerHTML : null; })()`); },
+      ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = c.id; ui.v13DeskFilter = null; ui.v13DeskTab = 'prepare'; render();
+      const p = document.querySelector('[data-v13-desk-body] [data-v13-desk-pane]'); return p ? p.innerHTML : null; })()`); },
     check: d3Guard,
   },
   D4: {

@@ -46,10 +46,11 @@ export function guardJs(targetExpr, accountName, accountId) {
   const target = ${targetExpr};
   if (!target) return JSON.stringify({found: false});
   // no scrollIntoView: the viewport was sized to hold the whole target, and a scroll makes the Today scroll handler swap the pane's account
-  const scope = target.closest('.day-pane, .day-step, .modal, .todo-item') || target;
-  const kind = scope.classList.contains('day-pane') ? 'day-pane' : scope.classList.contains('day-step') ? 'day-step' : scope.classList.contains('modal') ? 'modal' : scope.classList.contains('todo-item') ? 'todo-item' : 'target';
+  const scope = target.closest('.day-pane, .day-step, .modal, .todo-item, [data-v13-desk-body]') || target;
+  const kind = scope.hasAttribute('data-v13-desk-body') ? 'desk' : scope.classList.contains('day-pane') ? 'day-pane' : scope.classList.contains('day-step') ? 'day-step' : scope.classList.contains('modal') ? 'modal' : scope.classList.contains('todo-item') ? 'todo-item' : 'target';
   let nameIn = scope.textContent.includes(${JSON.stringify(accountName)});
   if (kind === 'day-pane') nameIn = nameIn && scope.dataset.dayHolds === ${JSON.stringify(accountId || '')};
+  if (kind === 'desk') { const pn = scope.querySelector('[data-v13-desk-panel]'); nameIn = nameIn && !!pn && pn.dataset.v13DeskCust === ${JSON.stringify(accountId || '')}; }
   if (kind === 'day-step') nameIn = nameIn && scope.dataset.dayStep === ${JSON.stringify(accountId || '')};
   const r = target.getBoundingClientRect();
   const hit = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(r.height / 2, innerHeight / 2));

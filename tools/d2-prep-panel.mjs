@@ -24,8 +24,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const OPEN = name => `(() => {
   const c = DATA.customers.find(x => x.name === ${JSON.stringify(name)});
   if (!c) return JSON.stringify({found: false});
-  ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = c.id; render();
-  const pane = document.querySelector('.day-pane[data-day-holds="' + cssEscape(c.id) + '"]');
+  ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = c.id; ui.v13DeskFilter = null; ui.v13DeskTab = 'prepare'; render();
+  const pane = document.querySelector('[data-v13-desk-body] [data-v13-desk-pane]');
   const boxes = pane ? pane.querySelectorAll('[data-beat-transcript]') : [];
   const box = boxes[0] || null;
   let rect = null, boxInfo = null;
@@ -79,7 +79,7 @@ async function shot(ctx, file, name, info) {
   await sleep(300);
   mkdirSync(OUT, { recursive: true });
   const png = join(OUT, file + '.png');
-  const pane = `document.querySelector('.day-pane[data-day-holds="' + cssEscape(${JSON.stringify(info.id)}) + '"]')`;
+  const pane = `document.querySelector('[data-v13-desk-body] [data-v13-desk-pane]')`;
   try { await guardShot(ctx, { name: 'd2-' + file, account: name, accountId: info.id, targetExpr: pane, png, logFile: GUARD_LOG }); }
   finally { await resetCapture(ctx); }
   writeFileSync(join(OUT, file + '.txt'), `Account: ${name}\nBox height: ${info.boxInfo ? info.boxInfo.height + 'px' : 'none (no transcript box)'}\nLabel: ${info.label || 'none'}\nBoxes in pane: ${info.boxes}\n`);

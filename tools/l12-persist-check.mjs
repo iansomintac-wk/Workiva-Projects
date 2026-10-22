@@ -25,8 +25,9 @@ const ROUND = (attr, key, val) => `(() => {
   try {
     const c = DATA.customers.find(x => x.name === 'Orion' || /^Orion/.test(x.name));
     if (!c) return JSON.stringify({ ok: false, err: 'no Orion' });
-    c.nextSessionScheduledOn = todayISO(); saveData(); ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = c.id; render();
-    const inp = document.querySelector('.day-pane[data-day-holds="' + c.id + '"] [${attr}="' + c.id + '"]');
+    c.nextSessionScheduledOn = todayISO(); saveData(); ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = c.id; ui.v13DeskFilter = null;
+    let inp = null;
+    for (const t of ['evidence', 'capture', 'prepare', 'record']) { ui.v13DeskTab = t; render(); inp = document.querySelector('[data-v13-desk-body] [${attr}="' + c.id + '"]'); if (inp) break; }
     if (!inp) return JSON.stringify({ ok: false, err: 'no input' });
     inp.value = '${val}';
     inp.dispatchEvent(new Event('change', { bubbles: true }));
@@ -44,8 +45,8 @@ const PINNED = `(() => {
     if (!c) return JSON.stringify({ ok: false, err: 'no account' });
     c.compliance = c.compliance || {}; const a = c.compliance.associatedPeopleCSAT = Object.assign({done: false, date: null, contactName: ''}, c.compliance.associatedPeopleCSAT);
     a.surveySentOn = '2026-10-01'; a.surveyAnsweredOn = null; c.nextSessionScheduledOn = null; saveData();
-    ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = null; render();
-    if (document.querySelector('.day-pane[data-day-holds="' + c.id + '"]')) return JSON.stringify({ ok: false, err: 'account has a day pane; not the F1 case' });
+    ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = null; ui.v13DeskFilter = null; render();
+    if (document.querySelector('[data-v13-desk-cust="' + c.id + '"]')) return JSON.stringify({ ok: false, err: 'account is on the Desk; not the F1 case' });
     const btn = document.querySelector('#surveys-to-chase [data-open-cust="' + c.id + '"]');
     if (!btn) return JSON.stringify({ ok: false, err: 'no pinned-line button' });
     btn.click();
