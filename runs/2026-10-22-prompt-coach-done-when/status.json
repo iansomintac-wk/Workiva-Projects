@@ -1,10 +1,10 @@
 {
   "run": "2026-10-22-prompt-coach-done-when",
-  "state": "running",
+  "state": "stopped",
   "pid": 31116,
   "task": 6,
   "of": 8,
-  "step": "check",
+  "step": "stopped",
   "attempts": [
     {
       "attempt": 1,
@@ -16,10 +16,10 @@
   "peakWorkerMb": 1153,
   "minFreeGb": 3.8,
   "startedAt": "2026-10-22T07:04:46.827Z",
-  "updatedAt": "2026-10-22T08:30:47.743Z",
-  "elapsedSec": 5161,
-  "tokens": 4263336,
-  "usage_cost_usd": 2.5567,
+  "updatedAt": "2026-10-22T08:39:08.689Z",
+  "elapsedSec": 5662,
+  "tokens": 4393842,
+  "usage_cost_usd": 2.7382,
   "usage_cost_note": "summed total_cost_usd of the workers: subscription usage, not money",
   "done": [
     1,
@@ -37,5 +37,6 @@
   ],
   "awaiting": [],
   "waiting": [],
-  "pidCreated": "2026-10-22T07:04:44.8045130Z"
+  "pidCreated": "2026-10-22T07:04:44.8045130Z",
+  "reason": null
 }
