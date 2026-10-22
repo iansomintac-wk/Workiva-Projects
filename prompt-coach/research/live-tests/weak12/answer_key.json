@@ -21,11 +21,12 @@
   "job": "A check that each line foots (opening + additions - releases - utilised = closing) and a short list of lines that fail or look unusual, with the arithmetic shown.",
   "found": [
    "Accrued audit fees: computed 90 vs stated 95, off by 5",
-   "Accrued utilities closes at -4 (debit balance in an accrual)",
-   "Accrued bonus: 30 released, no additions"
+   "Accrued utilities closes at -4 (debit balance in an accrual)"
   ],
   "hard": "Accrued audit fees footing error of 5",
-  "optional": [],
+  "optional": [
+   "Accrued bonus: 30 released, no additions"
+  ],
   "mustNotClaim": [
    "a reason for the bonus true-up beyond the note",
    "journal entry numbers",
@@ -77,7 +78,7 @@
    "AP-02 and AP-04 duplicate descriptions",
    "AP-06 approved by AP Clerk (SoD)"
   ],
-  "hard": "AP-06 segregation of duties concern",
+  "hard": "AP-02 and AP-04 duplicate descriptions",
   "optional": [],
   "mustNotClaim": [
    "test results or deficiencies not in the file",
@@ -146,7 +147,7 @@
    "Plant B Scope 1 +1,260 (refrigerant leak per note)",
    "Office C Scope 2 -315 (renewable tariff per note)",
    "Warehouse D FY2025 missing",
-   "Scope 1 total like-for-like (excluding D) 2,470 to 3,670; Scope 2 total 4,310 to 3,865"
+   "Scope 1 total on a labelled basis: excluding Warehouse D 2,470 to 3,670, or FY2024 with D 2,770 against a partial FY2025 3,670; Scope 2 total 4,310 to 3,865"
   ],
   "hard": "Warehouse D FY2025 is missing, so totals are partial",
   "optional": [],
