@@ -144,10 +144,15 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const args = process.argv.slice(2);
   const cli = args.length ? await import('./lib/cli.mjs') : null;
   const isCli = !!cli && args.some((a) => cli.COMMANDS.includes(a));
+  const usage = () => `usage: node connector/server.mjs [${cli.COMMANDS.join(' | ')}]  (--check takes --write; --measure-transcripts takes --book-bytes <n> --quota-bytes <n>); no argument starts the server`;
+  if (args.length === 1 && (args[0] === '--help' || args[0] === '-h')) {
+    console.log(usage());
+    process.exit(0);
+  }
   // T-14 F20: a mistyped command (`--chek`) must not start the server silently.
   if (args.length && !isCli) {
     console.error(`unknown argument: ${args.join(' ')}`);
-    console.error(`usage: node connector/server.mjs [${cli.COMMANDS.join(' | ')}]  (--check takes --write; --measure-transcripts takes --book-bytes <n> --quota-bytes <n>); no argument starts the server`);
+    console.error(usage());
     process.exit(2);
   }
   const explicit = env.CONNECTOR_CONFIG;

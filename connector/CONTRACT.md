@@ -183,7 +183,8 @@ failure is a 500; an adapter that throws is a 502.
 `node connector/server.mjs --unlock-production` (gainsight-rest, `environment: "production"` only) prints the
 configured production tenant and whether a sandbox write proof exists, asks for the tenant URL to be typed back, and
 on a match records the unlock in `proof.json`. A mismatch, an empty `appUrl` or an unreadable `proof.json` prints a
-`FAIL unlock:` line, changes nothing and exits 1. With no argument the server starts. If arguments are given and none of them is one of these commands, the server prints
+`FAIL unlock:` line, changes nothing and exits 1. With no argument the server starts. `--help` (or `-h`) on its own prints
+the usage line on stdout and exits 0 (nothing starts). If arguments are given and none of them is one of these commands, the server prints
 `unknown argument:` and a usage line and exits 2 (nothing starts). If at least one known command is given, a command runs:
 unrecognised arguments are ignored (for example `--check --wirte` runs the read-only check and ignores `--wirte`), the known
 sub-flags are honoured (`--write` with `--check`; `--book-bytes` and `--quota-bytes` with `--measure-transcripts`), and if

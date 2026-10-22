@@ -283,4 +283,15 @@ test('t15 an argument that is not a command prints usage and exits 2; the server
   assert.equal(existsSync(tokenFile), false);
 });
 
+test('t16 --help prints usage on stdout and exits 0; the server does not start', () => {
+  const tokenFile = join(tmp, 'help-token.txt');
+  const r = spawnSync(process.execPath, [join(root, 'server.mjs'), '--help'], { encoding: 'utf8', timeout: 20000,
+    env: { ...process.env, CONNECTOR_CONFIG: join(root, 'config.example.json'), CONNECTOR_STATE_DIR: tmp, CONNECTOR_TOKEN_FILE: tokenFile } });
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /usage: node connector\/server\.mjs/);
+  assert.ok(!/unknown argument/.test(r.stderr), r.stderr);
+  assert.ok(!/listening/.test(r.stdout), r.stdout);
+  assert.equal(existsSync(tokenFile), false);
+});
+
 test.after(() => { rmSync(tmp, { recursive: true, force: true }); });
