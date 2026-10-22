@@ -36,6 +36,10 @@ ORDER OF WORK (the plan writer turns this into tasks of <= 8 steps; the PM proxy
    in the same commit as the change it describes. Final review (Opus final-reviewer + Codex), fix round, merge via
    node "C:/Users/teasp/Documents/studio-harness/bin/merge-gate.mjs" under the merge rule.
 
+ONE BROWSER DRIVER AT A TIME: at launch (06:45Z) "NEW - Fit Finder B C A" was working and also drives the sandbox in
+Ian's Chrome. Before starting a --chrome driver (steps 1 and 7), check `claude agents --json --all` for another live
+session driving the sandbox; if one is working, do the offline tasks (2-6) first and re-check. Never two drivers at once.
+
 STOPS: plan approval goes to the PM proxy; Ian's batch confirm of the 42 prompts; look calls batched per stage; a bar
 missed after one build round and one two-strikes round (ruling: come back to Ian with the numbers, do not add an AI
 model); token cap 2M reached.
