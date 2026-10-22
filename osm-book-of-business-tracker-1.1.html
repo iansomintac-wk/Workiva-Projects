@@ -9451,12 +9451,62 @@ function v13Shell(){
 }
 // Task 1: the screens are still 1.1's renderers inside the v13 shell; Tasks 2-7 replace them.
 function v13Body(){
-  if(ui.view === 'accounts') return renderAccounts();
-  if(ui.view === 'risk') return renderRiskTab();
-  if(ui.view === 'copilot') return renderCopilot();
-  if(ui.view === 'system') return `<section aria-label="System"><h1 class="v13-h1">System</h1><p class="v13-sub">Curricula, Gainsight rules and connections live in Settings for now.</p><p style="margin-top:16px"><button type="button" class="v13-pill" data-v13-open-settings>Open settings</button></p></section>`;
-  return renderToday();
+  if(ui.view === 'accounts') return v13Accounts();
+  if(ui.view === 'risk') return v13Risk();
+  if(ui.view === 'copilot') return v13Copilot();
+  if(ui.view === 'system') return v13System();
+  return v13Desk();
 }
+/* ==== v13 screen: Desk ====
+   Owned by the Desk port. Everything for the Desk screen goes between this
+   marker and the end marker below: v13Desk() and its helpers.
+   Keep the end marker and do not edit outside it. */
+function v13Desk(){ return renderToday(); }
+/* ==== end v13 screen: Desk ==== */
+/* (spacer: keeps each screen's block apart so parallel ports merge cleanly)
+   (spacer)
+   (spacer)
+   (spacer)
+   (spacer) */
+/* ==== v13 screen: Co-pilot ====
+   Owned by the Co-pilot port. Everything for the Co-pilot screen goes between
+   this marker and the end marker below: v13Copilot() and its helpers.
+   Keep the end marker and do not edit outside it. */
+function v13Copilot(){ return renderCopilot(); }
+/* ==== end v13 screen: Co-pilot ==== */
+/* (spacer: keeps each screen's block apart so parallel ports merge cleanly)
+   (spacer)
+   (spacer)
+   (spacer)
+   (spacer) */
+/* ==== v13 screen: Accounts ====
+   Owned by the Accounts port. Everything for the Accounts screen goes between
+   this marker and the end marker below: v13Accounts() and its helpers.
+   Keep the end marker and do not edit outside it. */
+function v13Accounts(){ return renderAccounts(); }
+/* ==== end v13 screen: Accounts ==== */
+/* (spacer: keeps each screen's block apart so parallel ports merge cleanly)
+   (spacer)
+   (spacer)
+   (spacer)
+   (spacer) */
+/* ==== v13 screen: Risk ====
+   Owned by the Risk port. Everything for the Risk screen goes between this
+   marker and the end marker below: v13Risk() and its helpers.
+   Keep the end marker and do not edit outside it. */
+function v13Risk(){ return renderRiskTab(); }
+/* ==== end v13 screen: Risk ==== */
+/* (spacer: keeps each screen's block apart so parallel ports merge cleanly)
+   (spacer)
+   (spacer)
+   (spacer)
+   (spacer) */
+/* ==== v13 screen: System ====
+   Owned by the System port. Everything for the System screen goes between this
+   marker and the end marker below: v13System() and its helpers.
+   Keep the end marker and do not edit outside it. */
+function v13System(){ return `<section aria-label="System"><h1 class="v13-h1">System</h1><p class="v13-sub">Curricula, Gainsight rules and connections live in Settings for now.</p><p style="margin-top:16px"><button type="button" class="v13-pill" data-v13-open-settings>Open settings</button></p></section>`; }
+/* ==== end v13 screen: System ==== */
 function v13SwitchView(newView){
   if(ui.view === 'today' && newView !== 'today'){
     const ids = needsAttentionList().map(x=>x.c.id);

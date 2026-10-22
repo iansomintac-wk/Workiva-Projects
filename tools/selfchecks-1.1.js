@@ -10169,6 +10169,32 @@ function _runSelfChecksInner(){
     try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
     ui.view = prevView; ui.openCustomerId = prevOpen; render();
   })();
+  /* ==== v13 checks: Desk ==== (owned by the Desk port; put its checks here, switch on, restore state after) */
+  /* ==== end v13 checks: Desk ==== */
+  /* (spacer)
+     (spacer)
+     (spacer)
+     (spacer) */
+  /* ==== v13 checks: Co-pilot ==== (owned by the Co-pilot port) */
+  /* ==== end v13 checks: Co-pilot ==== */
+  /* (spacer)
+     (spacer)
+     (spacer)
+     (spacer) */
+  /* ==== v13 checks: Accounts ==== (owned by the Accounts port) */
+  /* ==== end v13 checks: Accounts ==== */
+  /* (spacer)
+     (spacer)
+     (spacer)
+     (spacer) */
+  /* ==== v13 checks: Risk ==== (owned by the Risk port) */
+  /* ==== end v13 checks: Risk ==== */
+  /* (spacer)
+     (spacer)
+     (spacer)
+     (spacer) */
+  /* ==== v13 checks: System ==== (owned by the System port) */
+  /* ==== end v13 checks: System ==== */
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
