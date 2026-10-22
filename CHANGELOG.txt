@@ -100,6 +100,13 @@ OSM Runway — release notes
       held / next / projected show in the dot colour, and the legend says "Next planned session".
     - Co-pilot: two self-checks build a call booked today and an overdue promise in the page and prove the
       "Before today's calls" and "Overdue" groups (the demo book has neither due).
+    - Fix: features the old Today pane carried had no place on the new Desk. They are back, same controls:
+      Call prep (last call, open questions, transcript line, Agenda + Copy agenda, promises) in Prepare;
+      the Go-Live outcome plan, CSAT contact and survey dates in Evidence; Sentiment (or the "Gainsight
+      gates start at Go-Live" note) in Capture; Surveys to chase, Wrap up the day and Back up the book in
+      the Today heading. The gate markup is one shared copy (beatGateBlocks) for the old pane and the Desk.
+    - The full-account panel wears the v13 look, and dark mode now darkens every screen and the panel
+      (it only darkened the frame before). The initials circle still says "Me": 1.1 stores no user name.
 
 1.1 — Graduation prompt colour.
     - The line under the graduation confirm box title (#gc-prompt) used var(--warn), which is not defined, so it fell back to grey; it now uses var(--status-watch-text) like the CSAT line.
