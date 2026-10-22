@@ -76,6 +76,9 @@ async function main() {
   const calls = await call('GET', '/v1/calls?since=2026-09-01T00:00:00Z');
   expect(calls.status === 200, 'calls');
 
+  const csat = await call('GET', '/v1/csat?since=2026-09-01T00:00:00Z');
+  expect(csat.status === 200, 'csat');
+
   const contactEmails = new Set(accounts.body.accounts.flatMap((a) => (a.contacts || []).map((c) => c.email)));
   const n = { id: 0, name: 0, email: 0, none: 0, touch: 0 };
   for (const c of calls.body.calls) {
@@ -112,6 +115,7 @@ async function main() {
   say(`health: ${a.gong}/${a.gainsight}/${a.ai}`);
   say(`calls: ${calls.body.calls.length} (${n.id} by id, ${n.name} name-only, ${n.email} email-only, ${n.none} unmatchable, ${n.touch} email touch)`);
   say(`accounts: ${accounts.body.accounts.length}`);
+  say(`csat: ${csat.body.rows.length} rows`);
   say(`push: ${sent} sent, ${failed.length} failed${failed.length ? ` (${failed.map((f) => f.error.match(/\((.+)\)/)?.[1] || f.error).join(', ')})` : ''}`);
   const t = ai.body.text;
   say(`ai: ${t.length > 60 ? `${t.slice(0, 60)}…` : t}`);
