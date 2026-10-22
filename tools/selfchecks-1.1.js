@@ -1236,18 +1236,34 @@ function _runSelfChecksInner(){
       DATA.weeklySnapshot = {date: isoAddDays(todayISO(), -7), ids: []};
       ui.openCustomerId = null; ui.view = 'copilot';
       render();
-      const dis = document.querySelector('[data-dk-risk="dismissed|' + key + '"]');
-      const found = !dis && !document.querySelector('[data-dk-risk="confirmed|' + key + '"]');   // Call 3: a confirmed item with a reason has no desk buttons at all; the handlers stay as fallbacks
+      // S1: the desk card must really be rendered. A confirmed item with a reason has no desk buttons (Call 3), so absence of buttons proves nothing: require its status line in the document.
+      const card = Array.from(document.querySelectorAll('.dk-risk')).find(el => el.textContent.indexOf('FX4A-KEEP-THIS-REASON') !== -1);
+      const found = !!card && !card.querySelector('[data-dk-risk]');
+      // Drive the [data-dk-risk] handler: inject a Dismiss button the way an older render would have drawn it, then rebind.
+      let dis = null;
+      if(card){
+        dis = document.createElement('button');
+        dis.setAttribute('data-dk-risk', 'dismissed|' + key);
+        card.appendChild(dis);
+        attachEvents();
+      }
       if(dis) dis.click();
       const kept = DATA.riskLog[key].verdict === 'confirmed' && DATA.riskLog[key].verdictReason === 'FX4A-KEEP-THIS-REASON';
       const noDismissToast = !toasts.some(t => /dismissed/i.test(t));
       toasts.length = 0; render();
-      const conf = document.querySelector('[data-dk-risk="confirmed|' + key + '"]');
+      const card2 = Array.from(document.querySelectorAll('.dk-risk')).find(el => el.textContent.indexOf('FX4A-KEEP-THIS-REASON') !== -1);
+      let conf = null;
+      if(card2){
+        conf = document.createElement('button');
+        conf.setAttribute('data-dk-risk', 'confirmed|' + key);
+        card2.appendChild(conf);
+        attachEvents();
+      }
       const modals0 = document.querySelectorAll('#rkc-reason').length;
       if(conf) conf.click();
       const noModal = document.querySelectorAll('#rkc-reason').length === modals0;
       const noFalseToast = !toasts.some(t => /confirmed as a real risk/i.test(t) && !/^already/i.test(t));
-      ok = found && kept && noDismissToast && noModal && noFalseToast;
+      ok = found && !!dis && !!conf && kept && noDismissToast && noModal && noFalseToast;
       detail = JSON.stringify({found, kept, noDismissToast, noModal, noFalseToast, toasts});
     }catch(e){ detail = 'threw: ' + e.message; }
     closeOwn(); saveData = realSave; showToast = realToast; _undoLabel = prevUL;
@@ -1256,7 +1272,50 @@ function _runSelfChecksInner(){
     ui.view = prevView; ui.openCustomerId = prevOpen; ui.panelTab = prevTab;
     try{ render(); }catch(e){}
     _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
-    check('FX4: a real click on the desk Dismiss of an already-confirmed item keeps its verdict and reason, and desk Confirm on it neither opens the modal nor toasts "confirmed"', ok, detail);
+    check('FX4: with the desk card rendered, a click on Dismiss of an already-confirmed item keeps its verdict and reason, and desk Confirm on it neither opens the modal nor toasts "confirmed"', ok, detail);
+  })();
+  (function(){                                   // S2: a real click on the desk "Add a reason" of a pre-1.2 confirmed item writes the reason
+    let ok = false, detail = '';
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const prevView = ui.view, prevOpen = ui.openCustomerId, prevTab = ui.panelTab, realSave = saveData, prevUL = _undoLabel, prevSnap = DATA.weeklySnapshot, realToast = showToast;
+    const pre = new Set(document.querySelectorAll('.modal-backdrop'));
+    const closeOwn = () => document.querySelectorAll('.modal-backdrop').forEach(el => { if(pre.has(el)) return; const b = el.querySelector('#rkc-cancel'); if(b) b.click(); else el.remove(); });
+    try{
+      saveData = function(){ return true; };
+      showToast = function(){};
+      const c = v13Acct('__s2__', {riskOverride: 'risk'});
+      DATA.customers = [c]; DATA.activities = {}; DATA.riskLog = {};
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      const it0 = buildRiskHubList().find(r => r.c.id === c.id);
+      const key = it0.logKey, on = isoAddDays(todayISO(), -5);
+      DATA.riskLog[key] = {firstSeen: on, lastActioned: on, verdict: 'confirmed', verdictOn: on, verdictSev: 3};   // pre-1.2: confirmed, no reason
+      _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map();
+      DATA.weeklySnapshot = {date: isoAddDays(todayISO(), -7), ids: []};
+      ui.openCustomerId = null; ui.view = 'copilot';
+      render();
+      const btn = document.querySelector('[data-dk-risk="confirmed|' + key + '"]');
+      const m0 = document.querySelectorAll('#rkc-reason').length;
+      if(btn) btn.click();
+      const ta = document.querySelector('#rkc-reason');
+      const opened = !!btn && document.querySelectorAll('#rkc-reason').length === m0 + 1;
+      let wrote = false, shown = false;
+      if(opened){
+        ta.value = 'S2-LEGACY-REASON'; ta.dispatchEvent(new Event('input', {bubbles: true}));
+        document.querySelector('#rkc-ok').click();
+        const e = DATA.riskLog[key];
+        wrote = e.verdict === 'confirmed' && e.verdictReason === 'S2-LEGACY-REASON';
+        shown = Array.from(document.querySelectorAll('.dk-risk')).some(el => el.textContent.indexOf('Confirmed as a risk') !== -1 && el.textContent.indexOf('S2-LEGACY-REASON') !== -1);
+      }
+      ok = opened && wrote && shown;
+      detail = JSON.stringify({hasBtn: !!btn, opened, wrote, shown});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    closeOwn(); saveData = realSave; showToast = realToast; _undoLabel = prevUL;
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    if(prevSnap === undefined) delete DATA.weeklySnapshot; else DATA.weeklySnapshot = prevSnap;
+    ui.view = prevView; ui.openCustomerId = prevOpen; ui.panelTab = prevTab;
+    try{ render(); }catch(e){}
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('S2: a real click on the desk Add a reason of a pre-1.2 confirmed item opens the reason modal, writes the reason, and the desk then shows the Confirmed as a risk line', ok, detail);
   })();
   (function(){                                   // FX4 (2): only confirmed reasons reach the AI risk-summary text
     let ok = false, detail = '';
