@@ -10065,10 +10065,12 @@ function v13AcEvents(F, lo, hi){
   const evs = {};
   const add = (iso, it) => { const off = v13AcOff(iso); if(off === null || off < lo || off > hi) return; (evs[off] = evs[off] || []).push(it); };
   F.forEach(f => { const id = f.c.id, name = f.c.name;
-    if(f.kind === 'partner'){ if(f.goLive) add(f.goLive, {id, name, label:'Go-live', tone:'var(--partner)', o:0}); return; }
-    if(f.kind === 'handed'){ if(f.handed) add(f.handed, {id, name, label:'Handed off', tone:'var(--faint)', o:2}); return; }
-    f.held.forEach(h => add(h.date, {id, name, label:'S' + h.n + ' held', tone:'var(--runway)', o:3}));
-    f.planned.forEach(p => add(p.date, {id, name, label:'S' + p.n + (p.kind === 'next' && f.time ? ' ' + f.time : p.kind === 'next' ? '' : ' projected'), tone: p.kind === 'next' ? 'var(--acc)' : 'var(--faint)', o: p.kind === 'next' ? 0 : 2, time: p.kind === 'next' ? f.time : null}));
+    if(f.kind === 'partner'){ if(f.goLive) add(f.goLive, {id, name, label:'Go-live', title: name + ' · go-live target', tone:'var(--partner)', o:0}); return; }
+    if(f.kind === 'handed'){ if(f.handed) add(f.handed, {id, name, label:'Handed off', title: name + ' · handed off', tone:'var(--faint)', o:2}); return; }
+    // short + title: v13's Month copy (S<n>, the kind lives in the dot and the title); the Week keeps label.
+    f.held.forEach(h => add(h.date, {id, name, label:'S' + h.n + ' held', short:'S' + h.n, title: name + ' · Session ' + h.n + ' held', tone:'var(--runway)', o:3}));
+    f.planned.forEach(p => add(p.date, {id, name, label:'S' + p.n + (p.kind === 'next' && f.time ? ' ' + f.time : p.kind === 'next' ? '' : ' projected'), tone: p.kind === 'next' ? 'var(--acc)' : 'var(--faint)', o: p.kind === 'next' ? 0 : 2, time: p.kind === 'next' ? f.time : null,
+      short:'S' + p.n + (p.kind === 'next' && f.time ? ' ' + f.time : ''), title: name + ' · Session ' + p.n + (p.kind === 'next' ? ' · next planned' : ' · projected at the current pace')}));
   });
   Object.keys(evs).forEach(k => evs[k].sort((a, b) => a.o - b.o));
   return evs;
@@ -10102,7 +10104,7 @@ function v13AcCal(F){
     const cells = []; for(let off = start; off < start + 35; off++){ const d = v13AcDay(off), list = evs[off] || [], today = off === 0, wk = d.getDay() === 0 || d.getDay() === 6;
       cells.push(`<div data-v13-month-cell style="min-height:118px;border-radius:10px;padding:6px;background:${today ? 'var(--acc-bg)' : wk ? 'transparent' : 'var(--sheet2)'};box-shadow:${today ? 'inset 0 0 0 2px var(--acc)' : 'none'};opacity:${d.getMonth() === month ? (off < 0 ? 0.7 : 1) : 0.4};display:flex;flex-direction:column;gap:3px;min-width:0">
         <p style="font-family:var(--mono);font-size:11px;font-weight:${today ? 800 : 500};color:${today ? 'var(--acc)' : 'var(--muted)'};padding:0 2px">${(d.getDate() === 1 || off === start) ? d.toLocaleDateString('en-US', {month:'short'}) + ' ' : ''}${d.getDate()}</p>
-        ${list.slice(0, 4).map(m => `<button type="button" data-v13-acct="${escapeAttr(m.id)}" title="${escapeAttr(m.name + ' · ' + m.label)}" style="display:grid;grid-template-columns:6px minmax(0,1fr);column-gap:5px;align-items:center;width:100%;max-width:100%;box-sizing:border-box;border:0;border-radius:6px;background:var(--sheet);box-shadow:var(--sh1);padding:3px 6px;text-align:left;font-size:11px;line-height:1.25;color:var(--ink)"><span style="width:6px;height:6px;border-radius:50%;background:${m.tone}"></span><span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${escapeHtml(m.name)}</span><span style="grid-column:2;font-family:var(--mono);font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${escapeHtml(m.label)}</span></button>`).join('')}
+        ${list.slice(0, 4).map(m => `<button type="button" data-v13-acct="${escapeAttr(m.id)}" title="${escapeAttr(m.title)}" style="display:grid;grid-template-columns:6px minmax(0,1fr);column-gap:5px;align-items:center;width:100%;max-width:100%;box-sizing:border-box;border:0;border-radius:6px;background:var(--sheet);box-shadow:var(--sh1);padding:3px 6px;text-align:left;font-size:11px;line-height:1.25;color:var(--ink)"><span style="width:6px;height:6px;border-radius:50%;background:${m.tone}"></span><span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${escapeHtml(m.name)}</span><span style="grid-column:2;font-family:var(--mono);font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${escapeHtml(m.short || m.label)}</span></button>`).join('')}
         ${list.length > 4 ? `<p style="font-size:10px;color:var(--muted);padding-left:6px">+${list.length - 4} more</p>` : ''}
       </div>`); }
     const lg = (c, t) => `<span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${c}"></span>${t}</span>`;
@@ -10110,7 +10112,7 @@ function v13AcCal(F){
       <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-bottom:4px">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => `<p style="font-size:11px;font-weight:800;color:var(--muted);padding:0 6px">${d}</p>`).join('')}</div>
       <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">${cells.join('')}</div>
     </div></div>
-    <div style="display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--muted);margin-top:10px">${lg('var(--acc)', 'Next planned session (booked)')}${lg('var(--faint)', 'Later sessions (projected at the current pace)')}${lg('var(--runway)', 'Held')}${lg('var(--partner)', 'Go-live')}</div>`;
+    <div style="display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--muted);margin-top:10px">${lg('var(--acc)', 'Next planned session')}${lg('var(--faint)', 'Later sessions (projected at the current pace)')}${lg('var(--runway)', 'Held')}${lg('var(--partner)', 'Go-live')}</div>`;
   }
   return `<div data-v13-av-pane="cal">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"><p style="font-size:13px;color:var(--muted)">${escapeHtml(note)}</p><div role="tablist" aria-label="Calendar range" style="display:flex;gap:2px;padding:3px;background:var(--well);border-radius:999px">${modes}</div></div>
@@ -10174,15 +10176,17 @@ function v13AcGs(F){
     <p style="font-size:12px;color:var(--muted);margin-top:10px">Not entered is a to-do, not a risk. Click a cell to open the account.</p>
   </div>`;
 }
+// 1.1's search/filter/sort (same ids) as one compact line in the heading's right
+// column, above the view switcher: v13 has no toolbar row. Well pills like the switcher.
 function v13AcToolbar(){
-  const sel = 'border:1px solid var(--line2);border-radius:999px;background:var(--sheet);color:var(--ink);padding:6px 12px;font-size:13px;font-family:inherit';
-  return `<div class="v13ac-tools" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:18px">
+  const sel = 'border:0;border-radius:999px;background:var(--well);color:var(--ink);padding:5px 10px;font-size:12px;font-weight:700;font-family:inherit;min-width:0';
+  return `<div data-v13-ac-filters style="display:flex;flex-wrap:nowrap;gap:6px;align-items:center;justify-content:flex-end;max-width:100%">
     ${ui.quickFilter === 'grad30' ? `<button type="button" id="clear-quick-filter" title="Clear this filter" style="${sel};font-weight:700;color:var(--acc)">Graduating ≤30 days ✕</button>` : ''}
-    <input type="text" id="search-input" placeholder="Search accounts…" aria-label="Search accounts" value="${escapeAttr(ui.search)}" style="${sel};min-width:220px;flex:0 1 280px">
-    <select id="filter-module" aria-label="Module" style="${sel}"><option value="all" ${ui.filterModule === 'all' ? 'selected' : ''}>All modules</option>${DATA.config.modules.map(m => `<option value="${escapeAttr(m)}" ${ui.filterModule === m ? 'selected' : ''}>${escapeHtml(m)}</option>`).join('')}</select>
-    <select id="filter-lifecycle" aria-label="Lifecycle" style="${sel}">${[['all','All lifecycle'],['implementation','In implementation'],['live','Live (post-impl.)'],['graduated','Graduated']].map(([v, t]) => `<option value="${v}" ${ui.filterLifecycle === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
-    <select id="filter-risk" aria-label="Status" style="${sel}">${[['all','All statuses'],['risk','Off Track'],['watch','Watch'],['ontrack','On Track']].map(([v, t]) => `<option value="${v}" ${ui.filterRisk === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
-    <select id="sort-by" aria-label="Sort" style="${sel}">${[['risk','Confirmed risk, then quiet longest'],['lastActivity','Last activity'],['stage','TTFV stage'],['graduation','Graduation date'],['name','Name']].map(([v, t]) => `<option value="${v}" ${ui.sortBy === v ? 'selected' : ''}>Sort: ${t}</option>`).join('')}</select>
+    <input type="text" id="search-input" placeholder="Search accounts…" aria-label="Search accounts" value="${escapeAttr(ui.search)}" style="${sel};font-weight:500;width:130px;flex:0 1 130px">
+    <select id="filter-module" aria-label="Module" style="${sel};width:112px"><option value="all" ${ui.filterModule === 'all' ? 'selected' : ''}>All modules</option>${DATA.config.modules.map(m => `<option value="${escapeAttr(m)}" ${ui.filterModule === m ? 'selected' : ''}>${escapeHtml(m)}</option>`).join('')}</select>
+    <select id="filter-lifecycle" aria-label="Lifecycle" style="${sel};width:112px">${[['all','All lifecycle'],['implementation','In implementation'],['live','Live (post-impl.)'],['graduated','Graduated']].map(([v, t]) => `<option value="${v}" ${ui.filterLifecycle === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
+    <select id="filter-risk" aria-label="Status" style="${sel};width:106px">${[['all','All statuses'],['risk','Off Track'],['watch','Watch'],['ontrack','On Track']].map(([v, t]) => `<option value="${v}" ${ui.filterRisk === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
+    <select id="sort-by" aria-label="Sort" style="${sel};width:268px">${[['risk','Confirmed risk, then quiet longest'],['lastActivity','Last activity'],['stage','TTFV stage'],['graduation','Graduation date'],['name','Name']].map(([v, t]) => `<option value="${v}" ${ui.sortBy === v ? 'selected' : ''}>Sort: ${t}</option>`).join('')}</select>
   </div>`;
 }
 function v13Accounts(){
@@ -10196,15 +10200,17 @@ function v13Accounts(){
     : av === 'kanban' ? v13AcKanban(F) : av === 'table' ? v13AcTable(F) : av === 'cal' ? v13AcCal(F) : av === 'heat' ? v13AcHeat(F) : av === 'gs' ? v13AcGs(F) : v13AcGantt(F);
   return `<section data-v13-accounts aria-label="Accounts">
     <style>[data-v13-accounts] .v13ac-row:hover{background:var(--sheet2) !important}[data-v13-accounts] button{cursor:pointer;font-family:inherit}[data-v13-accounts] h1,[data-v13-accounts] p{margin:0}[data-v13-accounts] table th,[data-v13-accounts] table td{border:0;vertical-align:top}</style>
-    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px 24px">
-      <div>
+    <div data-v13-ac-head style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px 24px">
+      <div style="flex:1 1 340px;min-width:0">
         <h1 style="font-size:clamp(34px,3.6vw,52px);font-weight:900;letter-spacing:-0.035em;line-height:1">Accounts</h1>
         <p data-v13-acct-sub style="color:var(--muted);margin-top:8px;font-size:15px">${DATA.customers.length} accounts${F.length !== DATA.customers.length ? ' · ' + F.length + ' shown' : ''}. Each view shows separate facts; none of them stands in for readiness.</p>
       </div>
-      <div role="tablist" aria-label="Book view" style="display:flex;gap:2px;padding:3px;background:var(--well);border-radius:999px;flex-wrap:wrap">${tabs}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width:0;max-width:100%">
+        ${v13AcToolbar()}
+        <div role="tablist" aria-label="Book view" style="display:flex;gap:2px;padding:3px;background:var(--well);border-radius:999px;flex-wrap:wrap">${tabs}</div>
+      </div>
     </div>
-    ${v13AcToolbar()}
-    <div style="margin-top:14px;background:var(--sheet);border-radius:18px;box-shadow:var(--sh1);padding:18px 20px">${body}</div>
+    <div style="margin-top:22px;background:var(--sheet);border-radius:18px;box-shadow:var(--sh1);padding:18px 20px">${body}</div>
   </section>`;
 }
 V13_BINDERS.accounts = box => {
