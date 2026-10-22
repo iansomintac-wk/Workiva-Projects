@@ -1,0 +1,32 @@
+TALK: Prompt Coach C1, more Context cues. Written 2026-10-22 ~17:55Z by session 19888854 (close-out of done-when).
+Load studio-harness:talk-and-run (the talk), then superpowers:brainstorming. Work in
+C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-c1-cues (branch prompt-coach-c1-cues, from prompt-coach @ 74040ee).
+
+IAN'S RULING (verbatim, card '[Ian] C1 next', 17:51:39Z, answered-for-ian row left: ian-kind, so typed by Ian):
+"More Context cues (Recommended)" - new talk + run: add cue families from training misses, retrain, re-check the
+Source cut-off, then read the fresh 30 once for the real C1 number.
+Standing rulings still hold: keep it AI-free; C1-C5 bars unchanged (C1 >= 27 of 30, C2 <= 5% on test and sim, C4 0 blanks).
+
+READ FIRST: prompt-coach/docs/research/2026-10-22-c1-options.md (measured cause and options; the other
+2026-10-22-c1-*.md notes are shallow researcher notes, mostly unconfirmed). Probes and the spike's cue script:
+prompt-coach/docs/research/c1-probes/ (node c1probe3.js <prompt-coach dir>; addcues.js <rules.js> inserts the 5 spike cues).
+
+MEASURED (session 19888854, throwaway copy, fresh set excluded):
+- 10 of 13 r1 misses have zero Context rule hits (score = intercept, tied with weak prompts). Training: 99/532 Context=1 rows have zero hits.
+- Retrain of unchanged code does NOT reproduce shipped weights (tuned C thr 0.3 vs shipped 0.575). Compare against a control retrain.
+- Control retrain: r1 C1 14/30, C2 2.0% test / 1.8% sim. With 5 spike cue families (from training misses only):
+  r1 19/30, C2 2.8% / 1.8%, C4 0. Still failing: 5 rows with zero Context hits, 5 rows failing Source sure (S 0.99).
+- Hidden twin: weak prompts graded strong and left untouched (no label): test 6.1%, sim 15.3%. Context detector precision 0.54.
+
+RULES FOR THE WORK
+- data/done_when_strong.jsonl (fresh 30) stays UNREAD until the final one-time C1 measurement; do not run
+  validate_done_when_sets.js before then (it scores that set). r1 is dev data; cues come from TRAINING misses,
+  written as patterns, never copied from r1 rows; disclose that r1 was seen when quoting r1 numbers.
+- Spec probes first; slip/budget as talk-and-run says; Workiva repo: push and merge clear by the merge rule
+  (merge-gate.mjs cannot run its suite here: see memory merge-gate-no-npm-test).
+
+ALSO OPEN (from the done-when final review, reviews/final-review.md on the done-when ledger), small fixes the
+talk may fold in: train.js:89 regex /}(s*)$/ -> /}(\s*)$/; c5_gate.js accepts pass 0 / fail 0; done_when.js --only
+with an empty or unknown set exits 0; evidence doc line 36 blames FR3/GEN29 on Better (they are "not sure" misses);
+runs/2026-10-22-prompt-coach-done-when/ runtime files were merged; look item for Ian: template.html:402 still shows
+"[fill in your details]" under Strong.
