@@ -1,6 +1,8 @@
 // Dev tooling (not part of the bundle): D3 call-prep Promises section check, control and captures (1.1).
 // usage: node tools/d3-prep-panel.mjs --check      -> prints one D3PREP-CHECK line, exit 0 only if ok
 //        node tools/d3-prep-panel.mjs --control    -> same checks on the pre-change tracker at c297df3 (CONTROL_REF); must exit 1
+//          (since the v13 port the checks read Desk selectors c297df3 never had, so this exit 1 no longer
+//           proves the Promises feature; the D3 break in tools/sim/osm-day/lib/breaks.mjs is the live control)
 //        node tools/d3-prep-panel.mjs --captures   -> sim-runs/d3-prep/{orion-10-21,one-promise,none}.{png,txt}
 // Throwaway osmsim-* profiles only (launch()), removed by ctx.stop() in a finally. Synthetic data only.
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
