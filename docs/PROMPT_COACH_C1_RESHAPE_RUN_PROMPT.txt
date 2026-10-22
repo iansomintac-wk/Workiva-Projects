@@ -30,8 +30,9 @@ ORDER OF WORK (the plan writer turns this into tasks of <= 8 steps; the PM proxy
    A fresh checker re-labels 5 at random (more than 1 letter of disagreement in total is a stop).
 3. Go/no-go G (Design 3): more than half of the drafts labeled Context=1 get zero Context hits under Task 1's rules, else stop
    and keep the fallback (the run then goes straight to 6).
-4. Context cues from training misses only (Design 4), retrain, REPRO OK. D1 count.
-5. Dev gates in a mkcopy.sh r1 copy (Design 5): r1 under 25, or C2 over 5%: stop, fallback kept. 25-26: stop, keep the better
+4. Context cues from training misses only (Design 4): the drafts plus the 12 older Context=1 zero-hit rows are the only
+   sources. Retrain, REPRO OK. D1 count, scored against its prediction (under 8; disproved above 12).
+5. Dev gates in a mkcopy.sh r1 copy (Design 5), at most one fix round (more cues from training misses only): r1 under 25, or C2 over 5%: stop, fallback kept. 25-26: stop, keep the better
    committed state. >= 27 with C2, C4, c5_gate passing: read the fresh 30 once (Design 6), C1 then validate, report as is.
 6. Evidence doc docs/evidence/2026-10-22-prompt-coach-c1-reshape.md (measured vs read, every row with its number; r1 always
    called seen). Final review (Opus final-reviewer + Codex), fix round.
