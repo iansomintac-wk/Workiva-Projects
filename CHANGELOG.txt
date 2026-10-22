@@ -113,6 +113,7 @@ OSM Runway — release notes
       pane is bound by bindBeatPane, not globally" and "the close is the only place that pushes, and it reads
       the real queue" now also read beatGateBlocks; intent unchanged. The second is tightened: it also needs
       renderBeatPanel to use g.outcome, so dropping the outcome block from the pane fails it.
+    - Desk look (Ian, 2026-10-22): Prepare step 04 reads "NEXT · curriculum" instead of "Next review · curriculum"; Evidence puts the Go-Live gates box below the stat tiles; and the Desk Evidence tiles drop Health (the full account Overview keeps it, the score is unchanged). Four self-checks (560 in all); the older Prepare order check now expects "Next".
 
 1.1 — Graduation prompt colour.
     - The line under the graduation confirm box title (#gc-prompt) used var(--warn), which is not defined, so it fell back to grey; it now uses var(--status-watch-text) like the CSAT line.
