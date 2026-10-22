@@ -40,3 +40,4 @@
 | 2026-10-22T08:30:47.741Z | 6 | task | parked | 0 | 0 | 0 | 0 | two strikes |
 | 2026-10-22T08:39:07.892Z | 6 | debug | ok | 130506 | 0.18157720000000002 | 60 | 0 |  |
 | 2026-10-22T08:39:08.682Z | 6 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; tee: /dev/stderr: No such file or directory |
+| 2026-10-22T15:01:49.000Z | 6 | task | reopened | 0 | 0 | 0 | 0 | Ian A 13:31Z: fix + fresh test; Ian 15:00Z launch now (lowest-Context rule) |
