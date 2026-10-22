@@ -59,3 +59,7 @@
 | 2026-10-22T07:30:58.433Z | 7 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; match-frozen PASS |
 | 2026-10-22T07:31:23.837Z | 7 | checker | pass | 59982 | 0.048482199999999996 | 25 | 0 | PASS: the evidence file (committed in a1a0d8d, with HEAD a07b8eb an empty commit on top) has the hashes, B-SHA, both sco |
 | 2026-10-22T07:31:23.843Z | 7 | task | done | 0 | 0 | 0 | 0 | attempt 1 |
+| 2026-10-22T07:31:59.552Z | 8 | build | ok | 61204 | 0.0750312 | 32 | 0 |  |
+| 2026-10-22T07:32:00.466Z | 8 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; hits: none |
+| 2026-10-22T07:32:25.797Z | 8 | checker | pass | 27437 | 0.0200144 | 25 | 0 | PASS: HEAD is an empty commit with the required message and attribution lines, and the ledger file stays out of git. The |
+| 2026-10-22T07:32:25.804Z | 8 | task | done | 0 | 0 | 0 | 0 | attempt 1 |
