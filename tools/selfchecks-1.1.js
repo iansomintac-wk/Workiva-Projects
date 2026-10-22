@@ -4687,7 +4687,7 @@ function _runSelfChecksInner(){
        selector renderBeatPanel() emits is handled inside bindBeatPane(), and
        that syncDayPool() calls it. */
     (function(){
-      const emitted = [...new Set((String(renderBeatPanel) + String(renderBeatPrep))
+      const emitted = [...new Set((String(renderBeatPanel) + String(beatGateBlocks) + String(renderBeatPrep))
         .match(/data-fp-[a-z-]+/g) || [])];
       const bound = String(bindBeatPane);
       const missing = emitted.filter(sel => bound.indexOf(sel) === -1);
@@ -4696,7 +4696,7 @@ function _runSelfChecksInner(){
         && typeof notInPane === 'function';
     })(),
     (function(){
-      const emitted = [...new Set((String(renderBeatPanel) + String(renderBeatPrep)).match(/data-fp-[a-z-]+/g) || [])];
+      const emitted = [...new Set((String(renderBeatPanel) + String(beatGateBlocks) + String(renderBeatPrep)).match(/data-fp-[a-z-]+/g) || [])];
       return 'unbound: ' + emitted.filter(sel => String(bindBeatPane).indexOf(sel) === -1).join(', ');
     })());
   (function(){
@@ -5359,7 +5359,7 @@ function _runSelfChecksInner(){
     // Draft in the beat, push at the close: a beat action must QUEUE, not fire.
     String(renderDayClose).indexOf('getGainsightQueue()') !== -1 &&
     String(renderBeatPanel).indexOf('data-fp-queue=') !== -1 &&
-    String(renderBeatPanel).indexOf('data-fp-outcome-queue=') !== -1);
+    String(renderBeatPanel).indexOf('beatGateBlocks(c)') !== -1 && String(beatGateBlocks).indexOf('data-fp-outcome-queue=') !== -1   /* Task 6: the gates moved to a shared helper */);
   check('v62 AI dossier reads a full onboarding lifecycle',
     CALLPREP_MAX_ACTIVITIES >= 40 && CALLPREP_NOTE_CHAR_CAP > 0,
     `max=${CALLPREP_MAX_ACTIVITIES}, noteCap=${CALLPREP_NOTE_CHAR_CAP}`);
@@ -10372,6 +10372,122 @@ function _runSelfChecksInner(){
     }
   })();
   /* ==== end v13 fixes: desk ==== */
+  /* ==== v13 fixes: pane ==== (Task 6: the old Today day pane's features live on the Desk, same ids
+     and data attributes, acting on the Desk's account). Works on a copy of DATA and puts the real one back. */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prev = {view: ui.view, open: ui.openCustomerId, tab: ui.panelTab, id: ui.v13DeskId, wt: ui.v13DeskTab, lens: ui.v13DeskLens, fil: ui.v13DeskFilter};
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevSwitch = null; try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const realDATA = DATA;
+    const prevWrite = navigator.clipboard && navigator.clipboard.writeText;
+    const body = () => document.querySelector('#app [data-osm] [data-v13-desk-body]');
+    const pickAB = () => {
+      const live = DATA.customers.filter(c => c.stage !== 'graduated' && !inImplementation(c));
+      return [live[0], live[1] || DATA.customers.find(c => c !== live[0])];
+    };
+    const show = (a, tab) => { ui.openCustomerId = null; ui.view = 'today'; ui.v13DeskId = a.id; ui.v13DeskTab = tab; ui.v13DeskFilter = null; render(); };
+    // B's compliance record only: a render with ui.openCustomerId = B opens B's panel, which may stamp display fields
+    const cust = id => JSON.stringify((DATA.customers.find(c => c.id === id) || {}).compliance || null);
+    const live = c => { c.compliance = c.compliance || {}; ['sentiment','outcomePlan','associatedPeopleCSAT'].forEach(k => { if(!c.compliance[k]) c.compliance[k] = {done:false}; }); };
+    let ok, detail;
+    try{
+      localStorage.removeItem(KEY);
+      // 1. Call prep inside Prepare for an account with a call today; Copy agenda copies the Desk's account
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB();
+        A.nextSessionScheduledOn = todayISO(); A.nextSessionTime = '10:00';
+        A.commitments = (A.commitments || []).concat([{id:'pane-sc-1', direction:'i_owe', text:'pane check you owe', due: isoAddDays(todayISO(), -2), createdOn: isoAddDays(todayISO(), -9)},
+          {id:'pane-sc-2', direction:'they_owe', text:'pane check they owe', due: isoAddDays(todayISO(), 3), createdOn: isoAddDays(todayISO(), -9)}]);
+        show(A, 'prepare');
+        ui.openCustomerId = B.id;
+        let clip = null; navigator.clipboard.writeText = t => { clip = t; return Promise.resolve(); };
+        const b = body();
+        const prep = b.querySelector('[data-v13-desk-pane] [data-beat-agenda]');
+        const btn = prep && prep.querySelector('[data-beat-agenda-copy]');
+        if(btn) btn.click();
+        const txt = b.textContent;
+        ok = !!btn && /Call prep/.test(txt) && !!b.querySelector('[data-beat-promises-sec]') && /pane check they owe/.test(txt)
+          && /Sessions/.test(txt) && typeof clip === 'string' && clip.indexOf('Agenda - ' + A.name) === 0 && clip.indexOf('pane check you owe') !== -1;
+        detail = JSON.stringify({A: A.id, btn: !!btn, clip: clip && clip.slice(0, 60)});
+      }catch(e){ detail = e.message; }
+      check('v13 fix pane: Desk Prepare carries Call prep (standing, agenda, promises) and Copy agenda copies the Desk\'s account', ok, detail);
+      // 2. Go-Live outcome plan and CSAT controls on Evidence write to the Desk's account
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB(); live(A); live(B);
+        A.compliance.outcomePlan.outcomeNumber = null; A.compliance.associatedPeopleCSAT.surveySentOn = null;
+        show(A, 'evidence');
+        const bB = cust(B.id);
+        ui.openCustomerId = B.id;
+        const sel = body().querySelector('[data-v13-desk-pane] [data-fp-outcome="' + cssEscape(A.id) + '"]');
+        const hasCsat = !!body().querySelector('[data-fp-csat="' + cssEscape(A.id) + '"]') && !!body().querySelector('[data-fp-csat-answered="' + cssEscape(A.id) + '"]');
+        sel.value = '1'; sel.dispatchEvent(new Event('change'));
+        show(A, 'evidence'); ui.openCustomerId = B.id;   // the change re-rendered with B's panel open; back to the Desk
+        const sent = body().querySelector('[data-v13-desk-pane] [data-fp-csat-sent="' + cssEscape(A.id) + '"]');
+        sent.value = isoAddDays(todayISO(), -1); sent.dispatchEvent(new Event('change'));
+        const a2 = DATA.customers.find(c => c.id === A.id).compliance;
+        ok = hasCsat && a2.outcomePlan.outcomeNumber === 1 && a2.associatedPeopleCSAT.surveySentOn === isoAddDays(todayISO(), -1) && cust(B.id) === bB;
+        detail = JSON.stringify({A: A.id, hasCsat, n: a2.outcomePlan.outcomeNumber, sent: a2.associatedPeopleCSAT.surveySentOn, changedB: cust(B.id) !== bB});
+      }catch(e){ detail = e.message; }
+      check('v13 fix pane: Desk Evidence carries the Go-Live outcome plan and CSAT controls, writing to the Desk\'s account', ok, detail);
+      // 3. Capture: the Sentiment toggle for a live account, the gates note (no Sentiment) for one in implementation
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB(); live(A); live(B);
+        A.compliance.sentiment.done = false;
+        const I = DATA.customers.find(c => inImplementation(c) && c.id !== A.id);
+        show(A, 'capture');
+        const bB = cust(B.id);
+        ui.openCustomerId = B.id;
+        const heads = [...body().querySelectorAll('[data-v13-desk-pane] h5')].map(h => h.textContent.replace(/\s+/g, ' ').trim());
+        const t = body().querySelector('[data-v13-desk-pane] [data-fp-toggle="sentiment|' + A.id + '"]');
+        t.click();
+        const doneA = DATA.customers.find(c => c.id === A.id).compliance.sentiment.done === true;
+        show(I, 'capture');
+        const iHeads = [...body().querySelectorAll('[data-v13-desk-pane] h5')].map(h => h.textContent.replace(/\s+/g, ' ').trim());
+        ok = heads.some(h => /^Sentiment/.test(h) && /not logged/.test(h)) && doneA && cust(B.id) === bB
+          && iHeads.some(h => h.indexOf('Gainsight gates start at Go-Live') !== -1) && !iHeads.some(h => /^Sentiment/.test(h));
+        detail = JSON.stringify({A: A.id, I: I && I.id, heads, iHeads, doneA});
+      }catch(e){ detail = e.message; }
+      check('v13 fix pane: Desk Capture carries the Sentiment toggle (acts on the Desk\'s account) and, in implementation, the gates-start-at-Go-Live note', ok, detail);
+      // 4. Today heading: Surveys to chase line, Wrap up the day and Back up the book
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A] = pickAB(); live(A);
+        A.compliance.associatedPeopleCSAT.surveySentOn = isoAddDays(todayISO(), -30); A.compliance.associatedPeopleCSAT.surveyAnsweredOn = null;
+        const hadDC = Object.prototype.hasOwnProperty.call(DATA, 'dayClose');
+        if(hadDC) DATA.dayClose = {};
+        show(A, 'prepare');
+        const head = document.querySelector('#app [data-osm] section[aria-label="Today"]');
+        const line = head && head.querySelector('#surveys-to-chase');
+        const wrap = head && head.querySelector('[data-wrap-day]'), back = head && head.querySelector('[data-backup-now]');
+        const was = dayIsClosed();
+        if(wrap) wrap.click();
+        const closed = dayIsClosed();
+        const cancel = document.getElementById('modal-cancel'); if(cancel) cancel.click();
+        if(!hadDC) delete DATA.dayClose;   // keep the book's key set as it was at suite entry
+        ok = !!line && line.textContent.indexOf(A.name) !== -1 && !!back && !!wrap && !was && closed;
+        detail = JSON.stringify({line: !!line, wrap: !!wrap, back: !!back, was, closed});
+      }catch(e){ detail = e.message; }
+      check('v13 fix pane: the Today heading carries Surveys to chase, Wrap up the day (closes the day) and Back up the book', ok, detail);
+    } finally {
+      DATA = realDATA;
+      if(navigator.clipboard) navigator.clipboard.writeText = prevWrite;
+      document.querySelectorAll('.modal-backdrop').forEach(n => n.remove());
+      try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+      try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+      ui.view = prev.view; ui.openCustomerId = prev.open; ui.panelTab = prev.tab; ui.v13DeskId = prev.id; ui.v13DeskTab = prev.wt;
+      ui.v13DeskLens = prev.lens; ui.v13DeskFilter = prev.fil;
+      render();
+    }
+  })();
+  /* ==== end v13 fixes: pane ==== */
   /* (spacer)
      (spacer)
      (spacer)

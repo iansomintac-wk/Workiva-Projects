@@ -9690,6 +9690,37 @@ function v13DeskPrepare(c, x){
         <span style="display:block;font-size:12px;color:var(--muted);margin-top:6px">${num ? 'Next · S' + num + ' ' + escapeHtml(tpl.title) + ' · ' : ''}Changing the plan never changes evidence, readiness or risk.</span></summary>
       <div style="margin-top:12px">${renderCurriculumFit(c)}${others}</div></details>`;
 }
+/* v13 fixes Task 6: the old Today day pane's surfaces on the Desk, for the Desk's account. Each sits in
+   a [data-v13-desk-pane] box that attachEvents binds with bindBeatPane(), so the same ids, data
+   attributes and handlers as the pane; no new data. */
+function v13DeskPaneBox(c, kick, inner){
+  if(!inner) return '';
+  return `<section data-v13-desk-pane data-v13-desk-cust="${escapeAttr(c.id)}" style="background:var(--sheet2);border:1px solid var(--line2);border-radius:14px;padding:14px 18px;margin:0 0 18px">
+    <p style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--acc);margin-bottom:8px">${escapeHtml(kick)}</p>${inner}</section>`;
+}
+function v13DeskCallPrep(c, x){
+  const call = ((x && x.calls) || []).find(k => k.c.id === c.id);
+  if(!call) return '';
+  return v13DeskPaneBox(c, 'Before the call · from the record', renderBeatStanding(c) + renderBeatQuestions(c) + renderBeatPrep({call}));
+}
+function v13DeskGates(c, which){
+  const g = beatGateBlocks(c), impl = inImplementation(c);
+  if(which === 'evidence') return impl ? '' : v13DeskPaneBox(c, 'Go-Live gates · for Gainsight', g.outcome + g.csat);
+  return v13DeskPaneBox(c, impl ? 'Gainsight gates' : 'Gainsight gate · after the call', impl ? g.gates : g.sentiment);
+}
+function v13DeskSurveys(){
+  const list = surveysToChase(DATA.customers); if(!list.length) return '';
+  const shown = list.slice(0, 5), more = list.length - shown.length;
+  return `<p id="surveys-to-chase" style="margin-top:12px;font-size:13px;color:var(--muted);padding:8px 14px;border-radius:10px;background:var(--warn-bg)"><b style="color:var(--warn)">Surveys to chase</b> · ${shown.map(s => `<button type="button" data-open-cust="${escapeAttr(s.id)}" data-open-tab="details" style="border:0;background:transparent;padding:0;font:inherit;font-weight:700;color:var(--ink)">${escapeHtml(s.name)}</button> (sent ${s.days} days ago, no answer)`).join('; ')}${more ? '; +' + more + ' more' : ''}</p>`;
+}
+function v13DeskDayActs(){
+  const d = DATA.lastExportedAt ? daysSince(DATA.lastExportedAt) : null;
+  const note = d === null ? 'This book has never been exported. It exists only in this browser.' : d === 0 ? 'Backed up today.' : `Last backup ${d} day${d === 1 ? '' : 's'} ago. Everything since then exists only in this browser.`;
+  const btn = strong => `border:${strong ? '0' : '1px solid var(--line2)'};border-radius:999px;background:${strong ? 'var(--ink)' : 'var(--sheet)'};color:${strong ? 'var(--sheet)' : 'var(--ink)'};padding:7px 14px;font-size:12px;font-weight:800;white-space:nowrap`;
+  return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    ${dayIsClosed() ? `<span style="font-size:12px;color:var(--muted)">Wrapped up ${escapeHtml(fmtDate(getDayClose().date))}</span>` : `<button type="button" data-wrap-day title="Closes today and counts the beats you walked" style="${btn(true)}">Wrap up the day</button>`}
+    <button type="button" data-backup-now title="${escapeAttr(note)}" style="${btn(false)}">Back up the book</button></div>`;
+}
 function v13DeskTabBody(c, tab, x){
   if(ui.openCustomerId) return `<p style="font-size:13px;color:var(--muted)">This account is open in the full account panel. Close it to work here.</p>`;
   const call = (fn) => { try{ return fn(); }catch(e){ console.warn('v13 desk tab', e); return ''; } };
@@ -9702,15 +9733,15 @@ function v13DeskTabBody(c, tab, x){
     record: ['The record', 'Activity log + Gainsight']
   };
   // The panel's Cancel only moves the panel's tab; on the Desk it would do nothing, so hide it.
-  const body = tab === 'capture' ? call(() => renderLogActivityTab(c).replace('id="btn-cancel-log-form"', 'id="btn-cancel-log-form" hidden'))
-    : tab === 'evidence' ? call(() => {
+  const body = tab === 'capture' ? call(() => renderLogActivityTab(c).replace('id="btn-cancel-log-form"', 'id="btn-cancel-log-form" hidden')) + call(() => v13DeskGates(c, 'capture'))
+    : tab === 'evidence' ? call(() => v13DeskGates(c, 'evidence')) + call(() => {
         // renderOverviewTab stamps lastShownRecommendation; the Desk only reads, so put it back.
         const had = Object.prototype.hasOwnProperty.call(c, 'lastShownRecommendation'), was = c.lastShownRecommendation;
         try{ return renderOverviewTab(c, computeRisk(c)); }
         finally{ if(had) c.lastShownRecommendation = was; else delete c.lastShownRecommendation; }
       }) + call(() => renderHandoffTab(c))
     : tab === 'record' ? call(() => renderActivityTab(c, acts)) + call(() => renderCustomerGainsightTab(c))
-    : call(() => v13DeskPrepare(c, x));
+    : call(() => v13DeskCallPrep(c, x)) + call(() => v13DeskPrepare(c, x));
   const h = heads[tab] || heads.prepare;
   return `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:14px">
       <h3 style="font-size:20px;font-weight:900;letter-spacing:-0.01em">${escapeHtml(h[0])}</h3>
@@ -9730,10 +9761,11 @@ function v13Desk(){
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
       <div><h1 style="font-size:clamp(38px,4vw,58px);font-weight:900;letter-spacing:-0.035em;line-height:1">Today</h1>
         <p style="font-size:15px;color:var(--muted);margin-top:8px">${x.calls.length} call${x.calls.length === 1 ? '' : 's'} · ${x.risks.length} confirmed risk · ${x.sigs.length} signal${x.sigs.length === 1 ? '' : 's'} to check · ${x.owed.length} thing${x.owed.length === 1 ? '' : 's'} you owe today</p></div>
-      <div role="tablist" aria-label="Time lens" style="display:flex;gap:2px;padding:3px;background:var(--well);border-radius:999px">${[['day','Day'],['week','Week']].map(([k, l]) => {
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">${v13DeskDayActs()}<div role="tablist" aria-label="Time lens" style="display:flex;gap:2px;padding:3px;background:var(--well);border-radius:999px">${[['day','Day'],['week','Week']].map(([k, l]) => {
         const on = (ui.v13DeskLens || 'day') === k;
-        return `<button type="button" role="tab" aria-selected="${on}" data-v13-desk-lens="${k}" style="border:0;border-radius:999px;padding:7px 18px;font-size:13px;font-weight:700;${v13DeskSeg(on)}">${l}</button>`; }).join('')}</div>
+        return `<button type="button" role="tab" aria-selected="${on}" data-v13-desk-lens="${k}" style="border:0;border-radius:999px;padding:7px 18px;font-size:13px;font-weight:700;${v13DeskSeg(on)}">${l}</button>`; }).join('')}</div></div>
     </div>
+    ${v13DeskSurveys()}
     <div role="group" aria-label="Book snapshot" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:16px">${strip.map(t => {
       const on = filter === t.key;
       return `<button type="button" data-v13-desk-chip="${t.key}" aria-pressed="${on}" title="${on ? 'Clear the filter' : 'Filter the book to these accounts'}" style="display:flex;align-items:center;gap:8px;border:1px solid ${on ? 'var(--ink)' : 'var(--line2)'};background:${on ? 'var(--well)' : 'var(--sheet)'};border-radius:5px;padding:6px 11px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink)"><span style="width:8px;height:8px;border-radius:2px;background:${t.c};flex:none"></span><span style="color:var(--muted);white-space:nowrap">${escapeHtml(t.k)}</span><span style="font-weight:700;white-space:nowrap">${escapeHtml(t.v)}</span></button>`; }).join('')}</div>
@@ -14023,11 +14055,50 @@ async function generateThreadAnswer(activityId, threadId){
   render();
 }
 
+/* The Go-Live gates of the old day pane, shared by the pane and the v13 Desk (Task 6): one markup,
+ same ids and data attributes, so bindBeatPane() binds them wherever they sit. */
+function beatGateBlocks(c){
+  const comp = c.compliance || {};
+  const s = comp.sentiment || {}, op = comp.outcomePlan || {}, ap = comp.associatedPeopleCSAT || {};
+  const done = (isDone, label) => `<span class="badge ${isDone ? 'badge-ontrack' : 'badge-watch'}">${isDone ? icon('check') + ' ' + label : label}</span>`;
+  return {
+    gates: `      <div class="focus-act">
+        <h5>Gainsight gates start at Go-Live</h5>
+        <p class="bp-basis" style="margin:0;">This account is in partner-led implementation, so the outcome plan, CSAT contact, and sentiment gates are not open yet. Manage the build on the Implementation tab.</p>
+      </div>`,
+    outcome: `    <div class="focus-act">
+      <h5>Success Outcome Plan ${done(!!op.done, op.done ? 'created' : 'not created')}</h5>
+      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+        <label class="sr-only" for="fp-outcome-${escapeAttr(c.id)}">Numbered success outcome for ${escapeHtml(c.name)}</label>
+        <select id="fp-outcome-${escapeAttr(c.id)}" data-fp-outcome="${escapeAttr(c.id)}" style="flex:1; min-width:180px;">
+          <option value="">Select the numbered outcome…</option>
+          ${(DATA.config.outcomeNames || []).map((n,i)=>`<option value="${i+1}"${op.outcomeNumber===(i+1)?' selected':''}>${i+1}. ${escapeHtml(n)}</option>`).join('')}
+        </select>
+        <button class="btn btn-sm" data-fp-outcome-queue="${escapeAttr(c.id)}" title="Add the drafted plan to the close, to push with everything else">Queue plan</button>
+        <button class="btn btn-sm ${op.done ? '' : 'btn-primary'}" data-fp-toggle="outcomePlan|${escapeAttr(c.id)}">${op.done ? 'Undo' : 'Mark created'}</button>
+      </div>
+    </div>`,
+    csat: `    <div class="focus-act">
+      <h5>Associated contact for CSAT ${done(!!ap.done, ap.done ? 'added' : 'not added')}</h5>
+      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+        <label class="sr-only" for="fp-csat-${escapeAttr(c.id)}">CSAT survey contact for ${escapeHtml(c.name)}</label>
+        <input type="text" id="fp-csat-${escapeAttr(c.id)}" data-fp-csat="${escapeAttr(c.id)}" maxlength="120" placeholder="Contact name for the CSAT survey" value="${escapeAttr(ap.contactName || '')}" style="flex:1; min-width:180px;">
+        <button class="btn btn-sm ${ap.done ? '' : 'btn-primary'}" data-fp-toggle="associatedPeopleCSAT|${escapeAttr(c.id)}">${ap.done ? 'Undo' : 'Mark added'}</button>
+      </div>
+      ${csatDatesHtml(ap, c.id, 'pane')}
+    </div>`,
+    sentiment: `    <div class="focus-act">
+      <h5>Sentiment ${done(!!s.done, s.done ? 'logged' : 'not logged')}</h5>
+      <label class="sr-only" for="fp-sent-a-${escapeAttr(c.id)}">What has contributed most to their satisfaction or success?</label>
+      <textarea id="fp-sent-a-${escapeAttr(c.id)}" data-fp-sentiment="a|${escapeAttr(c.id)}" rows="2" placeholder="What has contributed most to their satisfaction or success?">${escapeHtml(s.answerA || '')}</textarea>
+      <label class="sr-only" for="fp-sent-b-${escapeAttr(c.id)}">What could be improved to better meet their needs or goals?</label>
+      <textarea id="fp-sent-b-${escapeAttr(c.id)}" data-fp-sentiment="b|${escapeAttr(c.id)}" rows="2" style="margin-top:6px;" placeholder="What could be improved to better meet their needs or goals?">${escapeHtml(s.answerB || '')}</textarea>
+      <button class="btn btn-sm ${s.done ? '' : 'btn-primary'}" style="margin-top:6px;" data-fp-toggle="sentiment|${escapeAttr(c.id)}">${s.done ? 'Undo' : 'Mark logged'}</button>`
+  };
+}
 function renderBeatPanel(beat, dispatchChips){
   const c = DATA.customers.find(x => x.id === beat.customerId);
   if(!c) return '';
-  const comp = c.compliance || {};
-  const s = comp.sentiment || {}, op = comp.outcomePlan || {}, ap = comp.associatedPeopleCSAT || {};
   const risks = buildRiskHubList().filter(r => r.c.id === c.id);
   const impl = inImplementation(c);
   const done = (isDone, label) => `<span class="badge ${isDone ? 'badge-ontrack' : 'badge-watch'}">${isDone ? icon('check') + ' ' + label : label}</span>`;
@@ -14068,42 +14139,7 @@ function renderBeatPanel(beat, dispatchChips){
 
     ${renderBeatQuestions(c)}
 
-    ${impl ? `
-      <div class="focus-act">
-        <h5>Gainsight gates start at Go-Live</h5>
-        <p class="bp-basis" style="margin:0;">This account is in partner-led implementation, so the outcome plan, CSAT contact, and sentiment gates are not open yet. Manage the build on the Implementation tab.</p>
-      </div>` : `
-    <div class="focus-act">
-      <h5>Success Outcome Plan ${done(!!op.done, op.done ? 'created' : 'not created')}</h5>
-      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-        <label class="sr-only" for="fp-outcome-${escapeAttr(c.id)}">Numbered success outcome for ${escapeHtml(c.name)}</label>
-        <select id="fp-outcome-${escapeAttr(c.id)}" data-fp-outcome="${escapeAttr(c.id)}" style="flex:1; min-width:180px;">
-          <option value="">Select the numbered outcome…</option>
-          ${(DATA.config.outcomeNames || []).map((n,i)=>`<option value="${i+1}"${op.outcomeNumber===(i+1)?' selected':''}>${i+1}. ${escapeHtml(n)}</option>`).join('')}
-        </select>
-        <button class="btn btn-sm" data-fp-outcome-queue="${escapeAttr(c.id)}" title="Add the drafted plan to the close, to push with everything else">Queue plan</button>
-        <button class="btn btn-sm ${op.done ? '' : 'btn-primary'}" data-fp-toggle="outcomePlan|${escapeAttr(c.id)}">${op.done ? 'Undo' : 'Mark created'}</button>
-      </div>
-    </div>
-
-    <div class="focus-act">
-      <h5>Associated contact for CSAT ${done(!!ap.done, ap.done ? 'added' : 'not added')}</h5>
-      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-        <label class="sr-only" for="fp-csat-${escapeAttr(c.id)}">CSAT survey contact for ${escapeHtml(c.name)}</label>
-        <input type="text" id="fp-csat-${escapeAttr(c.id)}" data-fp-csat="${escapeAttr(c.id)}" maxlength="120" placeholder="Contact name for the CSAT survey" value="${escapeAttr(ap.contactName || '')}" style="flex:1; min-width:180px;">
-        <button class="btn btn-sm ${ap.done ? '' : 'btn-primary'}" data-fp-toggle="associatedPeopleCSAT|${escapeAttr(c.id)}">${ap.done ? 'Undo' : 'Mark added'}</button>
-      </div>
-      ${csatDatesHtml(ap, c.id, 'pane')}
-    </div>
-
-    <div class="focus-act">
-      <h5>Sentiment ${done(!!s.done, s.done ? 'logged' : 'not logged')}</h5>
-      <label class="sr-only" for="fp-sent-a-${escapeAttr(c.id)}">What has contributed most to their satisfaction or success?</label>
-      <textarea id="fp-sent-a-${escapeAttr(c.id)}" data-fp-sentiment="a|${escapeAttr(c.id)}" rows="2" placeholder="What has contributed most to their satisfaction or success?">${escapeHtml(s.answerA || '')}</textarea>
-      <label class="sr-only" for="fp-sent-b-${escapeAttr(c.id)}">What could be improved to better meet their needs or goals?</label>
-      <textarea id="fp-sent-b-${escapeAttr(c.id)}" data-fp-sentiment="b|${escapeAttr(c.id)}" rows="2" style="margin-top:6px;" placeholder="What could be improved to better meet their needs or goals?">${escapeHtml(s.answerB || '')}</textarea>
-      <button class="btn btn-sm ${s.done ? '' : 'btn-primary'}" style="margin-top:6px;" data-fp-toggle="sentiment|${escapeAttr(c.id)}">${s.done ? 'Undo' : 'Mark logged'}</button>
-    </div>`}
+    ${(g => impl ? g.gates : g.outcome + g.csat + g.sentiment)(beatGateBlocks(c))}
 
     <div class="focus-act">
       <h5>Risk ${risks.length ? `<span class="badge badge-risk">${risks.length} open</span>` : done(true, 'none open')}</h5>
@@ -16834,7 +16870,7 @@ function bindBeatPane(root){
 }
 /* Global bindings for selectors that ALSO appear inside beat panes must skip
    pane descendants, or a pane present at render time would be bound twice. */
-function notInPane(el){ return !(el.closest && el.closest('.day-pane')); }
+function notInPane(el){ return !(el.closest && el.closest('.day-pane, [data-v13-desk-pane]')); }   // Task 6: Desk boxes bind like panes
 /* v13 fixes: the account a control acts on. The Desk draws 1.1's tab bodies for its own
    selected account inside [data-v13-desk-cust]; there that id wins over ui.openCustomerId,
    so a Desk control can never write to the panel's (or a stale) account. */
@@ -17174,6 +17210,7 @@ The draft is discarded. The risk itself stays open.`)) return;
      it. Panes present at this moment are bound here; panes rebuilt by a swap
      are bound by syncDayPool(). A node is therefore bound exactly once. */
   $$('#day .day-pane').forEach(bindBeatPane);
+  $$('[data-v13-desk-pane]').forEach(bindBeatPane);   // Task 6: the pane's surfaces on the v13 Desk
   $$('[data-goto-gainsight]').forEach(b => b.addEventListener('click', ()=>{
     ui.view = 'risk'; syncRoute(); render();
     // The queue is a block on the Risk tab, so land ON it rather than at the top.
