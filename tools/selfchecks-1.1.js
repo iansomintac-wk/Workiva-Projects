@@ -11260,6 +11260,67 @@ function _runSelfChecksInner(){
     check('T4v13: on the v13 Settings screen, Check CSAT (connector) is present and visible when the connector is set, its click asks the connector for /v1/csat, the CSAT import modal shows changed, filled, unchanged and unmatched demo rows, and the button is absent when no connector is set', ok, detail);
   })();
   /* ==== end v13 Task 3 ==== */
+  /* ==== v13 Task 4: T14 (S1, S2) on the v13 Risk screen ==== */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    let prevSwitch = null;
+    try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const prevView = ui.view, prevOpen = ui.openCustomerId, prevTab = ui.panelTab, realSave = saveData, prevUL = _undoLabel, prevSnap = DATA.weeklySnapshot, realToast = showToast;
+    const pre = new Set(document.querySelectorAll('.modal-backdrop'));
+    const closeOwn = () => document.querySelectorAll('.modal-backdrop').forEach(el => { if(pre.has(el)) return; const b = el.querySelector('#rkc-cancel'); if(b) b.click(); else el.remove(); });
+    const resetMemo = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+    let ok = false, detail = '';
+    try{
+      saveData = function(){ return true; };
+      showToast = function(){};
+      localStorage.setItem(KEY, '1');
+      const c1 = v13Acct('__t14a__', {riskOverride: 'risk'}), c2 = v13Acct('__t14b__', {riskOverride: 'risk'});
+      DATA.customers = [c1, c2]; DATA.activities = {}; DATA.riskLog = {};
+      resetMemo();
+      const items = buildRiskHubList();
+      const k1 = items.find(r => r.c.id === c1.id).logKey, k2 = items.find(r => r.c.id === c2.id).logKey;
+      const on = isoAddDays(todayISO(), -5);
+      DATA.riskLog[k1] = {firstSeen: on, lastActioned: on, verdict: 'confirmed', verdictOn: on, verdictSev: 3, verdictReason: 'T14V13-SHOWN-REASON'};
+      DATA.riskLog[k2] = {firstSeen: on, lastActioned: on, verdict: 'confirmed', verdictOn: on, verdictSev: 3};   // pre-1.2: confirmed, no reason
+      resetMemo();
+      DATA.weeklySnapshot = {date: isoAddDays(todayISO(), -7), ids: []};
+      ui.openCustomerId = null; ui.view = 'risk';
+      render();
+      const root = document.querySelector('#app [data-osm] [data-v13-risk]');
+      const card = id => root && root.querySelector('[data-v13-risk-card="' + id + '"]');
+      const card1 = card(c1.id);
+      const s1 = !!card1 && card1.textContent.indexOf('T14V13-SHOWN-REASON') !== -1 && !card1.querySelector('[data-risk-confirm]');
+      const card2 = card(c2.id);
+      const btn = card2 && card2.querySelector('[data-risk-confirm="' + c2.id + '"]');
+      const legacyText = !!card2 && card2.textContent.indexOf('Confirmed before reasons were required') !== -1;
+      const m0 = document.querySelectorAll('#rkc-reason').length;
+      if(btn) btn.click();
+      const ta = document.querySelector('#rkc-reason');
+      const opened = !!btn && document.querySelectorAll('#rkc-reason').length === m0 + 1;
+      let wrote = false, shown = false;
+      if(opened){
+        ta.value = 'T14V13-LEGACY-REASON'; ta.dispatchEvent(new Event('input', {bubbles: true}));
+        document.querySelector('#rkc-ok').click();
+        const e = DATA.riskLog[k2];
+        wrote = !!e && e.verdict === 'confirmed' && e.verdictReason === 'T14V13-LEGACY-REASON';
+        const root2 = document.querySelector('#app [data-osm] [data-v13-risk]'), c2b = root2 && root2.querySelector('[data-v13-risk-card="' + c2.id + '"]');
+        shown = !!c2b && c2b.textContent.indexOf('T14V13-LEGACY-REASON') !== -1 && !c2b.querySelector('[data-risk-confirm]')
+          && !!document.querySelector('#app [data-osm] [data-v13-risk-confirmed]');
+      }
+      ok = s1 && legacyText && !!btn && opened && wrote && shown;
+      detail = JSON.stringify({s1, legacyText, hasBtn: !!btn, opened, wrote, shown});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    closeOwn(); saveData = realSave; showToast = realToast; _undoLabel = prevUL;
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    if(prevSnap === undefined) delete DATA.weeklySnapshot; else DATA.weeklySnapshot = prevSnap;
+    try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+    ui.view = prevView; ui.openCustomerId = prevOpen; ui.panelTab = prevTab;
+    try{ render(); }catch(e){}
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('T14v13: on the v13 Risk screen a confirmed risk with a reason shows that reason, and the Add a reason control of a pre-1.2 confirmed item opens the reason modal, a real click on save writes the reason, and the card then shows it', ok, detail);
+  })();
+  /* ==== end v13 Task 4 ==== */
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
