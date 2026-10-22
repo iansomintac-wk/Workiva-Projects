@@ -1,10 +1,10 @@
 {
   "run": "2026-10-22-fit-finder-bca",
-  "state": "stopped",
-  "pid": 36052,
+  "state": "running",
+  "pid": 2988,
   "task": 14,
   "of": 15,
-  "step": "stopped",
+  "step": "check",
   "attempts": [
     {
       "attempt": 1,
@@ -29,15 +29,21 @@
       "startedAt": "2026-10-22T07:36:36.069Z",
       "peakWorkerMb": 1143,
       "minFreeGb": 5.6
+    },
+    {
+      "attempt": 5,
+      "startedAt": "2026-10-22T07:59:23.796Z",
+      "peakWorkerMb": 1080,
+      "minFreeGb": 5.2
     }
   ],
-  "peakWorkerMb": 1143,
-  "minFreeGb": 5.6,
+  "peakWorkerMb": 1080,
+  "minFreeGb": 5.2,
   "startedAt": "2026-10-22T07:01:50.439Z",
-  "updatedAt": "2026-10-22T07:55:29.647Z",
-  "elapsedSec": 3219,
-  "tokens": 3676678,
-  "usage_cost_usd": 3.7256,
+  "updatedAt": "2026-10-22T08:06:03.016Z",
+  "elapsedSec": 3853,
+  "tokens": 3841102,
+  "usage_cost_usd": 3.8664,
   "usage_cost_note": "summed total_cost_usd of the workers: subscription usage, not money",
   "done": [
     0,
@@ -53,14 +59,13 @@
     10,
     11,
     12,
-    13
-  ],
-  "parked": [
+    13,
     14
   ],
+  "parked": [],
   "blocked": [],
   "awaiting": [],
   "waiting": [],
-  "pidCreated": "2026-10-22T07:36:31.2572070Z",
+  "pidCreated": "2026-10-22T07:59:19.2911820Z",
   "reason": null
 }

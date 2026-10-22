@@ -98,3 +98,7 @@
 | 2026-10-22T07:55:28.693Z | 14 | debug | ok | 152970 | 0.47624560000000005 | 337 | 0 |  |
 | 2026-10-22T07:55:29.638Z | 14 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; |
 | 2026-10-22T07:59:18.000Z | 14 | task | reset | 0 | 0 | 0 | 0 | lead 0dfe9582: Task 14 CR clause grep fixed to tr -cd (PM approved); re-run |
+| 2026-10-22T08:01:16.038Z | 14 | build | ok | 63394 | 0.0674424 | 112 | 0 |  |
+| 2026-10-22T08:02:40.856Z | 14 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; fair-guard PASS |
+| 2026-10-22T08:06:03.008Z | 14 | checker | pass | 101030 | 0.07339419999999999 | 32 | 0 | PASS: The check passed with fair-guard PASS, and the task 14 commit (4e4c548) changes only the allowed files. Its split  |
+| 2026-10-22T08:06:03.014Z | 14 | task | done | 0 | 0 | 0 | 0 | attempt 1 |
