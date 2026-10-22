@@ -24,8 +24,9 @@ const judgeTap = (out) => {
 
 const gates = [
   ['eval', ['tests/eval.js', 'rulefeat', 'data/test.jsonl'], (r) => {
-    const m = r.out.match(/GRADE acc=[0-9.]+/);
-    return [r.out.includes('GRADE acc=0.856'), m ? m[0] : 'no GRADE line'];
+    const m = r.out.match(/GRADE acc=([0-9.]+)/);
+    const acc = m ? parseFloat(m[1]) : NaN;
+    return [acc >= 0.856, m ? m[0] : 'no GRADE line'];
   }],
   ['simulate', ['tests/simulate.js', 'data/train_fr.jsonl', 'data/train_grc.jsonl', 'data/train_hard.jsonl', 'data/train_sus.jsonl'], (r) => {
     const got = {}, bad = [];
