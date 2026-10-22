@@ -10369,6 +10369,101 @@ function _runSelfChecksInner(){
      (spacer)
      (spacer) */
   /* ==== v13 checks: System ==== (owned by the System port) */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prevView = ui.view, prevOpen = ui.openCustomerId;
+    const hadSeen = 'todayLastSeenIds' in DATA, prevSeen = JSON.stringify(DATA.todayLastSeenIds);
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    const prevCfg = JSON.stringify(DATA.config);
+    let prevSwitch = null; try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const closeModals = () => document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+    const sys = () => document.querySelector('#app [data-osm] section[data-v13-system]');
+    let detail = '';
+    // 1. the page: heading and v13's five cards, in v13's order
+    let cardsOk = false;
+    try{
+      localStorage.removeItem(KEY); ui.openCustomerId = null; ui.view = 'system'; render();
+      const s = sys();
+      const h1 = s && s.querySelector('h1');
+      const heads = s ? [...s.querySelectorAll(':scope > div > section > div h2, :scope > div > section > h2')].map(h => h.textContent.trim()) : [];
+      cardsOk = !!s && !!h1 && h1.textContent.trim() === 'System'
+        && heads.join('|') === 'Gainsight connection|Co-pilot rules|Gainsight admin rules|Curricula|Data and connections';
+      detail = JSON.stringify({sec: !!s, h1: h1 && h1.textContent, heads});
+    }catch(e){ detail = e.message; }
+    check('v13 System draws the System heading and v13\'s five cards in order (Gainsight connection, Co-pilot rules, Gainsight admin rules, Curricula, Data and connections)', cardsOk, detail);
+    // 2. Gainsight cards read 1.1's queue, ids and gate definitions
+    let gsOk = false; detail = '';
+    try{
+      const s = sys();
+      const q = getGainsightQueue(), unsent = q.filter(x => x.status !== 'sent').length;
+      const ids = DATA.customers.filter(c => String(c.gainsightId || '').trim()).length;
+      const txt = s ? s.textContent.replace(/\s+/g, ' ') : '';
+      const rules = s ? [...s.querySelectorAll('[data-v13-sys-rule]')].map(li => li.querySelector('b').textContent.trim()) : [];
+      gsOk = txt.indexOf('Pending push · ' + unsent + ' of ' + q.length) !== -1
+        && txt.indexOf('Company IDs · ' + ids + ' of ' + DATA.customers.length + ' matched') !== -1
+        && rules.join('|') === GATE_DEFS.map(g => g.label).join('|');
+      detail = JSON.stringify({unsent, total: q.length, ids, rules});
+    }catch(e){ detail = e.message; }
+    check('v13 System Gainsight cards show 1.1\'s queue (unsent of total), matched Gainsight IDs and one admin rule per GATE_DEFS gate', gsOk, detail);
+    // 3. Curricula: one row per module; Edit opens 1.1's curriculum modal on that module
+    let curOk = false; detail = '';
+    try{
+      const s = sys();
+      const rows = s ? [...s.querySelectorAll('[data-v13-sys-curric]')] : [];
+      const names = rows.map(r => r.getAttribute('data-v13-sys-curric'));
+      const mods = DATA.config.modules.slice();
+      const last = mods[mods.length - 1];
+      const btn = rows.find(r => r.getAttribute('data-v13-sys-curric') === last);
+      closeModals();
+      if(btn) btn.click();
+      const sel = document.querySelector('.modal-backdrop #cur-module-select');
+      const h3 = document.querySelector('.modal-backdrop .modal h3');
+      curOk = mods.length > 0 && names.join('|') === mods.join('|') && !!sel && sel.value === last && !!h3 && h3.textContent.trim() === 'Session Curriculum';
+      detail = JSON.stringify({names, mods, sel: sel && sel.value});
+      closeModals();
+    }catch(e){ detail = e.message; closeModals(); }
+    check('v13 System Curricula lists every module and its Edit opens 1.1\'s Session Curriculum modal on that module', curOk, detail);
+    // 4. Co-pilot rules: inline thresholds save through parseSettingsDraft/applySettingsDraft; a bad value is refused
+    let ruleOk = false; detail = '';
+    try{
+      render();
+      const w0 = DATA.config.riskWatchDays, a0 = DATA.config.riskAlertDays;
+      const inp = sys().querySelector('input[data-v13-sys-cfg="riskWatchDays"]');
+      const shown = inp && Number(inp.value) === w0;
+      const good = Math.max(1, a0 - 1) === w0 ? Math.max(1, w0 - 1) : Math.max(1, a0 - 1);
+      inp.value = String(good); inp.dispatchEvent(new Event('change', {bubbles: true}));
+      const saved = DATA.config.riskWatchDays === good;
+      const inp2 = sys().querySelector('input[data-v13-sys-cfg="riskWatchDays"]');
+      inp2.value = String(a0 + 5); inp2.dispatchEvent(new Event('change', {bubbles: true}));
+      const refused = DATA.config.riskWatchDays === good;
+      const redrawn = Number(sys().querySelector('input[data-v13-sys-cfg="riskWatchDays"]').value) === good;
+      ruleOk = shown && saved && refused && redrawn;
+      detail = JSON.stringify({w0, a0, good, shown, saved, refused, redrawn});
+    }catch(e){ detail = e.message; }
+    DATA.config = JSON.parse(prevCfg);
+    check('v13 System Co-pilot rules show 1.1\'s thresholds as inputs, a change saves through 1.1\'s settings parser, and a watch value past at-risk is refused', ruleOk, detail);
+    // 5. Data and connections: 1.1's actions are there, and Open settings still opens the full modal
+    let dataOk = false; detail = '';
+    try{
+      render(); closeModals();
+      const s = sys();
+      const acts = s ? [...s.querySelectorAll('[data-v13-sys-act]')].map(b => b.getAttribute('data-v13-sys-act')) : [];
+      const want = ['export','import','import-excel','import-values','import-csat','restore','curriculum','backfill'];
+      const missing = want.filter(k => acts.indexOf(k) === -1);
+      const open = s && s.querySelector('[data-v13-open-settings]');
+      if(open) open.click();
+      const h3 = document.querySelector('.modal-backdrop .modal h3');
+      dataOk = !missing.length && !!h3 && h3.textContent.trim() === 'Settings';
+      detail = JSON.stringify({missing, settings: h3 && h3.textContent});
+      closeModals();
+    }catch(e){ detail = e.message; closeModals(); }
+    check('v13 System Data and connections carries 1.1\'s import/export/backup actions and an Open settings fallback that opens the Settings modal', dataOk, detail);
+    try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+    DATA.config = JSON.parse(prevCfg);
+    if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
+    try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+    ui.view = prevView; ui.openCustomerId = prevOpen; render();
+  })();
   /* ==== end v13 checks: System ==== */
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',

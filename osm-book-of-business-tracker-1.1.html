@@ -9746,7 +9746,202 @@ function v13Risk(){
    Owned by the System port. Everything for the System screen goes between this
    marker and the end marker below: v13System() and its helpers.
    Keep the end marker and do not edit outside it. */
-function v13System(){ return `<section aria-label="System"><h1 class="v13-h1">System</h1><p class="v13-sub">Curricula, Gainsight rules and connections live in Settings for now.</p><p style="margin-top:16px"><button type="button" class="v13-pill" data-v13-open-settings>Open settings</button></p></section>`; }
+const V13S_CARD = 'margin-top:20px;background:var(--sheet);border-radius:18px;box-shadow:var(--sh1);padding:20px';
+const V13S_IN = 'box-sizing:border-box;border:1px solid var(--line2);border-radius:8px;background:var(--sheet);color:var(--ink);padding:6px 9px;font-size:13px;width:70px;font-family:var(--mono)';
+const V13S_LINK = 'border:0;background:transparent;padding:4px 6px;font-size:12px;font-weight:700;white-space:nowrap;color:var(--acc);cursor:pointer';
+const V13S_PILL = 'border:1px solid var(--line2);background:var(--sheet);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap';
+// The thresholds the settings modal saves, as [config key, label, unit, current value].
+function v13SysRules(){
+  const c = DATA.config;
+  return [
+    ['riskWatchDays', 'Watch after', 'days quiet', c.riskWatchDays],
+    ['riskAlertDays', 'At risk after', 'days quiet', c.riskAlertDays],
+    ['dueSoonDays', 'Due soon', 'days ahead', c.dueSoonDays],
+    ['neglectDays', 'Neglected after', 'days', c.neglectDays],
+    ['defaultPaceDays', 'Fallback pace', 'days between sessions', c.defaultPaceDays],
+    ['implQuietDays', 'Build quiet after', 'days', implQuietDays()],
+    ['gradReviewDays', 'Graduation check-back', 'days after', gradReviewDays()]
+  ];
+}
+function v13SysChip(text, warn){
+  return `<span style="font-size:11px;font-weight:800;border-radius:999px;padding:2px 10px;white-space:nowrap;${warn ? 'color:var(--warn);background:var(--warn-bg)' : 'color:var(--muted);background:var(--well)'}">${escapeHtml(text)}</span>`;
+}
+function v13SysRow(name, note, right){
+  return `<li style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap"><span style="min-width:0;flex:1 1 320px"><span style="display:block;font-size:14px;font-weight:700">${escapeHtml(name)}</span><span style="display:block;font-size:12px;color:var(--muted)">${escapeHtml(note)}</span></span><span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">${right}</span></li>`;
+}
+function v13SysAct(key, label, title){
+  return `<button type="button" data-v13-sys-act="${key}" style="${V13S_PILL}"${title ? ` title="${escapeAttr(title)}"` : ''}>${escapeHtml(label)}</button>`;
+}
+function v13SysGainsight(){
+  const q = getGainsightQueue();
+  const unsent = q.filter(x => x.status !== 'sent').length;
+  const online = connectorConfigured();
+  const withId = DATA.customers.filter(c => String(c.gainsightId || '').trim());
+  const noId = DATA.customers.filter(c => !String(c.gainsightId || '').trim());
+  const status = String(renderConnectorStatus() || '').replace(/<[^>]*>/g, '').trim();
+  const items = q.map((x, i) => {
+    const st = x.status === 'sent' ? 'Sent' : x.status === 'failed' ? 'Failed' : 'Queued';
+    return `<li style="padding:9px 0;border-top:1px solid var(--line)"><div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.4fr) auto;gap:10px;align-items:center">
+      <span style="min-width:0"><span style="display:block;font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(x.customerName)}</span><span style="display:block;font-size:11px;color:var(--muted)">${escapeHtml(x.kind)} · ${escapeHtml(fmtDate(x.date))}</span></span>
+      <span style="min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(String(x.payload || '').split('\n')[0])}</span>
+      <span style="display:flex;gap:4px;align-items:center;justify-content:flex-end">${v13SysChip(st, x.status === 'failed')}<button type="button" data-queue-view="${i}" style="${V13S_LINK}">View</button></span></div>
+      ${x.status === 'failed' ? `<p style="font-size:12px;color:var(--warn);margin-top:3px">${escapeHtml(x.error || 'The connector could not send this item.')}</p>` : ''}</li>`;
+  }).join('');
+  const shown = noId.slice(0, 8).map(c => escapeHtml(c.name)).join(' · ');
+  return `<section style="${V13S_CARD}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div><h2 style="font-size:16px;font-weight:900">Gainsight connection</h2>
+          <p style="font-size:12px;color:var(--muted);margin-top:2px">Queued items persist in the book and export as JSON. Nothing is ever sent silently.</p></div>
+        <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:${online ? 'var(--ink)' : 'var(--warn)'};background:${online ? 'var(--well)' : 'var(--warn-bg)'};border-radius:999px;padding:3px 10px;white-space:nowrap">${online ? 'Connector set' : 'Offline · not connected'}</span>
+      </div>
+      <ol style="margin:12px 0 0;padding-left:18px;display:grid;gap:3px;font-size:13px">
+        <li>Each customer needs its Gainsight ID so updates land on the right record.</li>
+        <li>A small connector on this computer talks to Gainsight, so no key lives in this page. Set its address and token in Settings.</li>
+        <li>Send to Gainsight sends only what you queued, and only when you press it.${status ? ' ' + escapeHtml(status) : ''}</li>
+      </ol>
+      <h3 style="font-size:14px;font-weight:900;margin-top:18px">Pending push · ${unsent} of ${q.length}</h3>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px">
+        ${online ? `<button type="button" id="btn-send-gainsight" ${unsent ? '' : 'disabled'} style="border:0;border-radius:999px;background:#0074E8;color:#fff;padding:7px 16px;font-size:13px;font-weight:800;opacity:${unsent ? 1 : .5}">Send to Gainsight${unsent ? ' · ' + unsent : ''}</button>` : ''}
+        <button type="button" id="btn-export-gainsight-queue" ${q.length ? '' : 'disabled'} style="${V13S_PILL};opacity:${q.length ? 1 : .5}">Export queue (JSON)</button>
+        <span style="font-size:12px;color:var(--muted)">${online ? 'An item marked sent shows the id Gainsight returned.' : 'No connector is configured: paste the text or export the JSON.'}</span>
+      </div>
+      ${q.length ? `<ul style="list-style:none;padding:0;margin:10px 0 0">${items}</ul>` : `<p style="font-size:13px;color:var(--muted);margin-top:10px">Nothing queued yet. Confirm a risk and add it to the close.</p>`}
+      <h3 style="font-size:14px;font-weight:900;margin-top:18px">Company IDs · ${withId.length} of ${DATA.customers.length} matched</h3>
+      ${noId.length ? `<p style="font-size:12px;color:var(--muted);margin-top:4px">Updates for these accounts have no record to land on until they have an ID. Add it in the account's details.</p>
+      <p style="font-size:13px;font-weight:700;margin-top:6px">${shown}${noId.length > 8 ? ` <span style="font-weight:400;color:var(--muted)">and ${noId.length - 8} more</span>` : ''}</p>` : ''}
+    </section>`;
+}
+function v13SysCopilotRules(){
+  const fields = v13SysRules().map(([k, label, unit, v]) =>
+    `<label style="display:flex;gap:6px;align-items:center"><b>${escapeHtml(label)}</b><input type="number" min="1" data-v13-sys-cfg="${k}" value="${escapeAttr(String(v))}" aria-label="${escapeAttr(label)}" style="${V13S_IN}"> ${escapeHtml(unit)}</label>`).join('');
+  return `<section style="${V13S_CARD}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap">
+        <h2 style="font-size:16px;font-weight:900">Co-pilot rules</h2>
+        <span style="font-size:12px;color:var(--muted)">What it watches. A change saves straight away.</span>
+      </div>
+      <div style="display:flex;gap:14px 18px;flex-wrap:wrap;margin-top:12px;font-size:13px">${fields}</div>
+      <p style="font-size:12px;color:var(--muted);margin-top:14px">Watch and at risk count days since the last logged activity; watch must be the smaller. Due soon flags a next planned session inside that window that is not scheduled; neglected flags an account with no touch past that many days. Fallback pace projects graduation when an account has no dates. Build quiet applies to partner-led builds (14 to 180 days). Graduation check-back asks whether the onboarding held (1 to 365 days).</p>
+    </section>`;
+}
+function v13SysAdminRules(){
+  const rows = GATE_DEFS.map(g =>
+    `<li data-v13-sys-rule="${escapeAttr(g.key)}" style="display:grid;grid-template-columns:minmax(160px,220px) minmax(0,1fr);gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px"><b>${escapeHtml(g.label)}</b><span style="color:var(--muted)">${escapeHtml((g.gainsightAction ? g.gainsightAction + '. ' : (g.gainsightActivityType ? g.gainsightActivityType + '. ' : '')) + g.adminWhy)}</span></li>`).join('');
+  return `<section style="${V13S_CARD}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap">
+        <h2 style="font-size:16px;font-weight:900">Gainsight admin rules</h2>
+        <span style="font-size:12px;color:var(--muted)">What each field is and why it matters. Paused, building and graduated accounts are not counted.</span>
+      </div>
+      <ul style="list-style:none;padding:0;margin-top:8px">${rows}</ul>
+    </section>`;
+}
+function v13SysCurricula(){
+  const T = DATA.config.sessionTemplates || {};
+  const rows = DATA.config.modules.map(m => {
+    const n = (T[m] || []).length;
+    const accts = DATA.customers.filter(c => c.module === m).length;
+    const csrd = moduleSupportsCSRD(m) && (T[m + ' (CSRD)'] || []).length;
+    return `<li style="border-bottom:1px solid var(--line)"><button type="button" data-v13-sys-curric="${escapeAttr(m)}" class="v13s-row" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:center;width:100%;border:0;background:transparent;color:var(--ink);border-radius:10px;padding:12px 8px;text-align:left;cursor:pointer">
+      <span style="min-width:0"><span style="display:block;font-size:15px;font-weight:800">${escapeHtml(m)}</span><span style="display:block;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px">${n} session${n === 1 ? '' : 's'} · ${accts} account${accts === 1 ? '' : 's'}</span></span>
+      <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center">${csrd ? `<span style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:2px 9px;white-space:nowrap;color:var(--acc);background:var(--acc-bg)">CSRD · ${csrd} sessions</span>` : ''}<span style="font-size:13px;font-weight:800;color:var(--acc)">Edit</span></span>
+    </button></li>`;
+  }).join('');
+  return `<section style="${V13S_CARD}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap">
+        <h2 style="font-size:16px;font-weight:900">Curricula</h2>
+        <span style="font-size:12px;color:var(--muted)">One session curriculum per solution area. Each account's plan follows its module.</span>
+      </div>
+      <ul style="list-style:none;padding:0;margin-top:8px">${rows || '<li style="padding:12px 0;font-size:13px;color:var(--muted)">No curricula yet.</li>'}</ul>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">${v13SysAct('curriculum', 'Add or rename a module')}</div>
+    </section>`;
+}
+function v13SysData(){
+  const ai = getAiSettings();
+  const conn = String(renderConnectorStatus() || '').replace(/<[^>]*>/g, '').trim();
+  const fsBtns = _fsState === 'unsupported' ? ''
+    : _fsState === 'unset' ? v13SysAct('fs-choose', 'Choose a backup file')
+    : _fsState === 'needs-permission' ? v13SysAct('fs-resume', 'Resume backing up')
+    : v13SysAct('fs-now', 'Back up now');
+  const fsWarn = _fsState !== 'ready' || !!fsBlockedReason();
+  const rows = [
+    v13SysRow('Account data', `${DATA.customers.length} accounts · ${storageKeptLine()}`, v13SysChip(DATA.synthetic === true ? 'Test book' : 'This browser only', false)),
+    v13SysRow('Automatic backup', fsStatusLine(), fsBtns + v13SysChip(_fsState === 'unsupported' ? 'Export only' : fsWarn ? 'Not backing up' : 'On', fsWarn)),
+    v13SysRow('Import and export', 'Export JSON is the full book; Import JSON and Restore Archive read it back. Every import is previewed first.',
+      v13SysAct('export', 'Export JSON') + v13SysAct('import', 'Import JSON') + v13SysAct('restore', 'Restore Archive')),
+    v13SysRow('Gainsight and Snowflake files', 'Tier, contract value and renewal from a Gainsight CSV; survey dates from a CSAT CSV; a workbook from Excel.',
+      v13SysAct('import-values', 'Gainsight CSV') + v13SysAct('import-csat', 'CSAT CSV') + v13SysAct('import-excel', 'Excel')),
+    v13SysRow('Partner notes and sessions', 'A partner tracker sheet is staged as notes for review; backfill catches up completed sessions in one grid.',
+      v13SysAct('import-partner', 'Partner sheet') + v13SysAct('backfill', 'Backfill sessions')),
+    v13SysRow('Connector', conn || 'Not set up. Fetches Gong calls and talks to Gainsight and AI from this computer.',
+      `<button type="button" data-v13-sys-focus="connector-url" style="${V13S_LINK}">Set up</button>` + v13SysChip(connectorConfigured() ? 'Configured' : 'Not set', !connectorConfigured())),
+    v13SysRow('AI brief', ai.apiKey ? 'A key is stored in this browser.' : 'Bring your own key; nothing is sent without one.',
+      `<button type="button" data-v13-sys-focus="ai-api-key" style="${V13S_LINK}">Set up</button>` + v13SysChip(ai.apiKey ? 'Key stored' : 'No key', !ai.apiKey))
+  ].join('');
+  return `<section style="${V13S_CARD}">
+      <h2 style="font-size:16px;font-weight:900">Data and connections</h2>
+      <ul style="list-style:none;padding:0;margin-top:8px">${rows}</ul>
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px">
+        <span style="font-size:12px;color:var(--muted);max-width:640px">Readiness domains, outcome names, advisor keywords, graduation gates, component weights, AI answer style, motion and clearing the book stay in Settings.</span>
+        <button type="button" data-v13-open-settings style="${V13S_PILL}">Open settings</button>
+      </div>
+    </section>`;
+}
+function v13System(){
+  return `<section aria-label="System" data-v13-system="">
+    <style>[data-v13-system] :is(h1,h2,h3,p,ol,ul){margin:0}[data-v13-system] .v13s-row:hover{background:var(--sheet2)}[data-v13-system] button:disabled{cursor:default}</style>
+    <div style="max-width:980px;margin:0 auto">
+      <h1 style="font-size:clamp(34px,3.6vw,52px);font-weight:900;letter-spacing:-0.035em;line-height:1">System</h1>
+      ${v13SysGainsight()}
+      ${v13SysCopilotRules()}
+      ${v13SysAdminRules()}
+      ${v13SysCurricula()}
+      ${v13SysData()}
+    </div>
+  </section>`;
+}
+// Opens 1.1's Settings modal and puts the cursor on one of its fields.
+function v13SysOpenSettingsAt(id){
+  openSettingsModal();
+  const all = document.querySelectorAll('.modal-backdrop');
+  const el = all.length && all[all.length - 1].querySelector('#' + id);
+  if(el){ try{ el.scrollIntoView({block:'center'}); }catch(e){} el.focus(); }
+}
+// One threshold changed: rebuild the settings draft from the book as it stands, so the
+// save runs through 1.1's own parseSettingsDraft / applySettingsDraft / commitDataCandidate.
+function v13SysSaveRule(key, value){
+  const c = DATA.config;
+  const raw = {domains: c.domains.slice(), outcomes: c.outcomeNames.slice(),
+    riskKeywords: c.advisorRiskKeywords.join('\n'), positiveKeywords: c.advisorPositiveKeywords.join('\n'),
+    keywordMaxAgeDays: c.keywordSignalMaxAgeDays};
+  v13SysRules().forEach(([k, , , v]) => { raw[k] = v; });
+  raw[key] = value;
+  let draft;
+  try{ draft = parseSettingsDraft(raw); }catch(err){ showToast(err.message); render(); return; }
+  if(commitDataCandidate(applySettingsDraft(cloneData(DATA), draft))) showToast('Saved');
+  render();
+}
+V13_BINDERS.system = box => {
+  const s = box.querySelector('[data-v13-system]');
+  if(!s) return;
+  s.querySelectorAll('input[data-v13-sys-cfg]').forEach(inp => inp.addEventListener('change', () => v13SysSaveRule(inp.dataset.v13SysCfg, inp.value)));
+  s.querySelectorAll('[data-v13-sys-curric]').forEach(b => b.addEventListener('click', () => {
+    openCurriculumModal();
+    const sel = document.querySelector('.modal-backdrop #cur-module-select');
+    if(sel && sel.value !== b.dataset.v13SysCurric){ sel.value = b.dataset.v13SysCurric; sel.dispatchEvent(new Event('change')); }
+  }));
+  s.querySelectorAll('[data-v13-sys-focus]').forEach(b => b.addEventListener('click', () => v13SysOpenSettingsAt(b.dataset.v13SysFocus)));
+  const file = id => () => { const el = document.getElementById(id); if(el) el.click(); };
+  const acts = {
+    'export': exportData, 'import': file('import-file-input'), 'restore': file('restore-archive-input'),
+    'import-excel': file('import-excel-input'), 'import-values': file('import-values-input'),
+    'import-csat': file('import-csat-input'), 'import-partner': file('import-partner-sheet-input'),
+    'curriculum': () => openCurriculumModal(), 'backfill': () => openBackfillModal(),
+    'fs-choose': () => fsChooseFile(), 'fs-resume': () => fsResume(), 'fs-now': () => fsWriteNow(false)
+  };
+  s.querySelectorAll('[data-v13-sys-act]').forEach(b => {
+    const fn = acts[b.dataset.v13SysAct];
+    if(fn) b.addEventListener('click', fn);
+  });
+};
 /* ==== end v13 screen: System ==== */
 function v13SwitchView(newView){
   if(ui.view === 'today' && newView !== 'today'){
