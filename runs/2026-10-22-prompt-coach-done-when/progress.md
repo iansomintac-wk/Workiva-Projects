@@ -11,3 +11,4 @@
 | 2026-10-22T07:13:43.112Z | 2 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; VALID |
 | 2026-10-22T07:15:30.240Z | 2 | checker | pass | 59440 | 0.0519404 | 27 | 0 | PASS: The task's work is in commit c9decaf, the commit before HEAD. HEAD (d7c90f5) is a later commit that only edits pla |
 | 2026-10-22T07:15:30.245Z | 2 | task | done | 0 | 0 | 0 | 0 | attempt 1 |
+| 2026-10-22T07:15:34.278Z | 3 | task | blocked | 0 | 0 | 0 | 0 | depends on a task that is parked or not done |
