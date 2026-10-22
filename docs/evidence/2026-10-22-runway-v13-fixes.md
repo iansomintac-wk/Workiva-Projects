@@ -31,8 +31,15 @@ Opus (final-reviewer) and Codex (codex-cli 0.163.0, read-only) each found one mu
 - Opus: beatGateBlocks' Sentiment block lost its `</div>`, nesting the old screens' day panes. Fixed 55fe4ce, 2 red-first checks.
 - Codex: sim setup clicked a v13-only control, so the default run died at 1.0 (exit 2, reproduced by the lead). Fixed 6d97bb5.
 - Should-fixes closed: the two Task 6 edits to locked v72 checks are recorded in README and CHANGELOG (intent unchanged, one tightened with `g.outcome`); D2/D3 read only the Prepare call-prep box; dead L6/L7 cap legs dropped (pass conditions unchanged); stale sim comments corrected.
-- Left for Ian: the Desk Evidence tab shows 1.1's "Health NN%" tile (healthScore). It was already drawn there at the base commit; both reviewers call it a v13-rule breach the branch did not introduce.
+- Left for Ian: the Desk Evidence tab shows 1.1's "Health NN%" tile (healthScore). It was already drawn there at the base commit; both reviewers call it a v13-rule breach the branch did not introduce. Ian ruled "Hide on Desk" (below).
 
-## Open for Ian
+## Ian's rulings, 2026-10-22 18:15Z (resume 2)
 
-Taste batch (PM first pass, Ian decides), item 6 report (features left out for lack of 1.1 data), and the kept v13-risk worktree: see the run ledger and the session's report.
+Ian answered four cards himself (answered-for-ian.jsonl: left=ian-kind).
+- Look, "PM's picks": Desk Prepare step 04 reads "NEXT · curriculum" (v13's word, was "Next review"); the Go-Live gates box sits below the Evidence stat tiles; Task 6 placements, the dark raised Co-pilot summary, and Month without "Sentiment check-in" stay as they are. Built 99c76cb, merged 45661ed.
+- Health, "Hide on Desk": the Desk Evidence tab draws no Health tile (a `noHealth` option on the overview tiles); the full-account overlay's Overview keeps it; healthScore unchanged.
+- 4 new self-checks in `v13 fixes: look2`, red 3 of 4 on 02f460d (the 4th, overlay keeps Health, is a guard that passes both ways). One existing check's expected heading moved from 'Next review' to 'Next' with ruling (a).
+- Left out, "None for now": deferred by Ian 2026-10-22, the v13 features 1.1 has no data for: signal ids (EV-27); co-pilot minutes saved and applied / edited / dismissed counts; "Applied for you"; "After your calls"; implementation %; check-ins due; sentiment and renewal pickers; Gainsight dry-run, JSON preview, field mapping and per-row company-ID boxes; renewal window; TTFV target; curriculum versions.
+- v13-risk worktree, "Save then remove": its uncommitted diff (docs/HOSTING.md, the 1.1 html, tools/sim/osm-day/verify.mjs; 2,831 bytes) is saved as `v13-risk-uncommitted.patch` in the run ledger and committed on branch `v13-risk` (2ee32f1, pushed as its own branch, not merged); the worktree is removed, branch kept.
+
+Measured by lead ef392aa7 on 45661ed plus the re-pin (1.1 a2e52373): self-checks 560/560, 0 console errors; tests 597 / 595 pass / 0 fail / 2 skipped; day sim `node tools/sim/osm-day/run.mjs` 1.1: steps 22 breaks 22, exit 0 (22 PASS, 0 FAIL); 1.0: exit 1 with the same 7 FAIL as before. Captures (headless throwaway profile, demo seed): Desk Prepare step 04 kicker "Next · curriculum · Carbon · S7" (was "Next review · ..."); Desk Evidence text has the tiles at char 143 and Go-Live gates at 4173 (was gates 93, tiles 1211), no "Health NN%" (was present); both opened and checked.
