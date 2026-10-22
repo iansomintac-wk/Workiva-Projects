@@ -1,0 +1,36 @@
+RUN: Runway fake-book end to end, connector seam, team demo. Written 2026-10-22 ~06:50Z by the fake-book talk. Run `date -u` before every stamp.
+Method: studio-harness:talk-and-run, "The run". You are the lead: coordinate only. Each piece goes to a fresh helper, one at a time; the ledger is the memory.
+Spec (approved by Ian before launch): docs/superpowers/specs/2026-10-22-runway-fake-book-connector-design.md. Read it whole first.
+Repo: C:/Users/teasp/Documents/Runway Tracker. Worktree: .claude/worktrees/runway-fake-book, branch runway-fake-book (made from runway-fake-book-talk at launch).
+Ledger: $STUDIO_RUN_LEDGER (= <worktree>/.ledger/2026-10-22-runway-fake-book). First check: budget.json and slip.json exist there, else stop.
+
+ORDER (cut from the end: M0b first, then M1)
+1. Plan: a studio-harness:plan-writer helper writes docs/superpowers/plans/2026-10-22-runway-fake-book.md from the spec. Tasks of 8 steps or fewer, with exact files, check lines and Depends. Header `Data: (none)` unless a task changes data. PM proxy approves; then correct budget.json `plan` and `tasksLeft`.
+2. M0a: README counts and adapter line.
+3. M2: time-proof fake data (spec section 3), demo ids of 15 or more characters, the Check CSAT button through the existing plan builder, e2e step, demo csat line.
+4. M3: tools/team-demo.mjs, walkthrough page, how-it's-built page, test/team-demo.test.mjs; captures then look critic then PM first pass, all filed for Ian's batch.
+5. M1: connector/adapters/snowflake-sql.mjs, documented-shape fixtures, --check steps, CONNECT-SNOWFLAKE admin ask.
+6. M0b: S1-S3, N1-N3; look call 6 goes in Ian's batch.
+7. Final whole-branch review (studio-harness:final-reviewer plus a read-only Codex review), fix round, evidence doc docs/evidence/2026-10-22-runway-fake-book.md, merge through bin/merge-gate.mjs if the slip names it.
+
+DONE WHEN (each one is re-run by the lead, not read from a report)
+- M0a: every README --expect line exits 0 when run (predicted 503 and 72).
+- M2: node tools/connector-e2e.mjs passes every step (predicted 8/8) today AND with the clock set 90 days ahead; the CSV-vs-connector equivalence test passes; node --test --test-reporter=spec test/*.test.mjs and node --test connector/test/*.test.mjs are green; test/csat-no-network.test.mjs unchanged and green.
+- M3: test/team-demo.test.mjs passes (headless launcher twice, temp folder gone, ports free, page count = live suite count); one capture per walkthrough step, each opened and checked.
+- M1: new connector tests pass under test-net-guard; --check on config.example.json prints only SKIP lines; health shows snowflake-sql (unproven) for a config naming it.
+- M0b: each new check red on the parent and green on the task commit; the 1.1 count moves by exactly the checks added.
+
+LOCKED (no change without Ian's ruling): test/csat-no-network.test.mjs; the existing connector contract tests' fixed fixture dates; osm-book-of-business-tracker-1.0.html; tools/step*-probe.js expected counts other than README text.
+
+SAFETY
+- $0 spend. No installs (no snowflake-sdk). No network from code or tests; 127.0.0.1 only; no real Gainsight, Snowflake or Gong credentials or calls.
+- Workiva data stays in this repo; only names go to the brain or studio-harness. Never read *RESTORE-POINT* files, exports, or Ian's real CSAT file.
+- Never open a test copy in Ian's normal Chrome profile: --user-data-dir in a temp folder only. Stop processes by PID only, never by image name; never touch :8790 or :8800.
+- Never touch the 6 untracked files in Ian's main checkout. Do not ask Ian to switch his real book.
+- No ~/.claude/ writes, except the session-rename exception in talk-and-run "Session names".
+- Codex on this PC: run reviews with `codex exec -s read-only -c windows.sandbox=unelevated --skip-git-repo-check` (the default sandbox fails setup; ledger gotchas 2026-10-14 and 2026-10-17). Probe with "echo hi" first; if it fails, record it and let the Opus review stand alone.
+- Never let a helper edit the worktree while a verify or suite is running in it (ledger 2026-10-19).
+- Traps from the ledger: `node --test <folder>` runs nothing on Node 26, so always pass a glob; a CSS token copied from a neighbour may be undefined, so check each var() exists in :root; a hook's answer is a proposal, not Ian's ruling, until he confirms it.
+
+STOPS: plan approval (PM proxy); a push or merge the slip does not name; any spend; a decision only Ian can make (through the PM, ESCALATE only); Ian's look batch at the end of M3 (keep building M1 and M0b meanwhile). At each stop: PushNotification, notify.mjs, then ask under an [Ian] header. Give time left at each stop, from measured wall times.
+Session-name rule: predecessor is the talk session that launched you.
