@@ -1,6 +1,20 @@
 OSM Runway — release notes
 ==========================
 
+1.1 - v13 look.
+
+    - The five screens (Desk, Co-pilot, Accounts, Risk, System) are drawn in the v13 layout, copy and
+      colours on 1.1's engine and data: no new data fields, no score. They are on by default; setting the
+      browser-storage switch obm-next-screens-v1 to '0' brings back the old screens.
+    - Fix: the Desk's work tabs (Prepare, Capture, Evidence, Record) were drawn read-only, and their
+      controls looked up the account open in the full-account panel, so on the Desk they did nothing or
+      could act on another account. They are live now and every control acts on the Desk's selected
+      account. "Open full account" still opens the panel.
+    - Prepare follows v13's call review: Goal (the next session's required outcomes, tickable, and what
+      to enable), Evidence (outcomes the customer demonstrated and the latest log entries), Uncertainty
+      (the account's signals and confirmed risks) and Next review (the 45-minute run script, the copy
+      button and the notes for next meeting). Every other session stays under "Session plan".
+
 1.1 — Hosting. A site you can put behind company sign-in (nothing is published).
 
     - 1.1 - Surveys to chase: one short line at the top of Today, outside the ranking: "Surveys to chase: Fernhollow (sent 9 days

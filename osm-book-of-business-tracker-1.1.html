@@ -9594,18 +9594,91 @@ function v13DeskFacts(c){
     <p style="margin-top:4px;line-height:1"><span style="font-size:32px;font-weight:900;letter-spacing:-0.03em;color:${f.color}">${escapeHtml(f.value)}</span><span style="font-size:14px;color:var(--muted);font-weight:600">${escapeHtml(f.unit)}</span></p>
     <p style="font-size:12px;color:var(--muted);margin-top:6px">${escapeHtml(f.note)}</p></div>`).join('');
 }
-function v13DeskTabBody(c, tab){
+/* v13 fixes: Prepare in v13's call-review shape, Goal > Evidence > Uncertainty > Next review,
+   filled from 1.1's session plan and record only. The next session's controls (deliverable
+   ticks, who demonstrated it, the run script, the prep note) live in the steps; every other
+   session stays one click away under "Session plan". */
+function v13DeskPrepare(c, x){
+  const templates = getSessionTemplateSet(c);
+  const next = c.stage === 'graduated' ? null : getNextSessionInfo(c);
+  const num = next ? next.number : null, tpl = next ? next.template || templates[num - 1] : null;
+  const impl = inImplementation(c);
+  const card = (label, text, meta, lc, bg, extra) => `<div style="background:${bg || 'var(--sheet2)'};border:1px ${bg === 'var(--warn-bg)' ? 'dashed var(--warn)' : 'solid var(--line2)'};border-radius:10px;padding:10px 12px;min-width:0">
+      <p style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;color:${lc};text-transform:uppercase">${escapeHtml(label)}</p>
+      <p style="font-size:13px;margin-top:4px">${text}</p>${meta ? `<p style="font-size:12px;color:var(--muted);margin-top:2px">${escapeHtml(meta)}</p>` : ''}${extra || ''}</div>`;
+  const grid = cards => cards.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;margin-top:10px">${cards.join('')}</div>` : '';
+  // Goal: the next session's deliverables, each a live tick plus who demonstrated it.
+  const criteria = outcomeCriteriaFor(c);
+  const goalCards = tpl ? tpl.deliverables.map((label, idx) => {
+    const crit = criteria.find(k => k.sourceSession === num && k.sourceIndex === idx);
+    const ev = crit ? crit.evidence : null, by = ev ? (ev.by || 'unknown') : 'osm', sel = v => by === v ? ' selected' : '';
+    const key = `${c.id}|${num}|${idx}`;
+    return card('Required outcome · S' + num, `<label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" data-session-deliverable="${escapeAttr(key)}" ${ev ? 'checked' : ''} style="margin-top:3px"><span>${escapeHtml(label)}</span></label>`, '', 'var(--muted)', '',
+      `<select data-deliverable-by="${escapeAttr(key)}" aria-label="Evidence source" ${ev ? '' : 'disabled'} style="margin-top:6px;font-size:12px;border:1px solid var(--line2);border-radius:8px;background:var(--sheet);padding:3px 6px"><option value="osm"${sel('osm')}>we observed it</option><option value="customer"${sel('customer')}>customer demonstrated</option>${by === 'unknown' ? '<option value="unknown" selected>source unknown</option>' : ''}</select>`);
+  }) : [];
+  // Evidence: what the record shows, newest first.
+  const v = outcomeVerdict(c);
+  const met = v.ttfv1.met + v.ttfv2.met + v.other.met, tot = v.ttfv1.total + v.ttfv2.total + v.other.total;
+  const acts = (DATA.activities[c.id] || []).slice().sort((a, b) => a.date < b.date ? 1 : -1);
+  const clip = s => { s = String(s || ''); return s.length > 220 ? s.slice(0, 219) + '…' : s; };
+  const evCards = acts.slice(0, 2).map(a => card(a.type + (a.sessionNumber ? ' · S' + a.sessionNumber : '') + ' · ' + fmtDate(a.date), escapeHtml(clip(a.summary)), '', 'var(--acc)'));
+  // Uncertainty: the account's open signals and confirmed risks, never a score.
+  const k = x && x.caseOf.get(c.id);
+  const unCards = k ? k.items.map(it => k.isRisk
+      ? card('Confirmed risk · ' + it.kind, escapeHtml(it.detail || it.kind), 'Confirmed by you', 'var(--risk)', 'var(--risk-bg)')
+      : card('Signal to check · ' + it.kind, escapeHtml(it.detail || it.kind), 'Not a risk unless you confirm it', 'var(--warn)', 'var(--warn-bg)')) : [];
+  const unOpen = tot - met;
+  // Next review: the 45-minute run script, one row per segment, the script behind each row.
+  const rb = tpl ? buildSessionRunbook(c, tpl) : null;
+  const note = tpl ? readSessionNote(c, num, tpl) : null;
+  const agenda = rb ? `<div style="display:grid;gap:4px;margin-top:10px">${rb.segments.map(seg => `<details style="background:var(--sheet2);border-radius:10px;padding:8px 12px">
+      <summary style="display:grid;grid-template-columns:90px minmax(0,1fr) auto;gap:10px;align-items:baseline;cursor:pointer;list-style:none"><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${escapeHtml(seg.m || '-')}</span><span style="font-size:13px;font-weight:800">${escapeHtml(seg.title)}</span><span style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--acc)">Call script</span></summary>
+      <p style="font-size:13px;margin:8px 0 0 100px">${escapeHtml(seg.talk)}</p>
+      ${seg.steps.length ? `<ol style="font-size:12px;color:var(--muted);margin:6px 0 0 118px">${seg.steps.map(st => `<li>${escapeHtml(st)}</li>`).join('')}</ol>` : ''}</details>`).join('')}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button type="button" data-copy-script="${escapeAttr(c.id + '|' + num)}" style="border:1px solid var(--line2);background:var(--sheet);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700">Open / copy full script</button>
+      <button type="button" data-v13-desk-go="capture" style="border:0;border-radius:10px;background:var(--ink);color:var(--sheet);padding:6px 12px;font-size:12px;font-weight:800">Call finished · capture</button></div>
+    <label style="display:block;margin-top:12px"><span style="font-size:12px;font-weight:700">Notes for next meeting</span>
+      <textarea data-session-prep="${escapeAttr(c.id + '|' + num)}" placeholder="Anything specific to prep, follow up on, or bring to the next call…" style="display:block;width:100%;min-height:64px;margin-top:4px;border:1px solid var(--line2);border-radius:10px;background:var(--sheet);padding:8px 10px;font:inherit;font-size:13px;resize:vertical">${escapeHtml(note.prep)}</textarea></label>` : '';
+  const steps = [
+    {key:'goal', kick:'Goal · ' + (num ? 'S' + num + ' ' + tpl.title : 'session plan'), c:'var(--ink)',
+      title: tpl ? (impl ? 'Preview, starts at go-live: ' : 'The customer shows: ') + (tpl.deliverables.join('; ') || tpl.title) + '.' : 'Every session is logged.',
+      body: tpl ? 'What to enable: ' + tpl.enable.join('; ') + '. Tick an outcome when you see it.' : 'Nothing left on the curriculum.', more: grid(goalCards)},
+    {key:'evidence', kick:'Evidence · what the record shows', c:'var(--demo-t)',
+      title: tot ? 'Customer demonstrated ' + met + ' of ' + tot + ' outcomes.' : 'No success criteria authored.',
+      body: acts.length ? sessionsCompletedCount(c) + ' meeting' + (sessionsCompletedCount(c) === 1 ? '' : 's') + ' held. Latest entries from the activity log.' : 'Nothing logged yet.', more: grid(evCards)},
+    {key:'uncertainty', kick:'Uncertainty · what you don’t know yet', c:'var(--warn)',
+      title: unCards.length ? unCards.length + (k.isRisk ? ' confirmed risk item' : ' signal') + (unCards.length === 1 ? '' : 's') + ' on this account.' : 'Nothing flagged.',
+      body: 'Missing evidence is a reason to check, not a confirmed risk.' + (unOpen > 0 ? ' ' + unOpen + ' outcome' + (unOpen === 1 ? '' : 's') + ' not yet evidenced' + (v.undated ? ', ' + v.undated + ' undated' : '') + '.' : ''), more: grid(unCards)},
+    {key:'next', kick:'Next review · curriculum · ' + c.module + (num ? ' · S' + num : ''), c:'var(--acc)',
+      title: rb ? '45-minute run script · ' + RUNBOOK_SOURCE_LABEL[rb.source] : 'No session to run.',
+      body: rb ? 'Today’s agenda. Open a row for its call script.' : 'Log the next touchpoint from Capture.', more: agenda}
+  ];
+  const others = templates.map((t, i) => i + 1 === num ? '' : renderSessionCard(c, i + 1, t, false)).join('');
+  const pills = templates.map((t, i) => { const done = !!getSessionActivity(c, i + 1), on = i + 1 === num;
+    return `<span style="flex:1;min-width:18px;text-align:center;font-family:var(--mono);font-size:10px;font-weight:700;border-radius:5px;padding:3px 0;background:${on ? 'var(--acc)' : done ? 'var(--muted)' : 'var(--well)'};color:${on || done ? 'var(--sheet)' : 'var(--muted)'}">${i + 1}</span>`; }).join('');
+  return `<div style="display:grid;gap:0">${steps.map((s, i) => `<section data-v13-prep-step="${s.key}" style="display:grid;grid-template-columns:28px minmax(0,1fr);gap:0 12px">
+      <div style="display:flex;flex-direction:column;align-items:center"><span style="width:28px;height:28px;border-radius:50%;background:${s.c};color:var(--sheet);display:grid;place-items:center;font-family:var(--mono);font-size:11px;font-weight:700;flex:none">0${i + 1}</span>${i < steps.length - 1 ? '<span style="flex:1;width:1px;background:var(--line2);margin:4px 0"></span>' : ''}</div>
+      <div style="min-width:0;padding-bottom:22px"><h4 style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${s.c};padding-top:6px">${escapeHtml(s.kick)}</h4>
+        <p style="font-size:16px;font-weight:900;margin-top:4px">${escapeHtml(s.title)}</p><p style="font-size:13px;color:var(--muted);margin-top:4px">${escapeHtml(s.body)}</p>${s.more}</div></section>`).join('')}</div>
+    <details data-v13-prep-plan style="margin-top:8px;background:var(--sheet2);border-radius:14px;padding:12px 16px">
+      <summary style="cursor:pointer;list-style:none"><span style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap"><b style="font-size:14px">Session plan</b><span style="font-size:12px;color:var(--acc);font-weight:700">Show every session</span></span>
+        <span style="display:flex;gap:3px;margin-top:8px">${pills}</span>
+        <span style="display:block;font-size:12px;color:var(--muted);margin-top:6px">${num ? 'Next · S' + num + ' ' + escapeHtml(tpl.title) + ' · ' : ''}Changing the plan never changes evidence, readiness or risk.</span></summary>
+      <div style="margin-top:12px">${renderCurriculumFit(c)}${others}</div></details>`;
+}
+function v13DeskTabBody(c, tab, x){
   if(ui.openCustomerId) return `<p style="font-size:13px;color:var(--muted)">This account is open in the full account panel. Close it to work here.</p>`;
   const call = (fn) => { try{ return fn(); }catch(e){ console.warn('v13 desk tab', e); return ''; } };
   const acts = (DATA.activities[c.id] || []).slice().sort((a, b) => a.date < b.date ? 1 : -1);
   const next = getNextSessionInfo(c);
   const heads = {
-    prepare: [c.name + (next ? ' · S' + next.number + ' ' + (next.template && next.template.title || '') : ' · session plan'), 'From the session plan'],
+    prepare: [c.name + (next && c.stage !== 'graduated' ? ' · S' + next.number + ' call review' : ' · session plan'), 'From the session plan + record'],
     capture: ['Capture · log what happened', 'Writes to the activity log'],
     evidence: ['Outcomes and handoff', 'From the success criteria'],
     record: ['The record', 'Activity log + Gainsight']
   };
-  const body = tab === 'capture' ? call(() => renderLogActivityTab(c))
+  // The panel's Cancel only moves the panel's tab; on the Desk it would do nothing, so hide it.
+  const body = tab === 'capture' ? call(() => renderLogActivityTab(c).replace('id="btn-cancel-log-form"', 'id="btn-cancel-log-form" hidden'))
     : tab === 'evidence' ? call(() => {
         // renderOverviewTab stamps lastShownRecommendation; the Desk only reads, so put it back.
         const had = Object.prototype.hasOwnProperty.call(c, 'lastShownRecommendation'), was = c.lastShownRecommendation;
@@ -9613,13 +9686,13 @@ function v13DeskTabBody(c, tab){
         finally{ if(had) c.lastShownRecommendation = was; else delete c.lastShownRecommendation; }
       }) + call(() => renderHandoffTab(c))
     : tab === 'record' ? call(() => renderActivityTab(c, acts)) + call(() => renderCustomerGainsightTab(c))
-    : call(() => renderSessionPlanTab(c));
+    : call(() => v13DeskPrepare(c, x));
   const h = heads[tab] || heads.prepare;
   return `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:14px">
       <h3 style="font-size:20px;font-weight:900;letter-spacing:-0.01em">${escapeHtml(h[0])}</h3>
       <span style="display:flex;gap:12px;align-items:baseline"><span style="font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">${escapeHtml(h[1])}</span>
-      <button type="button" data-v13-desk-open style="border:1px solid var(--line2);background:var(--sheet);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700">Edit in the full account</button></span></div>
-    <div data-v13-desk-panel="${escapeAttr(tab)}" inert title="Read here; edit in the full account">${body}</div>`;
+      <button type="button" data-v13-desk-open style="border:1px solid var(--line2);background:var(--sheet);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700">Open full account</button></span></div>
+    <div data-v13-desk-panel="${escapeAttr(tab)}" data-v13-desk-cust="${escapeAttr(c.id)}">${body}</div>`;
 }
 function v13Desk(){
   const x = v13DeskCtx();
@@ -9695,7 +9768,7 @@ function v13Desk(){
     ${coStrip}
     <div role="tablist" aria-label="Customer work" style="display:flex;gap:4px;margin:20px 28px 0;padding:3px;background:var(--well);border-radius:12px">${V13_DESK_TABS.map(([kk, l]) =>
       `<button type="button" role="tab" aria-selected="${tab === kk}" data-v13-desk-tab="${kk}" style="flex:1;border:0;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;white-space:nowrap;${v13DeskSeg(tab === kk)}">${l}</button>`).join('')}</div>
-    <div role="tabpanel" data-v13-desk-body style="padding:22px 28px 30px">${v13DeskTabBody(a, tab)}</div>
+    <div role="tabpanel" data-v13-desk-body style="padding:22px 28px 30px">${v13DeskTabBody(a, tab, x)}</div>
   </article>`;
   return `${head}<div style="display:grid;grid-template-columns:260px minmax(0,1fr);gap:24px;align-items:start;margin-top:30px">${aside}<div style="min-width:0">${art}</div></div>`;
 }
@@ -16738,6 +16811,14 @@ function bindBeatPane(root){
 /* Global bindings for selectors that ALSO appear inside beat panes must skip
    pane descendants, or a pane present at render time would be bound twice. */
 function notInPane(el){ return !(el.closest && el.closest('.day-pane')); }
+/* v13 fixes: the account a control acts on. The Desk draws 1.1's tab bodies for its own
+   selected account inside [data-v13-desk-cust]; there that id wins over ui.openCustomerId,
+   so a Desk control can never write to the panel's (or a stale) account. */
+function controlCustomer(el){
+  const scope = el && el.closest && el.closest('[data-v13-desk-cust]');
+  const id = scope ? scope.dataset.v13DeskCust : ui.openCustomerId;
+  return DATA.customers.find(x => x.id === id);
+}
 
 function attachEvents(){
   const $ = sel => document.querySelector(sel);
@@ -17381,7 +17462,7 @@ The draft is discarded. The risk itself stays open.`)) return;
   /* v88 plays. Every write goes through the model functions, never by hand, so
      the caps and the never-two-of-the-same rule cannot be bypassed from the UI. */
   $$('[data-pb-start]').forEach(b => b.addEventListener('click', ()=>{
-    const c = DATA.customers.find(x => x.id === ui.openCustomerId);
+    const c = controlCustomer(b);
     if(!c) return;
     markUndoable('start play');
     if(!startPlaybook(c, b.dataset.pbStart)){ showToast('That play is already running on this account.'); return; }
@@ -17389,14 +17470,14 @@ The draft is discarded. The risk itself stays open.`)) return;
     showToast(`"${playbookDef(b.dataset.pbStart).title}" started. Its steps carry dates and will show on Today.`);
   }));
   $$('[data-pb-step]').forEach(cb => cb.addEventListener('change', ()=>{
-    const c = DATA.customers.find(x => x.id === ui.openCustomerId);
+    const c = controlCustomer(cb);
     if(!c) return;
     markUndoable('play step');
     togglePlaybookStep(c, cb.dataset.pbStep, cb.dataset.pbStepKey);
     saveData(); render();
   }));
   $$('[data-pb-close]').forEach(sel => sel.addEventListener('change', ()=>{
-    const c = DATA.customers.find(x => x.id === ui.openCustomerId);
+    const c = controlCustomer(sel);
     if(!c || !sel.value) return;
     markUndoable('close play');
     closePlaybook(c, sel.dataset.pbClose, sel.value);
@@ -17554,7 +17635,7 @@ The draft is discarded. The risk itself stays open.`)) return;
   const coordCollection = (c, kind) => kind === 'stakeholder' ? 'stakeholders' : kind === 'blocker' ? 'blockers' : 'commitments';
   const coordCap = kind => kind === 'stakeholder' ? MAX_STAKEHOLDERS : kind === 'blocker' ? MAX_BLOCKERS : MAX_COMMITMENTS;
   $$('[data-coord-add]').forEach(btn => btn.addEventListener('click', ()=>{
-    const c = DATA.customers.find(x => x.id === ui.openCustomerId);
+    const c = controlCustomer(btn);
     if(!c) return;
     const kind = btn.dataset.coordAdd, field = coordCollection(c, kind);
     const raw = kind === 'stakeholder'
@@ -17572,7 +17653,7 @@ The draft is discarded. The risk itself stays open.`)) return;
   }));
   $$('[data-coord-toggle]').forEach(btn => btn.addEventListener('click', ()=>{
     const [kind, id] = btn.dataset.coordToggle.split('|');
-    const c = DATA.customers.find(x => x.id === ui.openCustomerId);
+    const c = controlCustomer(btn);
     if(!c) return;
     const rec = (c[coordCollection(c, kind)] || []).find(r => r.id === id);
     if(!rec) return;
@@ -17585,7 +17666,7 @@ The draft is discarded. The risk itself stays open.`)) return;
      repaint per keystroke would destroy the field mid-sentence. */
   $$('[data-handoff]').forEach(ta => ta.addEventListener('change', ()=>{
     const [dir, key] = ta.dataset.handoff.split('|');
-    const c = DATA.customers.find(x => x.id === ui.openCustomerId);
+    const c = controlCustomer(ta);
     if(!c || !HANDOFF_DIRS[dir]) return;
     markUndoable('handoff notes');
     setHandoffField(c, dir, key, ta.value);
@@ -17608,7 +17689,7 @@ The draft is discarded. The risk itself stays open.`)) return;
   }));
   $$('[data-coord-remove]').forEach(btn => btn.addEventListener('click', ()=>{
     const [kind, id] = btn.dataset.coordRemove.split('|');
-    const c = DATA.customers.find(x => x.id === ui.openCustomerId);
+    const c = controlCustomer(btn);
     if(!c) return;
     const field = coordCollection(c, kind);
     markUndoable('remove ' + kind);
@@ -17733,7 +17814,7 @@ The draft is discarded. The risk itself stays open.`)) return;
   $('#btn-cancel-log-form') && $('#btn-cancel-log-form').addEventListener('click', ()=>{ ui.panelTab = 'activity'; render(); });
 
   // overview tab interactions
-  const c = DATA.customers.find(x=>x.id===ui.openCustomerId);
+  const c = DATA.customers.find(x=>x.id===ui.openCustomerId) || controlCustomer(document.querySelector('[data-v13-desk-cust]'));
   if(c){
     $$('.override-btn').forEach(b => b.addEventListener('click', ()=>{
       c.riskOverride = b.dataset.override || null; saveData(); render();

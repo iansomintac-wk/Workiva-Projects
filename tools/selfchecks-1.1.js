@@ -10271,6 +10271,107 @@ function _runSelfChecksInner(){
     }
   })();
   /* ==== end v13 checks: Desk ==== */
+  /* ==== v13 fixes: desk ==== (fix items 1a, 2, 9: the Desk work tabs are live and act on the
+     Desk's account, never ui.openCustomerId's; Prepare uses v13's four steps). Works on a
+     copy of DATA and puts the real one back. */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prev = {view: ui.view, open: ui.openCustomerId, tab: ui.panelTab, id: ui.v13DeskId, wt: ui.v13DeskTab, lens: ui.v13DeskLens, fil: ui.v13DeskFilter};
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevSwitch = null; try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const realDATA = DATA;
+    const body = () => document.querySelector('#app [data-osm] [data-v13-desk-body]');
+    const pickAB = () => {
+      const live = DATA.customers.filter(c => c.stage !== 'graduated' && !inImplementation(c));
+      return [live[0], live[1] || DATA.customers.find(c => c !== live[0])];
+    };
+    const show = (a, tab) => { ui.openCustomerId = null; ui.view = 'today'; ui.v13DeskId = a.id; ui.v13DeskTab = tab; ui.v13DeskFilter = null; render(); };
+    const cust = id => JSON.stringify(DATA.customers.find(c => c.id === id));
+    let ok, detail;
+    try{
+      localStorage.removeItem(KEY); DATA = cloneData(realDATA);
+      // 1. Capture: logging an activity writes to the Desk's account, not ui.openCustomerId's
+      ok = false; detail = '';
+      try{
+        const [A, B] = pickAB();
+        show(A, 'capture');
+        const nA = (DATA.activities[A.id] || []).length, nB = (DATA.activities[B.id] || []).length;
+        ui.openCustomerId = B.id;   // a stale panel id must not steer the Desk's form
+        const b = body();
+        b.querySelector('#act-type').value = 'Email';
+        b.querySelector('#act-summary').value = 'v13 fixes desk check';
+        b.querySelector('#btn-save-activity').click();
+        const gA = (DATA.activities[A.id] || []).length, gB = (DATA.activities[B.id] || []).length;
+        ok = gA === nA + 1 && gB === nB && (DATA.activities[A.id] || []).some(x => x.summary === 'v13 fixes desk check');
+        detail = JSON.stringify({A: A.id, B: B.id, nA, gA, nB, gB});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk Capture logs the activity on the Desk\'s selected account, not the one in ui.openCustomerId', ok, detail);
+      // 2. Prepare: the session-plan prep note writes to the Desk's account
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB();
+        show(A, 'prepare');
+        const bA = cust(A.id), bB = cust(B.id);
+        ui.openCustomerId = B.id;
+        const ta = body().querySelector('[data-session-prep]');
+        ta.value = 'v13 fixes prep note';
+        ta.dispatchEvent(new Event('change'));
+        ok = cust(A.id) !== bA && cust(A.id).indexOf('v13 fixes prep note') !== -1 && cust(B.id) === bB;
+        detail = JSON.stringify({A: A.id, B: B.id, changedA: cust(A.id) !== bA, changedB: cust(B.id) !== bB});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk Prepare session-plan note writes to the Desk\'s selected account', ok, detail);
+      // 3. Evidence: a handoff note (read at change time) writes to the Desk's account
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB();
+        show(A, 'evidence');
+        const bA = cust(A.id), bB = cust(B.id);
+        ui.openCustomerId = B.id;
+        const ta = body().querySelector('[data-handoff]');
+        ta.value = 'v13 fixes handoff note';
+        ta.dispatchEvent(new Event('change'));
+        ok = cust(A.id).indexOf('v13 fixes handoff note') !== -1 && cust(B.id) === bB;
+        detail = JSON.stringify({A: A.id, B: B.id, changedA: cust(A.id) !== bA, changedB: cust(B.id) !== bB});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk Evidence handoff note writes to the Desk\'s selected account', ok, detail);
+      // 4. no inert, no read-only title, on any tab
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A] = pickAB();
+        const bad = [];
+        ['prepare','capture','evidence','record'].forEach(t => {
+          show(A, t);
+          const p = body().querySelector('[data-v13-desk-panel]');
+          if(!p || p.hasAttribute('inert') || body().querySelector('[inert]') || /Read here/.test(p.getAttribute('title') || '')) bad.push(t);
+        });
+        ok = !bad.length;
+        detail = JSON.stringify({bad});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk work-tab panels are live: no inert attribute and no "Read here" title', ok, detail);
+      // 5. Prepare follows v13: Goal > Evidence > Uncertainty > Next review, and "Open full account" still opens the panel
+      ok = false; detail = '';
+      try{
+        const [A] = pickAB();
+        show(A, 'prepare');
+        const heads = [...body().querySelectorAll('[data-v13-prep-step] h4')].map(h => h.textContent.split('·')[0].trim());
+        document.querySelector('#app [data-osm] [data-v13-desk-open]').click();
+        ok = heads.join('|') === 'Goal|Evidence|Uncertainty|Next review' && ui.openCustomerId === A.id && !!document.querySelector('.overlay .panel');
+        detail = JSON.stringify({heads, open: ui.openCustomerId});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk Prepare shows Goal, Evidence, Uncertainty and Next review in order; "Open full account" still opens the panel', ok, detail);
+    } finally {
+      DATA = realDATA;
+      try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+      try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+      ui.view = prev.view; ui.openCustomerId = prev.open; ui.panelTab = prev.tab; ui.v13DeskId = prev.id; ui.v13DeskTab = prev.wt;
+      ui.v13DeskLens = prev.lens; ui.v13DeskFilter = prev.fil;
+      render();
+    }
+  })();
+  /* ==== end v13 fixes: desk ==== */
   /* (spacer)
      (spacer)
      (spacer)
