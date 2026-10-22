@@ -11,6 +11,8 @@
   const GS_IDS = ['GS-DEMO-001','GS-DEMO-002','GS-DEMO-003','GS-DEMO-004','GS-DEMO-005','GS-DEMO-006','GS-DEMO-007',
     'GS-DEMO-008','GS-DEMO-009','GS-DEMO-010','GS-DEMO-011','GS-DEMO-012','GS-DEMO-013','GS-DEMO-014','GS-DEMO-015',
     'GS-DEMO-016','GS-DEMO-017'];
+  // Fake Salesforce ids (20 chars, so csatIdsMatch accepts them), same order as GS_IDS.
+  const SF_IDS = GS_IDS.map((_, i) => '001DEMO00000000' + String(i + 1).padStart(2, '0') + 'AAA');
   const NAMES = [
     ['Aldridge Energy','Carbon',['sec','risk']],
     ['Brightwater Foods','Sustainability',['sec']],
@@ -42,7 +44,7 @@
     const totalSessions = 8;
     const done = [6,7,5,4,8,3,6,5,7,4,6,5][i];
     const c = {
-      id, name, gainsightId: GS_IDS[i], module, stage: done >= 7 ? 'ttfv2' : done >= 4 ? 'ttfv1' : 'kickoff',
+      id, name, gainsightId: GS_IDS[i], salesforceId: SF_IDS[i], module, stage: done >= 7 ? 'ttfv2' : done >= 4 ? 'ttfv1' : 'kickoff',
       implementationDate: D(T, -startedAgo),
       totalSessions,
       components: comps,
@@ -70,6 +72,10 @@
         achievedOn: D(T,-45)}
     };
     domains.forEach((d, di) => { c.domainScores[d] = [4,3,4,2,3,4,3,2,4,3][(i+di) % 10]; });
+    /* CSAT dry-run states against connector/fixtures/snowflake-csat-demo.json (the adapter rebases it so its newest date is T-1):
+       0 has no survey dates (NEW), 1 has the sent date but no answer (FILLED), 2 matches the file (UNCHANGED). The file's fourth row has no customer. */
+    if(i === 1) Object.assign(c.compliance.associatedPeopleCSAT, {surveySentOn: D(T,-11)});
+    if(i === 2) Object.assign(c.compliance.associatedPeopleCSAT, {surveySentOn: D(T,-21), surveyAnsweredOn: D(T,-16)});
 
     const acts = [];
     for(let sN = 1; sN <= done; sN++){
@@ -128,7 +134,7 @@
 
   // 8. a graduated account with an answered check-back (the grad-review state the check-back checks read)
   const grad = {
-    id:'best-grad', name:'Summit Grain Co', gainsightId: GS_IDS[12], module: mod, stage:'graduated',
+    id:'best-grad', name:'Summit Grain Co', gainsightId: GS_IDS[12], salesforceId: SF_IDS[12], module: mod, stage:'graduated',
     implementationDate: D(T,-260), totalSessions:8, components:['sec'], cadence:'biweekly',
     targetGraduationDate: D(T,-50), domainScores:{}, sessionNotes:{},
     stageHistory:[{stage:'kickoff',date:D(T,-260)},{stage:'graduated',date:D(T,-50)}],
@@ -148,7 +154,7 @@
     const [name, phase, startedAgo, phaseAgo] = b;
     const id = 'bld' + i;
     customers.push({
-      id, name, gainsightId: GS_IDS[13 + i], module: mod, stage:'kickoff',
+      id, name, gainsightId: GS_IDS[13 + i], salesforceId: SF_IDS[13 + i], module: mod, stage:'kickoff',
       implementationDate: D(T,-startedAgo), totalSessions:8, domainScores:{}, sessionNotes:{},
       stageHistory:[{stage:'kickoff', date: D(T,-startedAgo)}],
       compliance:{sentiment:{done:false,date:null,answerA:'',answerB:''},
