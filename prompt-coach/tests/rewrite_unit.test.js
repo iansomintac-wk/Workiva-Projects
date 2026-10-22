@@ -130,29 +130,29 @@ test('typos: common misspellings are fixed as whole words, case kept', () => {
 test('context: wording fits the task and registers as Context', () => {
   const base = 'Extract every date from the attached file into a table. Do not guess.';
   const want = [
-    ['extract', 'SUS', 'This table feeds [what it is for, such as our Scope 2 inventory].'],
-    ['extract', 'GEN', 'This table feeds [what it is for].'],
-    ['variance', 'FR', 'This is for [what it feeds, such as the quarterly flux review].'],
-    ['anomaly', 'GRC', 'This is for [what it feeds, such as our SOX control testing].'],
-    ['compare', 'GEN', 'This is for [what it feeds].']
+    ['extract', 'SUS', 'This table is for the reader of this report.'],
+    ['extract', 'GEN', 'This table is for the reader of this report.'],
+    ['variance', 'FR', 'This is for the reader of this report.'],
+    ['anomaly', 'GRC', 'This is for the reader of this report.'],
+    ['compare', 'GEN', 'This is for the reader of this report.']
   ];
   for (const [intent, domain, text] of want) {
     const o = run(base, [], { intent, domain, taskSure: true, areaSure: true });
     assert.equal(missing(o), 'C', 'base must be missing only Context; probe another base: ' + JSON.stringify(o.detected));
     assert.ok(o.stages.strong.prompt.includes(text), intent + '/' + domain + ': ' + o.stages.strong.prompt);
-    assert.equal((o.stages.strong.prompt.match(/\[[^\]]*\]/g) || []).length, 1, o.stages.strong.prompt);
+    assert.equal((o.stages.strong.prompt.match(/\[[^\]]*\]/g) || []).length, 0, o.stages.strong.prompt);
   }
   const o = run(base, [], { intent: 'summarize', domain: 'FR', taskSure: true, areaSure: true });
-  assert.ok(/10-Q MD&A|intended for \[who will read it/.test(o.stages.strong.prompt), 'other intents keep the destination wording or its one-blank fallback: ' + o.stages.strong.prompt);
+  assert.ok(/This is for the reader of this report/.test(o.stages.strong.prompt) && !/\[/.test(o.stages.strong.prompt), 'other intents get the general destination wording: ' + o.stages.strong.prompt);
 });
 
-test('context: only Context missing means exactly one blank, even when a kept sentence has a Context cue', () => {
+test('context: only Context missing means no blank, even when a kept sentence has a Context cue', () => {
   const rows = fs.readFileSync(path.join(__dirname, '../data/test.jsonl'), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
   const row = rows.find((r) => /user-control assessment/.test(r.prompt));
   assert.ok(row, 'the "We need this for our user-control assessment" prompt is in data/test.jsonl');
   const o = run(row.prompt);
   assert.equal(missing(o), 'C', JSON.stringify(o.detected));
-  assert.equal((o.stages.strong.prompt.match(/\[[^\]]*\]/g) || []).length, 1, o.stages.strong.prompt);
+  assert.equal((o.stages.strong.prompt.match(/\[[^\]]*\]/g) || []).length, 0, o.stages.strong.prompt);
   assert.notEqual(o.stages.strong.prompt.trim(), row.prompt.trim());
 });
 
@@ -165,6 +165,17 @@ test('context: Ian case gets the approved Strong and Better text, with and witho
     assert.equal(flat(o.stages.better.prompt), rd('ian_better.txt'));
   }
 });
+test('ready to paste: no [blank] in Better or Strong for a bare ask, and each SCOPE letter still has a piece', () => {
+  for (const p of ['help me with this', 'summarize the report', 'what is ITGC', 'map our controls', 'draft a note', 'write the formula', 'review the numbers']) {
+    for (const extra of [{}, { taskSure: false, areaSure: false }]) {
+      const o = run(p, [], extra);
+      for (const st of ['better', 'strong']) assert.ok(!/\[[^\]]*\]/.test(o.stages[st].prompt), p + ' ' + st + ': ' + o.stages[st].prompt);
+      assert.equal(o.placeholders, 0, p);
+      for (const k of K) assert.ok(o.scope[k].frag.trim(), p + ' empty ' + k);
+    }
+  }
+});
+
 
 test('objective: the blank-free "one per line" objective is only for list tasks', () => {
   for (const p of ['make this sound less harsh', 'what is ITGC']) {
@@ -178,7 +189,7 @@ test('objective: a request to fix the text keeps the fill-in objective, not the 
   for (const files of [[], [RCM]]) {
     const s = run('these risk descriptions are inconsistent can u fix them', files).stages.strong.prompt;
     assert.ok(!s.includes('one per line'), 'list objective beside "Fix them": ' + s);
-    assert.ok(s.includes('Identify and list ['), 'fill-in objective kept: ' + s);
+    assert.ok(s.includes('Identify and list the key points and where each one appears.'), 'fill-in objective kept: ' + s);
     assert.ok(s.includes('Fix them.'), 'user ask kept: ' + s);
   }
   // a list task is unchanged: still the blank-free list objective

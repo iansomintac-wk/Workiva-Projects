@@ -691,15 +691,8 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     SUS: { def: 'a sustainability reporting analyst', questions: 'a sustainability assurance reviewer', explain: 'a CSRD reporting advisor', map: 'a CSRD reporting advisor', rewrite: 'a sustainability report editor' },
     GEN: { def: 'a reporting analyst', rewrite: 'an editor', questions: 'a careful reviewer' }
   };
-  const DEST = {
-    FR: '[the 10-Q MD&A, the audit committee deck, or the close review]',
-    GRC: '[the SOX testing workpapers or the audit committee update]',
-    SUS: '[the climate section of the CSRD report or the assurance review]',
-    GEN: '[who will read this and what it is for]'
-  };
   // Generated text adds a finish line and a format, but never facts, counts, or limits the user
-  // did not give: those become [blanks] for the user to fill in.
-  const AUDIENCE = { FR: 'the audit committee', GRC: 'our external auditors', SUS: 'our assurance provider', GEN: 'my manager' };
+  // did not give: where a fact is missing the text stays general ("the attached file", "a short table"), never a [blank].
 
   /* ---------------- file grounding ---------------- */
   function words(s) { return (String(s).toLowerCase().match(/[a-z0-9][a-z0-9&%-]{2,}/g) || []); }
@@ -729,21 +722,17 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       return 'Use only ' + files.slice(0, 10).map((f) => '@' + cleanFile(f.name)).join(', ') + '. ';
     }
     // No file: name what the user named; otherwise leave the source as a blank, never a guessed type.
-    if (intent === 'explain' && domain === 'SUS') return /\b(?:issb|ifrs s[12])\b/.test(ctx.t) ? 'Use the ISSB knowledge base. ' : /\besrs\b/.test(ctx.t) ? 'Use the ESRS knowledge base. ' : 'Use [the ESRS or ISSB knowledge base, or the standard text you selected]. ';
-    if (intent === 'explain') return 'Use the [requirement or standard text] I have selected. ';
+    if (intent === 'explain' && domain === 'SUS') return /\b(?:issb|ifrs s[12])\b/.test(ctx.t) ? 'Use the ISSB knowledge base. ' : /\besrs\b/.test(ctx.t) ? 'Use the ESRS knowledge base. ' : (ctx.soft.add('S'), 'Use the ESRS or ISSB knowledge base that applies. ');
+    if (intent === 'explain') { ctx.soft.add('S'); return 'Use the requirement or standard text I have selected. '; }
     // writing tasks need room for new wording, so the source is a starting point, not a fence
     const lead = ['draft', 'checklist'].includes(intent) ? 'Start from ' : 'Work only from ';
-    return lead + '[the selected text, table, or file]. ';
+    ctx.soft.add('S');
+    return lead + 'the text, table, or file I have selected. ';
   }
 
-  // Context fits the task: a table feeds something; other data tasks are "for" something. Blank, never a guessed audience.
-  const CTX_EXAMPLE = { FR: 'the quarterly flux review', GRC: 'our SOX control testing', SUS: 'our Scope 2 inventory', GEN: null };
-  const DATA_CTX = new Set(['variance', 'anomaly', 'consistency', 'compare', 'map', 'formula']);
+  // Context fits the task: a table feeds something; other data tasks are "for" something. General reader wording, never a guessed audience.
   function contextFragment(ctx) {
-    const ex = CTX_EXAMPLE[ctx.audDomain] ? ', such as ' + CTX_EXAMPLE[ctx.audDomain] : '';
-    if (ctx.intent === 'extract') return 'This table feeds [what it is for' + ex + ']. ';
-    if (DATA_CTX.has(ctx.intent)) return 'This is for [what it feeds' + ex + ']. ';
-    return 'This is for ' + DEST[ctx.audDomain] + '. ';
+    return (ctx.intent === 'extract' ? 'This table is for' : 'This is for') + ' the reader of this report. ';
   }
 
   function periodPhrase(ctx) {
@@ -768,11 +757,11 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       case 'draft': return 'Draft ' + (ctx.object ? 'the ' + ctx.object : 'the text') + ' from the source. ';
       case 'extract': return 'Extract every ' + (ctx.object || 'relevant item') + ' into one list. ';
       case 'compare': return 'List what is different between the two' + (o ? ' ' + ctx.object : '') + '. ';
-      case 'explain': return 'Explain ' + (ctx.object ? ctx.object : '[the requirement]') + ' in plain terms. ';
+      case 'explain': return 'Explain ' + (ctx.object ? ctx.object : (ctx.soft.add('O'), 'the requirement')) + ' in plain terms. ';
       case 'questions': return 'List the questions a reviewer is most likely to ask. ';
-      case 'map': return 'Map each ' + (ctx.object || 'item') + ' to [the framework and version]. ';
+      case 'map': ctx.soft.add('O'); return 'Map each ' + (ctx.object || 'item') + ' to the framework requirement it relates to. ';
       case 'checklist': return 'Turn the' + (o || ' process') + ' into numbered steps. ';
-      case 'formula': return 'Write the formula that ' + (ctx.object ? 'calculates ' + ctx.object : '[does what you need]') + '. ';
+      case 'formula': return 'Write the formula that ' + (ctx.object ? 'calculates ' + ctx.object : (ctx.soft.add('O'), 'does what I describe')) + '. ';
       default: return 'List the most important points in the' + (o || ' content') + '. ';
     }
   }
@@ -790,31 +779,33 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
   }
 
   function paramsFragment(ctx) {
+    if (!['errors', 'gaps', 'anomaly', 'consistency', 'extract', 'compare', 'explain', 'map', 'checklist', 'formula'].includes(ctx.intent)) ctx.soft.add('P');
     const h = ctx.headers.slice(0, 4);
     const cols = h.length >= 2 ? h.join(', ') : null;
     switch (ctx.intent) {
       case 'errors': return 'Return a table: location, what is wrong, suggested fix. ';
       case 'gaps': return 'Return a table: item, what is missing, why it matters. ';
-      case 'variance': return 'Return a table: ' + (cols ? cols + ', ' : 'item, both values, ') + 'change in amount and percent. Include only changes over [your threshold]. ';
+      case 'variance': return 'Return a table: ' + (cols ? cols + ', ' : 'item, both values, ') + 'change in amount and percent, largest changes first. ';
       case 'anomaly': return ctx.missingAsk
         ? 'Return a table: ' + (cols ? cols + ', ' : 'item, ') + 'what is missing, where it should be. '
         : 'Return a table: ' + (cols ? cols + ', ' : 'item, value, ') + 'why it looks wrong, what to check. ';
       case 'consistency': return 'For each mismatch, give both locations and both values in a table. ';
-      case 'rewrite': return 'Keep it to [target length], in the same voice. ';
-      case 'summarize': return 'Use [number] bullets. ';
-      case 'draft': return 'Keep it to about [length], in the style of the existing text. ';
+      case 'rewrite': return 'Keep it about the same length, in the same voice. ';
+      case 'summarize': return 'Use short bullets. ';
+      case 'draft': return 'Keep it short, in the style of the existing text. ';
       case 'extract': return 'Return a table with one row per item' + (cols ? ' and columns ' + cols : ' and where it appears') + '. ';
       case 'compare': return 'Return a table: item, before, after, what changed. ';
       case 'explain': return 'Use short bullets. ';
-      case 'questions': return 'Give [number] questions, most important first. ';
+      case 'questions': return 'Give a short list of questions, most important first. ';
       case 'map': return 'Return a table: item, framework reference, one-line reason. ';
       case 'checklist': return 'Use numbered steps, each with the evidence to keep. ';
       case 'formula': return 'Give the formula first, then one line explaining each part. ';
-      default: return 'Use [number] short bullets. ';
+      default: return 'Use short bullets. ';
     }
   }
 
   function evalFragment(ctx) {
+    if (ctx.soft && ctx.intent === 'draft') ctx.soft.add('E');
     switch (ctx.intent) {
       case 'errors': return 'Do not change anything yourself, and flag anything you are not sure is an error.';
       case 'gaps': return 'Only flag gaps you can point to in the source, and mark judgment calls for my review.';
@@ -823,7 +814,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       case 'consistency': return 'Do not decide which value is correct.';
       case 'rewrite': return 'Preserve every number, date, and factual claim, and do not introduce new facts.';
       case 'summarize': return 'Do not add anything that is not in the source, and keep every figure exactly as written.';
-      case 'draft': return 'Use only facts from the source, and mark anything I need to confirm as [to confirm].';
+      case 'draft': return 'Use only facts from the source, and mark anything I need to confirm as "to confirm".';
       case 'extract': return 'If an item is missing or unclear, say so rather than guessing.';
       case 'compare': return 'Show where each figure comes from, and do not explain causes the data does not support.';
       case 'explain': return 'Cite the sources, and say if the requirement is not covered.';
@@ -1131,9 +1122,10 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     ctx.missingAsk = ctx.intent === 'anomaly' && missingAsk(prompt);
     ctx.unsupported = cannotSupport(prompt, files, ctx.intent);
     const taskSure = opts.taskSure !== false;
+    ctx.soft = new Set();
     const gen = { S: sourceFragment(ctx), C: contextFragment(ctx), O: objectiveFragment(ctx), P: paramsFragment(ctx), E: evalFragment(ctx) };
-    const BLANK = { O: 'Identify and list [what you want back, such as the issues and where they are, or the key points]. ', P: 'Format it as [a table, bullets, or a short paragraph]. ', E: evalFragment({ intent: null }) };
-    if (!taskSure) Object.assign(gen, BLANK);
+    const BLANK = { O: 'Identify and list the key points and where each one appears. ', P: 'Format it as a short table. ', E: evalFragment({ intent: null }) };
+    if (!taskSure) { Object.assign(gen, BLANK); ['O', 'P'].forEach((k) => ctx.soft.add(k)); }
     const sentences = userSegments(prompt, d, on);
     const eh = d.el.E.hits;
     const scopeLimitOnlyE = eh.length > 0 && eh.every((h) => h.tag === 'do-not-touch' && h.orig && /^[^.!?\n]*\b(?:outside|beyond|other than|apart from|aside from|except)\b/i.test(prompt.slice(h.orig[0])));
@@ -1168,14 +1160,14 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
         kept.push(snt);
       }
       // The user's own question stays as the job; add only a finish line for them to fill in.
-      if (!on.O && !folded && kept.some((x) => x.text && x.host === 'O')) Object.assign(g, { O: BLANK.O, P: BLANK.P, E: BLANK.E });
+      if (!on.O && !folded && kept.some((x) => x.text && x.host === 'O')) { Object.assign(g, { O: BLANK.O, P: BLANK.P, E: BLANK.E }); ctx.soft.add('O'); ctx.soft.add('P'); }
       const present = new Set(); for (const snt of kept) for (const l of snt.letters) present.add(l);
       // Only Context missing: add just that sentence. A letter the detector sees in a sentence that does not host it
       // (e.g. the objective inside a Source sentence) still needs a segment of its own, written without a blank.
       const onlyC = !on.C && K.every((k) => k === 'C' || on[k]);
       const genUsed = new Set(onlyC ? ['C'] : []);
       if (onlyC) { const BF = { S: 'Use only the selected content and nothing outside it. ', O: 'List the specific items that answer this, one per line. ', P: 'Keep it short. ', E: 'Do not guess or add facts that are not in the source; flag anything you are unsure of.' };
-        for (const k of K) if (k !== 'C' && !present.has(k)) { genUsed.add(k); if (g[k].includes('[')) g[k] = BF[k]; } }
+        for (const k of K) if (k !== 'C' && !present.has(k)) { genUsed.add(k); if (ctx.soft.has(k)) g[k] = BF[k]; } }
       else for (const k of K) if (!present.has(k) || (k === 'O' && !on.O) || (k === 'S' && !on.S && !present.has('S'))) genUsed.add(k);
       // A scope limit ("Don't comment on anything outside X") matches Evaluate but is a Parameter by the labeling rules (data/LABELING.md);
       // when it is the only Evaluate match, the coach still adds its own checking sentence.
@@ -1194,9 +1186,9 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       // swap in a more explicit wording for it (at most two passes).
       const ALT = {
         S: ['Use only the selected content and nothing outside it. '],
-        C: ['The audience is [who will read it, such as ' + AUDIENCE[ctx.audDomain] + ']. ', 'This is intended for [who will read it, such as ' + AUDIENCE[ctx.audDomain] + ']. '],
+        C: ['The audience is the reader of this report. ', 'This is intended for the reader of this report. '],
         O: ['List the specific items that answer this, one per line. ', 'Identify and list the specific items that answer this request. '],
-        P: ['Return a table with one row per item, under [length]. ', 'Return a table with one row per item and one line per row, under [length]. '],
+        P: ['Return a table with one row per item. ', 'Return a table with one row per item and one short line per row. '],
         E: ['Do not guess or add facts that are not in the source; flag anything you are unsure of.']
       };
       for (let pass = 0; pass < 2; pass++) {
@@ -1214,11 +1206,11 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       { const fin = detect(assemble(segments, allOn)).on;
         if (!fin.O && !genUsed.has('O')) {
           const at = segments.findIndex((x) => x.generated && x.letter === 'C');
-          segments.splice(at + 1, 0, { text: g.O.includes('[') ? ALT.O[0] : g.O, letter: 'O', generated: true }); genUsed.add('O');
+          segments.splice(at + 1, 0, { text: ctx.soft.has('O') ? ALT.O[0] : g.O, letter: 'O', generated: true }); genUsed.add('O');
         } }
       // Fewer blanks when it costs nothing: when the task is sure and a generated Context sentence already adds a blank,
       // a blank-free objective replaces the fill-in one if the result stays strong. Only for tasks whose output is a list.
-      { const seg = segments.find((x) => x.generated && x.letter === 'O' && x.text.includes('['));
+      { const seg = segments.find((x) => x.generated && x.letter === 'O' && ctx.soft.has('O'));
         if (seg && taskSure && genUsed.has('C') && LIST_INTENT.has(ctx.intent) && !CHANGE_ASK.test(ctx.t)) { const was = seg.text; seg.text = ALT.O[0]; if (R.grade(detect(assemble(segments, allOn)).on) !== 'strong') seg.text = was; } }
       const betterOk = R.grade(detect(assemble(segments.filter((g) => !g.generated || g.letter === 'S' || g.letter === 'O'), allOn)).on) !== 'weak';
       return { segments, genUsed, ok: detect(assemble(segments, allOn)).on.O && betterOk };

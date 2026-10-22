@@ -1,6 +1,6 @@
 /* Writes tests/fixtures/rewrites/blank_baseline.json: blank count in the Strong rewrite for every non-strong run
    (each prompt alone and with the matching file), keyed "<file>|<row>|<0/1>".
-   Run ONLY while engine/ equals commit 73be350:  node tests/make_blank_baseline.js data/sim_customers.jsonl data/test.jsonl */
+   Every value is now 0 (Better and Strong are ready to paste, no [blank]); the file stays a list of runs that must stay at 0. Run:  node tests/make_blank_baseline.js data/sim_customers.jsonl data/test.jsonl */
 const fs = require('fs'), path = require('path');
 const M = require('../engine/model.js'), W = require('../engine/rewrite.js'), C = require('../engine/classify.js');
 const weights = JSON.parse(fs.readFileSync(path.join(__dirname, '../engine/weights.json')));
