@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launch, countLeftovers } from './lib/browser.mjs';
-import { BREAKS, OVERRIDE_NAMES } from './lib/breaks.mjs';
+import { BREAKS, BREAKS_1_0, OVERRIDE_NAMES } from './lib/breaks.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const OUT = join(ROOT, 'sim-runs');
@@ -77,11 +77,11 @@ async function runControl(name) {
         openThreads:[{id:uid(), q:'SIM-QUESTION which sandbox region?', a:'', resolvedOn:null}]}]})`);
       const panel = `(() => { const c = DATA.customers.find(x => x.id === ${JSON.stringify(id)});
         const call = callsScheduledToday().find(x => x.c.id === c.id);
-        return renderBeatPanel({kind:'call', customerId:c.id, customerName:c.name, call, row:null}, () => ''); })()`;
+        return ${version === '1.0' ? `renderBeatPanel({kind:'call', customerId:c.id, customerName:c.name, call, row:null}, () => '')` : `v13DeskCallPrep(c, { calls: [call] })`}; })()`;
       const pre = await ctx.ev(panel);
       const owe = pre.match(/SIM-OWE[^<]*/g) || [];
       if (owe.length < 1) fail(`control d3: FAIL no SIM-OWE entries on the unbroken panel (${/Call prep/.test(pre) ? 'heading present' : 'no heading'})`);
-      await ctx.ev(BREAKS.D3.js);
+      await ctx.ev((version === '1.0' ? BREAKS_1_0.D3 : BREAKS.D3).js);
       const post = await ctx.ev(panel);
       const problems = [];
       if (/SIM-OWE/.test(post)) problems.push('SIM-OWE remains');
@@ -145,7 +145,8 @@ async function runProbe() {
     const calledElsewhere = n => h.replace(`function ${n}(`, '').includes(`${n}(`);
     add(/persistFn *= *saveData/.test(body('commitDataCandidate')), 'L1: commitDataCandidate persists through saveData (add-customer save goes via commitDataCandidate)');
     add(calledElsewhere('confirmGraduation'), 'L11: confirmGraduation is called by name somewhere');
-    add(calledElsewhere('renderBeatPanel'), 'D3: renderBeatPanel is called by name somewhere');
+    const d3fn = version === '1.0' ? 'renderBeatPanel' : 'renderBeatPrep';
+    add(calledElsewhere(d3fn), `D3: ${d3fn} is called by name somewhere`);
     add(calledElsewhere('commitDataCandidate'), 'D4: commitDataCandidate is called by name somewhere');
     add(/todayActionList\(\)/.test(body('buildDayTimeline')), 'L6: buildDayTimeline sources Today rows from todayActionList()');
     const s = ctx.aiStats(); escaped = s.escaped; add(s.escaped === 0, `AI escaped = ${s.escaped}, fake = ${s.fake}`);

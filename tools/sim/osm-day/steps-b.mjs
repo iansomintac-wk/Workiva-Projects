@@ -24,16 +24,14 @@ async function confirmWithReason(ctx, id, text) {
   return true;
 }
 async function staysListed(ctx, id, reason) {
-  const r = JSON.parse(await ctx.ev(`(() => { const el = document.getElementById('rk-c-${id}');
-    const deck = [...document.querySelectorAll('.rk3-stage .rk3-card')]; const sig = document.querySelector('.rk-signals');
-    return JSON.stringify({ exists: !!el, inDeck: !!el && deck.includes(el), confirmed: !!el && el.classList.contains('confirmed'),
-      work: !!el && !!el.querySelector('.rk-work'),
-      workShown: !!el && !!el.querySelector('.rk-work') && el.querySelector('.rk-work').getBoundingClientRect().height > 0 && el.querySelector('.rk-work').offsetParent !== null,
-      why: !!el && !!el.querySelector('.rk-confirmed-why'),
-      reasonShown: !!el && [...el.querySelectorAll('.rk-confirmed-why')].some(w => w.textContent.includes(${JSON.stringify(reason)})),
-      stillSignal: !!(sig && sig.querySelector('#rk-c-${id}')), deckN: deck.length,
-      deckBeforeSignals: !sig || !deck.length || !!(deck[deck.length - 1].compareDocumentPosition(sig) & Node.DOCUMENT_POSITION_FOLLOWING) }); })()`));
-  r.ok = r.exists && r.inDeck && r.confirmed && r.work && r.workShown && r.why && r.reasonShown && !r.stillSignal && r.deckBeforeSignals;
+  // v13 Risk: a confirmed case is a card in the Confirmed risks sheet (with the user's reason and a visible Open commitments
+  // route) and is no longer a row in the Signals to check sheet.
+  const r = JSON.parse(await ctx.ev(`(() => { const card = document.querySelector('[data-v13-risk-confirmed] [data-v13-risk-card="${id}"]');
+    const sig = document.querySelector('[data-v13-risk-signals] [data-v13-signal="${id}"]');
+    const open = card && card.querySelector('[data-open-cust="${id}"]');
+    return JSON.stringify({ exists: !!card, confirmed: !!card, work: !!open, workShown: !!open && open.getBoundingClientRect().height > 0 && open.offsetParent !== null,
+      reasonShown: !!card && card.textContent.includes(${JSON.stringify(reason)}), stillSignal: !!sig }); })()`));
+  r.ok = r.exists && r.confirmed && r.work && r.workShown && r.reasonShown && !r.stillSignal;
   return r;
 }
 const FERN = 'Fernhollow Renewables';
@@ -109,15 +107,19 @@ async function onTrackNoReadiness(ctx, id) {
       pending: pend.map(p => p.label), readinessRows: rows.filter(r => /Readiness Assessment|sentiment/i.test(JSON.stringify(r))).length }); })()`));
 }
 
-// The beat pane only exists for a booked call; the fake day books Fernhollow itself (setup, labelled), then focuses it on Today.
+// v13 Desk: the Go-Live controls live in the selected account's Desk tabs (Prepare, Capture, Evidence); the fake day books Fernhollow
+// itself (setup, labelled), then selects it on the Desk.
 async function bookAndFocus(ctx, id) {
   await ctx.ev(`(() => { const c = DATA.customers.find(x => x.id === ${JSON.stringify(id)}); c.nextSessionScheduledOn = todayISO(); saveData();
-    ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = c.id; render(); return true; })()`);
+    ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = c.id; ui.v13DeskFilter = null; ui.v13DeskTab = 'prepare'; render(); return true; })()`);
   await sleep(300);
 }
-// Today's scroll observer can move the focused beat between two evaluations, so each pane action refocuses and acts in ONE evaluation.
-const paneAct = (ctx, id, sel, body) => ctx.ev(`(() => { ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = ${JSON.stringify(id)}; render();
-  const el = document.querySelector('.day-pane[data-day-holds="${id}"] ' + ${JSON.stringify(sel)}); if (!el) throw new Error('pane control not found: ' + ${JSON.stringify(sel)});
+// Each Desk action selects the account, walks the four tabs until the control is drawn, and acts in ONE evaluation.
+const paneAct = (ctx, id, sel, body) => ctx.ev(`(() => { ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = ${JSON.stringify(id)}; ui.v13DeskFilter = null;
+  let el = null;
+  for (const t of ['evidence', 'capture', 'prepare', 'record']) { ui.v13DeskTab = t; render();
+    el = document.querySelector('[data-v13-desk-body] ' + ${JSON.stringify(sel)}); if (el) break; }
+  if (!el) throw new Error('desk control not found: ' + ${JSON.stringify(sel)});
   ${body}; return true; })()`);
 const paneClick = (ctx, id, sel) => paneAct(ctx, id, sel, 'el.click()');
 const paneType = (ctx, id, sel, text) => paneAct(ctx, id, sel, `el.value = ${JSON.stringify(text)}; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true }))`);
@@ -337,18 +339,17 @@ export const PART_B = [
     const log = [];
     for (const d of days) {
       await openDay(ctx, d);
-      await ctx.ev(`ui.view = 'today'; ui.openCustomerId = null; render(); true`);
+      await ctx.ev(`ui.view = 'copilot'; ui.openCustomerId = null; render(); true`);
       const r = JSON.parse(await ctx.ev(`(() => { const c = DATA.customers.find(x => x.name === ${JSON.stringify(FERN)});
         if (!c) return JSON.stringify({ missing: true });
         const list = todayActionList(); const idx = list.findIndex(r => r.customerId === c.id); const row = idx >= 0 ? list[idx] : null;
-        const inBeat = [...document.querySelectorAll('[data-day-step] h4')].some(h => h.textContent.includes(${JSON.stringify(FERN)}));
-        const inBelow = [...document.querySelectorAll('[data-today-row] .todo-cust')].some(h => h.textContent.includes(${JSON.stringify(FERN)}));
-        const inDeck = [...document.querySelectorAll('.dk-name')].some(h => h.textContent.includes(${JSON.stringify(FERN)}));
-        // Rendered anywhere on the Today screen: a day step, the Below-the-day rows, or a Gainsight gate deck card.
-        const rendered = document.body.innerText.includes(${JSON.stringify(FERN)});
+        const inBeat = !!document.querySelector('[data-v13-co-card][data-kind="row"][data-cust="' + c.id + '"]'); // v13: the account's card on the Co-pilot queue (todayActionList's v13 surface)
+        // v13 Co-pilot has no Below-the-day rows, no gate deck and no cap: the only surface is the queue card, so the old
+        // inBelow / inDeck / beyond-cap legs are gone rather than left as selectors that can never match.
+        const rendered = inBeat; // v13: a Co-pilot queue card for the account (body text also names it in the morning summary)
         const cov = computeCoverage(c);
         return JSON.stringify({ rank: idx >= 0 ? idx + 1 : null, headline: row ? row.headline : null, reason: row ? (row.reasons || []).join('; ') : null, rendered,
-          where: [inBeat && 'day step', inBelow && 'Below the day', inDeck && 'gate deck'].filter(Boolean).join('+') || (rendered ? 'elsewhere on Today' : null), inList: idx >= 0, beyondBeatCap: idx >= 15, capHidden: !!row && !inBeat && !inBelow, risk: computeRisk(c), coverage: cov ? cov.status : null }); })()`));
+          where: inBeat ? 'day step' : null, inList: idx >= 0, capHidden: !!row && !inBeat, risk: computeRisk(c), coverage: cov ? cov.status : null }); })()`));
       r.d = d;
       log.push(r);
     }
@@ -363,7 +364,7 @@ export const PART_B = [
     const remaining = log.filter(x => x.d <= CAL.L6.day7 && (x.rendered || x.rank !== null)).map(x => `${x.d}: ${x.headline} | ${x.reason}`);
     const passed = firstToday !== 'never' && firstToday <= CAL.L6.day7;
     const dayNo = d => d === 'never' ? 'never' : daysBetween(CAL.L5, d);
-    return { passed, evidence: await withBreak(ctx, `firstToday=${firstToday} (day ${dayNo(firstToday)}) firstWatch=${firstWatch} (day ${dayNo(firstWatch)}) firstOffTrack=${firstOffTrack} (day ${dayNo(firstOffTrack)}) rank=${ft ? ft.rank : 'none'} firstRanked=${firstRanked} where=${ft ? ft.where : 'none'} beyondBeatCapDays=${log.filter(x => x.beyondBeatCap).length}/${log.length} reasonIsCoverage=${reasonIsCoverage} reason="${ft ? ft.reason : ''}" capHiddenDays=${log.filter(x => x.capHidden).length}/${log.length} remainingThroughDay7=[${remaining.join(' ;; ')}] dayRows=[${log.map(x => `${x.d}@${x.rank == null ? 'none' : x.rank}@${x.where || 'none'}`).join(';')}]`) };
+    return { passed, evidence: await withBreak(ctx, `firstToday=${firstToday} (day ${dayNo(firstToday)}) firstWatch=${firstWatch} (day ${dayNo(firstWatch)}) firstOffTrack=${firstOffTrack} (day ${dayNo(firstOffTrack)}) rank=${ft ? ft.rank : 'none'} firstRanked=${firstRanked} where=${ft ? ft.where : 'none'} reasonIsCoverage=${reasonIsCoverage} reason="${ft ? ft.reason : ''}" capHiddenDays=${log.filter(x => x.capHidden).length}/${log.length} remainingThroughDay7=[${remaining.join(' ;; ')}] dayRows=[${log.map(x => `${x.d}@${x.rank == null ? 'none' : x.rank}@${x.where || 'none'}`).join(';')}]`) };
   } },
   { id: 'L7', async run(ctx) {
     await openDay(ctx, CAL.L7.email);
@@ -385,11 +386,10 @@ export const PART_B = [
       const r = await candidateSources(ctx);
       if (r.missing) return { passed: false, evidence: 'Fernhollow does not exist for L7' };
       r.d = d; r.silence = r.sources.filter(s => SILENCE_SRC.test(s));
-      Object.assign(r, JSON.parse(await ctx.ev(`(() => { ui.view = 'today'; ui.openCustomerId = null; render();
+      Object.assign(r, JSON.parse(await ctx.ev(`(() => { ui.view = 'copilot'; ui.openCustomerId = null; render();
         const c = DATA.customers.find(x => x.name === ${JSON.stringify(FERN)}); const list = todayActionList(); const idx = list.findIndex(r => r.customerId === c.id);
-        const inBeat = [...document.querySelectorAll('[data-day-step] h4')].some(h => h.textContent.includes(${JSON.stringify(FERN)}));
-        const inBelow = [...document.querySelectorAll('[data-today-row] .todo-cust')].some(h => h.textContent.includes(${JSON.stringify(FERN)}));
-        return JSON.stringify({ rank: idx >= 0 ? idx + 1 : null, rendered: document.body.innerText.includes(${JSON.stringify(FERN)}), onScreen: inBeat || inBelow, capHidden: idx >= 0 && !inBeat && !inBelow }); })()`)));
+        const inBeat = !!document.querySelector('[data-v13-co-card][data-kind="row"][data-cust="' + c.id + '"]'); // v13: the account's card on the Co-pilot queue (todayActionList's v13 surface)
+        return JSON.stringify({ rank: idx >= 0 ? idx + 1 : null, rendered: inBeat, onScreen: inBeat, capHidden: idx >= 0 && !inBeat }); })()`)));
       days.push(r);
     }
     const j = l7Judge(days, CAL.L7);
@@ -400,7 +400,7 @@ export const PART_B = [
     const id = await fernId(ctx);
     if (!id) return { passed: false, evidence: 'Fernhollow does not exist at L8' };
     const prodSignals = `buildRiskHubList({ readOnly: true }).filter(it => it.c.id === ${JSON.stringify(id)} && it.category && it.category.key === 'product').length`;
-    const card = `(() => { const el = document.getElementById('rk-c-${id}'); return el ? el.className : null; })()`;
+    const card = `(() => { const el = document.querySelector('[data-v13-risk-card="${id}"],[data-v13-signal="${id}"]'); return el ? (el.hasAttribute('data-v13-risk-card') ? 'confirmed' : 'signal') : null; })()`;
     const preSignals = await ctx.ev(prodSignals);
     await openPanel(ctx, id, 'log');
     await sleep(300);

@@ -17,10 +17,11 @@ const ORION = 'Orion Semiconductor';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const J = v => JSON.stringify(v);
 
-const OPEN = id => `(() => { ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = ${J(id)}; render(); ui.todayFocusId = null; setTodayFocus(${J(id)}); return !!document.querySelector('.day-pane[data-day-holds="' + cssEscape(${J(id)}) + '"]'); })()`;
+// v13: the account is the Desk's selected account; its call prep is in Prepare, the CSAT block in Evidence.
+const OPEN = (id, tab = 'prepare') => `(() => { ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = ${J(id)}; ui.v13DeskFilter = null; ui.v13DeskTab = ${J(tab)}; render(); return !!document.querySelector('[data-v13-desk-body] [data-v13-desk-cust="' + cssEscape(${J(id)}) + '"]'); })()`;
 // Open and test in ONE evaluation: Today's scroll handler can swap the shared working pane between calls.
-const has = (ctx, id, expr) => ctx.ev(`(() => { ui.todayFocusId = null; setTodayFocus(${J(id)}); return !!(${expr}); })()`);
-const PANE = id => `(document.querySelector('.day-pane[data-day-holds="' + cssEscape(${J(id)}) + '"]') || document.createElement('div'))`;
+const has = (ctx, id, expr, tab = 'prepare') => ctx.ev(`(() => { ui.v13DeskId = ${J(id)}; ui.v13DeskTab = ${J(tab)}; render(); return !!(${expr}); })()`);
+const PANE = id => `(document.querySelector('[data-v13-desk-body]') || document.createElement('div'))`;
 
 async function shot(ctx, { file, id, targetExpr, state, text }) {
   mkdirSync(OUT, { recursive: true });
@@ -50,9 +51,9 @@ async function captures() {
     await shot(ctx, { file: 'agenda', id, targetExpr: agenda, state: 'Call prep agenda with Copy agenda button, Orion promises open', text: await textOf(ctx, agenda) });
 
     // (2) CSAT block with both dates
-    await ctx.ev(OPEN(id)); await sleep(400);
+    await ctx.ev(OPEN(id, 'evidence')); await sleep(400);
     const csat = `Array.from(${PANE(id)}.querySelectorAll('.focus-act')).find(e => { const h = e.querySelector('h5'); return h && h.textContent.includes('Associated contact for CSAT'); })`;
-    if (!(await has(ctx, id, csat))) throw new Error('Orion pane has no CSAT focus-act; stopping');
+    if (!(await has(ctx, id, csat, 'evidence'))) throw new Error('Orion pane has no CSAT focus-act; stopping');
     await shot(ctx, { file: 'csat-dates', id, targetExpr: csat, state: 'CSAT block, survey sent 2026-10-14, answered empty', text: await textOf(ctx, csat) });
 
     // (4) the pinned "Surveys to chase" line at the top of Today: outside the ranking, so it needs no cleared promises

@@ -1,0 +1,20 @@
+RUNWAY v13 FIXES: RESUME 2. From 2055468c (NEW - Runway v13 fixes resume), 2026-10-22 ~18:17Z, stopped at the 200k context line.
+Ian, 2026-10-22: "JUST FINISH IT NOW". Ian answered 4 cards himself at 18:15Z (hook left them to him: answered-for-ian.jsonl left=ian-kind).
+
+WHERE: worktree C:/Users/teasp/Documents/Runway Tracker/.claude/worktrees/runway-v13-fixes, branch runway-v13-fixes (pushed, 02f460d). Work there.
+Ledger: .ledger/2026-10-22-runway-v13-fixes/progress.md (git-ignored; read it first). Reviews: .ledger/.../reviews/ (merged-final.md: no open must-fix).
+State: Tasks 1-6 + final review (Opus + Codex) + fixes A/B DONE. runway-v13-fixes fast-forwarded into runway-v13-look (8df9a0c..02f460d; backup/runway-v13-look-before-runway-v13-fixes-2026-10-22 = 8df9a0c). master is Ian's: do not touch.
+Measured at 02f460d content (29f66fa): self-checks 556/556, 0 console errors; tests 597/595/0 fail/2 skip; sim default 1.1 22/22 breaks 22 exit 0, 1.0 exit 1 (same 7 FAIL as before the port).
+Captures: C:/Users/teasp/.claude/jobs/2055468c/tmp/shots/ (copy to your own job tmp first).
+
+TO DO (lead coordinates, helpers build, talk-and-run):
+1. One implementer (isolated worktree, `git checkout -B v13f-look2 02f460d`), red-first self-checks in a `/* ==== v13 fixes: look2 ==== */` block, Ian's look rulings:
+   a. Desk Prepare step 04 kicker reads "NEXT · ..." (v13 copy), not "NEXT REVIEW · ...".
+   b. Desk Evidence: the Go-Live gates box sits BELOW the stat tiles, not above.
+   c. Desk Evidence: hide 1.1's "Health NN%" tile (healthScore) on the Desk only; the full-account overlay keeps it. Check: Desk Evidence has no Health tile; overlay Overview still has it.
+   Accept: self-checks --expect 556+N pass, 0 console errors. Then checker, then lead merges, re-pins (node tools/repin.mjs), README count, CHANGELOG v13 section (THIRD section) bullet, full tests, sim default (1.1 22/22 exit 0). Captures of Desk Prepare + Evidence after, opened and checked.
+2. v13-risk worktree (.claude/worktrees/v13-risk): Ian "Save then remove": `git -C <it> diff > .ledger/2026-10-22-runway-v13-fixes/v13-risk-uncommitted.patch` (check the patch is non-empty and lists docs/HOSTING.md, the 1.1 html, tools/sim/osm-day/verify.mjs), then node C:/Users/teasp/Documents/studio-harness/bin/remove-worktree.mjs <path> --dry-run; if it still refuses for uncommitted edits, `git -C <it> stash push -u -m v13-risk-saved` is NOT allowed (shared stash); instead commit the edits on its own branch v13-risk as "wip: saved before removal" (branch kept, not pushed to master) and re-run remove-worktree. Never force flags.
+3. Merge runway-v13-fixes -> runway-v13-look again by the merge rule (push backup of look's remote tip first, unforced fast-forward/merge, full suite).
+4. Left-out features: Ian "None for now" - add one line to docs/evidence/2026-10-22-runway-v13-fixes.md listing them as deferred by Ian 2026-10-22 (same commit as item 1's docs).
+5. Report to Ian: done items, numbers, links. Predecessors 0e0cbb80 and 2055468c: both launched in this same worktree, so do not `claude rm` them (rm could remove the worktree); rename 2055468c to COMPLETED when you run.
+DO: self-checks and tests before each commit; logs to files; safety: never Ian's normal Chrome profile, never his real book, publish nothing.

@@ -1,0 +1,19 @@
+RUNWAY v13: FIX WHAT THE NEW DESIGN BROKE OR LEFT OUT. From 9c78980f (NEW - Runway v13 look), 2026-10-22 ~16:15Z.
+Ian, 2026-10-22, relayed verbatim: "THE POINT WAS TO CHANGE THE DESIGN AND THEN FIX WHATEVER NEEDED TO BE FIXED BECAUSE WITH A DESIGN THE PREVIOUS UX/UI WOULD MOST LIKELY CHANGE." / "JUST FINISH IT NOW".
+
+STATE: branch runway-v13-look (pushed to origin, tip = the commit that added this file). All five v13 screens are in (Desk, Co-pilot, Accounts, Risk, System), default on through the browser-only switch obm-next-screens-v1 ('0' = old screens). Measured on the branch: self-checks 535/535, 0 console errors; tests 597 / 595 pass / 0 fail. Backup branch backup/master-before-runway-v13-look-2026-10-22 = fd3a09c (master). master is a direct ancestor: the merge is a fast-forward. Plan: docs/superpowers/plans/2026-10-22-runway-v13-look.md. Ledger: .ledger/2026-10-22-runway-v13-look/ in the runway-v13-look worktree (progress.md, screen-rules.md). Captures: C:/Users/teasp/.claude/jobs/9c78980f/tmp/shots/{v13,final}/ (may be gone if job 9c78980f is deleted; re-take with tools/v13-shots.mjs, steps in that job's tmp/steps-final.json pattern).
+If master has not been fast-forwarded yet, Ian runs it; a background session must not merge.
+
+FIX LIST (from the five helpers' reports and the lead's look; fix each in a small task, tests first, captures before/after):
+1. Desk work tabs (Prepare/Capture/Evidence/Record) draw 1.1's tab content read-only (inert): their controls look up ui.openCustomerId, so on the Desk they could act on the wrong account. Editing goes through "Open full account" (the old panel overlay, old look). Make the tab controls act on the Desk's selected account (ui.v13DeskId) and drop inert, then restyle the panel overlay in v13 tokens.
+2. Prepare shows 1.1's full session plan, much longer than v13's Goal > Evidence > Uncertainty > Next review. Fit it into v13's structure.
+3. The day sim (tools/sim/osm-day) and the tools built on it (l12-persist-check, d3-prep-panel, l11-csat-panel) pin the old screens (tools/sim/osm-day/lib/browser.mjs). Port their steps to v13, then remove the pin.
+4. Dark mode: check every v13 screen and the panel overlay in dark (theme button); Task 1 found dark only recoloured the shell then.
+5. Initials circle says "Me": 1.1 stores no user name. Leave it or read one from Settings if 1.1 has it; no new feature.
+6. Left out because 1.1 has no data (report, do not invent): signal ids (EV-27), co-pilot minutes saved / applied / edited / dismissed counts, "Applied for you", "After your calls", implementation %, check-ins due, sentiment/renewal pickers, Gainsight dry-run / JSON preview / field mapping / per-row company-ID boxes, renewal window, TTFV target, curriculum versions. Ian decides which, if any, become work.
+7. Accounts: one extra row of 1.1 search/filter/sort controls under the heading (v13 has none); Month calendar not compared with v13.
+8. Co-pilot: "Before today's calls" and "Overdue" groups are coded but not seen in a capture (demo book has none due); prove each with a fixture.
+9. README: the 1.1 self-check count is 535; CHANGELOG has no v13 entry yet. Add it in the same commit as the first fix.
+10. Clean up: worktrees .claude/worktrees/v13-{desk,copilot,accounts,risk,system} (branches v13-*, at f4bfb3c, never used) and the five agent-* worktrees of the screen helpers (merged): remove with node C:/Users/teasp/Documents/studio-harness/bin/remove-worktree.mjs <path> (--dry-run first).
+
+DO: own worktree from runway-v13-look (or master once fast-forwarded). Self-checks and tests before each commit (README commands; tests: node --test "test/*.test.mjs" "connector/test/*.test.mjs"; re-pin with node tools/repin.mjs after any 1.1 edit). Send Ian before/after captures in one batch at the end. Safety: never open a test copy in Ian's normal Chrome profile, never write test data where his real book lives, publish nothing.

@@ -9,6 +9,26 @@ import { fileURLToPath } from 'node:url';
 const STEPS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../steps');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// tools/sim/steps is shared with the field-test runner and still drives 1.1's own screens. In v13 the Backfill sessions
+// button lives on System, so step 04 is replaced here by the same action taken through v13's route to it.
+// 1.0 has no v13 screens or System button, so it keeps the shared steps unchanged (its own old route); the overrides apply to 1.1 only.
+// Step 01 likewise: v13 keeps Settings inside the closed "More" menu, whose buttons have no innerText until it opens.
+const STEP_OVERRIDES = {
+  '01-open-settings.js': `(async () => {
+  document.getElementById('btn-settings').click();
+  await new Promise(r => setTimeout(r, 400));
+  return document.getElementById('import-excel-input') ? 'settings open' : 'FAIL: no #import-excel-input';
+})()`,
+  '04-open-backfill.js': `(async () => {
+  document.querySelectorAll('.modal-backdrop').forEach(m => m.remove());
+  ui.view = 'system'; render();
+  const b = document.querySelector('[data-v13-sys-act="backfill"]');
+  if (!b) return 'FAIL: no Backfill sessions button on System';
+  b.click(); await new Promise(r => setTimeout(r, 500));
+  return 'backfill open';
+})()`
+};
+
 async function runBaseSteps(ctx) {
   for (const end = Date.now() + 20000; ; await sleep(250)) {
     if (await ctx.ev(`typeof XLSX !== 'undefined'`)) break;
@@ -18,7 +38,7 @@ async function runBaseSteps(ctx) {
   const files = readdirSync(STEPS_DIR).filter(f => /^0[1-6]-.*\.js$/.test(f)).sort();
   if (files.length !== 6) throw new Error(`setup: expected steps 01-06, found ${files.length}`);
   for (const f of files) {
-    const v = await ctx.ev(readFileSync(join(STEPS_DIR, f), 'utf8'));
+    const v = await ctx.ev((ctx.version === '1.1' && STEP_OVERRIDES[f]) || readFileSync(join(STEPS_DIR, f), 'utf8'));
     if (typeof v === 'string' && v.startsWith('FAIL')) throw new Error(`setup: ${f}: ${v}`);
   }
 }

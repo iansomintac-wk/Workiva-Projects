@@ -52,7 +52,7 @@ test('D3: render and the agenda read share one evaluate, so no frame can swap th
   await d3.run(ctx);
   const read = srcs.find(s => s.includes('[data-beat-agenda]'));
   assert.ok(read, 'an evaluate reads the agenda');
-  const focus = read.indexOf('ui.todayFocusId = c.id');
+  const focus = read.indexOf('ui.v13DeskId = c.id');
   const render = read.indexOf('render()');
   const query = read.indexOf("querySelector('[data-beat-agenda]')");
   assert.ok(focus >= 0, 'focuses Orion in the same evaluate');

@@ -9,9 +9,19 @@
    A2), but it is the honest way to assert that folding is LOSSLESS rather than merely
    that short lines came out. */
 function icsUnfold(text){ return String(text).split(ICS_CRLF + ' ').join(''); }
+/* v13 Task 1: the old-UI checks below were written against the old shell, so the
+   suite runs them with the v13 switch OFF and puts the switch back afterwards. The
+   v13 checks near the end turn it on for themselves. */
+const V13_SWITCH_KEY_SC = 'obm-next-screens-v1';
 function runSelfChecks(){
   _suiteRunning = true;
-  try{ return _runSelfChecksInner(); } finally { _suiteRunning = false; }
+  let prevSwitch = null;
+  try{ prevSwitch = localStorage.getItem(V13_SWITCH_KEY_SC); localStorage.setItem(V13_SWITCH_KEY_SC, '0'); }catch(e){}
+  try{ render(); return _runSelfChecksInner(); } finally {
+    _suiteRunning = false;
+    try{ if(prevSwitch === null) localStorage.removeItem(V13_SWITCH_KEY_SC); else localStorage.setItem(V13_SWITCH_KEY_SC, prevSwitch); }catch(e){}
+    try{ render(); }catch(e){}
+  }
 }
 function _runSelfChecksInner(){
   const results = [];
@@ -4736,7 +4746,7 @@ function _runSelfChecksInner(){
        selector renderBeatPanel() emits is handled inside bindBeatPane(), and
        that syncDayPool() calls it. */
     (function(){
-      const emitted = [...new Set((String(renderBeatPanel) + String(renderBeatPrep))
+      const emitted = [...new Set((String(renderBeatPanel) + String(beatGateBlocks) + String(renderBeatPrep))
         .match(/data-fp-[a-z-]+/g) || [])];
       const bound = String(bindBeatPane);
       const missing = emitted.filter(sel => bound.indexOf(sel) === -1);
@@ -4745,7 +4755,7 @@ function _runSelfChecksInner(){
         && typeof notInPane === 'function';
     })(),
     (function(){
-      const emitted = [...new Set((String(renderBeatPanel) + String(renderBeatPrep)).match(/data-fp-[a-z-]+/g) || [])];
+      const emitted = [...new Set((String(renderBeatPanel) + String(beatGateBlocks) + String(renderBeatPrep)).match(/data-fp-[a-z-]+/g) || [])];
       return 'unbound: ' + emitted.filter(sel => String(bindBeatPane).indexOf(sel) === -1).join(', ');
     })());
   (function(){
@@ -5408,7 +5418,7 @@ function _runSelfChecksInner(){
     // Draft in the beat, push at the close: a beat action must QUEUE, not fire.
     String(renderDayClose).indexOf('getGainsightQueue()') !== -1 &&
     String(renderBeatPanel).indexOf('data-fp-queue=') !== -1 &&
-    String(renderBeatPanel).indexOf('data-fp-outcome-queue=') !== -1);
+    String(renderBeatPanel).indexOf('beatGateBlocks(c)') !== -1 && String(renderBeatPanel).indexOf('g.outcome') !== -1 && String(beatGateBlocks).indexOf('data-fp-outcome-queue=') !== -1   /* Task 6: the gates moved to a shared helper */);
   check('v62 AI dossier reads a full onboarding lifecycle',
     CALLPREP_MAX_ACTIVITIES >= 40 && CALLPREP_NOTE_CHAR_CAP > 0,
     `max=${CALLPREP_MAX_ACTIVITIES}, noteCap=${CALLPREP_NOTE_CHAR_CAP}`);
@@ -10132,6 +10142,1042 @@ function _runSelfChecksInner(){
     finally{ window.setTimeout = realSet; clearTimeout(showToast._t); if(el){ el.textContent = prevText; el.classList.toggle('show', prevShow); } }
     check('toast r4: a short toast lasts 3200 ms, a long warning (the push-timeout text) lasts at least 6 s, and no toast outlives 12 s', ok, detail);
   })();
+  /* ==== v13 Task 1: shell, tokens, switch ==== */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC, THEME = 'obm-theme-v1';
+    const prevView = ui.view, prevOpen = ui.openCustomerId;
+    // Leaving Today stamps DATA.todayLastSeenIds and saves (the real rule); put both back.
+    const hadSeen = 'todayLastSeenIds' in DATA, prevSeen = JSON.stringify(DATA.todayLastSeenIds);
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevTheme = null; try{ prevTheme = localStorage.getItem(THEME); }catch(e){}
+    const setSwitch = v => { if(v === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, v); };
+    let detail = '';
+    // 1. default on: no stored value means v13
+    let defOn = false;
+    try{ setSwitch(null); defOn = typeof v13On === 'function' && v13On() === true;
+         setSwitch('0'); defOn = defOn && v13On() === false; }
+    catch(e){ detail = e.message; }
+    check('v13 T1 the next-screens switch defaults to on and "0" turns it off', defOn, detail || 'v13On missing or wrong');
+    // 2. the shell
+    let shellOk = false; detail = '';
+    try{
+      setSwitch('1'); ui.openCustomerId = null; ui.view = 'today'; render();
+      const root = document.querySelector('#app [data-osm]');
+      const nav = root && root.querySelector('header nav[aria-label="Workspace"]');
+      const labels = nav ? [...nav.querySelectorAll('button')].map(b => (b.querySelector('[data-v13-label]') || b).textContent.trim()) : [];
+      const head = root && root.querySelector('header');
+      const ids = ['btn-quick-log','btn-settings','btn-progress-report','btn-add-customer','import-file-input','restore-archive-input','import-excel-input','import-partner-sheet-input','import-values-input','import-csat-input'];
+      const missing = ids.filter(id => !(head && head.querySelector('#' + id)));
+      const old = ['.stats','.tabs[role="tablist"]','.header h1'].filter(sel => document.querySelector('#app ' + sel));
+      const themeBtn = head && head.querySelector('[data-v13-theme]');
+      shellOk = !!root && labels.join('|') === 'Desk|Co-pilot|Accounts|Risk|System' && !missing.length && !old.length && !!themeBtn
+        && getComputedStyle(root).getPropertyValue('--page').trim() !== '';
+      detail = JSON.stringify({root: !!root, labels, missing, old, themeBtn: !!themeBtn, page: root ? getComputedStyle(root).getPropertyValue('--page') : null});
+    }catch(e){ detail = e.message; }
+    check('v13 T1 v13 mode draws the top bar (OSM nav Desk/Co-pilot/Accounts/Risk/System, header actions with their ids, theme button) and not the old hero, stat tiles or tabs', shellOk, detail);
+    // 3. every nav item switches view
+    let navOk = false; detail = '';
+    try{
+      const want = {desk:'today', copilot:'copilot', accounts:'accounts', risk:'risk', system:'system'};
+      const got = {};
+      Object.keys(want).forEach(k => {
+        const b = document.querySelector('#app [data-osm] header [data-v13-nav="' + k + '"]');
+        if(!b){ got[k] = 'missing'; return; }
+        b.click();
+        const cur = document.querySelector('#app [data-osm] header [data-v13-nav="' + k + '"]');
+        got[k] = ui.view + (cur && cur.getAttribute('aria-current') === 'page' ? '' : ' (not current)');
+      });
+      navOk = Object.keys(want).every(k => got[k] === want[k]);
+      detail = JSON.stringify(got);
+    }catch(e){ detail = e.message; }
+    check('v13 T1 every top-bar nav item switches ui.view (desk→today, copilot, accounts, risk, system) and marks itself current', navOk, detail);
+    // 4. theme toggle
+    let themeOk = false; detail = '';
+    try{
+      localStorage.setItem(THEME, 'light'); render();
+      document.querySelector('#app [data-osm] [data-v13-theme]').click();
+      const r1 = document.querySelector('#app [data-osm]');
+      const dark = r1.getAttribute('data-theme') === 'dark' && localStorage.getItem(THEME) === 'dark';
+      const darkPage = getComputedStyle(r1).getPropertyValue('--page').trim().toUpperCase();
+      document.querySelector('#app [data-osm] [data-v13-theme]').click();
+      const r2 = document.querySelector('#app [data-osm]');
+      const light = r2.getAttribute('data-theme') === 'light' && localStorage.getItem(THEME) === 'light';
+      const lightPage = getComputedStyle(r2).getPropertyValue('--page').trim().toUpperCase();
+      themeOk = dark && light && darkPage === '#151514' && lightPage === '#F3EEE6';
+      detail = JSON.stringify({dark, light, darkPage, lightPage});
+    }catch(e){ detail = e.message; }
+    check('v13 T1 the theme button flips data-theme light/dark, stores it in obm-theme-v1, and the v13 page token follows (#F3EEE6 / #151514)', themeOk, detail);
+    // 5. never in the book or an export
+    let bookOk = false; detail = '';
+    try{
+      const exported = serializeBackup(DATA, serializeBook(DATA));
+      bookOk = !(KEY in DATA) && !(THEME in DATA) && exported.indexOf(KEY) === -1 && exported.indexOf(THEME) === -1
+        && String(localStorage.getItem(STORAGE_KEY) || '').indexOf(KEY) === -1;
+      detail = 'switch or theme key found in DATA, the export or the stored book';
+    }catch(e){ detail = e.message; }
+    check('v13 T1 the switch and theme keys never enter DATA, the stored book or an export', bookOk, detail);
+    // 6. old mode treats "system" as today
+    let oldOk = false; detail = '';
+    try{
+      setSwitch('0'); ui.view = 'system'; render();
+      oldOk = !document.querySelector('#app [data-osm]') && !!document.querySelector('#app .tabs[role="tablist"]') && !!document.querySelector('#app .stats');
+      detail = 'old shell not drawn for ui.view=system with the switch off';
+    }catch(e){ detail = e.message; }
+    check('v13 T1 with the switch off the old shell draws, and ui.view "system" falls back to Today', oldOk, detail);
+    try{ setSwitch('0'); if(prevTheme === null) localStorage.removeItem(THEME); else localStorage.setItem(THEME, prevTheme); }catch(e){}
+    if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
+    try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+    ui.view = prevView; ui.openCustomerId = prevOpen; render();
+  })();
+  /* ==== v13 checks: Desk ==== (owned by the Desk port; put its checks here, switch on, restore state after) */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prev = {view: ui.view, open: ui.openCustomerId, tab: ui.panelTab, id: ui.v13DeskId, wt: ui.v13DeskTab, lens: ui.v13DeskLens, fil: ui.v13DeskFilter};
+    const hadSeen = 'todayLastSeenIds' in DATA, prevSeen = JSON.stringify(DATA.todayLastSeenIds);
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevSwitch = null; try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const bookBefore = JSON.stringify(DATA);
+    // Opening the existing panel (check 5) draws its Overview, which stamps lastShownRecommendation; put it back.
+    const lastShown = DATA.customers.map(c => [c, Object.prototype.hasOwnProperty.call(c, 'lastShownRecommendation'), c.lastShownRecommendation]);
+    const box = () => document.querySelector('#app [data-osm]');
+    let ok, detail;
+    try{
+      localStorage.removeItem(KEY); ui.openCustomerId = null; ui.view = 'today';
+      ui.v13DeskId = null; ui.v13DeskTab = null; ui.v13DeskLens = null; ui.v13DeskFilter = null; render();
+      // 1. heading, summary, lens, strip, no old day track
+      ok = false; detail = '';
+      try{
+        const sec = box().querySelector('section[aria-label="Today"]');
+        const h1 = sec && sec.querySelector('h1');
+        const sub = sec && sec.querySelector('h1 + p');
+        const lens = sec && [...sec.querySelectorAll('[role="tablist"][aria-label="Time lens"] [role="tab"]')].map(b => b.textContent.trim());
+        const chips = sec ? sec.querySelectorAll('[role="group"][aria-label="Book snapshot"] button').length : 0;
+        const calls = callsScheduledToday().length;
+        ok = !!h1 && h1.textContent.trim() === 'Today' && !!sub && sub.textContent.indexOf(calls + ' call') === 0
+          && (lens || []).join('|') === 'Day|Week' && chips === 6 && !box().querySelector('#day');
+        detail = JSON.stringify({h1: h1 && h1.textContent, sub: sub && sub.textContent, lens, chips, calls, oldDay: !!box().querySelector('#day')});
+      }catch(e){ detail = e.message; }
+      check('v13 Desk draws the Today heading, the summary line from today\'s calls, the Day/Week lens and six snapshot chips, not the old day track', ok, detail);
+      // 2. timeline: one block per call today; Week shows five days
+      ok = false; detail = '';
+      try{
+        const n = box().querySelectorAll('[data-v13-desk-call]').length, want = callsScheduledToday().length;
+        [...box().querySelectorAll('[aria-label="Time lens"] [role="tab"]')].find(b => b.textContent.trim() === 'Week').click();
+        const days = box().querySelectorAll('[data-v13-desk-day]').length;
+        ok = n === want && ui.v13DeskLens === 'week' && days === 5;
+        detail = JSON.stringify({n, want, lens: ui.v13DeskLens, days});
+        ui.v13DeskLens = null; render();
+      }catch(e){ detail = e.message; }
+      check('v13 Desk timeline draws one block per call scheduled today, and Week switches to five day columns', ok, detail);
+      // 3. book list: every account, first selected by default
+      ok = false; detail = '';
+      try{
+        const aside = box().querySelector('aside[aria-label="Your book"]');
+        const rows = aside ? [...aside.querySelectorAll('[data-v13-desk-pick]')] : [];
+        const sel = rows.filter(r => r.getAttribute('aria-pressed') === 'true');
+        const art = box().querySelector('article[aria-label="Selected customer"]');
+        const name = art && art.querySelector('h2');
+        ok = rows.length === DATA.customers.length && sel.length === 1 && sel[0] === rows[0]
+          && !!name && name.textContent.trim() === DATA.customers.find(c => c.id === rows[0].dataset.v13DeskPick).name
+          && aside.textContent.indexOf(DATA.customers.length + ' accounts') !== -1;
+        detail = JSON.stringify({rows: rows.length, want: DATA.customers.length, sel: sel.length, name: name && name.textContent});
+      }catch(e){ detail = e.message; }
+      check('v13 Desk "Your book" lists every account with the first one selected and drawn as the big name', ok, detail);
+      // 4. picking a row selects it, three fact cards, since-last-conversation, nothing written
+      ok = false; detail = '';
+      try{
+        const rows = [...box().querySelectorAll('[data-v13-desk-pick]')];
+        const pick = rows[Math.min(2, rows.length - 1)], id = pick.dataset.v13DeskPick;
+        pick.click();
+        const art = box().querySelector('article[aria-label="Selected customer"]');
+        const facts = art ? art.querySelectorAll('[data-v13-desk-fact]').length : 0;
+        const since = art && art.querySelector('section[aria-label="Since the last conversation"] h3');
+        const clean = JSON.stringify(DATA) === bookBefore && String(localStorage.getItem(STORAGE_KEY) || '').indexOf('v13DeskId') === -1;
+        ok = ui.v13DeskId === id && art.querySelector('h2').textContent.trim() === DATA.customers.find(c => c.id === id).name
+          && facts === 3 && !!since && clean;
+        detail = JSON.stringify({id, got: ui.v13DeskId, facts, since: !!since, clean});
+      }catch(e){ detail = e.message; }
+      check('v13 Desk picking a book row selects that account (browser memory only), with three fact cards and "Since the last conversation"', ok, detail);
+      // 5. work tabs + open full account
+      ok = false; detail = '';
+      try{
+        const tl = box().querySelector('[role="tablist"][aria-label="Customer work"]');
+        const labels = tl ? [...tl.querySelectorAll('[role="tab"]')].map(b => b.textContent.trim()) : [];
+        [...tl.querySelectorAll('[role="tab"]')].find(b => b.textContent.trim() === 'Capture').click();
+        const cap = box().querySelector('[role="tablist"][aria-label="Customer work"] [aria-selected="true"]');
+        const panelHas = !!box().querySelector('[data-v13-desk-panel="capture"]');
+        // Drawing every tab body for every account writes nothing.
+        const dirty = [];
+        DATA.customers.forEach(c => ['prepare','capture','evidence','record'].forEach(t => {
+          ui.v13DeskId = c.id; ui.v13DeskTab = t; render();
+          if(JSON.stringify(DATA) !== bookBefore && !dirty.length) dirty.push(c.id + ':' + t);
+        }));
+        ui.v13DeskTab = 'capture'; render();
+        const id = ui.v13DeskId;
+        box().querySelector('[data-v13-desk-open]').click();
+        ok = labels.join('|') === 'Prepare|Capture|Evidence|Record' && cap && cap.textContent.trim() === 'Capture' && panelHas
+          && ui.openCustomerId === id && !!document.querySelector('.overlay .panel') && !dirty.length;
+        detail = JSON.stringify({labels, cap: cap && cap.textContent, panelHas, open: ui.openCustomerId, id, dirty});
+      }catch(e){ detail = e.message; }
+      check('v13 Desk work tabs are Prepare/Capture/Evidence/Record, switch the body, and "Open full account" opens the existing panel', ok, detail);
+    } finally {
+      try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+      if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
+      try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+      ui.view = prev.view; ui.openCustomerId = prev.open; ui.panelTab = prev.tab; ui.v13DeskId = prev.id; ui.v13DeskTab = prev.wt;
+      ui.v13DeskLens = prev.lens; ui.v13DeskFilter = prev.fil;
+      lastShown.forEach(([c, had, was]) => { if(had) c.lastShownRecommendation = was; else delete c.lastShownRecommendation; });
+      render();
+    }
+  })();
+  /* ==== end v13 checks: Desk ==== */
+  /* ==== v13 fixes: desk ==== (fix items 1a, 2, 9: the Desk work tabs are live and act on the
+     Desk's account, never ui.openCustomerId's; Prepare uses v13's four steps). Works on a
+     copy of DATA and puts the real one back. */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prev = {view: ui.view, open: ui.openCustomerId, tab: ui.panelTab, id: ui.v13DeskId, wt: ui.v13DeskTab, lens: ui.v13DeskLens, fil: ui.v13DeskFilter};
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevSwitch = null; try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const realDATA = DATA;
+    const body = () => document.querySelector('#app [data-osm] [data-v13-desk-body]');
+    const pickAB = () => {
+      const live = DATA.customers.filter(c => c.stage !== 'graduated' && !inImplementation(c));
+      return [live[0], live[1] || DATA.customers.find(c => c !== live[0])];
+    };
+    const show = (a, tab) => { ui.openCustomerId = null; ui.view = 'today'; ui.v13DeskId = a.id; ui.v13DeskTab = tab; ui.v13DeskFilter = null; render(); };
+    const cust = id => JSON.stringify(DATA.customers.find(c => c.id === id));
+    let ok, detail;
+    try{
+      localStorage.removeItem(KEY); DATA = cloneData(realDATA);
+      // 1. Capture: logging an activity writes to the Desk's account, not ui.openCustomerId's
+      ok = false; detail = '';
+      try{
+        const [A, B] = pickAB();
+        show(A, 'capture');
+        const nA = (DATA.activities[A.id] || []).length, nB = (DATA.activities[B.id] || []).length;
+        ui.openCustomerId = B.id;   // a stale panel id must not steer the Desk's form
+        const b = body();
+        b.querySelector('#act-type').value = 'Email';
+        b.querySelector('#act-summary').value = 'v13 fixes desk check';
+        b.querySelector('#btn-save-activity').click();
+        const gA = (DATA.activities[A.id] || []).length, gB = (DATA.activities[B.id] || []).length;
+        ok = gA === nA + 1 && gB === nB && (DATA.activities[A.id] || []).some(x => x.summary === 'v13 fixes desk check');
+        detail = JSON.stringify({A: A.id, B: B.id, nA, gA, nB, gB});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk Capture logs the activity on the Desk\'s selected account, not the one in ui.openCustomerId', ok, detail);
+      // 2. Prepare: the session-plan prep note writes to the Desk's account
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB();
+        show(A, 'prepare');
+        const bA = cust(A.id), bB = cust(B.id);
+        ui.openCustomerId = B.id;
+        const ta = body().querySelector('[data-session-prep]');
+        ta.value = 'v13 fixes prep note';
+        ta.dispatchEvent(new Event('change'));
+        ok = cust(A.id) !== bA && cust(A.id).indexOf('v13 fixes prep note') !== -1 && cust(B.id) === bB;
+        detail = JSON.stringify({A: A.id, B: B.id, changedA: cust(A.id) !== bA, changedB: cust(B.id) !== bB});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk Prepare session-plan note writes to the Desk\'s selected account', ok, detail);
+      // 3. Evidence: a handoff note (read at change time) writes to the Desk's account
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB();
+        show(A, 'evidence');
+        const bA = cust(A.id), bB = cust(B.id);
+        ui.openCustomerId = B.id;
+        const ta = body().querySelector('[data-handoff]');
+        ta.value = 'v13 fixes handoff note';
+        ta.dispatchEvent(new Event('change'));
+        ok = cust(A.id).indexOf('v13 fixes handoff note') !== -1 && cust(B.id) === bB;
+        detail = JSON.stringify({A: A.id, B: B.id, changedA: cust(A.id) !== bA, changedB: cust(B.id) !== bB});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk Evidence handoff note writes to the Desk\'s selected account', ok, detail);
+      // 4. no inert, no read-only title, on any tab
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A] = pickAB();
+        const bad = [];
+        ['prepare','capture','evidence','record'].forEach(t => {
+          show(A, t);
+          const p = body().querySelector('[data-v13-desk-panel]');
+          if(!p || p.hasAttribute('inert') || body().querySelector('[inert]') || /Read here/.test(p.getAttribute('title') || '')) bad.push(t);
+        });
+        ok = !bad.length;
+        detail = JSON.stringify({bad});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk work-tab panels are live: no inert attribute and no "Read here" title', ok, detail);
+      // 5. Prepare follows v13: Goal > Evidence > Uncertainty > Next review, and "Open full account" still opens the panel
+      ok = false; detail = '';
+      try{
+        const [A] = pickAB();
+        show(A, 'prepare');
+        const heads = [...body().querySelectorAll('[data-v13-prep-step] h4')].map(h => h.textContent.split('·')[0].trim());
+        document.querySelector('#app [data-osm] [data-v13-desk-open]').click();
+        ok = heads.join('|') === 'Goal|Evidence|Uncertainty|Next' && ui.openCustomerId === A.id && !!document.querySelector('.overlay .panel');
+        detail = JSON.stringify({heads, open: ui.openCustomerId});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk Prepare shows Goal, Evidence, Uncertainty and Next review in order; "Open full account" still opens the panel', ok, detail);
+    } finally {
+      DATA = realDATA;
+      try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+      try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+      ui.view = prev.view; ui.openCustomerId = prev.open; ui.panelTab = prev.tab; ui.v13DeskId = prev.id; ui.v13DeskTab = prev.wt;
+      ui.v13DeskLens = prev.lens; ui.v13DeskFilter = prev.fil;
+      render();
+    }
+  })();
+  /* ==== end v13 fixes: desk ==== */
+  /* ==== v13 fixes: pane ==== (Task 6: the old Today day pane's features live on the Desk, same ids
+     and data attributes, acting on the Desk's account). Works on a copy of DATA and puts the real one back. */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prev = {view: ui.view, open: ui.openCustomerId, tab: ui.panelTab, id: ui.v13DeskId, wt: ui.v13DeskTab, lens: ui.v13DeskLens, fil: ui.v13DeskFilter};
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevSwitch = null; try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const realDATA = DATA;
+    const prevWrite = navigator.clipboard && navigator.clipboard.writeText;
+    const body = () => document.querySelector('#app [data-osm] [data-v13-desk-body]');
+    const pickAB = () => {
+      const live = DATA.customers.filter(c => c.stage !== 'graduated' && !inImplementation(c));
+      return [live[0], live[1] || DATA.customers.find(c => c !== live[0])];
+    };
+    const show = (a, tab) => { ui.openCustomerId = null; ui.view = 'today'; ui.v13DeskId = a.id; ui.v13DeskTab = tab; ui.v13DeskFilter = null; render(); };
+    // B's compliance record only: a render with ui.openCustomerId = B opens B's panel, which may stamp display fields
+    const cust = id => JSON.stringify((DATA.customers.find(c => c.id === id) || {}).compliance || null);
+    const live = c => { c.compliance = c.compliance || {}; ['sentiment','outcomePlan','associatedPeopleCSAT'].forEach(k => { if(!c.compliance[k]) c.compliance[k] = {done:false}; }); };
+    let ok, detail;
+    try{
+      localStorage.removeItem(KEY);
+      // 1. Call prep inside Prepare for an account with a call today; Copy agenda copies the Desk's account
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB();
+        A.nextSessionScheduledOn = todayISO(); A.nextSessionTime = '10:00';
+        A.commitments = (A.commitments || []).concat([{id:'pane-sc-1', direction:'i_owe', text:'pane check you owe', due: isoAddDays(todayISO(), -2), createdOn: isoAddDays(todayISO(), -9)},
+          {id:'pane-sc-2', direction:'they_owe', text:'pane check they owe', due: isoAddDays(todayISO(), 3), createdOn: isoAddDays(todayISO(), -9)}]);
+        show(A, 'prepare');
+        ui.openCustomerId = B.id;
+        let clip = null; navigator.clipboard.writeText = t => { clip = t; return Promise.resolve(); };
+        const b = body();
+        const prep = b.querySelector('[data-v13-desk-pane] [data-beat-agenda]');
+        const btn = prep && prep.querySelector('[data-beat-agenda-copy]');
+        if(btn) btn.click();
+        const txt = b.textContent;
+        ok = !!btn && /Call prep/.test(txt) && !!b.querySelector('[data-beat-promises-sec]') && /pane check they owe/.test(txt)
+          && /Sessions/.test(txt) && typeof clip === 'string' && clip.indexOf('Agenda - ' + A.name) === 0 && clip.indexOf('pane check you owe') !== -1;
+        detail = JSON.stringify({A: A.id, btn: !!btn, clip: clip && clip.slice(0, 60)});
+      }catch(e){ detail = e.message; }
+      check('v13 fix pane: Desk Prepare carries Call prep (standing, agenda, promises) and Copy agenda copies the Desk\'s account', ok, detail);
+      // 2. Go-Live outcome plan and CSAT controls on Evidence write to the Desk's account
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB(); live(A); live(B);
+        A.compliance.outcomePlan.outcomeNumber = null; A.compliance.associatedPeopleCSAT.surveySentOn = null;
+        show(A, 'evidence');
+        const bB = cust(B.id);
+        ui.openCustomerId = B.id;
+        const sel = body().querySelector('[data-v13-desk-pane] [data-fp-outcome="' + cssEscape(A.id) + '"]');
+        const hasCsat = !!body().querySelector('[data-fp-csat="' + cssEscape(A.id) + '"]') && !!body().querySelector('[data-fp-csat-answered="' + cssEscape(A.id) + '"]');
+        sel.value = '1'; sel.dispatchEvent(new Event('change'));
+        show(A, 'evidence'); ui.openCustomerId = B.id;   // the change re-rendered with B's panel open; back to the Desk
+        const sent = body().querySelector('[data-v13-desk-pane] [data-fp-csat-sent="' + cssEscape(A.id) + '"]');
+        sent.value = isoAddDays(todayISO(), -1); sent.dispatchEvent(new Event('change'));
+        const a2 = DATA.customers.find(c => c.id === A.id).compliance;
+        ok = hasCsat && a2.outcomePlan.outcomeNumber === 1 && a2.associatedPeopleCSAT.surveySentOn === isoAddDays(todayISO(), -1) && cust(B.id) === bB;
+        detail = JSON.stringify({A: A.id, hasCsat, n: a2.outcomePlan.outcomeNumber, sent: a2.associatedPeopleCSAT.surveySentOn, changedB: cust(B.id) !== bB});
+      }catch(e){ detail = e.message; }
+      check('v13 fix pane: Desk Evidence carries the Go-Live outcome plan and CSAT controls, writing to the Desk\'s account', ok, detail);
+      // 3. Capture: the Sentiment toggle for a live account, the gates note (no Sentiment) for one in implementation
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB(); live(A); live(B);
+        A.compliance.sentiment.done = false;
+        const I = DATA.customers.find(c => inImplementation(c) && c.id !== A.id);
+        show(A, 'capture');
+        const bB = cust(B.id);
+        ui.openCustomerId = B.id;
+        const heads = [...body().querySelectorAll('[data-v13-desk-pane] h5')].map(h => h.textContent.replace(/\s+/g, ' ').trim());
+        const t = body().querySelector('[data-v13-desk-pane] [data-fp-toggle="sentiment|' + A.id + '"]');
+        t.click();
+        const doneA = DATA.customers.find(c => c.id === A.id).compliance.sentiment.done === true;
+        show(I, 'capture');
+        const iHeads = [...body().querySelectorAll('[data-v13-desk-pane] h5')].map(h => h.textContent.replace(/\s+/g, ' ').trim());
+        ok = heads.some(h => /^Sentiment/.test(h) && /not logged/.test(h)) && doneA && cust(B.id) === bB
+          && iHeads.some(h => h.indexOf('Gainsight gates start at Go-Live') !== -1) && !iHeads.some(h => /^Sentiment/.test(h));
+        detail = JSON.stringify({A: A.id, I: I && I.id, heads, iHeads, doneA});
+      }catch(e){ detail = e.message; }
+      check('v13 fix pane: Desk Capture carries the Sentiment toggle (acts on the Desk\'s account) and, in implementation, the gates-start-at-Go-Live note', ok, detail);
+      // 4. Today heading: Surveys to chase line, Wrap up the day and Back up the book
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A] = pickAB(); live(A);
+        A.compliance.associatedPeopleCSAT.surveySentOn = isoAddDays(todayISO(), -30); A.compliance.associatedPeopleCSAT.surveyAnsweredOn = null;
+        const hadDC = Object.prototype.hasOwnProperty.call(DATA, 'dayClose');
+        if(hadDC) DATA.dayClose = {};
+        show(A, 'prepare');
+        const head = document.querySelector('#app [data-osm] section[aria-label="Today"]');
+        const line = head && head.querySelector('#surveys-to-chase');
+        const wrap = head && head.querySelector('[data-wrap-day]'), back = head && head.querySelector('[data-backup-now]');
+        const was = dayIsClosed();
+        if(wrap) wrap.click();
+        const closed = dayIsClosed();
+        const cancel = document.getElementById('modal-cancel'); if(cancel) cancel.click();
+        if(!hadDC) delete DATA.dayClose;   // keep the book's key set as it was at suite entry
+        ok = !!line && line.textContent.indexOf(A.name) !== -1 && !!back && !!wrap && !was && closed;
+        detail = JSON.stringify({line: !!line, wrap: !!wrap, back: !!back, was, closed});
+      }catch(e){ detail = e.message; }
+      check('v13 fix pane: the Today heading carries Surveys to chase, Wrap up the day (closes the day) and Back up the book', ok, detail);
+    } finally {
+      DATA = realDATA;
+      if(navigator.clipboard) navigator.clipboard.writeText = prevWrite;
+      document.querySelectorAll('.modal-backdrop').forEach(n => n.remove());
+      try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+      try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+      ui.view = prev.view; ui.openCustomerId = prev.open; ui.panelTab = prev.tab; ui.v13DeskId = prev.id; ui.v13DeskTab = prev.wt;
+      ui.v13DeskLens = prev.lens; ui.v13DeskFilter = prev.fil;
+      render();
+    }
+  })();
+  /* ==== end v13 fixes: pane ==== */
+  /* (spacer)
+     (spacer)
+     (spacer)
+     (spacer) */
+  /* ==== v13 checks: Co-pilot ==== (owned by the Co-pilot port) */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prevView = ui.view, prevOpen = ui.openCustomerId;
+    const hadSeen = 'todayLastSeenIds' in DATA, prevSeen = JSON.stringify(DATA.todayLastSeenIds);
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevSwitch = null; try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const draw = () => { localStorage.removeItem(KEY); ui.openCustomerId = null; ui.view = 'copilot'; render(); return document.querySelector('#app [data-osm] [data-v13-copilot]'); };
+    const BK = ['Before today’s calls', 'After your calls', 'Overdue', 'This week'];
+    const TIERS = ['APPLIED FOR YOU', 'ONE TAP', 'YOUR CALL'];
+    let detail = '';
+    // 1. layout: heading, morning summary, ranked groups in v13 order, no old chapters
+    let layOk = false;
+    try{
+      const box = draw();
+      const h1 = box && box.querySelector('h1');
+      const groups = box ? [...box.querySelectorAll('[data-v13-co-group]')].map(g => g.getAttribute('data-v13-co-group')) : [];
+      const order = groups.map(g => BK.indexOf(g));
+      layOk = !!box && !!h1 && h1.textContent.trim() === 'Co-pilot' && !!box.querySelector('[data-v13-co-summary]')
+        && groups.length > 0 && order.every((v, i) => v >= 0 && (i === 0 || v > order[i - 1]))
+        && !document.querySelector('#app .cp3-ch');
+      detail = JSON.stringify({box: !!box, h1: h1 && h1.textContent, groups, old: !!document.querySelector('#app .cp3-ch')});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot draws the heading, the morning summary and one ranked queue grouped in v13 order (before calls / after calls / overdue / this week), not the old book-read chapters', layOk, detail);
+    // 2. every pending Gainsight item is one card carrying 1.1's own action
+    let gsOk = false; detail = '';
+    try{
+      const box = draw();
+      const items = pendingGainsightItems();
+      const cards = box ? [...box.querySelectorAll('[data-v13-co-card][data-kind="gs"]')] : [];
+      const bad = cards.filter(cd => !cd.querySelector('[data-done-item],[data-done-compliance],[data-open-cust]'));
+      gsOk = items.length > 0 && cards.length === items.length && !bad.length;
+      detail = JSON.stringify({items: items.length, cards: cards.length, bad: bad.length});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot shows every pending Gainsight item as one card with 1.1\'s Mark done / Review action', gsOk, detail);
+    // 3. every ranked account (non-Gainsight top reason) is a card; signal rows carry Done + "Not now…" (1.1's dismiss with reason)
+    let rowOk = false; detail = '';
+    try{
+      const box = draw();
+      const rows = todayActionList().filter(r => !/^gainsight_|^grad_review/.test(r.source));
+      const cards = box ? [...box.querySelectorAll('[data-v13-co-card][data-kind="row"]')] : [];
+      const ids = cards.map(cd => cd.getAttribute('data-cust'));
+      const sig = rows.filter(r => r.signalKey && SIGNAL_KEY_SET.has(r.signalKey));
+      const sigBad = sig.filter(r => { const cd = cards.find(x => x.getAttribute('data-cust') === r.customerId); return !cd || !cd.querySelector('[data-rec-done]') || !cd.querySelector('[data-rec-dismiss]') || !/Not now/.test(cd.querySelector('[data-rec-dismiss]').textContent); });
+      rowOk = rows.length > 0 && cards.length === rows.length && rows.every(r => ids.includes(r.customerId)) && !sigBad.length;
+      detail = JSON.stringify({rows: rows.length, cards: cards.length, sig: sig.length, sigBad: sigBad.map(r => r.customerName)});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot shows every ranked account as a card, and signal cards carry 1.1\'s Done and "Not now…" (dismiss with a reason)', rowOk, detail);
+    // 4. trust tiers: only v13's three labels; today's calls get a brief before the queue
+    let tierOk = false; detail = '';
+    try{
+      const box = draw();
+      const tiers = box ? [...box.querySelectorAll('[data-v13-co-card] [data-v13-co-tier]')].map(t => t.textContent.trim()) : [];
+      const calls = callsToPrepare(0).length;
+      const briefs = box ? box.querySelectorAll('[data-v13-co-group="Before today’s calls"] [data-v13-co-card][data-kind="brief"]').length : -1;
+      tierOk = tiers.length > 0 && tiers.every(t => TIERS.includes(t)) && briefs === calls;
+      detail = JSON.stringify({tiers: [...new Set(tiers)], calls, briefs});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot labels every card with one of the three trust tiers and puts a brief for each of today\'s calls first', tierOk, detail);
+    // 5. drawing is read-only; Hide on the summary hides it without writing the book
+    let roOk = false; detail = '';
+    try{
+      const before = JSON.stringify(DATA);
+      let box = draw();
+      const hide = box && box.querySelector('[data-v13-co-sumhide]');
+      if(hide) hide.click();
+      box = document.querySelector('#app [data-osm] [data-v13-copilot]');
+      const hidden = !!box && !box.querySelector('[data-v13-co-summary]');
+      const show = box && box.querySelector('[data-v13-co-sumshow]');
+      if(show) show.click();
+      box = document.querySelector('#app [data-osm] [data-v13-copilot]');
+      roOk = !!hide && hidden && !!box.querySelector('[data-v13-co-summary]') && JSON.stringify(DATA) === before;
+      detail = JSON.stringify({hide: !!hide, hidden, changed: JSON.stringify(DATA) !== before});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot drawing never writes the book, and Hide / Show on the morning summary changes only the view', roOk, detail);
+    // 6. a suggested play starts through 1.1's startPlaybook
+    let pbOk = false; detail = '';
+    try{
+      const box = draw();
+      const btn = box && box.querySelector('[data-v13-co-play]');
+      if(!btn){ detail = 'no suggested play on any card'; }
+      else{
+        const [cid, key] = btn.getAttribute('data-v13-co-play').split('|');
+        const c = DATA.customers.find(x => x.id === cid);
+        const prev = JSON.stringify(c.playbooks || null);
+        btn.click();
+        pbOk = getPlaybooks(c).some(p => p.key === key && !p.closedOn);
+        detail = JSON.stringify({cid, key, started: pbOk});
+        if(prev === 'null') delete c.playbooks; else c.playbooks = JSON.parse(prev);
+      }
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot "Start this play" starts the suggested play through 1.1\'s startPlaybook', pbOk, detail);
+    // 7-8. fixture: a call booked today with prep owed, and an overdue commitment. Built in-page, restored after.
+    const FIXTURE_ON = true; // control run: set false and both checks below must fail
+    const live = DATA.customers.filter(c => c.stage !== 'graduated' && !isPaused(c));
+    const callC = live[0], dueC = live[1];
+    const snap = c => ({s: c.nextSessionScheduledOn, hadS: 'nextSessionScheduledOn' in c, k: JSON.stringify(c.commitments), hadK: 'commitments' in c});
+    const undo = (c, s) => { if(s.hadS) c.nextSessionScheduledOn = s.s; else delete c.nextSessionScheduledOn; if(s.hadK) c.commitments = JSON.parse(s.k); else delete c.commitments; };
+    const sCall = callC && snap(callC), sDue = dueC && snap(dueC);
+    const groupOf = (box, name) => box ? box.querySelector('[data-v13-co-group="' + name + '"]') : null;
+    const countOf = g => g ? Number(g.querySelector('p span').textContent) : 0;
+    const base = (function(){ const b = draw(); return {before: countOf(groupOf(b, BK[0])), overdue: countOf(groupOf(b, BK[2])), overdueCard: !!(b && b.querySelector('[data-v13-co-card][data-cust="' + (dueC && dueC.id) + '"][data-kind="row"]') && /FIXTURE-OVERDUE/.test(b.textContent))}; })();
+    if(FIXTURE_ON && callC && dueC){
+      callC.nextSessionScheduledOn = todayISO();
+      dueC.commitments = [{id: 'fx-overdue', text: 'FIXTURE-OVERDUE send the rollout note', direction: 'i_owe', due: isoAddDays(todayISO(), -3), doneOn: null}];
+    }
+    let bfOk = false; detail = '';
+    try{
+      const box = draw();
+      const g = groupOf(box, BK[0]);
+      const cards = g ? [...g.querySelectorAll('[data-v13-co-card][data-kind="brief"]')] : [];
+      const mine = cards.filter(cd => cd.getAttribute('data-cust') === (callC && callC.id));
+      const n = callsToPrepare(0).length;
+      bfOk = !!g && base.before === 0 && countOf(g) === n && cards.length === n && mine.length === 1 && /Goal:/.test(mine[0].textContent)
+        && box.querySelector('[data-v13-co-group]').getAttribute('data-v13-co-group') === BK[0];
+      detail = JSON.stringify({baseBefore: base.before, group: !!g, count: g && countOf(g), calls: n, cards: cards.length, mine: mine.length});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot "Before today’s calls" shows a brief card for the account booked today, with the right count, first in the list, and the group is absent without a call booked today', bfOk, detail);
+    let odOk = false; detail = '';
+    try{
+      const box = draw();
+      const g = groupOf(box, BK[2]);
+      const mine = g ? [...g.querySelectorAll('[data-v13-co-card][data-kind="row"]')].filter(cd => cd.getAttribute('data-cust') === (dueC && dueC.id) && /FIXTURE-OVERDUE/.test(cd.textContent)) : [];
+      const total = g ? g.querySelectorAll('[data-v13-co-card]').length : 0;
+      odOk = !!g && !base.overdueCard && mine.length === 1 && countOf(g) === total && countOf(g) === base.overdue + 1;
+      detail = JSON.stringify({baseOverdue: base.overdue, baseHadCard: base.overdueCard, group: !!g, count: g && countOf(g), total, mine: mine.length});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot "Overdue" shows the overdue commitment as a card in the group, the count goes up by one, and the card is absent without the commitment', odOk, detail);
+    if(callC) undo(callC, sCall); if(dueC) undo(dueC, sDue);
+    try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+    if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
+    try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+    ui.view = prevView; ui.openCustomerId = prevOpen; render();
+  })();
+  /* ==== end v13 checks: Co-pilot ==== */
+  /* (spacer)
+     (spacer)
+     (spacer)
+     (spacer) */
+  /* ==== v13 checks: Accounts ==== (owned by the Accounts port) */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prev = {view: ui.view, open: ui.openCustomerId, av: ui.accountsView, search: ui.search, desk: ui.v13DeskId, cal: ui.v13CalMode, gs: ui.v13GsFilter};
+    const hadSeen = 'todayLastSeenIds' in DATA, prevSeen = JSON.stringify(DATA.todayLastSeenIds);
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    const prevSwitch = localStorage.getItem(KEY);
+    const pane = () => document.querySelector('#app [data-osm] [data-v13-accounts]');
+    const VIEWS = ['gantt','kanban','table','cal','heat','gs'];
+    let detail = '';
+    // 1. heading, switcher, 1.1's toolbar ids, no old toolbar
+    let headOk = false;
+    try{
+      localStorage.removeItem(KEY); ui.openCustomerId = null; ui.search = ''; ui.accountsView = 'gantt'; ui.view = 'accounts'; render();
+      const p = pane();
+      const h1 = p && p.querySelector('h1');
+      const tabs = p ? [...p.querySelectorAll('[role=tablist][aria-label="Book view"] [role=tab]')].map(b => b.textContent.trim()) : [];
+      const ids = ['search-input','filter-module','filter-lifecycle','filter-risk','sort-by'];
+      const missing = ids.filter(id => !(p && p.querySelector('#' + id)));
+      const sub = p && p.querySelector('[data-v13-acct-sub]');
+      headOk = !!p && !!h1 && h1.textContent.trim() === 'Accounts' && tabs.join('|') === 'Gantt|Kanban|Table|Calendar|Outcome coverage|Gainsight admin'
+        && !missing.length && !document.querySelector('#app .view-switch') && !!sub && sub.textContent.indexOf(DATA.customers.length + ' accounts') === 0;
+      detail = JSON.stringify({pane: !!p, h1: h1 && h1.textContent, tabs, missing, sub: sub && sub.textContent.slice(0, 60)});
+    }catch(e){ detail = e.message; }
+    check('v13 Accounts draws the v13 heading, the six-view switcher (Gantt, Kanban, Table, Calendar, Outcome coverage, Gainsight admin) and 1.1\'s search/filter/sort ids, not the old toolbar', headOk, detail);
+    // 2. every tab switches view and draws one row per filtered account
+    let tabsOk = false; detail = '';
+    try{
+      const got = {};
+      VIEWS.forEach(k => {
+        const b = pane().querySelector('[data-v13-av="' + k + '"]');
+        if(!b){ got[k] = 'missing'; return; }
+        b.click();
+        const p = pane(), body = p && p.querySelector('[data-v13-av-pane="' + k + '"]');
+        got[k] = ui.accountsView === k && !!body && p.querySelector('[data-v13-av="' + k + '"]').getAttribute('aria-selected') === 'true' ? 'ok' : 'bad';
+      });
+      ui.accountsView = 'table'; render();
+      const n = getFilteredCustomers().length;
+      const rows = pane().querySelectorAll('[data-v13-av-pane="table"] tbody tr').length;
+      ui.accountsView = 'gantt'; render();
+      const grows = pane().querySelectorAll('[data-v13-av-pane="gantt"] [data-v13-acct]').length;
+      ui.accountsView = 'cal'; ui.v13CalMode = 'month'; render();
+      const month = pane().querySelectorAll('[data-v13-av-pane="cal"] [data-v13-month-cell]').length;
+      tabsOk = VIEWS.every(k => got[k] === 'ok') && rows === n && grows === n && month === 35;
+      detail = JSON.stringify({got, n, rows, grows, month});
+    }catch(e){ detail = e.message; }
+    check('v13 Accounts each switcher view draws (and marks itself selected); the Table and Gantt show one row per filtered account; the Month calendar draws 35 days', tabsOk, detail);
+    // 3. a row opens the account on the Desk
+    let openOk = false; detail = '';
+    try{
+      ui.accountsView = 'table'; render();
+      const btn = pane().querySelector('[data-v13-av-pane="table"] [data-v13-acct]');
+      const id = btn && btn.getAttribute('data-v13-acct');
+      btn.click();
+      openOk = !!id && ui.v13DeskId === id && ui.view === 'today';
+      detail = JSON.stringify({id, desk: ui.v13DeskId, view: ui.view});
+    }catch(e){ detail = e.message; }
+    check('v13 Accounts clicking an account sets ui.v13DeskId to it and goes to the Desk', openOk, detail);
+    // 4. never a health number or a percentage in any view
+    let healthOk = false; detail = '';
+    try{
+      const bad = [];
+      VIEWS.forEach(k => { ui.view = 'accounts'; ui.accountsView = k; render(); let t = pane().textContent; DATA.customers.forEach(c => { t = t.split(c.name).join(' '); }); if(/\d\s*%|health/i.test(t)) bad.push(k + ':' + (t.match(/.{0,30}(\d\s*%|health).{0,10}/i) || [''])[0]); });
+      healthOk = !bad.length;
+      detail = JSON.stringify(bad);
+    }catch(e){ detail = e.message; }
+    check('v13 Accounts shows no health number or percentage in any view', healthOk, detail);
+    // 5. 1.1's search still filters
+    let searchOk = false; detail = '';
+    try{
+      const first = DATA.customers[0];
+      ui.view = 'accounts'; ui.accountsView = 'table'; ui.search = first ? first.name : ''; render();
+      const rows = pane().querySelectorAll('[data-v13-av-pane="table"] tbody tr').length;
+      const want = getFilteredCustomers().length;
+      searchOk = !!first && rows === want && rows >= 1 && rows < DATA.customers.length && pane().querySelector('#search-input').value === first.name;
+      detail = JSON.stringify({rows, want, all: DATA.customers.length});
+    }catch(e){ detail = e.message; }
+    check('v13 Accounts 1.1\'s search box still narrows the rows', searchOk, detail);
+    /* v13 fixes: accounts (fix item 7) */
+    // 6. the search/filter/sort controls sit in the heading area as one line, not a second toolbar row; typing and choosing still filter
+    let headCtlOk = false; detail = '';
+    const prevLife = ui.filterLifecycle;
+    try{
+      ui.view = 'accounts'; ui.accountsView = 'table'; ui.search = ''; ui.filterLifecycle = 'all'; render();
+      const p = pane(), head = p && p.querySelector('[data-v13-ac-head]');
+      const ids = ['search-input','filter-module','filter-lifecycle','filter-risk','sort-by'];
+      const inHead = ids.filter(id => head && head.querySelector('#' + id));
+      const line = head && head.querySelector('[data-v13-ac-filters]');
+      const oneLine = !!line && getComputedStyle(line).flexWrap === 'nowrap' && ids.every(id => line.querySelector('#' + id));
+      // the sheet holding the view comes straight after the heading: nothing in between
+      const noToolbar = !!head && !p.querySelector('.v13ac-tools') && !!head.nextElementSibling && !!head.nextElementSibling.querySelector('[data-v13-av-pane]');
+      const first = DATA.customers[0];
+      const inp = p.querySelector('[data-v13-ac-head] #search-input');
+      if(inp && first){ inp.value = first.name; inp.dispatchEvent(new Event('input', {bubbles:true})); }
+      const typed = ui.search; render();
+      const rows = pane().querySelectorAll('[data-v13-av-pane="table"] tbody tr').length;
+      ui.search = ''; render();
+      const lc = pane().querySelector('[data-v13-ac-head] #filter-lifecycle');
+      if(lc){ lc.value = 'graduated'; lc.dispatchEvent(new Event('change', {bubbles:true})); }
+      const lcOk = ui.filterLifecycle === 'graduated' && !!pane().querySelector('[data-v13-ac-head] #filter-lifecycle') && pane().querySelector('[data-v13-ac-head] #filter-lifecycle').value === 'graduated';
+      headCtlOk = inHead.length === ids.length && oneLine && noToolbar && !!first && typed === first.name && rows >= 1 && rows < DATA.customers.length && lcOk;
+      detail = JSON.stringify({head: !!head, inHead: inHead.length, oneLine, noToolbar, typed, rows, lc: ui.filterLifecycle});
+    }catch(e){ detail = e.message; }
+    ui.filterLifecycle = prevLife; ui.search = '';
+    check('v13 Accounts the 1.1 search/filter/sort controls sit on one line inside the heading area (no second toolbar row above the sheet); typing in the search and choosing a lifecycle still filter', headCtlOk, detail);
+    // 7. Month calendar copy matches v13: item label is S<n> (plus time when booked), Go-live or Handed off; the kind lives in the dot and the title; legend says "Next planned session"
+    let monthOk = false; detail = '';
+    try{
+      ui.view = 'accounts'; ui.accountsView = 'cal'; ui.v13CalMode = 'month'; render();
+      const cal = pane().querySelector('[data-v13-av-pane="cal"]');
+      const items = [...cal.querySelectorAll('[data-v13-month-cell] [data-v13-acct]')];
+      const bad = items.map(b => ({l: b.lastElementChild.textContent.trim(), t: b.title})).filter(x => !/^(S\d+( \d{1,2}:\d\d)?|Go-live|Handed off)$/.test(x.l)
+        || !/ · (Session \d+ (held|· next planned|· projected at the current pace)|go-live target|handed off)$/.test(x.t));
+      const legend = cal.lastElementChild.textContent;
+      monthOk = items.length > 0 && !bad.length && legend.indexOf('Next planned session') !== -1 && legend.indexOf('(booked)') === -1;
+      detail = JSON.stringify({items: items.length, bad: bad.slice(0, 3), legend: legend.slice(0, 80)});
+    }catch(e){ detail = e.message; }
+    check('v13 Accounts Month calendar items read like v13 (S<n>, S<n> HH:MM, Go-live, Handed off; held/next/projected in the title) and the legend says "Next planned session"', monthOk, detail);
+    try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+    if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
+    try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+    ui.view = prev.view; ui.openCustomerId = prev.open; ui.accountsView = prev.av; ui.search = prev.search;
+    if(prev.desk === undefined) delete ui.v13DeskId; else ui.v13DeskId = prev.desk;
+    if(prev.cal === undefined) delete ui.v13CalMode; else ui.v13CalMode = prev.cal;
+    if(prev.gs === undefined) delete ui.v13GsFilter; else ui.v13GsFilter = prev.gs;
+    render();
+  })();
+  /* ==== end v13 checks: Accounts ==== */
+  /* (spacer)
+     (spacer)
+     (spacer)
+     (spacer) */
+  /* ==== v13 checks: Risk ==== (owned by the Risk port) */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prevView = ui.view, prevOpen = ui.openCustomerId;
+    const hadSeen = 'todayLastSeenIds' in DATA, prevSeen = JSON.stringify(DATA.todayLastSeenIds);
+    const hadLog = 'riskLog' in DATA, prevLog = JSON.stringify(DATA.riskLog);
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    const restoreBook = () => {
+      if(hadLog) DATA.riskLog = JSON.parse(prevLog); else delete DATA.riskLog;
+      if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
+      try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+    };
+    const draw = () => { localStorage.removeItem(KEY); ui.openCustomerId = null; ui.view = 'risk'; render(); return document.querySelector('#app [data-osm] [data-v13-risk]'); };
+    const cases = () => buildRiskCases(buildRiskHubList({readOnly:true}));
+    let detail = '';
+    // 1. heading, two sections, counts from 1.1's cases
+    let headOk = false;
+    try{
+      const box = draw();
+      const ks = cases();
+      const nR = ks.filter(k => k.isRisk).length, nS = ks.filter(k => !k.isRisk && k.state !== 'dismissed').length;
+      const h1 = box && box.querySelector('h1');
+      const hR = box && box.querySelector('[data-v13-risk-confirmed] h2'), hS = box && box.querySelector('[data-v13-risk-signals] h2');
+      headOk = !!h1 && h1.textContent.trim() === 'Signals ask. You confirm.'
+        && !!hR && hR.textContent.trim() === `Confirmed risks · ${nR}`
+        && !!hS && hS.textContent.trim() === `Signals to check · ${nS}`
+        && box.querySelectorAll('[data-v13-signal]').length === nS
+        && !document.querySelector('#app .rk3');
+      detail = JSON.stringify({h1: h1 && h1.textContent, hR: hR && hR.textContent, hS: hS && hS.textContent, nR, nS});
+    }catch(e){ detail = e.message; }
+    check('v13 Risk draws "Signals ask. You confirm." with Confirmed risks · N and Signals to check · N counted from 1.1\'s cases, no old deck', headOk, detail);
+    // 2. drawing is read-only
+    let pureOk = false; detail = '';
+    try{
+      const before = JSON.stringify(DATA.riskLog), storedBefore = localStorage.getItem(STORAGE_KEY);
+      draw(); draw();
+      pureOk = JSON.stringify(DATA.riskLog) === before && localStorage.getItem(STORAGE_KEY) === storedBefore;
+      detail = 'drawing the v13 Risk screen changed the risk log or the stored book';
+    }catch(e){ detail = e.message; }
+    check('v13 Risk drawing writes nothing (no risk log stamps, stored book unchanged)', pureOk, detail);
+    // 3. every signal card offers 1.1's confirm and dismiss, and never calls itself a risk
+    let sigOk = false; detail = '';
+    try{
+      const box = draw();
+      const rows = [...box.querySelectorAll('[data-v13-signal]')];
+      sigOk = rows.length > 0 && rows.every(r => r.querySelector('[data-risk-confirm]') && r.querySelector('[data-risk-dismiss]') && r.querySelector('[data-open-cust]')
+        && !/\brisk\b/i.test((r.querySelector('[data-v13-signal-label]') || {}).textContent || 'risk'));
+      detail = rows.length + ' signal cards';
+    }catch(e){ detail = e.message; }
+    check('v13 Risk each signal card has Review, confirm and dismiss (1.1 handlers) and its label never says risk', sigOk, detail);
+    // 4. confirm needs a reason; a confirmed case moves to Confirmed risks with the reason shown
+    let confOk = false; detail = '';
+    try{
+      const k = cases().find(x => !x.isRisk && x.state !== 'dismissed');
+      const noReason = setRiskVerdict(k.lead, 'confirmed', '   ');
+      confirmRiskCase(k, 'Sponsor left and nobody owns approvals');
+      const box = draw();
+      const card = box.querySelector(`[data-v13-risk-confirmed] [data-v13-risk-card="${k.c.id}"]`);
+      confOk = noReason === false && !!card && card.textContent.includes(k.c.name) && card.textContent.includes('Sponsor left and nobody owns approvals')
+        && card.textContent.includes('You confirmed') && !box.querySelector(`[data-v13-risk-signals] [data-v13-signal="${k.c.id}"]`);
+      detail = JSON.stringify({noReason, card: !!card});
+    }catch(e){ detail = e.message; }
+    restoreBook();
+    check('v13 Risk confirm without a reason is refused; with one the account moves to Confirmed risks showing "You confirmed" and the reason', confOk, detail);
+    // 5. the confirm button on a signal opens 1.1's reason modal
+    let modalOk = false; detail = '';
+    try{
+      const box = draw();
+      const b = box.querySelector('[data-v13-signal] [data-risk-confirm]');
+      b.click();
+      const m = document.getElementById('rkc-reason');
+      modalOk = !!m;
+      document.querySelectorAll('.modal-backdrop').forEach(o => { if(o.querySelector('#rkc-reason')) o.remove(); });
+      detail = 'no reason modal after clicking confirm';
+    }catch(e){ detail = e.message; }
+    check('v13 Risk a signal\'s confirm button opens the reason-required modal', modalOk, detail);
+    restoreBook();
+    try{ localStorage.setItem(KEY, '0'); }catch(e){}
+    ui.view = prevView; ui.openCustomerId = prevOpen; render();
+  })();
+  /* ==== end v13 checks: Risk ==== */
+  /* (spacer)
+     (spacer)
+     (spacer)
+     (spacer) */
+  /* ==== v13 checks: System ==== (owned by the System port) */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prevView = ui.view, prevOpen = ui.openCustomerId;
+    const hadSeen = 'todayLastSeenIds' in DATA, prevSeen = JSON.stringify(DATA.todayLastSeenIds);
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    const prevCfg = JSON.stringify(DATA.config);
+    let prevSwitch = null; try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const closeModals = () => document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+    const sys = () => document.querySelector('#app [data-osm] section[data-v13-system]');
+    let detail = '';
+    // 1. the page: heading and v13's five cards, in v13's order
+    let cardsOk = false;
+    try{
+      localStorage.removeItem(KEY); ui.openCustomerId = null; ui.view = 'system'; render();
+      const s = sys();
+      const h1 = s && s.querySelector('h1');
+      const heads = s ? [...s.querySelectorAll(':scope > div > section > div h2, :scope > div > section > h2')].map(h => h.textContent.trim()) : [];
+      cardsOk = !!s && !!h1 && h1.textContent.trim() === 'System'
+        && heads.join('|') === 'Gainsight connection|Co-pilot rules|Gainsight admin rules|Curricula|Data and connections';
+      detail = JSON.stringify({sec: !!s, h1: h1 && h1.textContent, heads});
+    }catch(e){ detail = e.message; }
+    check('v13 System draws the System heading and v13\'s five cards in order (Gainsight connection, Co-pilot rules, Gainsight admin rules, Curricula, Data and connections)', cardsOk, detail);
+    // 2. Gainsight cards read 1.1's queue, ids and gate definitions
+    let gsOk = false; detail = '';
+    try{
+      const s = sys();
+      const q = getGainsightQueue(), unsent = q.filter(x => x.status !== 'sent').length;
+      const ids = DATA.customers.filter(c => String(c.gainsightId || '').trim()).length;
+      const txt = s ? s.textContent.replace(/\s+/g, ' ') : '';
+      const rules = s ? [...s.querySelectorAll('[data-v13-sys-rule]')].map(li => li.querySelector('b').textContent.trim()) : [];
+      gsOk = txt.indexOf('Pending push · ' + unsent + ' of ' + q.length) !== -1
+        && txt.indexOf('Company IDs · ' + ids + ' of ' + DATA.customers.length + ' matched') !== -1
+        && rules.join('|') === GATE_DEFS.map(g => g.label).join('|');
+      detail = JSON.stringify({unsent, total: q.length, ids, rules});
+    }catch(e){ detail = e.message; }
+    check('v13 System Gainsight cards show 1.1\'s queue (unsent of total), matched Gainsight IDs and one admin rule per GATE_DEFS gate', gsOk, detail);
+    // 3. Curricula: one row per module; Edit opens 1.1's curriculum modal on that module
+    let curOk = false; detail = '';
+    try{
+      const s = sys();
+      const rows = s ? [...s.querySelectorAll('[data-v13-sys-curric]')] : [];
+      const names = rows.map(r => r.getAttribute('data-v13-sys-curric'));
+      const mods = DATA.config.modules.slice();
+      const last = mods[mods.length - 1];
+      const btn = rows.find(r => r.getAttribute('data-v13-sys-curric') === last);
+      closeModals();
+      if(btn) btn.click();
+      const sel = document.querySelector('.modal-backdrop #cur-module-select');
+      const h3 = document.querySelector('.modal-backdrop .modal h3');
+      curOk = mods.length > 0 && names.join('|') === mods.join('|') && !!sel && sel.value === last && !!h3 && h3.textContent.trim() === 'Session Curriculum';
+      detail = JSON.stringify({names, mods, sel: sel && sel.value});
+      closeModals();
+    }catch(e){ detail = e.message; closeModals(); }
+    check('v13 System Curricula lists every module and its Edit opens 1.1\'s Session Curriculum modal on that module', curOk, detail);
+    // 4. Co-pilot rules: inline thresholds save through parseSettingsDraft/applySettingsDraft; a bad value is refused
+    let ruleOk = false; detail = '';
+    try{
+      render();
+      const w0 = DATA.config.riskWatchDays, a0 = DATA.config.riskAlertDays;
+      const inp = sys().querySelector('input[data-v13-sys-cfg="riskWatchDays"]');
+      const shown = inp && Number(inp.value) === w0;
+      const good = Math.max(1, a0 - 1) === w0 ? Math.max(1, w0 - 1) : Math.max(1, a0 - 1);
+      inp.value = String(good); inp.dispatchEvent(new Event('change', {bubbles: true}));
+      const saved = DATA.config.riskWatchDays === good;
+      const inp2 = sys().querySelector('input[data-v13-sys-cfg="riskWatchDays"]');
+      inp2.value = String(a0 + 5); inp2.dispatchEvent(new Event('change', {bubbles: true}));
+      const refused = DATA.config.riskWatchDays === good;
+      const redrawn = Number(sys().querySelector('input[data-v13-sys-cfg="riskWatchDays"]').value) === good;
+      ruleOk = shown && saved && refused && redrawn;
+      detail = JSON.stringify({w0, a0, good, shown, saved, refused, redrawn});
+    }catch(e){ detail = e.message; }
+    DATA.config = JSON.parse(prevCfg);
+    check('v13 System Co-pilot rules show 1.1\'s thresholds as inputs, a change saves through 1.1\'s settings parser, and a watch value past at-risk is refused', ruleOk, detail);
+    // 5. Data and connections: 1.1's actions are there, and Open settings still opens the full modal
+    let dataOk = false; detail = '';
+    try{
+      render(); closeModals();
+      const s = sys();
+      const acts = s ? [...s.querySelectorAll('[data-v13-sys-act]')].map(b => b.getAttribute('data-v13-sys-act')) : [];
+      const want = ['export','import','import-excel','import-values','import-csat','restore','curriculum','backfill'];
+      const missing = want.filter(k => acts.indexOf(k) === -1);
+      const open = s && s.querySelector('[data-v13-open-settings]');
+      if(open) open.click();
+      const h3 = document.querySelector('.modal-backdrop .modal h3');
+      dataOk = !missing.length && !!h3 && h3.textContent.trim() === 'Settings';
+      detail = JSON.stringify({missing, settings: h3 && h3.textContent});
+      closeModals();
+    }catch(e){ detail = e.message; closeModals(); }
+    check('v13 System Data and connections carries 1.1\'s import/export/backup actions and an Open settings fallback that opens the Settings modal', dataOk, detail);
+    try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+    DATA.config = JSON.parse(prevCfg);
+    if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
+    try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+    ui.view = prevView; ui.openCustomerId = prevOpen; render();
+  })();
+  /* ==== end v13 checks: System ==== */
+  /* ==== v13 fixes: dark ==== (fix items 1b, 4, 5: the full-account overlay wears v13 tokens;
+     with the theme set to dark every v13 screen and the overlay are dark, no light sheet left;
+     the "Me" circle follows the initials rule). Works on a copy of DATA and puts the real one back. */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC, THEME = 'obm-theme-v1';
+    const prev = {view: ui.view, open: ui.openCustomerId, tab: ui.panelTab, wt: ui.v13DeskTab, av: ui.accountsView};
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevSwitch = null, prevTheme = null;
+    try{ prevSwitch = localStorage.getItem(KEY); prevTheme = localStorage.getItem(THEME); }catch(e){}
+    const realDATA = DATA;
+    const rgb = hex => 'rgb(' + [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)).join(', ') + ')';
+    const bg = el => el ? getComputedStyle(el).backgroundColor : 'missing';
+    const setTheme = t => localStorage.setItem(THEME, t);
+    const screen = (view, extra) => { ui.openCustomerId = null; ui.view = view; if(extra) extra(); render(); };
+    const panel = tab => { ui.view = 'today'; ui.openCustomerId = DATA.customers[0].id; ui.panelTab = tab; render(); };
+    // Light surfaces at least 120x36 (a sheet, card or field), opaque enough to read as a sheet.
+    const lightSurfaces = root => {
+      const out = [];
+      const lum = s => { const m = String(s).match(/rgba?\(([^)]+)\)/); if(!m) return null;
+        const p = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); if(p.length > 3 && p[3] < 0.5) return null;
+        return (0.2126*p[0] + 0.7152*p[1] + 0.0722*p[2]) / 255; };
+      root.querySelectorAll('*').forEach(el => {
+        const r = el.getBoundingClientRect(); if(r.width < 120 || r.height < 36) return;
+        const cs = getComputedStyle(el); if(cs.visibility === 'hidden' || cs.display === 'none') return;
+        let L = lum(cs.backgroundColor); const g = cs.backgroundImage.match(/rgba?\([^)]+\)/);
+        if(g){ const l2 = lum(g[0]); if(l2 !== null) L = Math.max(L || 0, l2); }
+        if(L !== null && L > 0.55) out.push((typeof el.className === 'string' && el.className ? el.className.split(' ')[0] : el.tagName) + (el.id ? '#' + el.id : ''));
+      });
+      return out;
+    };
+    const SCREENS = [['desk-prepare', 'today', () => { ui.v13DeskTab = 'prepare'; }], ['desk-capture', 'today', () => { ui.v13DeskTab = 'capture'; }],
+      ['desk-evidence', 'today', () => { ui.v13DeskTab = 'evidence'; }], ['desk-record', 'today', () => { ui.v13DeskTab = 'record'; }],
+      ['copilot', 'copilot'], ...['gantt','kanban','table','cal','heat','gs'].map(v => ['accounts-' + v, 'accounts', () => { ui.accountsView = v; }]),
+      ['risk', 'risk'], ['system', 'system']];
+    const TABS = ['overview','details','sessions','log','gainsight','coordination','handoff','plays'];
+    let ok, detail;
+    try{
+      localStorage.removeItem(KEY); DATA = cloneData(realDATA);
+      // 1. the overlay panel is a v13 side sheet: --sheet2 surface, v13 type and ink, in both themes
+      ok = false; detail = '';
+      try{
+        const read = t => { setTheme(t); panel('overview'); const p = document.querySelector('.overlay .panel'); const cs = getComputedStyle(p);
+          return {bg: cs.backgroundColor, font: cs.fontFamily.split(',')[0], ink: getComputedStyle(p.querySelector('.panel-title')).color}; };
+        const L = read('light'), D = read('dark');
+        ok = L.bg === rgb('#FAF7F1') && D.bg === rgb('#252523') && /Figtree/.test(L.font) && L.ink === rgb('#262626') && D.ink === rgb('#EDEBE7');
+        detail = JSON.stringify({L, D});
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: the full-account overlay is a v13 side sheet (--sheet2 #FAF7F1 / #252523, Figtree, v13 ink) in light and dark', ok, detail);
+      // 2. cards inside the overlay sit on --sheet, which follows the theme
+      ok = false; detail = '';
+      try{
+        setTheme('light'); panel('overview'); const l = bg(document.querySelector('.overlay .section-card'));
+        setTheme('dark'); panel('overview'); const d = bg(document.querySelector('.overlay .section-card'));
+        ok = l === rgb('#FFFFFF') && d === rgb('#1F1F1D');
+        detail = JSON.stringify({l, d});
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: cards in the overlay use the --sheet token (#FFFFFF light, #1F1F1D dark)', ok, detail);
+      // 3. dark: no light sheet left on any v13 screen (Desk four tabs, Co-pilot, Accounts six views, Risk, System)
+      ok = false; detail = '';
+      try{
+        setTheme('dark'); const bad = [];
+        SCREENS.forEach(([name, view, extra]) => { screen(view, extra);
+          const pageOk = bg(document.querySelector('#app [data-osm]')) === rgb('#151514');
+          const l = lightSurfaces(document.querySelector('#app [data-osm] main'));
+          if(!pageOk || l.length) bad.push(name + ':' + (pageOk ? '' : 'page ') + l.slice(0, 3).join(',') + (l.length > 3 ? '+' + (l.length - 3) : '')); });
+        ok = !bad.length; detail = bad.join(' | ').slice(0, 400);
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: with the theme dark, no light sheet is left on any v13 screen (Desk tabs, Co-pilot, Accounts x6, Risk, System)', ok, detail);
+      // 4. dark: no light sheet left in the overlay, on any of its tabs
+      ok = false; detail = '';
+      try{
+        setTheme('dark'); const bad = [];
+        TABS.forEach(t => { panel(t); const p = document.querySelector('.overlay .panel'); p.scrollTop = 0;
+          const l = lightSurfaces(p); if(p.matches && bg(p) !== rgb('#252523')) l.unshift('panel');
+          if(l.length) bad.push(t + ':' + l.slice(0, 3).join(',') + (l.length > 3 ? '+' + (l.length - 3) : '')); });
+        ok = !bad.length; detail = bad.join(' | ').slice(0, 400);
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: with the theme dark, no light sheet is left in the full-account overlay on any tab', ok, detail);
+      // 5. the Co-pilot morning summary stays the stand-out box in light (ink) and turns into a dark raised box in dark
+      ok = false; detail = '';
+      try{
+        const sum = () => document.querySelector('#app [data-v13-co-summary]');
+        setTheme('light'); screen('copilot'); const l = sum() ? bg(sum()) : 'hidden';
+        setTheme('dark'); screen('copilot'); const d = sum() ? bg(sum()) : 'hidden', dc = sum() ? getComputedStyle(sum()).color : '';
+        ok = l === rgb('#262626') && d === rgb('#252523') && dc === rgb('#EDEBE7');
+        detail = JSON.stringify({l, d, dc});
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: the Co-pilot morning summary is #262626 in light and a dark #252523 box with light ink in dark', ok, detail);
+      // 6. initials: 1.1 stores no user name in Settings, so the circle reads "Me" (no new field)
+      ok = false; detail = '';
+      try{
+        setTheme('light'); screen('today');
+        const me = document.querySelector('#app [data-osm] .v13-me');
+        const named = Object.keys(DATA.settings || {}).filter(k => /name/i.test(k));
+        ok = !!me && me.textContent.trim() === 'Me' && !named.length;
+        detail = JSON.stringify({me: me && me.textContent, named});
+      }catch(e){ detail = e.message; }
+      check('v13 fix initials: no user name is stored in Settings, so the top-bar circle reads "Me"', ok, detail);
+    } finally {
+      DATA = realDATA;
+      try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+      try{ if(prevTheme === null) localStorage.removeItem(THEME); else localStorage.setItem(THEME, prevTheme); }catch(e){}
+      try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+      ui.view = prev.view; ui.openCustomerId = prev.open; ui.panelTab = prev.tab; ui.v13DeskTab = prev.wt; ui.accountsView = prev.av;
+      render();
+    }
+  })();
+  /* ==== end v13 fixes: dark ==== */
+  /* ==== v13 fixes: review ==== */
+  (function(){
+    // The shared gate markup must be balanced: an unclosed <div class="focus-act"> nests the three day panes on the old screens.
+    const bal = h => (h.match(/<div\b/g) || []).length - (h.match(/<\/div>/g) || []).length;
+    const live = DATA.customers.slice(0, 12);
+    const prevFocus = ui.todayFocusId;
+    let ok = false, detail = '';
+    try{
+      const unbalanced = [];
+      live.forEach(c => { const g = beatGateBlocks(c); Object.keys(g).forEach(k => { if(bal(g[k]) !== 0) unbalanced.push(c.id + ':' + k + ':' + bal(g[k])); }); });
+      ['evidence', 'capture'].forEach(w => live.forEach(c => { const h = v13DeskGates(c, w); if(bal(h) !== 0) unbalanced.push(c.id + ':desk-' + w + ':' + bal(h)); }));
+      ok = live.length > 0 && !unbalanced.length; detail = JSON.stringify({n: live.length, unbalanced: unbalanced.slice(0, 6)});
+    }catch(e){ detail = e.message; }
+    check('v13 fix review: every beatGateBlocks string (old Today pane and Desk Capture/Evidence) has balanced <div> and </div>', ok, detail);
+    ok = false; detail = '';
+    try{
+      const beats = live.slice(0, 3).map((c, i) => ({kind:'work', customerId:c.id, customerName:c.name, at:null, call:null,
+        headline:'Review item', reasons:['Review item'], severity:2, effortMin:20, signalKey:null,
+        row:{customerId:c.id, severity:2, source:'test', why:'', signalKey:null, alsoWaiting:[], panelTab:'overview'}}));
+      beats.forEach((b, i) => { b._i = i; });
+      const day = {beats, movements:[{mkey:'work', label:'Work', note:'', beats}], spilled:0};
+      const box = document.createElement('div'); box.innerHTML = renderDay(day, () => '');
+      const panes = [...box.querySelectorAll('.day-pane')];
+      const nested = panes.filter(p => p.parentElement && p.parentElement.closest('.day-pane'));
+      ok = panes.length === 3 && !nested.length; detail = JSON.stringify({panes: panes.length, nested: nested.length});
+    }catch(e){ detail = e.message; }
+    finally{ ui.todayFocusId = prevFocus; }
+    check('v13 fix review: on the old screens the three day panes sit side by side, none inside another', ok, detail);
+  })();
+  /* ==== end v13 fixes: review ==== */
+  /* ==== v13 fixes: look2 ==== (Ian's three look rulings, 2026-10-22) */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prev = {view: ui.view, open: ui.openCustomerId, tab: ui.panelTab, id: ui.v13DeskId, wt: ui.v13DeskTab, fil: ui.v13DeskFilter};
+    let prevSwitch = null; try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const body = () => document.querySelector('#app [data-osm] [data-v13-desk-body]');
+    const a = DATA.customers.find(c => c.stage !== 'graduated' && !inImplementation(c));
+    const show = tab => { ui.openCustomerId = null; ui.view = 'today'; ui.v13DeskId = a.id; ui.v13DeskTab = tab; ui.v13DeskFilter = null; render(); };
+    const tileLabels = root => [...root.querySelectorAll('div')].filter(d => d.children.length === 0).map(d => d.textContent.trim().toLowerCase());
+    let r = {};
+    try{
+      localStorage.removeItem(KEY);
+      show('prepare'); const p = body();
+      r.kick = p ? p.textContent : '';
+      show('evidence'); const e = body();
+      const t = e ? e.textContent : '';
+      r.gateAt = t.indexOf('Go-Live gates'); r.tileAt = t.indexOf('Last touch');
+      r.health = e ? tileLabels(e).includes('health') : null;
+      r.tiles = e ? tileLabels(e).includes('last touch') : false;
+    }catch(err){ r.err = err.message; }
+    finally{
+      ui.view = prev.view; ui.openCustomerId = prev.open; ui.panelTab = prev.tab; ui.v13DeskId = prev.id; ui.v13DeskTab = prev.wt; ui.v13DeskFilter = prev.fil;
+      try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+      render();
+    }
+    check('v13 look2: Desk Prepare step 04 kicker starts "NEXT · curriculum", not "Next review"', /Next · curriculum/.test(r.kick || '') && !/Next review/.test(r.kick || ''), JSON.stringify({err: r.err, has: (r.kick || '').match(/Next[^·]*·[^·]*/)}));
+    check('v13 look2: Desk Evidence draws the Go-Live gates box below the stat tiles', r.tileAt >= 0 && r.gateAt > r.tileAt, JSON.stringify(r).slice(0, 300));
+    check('v13 look2: Desk Evidence has no Health tile (and still has the other tiles)', r.health === false && r.tiles === true, JSON.stringify({health: r.health, tiles: r.tiles, err: r.err}));
+    const ov = document.createElement('div');
+    const had = Object.prototype.hasOwnProperty.call(a, 'lastShownRecommendation'), was = a.lastShownRecommendation;
+    try{ ov.innerHTML = renderOverviewTab(a, computeRisk(a)); }catch(e){}
+    finally{ if(had) a.lastShownRecommendation = was; else delete a.lastShownRecommendation; }
+    check('v13 look2: the full-account Overview still has its Health tile', tileLabels(ov).includes('health'), tileLabels(ov).slice(0, 12).join(','));
+  })();
+  /* ==== end v13 fixes: look2 ==== */
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
