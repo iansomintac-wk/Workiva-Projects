@@ -1695,10 +1695,34 @@
   /* ==== v13 shell (2026-10-22): tokens and top bar from OSM Workstation v13 ====
      Scoped to [data-osm] (the v13 wrapper) rather than :root because 1.1 already
      defines --ink and --brand there for the old shell; old mode never sees these. */
-  [data-osm]{--page:#F3EEE6;--sheet:#FFFFFF;--sheet2:#FAF7F1;--well:#EFE9DF;--ink:#262626;--muted:#5B5650;--faint:#A39C91;--line:rgba(38,38,38,.09);--line2:rgba(38,38,38,.17);--acc:#0067CF;--acc-bg:#E6F0FB;--brand:#66CC66;--runway:#6E6A64;--demo:#3F9F3F;--demo-t:#2A6B2A;--demo-bg:#E7F3E2;--obs:#F0A020;--warn:#7A5200;--warn-bg:#FDF0D4;--risk:#B42000;--risk-bg:#FBE6DF;--partner:#0058AF;--partner-bg:#E3EEFA;--plum:#663399;--plum-bg:#F1E8F8;--sh1:0 1px 0 rgba(38,38,38,.04),0 10px 30px -18px rgba(38,38,38,.30);--sh2:0 1px 0 rgba(38,38,38,.05),0 24px 60px -28px rgba(38,38,38,.45),0 4px 12px -6px rgba(38,38,38,.12);--mono:'JetBrains Mono',Consolas,monospace;--font-brand:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color-scheme:light}
-  [data-osm][data-theme="dark"]{--page:#151514;--sheet:#1F1F1D;--sheet2:#252523;--well:#1A1A19;--ink:#EDEBE7;--muted:#B3AEA6;--faint:#6E6A64;--line:rgba(237,235,231,.08);--line2:rgba(237,235,231,.16);--acc:#8CC6FF;--acc-bg:#1B2A3A;--runway:#A39C91;--demo:#66CC66;--demo-t:#8FE08F;--demo-bg:#1E3220;--obs:#FBAD17;--warn:#F9CB76;--warn-bg:#3A301C;--risk:#FF9E85;--risk-bg:#3E231D;--partner:#A9D2FF;--partner-bg:#1C2836;--plum:#D9B8EE;--plum-bg:#30243B;--sh1:0 1px 0 rgba(0,0,0,.3),0 12px 30px -18px rgba(0,0,0,.7);--sh2:0 24px 60px -24px rgba(0,0,0,.85),0 4px 12px -6px rgba(0,0,0,.5);color-scheme:dark}
+  [data-osm], body[data-ui="v13"] .overlay{--page:#F3EEE6;--sheet:#FFFFFF;--sheet2:#FAF7F1;--well:#EFE9DF;--ink:#262626;--muted:#5B5650;--faint:#A39C91;--line:rgba(38,38,38,.09);--line2:rgba(38,38,38,.17);--acc:#0067CF;--acc-bg:#E6F0FB;--brand:#66CC66;--runway:#6E6A64;--demo:#3F9F3F;--demo-t:#2A6B2A;--demo-bg:#E7F3E2;--obs:#F0A020;--warn:#7A5200;--warn-bg:#FDF0D4;--risk:#B42000;--risk-bg:#FBE6DF;--partner:#0058AF;--partner-bg:#E3EEFA;--plum:#663399;--plum-bg:#F1E8F8;--sh1:0 1px 0 rgba(38,38,38,.04),0 10px 30px -18px rgba(38,38,38,.30);--sh2:0 1px 0 rgba(38,38,38,.05),0 24px 60px -28px rgba(38,38,38,.45),0 4px 12px -6px rgba(38,38,38,.12);--mono:'JetBrains Mono',Consolas,monospace;--font-brand:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color-scheme:light}
+  [data-osm][data-theme="dark"], body[data-ui="v13"][data-v13-theme="dark"] .overlay{--page:#151514;--sheet:#1F1F1D;--sheet2:#252523;--well:#1A1A19;--ink:#EDEBE7;--muted:#B3AEA6;--faint:#6E6A64;--line:rgba(237,235,231,.08);--line2:rgba(237,235,231,.16);--acc:#8CC6FF;--acc-bg:#1B2A3A;--runway:#A39C91;--demo:#66CC66;--demo-t:#8FE08F;--demo-bg:#1E3220;--obs:#FBAD17;--warn:#F9CB76;--warn-bg:#3A301C;--risk:#FF9E85;--risk-bg:#3E231D;--partner:#A9D2FF;--partner-bg:#1C2836;--plum:#D9B8EE;--plum-bg:#30243B;--sh1:0 1px 0 rgba(0,0,0,.3),0 12px 30px -18px rgba(0,0,0,.7);--sh2:0 24px 60px -24px rgba(0,0,0,.85),0 4px 12px -6px rgba(0,0,0,.5);color-scheme:dark}
   body[data-ui="v13"]{background:#F3EEE6;}
   body[data-ui="v13"][data-v13-theme="dark"]{background:#151514;}
+  /* v13 fixes (Task 5): the full-account overlay is a sibling of [data-osm], so it gets the
+     v13 tokens itself (the two token rules above also name it). Inside the overlay, and inside
+     [data-osm] when the theme is dark, 1.1's own tokens are pointed at the v13 ones, so the
+     1.1 renderers still used there (session plan, forms, logs) follow the theme. Light
+     [data-osm] keeps 1.1's tokens: the light screens do not change. */
+  body[data-ui="v13"] .overlay,
+  body[data-ui="v13"][data-v13-theme="dark"] [data-osm]{
+    --bg:var(--sheet2); --bg-panel:var(--sheet); --bg-card:var(--sheet); --bg-card-hover:var(--well);
+    --border:var(--line2); --border-soft:var(--line); --text:var(--ink); --text-dim:var(--muted); --text-faint:var(--muted);
+    --ink-2:var(--ink); --accent-info:var(--acc); --status-ontrack-text:var(--demo-t); --status-watch-text:var(--warn);
+    --status-risk-text:var(--risk); --accent-text:var(--demo-t); --accent-watch-text:var(--warn); --accent-risk-text:var(--risk);
+    --accent-grad-text:var(--plum); --shadow-sm:var(--sh1); --shadow-md:var(--sh2);
+  }
+  body[data-ui="v13"] .overlay{--font-display:var(--font-brand); --font-body:var(--font-brand); --font-mono:var(--mono);
+    background:rgba(20,20,20,.18); backdrop-filter:none; color:var(--ink); font-family:var(--font-brand);}
+  body[data-ui="v13"] .overlay .panel{background:var(--sheet2); color:var(--ink); border-radius:0; border-left:1px solid var(--line2); box-shadow:var(--sh2);}
+  body[data-ui="v13"] .overlay .panel::-webkit-scrollbar-thumb{border-color:var(--sheet2);}
+  body[data-ui="v13"] .overlay :is(input, select, textarea),
+  body[data-ui="v13"][data-v13-theme="dark"] [data-osm] :is(input, select, textarea){background:var(--sheet); color:var(--ink); border-color:var(--line2);}
+  /* The Co-pilot morning summary is an ink box in light; in dark an ink box would be a light
+     sheet, so it becomes a raised dark box (--sheet2, ringed) with light ink. */
+  [data-osm][data-theme="dark"]{--sum-bg:var(--sheet2); --sum-ink:var(--ink); --sum-ring:inset 0 0 0 1px var(--line2);}
+  body[data-ui="v13"] .overlay .btn-primary,
+  body[data-ui="v13"][data-v13-theme="dark"] [data-osm] .btn-primary{background:var(--ink); border-color:var(--ink); color:var(--sheet);}
   body[data-ui="v13"] .app{max-width:none; margin:0; padding:0;}
   [data-osm]{min-height:100vh; background:var(--page); color:var(--ink); font-family:var(--font-brand); font-size:14px; line-height:1.5; padding-bottom:110px;}
   .v13-nav button, .v13-pill, .v13-menu-panel > button{font-family:inherit; line-height:inherit; color:inherit; cursor:pointer;}
@@ -9933,7 +9957,7 @@ function v13Copilot(){
     + items.length + ' thing' + (items.length === 1 ? '' : 's') + ' need' + (items.length === 1 ? 's' : '') + ' you: ' + beforeN + ' before your first call, ' + judgeN + (judgeN === 1 ? ' is' : ' are') + ' your judgment.';
   const sumCard = v13CoSumHidden
     ? `<button type="button" data-v13-co-sumshow style="${V13_CO_BTN.link};padding-left:0">Show the morning summary</button>`
-    : `<div data-v13-co-summary style="padding:14px 16px;border-radius:14px;background:var(--ink);color:var(--sheet)">
+    : `<div data-v13-co-summary style="padding:14px 16px;border-radius:14px;background:var(--sum-bg,var(--ink));color:var(--sum-ink,var(--sheet));box-shadow:var(--sum-ring,none)">
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><p style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;opacity:.75">MORNING SUMMARY · FROM YOUR BOOK, NOT SENT ANYWHERE</p><button type="button" data-v13-co-sumhide style="border:0;background:transparent;font-size:12px;font-weight:700;white-space:nowrap;color:inherit;opacity:.75;padding:0">Hide</button></div>
         <p style="font-size:17px;font-weight:700;margin-top:6px;text-wrap:pretty">${escapeHtml(summary)}</p>
         ${insights.length ? `<p style="font-size:13px;margin-top:6px;opacity:.8;text-wrap:pretty">${insights.map(escapeHtml).join(' ')}</p>` : ''}
