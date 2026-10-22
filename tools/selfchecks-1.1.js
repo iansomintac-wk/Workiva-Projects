@@ -5359,7 +5359,7 @@ function _runSelfChecksInner(){
     // Draft in the beat, push at the close: a beat action must QUEUE, not fire.
     String(renderDayClose).indexOf('getGainsightQueue()') !== -1 &&
     String(renderBeatPanel).indexOf('data-fp-queue=') !== -1 &&
-    String(renderBeatPanel).indexOf('beatGateBlocks(c)') !== -1 && String(beatGateBlocks).indexOf('data-fp-outcome-queue=') !== -1   /* Task 6: the gates moved to a shared helper */);
+    String(renderBeatPanel).indexOf('beatGateBlocks(c)') !== -1 && String(renderBeatPanel).indexOf('g.outcome') !== -1 && String(beatGateBlocks).indexOf('data-fp-outcome-queue=') !== -1   /* Task 6: the gates moved to a shared helper */);
   check('v62 AI dossier reads a full onboarding lifecycle',
     CALLPREP_MAX_ACTIVITIES >= 40 && CALLPREP_NOTE_CHAR_CAP > 0,
     `max=${CALLPREP_MAX_ACTIVITIES}, noteCap=${CALLPREP_NOTE_CHAR_CAP}`);
@@ -11053,6 +11053,36 @@ function _runSelfChecksInner(){
     }
   })();
   /* ==== end v13 fixes: dark ==== */
+  /* ==== v13 fixes: review ==== */
+  (function(){
+    // The shared gate markup must be balanced: an unclosed <div class="focus-act"> nests the three day panes on the old screens.
+    const bal = h => (h.match(/<div\b/g) || []).length - (h.match(/<\/div>/g) || []).length;
+    const live = DATA.customers.slice(0, 12);
+    const prevFocus = ui.todayFocusId;
+    let ok = false, detail = '';
+    try{
+      const unbalanced = [];
+      live.forEach(c => { const g = beatGateBlocks(c); Object.keys(g).forEach(k => { if(bal(g[k]) !== 0) unbalanced.push(c.id + ':' + k + ':' + bal(g[k])); }); });
+      ['evidence', 'capture'].forEach(w => live.forEach(c => { const h = v13DeskGates(c, w); if(bal(h) !== 0) unbalanced.push(c.id + ':desk-' + w + ':' + bal(h)); }));
+      ok = live.length > 0 && !unbalanced.length; detail = JSON.stringify({n: live.length, unbalanced: unbalanced.slice(0, 6)});
+    }catch(e){ detail = e.message; }
+    check('v13 fix review: every beatGateBlocks string (old Today pane and Desk Capture/Evidence) has balanced <div> and </div>', ok, detail);
+    ok = false; detail = '';
+    try{
+      const beats = live.slice(0, 3).map((c, i) => ({kind:'work', customerId:c.id, customerName:c.name, at:null, call:null,
+        headline:'Review item', reasons:['Review item'], severity:2, effortMin:20, signalKey:null,
+        row:{customerId:c.id, severity:2, source:'test', why:'', signalKey:null, alsoWaiting:[], panelTab:'overview'}}));
+      beats.forEach((b, i) => { b._i = i; });
+      const day = {beats, movements:[{mkey:'work', label:'Work', note:'', beats}], spilled:0};
+      const box = document.createElement('div'); box.innerHTML = renderDay(day, () => '');
+      const panes = [...box.querySelectorAll('.day-pane')];
+      const nested = panes.filter(p => p.parentElement && p.parentElement.closest('.day-pane'));
+      ok = panes.length === 3 && !nested.length; detail = JSON.stringify({panes: panes.length, nested: nested.length});
+    }catch(e){ detail = e.message; }
+    finally{ ui.todayFocusId = prevFocus; }
+    check('v13 fix review: on the old screens the three day panes sit side by side, none inside another', ok, detail);
+  })();
+  /* ==== end v13 fixes: review ==== */
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,

@@ -107,6 +107,12 @@ OSM Runway — release notes
       the Today heading. The gate markup is one shared copy (beatGateBlocks) for the old pane and the Desk.
     - The full-account panel wears the v13 look, and dark mode now darkens every screen and the panel
       (it only darkened the frame before). The initials circle still says "Me": 1.1 stores no user name.
+    - Fix: on the old screens (switch '0') the Sentiment gate left a box open, so the three day panes nested
+      inside each other. Closed; two self-checks prove balanced gate markup and side-by-side panes.
+    - Locked self-checks edited in Task 6 (the gate markup moved into beatGateBlocks): "every control in a beat
+      pane is bound by bindBeatPane, not globally" and "the close is the only place that pushes, and it reads
+      the real queue" now also read beatGateBlocks; intent unchanged. The second is tightened: it also needs
+      renderBeatPanel to use g.outcome, so dropping the outcome block from the pane fails it.
 
 1.1 — Graduation prompt colour.
     - The line under the graduation confirm box title (#gc-prompt) used var(--warn), which is not defined, so it fell back to grey; it now uses var(--status-watch-text) like the CSAT line.
