@@ -53,6 +53,14 @@ ok('top3: no wrong card when the gold lists every shown card', /^top 3: right ca
 ok('top3: a card shown on a not-a-fit row is a wrong card', /^top 3: right card anywhere in the 3 shown 0 of 0 that fit \(first card right 0, gain 0\); any wrong card shown 1 of 1 \(M1\); first card wrong or on a not-a-fit prompt 1; rise in wrong lists 0\n$/.test(second(run(PM, gold('not', []), ['--top3']))));
 ok('top3: rows with no card shown (missed, and rightly none)', /^top 3: right card anywhere in the 3 shown 0 of 1 that fit \(first card right 0, gain 0\); any wrong card shown 0 of 2 \(\); first card wrong or on a not-a-fit prompt 0; rise in wrong lists 0\n$/.test(second(run(P, G, ['--top3']))));
 ok('top3: without the flag the output is still one line', run(PM, gold('good', [shown[0]])).stdout.split('\n').filter(Boolean).length === 1);
-fs.rmSync(dir, { recursive: true, force: true });
+// rank 3 / rank 4 boundary: only the first 3 matches are shown
+let long = '';
+for (const c of cat.useCases.slice(0, 8)) { long += (long ? ' ' : '') + c.try; if (match(long, cat, 10).length >= 4) break; }
+const all = match(long, cat, 10).map((c) => c.id);
+const PL = [{ id: 'M1', task: long }];
+ok('top3: found a task with 4 or more raw hits', all.length >= 4);
+ok('top3: a gold card at rank 3 counts as right in the 3', /right card anywhere in the 3 shown 1 of 1 that fit/.test(second(run(PL, gold('good', [all[2]]), ['--top3']))));
+ok('top3: a gold card at rank 4 is not shown, so not right in the 3', /right card anywhere in the 3 shown 0 of 1 that fit/.test(second(run(PL, gold('good', [all[3]]), ['--top3']))));
+fs.rmSync(dir,{ recursive: true, force: true });
 console.log(fails ? `synth-score tests FAILED: ${fails} of ${n}` : `synth-score tests pass: ${n}`);
 process.exit(fails ? 1 : 0);
