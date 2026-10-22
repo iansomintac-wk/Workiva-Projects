@@ -114,7 +114,7 @@ session (one sandbox browser driver at a time). The driver's evidence doc marks 
 | C2 | non-strong prompts in test.jsonl and sim_customers.jsonl: "No changes needed" shown | 6% and 15% | <= 5% on each set | more than 5% on either |
 | C3 | weak-12 in the Workiva AI sandbox, improved prompt pasted as-is, 2 runs each (24), original prompt 2 runs each beside it | never run on weak prompts | >= 22 of 24 give the intended answer in the requested format; 0 of 24 invent a fact; keyed findings found >= the original's | 21 or fewer, any invented fact, or fewer findings than the original |
 | C4 | [blanks] in Better or Strong output, test.jsonl + sim_customers.jsonl + weak-12, with and without files | 92% / 97% | 0 | any |
-| C5 | every command in the README's test block | measured this talk at 902fbff: eval 85.6%, simulate 2 + 5 of 2,070 fails, customer_check PASS 229, rewrite_unit 67/67 | passes, apart from the expected test changes below | any other failure the base lacks |
+| C5 | every command in the README's test block | measured this talk at 902fbff: eval 85.6%, simulate strongNotStrong 2 + betterWeak 5 of 2,070 fails (badText 2, re-measured 2026-10-22 at 30ae1ed), customer_check PASS 229, rewrite_unit 67/67 | passes, apart from the expected test changes below | any other failure the base lacks |
 
 C3 prediction is an estimate with no prior measurement on weak prompts. C3 scoring follows `SCORING_RULES.md`
 (scorer plus a second-provider scorer, as on 2026-10-18); disagreements are reported, not hidden. Sandbox only:
