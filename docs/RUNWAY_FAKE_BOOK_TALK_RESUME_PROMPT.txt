@@ -28,3 +28,10 @@ DO, in order
 Driver plan format: "### Task N: title"; one line "Check: `cmd`" (no backticks inside); optional Expect:, Depends:, Timeout: Nm, Look: true,
 Captures:; header Suite: and Data: (none); a "## Global Constraints" section holding every rule (workers load no CLAUDE.md).
 Session-name rule: predecessor 87fc0869.
+
+STATUS 2026-10-22T06:54Z (resume session 5c4da5b1): steps 1-6 DONE. Plan parsed (16 tasks, Data (none)); PM proxy asked for 3 changes
+(Tasks 14/16 read the 1.1 count from README instead of 505; Workiva-data rule; no self-approved looks) plus the lead's fix anchoring the README
+count grep to "1.1.html" (it matched the 1.0 count 475); approved, logged in studio-harness/.ledger/proxy/decisions.md 06:52:48Z; commit 48c6dbc.
+Run worktree .claude/worktrees/runway-fake-book (branch runway-fake-book). Driver started 06:53:02Z (--base master --skip-rehearse; merges via
+merge-gate at the end). First worker row: | 2026-10-22T06:53:50.007Z | 1 | build | ok | 76457 | 0.107475 | 48 | 0 |. Watch
+runs/2026-10-22-runway-fake-book/progress.md and status.json in the run worktree. Nothing left for this talk.
