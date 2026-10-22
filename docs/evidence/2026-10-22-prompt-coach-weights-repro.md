@@ -55,9 +55,11 @@ Only read, not re-run:
 - `train.js` sorts data files by basename, so same-named files in different folders keep argument order and a retrain over them still depends on shell order. Rare; a full-path tie-break would close it.
 - `repro_weights.js` firstDifference assumes both files have `sure`, `thr` and `w`; a retrained file missing one throws a TypeError stack instead of a `REPRO FAIL` line. Still exit 1, so not a false pass.
 
-## Open for Ian
+## Gate fix (Ian's ruling at the merge stop)
 
-- Codex flags `c5_gate.js:40-42`: the live `rewrite_unit` gate does not use `judgeTap`, so it would accept pass 0 / fail 0. It came in with 3d2fe90 (C1 run). `c5_gate.js` is locked in this run, so it is not fixed here. Opus did not flag it.
+- Codex flagged `c5_gate.js:40-42`: the live `rewrite_unit` gate did not use `judgeTap`, so it would accept pass 0 / fail 0. It came in with 3d2fe90 (C1 run). Opus did not flag it. The lead confirmed it by reading the code.
+- Ian, 2026-10-22 20:57Z, merge-stop card (his own pick, hook row `left: "ian-kind"`): "Fix the gate, then merge (Recommended)". That unlocked `c5_gate.js` for this one wire-up only.
+- Fixed in 7620ab6. The rewrite_unit judge is now `(r) => judgeTap(r.out)`, and `gates` is exported. New test in `c1_fixes.test.js`: "live rewrite_unit gate rejects pass 0 and accepts pass 77". Measured (lead): 5/0 on the branch. Control: in a scratch copy of 7620ab6 with the old judge and only the export added, that test fails (not ok 3). `c5_gate.js` still prints all five GATE lines PASS (rewrite_unit pass 77 fail 0, GRADE acc=0.856). The `GRADE acc=0.856` rule is unchanged.
 
 ## Plan corrections made during the run
 

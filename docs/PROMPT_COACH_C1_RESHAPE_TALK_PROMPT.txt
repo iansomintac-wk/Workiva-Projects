@@ -23,8 +23,8 @@ come from TRAINING misses, written as patterns, never copied from r1 or fresh ro
 say so: the C1 number then no longer counts as held-out.
 
 OPEN ITEM (Ian's ruling at the weights-repro merge stop): tests/c5_gate.js:40-42, the live rewrite_unit gate ignores judgeTap,
-so "# pass 0 / # fail 0" passes (from 3d2fe90). Status: [PENDING: fill from Ian's merge-stop answer]. Until Ian has ruled, do not
-edit c5_gate.js; ask the PM.
+so "# pass 0 / # fail 0" passes (from 3d2fe90). Status: FIXED in 7620ab6 before the merge (Ian 20:57Z "Fix the gate, then merge"); the
+gate now uses judgeTap. Nothing left to do here.
 
 SMALL ITEMS the talk may fold in: done_when.js --only with an empty or unknown set exits 0; template.html:402 "[fill in your
 details]" is a look item for Ian. Leave the weights-repro known limits (V8 sort, same-basename tie-break) unless they bite.
