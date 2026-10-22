@@ -62,3 +62,4 @@
 | 2026-10-22T08:26:20.858Z | 13 | build | ok | 63827 | 0.0498876 | 23 | 0 |  |
 | 2026-10-22T08:26:22.007Z | 13 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 2; or/server.mjs [--unlock-production   --check   --setup   --measure-transcripts]  (--check takes --write; --measu |
 | 2026-10-22T08:26:22.013Z | 13 | task | parked | 0 | 0 | 0 | 0 | two strikes |
+| 2026-10-22T08:26:22.152Z | 14 | task | blocked | 0 | 0 | 0 | 0 | depends on a task that is parked or not done |
