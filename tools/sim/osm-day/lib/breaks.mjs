@@ -30,6 +30,9 @@ export const BREAKS = {
 
 // Extra break for D3 only (SIM_EXTRA_BREAK=agenda-off), NOT in BREAKS: removes only the agenda, every old panel text stays,
 // so only the agenda judge can fail. Re-renders the Today panel as the other breaks' steps do.
+// 1.0 draws the old beat panel (renderBeatPanel), so its D3 break wraps that; 1.1 (v13) draws the call prep through renderBeatPrep.
+export const BREAKS_1_0 = { D3: B('D3', `{const o=renderBeatPanel; renderBeatPanel=(b,d)=>o(b,d).replace(/SIM-OWE[^<]*/g,'')}`) };
+
 export const AGENDA_OFF = `beatAgendaSection = () => ''${m('D3-agenda-off')}`;
 
 // Every global the overrides replace or the probe relies on; each must be `function <name>(` in both trackers.

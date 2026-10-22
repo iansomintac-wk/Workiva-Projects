@@ -344,13 +344,12 @@ export const PART_B = [
         if (!c) return JSON.stringify({ missing: true });
         const list = todayActionList(); const idx = list.findIndex(r => r.customerId === c.id); const row = idx >= 0 ? list[idx] : null;
         const inBeat = !!document.querySelector('[data-v13-co-card][data-kind="row"][data-cust="' + c.id + '"]'); // v13: the account's card on the Co-pilot queue (todayActionList's v13 surface)
-        const inBelow = [...document.querySelectorAll('[data-today-row] .todo-cust')].some(h => h.textContent.includes(${JSON.stringify(FERN)}));
-        const inDeck = [...document.querySelectorAll('.dk-name')].some(h => h.textContent.includes(${JSON.stringify(FERN)}));
-        // Rendered anywhere on the Today screen: a day step, the Below-the-day rows, or a Gainsight gate deck card.
+        // v13 Co-pilot has no Below-the-day rows, no gate deck and no cap: the only surface is the queue card, so the old
+        // inBelow / inDeck / beyond-cap legs are gone rather than left as selectors that can never match.
         const rendered = inBeat; // v13: a Co-pilot queue card for the account (body text also names it in the morning summary)
         const cov = computeCoverage(c);
         return JSON.stringify({ rank: idx >= 0 ? idx + 1 : null, headline: row ? row.headline : null, reason: row ? (row.reasons || []).join('; ') : null, rendered,
-          where: [inBeat && 'day step', inBelow && 'Below the day', inDeck && 'gate deck'].filter(Boolean).join('+') || (rendered ? 'elsewhere on Today' : null), inList: idx >= 0, beyondBeatCap: idx >= 15, capHidden: !!row && !inBeat && !inBelow, risk: computeRisk(c), coverage: cov ? cov.status : null }); })()`));
+          where: inBeat ? 'day step' : null, inList: idx >= 0, capHidden: !!row && !inBeat, risk: computeRisk(c), coverage: cov ? cov.status : null }); })()`));
       r.d = d;
       log.push(r);
     }
@@ -365,7 +364,7 @@ export const PART_B = [
     const remaining = log.filter(x => x.d <= CAL.L6.day7 && (x.rendered || x.rank !== null)).map(x => `${x.d}: ${x.headline} | ${x.reason}`);
     const passed = firstToday !== 'never' && firstToday <= CAL.L6.day7;
     const dayNo = d => d === 'never' ? 'never' : daysBetween(CAL.L5, d);
-    return { passed, evidence: await withBreak(ctx, `firstToday=${firstToday} (day ${dayNo(firstToday)}) firstWatch=${firstWatch} (day ${dayNo(firstWatch)}) firstOffTrack=${firstOffTrack} (day ${dayNo(firstOffTrack)}) rank=${ft ? ft.rank : 'none'} firstRanked=${firstRanked} where=${ft ? ft.where : 'none'} beyondBeatCapDays=${log.filter(x => x.beyondBeatCap).length}/${log.length} reasonIsCoverage=${reasonIsCoverage} reason="${ft ? ft.reason : ''}" capHiddenDays=${log.filter(x => x.capHidden).length}/${log.length} remainingThroughDay7=[${remaining.join(' ;; ')}] dayRows=[${log.map(x => `${x.d}@${x.rank == null ? 'none' : x.rank}@${x.where || 'none'}`).join(';')}]`) };
+    return { passed, evidence: await withBreak(ctx, `firstToday=${firstToday} (day ${dayNo(firstToday)}) firstWatch=${firstWatch} (day ${dayNo(firstWatch)}) firstOffTrack=${firstOffTrack} (day ${dayNo(firstOffTrack)}) rank=${ft ? ft.rank : 'none'} firstRanked=${firstRanked} where=${ft ? ft.where : 'none'} reasonIsCoverage=${reasonIsCoverage} reason="${ft ? ft.reason : ''}" capHiddenDays=${log.filter(x => x.capHidden).length}/${log.length} remainingThroughDay7=[${remaining.join(' ;; ')}] dayRows=[${log.map(x => `${x.d}@${x.rank == null ? 'none' : x.rank}@${x.where || 'none'}`).join(';')}]`) };
   } },
   { id: 'L7', async run(ctx) {
     await openDay(ctx, CAL.L7.email);
@@ -390,8 +389,7 @@ export const PART_B = [
       Object.assign(r, JSON.parse(await ctx.ev(`(() => { ui.view = 'copilot'; ui.openCustomerId = null; render();
         const c = DATA.customers.find(x => x.name === ${JSON.stringify(FERN)}); const list = todayActionList(); const idx = list.findIndex(r => r.customerId === c.id);
         const inBeat = !!document.querySelector('[data-v13-co-card][data-kind="row"][data-cust="' + c.id + '"]'); // v13: the account's card on the Co-pilot queue (todayActionList's v13 surface)
-        const inBelow = [...document.querySelectorAll('[data-today-row] .todo-cust')].some(h => h.textContent.includes(${JSON.stringify(FERN)}));
-        return JSON.stringify({ rank: idx >= 0 ? idx + 1 : null, rendered: inBeat, onScreen: inBeat || inBelow, capHidden: idx >= 0 && !inBeat && !inBelow }); })()`)));
+        return JSON.stringify({ rank: idx >= 0 ? idx + 1 : null, rendered: inBeat, onScreen: inBeat, capHidden: idx >= 0 && !inBeat }); })()`)));
       days.push(r);
     }
     const j = l7Judge(days, CAL.L7);

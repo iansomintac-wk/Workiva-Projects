@@ -38,16 +38,15 @@ async function staysListed(ctx, id, reason) {
   return r;
 }
 
-// Everything the v13 Desk shows for one account with no overlay: the selected account's four work tabs, read tab by tab.
-// (v13 has no beat panel: Call prep, the agenda, the promises block, Sentiment and the Go-Live gates note are not drawn
-// anywhere, so a step that wants them reports FAIL against this text rather than being loosened.)
+// What the v13 Desk's Prepare tab draws for one account with no overlay: the call-prep boxes ([data-v13-desk-pane], built by
+// v13DeskCallPrep) and nothing else. Evidence / Record / Capture content is deliberately not read, so D2 and D3 pass only
+// while Prepare itself still draws the call prep (Call prep, agenda, promises, Sentiment, Go-Live gates, Wrap up and Back up
+// now exist on v13 since Task 6; a step still FAILs against this text rather than being loosened).
 const panelText = (ctx, name) => ctx.ev(`(() => {
   const c = DATA.customers.find(x => x.name === ${JSON.stringify(name)});
   ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = c.id; ui.v13DeskFilter = null;
-  let all = '';
-  for (const t of ['prepare', 'capture', 'evidence', 'record']) { ui.v13DeskTab = t; render();
-    const p = document.querySelector('[data-v13-desk-body]'); all += ' ' + (p ? p.textContent : ''); }
   ui.v13DeskTab = 'prepare'; render();
+  const all = [...document.querySelectorAll('[data-v13-desk-body] [data-v13-desk-pane]')].map(p => p.textContent).join(' ');
   return all.trim() ? all.replace(/\\s+/g, ' ').trim() : null; })()`);
 
 const checkTexts = (text, wanted) => wanted.filter(w => !(text || '').includes(w));
@@ -284,8 +283,8 @@ export const PART_A = [
     await ctx.ev(`ui.view = 'today'; ui.openCustomerId = null; render(); true`);
     await sleep(300);
     if (await ctx.ev(`dayIsClosed()`)) throw new Error('D10: the day was already closed before wrap-up');
-    // v13 draws neither "Wrap up the day" nor a "Back up the book" button on its screens; a missing control is a FAIL, not a throw.
-    if (!(await ctx.ev(`!!document.querySelector('[data-wrap-day]')`))) return { passed: false, evidence: 'v13 has no "Wrap up the day" control on any screen, so the day cannot be closed from the UI' };
+    // Wrap up the day and Back up the book are drawn on v13 since Task 6; a control that goes missing is a FAIL, not a throw.
+    if (!(await ctx.ev(`!!document.querySelector('[data-wrap-day]')`))) return { passed: false, evidence: 'no "Wrap up the day" control on any screen, so the day cannot be closed from the UI' };
     await ctx.click('[data-wrap-day]');
     await sleep(500);
     const closed = await ctx.ev(`dayIsClosed() && getDayClose().date === todayISO()`);

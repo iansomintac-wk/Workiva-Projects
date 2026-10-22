@@ -12,6 +12,9 @@ import { classify, breakVerdict, exitCode, CHECKED } from './lib/results.mjs';
 import { summaryLine, renderReport, diffVersions } from './lib/report.mjs';
 import { PART_A, PART_A_DEPS, DAY } from './steps-a.mjs';
 import { PART_B, PART_B_ORDER, CAL, recomputeNT, ntMismatch } from './steps-b.mjs';
+// 1.0 keeps its old screens (no v13 Desk / Co-pilot / System), so it runs the pre-port steps; 1.1 runs the v13 steps.
+import { PART_A as PART_A_1_0 } from './steps-a-1.0.mjs';
+import { PART_B as PART_B_1_0 } from './steps-b-1.0.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const A_IDS = PART_A.map(s => s.id);
@@ -94,7 +97,11 @@ export function l6Remaining(evidence) {
 
 const GUARD = {
   D3: {
-    capture: async ctx => { await ctx.openOn(DAY); return ctx.ev(`(() => { const c = DATA.customers.find(x => x.name === 'Orion Semiconductor');
+    capture: async ctx => { await ctx.openOn(DAY);
+      if (ctx.version === '1.0') return ctx.ev(`(() => { const c = DATA.customers.find(x => x.name === 'Orion Semiconductor');
+        ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = c.id; render();
+        const p = document.querySelector('.day-pane[data-day-holds="' + c.id + '"]'); return p ? p.innerHTML : null; })()`);
+      return ctx.ev(`(() => { const c = DATA.customers.find(x => x.name === 'Orion Semiconductor');
       ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = c.id; ui.v13DeskFilter = null; ui.v13DeskTab = 'prepare'; render();
       const p = document.querySelector('[data-v13-desk-body] [data-v13-desk-pane]'); return p ? p.innerHTML : null; })()`); },
     check: d3Guard,
@@ -123,7 +130,7 @@ async function runStep(ctx, step, key) {
 }
 
 async function runPart({ v, part, ids, prereq, breaksOn, runDir, log }) {
-  const steps = part === 'A' ? PART_A : PART_B;
+  const steps = part === 'A' ? (v === '1.0' ? PART_A_1_0 : PART_A) : (v === '1.0' ? PART_B_1_0 : PART_B);
   const keys = part === 'A' ? A_IDS : PART_B_ORDER;
   const chosen = keys.filter(k => prereq.includes(k) || ids.includes(baseId(k)));
   const t0 = Date.now();
