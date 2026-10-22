@@ -626,8 +626,11 @@
       : !on.S && files.length ? 'You attached ' + listify(files.map((f) => cleanFile(f.name))) + ', but the prompt does not point to it. Start with ' + files.map((f) => '@' + cleanFile(f.name)).join(' ') + (on.O ? ' so the AI knows what to read.' : ' and say the one thing you want back.')
       : 'The AI would have to guess ' + listify(['S', 'O'].filter((k) => !on[k]).map((k) => MISSING[k])) + '.';
     const headlineOut = quote ? headline + ' The coach read your ask as "' + quote + '"' + QUOTE_SAYS : headline;
+    // One question per letter the engine filled from its intent template (not the user's words, not a named file). Objective has none.
+    const QUESTION = { S: 'Which file or section should it read?', C: 'Who is it for?', P: 'How long, and in what format?', E: 'What should it do if the data is missing?' };
+    const questions = grade === 'strong' ? [] : K.filter((k) => QUESTION[k] && segments.some((x) => x.generated && x.letter === k) && !(k === 'S' && files.length)).map((k) => ({ letter: k, text: QUESTION[k] }));
     const placeholders = (strongP.match(/\[[^\]]+\]/g) || []).length;
-    return { grade, detected: on, headline: headlineOut, stages, scope, segments, notes, stacked: stackedAll, offtopic, tips, intent: ctx.intent, domain: ctx.domain, placeholders, hits: d.el };
+    return { grade, detected: on, headline: headlineOut, stages, scope, segments, notes, stacked: stackedAll, offtopic, tips, intent: ctx.intent, domain: ctx.domain, placeholders, questions, hits: d.el };
   }
 
   // Coach notes (T4): additive warnings that never change a grade, weight or rewrite.

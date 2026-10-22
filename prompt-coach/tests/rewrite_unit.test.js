@@ -593,3 +593,26 @@ test('quote line A4: trailing en and em dashes are trimmed like a hyphen', () =>
   assert.equal(W.askQuote('help with the 10-K \u2014'), 'help with the 10-K');
   assert.equal(W.askQuote('help with the 10-K -'), 'help with the 10-K');
 });
+
+const QS = { S: 'Which file or section should it read?', C: 'Who is it for?', P: 'How long, and in what format?', E: 'What should it do if the data is missing?' };
+
+test('questions: a bare ask gets one question per generically filled letter, none for letters the user wrote', () => {
+  const o = run('Check the emissions numbers');
+  assert.ok(Array.isArray(o.questions) && o.questions.length > 0, JSON.stringify(o.questions));
+  const gen = K.filter((k) => k !== 'O' && o.segments.some((s) => s.generated && s.letter === k));
+  assert.deepEqual(o.questions.map((q) => q.letter), gen);
+  for (const q of o.questions) assert.equal(q.text, QS[q.letter]);
+  const u = run('Use only @RCM_FY26.xlsx. Summarize the failed controls.', [{ name: 'RCM_FY26.xlsx', kind: 'Excel', sheets: [], periods: [], text: '' }]);
+  assert.ok(!u.questions.some((q) => q.letter === 'S'), JSON.stringify(u.questions));
+});
+
+test('questions: not part of stages.better.prompt or stages.strong.prompt', () => {
+  const o = run('Check the emissions numbers');
+  for (const s of [o.stages.better.prompt, o.stages.strong.prompt]) for (const q of Object.values(QS)) assert.ok(!s.includes(q), s);
+});
+
+test('questions: empty when the user supplied every letter', () => {
+  const o = run('Use only @RCM_FY26.xlsx. This is for the audit committee. Summarize the failed controls. Use five bullets. Flag anything you cannot verify.', [{ name: 'RCM_FY26.xlsx', kind: 'Excel', sheets: [], periods: [], text: '' }]);
+  assert.equal(o.grade, 'strong');
+  assert.deepEqual(o.questions, []);
+});

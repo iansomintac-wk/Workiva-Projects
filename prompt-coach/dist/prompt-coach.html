@@ -97,6 +97,9 @@ select { font-size: 13px; font-weight: 600; border: 1px solid var(--line); backg
 .copy { border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.06); color: var(--panel-ink); border-radius: 99px; padding: 6px 14px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
 .copy:hover { background: rgba(255,255,255,.14); }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 16px; font-size: 12px; font-weight: 700; color: var(--panel-label); }
+.questions { margin-top: 16px; font-size: 14px; }
+.questions .qhead { margin: 0 0 6px; font-weight: 800; }
+.questions ul { margin: 0; padding-left: 20px; }
 .legend .sw { display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
 .verdict { padding: 26px 28px; min-width: 0; }
 .verdict p { margin: 10px 0 0; font-size: 16px; line-height: 1.6; text-wrap: pretty; }
@@ -192,6 +195,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
           <div class="panel-head"><span class="label" id="stageLabel">the prompt</span><button class="copy" type="button" id="copyStage">copy</button></div>
           <p class="prompt-text" id="stagePrompt"></p>
           <div class="legend" id="stageLegend"></div>
+          <div class="questions" id="stageQuestions" hidden><p class="qhead">To make it even better, tell Workiva AI:</p><ul id="stageQuestionList"></ul></div>
         </div>
         <div class="card verdict" id="yourVerdict">
           <span class="label" id="yourLabel">your prompt</span>
@@ -1267,8 +1271,11 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
       : !on.S && files.length ? 'You attached ' + listify(files.map((f) => cleanFile(f.name))) + ', but the prompt does not point to it. Start with ' + files.map((f) => '@' + cleanFile(f.name)).join(' ') + (on.O ? ' so the AI knows what to read.' : ' and say the one thing you want back.')
       : 'The AI would have to guess ' + listify(['S', 'O'].filter((k) => !on[k]).map((k) => MISSING[k])) + '.';
     const headlineOut = quote ? headline + ' The coach read your ask as "' + quote + '"' + QUOTE_SAYS : headline;
+    // One question per letter the engine filled from its intent template (not the user's words, not a named file). Objective has none.
+    const QUESTION = { S: 'Which file or section should it read?', C: 'Who is it for?', P: 'How long, and in what format?', E: 'What should it do if the data is missing?' };
+    const questions = grade === 'strong' ? [] : K.filter((k) => QUESTION[k] && segments.some((x) => x.generated && x.letter === k) && !(k === 'S' && files.length)).map((k) => ({ letter: k, text: QUESTION[k] }));
     const placeholders = (strongP.match(/\[[^\]]+\]/g) || []).length;
-    return { grade, detected: on, headline: headlineOut, stages, scope, segments, notes, stacked: stackedAll, offtopic, tips, intent: ctx.intent, domain: ctx.domain, placeholders, hits: d.el };
+    return { grade, detected: on, headline: headlineOut, stages, scope, segments, notes, stacked: stackedAll, offtopic, tips, intent: ctx.intent, domain: ctx.domain, placeholders, questions, hits: d.el };
   }
 
   // Coach notes (T4): additive warnings that never change a grade, weight or rewrite.
@@ -1631,6 +1638,8 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     } else el.textContent = '“' + data.prompt + '”';
     const lg = $('stageLegend'); lg.replaceChildren();
     if (showAdded) lg.append(legendItem('rgba(255,255,255,.18)', 'added by the coach'), legendItem('#F8BD4F', '[fill in your details]'));
+    const qs = r.questions || [];
+    $('stageQuestions').hidden = !qs.length; $('stageQuestionList').replaceChildren(...qs.map((q) => { const li = document.createElement('li'); li.textContent = q.text; return li; }));
     $('verdictLabel').textContent = s.verdictLabel;
     $('verdictText').textContent = data.verdict;
   }
