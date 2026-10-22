@@ -1,0 +1,37 @@
+RESUME: Prompt Coach done-when talk, after the plan review. Written 2026-10-22 ~07:10Z by talk af8d6241 at the 200k stop.
+Load studio-harness:talk-and-run. Work in C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-done-when
+(branch worktree-prompt-coach-done-when, pushed). Do not launch a run-lead session.
+
+DONE (all Ian's own answers, answered-for-ian left=ian-kind; see .ledger/2026-10-22-prompt-coach-done-when/rulings.md)
+- Spec approved: docs/superpowers/specs/2026-10-22-prompt-coach-done-when-design.md (keep AI-free; ready to paste +
+  questions; five checks C1-C5). Slip/budget in the ledger ($0, 2M cap, push/merge/new sessions yes).
+- Ian 06:40:56Z '[Ian] Driver': the talk starts bin/driver.mjs, then ends. '[Ian] Night': tonight the PM
+  (studio-harness:pm) answers questions, logged 'proxy decided' in studio-harness/.ledger/proxy/decisions.md.
+- Ruling records filed (proposed): 2026-10-22-prompt-coach-ai-free, -ready-to-paste, -done-when-bars, -start-now
+  (in the studio-harness ledger working tree, not committed by this talk).
+- Plan draft: docs/superpowers/plans/2026-10-22-prompt-coach-done-when.md (7 tasks, parses with rules-main parsePlan).
+  Reviews: .ledger/2026-10-22-prompt-coach-done-when/reviews/plan-review-codex.md (10 must-fix) and
+  plan-review-opus.md (6 must-fix, 10 should-fix).
+
+NEXT
+1. Hand both review files to a fresh studio-harness:plan-writer: fix every must-fix and the should-fixes. Key ones:
+   Task 4 Look must not block Task 5 (make a leaf Look task); Task 3 must list ian_strong.txt and customer_check.js:71
+   (unsureTask) as expected changes (add both to the spec's Expected test changes; the new ian_strong text goes to
+   Ian's Look batch); Task 5 adds only `sure` to weights.json (no retrain, eval GRADE acc=0.856 guard); Task 6
+   measurement only; Task 1/C4 checks count distinct checks and every run; a C5 regression gate (eval GRADE acc,
+   simulate counts vs base 2 + 5); Task 7 never runs trainers; Task 2 fixtures without a fallback, GEN not general.
+   Plan writer cannot run node -e: you run the parse check:
+   node -e "import('file:///C:/Users/teasp/Documents/studio-harness-worktrees/rules-main/lib/driver/plan.mjs').then(m=>console.log(m.parsePlan(require('fs').readFileSync('docs/superpowers/plans/2026-10-22-prompt-coach-done-when.md','utf8')).tasks.length))"
+2. Re-review on Sonnet (one checker pass against both review files). Headings must be `### Task <integer>:`.
+3. PM approval of the plan (studio-harness:pm, proxy decided), including: spec says the 42 test prompts are drafted on
+   the top model but driver workers are Sonnet: draft them on an Opus helper before launch and commit, or waive
+   (Ian's batch confirm is the gate). Also record in the spec that the yardstick and C3 moved after the driver.
+4. Commit plan + spec, push. Launch detached, log to a file:
+   node C:/Users/teasp/Documents/studio-harness-worktrees/rules-main/bin/driver.mjs --plan <abs plan> --repo
+   <abs worktree> --run 2026-10-22-prompt-coach-done-when --base prompt-coach --skip-rehearse
+   (--skip-rehearse is allowed only because the header says Data: (none)). Another browser driver (Fit Finder) may be
+   live; the driver has no browser tasks, so no clash.
+5. When the first worker row appears in runs/2026-10-22-prompt-coach-done-when/progress.md, record it, tell
+   "NEW - PM upgrade close-out 2" (lead 5996f223), then end (claude stop, not rm).
+Measured at base 902fbff: eval GRADE acc=0.856; simulate 2 + 5 fails of 2,070; customer_check PASS 229; rewrite_unit
+67/67; pagetest 15/15; a dist rebuild changes only line endings (use git restore, never git checkout --).

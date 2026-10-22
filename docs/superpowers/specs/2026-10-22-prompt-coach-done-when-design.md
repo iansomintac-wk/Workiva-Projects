@@ -20,6 +20,13 @@ Talk 2026-10-22, session "NEW - Prompt Coach done-when talk" (job af8d6241), fro
 - Ian, 2026-10-22 ~06:28Z, card '[Ian] Done-when': "Approve these five (Recommended)" (C1-C5 below; we draft
   both prompt sets and he confirms them in one batch; a browser-driven session runs the sandbox tests).
   `left: ian-kind`.
+- Ian, 2026-10-22 06:40:56Z, cards '[Ian] Driver' ("All three use the driver (Recommended)") and '[Ian] Night'
+  ("PM answers tonight (Recommended)"), session 5996f223, relayed verbatim and checked in answered-for-ian
+  (`left: ian-kind`): the talk writes the plan and starts `bin/driver.mjs`, not a run-lead session; tonight the PM
+  answers questions, logged as proxy decided. Ian, 06:41:36Z, card '[Ian] Start run': "Start now + file rulings
+  (Recommended)". Records: 2026-10-22-prompt-coach-ai-free, -ready-to-paste, -done-when-bars, -start-now.
+- Ruling 3 replaces two 2026-10-16 targets: the one purpose blank (2026-10-16-prompt-coach-strong-target-keep-words-order)
+  and "one blank for only-Context-missing prompts" (2026-10-16-prompt-coach-design-approved).
 - PM (studio-harness:pm, this talk), answers to talk questions 1-4, assumed and reversible: yardstick = Workiva's
   "Tips for getting useful responses from Workiva AI" page first, SCOPE second, vendor guides background; we
   draft the sets, Ian confirms; the reference is the 2026-10-18 live test. Its Q5 went to Ian (ruling 2 above).
