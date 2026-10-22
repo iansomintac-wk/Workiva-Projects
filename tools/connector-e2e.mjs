@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 // End-to-end scenario (C-7): the real tracker page, loaded as a file:// page in headless Chrome, talking real
 // HTTP to the real connector running FAKE adapters. Everything is on 127.0.0.1; no key, no external network.
-//   node tools/connector-e2e.mjs [--keep-logs]
+//   node tools/connector-e2e.mjs [--days-ahead N] [--keep-logs]
+// --days-ahead N runs the connector (env CONNECTOR_FAKE_NOW) and the pages (a Date shim) N days in the future, so both agree on today.
 // Chrome is launched WITHOUT --allow-file-access-from-files, so it sends `Origin: null` like a real browser
 // (that flag makes it send `file://`, which the connector correctly refuses). The connector's CORS is not loosened.
 // The connector gets a temp config, token file and push log (free port); Chrome gets a fresh temp profile.
 // All of it is removed at the end, and only the PIDs this runner spawned are killed.
-// Prints `connector-e2e: N/7 passed, M failed`; exit 0 only for 7/7 with no console errors.
+// Prints `connector-e2e: N/8 passed, M failed`; exit 0 only for 8/8 with no console errors.
 // NOT part of the distributable bundle — dev tooling, like docs/.
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, existsSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -17,6 +18,13 @@ import { removeDir, waitForExit } from './e2e-cleanup.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const keepLogs = process.argv.includes('--keep-logs');
+const daysAheadIdx = process.argv.indexOf('--days-ahead');
+const daysAhead = daysAheadIdx > 0 ? Number(process.argv[daysAheadIdx + 1]) : 0;
+if (!Number.isFinite(daysAhead)) { console.error('--days-ahead needs a number'); process.exit(2); }
+// Shifts new Date() and Date.now() by the same whole days the connector's fake clock is shifted by.
+const dateShim = `(() => { const off = ${daysAhead} * 86400000; window.Date = new Proxy(Date, {
+  construct(t, a, nt) { return a.length ? Reflect.construct(t, a, nt) : Reflect.construct(t, [t.now() + off], nt); },
+  get(t, p, r) { return p === 'now' ? () => t.now() + off : Reflect.get(t, p, r); } }); return true; })()`;
 const CHROME_CANDIDATES = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
@@ -32,8 +40,15 @@ const profile = mkdtempSync(join(tmpdir(), 'connector-e2e-chrome-'));
 const cfgPath = join(tmp, 'config.json');
 const tokenPath = join(tmp, 'token.txt');
 const logPath = join(tmp, 'fake-gainsight-log.jsonl');
+// The connector runs from a temp copy so the demo CSAT rows can be padded to the csat schema's 36-char GAINSIGHT_COMPANY_ID
+// (the committed demo fixture has 11-char ids, which makes GET /v1/csat answer 500). Matching is by Salesforce id; no repo file changes.
+const connectorDir = join(tmp, 'connector');
+cpSync(join(root, 'connector'), connectorDir, { recursive: true, filter: (f) => !/[\/](test|node_modules)([\/]|$)/.test(f) });
+const demoCsat = join(connectorDir, 'fixtures', 'snowflake-csat-demo.json');
+writeFileSync(demoCsat, readFileSync(demoCsat, 'utf8').replace(/"GAINSIGHT_COMPANY_ID":"([^"]*)"/g, (m, id) => `"GAINSIGHT_COMPANY_ID":"${id.padEnd(36, '0')}"`));
 writeFileSync(cfgPath, JSON.stringify({
-  port: 0, gong: { adapter: 'fake' }, gainsight: { adapter: 'fake' }, ai: { adapter: 'fake', model: '', apiKey: '' },
+  port: 0, gong: { adapter: 'fake', rebaseToToday: true }, gainsight: { adapter: 'fake' },
+  snowflake: { adapter: 'fake', rebaseToToday: true, fixture: 'demo' }, ai: { adapter: 'fake', model: '', apiKey: '' },
 }));
 
 let connector = null;
@@ -42,9 +57,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function startConnector() {
   return new Promise((resolve, reject) => {
-    connector = spawn(process.execPath, [join(root, 'connector', 'server.mjs')], {
+    connector = spawn(process.execPath, [join(connectorDir, 'server.mjs')], {
       cwd: root,
-      env: { ...process.env, CONNECTOR_CONFIG: cfgPath, CONNECTOR_TOKEN_FILE: tokenPath, CONNECTOR_LOG: logPath },
+      env: { ...process.env, CONNECTOR_CONFIG: cfgPath, CONNECTOR_TOKEN_FILE: tokenPath, CONNECTOR_LOG: logPath,
+        ...(daysAhead ? { CONNECTOR_FAKE_NOW: new Date(Date.now() + daysAhead * 86400000).toISOString() } : {}) },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let out = '';
@@ -137,6 +153,7 @@ async function main() {
     if (r.result?.value === true) break;
     await sleep(150);
   }
+  if (daysAhead) await send('Runtime.evaluate', { expression: dateShim, returnByValue: true });
   const suite = readFileSync(join(root, 'tools', 'selfchecks.js'), 'utf8');
   const seed = readFileSync(join(root, 'demo-seed.js'), 'utf8');
   await ev(`const s = document.createElement('script'); s.textContent = ${JSON.stringify(suite)}; document.body.appendChild(s); return typeof window.runSelfChecks;`);
@@ -145,6 +162,47 @@ async function main() {
   // Save the connector settings the way Settings does, then run the page's own startup health check.
   await ev(`saveConnectorSettings({url: ${JSON.stringify(url)}, token: ${JSON.stringify(token)}}); await checkConnectorHealth(); ui.view = 'today'; render(); return ui.connector.state;`);
   const waitFor = async (expr, ms = 8000) => { for (const d = Date.now() + ms; Date.now() < d; await sleep(100)) { if (await ev(`return !!(${expr});`)) return true; } return false; };
+
+  // A second page (same Chrome, same temp profile, new CDP target) on a tracker file, shimmed, seeded and pointed at the connector.
+  const openPage = async (file, connUrl, connToken) => {
+    const fileUrl = pathToFileURL(join(root, file)).href;
+    const t = await (await fetch(`http://127.0.0.1:${PORT}/json/new?${encodeURI(fileUrl)}`, { method: 'PUT' })).json();
+    const sock = new WebSocket(t.webSocketDebuggerUrl);
+    await new Promise((res, rej) => { sock.addEventListener('open', res, { once: true }); sock.addEventListener('error', () => rej(new Error('CDP socket failed (page 2)')), { once: true }); });
+    let n = 0; const wait = new Map();
+    sock.addEventListener('message', (e) => {
+      const m = JSON.parse(e.data);
+      if (m.id && wait.has(m.id)) { const p = wait.get(m.id); wait.delete(m.id); m.error ? p.rej(new Error(m.error.message)) : p.res(m.result); return; }
+      if (m.method === 'Runtime.exceptionThrown') consoleErrors.push('page2 exception: ' + String(m.params.exceptionDetails?.exception?.description || m.params.exceptionDetails?.text).split('\n')[0]);
+      if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') consoleErrors.push('page2 console.error: ' + m.params.args.map((a) => a.value ?? a.description).join(' ').slice(0, 200));
+    });
+    const snd = (method, params = {}) => new Promise((res, rej) => {
+      const id = ++n; wait.set(id, { res, rej }); sock.send(JSON.stringify({ id, method, params }));
+      setTimeout(() => { if (wait.delete(id)) rej(new Error(`CDP ${method} timed out (page 2)`)); }, 60000);
+    });
+    await snd('Runtime.enable'); await snd('Page.enable');
+    await snd('Page.setDownloadBehavior', { behavior: 'deny' }).catch(() => {});
+    const run = async (body) => {
+      const r = await snd('Runtime.evaluate', { awaitPromise: true, returnByValue: true,
+        expression: `(async () => { try { return JSON.stringify(await (async () => { ${body} })()); } catch (e) { return JSON.stringify({ __err: String(e && e.stack || e) }); } })()` });
+      if (r.exceptionDetails) throw new Error('eval threw: ' + (r.exceptionDetails.exception?.description || r.exceptionDetails.text));
+      const v = JSON.parse(r.result.value);
+      if (v && v.__err) throw new Error(v.__err.split('\n').slice(0, 3).join(' | '));
+      return v;
+    };
+    for (let i = 0; i < 200; i++) {
+      const r = await snd('Runtime.evaluate', { expression: `document.readyState === 'complete' && typeof saveData === 'function'`, returnByValue: true });
+      if (r.result?.value === true) break;
+      await sleep(150);
+    }
+    if (daysAhead) await snd('Runtime.evaluate', { expression: dateShim, returnByValue: true });
+    const seeded2 = await snd('Runtime.evaluate', { returnByValue: true, expression: `(() => { try { ${seed}
+; saveData(); return 'ok:' + DATA.customers.length; } catch (e) { return 'err:' + e.message; } })()` });
+    if (!String(seeded2.result?.value).startsWith('ok:')) throw new Error('page 2 seed failed: ' + seeded2.result?.value);
+    await run(`saveConnectorSettings({url: ${JSON.stringify(connUrl)}, token: ${JSON.stringify(connToken)}}); await checkConnectorHealth(); ui.view = 'today'; render(); return ui.connector.state;`);
+    const waitFor2 = async (expr, ms = 8000) => { for (const d = Date.now() + ms; Date.now() < d; await sleep(100)) { if (await run(`return !!(${expr});`)) return true; } return false; };
+    return { ev: run, waitFor: waitFor2, close: () => { try { sock.close(); } catch {} fetch(`http://127.0.0.1:${PORT}/json/close/${t.id}`).catch(() => {}); } };
+  };
 
   await check('e1 health line shows FAKE DATA (K9)', async () => {
     const r = await ev(`const t = document.body.innerText; return {state: ui.connector.state, fake: ui.connector.fake, shown: /Connector: FAKE DATA/.test(t), mixed: /Connector: connected/.test(t)};`);
@@ -253,6 +311,29 @@ async function main() {
     return { ok: !r.err && r.n > 0 && r.shown > 0 && r.shown === r.onToday && r.missing.length === 0 && r.text, detail: JSON.stringify(r) };
   });
 
+  await check('e8 Check CSAT (the button in Settings, second page on tracker 1.1): dry run lists changed and unmatched rows, Apply backs up first then changes the dates', async () => {
+    const p2 = await openPage('osm-book-of-business-tracker-1.1.html', url, token);
+    try {
+      await p2.ev(`const prior = window.exportData; window.__order = []; window.__snap = null;
+        window.exportData = function(){ window.__order.push('backup'); window.__snap = JSON.stringify(DATA.customers.map(c => (c.compliance && c.compliance.associatedPeopleCSAT) || null)); return prior.apply(this, arguments); };
+        return true;`);
+      const snapOf = `JSON.stringify(DATA.customers.map(c => (c.compliance && c.compliance.associatedPeopleCSAT) || null))`;
+      const before = await p2.ev(`return ${snapOf};`);
+      await p2.ev(`document.getElementById('btn-settings').click(); return true;`);
+      if (!await p2.waitFor(`document.getElementById('btn-check-survey-connector')`)) return { ok: false, detail: 'no Check CSAT button in Settings' };
+      await p2.ev(`document.getElementById('btn-check-survey-connector').click(); return true;`);
+      if (!await p2.waitFor(`document.getElementById('csat-apply')`)) return { ok: false, detail: 'no CSAT modal: ' + await p2.ev(`return document.body.innerText.slice(-200);`) };
+      const dry = await p2.ev(`const n = t => { const s = Array.from(document.querySelectorAll('.modal-backdrop summary')).find(e => e.textContent.startsWith(t)); const m = s && /\\((\\d+)\\)/.exec(s.textContent); return m ? Number(m[1]) : -1; };
+        return {changed: n('Dates that would change'), unmatched: n('Rows not in Runway'), summary: document.getElementById('csat-summary').textContent, applyDisabled: document.getElementById('csat-apply').disabled, order: window.__order.length, snap: ${snapOf}};`);
+      const untouchedDry = dry.snap === before && dry.order === 0;
+      await p2.ev(`document.getElementById('csat-apply').click(); return true;`);
+      await p2.waitFor(`document.getElementById('csat-report-close')`);
+      const after = await p2.ev(`return {order: window.__order, snapAtBackup: window.__snap, snap: ${snapOf}, saved: !/not saved/.test(document.body.innerText)};`);
+      return { ok: dry.changed >= 1 && dry.unmatched >= 1 && !dry.applyDisabled && untouchedDry && after.order.length === 1 && after.snapAtBackup === before && after.snap !== before && after.saved,
+        detail: JSON.stringify({ changed: dry.changed, unmatched: dry.unmatched, summary: dry.summary, untouchedDry, backups: after.order.length, backupBeforeChange: after.snapAtBackup === before, datesChanged: after.snap !== before, saved: after.saved, daysAhead }) };
+    } finally { p2.close(); }
+  });
+
   await check('e7 connector stopped: health says Connector offline, the full suite passes on the scenario book, Today renders, no console errors since the kill (K8)', async () => {
     await stopConnector();
     killed = true; errorsBeforeKill = consoleErrors.length;
@@ -269,11 +350,12 @@ async function main() {
 
   ws.close();
   const passed = results.filter((r) => r.ok).length;
+  results.sort((a, b) => a.name.localeCompare(b.name)); // e8 runs before e7 stops the connector; print in label order
   for (const r of results) console.log(`  ${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${r.ok ? '' : ' — ' + r.detail}`);
   if (process.argv.includes('--verbose')) for (const r of results) console.log(`  detail ${r.name.slice(0, 2)}: ${r.detail}`);
   if (consoleErrors.length) { console.log(`${consoleErrors.length} console error(s):`); for (const e of consoleErrors) console.log('  ' + e); }
-  console.log(`connector-e2e: ${passed}/7 passed, ${results.length - passed} failed`);
-  return passed === 7 && results.length === 7 && consoleErrors.length === 0 ? 0 : 1;
+  console.log(`connector-e2e: ${passed}/8 passed, ${results.length - passed} failed`);
+  return passed === 8 && results.length === 8 && consoleErrors.length === 0 ? 0 : 1;
 }
 
 let code = 2;

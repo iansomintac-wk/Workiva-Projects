@@ -285,8 +285,10 @@ docs/superpowers/drafts/connector-admin-ask.md (not sent).
 End-to-end check (task C-7): node tools/connector-e2e.mjs starts the connector with fake adapters, opens the tracker
 in headless Chrome (a fresh temp profile, no --allow-file-access-from-files, so the page sends Origin: null like a real
 browser) and walks the whole flow with the real buttons: health shows FAKE DATA, Check for calls, Refresh from
-Gainsight, Send to Gainsight with one forced failure, Brief my day, then stops the connector and runs the full suite.
-Prints "connector-e2e: 7/7 passed, 0 failed" and exits 0. Everything stays on 127.0.0.1; temp files are removed.
+Gainsight, Send to Gainsight with one forced failure, Brief my day, then (on a second page, tracker 1.1) Check CSAT
+(connector): a dry run with changed and unmatched rows, then Apply with the backup first, then stops the connector and runs the
+full suite. Add --days-ahead N (for example 90) to run the connector and the pages N days in the future.
+Prints "connector-e2e: 8/8 passed, 0 failed" and exits 0. Everything stays on 127.0.0.1; temp files are removed.
 
 Connect the tracker (task C-2): start the connector (node connector/server.mjs), open Settings, find
 "Connector (optional)", enter the address it prints (http://127.0.0.1:8787) and paste its token, then press Check.
