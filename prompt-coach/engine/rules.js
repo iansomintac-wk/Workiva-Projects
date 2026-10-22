@@ -118,6 +118,44 @@
       [/\b(?:ahead of|in preparation for|to prepare for|in advance of|before (?:the|our) (?:audit|assurance|filing|board|meeting|review|deadline|call))\b/, 0.9, 'ahead-of'],
       [/\b(?:so that|so i can|so we can|so they can|so the|in order to|the goal is|our goal is|my goal is|the purpose is|purpose:|goal:|this will be used|we need this for|i need this for|which will be used|to help (?:the|our|me|us) (?:\w+ ){0,3}(?:decide|understand|prepare|explain|brief|present))\b/, 0.9, 'purpose'],
       [/\b(?:first-?year|first-?time|newly public|recently ipo'd|ipo|pre-ipo|new to (?:csrd|sox|esrs|sec))\b/, 0.6, 'situation'],
+      // the writer's current task: "I'm preparing ...", "you are briefing ..."
+      [/\b(?:you're|you are|i'm|i am) (?:preparing|coaching|helping|briefing|drafting|writing|building|putting together|interviewing|onboarding)\b/, 0.9, 'you-are-doing'],
+      // "as the/a <x> reviewer|lead|manager|controller ..." job title
+      [/\bas (?:the |a |an |our |my )?(?:[\w-]+ ){0,2}(?:reviewer|lead|manager|analyst|preparer|owner|controller|auditor|consultant|partner)\b/, 0.9, 'as-job-title'],
+      // a plural reader group after "for" ("for the control owners"), or "<reader> can follow/use"
+      [/\bfor (?:the |our |my |all )?(?:[\w&\/-]+ ){0,2}(?:managers|owners|leads|leadership|staff|committee|analysts|accountants|reviewers|heads|executives|team members)\b|\b(?:team|member|managers?|staff|reader|analyst) can (?:follow|use|read|understand)\b/, 0.9, 'for-reader-group'],
+      // "this feeds/goes into ...", "for our next <x> review|deck|close|filing"
+      [/\b(?:this|it) (?:feeds|goes into|is going into|will go into|is for)\b|\bit's (?:going into|for)\b|\bfeeds (?:our|the|into)\b|\bfor (?:my|our) (?:first |next |new |upcoming )?(?:[\w&\/+-]+ ){0,3}(?:note|audit|review|deck|framework|assessment|refresh|walkthrough|tracker|close|filing)\b/, 0.9, 'feeds-into'],
+      // "next week/quarter", "our <x> committee/team asked/wants/needs"
+      [/\b(?:next|this coming|later this) (?:week|month|quarter|spring|summer|fall|autumn|winter|year)\b|\b(?:our|the) [\w-]+ (?:committee|team|lead|leads|leadership) (?:asked|wants|needs)\b/, 0.9, 'timing-or-ask'],
+      // "for my director", "for the procurement team", "for our <city> office", "for a <kind> audience": a named reader after "for"
+      [/\bfor (?:the |our |my |a |an )(?:[\w&-]+ ){0,2}(?:director|sponsor|vp|svp|cso|cfo|cao|cco|ac|team|office|colleagues|audience|auditor|analyst|investors|boss|chair|stakeholders)\b/, 0.9, 'for-named-reader'],
+      // telegraphic audience: "investor audience", "board-ready", "investor-facing", or a bare audience word as its own fragment ("Board.", ",,, board")
+      [/\b[\w-]+ audience\b|\b(?:board|executive|exec|investor|auditor|assurance|committee|regulator|management|leadership|client|customer)-(?:ready|facing|level|friendly|grade)\b|(?:^|[.,;:!]) *(?:the )?(?:board|executives?|execs|investors?|auditors?|leadership|management|cfo|ceo|regulators?)\s*(?=[.,;:!]|\s*$)/, 0.9, 'audience-shorthand'],
+      // a stakeholder as subject with a state or want: "our VP hates ...", "my director wants ...", "the CFO is nervous", "<x> team uses this"
+      [/\b(?:our|my|the) (?:[\w&-]+ ){0,3}(?:vp|svp|director|head of (?:[\w&-]+ ){1,3}|lead|team|cfo|ceo|cso|cro|manager|boss|committee|auditors?|sponsor|board|regulators?|investors?|chair)\s*(?:is|are|wants|want|needs|need|hates|likes|prefers|asked|asks|uses|use|will|meets|meet|starts?|keeps?|expects|cares|reads|hasn't|has not|does not)\b|\b[\w-]+ team (?:uses|use|relies on|will use|reads)\b/, 0.9, 'stakeholder-state'],
+      // outside scrutiny as background: "regulators are watching", "assurance people will dig into this"
+      [/\b(?:[\w-]+ )?(?:regulators?|auditors?|investors?|analysts?|reviewers?|examiners?|people|the sec)\s+(?:are|is|will|keep|have been)\s+(?:\w+ )?(?:watching|dig|digging|scrutiniz\w*|look(?:ing)? closely|focus\w*|pick(?:ing)? apart)\b/, 0.9, 'stakeholder-scrutiny'],
+      // where the output lands: "this goes in our ...", "this goes to the sponsor", "it's feeding the ... table"
+      [/\b(?:this|it|that|these|the output|the result)\s+(?:is |will |will be )?(?:goes|go|going|feeding|feeds|ends up|used)\s+(?:in|into|to|the|our)\b/, 0.9, 'goes-where'],
+      // a destination workstream after "for": "for our SOX testing", "for the AC dashboard", "for our ... KPI", "for Thursday's standup", "for the ... memo"
+      [/\bfor (?:the |our |my )(?:(?!in |on |of |to )[\w&\/+'-]+ ){0,4}(?:dashboard|kpi|kpis|testing|standup|stand-up|retro|commentary|statement|submission|memo|readiness|program|programme|walkthrough)\b|\bfor (?:the |our |a )?(?:10-?q|10-?k|8-?k|20-?f|mdna|md&a)\b/, 0.9, 'for-workstream'],
+      // a destination section: "for the climate section of our CSRD report"
+      [/\bfor (?:the |our |a )?(?:[\w&-]+ ){0,2}section of (?:the |our |this )?(?:[\w&-]+ ){0,3}(?:report|statement|filing|10-k|10-q|response|submission|disclosure)\b/, 0.9, 'section-of-deliverable'],
+      // an event on a named day: "auditors start Monday", "committee meets Thursday", "deadline is Friday", "Friday's retro", "here mon", "tomorrow"
+      [/\b(?:starts?|begins?|meets?|is|are|here|arrives?|lands?|due|kicks? off)\s+(?:[\w-]+ )?(?:on |this |next )?(?:monday|tuesday|wednesday|thursday|friday|mon|tue|tues|wed|thu|thurs|fri)\b|\b(?:monday|tuesday|wednesday|thursday|friday|tomorrow)'s [\w-]+|\b(?:tomorrow|tmrw)\b/, 0.9, 'event-day'],
+      // an upcoming review as background: "assurance coming up", "regulator visit coming"
+      [/\b(?:audit|assurance|visit|inspection|fieldwork|review|exam|examination|walkthrough|filing|deadline)\s+(?:is )?coming(?: up)?\b/, 0.9, 'review-coming'],
+      // reader or asker expertise: "I'm not an auditor", "new to sheets", "with no ESG background", "hasn't done CSRD before", "that's never received one"
+      [/\bi am not (?:an?|the) (?:[\w-]+ )?(?:auditor|accountant|expert|specialist|lawyer|engineer|person|analyst)\b|\bnew to [\w-]+\b|\b(?:with|has|have|having) (?:no|little|zero|limited) [\w&-]+ (?:background|experience|knowledge)\b|\b(?:has|have|is|are|hasn't|haven't)\s+(?:not |never )?(?:never )?(?:done|used|seen|received|worked|filed|been through|dealt with)\b(?= (?:\w+ ){0,3}before\b| one\b)|\b(?:is|are|has|have) never (?:done|used|seen|received|worked|filed|been through|dealt with)\b/, 0.9, 'reader-expertise'],
+      // role variants: "act like ...", "be a <x> expert", "as a <x>er would", "as a facilitator"
+      [/\b(?:act|behave) like\b|\bbe (?:an?|the|my) (?:[\w-]+ ){0,2}(?:expert|specialist|auditor|reviewer|consultant|advisor|analyst|lawyer|accountant|coach)\b|\bas (?:an?|the) (?:[\w-]+ ){0,2}\w+(?:er|or|ist|ant|ent)\s+would\b|\bas (?:an?|the) (?:facilitator|moderator|trainer|mentor|scorer|rater|grader|interviewer|presenter|host)\b/, 0.9, 'role-variant'],
+      // who would ask: "questions the audit committee might ask", "an external auditor might raise", "should management ask", "disclosure committee questions"
+      [/\b(?:committee|auditors?|management|board|regulators?|reviewers?|investors?|analysts?|examiners?|cfo|ceo|scorer|lenders?)\s+(?:might|would|will|could|should|may|is likely to|are likely to)\s+(?:ask|raise|challenge|question|push back|probe|flag|focus on|dig into)\b|\b(?:should|would|might|could) (?:the |our )?(?:management|board|committee|auditors?|investors?|regulators?|reviewers?) (?:ask|raise|challenge|probe)\b|\b(?:committee|auditor|regulator|board|investor|analyst|examiner) questions\b/, 0.9, 'asker-would-ask'],
+      // a message to named outside recipients: "email to the vendors", "to our top 5 suppliers", "asking suppliers for ..."
+      [/\b(?:email|e-mail|message|letter|announcement|invite|reminder)s? (?:to|for) (?:the |our |all |each )?(?:[\w-]+ ){0,2}(?:vendors|suppliers|customers|clients|employees|stakeholders|partners|attendees)\b|\bto (?:our|the|my|all) (?:top \d+ |key |main )?(?:[\w-]+ ){0,2}(?:suppliers|vendors|customers|clients|employees|colleagues)\b|\b(?:asking|remind|reminding|thanking|inviting) (?:the |our |my |all )?(?:[\w-]+ ){0,2}(?:suppliers|vendors|customers|clients|staff|employees|colleagues)\b/, 0.9, 'message-recipients'],
+      // organization profile or change underway: "a 300-person company", "we sell ...", "we're moving from X to Y", "for the first time"
+      [/\b(?:an?|our) \d[\d,]*[- ](?:person|employee|people|staff|site|entity)\b|\bwe (?:sell|make|manufacture|operate|serve|distribute)\b|\bwe are (?:moving|transitioning|switching|mapping|migrating|rolling out|expanding|consolidating|launching|sending)\b|\bfor the first time\b/, 0.9, 'org-situation'],
       [/\b(?:context|background|situation|audience|reader|readers|role|persona|for|purpose|goal|who)\s*[:=]\s*\S|\bfor context\b|\bsome context\b/, 1.1, 'context-label']
     ],
     E: [
