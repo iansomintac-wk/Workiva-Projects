@@ -6,15 +6,22 @@ const M = require('../engine/model.js'), W = require('../engine/rewrite.js'), C 
 const weights = JSON.parse(fs.readFileSync(path.join(__dirname, '../engine/weights.json')));
 const CLS = C.unpack(JSON.parse(fs.readFileSync(path.join(__dirname, '../engine/cls-weights.json'))));
 const detect = (p) => { const r = M.predict(p, weights, { mode: weights.mode }); return { on: r.on, d: r.rules }; };
+const detectP = (p) => { const r = M.predict(p, weights, { mode: weights.mode }); return { on: r.on, prob: r.prob, sure: r.sure, d: r.rules }; };
+const forced = (on, prob) => (p) => { const r = detectP(p); return { ...r, on: { ...r.on, ...on }, prob: { ...r.prob, ...prob } }; };
+const allProb = (x) => Object.fromEntries(K.map((k) => [k, x]));
+const runWith = (prompt, files, det) => W.coach(prompt, { files, detect: det, ...C.pick(prompt, CLS) });
+const pinned = (text, on, prob) => (p) => (p.trim() === text.trim() ? forced(on, prob)(p) : detectP(p));
+const ALL_ON = { S: true, C: true, O: true, P: true, E: true };
 const K = ['S', 'C', 'O', 'P', 'E'];
 const IAN = fs.readFileSync(path.join(__dirname, 'fixtures/rewrites/ian_case.txt'), 'utf8').replace(/\r/g, '').trim();
+const IAN_ON = { S: true, C: false, O: true, P: true, E: true };
 const PDF = { name: 'Utility invoices Sep 2018.pdf', kind: 'PDF', sheets: [], periods: [], text: 'Invoice Account Service address Usage kWh Amount due USD' };
 const run = (prompt, files = [], extra = {}) => W.coach(prompt, { files, detect, ...C.pick(prompt, CLS), ...extra });
 const missing = (o) => K.filter((k) => !o.detected[k]).join('');
 const bal = (s, a, b) => s.split(a).length === s.split(b).length;
 
 test('splitting: a semicolon inside parentheses never ends a sentence (Ian case)', () => {
-  const o = run(IAN);
+  const o = runWith(IAN, [], pinned(IAN, IAN_ON, {}));
   assert.notEqual(o.grade, 'strong');
   const s = o.stages.strong.prompt;
   assert.ok(!/;\s*[.!?]/.test(s), s);
@@ -98,7 +105,7 @@ test('direct voice: sentence-initial politeness becomes an imperative; other que
 test('direct voice: no filler in Better or Strong (Ian case, with and without the file)', () => {
   const FILL = /\bplease\b|\bpls\b|\bkindly\b|\bcan you\b|\bcould you\b|\bwould you\b|\bi was wondering\b|\bif possible\b/i;
   for (const files of [[], [PDF]]) {
-    const o = run(IAN, files);
+    const o = runWith(IAN, files, pinned(IAN, IAN_ON, {}));
     assert.ok(!FILL.test(o.stages.better.prompt), o.stages.better.prompt);
     assert.ok(!FILL.test(o.stages.strong.prompt), o.stages.strong.prompt);
     assert.ok(o.stages.better.prompt.startsWith('I have attached the following utility bill invoices. Input the applicable dates'), o.stages.better.prompt);
@@ -124,7 +131,7 @@ test('direct voice: lead-ins, kept commas, mixed questions', () => {
 test('typos: common misspellings are fixed as whole words, case kept', () => {
   assert.equal(W.fixTypos('Seperately, recieve it; occured untill tomorrow. Teh adress is definately wierd.'), 'Separately, receive it; occurred until tomorrow. The address is definitely weird.');
   assert.equal(W.fixTypos('The seperatelyx and Reciever words stay.'), 'The seperatelyx and Reciever words stay.');
-  assert.ok(!/seperat/.test(run(IAN).stages.strong.prompt));
+  assert.ok(!/seperat/.test(runWith(IAN, [], pinned(IAN, IAN_ON, {})).stages.strong.prompt));
 });
 
 test('context: wording fits the task and registers as Context', () => {
@@ -150,7 +157,8 @@ test('context: only Context missing means no blank, even when a kept sentence ha
   const rows = fs.readFileSync(path.join(__dirname, '../data/test.jsonl'), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
   const row = rows.find((r) => /user-control assessment/.test(r.prompt));
   assert.ok(row, 'the "We need this for our user-control assessment" prompt is in data/test.jsonl');
-  const o = run(row.prompt);
+  // All five letters pinned (Context off): the test's premise is "only Context missing", whatever the weights detect.
+  const o = runWith(row.prompt, [], pinned(row.prompt, { S: true, C: false, O: true, P: true, E: true }, {}));
   assert.equal(missing(o), 'C', JSON.stringify(o.detected));
   assert.equal((o.stages.strong.prompt.match(/\[[^\]]*\]/g) || []).length, 0, o.stages.strong.prompt);
   assert.notEqual(o.stages.strong.prompt.trim(), row.prompt.trim());
@@ -160,7 +168,7 @@ test('context: Ian case gets the approved Strong and Better text, with and witho
   const flat = (x) => x.replace(/\s+/g, ' ').trim();
   const rd = (f) => flat(fs.readFileSync(path.join(__dirname, 'fixtures/rewrites', f), 'utf8'));
   for (const files of [[], [PDF]]) {
-    const o = run(IAN, files);
+    const o = runWith(IAN, files, pinned(IAN, IAN_ON, {}));
     assert.equal(flat(o.stages.strong.prompt), rd('ian_strong.txt'));
     assert.equal(flat(o.stages.better.prompt), rd('ian_better.txt'));
   }
@@ -515,7 +523,6 @@ test('unsupported: Upstream T&D is not Downstream T&D, and a truly missing categ
 });
 
 // ---- quote line (spec 2026-10-20-prompt-coach-quote-line-design.md): headline AND stages.weak.verdict ----
-const detectP = (p) => { const r = M.predict(p, weights, { mode: weights.mode }); return { on: r.on, prob: r.prob, sure: r.sure, d: r.rules }; };
 const withO = (x) => (p) => { const r = detectP(p); return { ...r, prob: { ...r.prob, O: x } }; };
 const coachWith = (prompt, det) => W.coach(prompt, { files: [], detect: det, ...C.pick(prompt, CLS) });
 const QUOTED = /The coach read your ask as "/;
@@ -621,8 +628,6 @@ test('questions: empty when the user supplied every letter', () => {
 const NC_PROMPT = 'Use only @RCM_FY26.xlsx. This is for the audit committee. Summarize the failed controls. Use five bullets. Flag anything you cannot verify.';
 const NC_FILE = [{ name: 'RCM_FY26.xlsx', kind: 'Excel', sheets: [], periods: [], text: '' }];
 const sureOf = () => { assert.ok(weights.sure && K.every((k) => typeof weights.sure[k] === 'number'), 'weights.sure missing'); return weights.sure; };
-const forced = (on, prob) => (p) => { const r = detectP(p); return { ...r, on: { ...r.on, ...on }, prob: { ...r.prob, ...prob } }; };
-const allProb = (x) => Object.fromEntries(K.map((k) => [k, x]));
 const ncRun = (prompt, det, files = NC_FILE) => W.coach(prompt, { files, detect: det, ...C.pick(prompt, CLS) });
 
 test('no changes needed: a prompt with all five letters above the cut-offs shows noChanges and unchanged Better/Strong', () => {
@@ -672,7 +677,7 @@ const STRONG_EDITED = [
 
 test('better stage: a prompt graded strong is returned untouched in Better', () => {
   for (const text of STRONG_EDITED) {
-    const o = coachWith(text, detectP);
+    const o = coachWith(text, pinned(text, ALL_ON, allProb(0)));
     assert.equal(o.grade, 'strong');
     assert.equal(o.stages.better.prompt, text.trim());
   }
@@ -680,7 +685,7 @@ test('better stage: a prompt graded strong is returned untouched in Better', () 
 
 test('better stage: a strong prompt that is not sure still has Better equal to Strong', () => {
   for (const text of STRONG_EDITED) {
-    const o = coachWith(text, detect); // no probabilities, so never sure
+    const o = coachWith(text, (p) => ({ ...detect(p), on: ALL_ON })); // no probabilities, so never sure
     assert.equal(o.grade, 'strong');
     assert.equal(o.noChanges, false, 'fixture must be strong but not sure');
     assert.equal(o.stages.better.prompt, o.stages.strong.prompt);
