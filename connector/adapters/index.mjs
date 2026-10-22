@@ -34,7 +34,7 @@ export function loadAdapters(config = {}, opts = {}) {
     } else if (REAL.has(name)) {
       out[slot] = factory(cfg, { fetchImpl, stateDir, sleep, now, tokenSource, pageLimit });
     } else {
-      out[slot] = factory({ ...cfg, ...rest });
+      out[slot] = factory({ ...cfg, ...rest, now });
     }
   }
   return out;

@@ -284,3 +284,7 @@ fixtures; unproven until `--check` has passed.
 (including arrays of types, `"null"` and `"integer"`), `required`, `properties`, `additionalProperties`
 (boolean), `items`, `enum`, `minLength`, `minimum` and `format: "date-time"`. Every other keyword is
 ignored, including `$schema`, `title`, `description`, `$ref`, `oneOf`, `pattern` and `maxLength`.
+
+## Time-proof fake data (`rebaseToToday`)
+
+The fake Gong and Snowflake adapters accept config `rebaseToToday: true` (default false, fixtures stay at their fixed dates). It shifts every date in the fixture by one whole number of days so the newest date lands 1 day before today (UTC); spacing never changes. The clock is the injected `now` (a function returning a Date or ms), else env `CONNECTOR_FAKE_NOW` (ISO string), else `Date.now`. Helpers: `connector/lib/rebase.mjs`.
