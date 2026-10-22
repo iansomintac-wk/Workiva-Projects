@@ -198,9 +198,9 @@ export async function launch({ version, startDay, runDir, part, seed = null, chr
     };
     ctx.setBreak = async bid => {
       if (bid === null) { activeBreak = null; breakDef = null; return; }
-      const { BREAKS } = await import('./breaks.mjs');
+      const { BREAKS, BREAKS_1_0 } = await import('./breaks.mjs');
       if (!BREAKS[bid]) throw new Error('unknown break ' + bid);
-      activeBreak = bid; breakDef = BREAKS[bid];
+      activeBreak = bid; breakDef = (version === '1.0' && BREAKS_1_0[bid]) || BREAKS[bid];
     };
     ctx.click = t => ev(`(() => { const t = ${JSON.stringify(t)};
       let el = null; try { el = document.querySelector(t); } catch {}
