@@ -52,6 +52,15 @@ Files: osm-book-of-business-tracker-1.1.html (panel overlay styles, v13 shell/to
 - Initials circle "Me": if 1.1 already stores a user name in Settings, show its initials; else leave "Me". No new field.
 - Checks (red first): computed background of the overlay and each screen's main sheet differs between light and dark and matches the token; initials rule.
 
+## Task 6 - The Desk carries 1.1's Today-pane features (found by Task 2) - added 2026-10-22 ~16:45Z
+
+Why: Task 2 (commit f61956b, branch v13f-sim) found that with v13 on, these accepted 1.1 features have no surface: Call prep (how the last call ended, open question, transcript line, Agenda + Copy agenda, you owe / they owe promises: D2, D3), the Sentiment toggle and the "Gainsight gates start at Go-Live" note (D9), "Wrap up the day" and "Back up the book" (D10), the Go-Live controls data-fp-outcome / data-fp-csat / data-fp-csat-sent / data-fp-csat-answered (L9-L12, L11) and the #surveys-to-chase line (L12). They lived in the old Today day pane (.day-pane, ui.todayFocusId). Restoring them is a fix, not a feature: no new data, same behaviour.
+Files: osm-book-of-business-tracker-1.1.html (Desk block; reuse the old pane's renderers and handlers), tools/selfchecks-1.1.js.
+- Give each one a home on the v13 Desk for the selected account, in v13 type and tokens: Call prep inside Prepare (it is the call review); Go-Live outcome/CSAT controls where the account's stage needs them (Prepare or Evidence); Sentiment toggle and the gates note in Capture; Surveys to chase as one line in the Today heading area; Wrap up the day and Back up the book in the Today heading or the Desk foot. Keep the same ids and data attributes so attachEvents and the sim find them; controls act on the Desk's account (controlCustomer, data-v13-desk-cust from Task 1).
+- Checks (red first): with the switch on, each surface above is present on the Desk for an account that qualifies and acts on the Desk's account (one check per group).
+- Captures: Desk Prepare with Call prep, Capture with Sentiment, Today heading with Surveys to chase and Wrap up / Back up.
+Then Task 2 resumes on top: port the sim steps and tools to these surfaces, pin removed.
+
 ## Lead tasks (no helper)
 
 - Item 6: report the left-out-for-lack-of-data list to Ian; no work.

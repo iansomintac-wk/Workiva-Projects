@@ -1695,10 +1695,34 @@
   /* ==== v13 shell (2026-10-22): tokens and top bar from OSM Workstation v13 ====
      Scoped to [data-osm] (the v13 wrapper) rather than :root because 1.1 already
      defines --ink and --brand there for the old shell; old mode never sees these. */
-  [data-osm]{--page:#F3EEE6;--sheet:#FFFFFF;--sheet2:#FAF7F1;--well:#EFE9DF;--ink:#262626;--muted:#5B5650;--faint:#A39C91;--line:rgba(38,38,38,.09);--line2:rgba(38,38,38,.17);--acc:#0067CF;--acc-bg:#E6F0FB;--brand:#66CC66;--runway:#6E6A64;--demo:#3F9F3F;--demo-t:#2A6B2A;--demo-bg:#E7F3E2;--obs:#F0A020;--warn:#7A5200;--warn-bg:#FDF0D4;--risk:#B42000;--risk-bg:#FBE6DF;--partner:#0058AF;--partner-bg:#E3EEFA;--plum:#663399;--plum-bg:#F1E8F8;--sh1:0 1px 0 rgba(38,38,38,.04),0 10px 30px -18px rgba(38,38,38,.30);--sh2:0 1px 0 rgba(38,38,38,.05),0 24px 60px -28px rgba(38,38,38,.45),0 4px 12px -6px rgba(38,38,38,.12);--mono:'JetBrains Mono',Consolas,monospace;--font-brand:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color-scheme:light}
-  [data-osm][data-theme="dark"]{--page:#151514;--sheet:#1F1F1D;--sheet2:#252523;--well:#1A1A19;--ink:#EDEBE7;--muted:#B3AEA6;--faint:#6E6A64;--line:rgba(237,235,231,.08);--line2:rgba(237,235,231,.16);--acc:#8CC6FF;--acc-bg:#1B2A3A;--runway:#A39C91;--demo:#66CC66;--demo-t:#8FE08F;--demo-bg:#1E3220;--obs:#FBAD17;--warn:#F9CB76;--warn-bg:#3A301C;--risk:#FF9E85;--risk-bg:#3E231D;--partner:#A9D2FF;--partner-bg:#1C2836;--plum:#D9B8EE;--plum-bg:#30243B;--sh1:0 1px 0 rgba(0,0,0,.3),0 12px 30px -18px rgba(0,0,0,.7);--sh2:0 24px 60px -24px rgba(0,0,0,.85),0 4px 12px -6px rgba(0,0,0,.5);color-scheme:dark}
+  [data-osm], body[data-ui="v13"] .overlay{--page:#F3EEE6;--sheet:#FFFFFF;--sheet2:#FAF7F1;--well:#EFE9DF;--ink:#262626;--muted:#5B5650;--faint:#A39C91;--line:rgba(38,38,38,.09);--line2:rgba(38,38,38,.17);--acc:#0067CF;--acc-bg:#E6F0FB;--brand:#66CC66;--runway:#6E6A64;--demo:#3F9F3F;--demo-t:#2A6B2A;--demo-bg:#E7F3E2;--obs:#F0A020;--warn:#7A5200;--warn-bg:#FDF0D4;--risk:#B42000;--risk-bg:#FBE6DF;--partner:#0058AF;--partner-bg:#E3EEFA;--plum:#663399;--plum-bg:#F1E8F8;--sh1:0 1px 0 rgba(38,38,38,.04),0 10px 30px -18px rgba(38,38,38,.30);--sh2:0 1px 0 rgba(38,38,38,.05),0 24px 60px -28px rgba(38,38,38,.45),0 4px 12px -6px rgba(38,38,38,.12);--mono:'JetBrains Mono',Consolas,monospace;--font-brand:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color-scheme:light}
+  [data-osm][data-theme="dark"], body[data-ui="v13"][data-v13-theme="dark"] .overlay{--page:#151514;--sheet:#1F1F1D;--sheet2:#252523;--well:#1A1A19;--ink:#EDEBE7;--muted:#B3AEA6;--faint:#6E6A64;--line:rgba(237,235,231,.08);--line2:rgba(237,235,231,.16);--acc:#8CC6FF;--acc-bg:#1B2A3A;--runway:#A39C91;--demo:#66CC66;--demo-t:#8FE08F;--demo-bg:#1E3220;--obs:#FBAD17;--warn:#F9CB76;--warn-bg:#3A301C;--risk:#FF9E85;--risk-bg:#3E231D;--partner:#A9D2FF;--partner-bg:#1C2836;--plum:#D9B8EE;--plum-bg:#30243B;--sh1:0 1px 0 rgba(0,0,0,.3),0 12px 30px -18px rgba(0,0,0,.7);--sh2:0 24px 60px -24px rgba(0,0,0,.85),0 4px 12px -6px rgba(0,0,0,.5);color-scheme:dark}
   body[data-ui="v13"]{background:#F3EEE6;}
   body[data-ui="v13"][data-v13-theme="dark"]{background:#151514;}
+  /* v13 fixes (Task 5): the full-account overlay is a sibling of [data-osm], so it gets the
+     v13 tokens itself (the two token rules above also name it). Inside the overlay, and inside
+     [data-osm] when the theme is dark, 1.1's own tokens are pointed at the v13 ones, so the
+     1.1 renderers still used there (session plan, forms, logs) follow the theme. Light
+     [data-osm] keeps 1.1's tokens: the light screens do not change. */
+  body[data-ui="v13"] .overlay,
+  body[data-ui="v13"][data-v13-theme="dark"] [data-osm]{
+    --bg:var(--sheet2); --bg-panel:var(--sheet); --bg-card:var(--sheet); --bg-card-hover:var(--well);
+    --border:var(--line2); --border-soft:var(--line); --text:var(--ink); --text-dim:var(--muted); --text-faint:var(--muted);
+    --ink-2:var(--ink); --accent-info:var(--acc); --status-ontrack-text:var(--demo-t); --status-watch-text:var(--warn);
+    --status-risk-text:var(--risk); --accent-text:var(--demo-t); --accent-watch-text:var(--warn); --accent-risk-text:var(--risk);
+    --accent-grad-text:var(--plum); --shadow-sm:var(--sh1); --shadow-md:var(--sh2);
+  }
+  body[data-ui="v13"] .overlay{--font-display:var(--font-brand); --font-body:var(--font-brand); --font-mono:var(--mono);
+    background:rgba(20,20,20,.18); backdrop-filter:none; color:var(--ink); font-family:var(--font-brand);}
+  body[data-ui="v13"] .overlay .panel{background:var(--sheet2); color:var(--ink); border-radius:0; border-left:1px solid var(--line2); box-shadow:var(--sh2);}
+  body[data-ui="v13"] .overlay .panel::-webkit-scrollbar-thumb{border-color:var(--sheet2);}
+  body[data-ui="v13"] .overlay :is(input, select, textarea),
+  body[data-ui="v13"][data-v13-theme="dark"] [data-osm] :is(input, select, textarea){background:var(--sheet); color:var(--ink); border-color:var(--line2);}
+  /* The Co-pilot morning summary is an ink box in light; in dark an ink box would be a light
+     sheet, so it becomes a raised dark box (--sheet2, ringed) with light ink. */
+  [data-osm][data-theme="dark"]{--sum-bg:var(--sheet2); --sum-ink:var(--ink); --sum-ring:inset 0 0 0 1px var(--line2);}
+  body[data-ui="v13"] .overlay .btn-primary,
+  body[data-ui="v13"][data-v13-theme="dark"] [data-osm] .btn-primary{background:var(--ink); border-color:var(--ink); color:var(--sheet);}
   body[data-ui="v13"] .app{max-width:none; margin:0; padding:0;}
   [data-osm]{min-height:100vh; background:var(--page); color:var(--ink); font-family:var(--font-brand); font-size:14px; line-height:1.5; padding-bottom:110px;}
   .v13-nav button, .v13-pill, .v13-menu-panel > button{font-family:inherit; line-height:inherit; color:inherit; cursor:pointer;}
@@ -9594,32 +9618,136 @@ function v13DeskFacts(c){
     <p style="margin-top:4px;line-height:1"><span style="font-size:32px;font-weight:900;letter-spacing:-0.03em;color:${f.color}">${escapeHtml(f.value)}</span><span style="font-size:14px;color:var(--muted);font-weight:600">${escapeHtml(f.unit)}</span></p>
     <p style="font-size:12px;color:var(--muted);margin-top:6px">${escapeHtml(f.note)}</p></div>`).join('');
 }
-function v13DeskTabBody(c, tab){
+/* v13 fixes: Prepare in v13's call-review shape, Goal > Evidence > Uncertainty > Next review,
+   filled from 1.1's session plan and record only. The next session's controls (deliverable
+   ticks, who demonstrated it, the run script, the prep note) live in the steps; every other
+   session stays one click away under "Session plan". */
+function v13DeskPrepare(c, x){
+  const templates = getSessionTemplateSet(c);
+  const next = c.stage === 'graduated' ? null : getNextSessionInfo(c);
+  const num = next ? next.number : null, tpl = next ? next.template || templates[num - 1] : null;
+  const impl = inImplementation(c);
+  const card = (label, text, meta, lc, bg, extra) => `<div style="background:${bg || 'var(--sheet2)'};border:1px ${bg === 'var(--warn-bg)' ? 'dashed var(--warn)' : 'solid var(--line2)'};border-radius:10px;padding:10px 12px;min-width:0">
+      <p style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;color:${lc};text-transform:uppercase">${escapeHtml(label)}</p>
+      <p style="font-size:13px;margin-top:4px">${text}</p>${meta ? `<p style="font-size:12px;color:var(--muted);margin-top:2px">${escapeHtml(meta)}</p>` : ''}${extra || ''}</div>`;
+  const grid = cards => cards.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;margin-top:10px">${cards.join('')}</div>` : '';
+  // Goal: the next session's deliverables, each a live tick plus who demonstrated it.
+  const criteria = outcomeCriteriaFor(c);
+  const goalCards = tpl ? tpl.deliverables.map((label, idx) => {
+    const crit = criteria.find(k => k.sourceSession === num && k.sourceIndex === idx);
+    const ev = crit ? crit.evidence : null, by = ev ? (ev.by || 'unknown') : 'osm', sel = v => by === v ? ' selected' : '';
+    const key = `${c.id}|${num}|${idx}`;
+    return card('Required outcome · S' + num, `<label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" data-session-deliverable="${escapeAttr(key)}" ${ev ? 'checked' : ''} style="margin-top:3px"><span>${escapeHtml(label)}</span></label>`, '', 'var(--muted)', '',
+      `<select data-deliverable-by="${escapeAttr(key)}" aria-label="Evidence source" ${ev ? '' : 'disabled'} style="margin-top:6px;font-size:12px;border:1px solid var(--line2);border-radius:8px;background:var(--sheet);padding:3px 6px"><option value="osm"${sel('osm')}>we observed it</option><option value="customer"${sel('customer')}>customer demonstrated</option>${by === 'unknown' ? '<option value="unknown" selected>source unknown</option>' : ''}</select>`);
+  }) : [];
+  // Evidence: what the record shows, newest first.
+  const v = outcomeVerdict(c);
+  const met = v.ttfv1.met + v.ttfv2.met + v.other.met, tot = v.ttfv1.total + v.ttfv2.total + v.other.total;
+  const acts = (DATA.activities[c.id] || []).slice().sort((a, b) => a.date < b.date ? 1 : -1);
+  const clip = s => { s = String(s || ''); return s.length > 220 ? s.slice(0, 219) + '…' : s; };
+  const evCards = acts.slice(0, 2).map(a => card(a.type + (a.sessionNumber ? ' · S' + a.sessionNumber : '') + ' · ' + fmtDate(a.date), escapeHtml(clip(a.summary)), '', 'var(--acc)'));
+  // Uncertainty: the account's open signals and confirmed risks, never a score.
+  const k = x && x.caseOf.get(c.id);
+  const unCards = k ? k.items.map(it => k.isRisk
+      ? card('Confirmed risk · ' + it.kind, escapeHtml(it.detail || it.kind), 'Confirmed by you', 'var(--risk)', 'var(--risk-bg)')
+      : card('Signal to check · ' + it.kind, escapeHtml(it.detail || it.kind), 'Not a risk unless you confirm it', 'var(--warn)', 'var(--warn-bg)')) : [];
+  const unOpen = tot - met;
+  // Next review: the 45-minute run script, one row per segment, the script behind each row.
+  const rb = tpl ? buildSessionRunbook(c, tpl) : null;
+  const note = tpl ? readSessionNote(c, num, tpl) : null;
+  const agenda = rb ? `<div style="display:grid;gap:4px;margin-top:10px">${rb.segments.map(seg => `<details style="background:var(--sheet2);border-radius:10px;padding:8px 12px">
+      <summary style="display:grid;grid-template-columns:90px minmax(0,1fr) auto;gap:10px;align-items:baseline;cursor:pointer;list-style:none"><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${escapeHtml(seg.m || '-')}</span><span style="font-size:13px;font-weight:800">${escapeHtml(seg.title)}</span><span style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--acc)">Call script</span></summary>
+      <p style="font-size:13px;margin:8px 0 0 100px">${escapeHtml(seg.talk)}</p>
+      ${seg.steps.length ? `<ol style="font-size:12px;color:var(--muted);margin:6px 0 0 118px">${seg.steps.map(st => `<li>${escapeHtml(st)}</li>`).join('')}</ol>` : ''}</details>`).join('')}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button type="button" data-copy-script="${escapeAttr(c.id + '|' + num)}" style="border:1px solid var(--line2);background:var(--sheet);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700">Open / copy full script</button>
+      <button type="button" data-v13-desk-go="capture" style="border:0;border-radius:10px;background:var(--ink);color:var(--sheet);padding:6px 12px;font-size:12px;font-weight:800">Call finished · capture</button></div>
+    <label style="display:block;margin-top:12px"><span style="font-size:12px;font-weight:700">Notes for next meeting</span>
+      <textarea data-session-prep="${escapeAttr(c.id + '|' + num)}" placeholder="Anything specific to prep, follow up on, or bring to the next call…" style="display:block;width:100%;min-height:64px;margin-top:4px;border:1px solid var(--line2);border-radius:10px;background:var(--sheet);padding:8px 10px;font:inherit;font-size:13px;resize:vertical">${escapeHtml(note.prep)}</textarea></label>` : '';
+  const steps = [
+    {key:'goal', kick:'Goal · ' + (num ? 'S' + num + ' ' + tpl.title : 'session plan'), c:'var(--ink)',
+      title: tpl ? (impl ? 'Preview, starts at go-live: ' : 'The customer shows: ') + (tpl.deliverables.join('; ') || tpl.title) + '.' : 'Every session is logged.',
+      body: tpl ? 'What to enable: ' + tpl.enable.join('; ') + '. Tick an outcome when you see it.' : 'Nothing left on the curriculum.', more: grid(goalCards)},
+    {key:'evidence', kick:'Evidence · what the record shows', c:'var(--demo-t)',
+      title: tot ? 'Customer demonstrated ' + met + ' of ' + tot + ' outcomes.' : 'No success criteria authored.',
+      body: acts.length ? sessionsCompletedCount(c) + ' meeting' + (sessionsCompletedCount(c) === 1 ? '' : 's') + ' held. Latest entries from the activity log.' : 'Nothing logged yet.', more: grid(evCards)},
+    {key:'uncertainty', kick:'Uncertainty · what you don’t know yet', c:'var(--warn)',
+      title: unCards.length ? unCards.length + (k.isRisk ? ' confirmed risk item' : ' signal') + (unCards.length === 1 ? '' : 's') + ' on this account.' : 'Nothing flagged.',
+      body: 'Missing evidence is a reason to check, not a confirmed risk.' + (unOpen > 0 ? ' ' + unOpen + ' outcome' + (unOpen === 1 ? '' : 's') + ' not yet evidenced' + (v.undated ? ', ' + v.undated + ' undated' : '') + '.' : ''), more: grid(unCards)},
+    {key:'next', kick:'Next review · curriculum · ' + c.module + (num ? ' · S' + num : ''), c:'var(--acc)',
+      title: rb ? '45-minute run script · ' + RUNBOOK_SOURCE_LABEL[rb.source] : 'No session to run.',
+      body: rb ? 'Today’s agenda. Open a row for its call script.' : 'Log the next touchpoint from Capture.', more: agenda}
+  ];
+  const others = templates.map((t, i) => i + 1 === num ? '' : renderSessionCard(c, i + 1, t, false)).join('');
+  const pills = templates.map((t, i) => { const done = !!getSessionActivity(c, i + 1), on = i + 1 === num;
+    return `<span style="flex:1;min-width:18px;text-align:center;font-family:var(--mono);font-size:10px;font-weight:700;border-radius:5px;padding:3px 0;background:${on ? 'var(--acc)' : done ? 'var(--muted)' : 'var(--well)'};color:${on || done ? 'var(--sheet)' : 'var(--muted)'}">${i + 1}</span>`; }).join('');
+  return `<div style="display:grid;gap:0">${steps.map((s, i) => `<section data-v13-prep-step="${s.key}" style="display:grid;grid-template-columns:28px minmax(0,1fr);gap:0 12px">
+      <div style="display:flex;flex-direction:column;align-items:center"><span style="width:28px;height:28px;border-radius:50%;background:${s.c};color:var(--sheet);display:grid;place-items:center;font-family:var(--mono);font-size:11px;font-weight:700;flex:none">0${i + 1}</span>${i < steps.length - 1 ? '<span style="flex:1;width:1px;background:var(--line2);margin:4px 0"></span>' : ''}</div>
+      <div style="min-width:0;padding-bottom:22px"><h4 style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${s.c};padding-top:6px">${escapeHtml(s.kick)}</h4>
+        <p style="font-size:16px;font-weight:900;margin-top:4px">${escapeHtml(s.title)}</p><p style="font-size:13px;color:var(--muted);margin-top:4px">${escapeHtml(s.body)}</p>${s.more}</div></section>`).join('')}</div>
+    <details data-v13-prep-plan style="margin-top:8px;background:var(--sheet2);border-radius:14px;padding:12px 16px">
+      <summary style="cursor:pointer;list-style:none"><span style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap"><b style="font-size:14px">Session plan</b><span style="font-size:12px;color:var(--acc);font-weight:700">Show every session</span></span>
+        <span style="display:flex;gap:3px;margin-top:8px">${pills}</span>
+        <span style="display:block;font-size:12px;color:var(--muted);margin-top:6px">${num ? 'Next · S' + num + ' ' + escapeHtml(tpl.title) + ' · ' : ''}Changing the plan never changes evidence, readiness or risk.</span></summary>
+      <div style="margin-top:12px">${renderCurriculumFit(c)}${others}</div></details>`;
+}
+/* v13 fixes Task 6: the old Today day pane's surfaces on the Desk, for the Desk's account. Each sits in
+   a [data-v13-desk-pane] box that attachEvents binds with bindBeatPane(), so the same ids, data
+   attributes and handlers as the pane; no new data. */
+function v13DeskPaneBox(c, kick, inner){
+  if(!inner) return '';
+  return `<section data-v13-desk-pane data-v13-desk-cust="${escapeAttr(c.id)}" style="background:var(--sheet2);border:1px solid var(--line2);border-radius:14px;padding:14px 18px;margin:0 0 18px">
+    <p style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--acc);margin-bottom:8px">${escapeHtml(kick)}</p>${inner}</section>`;
+}
+function v13DeskCallPrep(c, x){
+  const call = ((x && x.calls) || []).find(k => k.c.id === c.id);
+  if(!call) return '';
+  return v13DeskPaneBox(c, 'Before the call · from the record', renderBeatStanding(c) + renderBeatQuestions(c) + renderBeatPrep({call}));
+}
+function v13DeskGates(c, which){
+  const g = beatGateBlocks(c), impl = inImplementation(c);
+  if(which === 'evidence') return impl ? '' : v13DeskPaneBox(c, 'Go-Live gates · for Gainsight', g.outcome + g.csat);
+  return v13DeskPaneBox(c, impl ? 'Gainsight gates' : 'Gainsight gate · after the call', impl ? g.gates : g.sentiment);
+}
+function v13DeskSurveys(){
+  const list = surveysToChase(DATA.customers); if(!list.length) return '';
+  const shown = list.slice(0, 5), more = list.length - shown.length;
+  return `<p id="surveys-to-chase" style="margin-top:12px;font-size:13px;color:var(--muted);padding:8px 14px;border-radius:10px;background:var(--warn-bg)"><b style="color:var(--warn)">Surveys to chase</b> · ${shown.map(s => `<button type="button" data-open-cust="${escapeAttr(s.id)}" data-open-tab="details" style="border:0;background:transparent;padding:0;font:inherit;font-weight:700;color:var(--ink)">${escapeHtml(s.name)}</button> (sent ${s.days} days ago, no answer)`).join('; ')}${more ? '; +' + more + ' more' : ''}</p>`;
+}
+function v13DeskDayActs(){
+  const d = DATA.lastExportedAt ? daysSince(DATA.lastExportedAt) : null;
+  const note = d === null ? 'This book has never been exported. It exists only in this browser.' : d === 0 ? 'Backed up today.' : `Last backup ${d} day${d === 1 ? '' : 's'} ago. Everything since then exists only in this browser.`;
+  const btn = strong => `border:${strong ? '0' : '1px solid var(--line2)'};border-radius:999px;background:${strong ? 'var(--ink)' : 'var(--sheet)'};color:${strong ? 'var(--sheet)' : 'var(--ink)'};padding:7px 14px;font-size:12px;font-weight:800;white-space:nowrap`;
+  return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    ${dayIsClosed() ? `<span style="font-size:12px;color:var(--muted)">Wrapped up ${escapeHtml(fmtDate(getDayClose().date))}</span>` : `<button type="button" data-wrap-day title="Closes today and counts the beats you walked" style="${btn(true)}">Wrap up the day</button>`}
+    <button type="button" data-backup-now title="${escapeAttr(note)}" style="${btn(false)}">Back up the book</button></div>`;
+}
+function v13DeskTabBody(c, tab, x){
   if(ui.openCustomerId) return `<p style="font-size:13px;color:var(--muted)">This account is open in the full account panel. Close it to work here.</p>`;
   const call = (fn) => { try{ return fn(); }catch(e){ console.warn('v13 desk tab', e); return ''; } };
   const acts = (DATA.activities[c.id] || []).slice().sort((a, b) => a.date < b.date ? 1 : -1);
   const next = getNextSessionInfo(c);
   const heads = {
-    prepare: [c.name + (next ? ' · S' + next.number + ' ' + (next.template && next.template.title || '') : ' · session plan'), 'From the session plan'],
+    prepare: [c.name + (next && c.stage !== 'graduated' ? ' · S' + next.number + ' call review' : ' · session plan'), 'From the session plan + record'],
     capture: ['Capture · log what happened', 'Writes to the activity log'],
     evidence: ['Outcomes and handoff', 'From the success criteria'],
     record: ['The record', 'Activity log + Gainsight']
   };
-  const body = tab === 'capture' ? call(() => renderLogActivityTab(c))
-    : tab === 'evidence' ? call(() => {
+  // The panel's Cancel only moves the panel's tab; on the Desk it would do nothing, so hide it.
+  const body = tab === 'capture' ? call(() => renderLogActivityTab(c).replace('id="btn-cancel-log-form"', 'id="btn-cancel-log-form" hidden')) + call(() => v13DeskGates(c, 'capture'))
+    : tab === 'evidence' ? call(() => v13DeskGates(c, 'evidence')) + call(() => {
         // renderOverviewTab stamps lastShownRecommendation; the Desk only reads, so put it back.
         const had = Object.prototype.hasOwnProperty.call(c, 'lastShownRecommendation'), was = c.lastShownRecommendation;
         try{ return renderOverviewTab(c, computeRisk(c)); }
         finally{ if(had) c.lastShownRecommendation = was; else delete c.lastShownRecommendation; }
       }) + call(() => renderHandoffTab(c))
     : tab === 'record' ? call(() => renderActivityTab(c, acts)) + call(() => renderCustomerGainsightTab(c))
-    : call(() => renderSessionPlanTab(c));
+    : call(() => v13DeskCallPrep(c, x)) + call(() => v13DeskPrepare(c, x));
   const h = heads[tab] || heads.prepare;
   return `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:14px">
       <h3 style="font-size:20px;font-weight:900;letter-spacing:-0.01em">${escapeHtml(h[0])}</h3>
       <span style="display:flex;gap:12px;align-items:baseline"><span style="font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">${escapeHtml(h[1])}</span>
-      <button type="button" data-v13-desk-open style="border:1px solid var(--line2);background:var(--sheet);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700">Edit in the full account</button></span></div>
-    <div data-v13-desk-panel="${escapeAttr(tab)}" inert title="Read here; edit in the full account">${body}</div>`;
+      <button type="button" data-v13-desk-open style="border:1px solid var(--line2);background:var(--sheet);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700">Open full account</button></span></div>
+    <div data-v13-desk-panel="${escapeAttr(tab)}" data-v13-desk-cust="${escapeAttr(c.id)}">${body}</div>`;
 }
 function v13Desk(){
   const x = v13DeskCtx();
@@ -9633,10 +9761,11 @@ function v13Desk(){
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
       <div><h1 style="font-size:clamp(38px,4vw,58px);font-weight:900;letter-spacing:-0.035em;line-height:1">Today</h1>
         <p style="font-size:15px;color:var(--muted);margin-top:8px">${x.calls.length} call${x.calls.length === 1 ? '' : 's'} · ${x.risks.length} confirmed risk · ${x.sigs.length} signal${x.sigs.length === 1 ? '' : 's'} to check · ${x.owed.length} thing${x.owed.length === 1 ? '' : 's'} you owe today</p></div>
-      <div role="tablist" aria-label="Time lens" style="display:flex;gap:2px;padding:3px;background:var(--well);border-radius:999px">${[['day','Day'],['week','Week']].map(([k, l]) => {
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">${v13DeskDayActs()}<div role="tablist" aria-label="Time lens" style="display:flex;gap:2px;padding:3px;background:var(--well);border-radius:999px">${[['day','Day'],['week','Week']].map(([k, l]) => {
         const on = (ui.v13DeskLens || 'day') === k;
-        return `<button type="button" role="tab" aria-selected="${on}" data-v13-desk-lens="${k}" style="border:0;border-radius:999px;padding:7px 18px;font-size:13px;font-weight:700;${v13DeskSeg(on)}">${l}</button>`; }).join('')}</div>
+        return `<button type="button" role="tab" aria-selected="${on}" data-v13-desk-lens="${k}" style="border:0;border-radius:999px;padding:7px 18px;font-size:13px;font-weight:700;${v13DeskSeg(on)}">${l}</button>`; }).join('')}</div></div>
     </div>
+    ${v13DeskSurveys()}
     <div role="group" aria-label="Book snapshot" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:16px">${strip.map(t => {
       const on = filter === t.key;
       return `<button type="button" data-v13-desk-chip="${t.key}" aria-pressed="${on}" title="${on ? 'Clear the filter' : 'Filter the book to these accounts'}" style="display:flex;align-items:center;gap:8px;border:1px solid ${on ? 'var(--ink)' : 'var(--line2)'};background:${on ? 'var(--well)' : 'var(--sheet)'};border-radius:5px;padding:6px 11px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink)"><span style="width:8px;height:8px;border-radius:2px;background:${t.c};flex:none"></span><span style="color:var(--muted);white-space:nowrap">${escapeHtml(t.k)}</span><span style="font-weight:700;white-space:nowrap">${escapeHtml(t.v)}</span></button>`; }).join('')}</div>
@@ -9695,7 +9824,7 @@ function v13Desk(){
     ${coStrip}
     <div role="tablist" aria-label="Customer work" style="display:flex;gap:4px;margin:20px 28px 0;padding:3px;background:var(--well);border-radius:12px">${V13_DESK_TABS.map(([kk, l]) =>
       `<button type="button" role="tab" aria-selected="${tab === kk}" data-v13-desk-tab="${kk}" style="flex:1;border:0;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;white-space:nowrap;${v13DeskSeg(tab === kk)}">${l}</button>`).join('')}</div>
-    <div role="tabpanel" data-v13-desk-body style="padding:22px 28px 30px">${v13DeskTabBody(a, tab)}</div>
+    <div role="tabpanel" data-v13-desk-body style="padding:22px 28px 30px">${v13DeskTabBody(a, tab, x)}</div>
   </article>`;
   return `${head}<div style="display:grid;grid-template-columns:260px minmax(0,1fr);gap:24px;align-items:start;margin-top:30px">${aside}<div style="min-width:0">${art}</div></div>`;
 }
@@ -9860,7 +9989,7 @@ function v13Copilot(){
     + items.length + ' thing' + (items.length === 1 ? '' : 's') + ' need' + (items.length === 1 ? 's' : '') + ' you: ' + beforeN + ' before your first call, ' + judgeN + (judgeN === 1 ? ' is' : ' are') + ' your judgment.';
   const sumCard = v13CoSumHidden
     ? `<button type="button" data-v13-co-sumshow style="${V13_CO_BTN.link};padding-left:0">Show the morning summary</button>`
-    : `<div data-v13-co-summary style="padding:14px 16px;border-radius:14px;background:var(--ink);color:var(--sheet)">
+    : `<div data-v13-co-summary style="padding:14px 16px;border-radius:14px;background:var(--sum-bg,var(--ink));color:var(--sum-ink,var(--sheet));box-shadow:var(--sum-ring,none)">
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><p style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;opacity:.75">MORNING SUMMARY · FROM YOUR BOOK, NOT SENT ANYWHERE</p><button type="button" data-v13-co-sumhide style="border:0;background:transparent;font-size:12px;font-weight:700;white-space:nowrap;color:inherit;opacity:.75;padding:0">Hide</button></div>
         <p style="font-size:17px;font-weight:700;margin-top:6px;text-wrap:pretty">${escapeHtml(summary)}</p>
         ${insights.length ? `<p style="font-size:13px;margin-top:6px;opacity:.8;text-wrap:pretty">${insights.map(escapeHtml).join(' ')}</p>` : ''}
@@ -10065,10 +10194,12 @@ function v13AcEvents(F, lo, hi){
   const evs = {};
   const add = (iso, it) => { const off = v13AcOff(iso); if(off === null || off < lo || off > hi) return; (evs[off] = evs[off] || []).push(it); };
   F.forEach(f => { const id = f.c.id, name = f.c.name;
-    if(f.kind === 'partner'){ if(f.goLive) add(f.goLive, {id, name, label:'Go-live', tone:'var(--partner)', o:0}); return; }
-    if(f.kind === 'handed'){ if(f.handed) add(f.handed, {id, name, label:'Handed off', tone:'var(--faint)', o:2}); return; }
-    f.held.forEach(h => add(h.date, {id, name, label:'S' + h.n + ' held', tone:'var(--runway)', o:3}));
-    f.planned.forEach(p => add(p.date, {id, name, label:'S' + p.n + (p.kind === 'next' && f.time ? ' ' + f.time : p.kind === 'next' ? '' : ' projected'), tone: p.kind === 'next' ? 'var(--acc)' : 'var(--faint)', o: p.kind === 'next' ? 0 : 2, time: p.kind === 'next' ? f.time : null}));
+    if(f.kind === 'partner'){ if(f.goLive) add(f.goLive, {id, name, label:'Go-live', title: name + ' · go-live target', tone:'var(--partner)', o:0}); return; }
+    if(f.kind === 'handed'){ if(f.handed) add(f.handed, {id, name, label:'Handed off', title: name + ' · handed off', tone:'var(--faint)', o:2}); return; }
+    // short + title: v13's Month copy (S<n>, the kind lives in the dot and the title); the Week keeps label.
+    f.held.forEach(h => add(h.date, {id, name, label:'S' + h.n + ' held', short:'S' + h.n, title: name + ' · Session ' + h.n + ' held', tone:'var(--runway)', o:3}));
+    f.planned.forEach(p => add(p.date, {id, name, label:'S' + p.n + (p.kind === 'next' && f.time ? ' ' + f.time : p.kind === 'next' ? '' : ' projected'), tone: p.kind === 'next' ? 'var(--acc)' : 'var(--faint)', o: p.kind === 'next' ? 0 : 2, time: p.kind === 'next' ? f.time : null,
+      short:'S' + p.n + (p.kind === 'next' && f.time ? ' ' + f.time : ''), title: name + ' · Session ' + p.n + (p.kind === 'next' ? ' · next planned' : ' · projected at the current pace')}));
   });
   Object.keys(evs).forEach(k => evs[k].sort((a, b) => a.o - b.o));
   return evs;
@@ -10102,7 +10233,7 @@ function v13AcCal(F){
     const cells = []; for(let off = start; off < start + 35; off++){ const d = v13AcDay(off), list = evs[off] || [], today = off === 0, wk = d.getDay() === 0 || d.getDay() === 6;
       cells.push(`<div data-v13-month-cell style="min-height:118px;border-radius:10px;padding:6px;background:${today ? 'var(--acc-bg)' : wk ? 'transparent' : 'var(--sheet2)'};box-shadow:${today ? 'inset 0 0 0 2px var(--acc)' : 'none'};opacity:${d.getMonth() === month ? (off < 0 ? 0.7 : 1) : 0.4};display:flex;flex-direction:column;gap:3px;min-width:0">
         <p style="font-family:var(--mono);font-size:11px;font-weight:${today ? 800 : 500};color:${today ? 'var(--acc)' : 'var(--muted)'};padding:0 2px">${(d.getDate() === 1 || off === start) ? d.toLocaleDateString('en-US', {month:'short'}) + ' ' : ''}${d.getDate()}</p>
-        ${list.slice(0, 4).map(m => `<button type="button" data-v13-acct="${escapeAttr(m.id)}" title="${escapeAttr(m.name + ' · ' + m.label)}" style="display:grid;grid-template-columns:6px minmax(0,1fr);column-gap:5px;align-items:center;width:100%;max-width:100%;box-sizing:border-box;border:0;border-radius:6px;background:var(--sheet);box-shadow:var(--sh1);padding:3px 6px;text-align:left;font-size:11px;line-height:1.25;color:var(--ink)"><span style="width:6px;height:6px;border-radius:50%;background:${m.tone}"></span><span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${escapeHtml(m.name)}</span><span style="grid-column:2;font-family:var(--mono);font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${escapeHtml(m.label)}</span></button>`).join('')}
+        ${list.slice(0, 4).map(m => `<button type="button" data-v13-acct="${escapeAttr(m.id)}" title="${escapeAttr(m.title)}" style="display:grid;grid-template-columns:6px minmax(0,1fr);column-gap:5px;align-items:center;width:100%;max-width:100%;box-sizing:border-box;border:0;border-radius:6px;background:var(--sheet);box-shadow:var(--sh1);padding:3px 6px;text-align:left;font-size:11px;line-height:1.25;color:var(--ink)"><span style="width:6px;height:6px;border-radius:50%;background:${m.tone}"></span><span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${escapeHtml(m.name)}</span><span style="grid-column:2;font-family:var(--mono);font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${escapeHtml(m.short || m.label)}</span></button>`).join('')}
         ${list.length > 4 ? `<p style="font-size:10px;color:var(--muted);padding-left:6px">+${list.length - 4} more</p>` : ''}
       </div>`); }
     const lg = (c, t) => `<span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${c}"></span>${t}</span>`;
@@ -10110,7 +10241,7 @@ function v13AcCal(F){
       <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-bottom:4px">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => `<p style="font-size:11px;font-weight:800;color:var(--muted);padding:0 6px">${d}</p>`).join('')}</div>
       <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">${cells.join('')}</div>
     </div></div>
-    <div style="display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--muted);margin-top:10px">${lg('var(--acc)', 'Next planned session (booked)')}${lg('var(--faint)', 'Later sessions (projected at the current pace)')}${lg('var(--runway)', 'Held')}${lg('var(--partner)', 'Go-live')}</div>`;
+    <div style="display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--muted);margin-top:10px">${lg('var(--acc)', 'Next planned session')}${lg('var(--faint)', 'Later sessions (projected at the current pace)')}${lg('var(--runway)', 'Held')}${lg('var(--partner)', 'Go-live')}</div>`;
   }
   return `<div data-v13-av-pane="cal">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"><p style="font-size:13px;color:var(--muted)">${escapeHtml(note)}</p><div role="tablist" aria-label="Calendar range" style="display:flex;gap:2px;padding:3px;background:var(--well);border-radius:999px">${modes}</div></div>
@@ -10174,15 +10305,17 @@ function v13AcGs(F){
     <p style="font-size:12px;color:var(--muted);margin-top:10px">Not entered is a to-do, not a risk. Click a cell to open the account.</p>
   </div>`;
 }
+// 1.1's search/filter/sort (same ids) as one compact line in the heading's right
+// column, above the view switcher: v13 has no toolbar row. Well pills like the switcher.
 function v13AcToolbar(){
-  const sel = 'border:1px solid var(--line2);border-radius:999px;background:var(--sheet);color:var(--ink);padding:6px 12px;font-size:13px;font-family:inherit';
-  return `<div class="v13ac-tools" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:18px">
+  const sel = 'border:0;border-radius:999px;background:var(--well);color:var(--ink);padding:5px 10px;font-size:12px;font-weight:700;font-family:inherit;min-width:0';
+  return `<div data-v13-ac-filters style="display:flex;flex-wrap:nowrap;gap:6px;align-items:center;justify-content:flex-end;max-width:100%">
     ${ui.quickFilter === 'grad30' ? `<button type="button" id="clear-quick-filter" title="Clear this filter" style="${sel};font-weight:700;color:var(--acc)">Graduating ≤30 days ✕</button>` : ''}
-    <input type="text" id="search-input" placeholder="Search accounts…" aria-label="Search accounts" value="${escapeAttr(ui.search)}" style="${sel};min-width:220px;flex:0 1 280px">
-    <select id="filter-module" aria-label="Module" style="${sel}"><option value="all" ${ui.filterModule === 'all' ? 'selected' : ''}>All modules</option>${DATA.config.modules.map(m => `<option value="${escapeAttr(m)}" ${ui.filterModule === m ? 'selected' : ''}>${escapeHtml(m)}</option>`).join('')}</select>
-    <select id="filter-lifecycle" aria-label="Lifecycle" style="${sel}">${[['all','All lifecycle'],['implementation','In implementation'],['live','Live (post-impl.)'],['graduated','Graduated']].map(([v, t]) => `<option value="${v}" ${ui.filterLifecycle === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
-    <select id="filter-risk" aria-label="Status" style="${sel}">${[['all','All statuses'],['risk','Off Track'],['watch','Watch'],['ontrack','On Track']].map(([v, t]) => `<option value="${v}" ${ui.filterRisk === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
-    <select id="sort-by" aria-label="Sort" style="${sel}">${[['risk','Confirmed risk, then quiet longest'],['lastActivity','Last activity'],['stage','TTFV stage'],['graduation','Graduation date'],['name','Name']].map(([v, t]) => `<option value="${v}" ${ui.sortBy === v ? 'selected' : ''}>Sort: ${t}</option>`).join('')}</select>
+    <input type="text" id="search-input" placeholder="Search accounts…" aria-label="Search accounts" value="${escapeAttr(ui.search)}" style="${sel};font-weight:500;width:130px;flex:0 1 130px">
+    <select id="filter-module" aria-label="Module" style="${sel};width:112px"><option value="all" ${ui.filterModule === 'all' ? 'selected' : ''}>All modules</option>${DATA.config.modules.map(m => `<option value="${escapeAttr(m)}" ${ui.filterModule === m ? 'selected' : ''}>${escapeHtml(m)}</option>`).join('')}</select>
+    <select id="filter-lifecycle" aria-label="Lifecycle" style="${sel};width:112px">${[['all','All lifecycle'],['implementation','In implementation'],['live','Live (post-impl.)'],['graduated','Graduated']].map(([v, t]) => `<option value="${v}" ${ui.filterLifecycle === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
+    <select id="filter-risk" aria-label="Status" style="${sel};width:106px">${[['all','All statuses'],['risk','Off Track'],['watch','Watch'],['ontrack','On Track']].map(([v, t]) => `<option value="${v}" ${ui.filterRisk === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
+    <select id="sort-by" aria-label="Sort" style="${sel};width:268px">${[['risk','Confirmed risk, then quiet longest'],['lastActivity','Last activity'],['stage','TTFV stage'],['graduation','Graduation date'],['name','Name']].map(([v, t]) => `<option value="${v}" ${ui.sortBy === v ? 'selected' : ''}>Sort: ${t}</option>`).join('')}</select>
   </div>`;
 }
 function v13Accounts(){
@@ -10196,15 +10329,17 @@ function v13Accounts(){
     : av === 'kanban' ? v13AcKanban(F) : av === 'table' ? v13AcTable(F) : av === 'cal' ? v13AcCal(F) : av === 'heat' ? v13AcHeat(F) : av === 'gs' ? v13AcGs(F) : v13AcGantt(F);
   return `<section data-v13-accounts aria-label="Accounts">
     <style>[data-v13-accounts] .v13ac-row:hover{background:var(--sheet2) !important}[data-v13-accounts] button{cursor:pointer;font-family:inherit}[data-v13-accounts] h1,[data-v13-accounts] p{margin:0}[data-v13-accounts] table th,[data-v13-accounts] table td{border:0;vertical-align:top}</style>
-    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px 24px">
-      <div>
+    <div data-v13-ac-head style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px 24px">
+      <div style="flex:1 1 340px;min-width:0">
         <h1 style="font-size:clamp(34px,3.6vw,52px);font-weight:900;letter-spacing:-0.035em;line-height:1">Accounts</h1>
         <p data-v13-acct-sub style="color:var(--muted);margin-top:8px;font-size:15px">${DATA.customers.length} accounts${F.length !== DATA.customers.length ? ' · ' + F.length + ' shown' : ''}. Each view shows separate facts; none of them stands in for readiness.</p>
       </div>
-      <div role="tablist" aria-label="Book view" style="display:flex;gap:2px;padding:3px;background:var(--well);border-radius:999px;flex-wrap:wrap">${tabs}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width:0;max-width:100%">
+        ${v13AcToolbar()}
+        <div role="tablist" aria-label="Book view" style="display:flex;gap:2px;padding:3px;background:var(--well);border-radius:999px;flex-wrap:wrap">${tabs}</div>
+      </div>
     </div>
-    ${v13AcToolbar()}
-    <div style="margin-top:14px;background:var(--sheet);border-radius:18px;box-shadow:var(--sh1);padding:18px 20px">${body}</div>
+    <div style="margin-top:22px;background:var(--sheet);border-radius:18px;box-shadow:var(--sh1);padding:18px 20px">${body}</div>
   </section>`;
 }
 V13_BINDERS.accounts = box => {
@@ -13920,11 +14055,50 @@ async function generateThreadAnswer(activityId, threadId){
   render();
 }
 
+/* The Go-Live gates of the old day pane, shared by the pane and the v13 Desk (Task 6): one markup,
+ same ids and data attributes, so bindBeatPane() binds them wherever they sit. */
+function beatGateBlocks(c){
+  const comp = c.compliance || {};
+  const s = comp.sentiment || {}, op = comp.outcomePlan || {}, ap = comp.associatedPeopleCSAT || {};
+  const done = (isDone, label) => `<span class="badge ${isDone ? 'badge-ontrack' : 'badge-watch'}">${isDone ? icon('check') + ' ' + label : label}</span>`;
+  return {
+    gates: `      <div class="focus-act">
+        <h5>Gainsight gates start at Go-Live</h5>
+        <p class="bp-basis" style="margin:0;">This account is in partner-led implementation, so the outcome plan, CSAT contact, and sentiment gates are not open yet. Manage the build on the Implementation tab.</p>
+      </div>`,
+    outcome: `    <div class="focus-act">
+      <h5>Success Outcome Plan ${done(!!op.done, op.done ? 'created' : 'not created')}</h5>
+      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+        <label class="sr-only" for="fp-outcome-${escapeAttr(c.id)}">Numbered success outcome for ${escapeHtml(c.name)}</label>
+        <select id="fp-outcome-${escapeAttr(c.id)}" data-fp-outcome="${escapeAttr(c.id)}" style="flex:1; min-width:180px;">
+          <option value="">Select the numbered outcome…</option>
+          ${(DATA.config.outcomeNames || []).map((n,i)=>`<option value="${i+1}"${op.outcomeNumber===(i+1)?' selected':''}>${i+1}. ${escapeHtml(n)}</option>`).join('')}
+        </select>
+        <button class="btn btn-sm" data-fp-outcome-queue="${escapeAttr(c.id)}" title="Add the drafted plan to the close, to push with everything else">Queue plan</button>
+        <button class="btn btn-sm ${op.done ? '' : 'btn-primary'}" data-fp-toggle="outcomePlan|${escapeAttr(c.id)}">${op.done ? 'Undo' : 'Mark created'}</button>
+      </div>
+    </div>`,
+    csat: `    <div class="focus-act">
+      <h5>Associated contact for CSAT ${done(!!ap.done, ap.done ? 'added' : 'not added')}</h5>
+      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+        <label class="sr-only" for="fp-csat-${escapeAttr(c.id)}">CSAT survey contact for ${escapeHtml(c.name)}</label>
+        <input type="text" id="fp-csat-${escapeAttr(c.id)}" data-fp-csat="${escapeAttr(c.id)}" maxlength="120" placeholder="Contact name for the CSAT survey" value="${escapeAttr(ap.contactName || '')}" style="flex:1; min-width:180px;">
+        <button class="btn btn-sm ${ap.done ? '' : 'btn-primary'}" data-fp-toggle="associatedPeopleCSAT|${escapeAttr(c.id)}">${ap.done ? 'Undo' : 'Mark added'}</button>
+      </div>
+      ${csatDatesHtml(ap, c.id, 'pane')}
+    </div>`,
+    sentiment: `    <div class="focus-act">
+      <h5>Sentiment ${done(!!s.done, s.done ? 'logged' : 'not logged')}</h5>
+      <label class="sr-only" for="fp-sent-a-${escapeAttr(c.id)}">What has contributed most to their satisfaction or success?</label>
+      <textarea id="fp-sent-a-${escapeAttr(c.id)}" data-fp-sentiment="a|${escapeAttr(c.id)}" rows="2" placeholder="What has contributed most to their satisfaction or success?">${escapeHtml(s.answerA || '')}</textarea>
+      <label class="sr-only" for="fp-sent-b-${escapeAttr(c.id)}">What could be improved to better meet their needs or goals?</label>
+      <textarea id="fp-sent-b-${escapeAttr(c.id)}" data-fp-sentiment="b|${escapeAttr(c.id)}" rows="2" style="margin-top:6px;" placeholder="What could be improved to better meet their needs or goals?">${escapeHtml(s.answerB || '')}</textarea>
+      <button class="btn btn-sm ${s.done ? '' : 'btn-primary'}" style="margin-top:6px;" data-fp-toggle="sentiment|${escapeAttr(c.id)}">${s.done ? 'Undo' : 'Mark logged'}</button>`
+  };
+}
 function renderBeatPanel(beat, dispatchChips){
   const c = DATA.customers.find(x => x.id === beat.customerId);
   if(!c) return '';
-  const comp = c.compliance || {};
-  const s = comp.sentiment || {}, op = comp.outcomePlan || {}, ap = comp.associatedPeopleCSAT || {};
   const risks = buildRiskHubList().filter(r => r.c.id === c.id);
   const impl = inImplementation(c);
   const done = (isDone, label) => `<span class="badge ${isDone ? 'badge-ontrack' : 'badge-watch'}">${isDone ? icon('check') + ' ' + label : label}</span>`;
@@ -13965,42 +14139,7 @@ function renderBeatPanel(beat, dispatchChips){
 
     ${renderBeatQuestions(c)}
 
-    ${impl ? `
-      <div class="focus-act">
-        <h5>Gainsight gates start at Go-Live</h5>
-        <p class="bp-basis" style="margin:0;">This account is in partner-led implementation, so the outcome plan, CSAT contact, and sentiment gates are not open yet. Manage the build on the Implementation tab.</p>
-      </div>` : `
-    <div class="focus-act">
-      <h5>Success Outcome Plan ${done(!!op.done, op.done ? 'created' : 'not created')}</h5>
-      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-        <label class="sr-only" for="fp-outcome-${escapeAttr(c.id)}">Numbered success outcome for ${escapeHtml(c.name)}</label>
-        <select id="fp-outcome-${escapeAttr(c.id)}" data-fp-outcome="${escapeAttr(c.id)}" style="flex:1; min-width:180px;">
-          <option value="">Select the numbered outcome…</option>
-          ${(DATA.config.outcomeNames || []).map((n,i)=>`<option value="${i+1}"${op.outcomeNumber===(i+1)?' selected':''}>${i+1}. ${escapeHtml(n)}</option>`).join('')}
-        </select>
-        <button class="btn btn-sm" data-fp-outcome-queue="${escapeAttr(c.id)}" title="Add the drafted plan to the close, to push with everything else">Queue plan</button>
-        <button class="btn btn-sm ${op.done ? '' : 'btn-primary'}" data-fp-toggle="outcomePlan|${escapeAttr(c.id)}">${op.done ? 'Undo' : 'Mark created'}</button>
-      </div>
-    </div>
-
-    <div class="focus-act">
-      <h5>Associated contact for CSAT ${done(!!ap.done, ap.done ? 'added' : 'not added')}</h5>
-      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-        <label class="sr-only" for="fp-csat-${escapeAttr(c.id)}">CSAT survey contact for ${escapeHtml(c.name)}</label>
-        <input type="text" id="fp-csat-${escapeAttr(c.id)}" data-fp-csat="${escapeAttr(c.id)}" maxlength="120" placeholder="Contact name for the CSAT survey" value="${escapeAttr(ap.contactName || '')}" style="flex:1; min-width:180px;">
-        <button class="btn btn-sm ${ap.done ? '' : 'btn-primary'}" data-fp-toggle="associatedPeopleCSAT|${escapeAttr(c.id)}">${ap.done ? 'Undo' : 'Mark added'}</button>
-      </div>
-      ${csatDatesHtml(ap, c.id, 'pane')}
-    </div>
-
-    <div class="focus-act">
-      <h5>Sentiment ${done(!!s.done, s.done ? 'logged' : 'not logged')}</h5>
-      <label class="sr-only" for="fp-sent-a-${escapeAttr(c.id)}">What has contributed most to their satisfaction or success?</label>
-      <textarea id="fp-sent-a-${escapeAttr(c.id)}" data-fp-sentiment="a|${escapeAttr(c.id)}" rows="2" placeholder="What has contributed most to their satisfaction or success?">${escapeHtml(s.answerA || '')}</textarea>
-      <label class="sr-only" for="fp-sent-b-${escapeAttr(c.id)}">What could be improved to better meet their needs or goals?</label>
-      <textarea id="fp-sent-b-${escapeAttr(c.id)}" data-fp-sentiment="b|${escapeAttr(c.id)}" rows="2" style="margin-top:6px;" placeholder="What could be improved to better meet their needs or goals?">${escapeHtml(s.answerB || '')}</textarea>
-      <button class="btn btn-sm ${s.done ? '' : 'btn-primary'}" style="margin-top:6px;" data-fp-toggle="sentiment|${escapeAttr(c.id)}">${s.done ? 'Undo' : 'Mark logged'}</button>
-    </div>`}
+    ${(g => impl ? g.gates : g.outcome + g.csat + g.sentiment)(beatGateBlocks(c))}
 
     <div class="focus-act">
       <h5>Risk ${risks.length ? `<span class="badge badge-risk">${risks.length} open</span>` : done(true, 'none open')}</h5>
@@ -16731,7 +16870,15 @@ function bindBeatPane(root){
 }
 /* Global bindings for selectors that ALSO appear inside beat panes must skip
    pane descendants, or a pane present at render time would be bound twice. */
-function notInPane(el){ return !(el.closest && el.closest('.day-pane')); }
+function notInPane(el){ return !(el.closest && el.closest('.day-pane, [data-v13-desk-pane]')); }   // Task 6: Desk boxes bind like panes
+/* v13 fixes: the account a control acts on. The Desk draws 1.1's tab bodies for its own
+   selected account inside [data-v13-desk-cust]; there that id wins over ui.openCustomerId,
+   so a Desk control can never write to the panel's (or a stale) account. */
+function controlCustomer(el){
+  const scope = el && el.closest && el.closest('[data-v13-desk-cust]');
+  const id = scope ? scope.dataset.v13DeskCust : ui.openCustomerId;
+  return DATA.customers.find(x => x.id === id);
+}
 
 function attachEvents(){
   const $ = sel => document.querySelector(sel);
@@ -17063,6 +17210,7 @@ The draft is discarded. The risk itself stays open.`)) return;
      it. Panes present at this moment are bound here; panes rebuilt by a swap
      are bound by syncDayPool(). A node is therefore bound exactly once. */
   $$('#day .day-pane').forEach(bindBeatPane);
+  $$('[data-v13-desk-pane]').forEach(bindBeatPane);   // Task 6: the pane's surfaces on the v13 Desk
   $$('[data-goto-gainsight]').forEach(b => b.addEventListener('click', ()=>{
     ui.view = 'risk'; syncRoute(); render();
     // The queue is a block on the Risk tab, so land ON it rather than at the top.
@@ -17375,7 +17523,7 @@ The draft is discarded. The risk itself stays open.`)) return;
   /* v88 plays. Every write goes through the model functions, never by hand, so
      the caps and the never-two-of-the-same rule cannot be bypassed from the UI. */
   $$('[data-pb-start]').forEach(b => b.addEventListener('click', ()=>{
-    const c = DATA.customers.find(x => x.id === ui.openCustomerId);
+    const c = controlCustomer(b);
     if(!c) return;
     markUndoable('start play');
     if(!startPlaybook(c, b.dataset.pbStart)){ showToast('That play is already running on this account.'); return; }
@@ -17383,14 +17531,14 @@ The draft is discarded. The risk itself stays open.`)) return;
     showToast(`"${playbookDef(b.dataset.pbStart).title}" started. Its steps carry dates and will show on Today.`);
   }));
   $$('[data-pb-step]').forEach(cb => cb.addEventListener('change', ()=>{
-    const c = DATA.customers.find(x => x.id === ui.openCustomerId);
+    const c = controlCustomer(cb);
     if(!c) return;
     markUndoable('play step');
     togglePlaybookStep(c, cb.dataset.pbStep, cb.dataset.pbStepKey);
     saveData(); render();
   }));
   $$('[data-pb-close]').forEach(sel => sel.addEventListener('change', ()=>{
-    const c = DATA.customers.find(x => x.id === ui.openCustomerId);
+    const c = controlCustomer(sel);
     if(!c || !sel.value) return;
     markUndoable('close play');
     closePlaybook(c, sel.dataset.pbClose, sel.value);
@@ -17548,7 +17696,7 @@ The draft is discarded. The risk itself stays open.`)) return;
   const coordCollection = (c, kind) => kind === 'stakeholder' ? 'stakeholders' : kind === 'blocker' ? 'blockers' : 'commitments';
   const coordCap = kind => kind === 'stakeholder' ? MAX_STAKEHOLDERS : kind === 'blocker' ? MAX_BLOCKERS : MAX_COMMITMENTS;
   $$('[data-coord-add]').forEach(btn => btn.addEventListener('click', ()=>{
-    const c = DATA.customers.find(x => x.id === ui.openCustomerId);
+    const c = controlCustomer(btn);
     if(!c) return;
     const kind = btn.dataset.coordAdd, field = coordCollection(c, kind);
     const raw = kind === 'stakeholder'
@@ -17566,7 +17714,7 @@ The draft is discarded. The risk itself stays open.`)) return;
   }));
   $$('[data-coord-toggle]').forEach(btn => btn.addEventListener('click', ()=>{
     const [kind, id] = btn.dataset.coordToggle.split('|');
-    const c = DATA.customers.find(x => x.id === ui.openCustomerId);
+    const c = controlCustomer(btn);
     if(!c) return;
     const rec = (c[coordCollection(c, kind)] || []).find(r => r.id === id);
     if(!rec) return;
@@ -17579,7 +17727,7 @@ The draft is discarded. The risk itself stays open.`)) return;
      repaint per keystroke would destroy the field mid-sentence. */
   $$('[data-handoff]').forEach(ta => ta.addEventListener('change', ()=>{
     const [dir, key] = ta.dataset.handoff.split('|');
-    const c = DATA.customers.find(x => x.id === ui.openCustomerId);
+    const c = controlCustomer(ta);
     if(!c || !HANDOFF_DIRS[dir]) return;
     markUndoable('handoff notes');
     setHandoffField(c, dir, key, ta.value);
@@ -17602,7 +17750,7 @@ The draft is discarded. The risk itself stays open.`)) return;
   }));
   $$('[data-coord-remove]').forEach(btn => btn.addEventListener('click', ()=>{
     const [kind, id] = btn.dataset.coordRemove.split('|');
-    const c = DATA.customers.find(x => x.id === ui.openCustomerId);
+    const c = controlCustomer(btn);
     if(!c) return;
     const field = coordCollection(c, kind);
     markUndoable('remove ' + kind);
@@ -17727,7 +17875,7 @@ The draft is discarded. The risk itself stays open.`)) return;
   $('#btn-cancel-log-form') && $('#btn-cancel-log-form').addEventListener('click', ()=>{ ui.panelTab = 'activity'; render(); });
 
   // overview tab interactions
-  const c = DATA.customers.find(x=>x.id===ui.openCustomerId);
+  const c = DATA.customers.find(x=>x.id===ui.openCustomerId) || controlCustomer(document.querySelector('[data-v13-desk-cust]'));
   if(c){
     $$('.override-btn').forEach(b => b.addEventListener('click', ()=>{
       c.riskOverride = b.dataset.override || null; saveData(); render();

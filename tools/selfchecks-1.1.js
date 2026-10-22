@@ -4687,7 +4687,7 @@ function _runSelfChecksInner(){
        selector renderBeatPanel() emits is handled inside bindBeatPane(), and
        that syncDayPool() calls it. */
     (function(){
-      const emitted = [...new Set((String(renderBeatPanel) + String(renderBeatPrep))
+      const emitted = [...new Set((String(renderBeatPanel) + String(beatGateBlocks) + String(renderBeatPrep))
         .match(/data-fp-[a-z-]+/g) || [])];
       const bound = String(bindBeatPane);
       const missing = emitted.filter(sel => bound.indexOf(sel) === -1);
@@ -4696,7 +4696,7 @@ function _runSelfChecksInner(){
         && typeof notInPane === 'function';
     })(),
     (function(){
-      const emitted = [...new Set((String(renderBeatPanel) + String(renderBeatPrep)).match(/data-fp-[a-z-]+/g) || [])];
+      const emitted = [...new Set((String(renderBeatPanel) + String(beatGateBlocks) + String(renderBeatPrep)).match(/data-fp-[a-z-]+/g) || [])];
       return 'unbound: ' + emitted.filter(sel => String(bindBeatPane).indexOf(sel) === -1).join(', ');
     })());
   (function(){
@@ -5359,7 +5359,7 @@ function _runSelfChecksInner(){
     // Draft in the beat, push at the close: a beat action must QUEUE, not fire.
     String(renderDayClose).indexOf('getGainsightQueue()') !== -1 &&
     String(renderBeatPanel).indexOf('data-fp-queue=') !== -1 &&
-    String(renderBeatPanel).indexOf('data-fp-outcome-queue=') !== -1);
+    String(renderBeatPanel).indexOf('beatGateBlocks(c)') !== -1 && String(beatGateBlocks).indexOf('data-fp-outcome-queue=') !== -1   /* Task 6: the gates moved to a shared helper */);
   check('v62 AI dossier reads a full onboarding lifecycle',
     CALLPREP_MAX_ACTIVITIES >= 40 && CALLPREP_NOTE_CHAR_CAP > 0,
     `max=${CALLPREP_MAX_ACTIVITIES}, noteCap=${CALLPREP_NOTE_CHAR_CAP}`);
@@ -10271,6 +10271,223 @@ function _runSelfChecksInner(){
     }
   })();
   /* ==== end v13 checks: Desk ==== */
+  /* ==== v13 fixes: desk ==== (fix items 1a, 2, 9: the Desk work tabs are live and act on the
+     Desk's account, never ui.openCustomerId's; Prepare uses v13's four steps). Works on a
+     copy of DATA and puts the real one back. */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prev = {view: ui.view, open: ui.openCustomerId, tab: ui.panelTab, id: ui.v13DeskId, wt: ui.v13DeskTab, lens: ui.v13DeskLens, fil: ui.v13DeskFilter};
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevSwitch = null; try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const realDATA = DATA;
+    const body = () => document.querySelector('#app [data-osm] [data-v13-desk-body]');
+    const pickAB = () => {
+      const live = DATA.customers.filter(c => c.stage !== 'graduated' && !inImplementation(c));
+      return [live[0], live[1] || DATA.customers.find(c => c !== live[0])];
+    };
+    const show = (a, tab) => { ui.openCustomerId = null; ui.view = 'today'; ui.v13DeskId = a.id; ui.v13DeskTab = tab; ui.v13DeskFilter = null; render(); };
+    const cust = id => JSON.stringify(DATA.customers.find(c => c.id === id));
+    let ok, detail;
+    try{
+      localStorage.removeItem(KEY); DATA = cloneData(realDATA);
+      // 1. Capture: logging an activity writes to the Desk's account, not ui.openCustomerId's
+      ok = false; detail = '';
+      try{
+        const [A, B] = pickAB();
+        show(A, 'capture');
+        const nA = (DATA.activities[A.id] || []).length, nB = (DATA.activities[B.id] || []).length;
+        ui.openCustomerId = B.id;   // a stale panel id must not steer the Desk's form
+        const b = body();
+        b.querySelector('#act-type').value = 'Email';
+        b.querySelector('#act-summary').value = 'v13 fixes desk check';
+        b.querySelector('#btn-save-activity').click();
+        const gA = (DATA.activities[A.id] || []).length, gB = (DATA.activities[B.id] || []).length;
+        ok = gA === nA + 1 && gB === nB && (DATA.activities[A.id] || []).some(x => x.summary === 'v13 fixes desk check');
+        detail = JSON.stringify({A: A.id, B: B.id, nA, gA, nB, gB});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk Capture logs the activity on the Desk\'s selected account, not the one in ui.openCustomerId', ok, detail);
+      // 2. Prepare: the session-plan prep note writes to the Desk's account
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB();
+        show(A, 'prepare');
+        const bA = cust(A.id), bB = cust(B.id);
+        ui.openCustomerId = B.id;
+        const ta = body().querySelector('[data-session-prep]');
+        ta.value = 'v13 fixes prep note';
+        ta.dispatchEvent(new Event('change'));
+        ok = cust(A.id) !== bA && cust(A.id).indexOf('v13 fixes prep note') !== -1 && cust(B.id) === bB;
+        detail = JSON.stringify({A: A.id, B: B.id, changedA: cust(A.id) !== bA, changedB: cust(B.id) !== bB});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk Prepare session-plan note writes to the Desk\'s selected account', ok, detail);
+      // 3. Evidence: a handoff note (read at change time) writes to the Desk's account
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB();
+        show(A, 'evidence');
+        const bA = cust(A.id), bB = cust(B.id);
+        ui.openCustomerId = B.id;
+        const ta = body().querySelector('[data-handoff]');
+        ta.value = 'v13 fixes handoff note';
+        ta.dispatchEvent(new Event('change'));
+        ok = cust(A.id).indexOf('v13 fixes handoff note') !== -1 && cust(B.id) === bB;
+        detail = JSON.stringify({A: A.id, B: B.id, changedA: cust(A.id) !== bA, changedB: cust(B.id) !== bB});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk Evidence handoff note writes to the Desk\'s selected account', ok, detail);
+      // 4. no inert, no read-only title, on any tab
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A] = pickAB();
+        const bad = [];
+        ['prepare','capture','evidence','record'].forEach(t => {
+          show(A, t);
+          const p = body().querySelector('[data-v13-desk-panel]');
+          if(!p || p.hasAttribute('inert') || body().querySelector('[inert]') || /Read here/.test(p.getAttribute('title') || '')) bad.push(t);
+        });
+        ok = !bad.length;
+        detail = JSON.stringify({bad});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk work-tab panels are live: no inert attribute and no "Read here" title', ok, detail);
+      // 5. Prepare follows v13: Goal > Evidence > Uncertainty > Next review, and "Open full account" still opens the panel
+      ok = false; detail = '';
+      try{
+        const [A] = pickAB();
+        show(A, 'prepare');
+        const heads = [...body().querySelectorAll('[data-v13-prep-step] h4')].map(h => h.textContent.split('·')[0].trim());
+        document.querySelector('#app [data-osm] [data-v13-desk-open]').click();
+        ok = heads.join('|') === 'Goal|Evidence|Uncertainty|Next review' && ui.openCustomerId === A.id && !!document.querySelector('.overlay .panel');
+        detail = JSON.stringify({heads, open: ui.openCustomerId});
+      }catch(e){ detail = e.message; }
+      check('v13 fix Desk Prepare shows Goal, Evidence, Uncertainty and Next review in order; "Open full account" still opens the panel', ok, detail);
+    } finally {
+      DATA = realDATA;
+      try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+      try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+      ui.view = prev.view; ui.openCustomerId = prev.open; ui.panelTab = prev.tab; ui.v13DeskId = prev.id; ui.v13DeskTab = prev.wt;
+      ui.v13DeskLens = prev.lens; ui.v13DeskFilter = prev.fil;
+      render();
+    }
+  })();
+  /* ==== end v13 fixes: desk ==== */
+  /* ==== v13 fixes: pane ==== (Task 6: the old Today day pane's features live on the Desk, same ids
+     and data attributes, acting on the Desk's account). Works on a copy of DATA and puts the real one back. */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prev = {view: ui.view, open: ui.openCustomerId, tab: ui.panelTab, id: ui.v13DeskId, wt: ui.v13DeskTab, lens: ui.v13DeskLens, fil: ui.v13DeskFilter};
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevSwitch = null; try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const realDATA = DATA;
+    const prevWrite = navigator.clipboard && navigator.clipboard.writeText;
+    const body = () => document.querySelector('#app [data-osm] [data-v13-desk-body]');
+    const pickAB = () => {
+      const live = DATA.customers.filter(c => c.stage !== 'graduated' && !inImplementation(c));
+      return [live[0], live[1] || DATA.customers.find(c => c !== live[0])];
+    };
+    const show = (a, tab) => { ui.openCustomerId = null; ui.view = 'today'; ui.v13DeskId = a.id; ui.v13DeskTab = tab; ui.v13DeskFilter = null; render(); };
+    // B's compliance record only: a render with ui.openCustomerId = B opens B's panel, which may stamp display fields
+    const cust = id => JSON.stringify((DATA.customers.find(c => c.id === id) || {}).compliance || null);
+    const live = c => { c.compliance = c.compliance || {}; ['sentiment','outcomePlan','associatedPeopleCSAT'].forEach(k => { if(!c.compliance[k]) c.compliance[k] = {done:false}; }); };
+    let ok, detail;
+    try{
+      localStorage.removeItem(KEY);
+      // 1. Call prep inside Prepare for an account with a call today; Copy agenda copies the Desk's account
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB();
+        A.nextSessionScheduledOn = todayISO(); A.nextSessionTime = '10:00';
+        A.commitments = (A.commitments || []).concat([{id:'pane-sc-1', direction:'i_owe', text:'pane check you owe', due: isoAddDays(todayISO(), -2), createdOn: isoAddDays(todayISO(), -9)},
+          {id:'pane-sc-2', direction:'they_owe', text:'pane check they owe', due: isoAddDays(todayISO(), 3), createdOn: isoAddDays(todayISO(), -9)}]);
+        show(A, 'prepare');
+        ui.openCustomerId = B.id;
+        let clip = null; navigator.clipboard.writeText = t => { clip = t; return Promise.resolve(); };
+        const b = body();
+        const prep = b.querySelector('[data-v13-desk-pane] [data-beat-agenda]');
+        const btn = prep && prep.querySelector('[data-beat-agenda-copy]');
+        if(btn) btn.click();
+        const txt = b.textContent;
+        ok = !!btn && /Call prep/.test(txt) && !!b.querySelector('[data-beat-promises-sec]') && /pane check they owe/.test(txt)
+          && /Sessions/.test(txt) && typeof clip === 'string' && clip.indexOf('Agenda - ' + A.name) === 0 && clip.indexOf('pane check you owe') !== -1;
+        detail = JSON.stringify({A: A.id, btn: !!btn, clip: clip && clip.slice(0, 60)});
+      }catch(e){ detail = e.message; }
+      check('v13 fix pane: Desk Prepare carries Call prep (standing, agenda, promises) and Copy agenda copies the Desk\'s account', ok, detail);
+      // 2. Go-Live outcome plan and CSAT controls on Evidence write to the Desk's account
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB(); live(A); live(B);
+        A.compliance.outcomePlan.outcomeNumber = null; A.compliance.associatedPeopleCSAT.surveySentOn = null;
+        show(A, 'evidence');
+        const bB = cust(B.id);
+        ui.openCustomerId = B.id;
+        const sel = body().querySelector('[data-v13-desk-pane] [data-fp-outcome="' + cssEscape(A.id) + '"]');
+        const hasCsat = !!body().querySelector('[data-fp-csat="' + cssEscape(A.id) + '"]') && !!body().querySelector('[data-fp-csat-answered="' + cssEscape(A.id) + '"]');
+        sel.value = '1'; sel.dispatchEvent(new Event('change'));
+        show(A, 'evidence'); ui.openCustomerId = B.id;   // the change re-rendered with B's panel open; back to the Desk
+        const sent = body().querySelector('[data-v13-desk-pane] [data-fp-csat-sent="' + cssEscape(A.id) + '"]');
+        sent.value = isoAddDays(todayISO(), -1); sent.dispatchEvent(new Event('change'));
+        const a2 = DATA.customers.find(c => c.id === A.id).compliance;
+        ok = hasCsat && a2.outcomePlan.outcomeNumber === 1 && a2.associatedPeopleCSAT.surveySentOn === isoAddDays(todayISO(), -1) && cust(B.id) === bB;
+        detail = JSON.stringify({A: A.id, hasCsat, n: a2.outcomePlan.outcomeNumber, sent: a2.associatedPeopleCSAT.surveySentOn, changedB: cust(B.id) !== bB});
+      }catch(e){ detail = e.message; }
+      check('v13 fix pane: Desk Evidence carries the Go-Live outcome plan and CSAT controls, writing to the Desk\'s account', ok, detail);
+      // 3. Capture: the Sentiment toggle for a live account, the gates note (no Sentiment) for one in implementation
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A, B] = pickAB(); live(A); live(B);
+        A.compliance.sentiment.done = false;
+        const I = DATA.customers.find(c => inImplementation(c) && c.id !== A.id);
+        show(A, 'capture');
+        const bB = cust(B.id);
+        ui.openCustomerId = B.id;
+        const heads = [...body().querySelectorAll('[data-v13-desk-pane] h5')].map(h => h.textContent.replace(/\s+/g, ' ').trim());
+        const t = body().querySelector('[data-v13-desk-pane] [data-fp-toggle="sentiment|' + A.id + '"]');
+        t.click();
+        const doneA = DATA.customers.find(c => c.id === A.id).compliance.sentiment.done === true;
+        show(I, 'capture');
+        const iHeads = [...body().querySelectorAll('[data-v13-desk-pane] h5')].map(h => h.textContent.replace(/\s+/g, ' ').trim());
+        ok = heads.some(h => /^Sentiment/.test(h) && /not logged/.test(h)) && doneA && cust(B.id) === bB
+          && iHeads.some(h => h.indexOf('Gainsight gates start at Go-Live') !== -1) && !iHeads.some(h => /^Sentiment/.test(h));
+        detail = JSON.stringify({A: A.id, I: I && I.id, heads, iHeads, doneA});
+      }catch(e){ detail = e.message; }
+      check('v13 fix pane: Desk Capture carries the Sentiment toggle (acts on the Desk\'s account) and, in implementation, the gates-start-at-Go-Live note', ok, detail);
+      // 4. Today heading: Surveys to chase line, Wrap up the day and Back up the book
+      ok = false; detail = '';
+      try{
+        DATA = cloneData(realDATA);
+        const [A] = pickAB(); live(A);
+        A.compliance.associatedPeopleCSAT.surveySentOn = isoAddDays(todayISO(), -30); A.compliance.associatedPeopleCSAT.surveyAnsweredOn = null;
+        const hadDC = Object.prototype.hasOwnProperty.call(DATA, 'dayClose');
+        if(hadDC) DATA.dayClose = {};
+        show(A, 'prepare');
+        const head = document.querySelector('#app [data-osm] section[aria-label="Today"]');
+        const line = head && head.querySelector('#surveys-to-chase');
+        const wrap = head && head.querySelector('[data-wrap-day]'), back = head && head.querySelector('[data-backup-now]');
+        const was = dayIsClosed();
+        if(wrap) wrap.click();
+        const closed = dayIsClosed();
+        const cancel = document.getElementById('modal-cancel'); if(cancel) cancel.click();
+        if(!hadDC) delete DATA.dayClose;   // keep the book's key set as it was at suite entry
+        ok = !!line && line.textContent.indexOf(A.name) !== -1 && !!back && !!wrap && !was && closed;
+        detail = JSON.stringify({line: !!line, wrap: !!wrap, back: !!back, was, closed});
+      }catch(e){ detail = e.message; }
+      check('v13 fix pane: the Today heading carries Surveys to chase, Wrap up the day (closes the day) and Back up the book', ok, detail);
+    } finally {
+      DATA = realDATA;
+      if(navigator.clipboard) navigator.clipboard.writeText = prevWrite;
+      document.querySelectorAll('.modal-backdrop').forEach(n => n.remove());
+      try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+      try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+      ui.view = prev.view; ui.openCustomerId = prev.open; ui.panelTab = prev.tab; ui.v13DeskId = prev.id; ui.v13DeskTab = prev.wt;
+      ui.v13DeskLens = prev.lens; ui.v13DeskFilter = prev.fil;
+      render();
+    }
+  })();
+  /* ==== end v13 fixes: pane ==== */
   /* (spacer)
      (spacer)
      (spacer)
@@ -10367,6 +10584,43 @@ function _runSelfChecksInner(){
       }
     }catch(e){ detail = e.message; }
     check('v13 Co-pilot "Start this play" starts the suggested play through 1.1\'s startPlaybook', pbOk, detail);
+    // 7-8. fixture: a call booked today with prep owed, and an overdue commitment. Built in-page, restored after.
+    const FIXTURE_ON = true; // control run: set false and both checks below must fail
+    const live = DATA.customers.filter(c => c.stage !== 'graduated' && !isPaused(c));
+    const callC = live[0], dueC = live[1];
+    const snap = c => ({s: c.nextSessionScheduledOn, hadS: 'nextSessionScheduledOn' in c, k: JSON.stringify(c.commitments), hadK: 'commitments' in c});
+    const undo = (c, s) => { if(s.hadS) c.nextSessionScheduledOn = s.s; else delete c.nextSessionScheduledOn; if(s.hadK) c.commitments = JSON.parse(s.k); else delete c.commitments; };
+    const sCall = callC && snap(callC), sDue = dueC && snap(dueC);
+    const groupOf = (box, name) => box ? box.querySelector('[data-v13-co-group="' + name + '"]') : null;
+    const countOf = g => g ? Number(g.querySelector('p span').textContent) : 0;
+    const base = (function(){ const b = draw(); return {before: countOf(groupOf(b, BK[0])), overdue: countOf(groupOf(b, BK[2])), overdueCard: !!(b && b.querySelector('[data-v13-co-card][data-cust="' + (dueC && dueC.id) + '"][data-kind="row"]') && /FIXTURE-OVERDUE/.test(b.textContent))}; })();
+    if(FIXTURE_ON && callC && dueC){
+      callC.nextSessionScheduledOn = todayISO();
+      dueC.commitments = [{id: 'fx-overdue', text: 'FIXTURE-OVERDUE send the rollout note', direction: 'i_owe', due: isoAddDays(todayISO(), -3), doneOn: null}];
+    }
+    let bfOk = false; detail = '';
+    try{
+      const box = draw();
+      const g = groupOf(box, BK[0]);
+      const cards = g ? [...g.querySelectorAll('[data-v13-co-card][data-kind="brief"]')] : [];
+      const mine = cards.filter(cd => cd.getAttribute('data-cust') === (callC && callC.id));
+      const n = callsToPrepare(0).length;
+      bfOk = !!g && base.before === 0 && countOf(g) === n && cards.length === n && mine.length === 1 && /Goal:/.test(mine[0].textContent)
+        && box.querySelector('[data-v13-co-group]').getAttribute('data-v13-co-group') === BK[0];
+      detail = JSON.stringify({baseBefore: base.before, group: !!g, count: g && countOf(g), calls: n, cards: cards.length, mine: mine.length});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot "Before today’s calls" shows a brief card for the account booked today, with the right count, first in the list, and the group is absent without a call booked today', bfOk, detail);
+    let odOk = false; detail = '';
+    try{
+      const box = draw();
+      const g = groupOf(box, BK[2]);
+      const mine = g ? [...g.querySelectorAll('[data-v13-co-card][data-kind="row"]')].filter(cd => cd.getAttribute('data-cust') === (dueC && dueC.id) && /FIXTURE-OVERDUE/.test(cd.textContent)) : [];
+      const total = g ? g.querySelectorAll('[data-v13-co-card]').length : 0;
+      odOk = !!g && !base.overdueCard && mine.length === 1 && countOf(g) === total && countOf(g) === base.overdue + 1;
+      detail = JSON.stringify({baseOverdue: base.overdue, baseHadCard: base.overdueCard, group: !!g, count: g && countOf(g), total, mine: mine.length});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot "Overdue" shows the overdue commitment as a card in the group, the count goes up by one, and the card is absent without the commitment', odOk, detail);
+    if(callC) undo(callC, sCall); if(dueC) undo(dueC, sDue);
     try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
     if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
     try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
@@ -10455,6 +10709,46 @@ function _runSelfChecksInner(){
       detail = JSON.stringify({rows, want, all: DATA.customers.length});
     }catch(e){ detail = e.message; }
     check('v13 Accounts 1.1\'s search box still narrows the rows', searchOk, detail);
+    /* v13 fixes: accounts (fix item 7) */
+    // 6. the search/filter/sort controls sit in the heading area as one line, not a second toolbar row; typing and choosing still filter
+    let headCtlOk = false; detail = '';
+    const prevLife = ui.filterLifecycle;
+    try{
+      ui.view = 'accounts'; ui.accountsView = 'table'; ui.search = ''; ui.filterLifecycle = 'all'; render();
+      const p = pane(), head = p && p.querySelector('[data-v13-ac-head]');
+      const ids = ['search-input','filter-module','filter-lifecycle','filter-risk','sort-by'];
+      const inHead = ids.filter(id => head && head.querySelector('#' + id));
+      const line = head && head.querySelector('[data-v13-ac-filters]');
+      const oneLine = !!line && getComputedStyle(line).flexWrap === 'nowrap' && ids.every(id => line.querySelector('#' + id));
+      // the sheet holding the view comes straight after the heading: nothing in between
+      const noToolbar = !!head && !p.querySelector('.v13ac-tools') && !!head.nextElementSibling && !!head.nextElementSibling.querySelector('[data-v13-av-pane]');
+      const first = DATA.customers[0];
+      const inp = p.querySelector('[data-v13-ac-head] #search-input');
+      if(inp && first){ inp.value = first.name; inp.dispatchEvent(new Event('input', {bubbles:true})); }
+      const typed = ui.search; render();
+      const rows = pane().querySelectorAll('[data-v13-av-pane="table"] tbody tr').length;
+      ui.search = ''; render();
+      const lc = pane().querySelector('[data-v13-ac-head] #filter-lifecycle');
+      if(lc){ lc.value = 'graduated'; lc.dispatchEvent(new Event('change', {bubbles:true})); }
+      const lcOk = ui.filterLifecycle === 'graduated' && !!pane().querySelector('[data-v13-ac-head] #filter-lifecycle') && pane().querySelector('[data-v13-ac-head] #filter-lifecycle').value === 'graduated';
+      headCtlOk = inHead.length === ids.length && oneLine && noToolbar && !!first && typed === first.name && rows >= 1 && rows < DATA.customers.length && lcOk;
+      detail = JSON.stringify({head: !!head, inHead: inHead.length, oneLine, noToolbar, typed, rows, lc: ui.filterLifecycle});
+    }catch(e){ detail = e.message; }
+    ui.filterLifecycle = prevLife; ui.search = '';
+    check('v13 Accounts the 1.1 search/filter/sort controls sit on one line inside the heading area (no second toolbar row above the sheet); typing in the search and choosing a lifecycle still filter', headCtlOk, detail);
+    // 7. Month calendar copy matches v13: item label is S<n> (plus time when booked), Go-live or Handed off; the kind lives in the dot and the title; legend says "Next planned session"
+    let monthOk = false; detail = '';
+    try{
+      ui.view = 'accounts'; ui.accountsView = 'cal'; ui.v13CalMode = 'month'; render();
+      const cal = pane().querySelector('[data-v13-av-pane="cal"]');
+      const items = [...cal.querySelectorAll('[data-v13-month-cell] [data-v13-acct]')];
+      const bad = items.map(b => ({l: b.lastElementChild.textContent.trim(), t: b.title})).filter(x => !/^(S\d+( \d{1,2}:\d\d)?|Go-live|Handed off)$/.test(x.l)
+        || !/ · (Session \d+ (held|· next planned|· projected at the current pace)|go-live target|handed off)$/.test(x.t));
+      const legend = cal.lastElementChild.textContent;
+      monthOk = items.length > 0 && !bad.length && legend.indexOf('Next planned session') !== -1 && legend.indexOf('(booked)') === -1;
+      detail = JSON.stringify({items: items.length, bad: bad.slice(0, 3), legend: legend.slice(0, 80)});
+    }catch(e){ detail = e.message; }
+    check('v13 Accounts Month calendar items read like v13 (S<n>, S<n> HH:MM, Go-live, Handed off; held/next/projected in the title) and the legend says "Next planned session"', monthOk, detail);
     try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
     if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
     try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
@@ -10651,6 +10945,114 @@ function _runSelfChecksInner(){
     ui.view = prevView; ui.openCustomerId = prevOpen; render();
   })();
   /* ==== end v13 checks: System ==== */
+  /* ==== v13 fixes: dark ==== (fix items 1b, 4, 5: the full-account overlay wears v13 tokens;
+     with the theme set to dark every v13 screen and the overlay are dark, no light sheet left;
+     the "Me" circle follows the initials rule). Works on a copy of DATA and puts the real one back. */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC, THEME = 'obm-theme-v1';
+    const prev = {view: ui.view, open: ui.openCustomerId, tab: ui.panelTab, wt: ui.v13DeskTab, av: ui.accountsView};
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevSwitch = null, prevTheme = null;
+    try{ prevSwitch = localStorage.getItem(KEY); prevTheme = localStorage.getItem(THEME); }catch(e){}
+    const realDATA = DATA;
+    const rgb = hex => 'rgb(' + [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)).join(', ') + ')';
+    const bg = el => el ? getComputedStyle(el).backgroundColor : 'missing';
+    const setTheme = t => localStorage.setItem(THEME, t);
+    const screen = (view, extra) => { ui.openCustomerId = null; ui.view = view; if(extra) extra(); render(); };
+    const panel = tab => { ui.view = 'today'; ui.openCustomerId = DATA.customers[0].id; ui.panelTab = tab; render(); };
+    // Light surfaces at least 120x36 (a sheet, card or field), opaque enough to read as a sheet.
+    const lightSurfaces = root => {
+      const out = [];
+      const lum = s => { const m = String(s).match(/rgba?\(([^)]+)\)/); if(!m) return null;
+        const p = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); if(p.length > 3 && p[3] < 0.5) return null;
+        return (0.2126*p[0] + 0.7152*p[1] + 0.0722*p[2]) / 255; };
+      root.querySelectorAll('*').forEach(el => {
+        const r = el.getBoundingClientRect(); if(r.width < 120 || r.height < 36) return;
+        const cs = getComputedStyle(el); if(cs.visibility === 'hidden' || cs.display === 'none') return;
+        let L = lum(cs.backgroundColor); const g = cs.backgroundImage.match(/rgba?\([^)]+\)/);
+        if(g){ const l2 = lum(g[0]); if(l2 !== null) L = Math.max(L || 0, l2); }
+        if(L !== null && L > 0.55) out.push((typeof el.className === 'string' && el.className ? el.className.split(' ')[0] : el.tagName) + (el.id ? '#' + el.id : ''));
+      });
+      return out;
+    };
+    const SCREENS = [['desk-prepare', 'today', () => { ui.v13DeskTab = 'prepare'; }], ['desk-capture', 'today', () => { ui.v13DeskTab = 'capture'; }],
+      ['desk-evidence', 'today', () => { ui.v13DeskTab = 'evidence'; }], ['desk-record', 'today', () => { ui.v13DeskTab = 'record'; }],
+      ['copilot', 'copilot'], ...['gantt','kanban','table','cal','heat','gs'].map(v => ['accounts-' + v, 'accounts', () => { ui.accountsView = v; }]),
+      ['risk', 'risk'], ['system', 'system']];
+    const TABS = ['overview','details','sessions','log','gainsight','coordination','handoff','plays'];
+    let ok, detail;
+    try{
+      localStorage.removeItem(KEY); DATA = cloneData(realDATA);
+      // 1. the overlay panel is a v13 side sheet: --sheet2 surface, v13 type and ink, in both themes
+      ok = false; detail = '';
+      try{
+        const read = t => { setTheme(t); panel('overview'); const p = document.querySelector('.overlay .panel'); const cs = getComputedStyle(p);
+          return {bg: cs.backgroundColor, font: cs.fontFamily.split(',')[0], ink: getComputedStyle(p.querySelector('.panel-title')).color}; };
+        const L = read('light'), D = read('dark');
+        ok = L.bg === rgb('#FAF7F1') && D.bg === rgb('#252523') && /Figtree/.test(L.font) && L.ink === rgb('#262626') && D.ink === rgb('#EDEBE7');
+        detail = JSON.stringify({L, D});
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: the full-account overlay is a v13 side sheet (--sheet2 #FAF7F1 / #252523, Figtree, v13 ink) in light and dark', ok, detail);
+      // 2. cards inside the overlay sit on --sheet, which follows the theme
+      ok = false; detail = '';
+      try{
+        setTheme('light'); panel('overview'); const l = bg(document.querySelector('.overlay .section-card'));
+        setTheme('dark'); panel('overview'); const d = bg(document.querySelector('.overlay .section-card'));
+        ok = l === rgb('#FFFFFF') && d === rgb('#1F1F1D');
+        detail = JSON.stringify({l, d});
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: cards in the overlay use the --sheet token (#FFFFFF light, #1F1F1D dark)', ok, detail);
+      // 3. dark: no light sheet left on any v13 screen (Desk four tabs, Co-pilot, Accounts six views, Risk, System)
+      ok = false; detail = '';
+      try{
+        setTheme('dark'); const bad = [];
+        SCREENS.forEach(([name, view, extra]) => { screen(view, extra);
+          const pageOk = bg(document.querySelector('#app [data-osm]')) === rgb('#151514');
+          const l = lightSurfaces(document.querySelector('#app [data-osm] main'));
+          if(!pageOk || l.length) bad.push(name + ':' + (pageOk ? '' : 'page ') + l.slice(0, 3).join(',') + (l.length > 3 ? '+' + (l.length - 3) : '')); });
+        ok = !bad.length; detail = bad.join(' | ').slice(0, 400);
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: with the theme dark, no light sheet is left on any v13 screen (Desk tabs, Co-pilot, Accounts x6, Risk, System)', ok, detail);
+      // 4. dark: no light sheet left in the overlay, on any of its tabs
+      ok = false; detail = '';
+      try{
+        setTheme('dark'); const bad = [];
+        TABS.forEach(t => { panel(t); const p = document.querySelector('.overlay .panel'); p.scrollTop = 0;
+          const l = lightSurfaces(p); if(p.matches && bg(p) !== rgb('#252523')) l.unshift('panel');
+          if(l.length) bad.push(t + ':' + l.slice(0, 3).join(',') + (l.length > 3 ? '+' + (l.length - 3) : '')); });
+        ok = !bad.length; detail = bad.join(' | ').slice(0, 400);
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: with the theme dark, no light sheet is left in the full-account overlay on any tab', ok, detail);
+      // 5. the Co-pilot morning summary stays the stand-out box in light (ink) and turns into a dark raised box in dark
+      ok = false; detail = '';
+      try{
+        const sum = () => document.querySelector('#app [data-v13-co-summary]');
+        setTheme('light'); screen('copilot'); const l = sum() ? bg(sum()) : 'hidden';
+        setTheme('dark'); screen('copilot'); const d = sum() ? bg(sum()) : 'hidden', dc = sum() ? getComputedStyle(sum()).color : '';
+        ok = l === rgb('#262626') && d === rgb('#252523') && dc === rgb('#EDEBE7');
+        detail = JSON.stringify({l, d, dc});
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: the Co-pilot morning summary is #262626 in light and a dark #252523 box with light ink in dark', ok, detail);
+      // 6. initials: 1.1 stores no user name in Settings, so the circle reads "Me" (no new field)
+      ok = false; detail = '';
+      try{
+        setTheme('light'); screen('today');
+        const me = document.querySelector('#app [data-osm] .v13-me');
+        const named = Object.keys(DATA.settings || {}).filter(k => /name/i.test(k));
+        ok = !!me && me.textContent.trim() === 'Me' && !named.length;
+        detail = JSON.stringify({me: me && me.textContent, named});
+      }catch(e){ detail = e.message; }
+      check('v13 fix initials: no user name is stored in Settings, so the top-bar circle reads "Me"', ok, detail);
+    } finally {
+      DATA = realDATA;
+      try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+      try{ if(prevTheme === null) localStorage.removeItem(THEME); else localStorage.setItem(THEME, prevTheme); }catch(e){}
+      try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+      ui.view = prev.view; ui.openCustomerId = prev.open; ui.panelTab = prev.tab; ui.v13DeskTab = prev.wt; ui.accountsView = prev.av;
+      render();
+    }
+  })();
+  /* ==== end v13 fixes: dark ==== */
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
