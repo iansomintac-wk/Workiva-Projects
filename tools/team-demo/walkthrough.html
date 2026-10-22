@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Team demo walkthrough</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --ink: #1d2433;
+  --muted: #5b6475;
+  --line: #d9dde5;
+  --accent: #1f5fbf;
+  --accent-ink: #ffffff;
+  --warn-bg: #fff4d6;
+  --warn-ink: #6b4a00;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 24px; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 760px; margin: 0 auto; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+.sub { color: var(--muted); margin: 0 0 16px; }
+.banner { background: var(--warn-bg); color: var(--warn-ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-bottom: 18px; }
+ol { list-style: none; counter-reset: step; margin: 0; padding: 0; }
+li { counter-increment: step; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+li h2 { font-size: 17px; margin: 0 0 6px; }
+li h2::before { content: counter(step) ". "; color: var(--accent); }
+li p { margin: 4px 0; }
+.real { color: var(--muted); font-size: 13px; }
+a.btn { display: inline-block; margin-top: 8px; padding: 6px 12px; border-radius: 6px; background: var(--accent); color: var(--accent-ink); text-decoration: none; }
+#health-line { font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+<h1>Team demo walkthrough</h1>
+<p class="sub">Five steps against a practice connector on this computer. Nothing here talks to a real system.</p>
+<div class="banner" id="banner">Checking the connector&hellip;</div>
+<ol>
+<li id="step-1">
+  <h2>Check for calls</h2>
+  <p>Open the tracker and run the call check: it shows 5 matched and 1 no-account.</p>
+  <p class="real">What the real connector does: asks Gong for recent calls and matches each one to an account in your book.</p>
+  <a class="btn" href="/osm-book-of-business-tracker-1.1.html" target="_blank">Open the tracker</a>
+</li>
+<li id="step-2">
+  <h2>Read Gainsight accounts</h2>
+  <p>In the tracker, read the Gainsight accounts and see the account list fill in.</p>
+  <p class="real">What the real connector does: reads company records from Gainsight; it never changes them in this step.</p>
+  <a class="btn" href="/osm-book-of-business-tracker-1.1.html" target="_blank">Open the tracker</a>
+</li>
+<li id="step-3">
+  <h2>Check CSAT</h2>
+  <p>In the tracker, choose Check CSAT, look at the dry run, then choose Apply.</p>
+  <p class="real">What the real connector does: reads survey scores from Snowflake, read-only, and the tracker applies them only after you confirm.</p>
+  <a class="btn" href="/osm-book-of-business-tracker-1.1.html" target="_blank">Open the tracker</a>
+</li>
+<li id="step-4">
+  <h2>Send to Gainsight</h2>
+  <p>In the tracker, send the prepared updates: it shows 2 sent and 1 failed.</p>
+  <p class="real">What the real connector does: writes the updates to Gainsight one at a time and reports which ones were refused.</p>
+  <a class="btn" href="/osm-book-of-business-tracker-1.1.html" target="_blank">Open the tracker</a>
+</li>
+<li id="step-5">
+  <h2>Health</h2>
+  <p>In the tracker, open the connector health line. It names each adapter as fake or unproven.</p>
+  <p class="real">What the real connector does: reports which adapters are live, and marks any it has not yet proven against your tenant as unproven.</p>
+  <p id="health-line">Health: loading&hellip;</p>
+  <a class="btn" href="/osm-book-of-business-tracker-1.1.html" target="_blank">Open the tracker</a>
+</li>
+</ol>
+</main>
+<script src="/demo-connector-seed.js"></script>
+<script>
+(function () {
+  var line = document.getElementById('health-line');
+  var banner = document.getElementById('banner');
+  var cfg = {};
+  try { cfg = JSON.parse(localStorage.getItem('obm-connector-settings-v1') || '{}'); } catch (e) {}
+  if (!cfg.url || !cfg.token) { line.textContent = 'Health: no connector settings found'; banner.textContent = 'No connector settings found.'; return; }
+  fetch(cfg.url + '/v1/health', { headers: { Authorization: 'Bearer ' + cfg.token } })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      var a = (j && j.data && j.data.adapters) || (j && j.adapters) || {};
+      var parts = Object.keys(a).map(function (k) {
+        var n = String(a[k]);
+        var tag = /fake/i.test(n) ? 'fake' : (/unproven/i.test(n) ? 'unproven' : 'live');
+        return k + ': ' + n + ' (' + tag + ')';
+      });
+      line.textContent = 'Health: ' + parts.join('; ');
+      banner.textContent = 'Practice mode: the adapters below are fake or unproven. Nothing is sent to a real system.';
+    })
+    .catch(function () { line.textContent = 'Health: the connector did not answer'; banner.textContent = 'The connector did not answer.'; });
+})();
+</script>
+</body>
+</html>

@@ -21,9 +21,9 @@ const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { retu
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function parseReady(out) {
-  const m = out.match(/^team-demo: ready (http:\/\/127\.0\.0\.1:8801\/) walkthrough=(\S+) built=(\S+) connector-pid=(\d+) pids=([\d,]+) tmp=(\S+) connector=(\S+)$/m);
+  const m = out.match(/^team-demo: ready (http:\/\/127\.0\.0\.1:8801\/) walkthrough=(\S+) built=(\S+) connector-pid=(\d+) pids=([\d,]+) tmp=(\S+) chrome-profile=(\S+) connector=(\S+)$/m);
   assert.ok(m, 'no ready line in: ' + out.slice(-600));
-  return { pid: Number(m[4]), tmp: m[6], connector: m[7] };
+  return { pid: Number(m[4]), tmp: m[6], profile: m[7], connector: m[8] };
 }
 async function assertGone({ pid, tmp, connector }) {
   for (let i = 0; i < 40 && (alive(pid) || existsSync(tmp)); i++) await sleep(250);
@@ -71,6 +71,35 @@ test('a kept-alive launcher serves the tracker and seed, and /__stop cleans ever
     await fetch('http://127.0.0.1:8801/__stop').catch(() => {});
     await new Promise((res) => { if (child.exitCode !== null) res(); else { child.once('exit', res); setTimeout(res, 20000); } });
     assert.equal(child.exitCode, 0, out.slice(-500));
+    await assertGone(info);
+  } finally { if (child.exitCode === null && child.pid) spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' }); }
+});
+
+test('walkthrough page has five steps, fake/unproven health, and only loopback URLs; Chrome profile is under the temp folder', { skip }, async () => {
+  const child = spawn(process.execPath, [launcher, '--headless', '--no-open'], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+  let out = '';
+  child.stdout.on('data', (d) => { out += d; }); child.stderr.on('data', (d) => { out += d; });
+  try {
+    for (let i = 0; i < 240 && !/team-demo: ready/.test(out); i++) await sleep(250);
+    const info = parseReady(out);
+    assert.ok(info.profile.startsWith(info.tmp), 'chrome profile not under temp: ' + info.profile);
+    assert.match(info.profile, /chrome-profile$/);
+      assert.doesNotMatch(info.profile.split(String.fromCharCode(92)).join('/'), /Google\/Chrome\/User Data|Chrome\/Default/i);
+    const res = await fetch('http://127.0.0.1:8801/walkthrough');
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type'), /text\/html/);
+    const html = await res.text();
+    const heads = [...html.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').trim());
+    assert.deepEqual(heads, ['Check for calls', 'Read Gainsight accounts', 'Check CSAT', 'Send to Gainsight', 'Health']);
+    assert.equal((html.match(/^\s*<p class="real">What the real connector does:/gm) || []).length, 5);
+    assert.match(html, /\/v1\/health/);
+    assert.match(html, /Bearer/);
+    assert.match(html, /fake/); assert.match(html, /unproven/);
+    assert.match(html, /osm-book-of-business-tracker-1\.1\.html/);
+    const urls = html.match(/https?:\/\/[^\s"'<>)]+/g) || [];
+    for (const u of urls) assert.match(u, /^https?:\/\/(127\.0\.0\.1|localhost)([:\/]|$)/, 'external URL: ' + u);
+    await fetch('http://127.0.0.1:8801/__stop').catch(() => {});
+    await new Promise((r) => { if (child.exitCode !== null) r(); else { child.once('exit', r); setTimeout(r, 20000); } });
     await assertGone(info);
   } finally { if (child.exitCode === null && child.pid) spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' }); }
 });

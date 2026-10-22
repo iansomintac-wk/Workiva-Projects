@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Team demo launcher: a fake-adapter connector plus a 127.0.0.1:8801 server for the 1.1 tracker.
 //   node tools/team-demo.mjs [--headless] [--no-open] [--exit-after-ready]
+// Chrome opens the walkthrough with a fresh --user-data-dir under the temp folder (--headless adds --headless=new and a debugging port; --no-open skips Chrome).
 // Everything is loopback and fake (no key, no external network). Temp files live in os.tmpdir()/team-demo-XXXX.
 // Ctrl+C, SIGTERM, a crash, Chrome exiting or GET /__stop (from 127.0.0.1) stop every child by PID and delete the temp folder.
 // Never touches ports 8790 or 8800. NOT part of the distributable bundle.
@@ -24,6 +25,8 @@ const CHROME_CANDIDATES = [
 ];
 const FILES = {
   '/osm-book-of-business-tracker-1.1.html': ['osm-book-of-business-tracker-1.1.html', 'text/html; charset=utf-8'],
+  '/walkthrough': ['tools/team-demo/walkthrough.html', 'text/html; charset=utf-8'],
+  '/walkthrough.html': ['tools/team-demo/walkthrough.html', 'text/html; charset=utf-8'],
   '/demo-seed.js': ['demo-seed.js', 'text/javascript; charset=utf-8'],
 };
 
@@ -108,17 +111,17 @@ async function main() {
   const c = await startConnector();
   connectorUrl = c.url; connectorToken = c.token;
   const base = `http://127.0.0.1:${PORT}/`;
-  let profile = null;
-  if (!args.has('--headless') && !args.has('--no-open')) {
+  const profile = join(tmp, 'chrome-profile');
+  if (!args.has('--no-open')) {
     const chromePath = CHROME_CANDIDATES.find((p) => existsSync(p));
     if (chromePath) {
-      profile = join(tmp, 'chrome-profile');
-      chrome = spawn(chromePath, [`--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', base + 'osm-book-of-business-tracker-1.1.html'], { stdio: 'ignore' });
+      const flags = args.has('--headless') ? ['--headless=new', '--remote-debugging-port=0'] : [];
+      chrome = spawn(chromePath, [...flags, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', base + 'walkthrough'], { stdio: 'ignore' });
       chrome.on('exit', () => { if (!stopping) shutdown(0); });
-    } else console.error('team-demo: no Chrome or Edge found; open ' + base + ' yourself');
+    } else console.error('team-demo: no Chrome or Edge found; open ' + base + 'walkthrough yourself');
   }
   const pids = [process.pid, connector.pid, chrome && chrome.pid].filter(Boolean).join(',');
-  console.log(`team-demo: ready ${base} walkthrough=${base}walkthrough.html built=${base}osm-book-of-business-tracker-1.1.html connector-pid=${connector.pid} pids=${pids} tmp=${tmp} connector=${connectorUrl}`);
+  console.log(`team-demo: ready ${base} walkthrough=${base}walkthrough built=${base}osm-book-of-business-tracker-1.1.html connector-pid=${connector.pid} pids=${pids} tmp=${tmp} chrome-profile=${profile} connector=${connectorUrl}`);
   if (args.has('--exit-after-ready')) await shutdown(0);
 }
 
