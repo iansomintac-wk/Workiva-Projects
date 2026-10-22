@@ -316,3 +316,7 @@ Timeout: 40m
 - Spec coverage: 1a Task 1; 1b Task 2; 1c Tasks 3 (T4), 4 (T14), 5 (T16), 6 (anything else Task 2 shows); 1d Task 7; 1e Task 8; 1f Task 9; 2 Task 10; 3 Task 11; 4 Task 11 Step 5.
 - Header lines: `Suite:` and `Data: (none)` present; no data task, so no rehearse block.
 - Assumed, not tested: T4/T14/T16 may already work on v13 (my greps show the names present on the merge result of both sides, not that the screens reach them). Tasks 3-5 are written to be honest either way (mutant red, plus fix if the real file is red).
+
+## Re-scope 2026-10-22 (PM proxy decision A, after Task 4 measured it)
+
+Task 4 found the selfcheck suite pins the v13 switch OFF (`tools/selfchecks-1.1.js` line 10), so the FX4/S2 checks prove T14 only on the old screens; with v13 ON (the default) the Desk has 0 `.dk-risk` and 0 `[data-dk-risk]`, and risks are confirmed on the v13 Risk screen (`data-risk-confirm`, "Confirmed before reasons were required. Add a reason"). Tasks 4-5 therefore add checks that set the switch to '1' and prove the T14 (S1 reason shown for a confirmed risk; S2 Add a reason writes it and shows confirmed) and T16 (saving a reason never confirms an unreviewed signal) intents on the v13 Risk screen; red vs a mutant; html fixed only if one fails. The old-screen checks stay (switch '0' still shows those screens). No new Desk card (that would be new look, Ian's call). If a Risk screen wording or layout change is needed to pass, stop and send it to Ian as a taste item. Task 4's first commit f6dca6b (empty, old-screen guard record) stands.
