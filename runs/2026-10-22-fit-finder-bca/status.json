@@ -2,7 +2,7 @@
   "run": "2026-10-22-fit-finder-bca",
   "state": "running",
   "pid": 25148,
-  "task": 3,
+  "task": 4,
   "of": 15,
   "step": "check",
   "attempts": [
@@ -16,16 +16,17 @@
   "peakWorkerMb": 456,
   "minFreeGb": 3.8,
   "startedAt": "2026-10-22T07:01:50.439Z",
-  "updatedAt": "2026-10-22T07:07:48.873Z",
-  "elapsedSec": 358,
-  "tokens": 480180,
-  "usage_cost_usd": 0.4266,
+  "updatedAt": "2026-10-22T07:08:48.697Z",
+  "elapsedSec": 418,
+  "tokens": 585860,
+  "usage_cost_usd": 0.5307,
   "usage_cost_note": "summed total_cost_usd of the workers: subscription usage, not money",
   "done": [
     0,
     1,
     2,
-    3
+    3,
+    4
   ],
   "parked": [],
   "blocked": [],
