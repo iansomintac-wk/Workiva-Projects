@@ -10176,6 +10176,102 @@ function _runSelfChecksInner(){
      (spacer)
      (spacer) */
   /* ==== v13 checks: Co-pilot ==== (owned by the Co-pilot port) */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prevView = ui.view, prevOpen = ui.openCustomerId;
+    const hadSeen = 'todayLastSeenIds' in DATA, prevSeen = JSON.stringify(DATA.todayLastSeenIds);
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevSwitch = null; try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const draw = () => { localStorage.removeItem(KEY); ui.openCustomerId = null; ui.view = 'copilot'; render(); return document.querySelector('#app [data-osm] [data-v13-copilot]'); };
+    const BK = ['Before today’s calls', 'After your calls', 'Overdue', 'This week'];
+    const TIERS = ['APPLIED FOR YOU', 'ONE TAP', 'YOUR CALL'];
+    let detail = '';
+    // 1. layout: heading, morning summary, ranked groups in v13 order, no old chapters
+    let layOk = false;
+    try{
+      const box = draw();
+      const h1 = box && box.querySelector('h1');
+      const groups = box ? [...box.querySelectorAll('[data-v13-co-group]')].map(g => g.getAttribute('data-v13-co-group')) : [];
+      const order = groups.map(g => BK.indexOf(g));
+      layOk = !!box && !!h1 && h1.textContent.trim() === 'Co-pilot' && !!box.querySelector('[data-v13-co-summary]')
+        && groups.length > 0 && order.every((v, i) => v >= 0 && (i === 0 || v > order[i - 1]))
+        && !document.querySelector('#app .cp3-ch');
+      detail = JSON.stringify({box: !!box, h1: h1 && h1.textContent, groups, old: !!document.querySelector('#app .cp3-ch')});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot draws the heading, the morning summary and one ranked queue grouped in v13 order (before calls / after calls / overdue / this week), not the old book-read chapters', layOk, detail);
+    // 2. every pending Gainsight item is one card carrying 1.1's own action
+    let gsOk = false; detail = '';
+    try{
+      const box = draw();
+      const items = pendingGainsightItems();
+      const cards = box ? [...box.querySelectorAll('[data-v13-co-card][data-kind="gs"]')] : [];
+      const bad = cards.filter(cd => !cd.querySelector('[data-done-item],[data-done-compliance],[data-open-cust]'));
+      gsOk = items.length > 0 && cards.length === items.length && !bad.length;
+      detail = JSON.stringify({items: items.length, cards: cards.length, bad: bad.length});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot shows every pending Gainsight item as one card with 1.1\'s Mark done / Review action', gsOk, detail);
+    // 3. every ranked account (non-Gainsight top reason) is a card; signal rows carry Done + "Not now…" (1.1's dismiss with reason)
+    let rowOk = false; detail = '';
+    try{
+      const box = draw();
+      const rows = todayActionList().filter(r => !/^gainsight_|^grad_review/.test(r.source));
+      const cards = box ? [...box.querySelectorAll('[data-v13-co-card][data-kind="row"]')] : [];
+      const ids = cards.map(cd => cd.getAttribute('data-cust'));
+      const sig = rows.filter(r => r.signalKey && SIGNAL_KEY_SET.has(r.signalKey));
+      const sigBad = sig.filter(r => { const cd = cards.find(x => x.getAttribute('data-cust') === r.customerId); return !cd || !cd.querySelector('[data-rec-done]') || !cd.querySelector('[data-rec-dismiss]') || !/Not now/.test(cd.querySelector('[data-rec-dismiss]').textContent); });
+      rowOk = rows.length > 0 && cards.length === rows.length && rows.every(r => ids.includes(r.customerId)) && !sigBad.length;
+      detail = JSON.stringify({rows: rows.length, cards: cards.length, sig: sig.length, sigBad: sigBad.map(r => r.customerName)});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot shows every ranked account as a card, and signal cards carry 1.1\'s Done and "Not now…" (dismiss with a reason)', rowOk, detail);
+    // 4. trust tiers: only v13's three labels; today's calls get a brief before the queue
+    let tierOk = false; detail = '';
+    try{
+      const box = draw();
+      const tiers = box ? [...box.querySelectorAll('[data-v13-co-card] [data-v13-co-tier]')].map(t => t.textContent.trim()) : [];
+      const calls = callsToPrepare(0).length;
+      const briefs = box ? box.querySelectorAll('[data-v13-co-group="Before today’s calls"] [data-v13-co-card][data-kind="brief"]').length : -1;
+      tierOk = tiers.length > 0 && tiers.every(t => TIERS.includes(t)) && briefs === calls;
+      detail = JSON.stringify({tiers: [...new Set(tiers)], calls, briefs});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot labels every card with one of the three trust tiers and puts a brief for each of today\'s calls first', tierOk, detail);
+    // 5. drawing is read-only; Hide on the summary hides it without writing the book
+    let roOk = false; detail = '';
+    try{
+      const before = JSON.stringify(DATA);
+      let box = draw();
+      const hide = box && box.querySelector('[data-v13-co-sumhide]');
+      if(hide) hide.click();
+      box = document.querySelector('#app [data-osm] [data-v13-copilot]');
+      const hidden = !!box && !box.querySelector('[data-v13-co-summary]');
+      const show = box && box.querySelector('[data-v13-co-sumshow]');
+      if(show) show.click();
+      box = document.querySelector('#app [data-osm] [data-v13-copilot]');
+      roOk = !!hide && hidden && !!box.querySelector('[data-v13-co-summary]') && JSON.stringify(DATA) === before;
+      detail = JSON.stringify({hide: !!hide, hidden, changed: JSON.stringify(DATA) !== before});
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot drawing never writes the book, and Hide / Show on the morning summary changes only the view', roOk, detail);
+    // 6. a suggested play starts through 1.1's startPlaybook
+    let pbOk = false; detail = '';
+    try{
+      const box = draw();
+      const btn = box && box.querySelector('[data-v13-co-play]');
+      if(!btn){ detail = 'no suggested play on any card'; }
+      else{
+        const [cid, key] = btn.getAttribute('data-v13-co-play').split('|');
+        const c = DATA.customers.find(x => x.id === cid);
+        const prev = JSON.stringify(c.playbooks || null);
+        btn.click();
+        pbOk = getPlaybooks(c).some(p => p.key === key && !p.closedOn);
+        detail = JSON.stringify({cid, key, started: pbOk});
+        if(prev === 'null') delete c.playbooks; else c.playbooks = JSON.parse(prev);
+      }
+    }catch(e){ detail = e.message; }
+    check('v13 Co-pilot "Start this play" starts the suggested play through 1.1\'s startPlaybook', pbOk, detail);
+    try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+    if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
+    try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+    ui.view = prevView; ui.openCustomerId = prevOpen; render();
+  })();
   /* ==== end v13 checks: Co-pilot ==== */
   /* (spacer)
      (spacer)
