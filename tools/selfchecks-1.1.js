@@ -10829,6 +10829,114 @@ function _runSelfChecksInner(){
     ui.view = prevView; ui.openCustomerId = prevOpen; render();
   })();
   /* ==== end v13 checks: System ==== */
+  /* ==== v13 fixes: dark ==== (fix items 1b, 4, 5: the full-account overlay wears v13 tokens;
+     with the theme set to dark every v13 screen and the overlay are dark, no light sheet left;
+     the "Me" circle follows the initials rule). Works on a copy of DATA and puts the real one back. */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC, THEME = 'obm-theme-v1';
+    const prev = {view: ui.view, open: ui.openCustomerId, tab: ui.panelTab, wt: ui.v13DeskTab, av: ui.accountsView};
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevSwitch = null, prevTheme = null;
+    try{ prevSwitch = localStorage.getItem(KEY); prevTheme = localStorage.getItem(THEME); }catch(e){}
+    const realDATA = DATA;
+    const rgb = hex => 'rgb(' + [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)).join(', ') + ')';
+    const bg = el => el ? getComputedStyle(el).backgroundColor : 'missing';
+    const setTheme = t => localStorage.setItem(THEME, t);
+    const screen = (view, extra) => { ui.openCustomerId = null; ui.view = view; if(extra) extra(); render(); };
+    const panel = tab => { ui.view = 'today'; ui.openCustomerId = DATA.customers[0].id; ui.panelTab = tab; render(); };
+    // Light surfaces at least 120x36 (a sheet, card or field), opaque enough to read as a sheet.
+    const lightSurfaces = root => {
+      const out = [];
+      const lum = s => { const m = String(s).match(/rgba?\(([^)]+)\)/); if(!m) return null;
+        const p = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); if(p.length > 3 && p[3] < 0.5) return null;
+        return (0.2126*p[0] + 0.7152*p[1] + 0.0722*p[2]) / 255; };
+      root.querySelectorAll('*').forEach(el => {
+        const r = el.getBoundingClientRect(); if(r.width < 120 || r.height < 36) return;
+        const cs = getComputedStyle(el); if(cs.visibility === 'hidden' || cs.display === 'none') return;
+        let L = lum(cs.backgroundColor); const g = cs.backgroundImage.match(/rgba?\([^)]+\)/);
+        if(g){ const l2 = lum(g[0]); if(l2 !== null) L = Math.max(L || 0, l2); }
+        if(L !== null && L > 0.55) out.push((typeof el.className === 'string' && el.className ? el.className.split(' ')[0] : el.tagName) + (el.id ? '#' + el.id : ''));
+      });
+      return out;
+    };
+    const SCREENS = [['desk-prepare', 'today', () => { ui.v13DeskTab = 'prepare'; }], ['desk-capture', 'today', () => { ui.v13DeskTab = 'capture'; }],
+      ['desk-evidence', 'today', () => { ui.v13DeskTab = 'evidence'; }], ['desk-record', 'today', () => { ui.v13DeskTab = 'record'; }],
+      ['copilot', 'copilot'], ...['gantt','kanban','table','cal','heat','gs'].map(v => ['accounts-' + v, 'accounts', () => { ui.accountsView = v; }]),
+      ['risk', 'risk'], ['system', 'system']];
+    const TABS = ['overview','details','sessions','log','gainsight','coordination','handoff','plays'];
+    let ok, detail;
+    try{
+      localStorage.removeItem(KEY); DATA = cloneData(realDATA);
+      // 1. the overlay panel is a v13 side sheet: --sheet2 surface, v13 type and ink, in both themes
+      ok = false; detail = '';
+      try{
+        const read = t => { setTheme(t); panel('overview'); const p = document.querySelector('.overlay .panel'); const cs = getComputedStyle(p);
+          return {bg: cs.backgroundColor, font: cs.fontFamily.split(',')[0], ink: getComputedStyle(p.querySelector('.panel-title')).color}; };
+        const L = read('light'), D = read('dark');
+        ok = L.bg === rgb('#FAF7F1') && D.bg === rgb('#252523') && /Figtree/.test(L.font) && L.ink === rgb('#262626') && D.ink === rgb('#EDEBE7');
+        detail = JSON.stringify({L, D});
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: the full-account overlay is a v13 side sheet (--sheet2 #FAF7F1 / #252523, Figtree, v13 ink) in light and dark', ok, detail);
+      // 2. cards inside the overlay sit on --sheet, which follows the theme
+      ok = false; detail = '';
+      try{
+        setTheme('light'); panel('overview'); const l = bg(document.querySelector('.overlay .section-card'));
+        setTheme('dark'); panel('overview'); const d = bg(document.querySelector('.overlay .section-card'));
+        ok = l === rgb('#FFFFFF') && d === rgb('#1F1F1D');
+        detail = JSON.stringify({l, d});
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: cards in the overlay use the --sheet token (#FFFFFF light, #1F1F1D dark)', ok, detail);
+      // 3. dark: no light sheet left on any v13 screen (Desk four tabs, Co-pilot, Accounts six views, Risk, System)
+      ok = false; detail = '';
+      try{
+        setTheme('dark'); const bad = [];
+        SCREENS.forEach(([name, view, extra]) => { screen(view, extra);
+          const pageOk = bg(document.querySelector('#app [data-osm]')) === rgb('#151514');
+          const l = lightSurfaces(document.querySelector('#app [data-osm] main'));
+          if(!pageOk || l.length) bad.push(name + ':' + (pageOk ? '' : 'page ') + l.slice(0, 3).join(',') + (l.length > 3 ? '+' + (l.length - 3) : '')); });
+        ok = !bad.length; detail = bad.join(' | ').slice(0, 400);
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: with the theme dark, no light sheet is left on any v13 screen (Desk tabs, Co-pilot, Accounts x6, Risk, System)', ok, detail);
+      // 4. dark: no light sheet left in the overlay, on any of its tabs
+      ok = false; detail = '';
+      try{
+        setTheme('dark'); const bad = [];
+        TABS.forEach(t => { panel(t); const p = document.querySelector('.overlay .panel'); p.scrollTop = 0;
+          const l = lightSurfaces(p); if(p.matches && bg(p) !== rgb('#252523')) l.unshift('panel');
+          if(l.length) bad.push(t + ':' + l.slice(0, 3).join(',') + (l.length > 3 ? '+' + (l.length - 3) : '')); });
+        ok = !bad.length; detail = bad.join(' | ').slice(0, 400);
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: with the theme dark, no light sheet is left in the full-account overlay on any tab', ok, detail);
+      // 5. the Co-pilot morning summary stays the stand-out box in light (ink) and turns into a dark raised box in dark
+      ok = false; detail = '';
+      try{
+        const sum = () => document.querySelector('#app [data-v13-co-summary]');
+        setTheme('light'); screen('copilot'); const l = sum() ? bg(sum()) : 'hidden';
+        setTheme('dark'); screen('copilot'); const d = sum() ? bg(sum()) : 'hidden', dc = sum() ? getComputedStyle(sum()).color : '';
+        ok = l === rgb('#262626') && d === rgb('#252523') && dc === rgb('#EDEBE7');
+        detail = JSON.stringify({l, d, dc});
+      }catch(e){ detail = e.message; }
+      check('v13 fix dark: the Co-pilot morning summary is #262626 in light and a dark #252523 box with light ink in dark', ok, detail);
+      // 6. initials: 1.1 stores no user name in Settings, so the circle reads "Me" (no new field)
+      ok = false; detail = '';
+      try{
+        setTheme('light'); screen('today');
+        const me = document.querySelector('#app [data-osm] .v13-me');
+        const named = Object.keys(DATA.settings || {}).filter(k => /name/i.test(k));
+        ok = !!me && me.textContent.trim() === 'Me' && !named.length;
+        detail = JSON.stringify({me: me && me.textContent, named});
+      }catch(e){ detail = e.message; }
+      check('v13 fix initials: no user name is stored in Settings, so the top-bar circle reads "Me"', ok, detail);
+    } finally {
+      DATA = realDATA;
+      try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+      try{ if(prevTheme === null) localStorage.removeItem(THEME); else localStorage.setItem(THEME, prevTheme); }catch(e){}
+      try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+      ui.view = prev.view; ui.openCustomerId = prev.open; ui.panelTab = prev.tab; ui.v13DeskTab = prev.wt; ui.accountsView = prev.av;
+      render();
+    }
+  })();
+  /* ==== end v13 fixes: dark ==== */
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
