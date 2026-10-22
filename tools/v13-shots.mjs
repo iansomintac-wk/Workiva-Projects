@@ -65,7 +65,10 @@ try {
     try { note = String(await ev(`(async()=>{${st.js || ''}})()`) ?? ''); } catch (e) { note = 'STEP ERROR: ' + e.message.split('\n')[0]; code = 1; }
     await sleep(st.wait ?? 800);
     let clip;
-    if (st.full) { const h = await ev('Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)'); clip = { x: 0, y: 0, width: W, height: Math.min(h, 6000), scale: 1 }; }
+    // A full-page capture starts from the top: a scroll left over from the previous step
+    // would draw the sticky top bar part-way down the image.
+    if (st.full) { await ev('window.scrollTo(0,0)'); await sleep(300); }
+    if (st.full) { const h =await ev('Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)'); clip = { x: 0, y: 0, width: W, height: Math.min(h, 6000), scale: 1 }; }
     const shot = await send('Page.captureScreenshot', { format: 'png', ...(clip ? { clip, captureBeyondViewport: true } : {}) });
     const buf = Buffer.from(shot.result.data, 'base64');
     const file = join(outDir, st.name + '.png'); writeFileSync(file, buf);
