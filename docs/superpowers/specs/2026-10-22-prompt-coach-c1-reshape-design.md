@@ -11,6 +11,8 @@ Talk session 0b6e9a11, 2026-10-22 from 21:05Z. Branch `prompt-coach-c1-reshape` 
   model drafts and labels these prompts offline while we build, the shipped coach itself still runs with no AI, and asked him
   to decide whether that fits "keep it AI-free"; this pick is that decision. Its stop rule: "If the practice-30 stays under 25
   or the 5% bar breaks, stop and ship the fallback."
+- Ian, 2026-10-22 ~21:38Z, card '[Ian] Spec' (answered-for-ian row 21:18:28.675Z, `left: "ian-kind"`): "Approve the spec
+  (Recommended)", on 4f814ff. The card carried the correction that the cap-respecting fallback is 21/30, not 23.
 - Standing: "Keep it AI-free (Recommended)", the C1-C5 bars, "$0, 2M token cap (Recommended)".
 - PM (studio-harness:pm, this talk; proxy decided, Ian may overturn): commit the fallback first so the retreat costs nothing;
   one draft-and-cue round; log which model drafted and labeled the new prompts; keep C4 in every run; confirm on sim that new
