@@ -50,11 +50,8 @@ for (const r of rows) for (const withFile of [false, true]) {
     }
     if (bad) fail.order.push([r.prompt, s]); }
   if ((/;\s*[.!?]/.test(s) && !/;\s*[.!?]/.test(r.prompt)) || (unbalanced(s) && !unbalanced(r.prompt))) fail.broken.push([r.prompt, s]);
-  { const key = r.__f + '|' + r.__i + '|' + (withFile ? 1 : 0);
-    if (BASE_FILES.has(r.__f)) {
-      if (!(key in BASE)) fail.blankMore.push([r.prompt, 'no baseline entry', s]);
-      else { const allowed = onlyC ? Math.max(BASE[key], 1) : BASE[key]; if (blanks > allowed) fail.blankMore.push([r.prompt, blanks + ' > ' + allowed, s]); } } }
-  if (onlyC) { info.onlyC++; if (blanks !== 1) fail.blankOnlyC.push([r.prompt, blanks, s]); }
+  { if (BASE_FILES.has(r.__f) && blanks > 0) fail.blankMore.push([r.prompt, blanks + ' > 0', s]); }
+  if (onlyC) { info.onlyC++; if (blanks !== 0) fail.blankOnlyC.push([r.prompt, blanks, s]); }
   const known = new Set(words(r.prompt + ' ' + (file ? file.name + ' ' + file.sheets.map((x) => x.name + ' ' + x.headers.join(' ')).join(' ') + ' ' + file.periods.join(' ') : '')));
   const nums = (bare.toLowerCase().match(/\b\d+(?:\.\d+)?%?/g) || []).filter((x) => { const b = x.replace('%', ''); return !r.prompt.toLowerCase().includes(x) && !known.has(b) && ![...known].some((w) => w.startsWith(b) && /^[a-z]/.test(w.slice(b.length))); });
   if (nums.length) fail.numbers.push([r.prompt, nums.join(' '), s]);
@@ -68,7 +65,7 @@ for (const r of rows) for (const withFile of [false, true]) {
   if (sh && !r.prompt.toLowerCase().includes(sh[1].toLowerCase())) fail.sheet.push([r.prompt, sh[1]]);
   { const on = detect(s).on; if (R.grade(on) !== 'strong') fail.notStrong.push([r.prompt, 'missing ' + K.filter((k) => !on[k]).join(''), s]); }
   if (/\b(?:can u|u|ur|pls|plz)\b|(?:^|[.!?]\s+)(?:any )?thoughts\?|(?:^|[.!?]\s+)(?:hi|hey|hello|thanks|thx)\b/i.test(s)) fail.casual.push([r.prompt, s]);
-  if (!pick.taskSure && !o.detected.O && !/identify and list \[what you want back/i.test(s)) fail.unsureTask.push([r.prompt, s]);
+  if (!pick.taskSure && !o.detected.O && !/identify and list the key points and where each one appears/i.test(s)) fail.unsureTask.push([r.prompt, s]);
   if (!pick.areaSure && /10-Q MD&A|SOX testing workpapers|CSRD report|audit committee|external auditors|assurance provider/.test(s.replace(r.prompt, ''))) fail.unsureArea.push([r.prompt, s]);
   if (/[A-Za-z0-9]\. [0-9]/.test(s) && !/[A-Za-z0-9]\. [0-9]/.test(r.prompt)) fail.splitNumber.push([r.prompt, s]);
   { const m = bare.match(/\b(?:the )?(?:selected|open) (table|report|document|text|range|data|rows?|section)\b/i);

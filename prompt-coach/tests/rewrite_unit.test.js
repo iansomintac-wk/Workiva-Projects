@@ -130,29 +130,29 @@ test('typos: common misspellings are fixed as whole words, case kept', () => {
 test('context: wording fits the task and registers as Context', () => {
   const base = 'Extract every date from the attached file into a table. Do not guess.';
   const want = [
-    ['extract', 'SUS', 'This table feeds [what it is for, such as our Scope 2 inventory].'],
-    ['extract', 'GEN', 'This table feeds [what it is for].'],
-    ['variance', 'FR', 'This is for [what it feeds, such as the quarterly flux review].'],
-    ['anomaly', 'GRC', 'This is for [what it feeds, such as our SOX control testing].'],
-    ['compare', 'GEN', 'This is for [what it feeds].']
+    ['extract', 'SUS', 'This table is for the reader of this report.'],
+    ['extract', 'GEN', 'This table is for the reader of this report.'],
+    ['variance', 'FR', 'This is for the reader of this report.'],
+    ['anomaly', 'GRC', 'This is for the reader of this report.'],
+    ['compare', 'GEN', 'This is for the reader of this report.']
   ];
   for (const [intent, domain, text] of want) {
     const o = run(base, [], { intent, domain, taskSure: true, areaSure: true });
     assert.equal(missing(o), 'C', 'base must be missing only Context; probe another base: ' + JSON.stringify(o.detected));
     assert.ok(o.stages.strong.prompt.includes(text), intent + '/' + domain + ': ' + o.stages.strong.prompt);
-    assert.equal((o.stages.strong.prompt.match(/\[[^\]]*\]/g) || []).length, 1, o.stages.strong.prompt);
+    assert.equal((o.stages.strong.prompt.match(/\[[^\]]*\]/g) || []).length, 0, o.stages.strong.prompt);
   }
   const o = run(base, [], { intent: 'summarize', domain: 'FR', taskSure: true, areaSure: true });
-  assert.ok(/10-Q MD&A|intended for \[who will read it/.test(o.stages.strong.prompt), 'other intents keep the destination wording or its one-blank fallback: ' + o.stages.strong.prompt);
+  assert.ok(/This is for the reader of this report/.test(o.stages.strong.prompt) && !/\[/.test(o.stages.strong.prompt), 'other intents get the general destination wording: ' + o.stages.strong.prompt);
 });
 
-test('context: only Context missing means exactly one blank, even when a kept sentence has a Context cue', () => {
+test('context: only Context missing means no blank, even when a kept sentence has a Context cue', () => {
   const rows = fs.readFileSync(path.join(__dirname, '../data/test.jsonl'), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
   const row = rows.find((r) => /user-control assessment/.test(r.prompt));
   assert.ok(row, 'the "We need this for our user-control assessment" prompt is in data/test.jsonl');
   const o = run(row.prompt);
   assert.equal(missing(o), 'C', JSON.stringify(o.detected));
-  assert.equal((o.stages.strong.prompt.match(/\[[^\]]*\]/g) || []).length, 1, o.stages.strong.prompt);
+  assert.equal((o.stages.strong.prompt.match(/\[[^\]]*\]/g) || []).length, 0, o.stages.strong.prompt);
   assert.notEqual(o.stages.strong.prompt.trim(), row.prompt.trim());
 });
 
@@ -165,6 +165,17 @@ test('context: Ian case gets the approved Strong and Better text, with and witho
     assert.equal(flat(o.stages.better.prompt), rd('ian_better.txt'));
   }
 });
+test('ready to paste: no [blank] in Better or Strong for a bare ask, and each SCOPE letter still has a piece', () => {
+  for (const p of ['help me with this', 'summarize the report', 'what is ITGC', 'map our controls', 'draft a note', 'write the formula', 'review the numbers']) {
+    for (const extra of [{}, { taskSure: false, areaSure: false }]) {
+      const o = run(p, [], extra);
+      for (const st of ['better', 'strong']) assert.ok(!/\[[^\]]*\]/.test(o.stages[st].prompt), p + ' ' + st + ': ' + o.stages[st].prompt);
+      assert.equal(o.placeholders, 0, p);
+      for (const k of K) assert.ok(o.scope[k].frag.trim(), p + ' empty ' + k);
+    }
+  }
+});
+
 
 test('objective: the blank-free "one per line" objective is only for list tasks', () => {
   for (const p of ['make this sound less harsh', 'what is ITGC']) {
@@ -178,7 +189,7 @@ test('objective: a request to fix the text keeps the fill-in objective, not the 
   for (const files of [[], [RCM]]) {
     const s = run('these risk descriptions are inconsistent can u fix them', files).stages.strong.prompt;
     assert.ok(!s.includes('one per line'), 'list objective beside "Fix them": ' + s);
-    assert.ok(s.includes('Identify and list ['), 'fill-in objective kept: ' + s);
+    assert.ok(s.includes('Identify and list the key points and where each one appears.'), 'fill-in objective kept: ' + s);
     assert.ok(s.includes('Fix them.'), 'user ask kept: ' + s);
   }
   // a list task is unchanged: still the blank-free list objective
@@ -504,7 +515,7 @@ test('unsupported: Upstream T&D is not Downstream T&D, and a truly missing categ
 });
 
 // ---- quote line (spec 2026-10-20-prompt-coach-quote-line-design.md): headline AND stages.weak.verdict ----
-const detectP = (p) => { const r = M.predict(p, weights, { mode: weights.mode }); return { on: r.on, prob: r.prob, d: r.rules }; };
+const detectP = (p) => { const r = M.predict(p, weights, { mode: weights.mode }); return { on: r.on, prob: r.prob, sure: r.sure, d: r.rules }; };
 const withO = (x) => (p) => { const r = detectP(p); return { ...r, prob: { ...r.prob, O: x } }; };
 const coachWith = (prompt, det) => W.coach(prompt, { files: [], detect: det, ...C.pick(prompt, CLS) });
 const QUOTED = /The coach read your ask as "/;
@@ -581,4 +592,97 @@ test('quote line A4: trailing en and em dashes are trimmed like a hyphen', () =>
   assert.equal(W.askQuote('help with the 10-K \u2013'), 'help with the 10-K');
   assert.equal(W.askQuote('help with the 10-K \u2014'), 'help with the 10-K');
   assert.equal(W.askQuote('help with the 10-K -'), 'help with the 10-K');
+});
+
+const QS = { S: 'Which file or section should it read?', C: 'Who is it for?', P: 'How long, and in what format?', E: 'What should it do if the data is missing?' };
+
+test('questions: a bare ask gets one question per generically filled letter, none for letters the user wrote', () => {
+  const o = run('Check the emissions numbers');
+  assert.ok(Array.isArray(o.questions) && o.questions.length > 0, JSON.stringify(o.questions));
+  const gen = K.filter((k) => k !== 'O' && o.segments.some((s) => s.generated && s.letter === k));
+  assert.deepEqual(o.questions.map((q) => q.letter), gen);
+  for (const q of o.questions) assert.equal(q.text, QS[q.letter]);
+  const u = run('Use only @RCM_FY26.xlsx. Summarize the failed controls.', [{ name: 'RCM_FY26.xlsx', kind: 'Excel', sheets: [], periods: [], text: '' }]);
+  assert.ok(!u.questions.some((q) => q.letter === 'S'), JSON.stringify(u.questions));
+});
+
+test('questions: not part of stages.better.prompt or stages.strong.prompt', () => {
+  const o = run('Check the emissions numbers');
+  for (const s of [o.stages.better.prompt, o.stages.strong.prompt]) for (const q of Object.values(QS)) assert.ok(!s.includes(q), s);
+});
+
+test('questions: empty when the user supplied every letter', () => {
+  const o = run('Use only @RCM_FY26.xlsx. This is for the audit committee. Summarize the failed controls. Use five bullets. Flag anything you cannot verify.', [{ name: 'RCM_FY26.xlsx', kind: 'Excel', sheets: [], periods: [], text: '' }]);
+  assert.equal(o.grade, 'strong');
+  assert.deepEqual(o.questions, []);
+});
+
+// ---- no changes needed: all five letters surely there, strong, not stacked ----
+const NC_PROMPT = 'Use only @RCM_FY26.xlsx. This is for the audit committee. Summarize the failed controls. Use five bullets. Flag anything you cannot verify.';
+const NC_FILE = [{ name: 'RCM_FY26.xlsx', kind: 'Excel', sheets: [], periods: [], text: '' }];
+const sureOf = () => { assert.ok(weights.sure && K.every((k) => typeof weights.sure[k] === 'number'), 'weights.sure missing'); return weights.sure; };
+const forced = (on, prob) => (p) => { const r = detectP(p); return { ...r, on: { ...r.on, ...on }, prob: { ...r.prob, ...prob } }; };
+const allProb = (x) => Object.fromEntries(K.map((k) => [k, x]));
+const ncRun = (prompt, det, files = NC_FILE) => W.coach(prompt, { files, detect: det, ...C.pick(prompt, CLS) });
+
+test('no changes needed: a prompt with all five letters above the cut-offs shows noChanges and unchanged Better/Strong', () => {
+  sureOf();
+  const o = ncRun(NC_PROMPT, detectP);
+  assert.equal(o.grade, 'strong', JSON.stringify(o.detected));
+  assert.equal(o.noChanges, true, JSON.stringify(o.detected));
+  assert.ok(typeof o.noChangesReason === 'string' && o.noChangesReason.length > 0 && !o.noChangesReason.includes('\n'));
+  assert.equal(o.stages.better.prompt, NC_PROMPT);
+  assert.equal(o.stages.strong.prompt, NC_PROMPT);
+  assert.deepEqual(o.questions, []);
+});
+
+test('no changes needed: a strong prompt with a stacked ask is not sure', () => {
+  const p = 'Use only @RCM_FY26.xlsx. This is for the audit committee. Summarize the failed controls, list the risks, draft an email, and compare to last year. Use five bullets. Flag anything you cannot verify.';
+  const o = ncRun(p, forced({ S: true, C: true, O: true, P: true, E: true }, allProb(0.999)));
+  assert.equal(o.grade, 'strong');
+  assert.equal(o.stacked, true);
+  assert.equal(o.noChanges, false);
+});
+
+test('no changes needed: a strong-but-borderline prompt keeps today\'s behaviour', () => {
+  const s = sureOf();
+  for (const k of K) {
+    const o = ncRun(NC_PROMPT, forced({ S: true, C: true, O: true, P: true, E: true }, { ...allProb(0.999), [k]: s[k] - 0.01 }));
+    assert.equal(o.grade, 'strong', k);
+    assert.equal(o.noChanges, false, k);
+    assert.equal(o.headline, 'It names a source, context, one job, constraints, and a check.', k);
+  }
+});
+
+test('no changes needed: a non-strong prompt is never noChanges', () => {
+  for (const k of ['S', 'O']) {
+    const o = ncRun(NC_PROMPT, forced({ [k]: false }, allProb(0.999)));
+    assert.notEqual(o.grade, 'strong', k);
+    assert.equal(o.noChanges, false, k);
+  }
+  assert.equal(ncRun('Check the emissions numbers', detectP, []).noChanges, false);
+  assert.equal(ncRun(NC_PROMPT, (p) => { const r = detectP(p); delete r.prob; return r; }).noChanges, false, 'no probability means not sure');
+});
+
+// ---- task 9: a prompt graded strong is returned untouched in Better (two made-up strong prompts the Better stage used to edit) ----
+const STRONG_EDITED = [
+  "Draft the inventory accounting policy note for our FY2026 10-K from the policy memo in this document. Match last year's note style: two paragraphs, past tense, no more than 180 words. Use only the policies the memo states, and list anything the memo leaves unclear as open questions at the end.",
+  "From the meeting minutes in this document, list every action item for the finance transformation workstream in a table (owner, action, due date) sorted by due date. It's going into the PMO tracker, so use the minutes' own wording for each action and write \"no date given\" where the minutes don't set one."
+];
+
+test('better stage: a prompt graded strong is returned untouched in Better', () => {
+  for (const text of STRONG_EDITED) {
+    const o = coachWith(text, detectP);
+    assert.equal(o.grade, 'strong');
+    assert.equal(o.stages.better.prompt, text.trim());
+  }
+});
+
+test('better stage: a strong prompt that is not sure still has Better equal to Strong', () => {
+  for (const text of STRONG_EDITED) {
+    const o = coachWith(text, detect); // no probabilities, so never sure
+    assert.equal(o.grade, 'strong');
+    assert.equal(o.noChanges, false, 'fixture must be strong but not sure');
+    assert.equal(o.stages.better.prompt, o.stages.strong.prompt);
+  }
 });

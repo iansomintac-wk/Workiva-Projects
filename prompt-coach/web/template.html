@@ -97,6 +97,9 @@ select { font-size: 13px; font-weight: 600; border: 1px solid var(--line); backg
 .copy { border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.06); color: var(--panel-ink); border-radius: 99px; padding: 6px 14px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
 .copy:hover { background: rgba(255,255,255,.14); }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 16px; font-size: 12px; font-weight: 700; color: var(--panel-label); }
+.questions { margin-top: 16px; font-size: 14px; }
+.questions .qhead { margin: 0 0 6px; font-weight: 800; }
+.questions ul { margin: 0; padding-left: 20px; }
 .legend .sw { display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
 .verdict { padding: 26px 28px; min-width: 0; }
 .verdict p { margin: 10px 0 0; font-size: 16px; line-height: 1.6; text-wrap: pretty; }
@@ -192,6 +195,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
           <div class="panel-head"><span class="label" id="stageLabel">the prompt</span><button class="copy" type="button" id="copyStage">copy</button></div>
           <p class="prompt-text" id="stagePrompt"></p>
           <div class="legend" id="stageLegend"></div>
+          <div class="questions" id="stageQuestions" hidden><p class="qhead">To make it even better, tell Workiva AI:</p><ul id="stageQuestionList"></ul></div>
         </div>
         <div class="card verdict" id="yourVerdict">
           <span class="label" id="yourLabel">your prompt</span>
@@ -286,7 +290,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
   const CLS = ScopeClassify.unpack(window.SCOPE_CLS);
   const detect = (p) => {
     const r = ScopeModel.predict(p, weights, { mode: weights.mode });
-    return { on: r.on, prob: r.prob, d: r.rules };
+    return { on: r.on, prob: r.prob, sure: r.sure, d: r.rules };
   };
   const state = { files: [], stage: 'mine', on: Object.fromEntries(K.map((k) => [k, true])), result: null };
 
@@ -338,6 +342,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     renderMirror(prompt, r);
     $('yourLabel').textContent = GRADE_LABEL[g]; $('yourLabel').style.color = GRADE_COLOR[g];
     $('headline').textContent = r.offtopic ? 'This is not a Workiva task, so there is nothing to grade.'
+      : r.noChanges ? 'No changes needed: ' + r.noChangesReason
       : g !== r.grade ? 'All five SCOPE elements are here, but it asks for several things at once. Split it into one ask at a time.' : r.headline;
     // warnings that matter: the engine's notes, plus the page's own check for emails, card numbers and passwords
     const notes = $('notes'); notes.replaceChildren();
@@ -360,7 +365,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     // tabs: your prompt (live, editable), then each stronger version above its grade
     const r = state.result, order = ['weak', 'better', 'strong'];
     const gi = r ? order.indexOf(r.grade) : 0;
-    const keys = ['mine', ...(r && !r.offtopic ? order.slice(gi + 1) : [])]; // off-topic: no polished rewrite to show
+    const keys = ['mine', ...(r && r.noChanges ? ['better', 'strong'] : r && !r.offtopic ? order.slice(gi + 1) : [])]; // off-topic: no polished rewrite to show
     if (!keys.includes(state.stage)) state.stage = 'mine';
     const tabs = $('stageTabs'); tabs.replaceChildren();
     for (const key of keys) {
@@ -375,10 +380,10 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     $('yourPanel').hidden = !mine; $('yourVerdict').hidden = !mine; $('stagePanel').hidden = mine; $('stageVerdict').hidden = mine;
     if (mine) return;
     const s = STAGES.find((x) => x.key === state.stage), data = r.stages[s.key];
-    $('stageLabel').textContent = 'a ' + s.key + ' version of your prompt';
+    $('stageLabel').textContent = r.noChanges ? 'your prompt, unchanged' : 'a ' + s.key + ' version of your prompt';
     const el = $('stagePrompt'); el.replaceChildren();
     // underline what the coach added (only for rewrites above the user's grade)
-    const showAdded = true;
+    const showAdded = !r.noChanges;
     const segs = showAdded ? r.segments.filter((g) => s.key === 'strong' || !g.generated || g.letter === 'S' || g.letter === 'O') : null;
     if (segs) {
       el.append('“');
@@ -395,6 +400,8 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     } else el.textContent = '“' + data.prompt + '”';
     const lg = $('stageLegend'); lg.replaceChildren();
     if (showAdded) lg.append(legendItem('rgba(255,255,255,.18)', 'added by the coach'), legendItem('#F8BD4F', '[fill in your details]'));
+    const qs = r.questions || [];
+    $('stageQuestions').hidden = !qs.length; $('stageQuestionList').replaceChildren(...qs.map((q) => { const li = document.createElement('li'); li.textContent = q.text; return li; }));
     $('verdictLabel').textContent = s.verdictLabel;
     $('verdictText').textContent = data.verdict;
   }

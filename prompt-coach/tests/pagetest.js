@@ -71,6 +71,24 @@ async function main() {
     check('quote line: "Evaluate:" label headline has no quote', !r.headline.includes('The coach read your ask'), r.headline.slice(0, 160));
     r = await type('the 10-K needs a quick look, can you help');
     check('quote line: no sentence-opening vague verb, headline has no quote', !r.headline.includes('The coach read your ask'), r.headline.slice(0, 160));
+    // questions block: under Better and Strong, outside the text Copy reads
+    for (const tab of ['better', 'strong']) {
+      const q = await ev(`(async () => { const e = document.getElementById('prompt'); e.value = 'Check the emissions numbers'; e.dispatchEvent(new Event('input', { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 700)); document.getElementById('tab-${tab}').click();
+        const box = document.getElementById('stageQuestions');
+        const head = 'To make it even better, tell Workiva AI:';
+        return { shown: !!box && !box.hidden && box.textContent.includes(head), items: box ? box.querySelectorAll('li').length : 0, inPrompt: document.getElementById('stagePrompt').textContent.includes(head), inCopy: document.getElementById('copyStage').textContent.includes(head), inPanelHead: document.querySelector('#stagePanel .panel-head').textContent.includes(head) }; })()`);
+      check(tab + ': questions block with the heading is shown', q.shown && q.items > 0, JSON.stringify(q));
+      check(tab + ': questions are not in the copied prompt element or Copy button', !q.inPrompt && !q.inCopy && !q.inPanelHead, JSON.stringify(q));
+    }
+    // no changes needed: an all-five-letters prompt says so on the Your prompt tab; Better and Strong show it unchanged
+    {
+      const NC = 'Use only @RCM_FY26.xlsx. This is for the audit committee. Summarize the failed controls. Use five bullets. Flag anything you cannot verify.';
+      r = await type(NC);
+      check('no changes needed: Your prompt tab headline says so', r.headline.startsWith('No changes needed'), r.headline.slice(0, 120));
+      const nc = await ev(`(async () => { const out = {}; for (const t of ['better', 'strong']) { const b = document.getElementById('tab-' + t); if (!b) { out[t] = null; continue; } b.click(); out[t] = { text: document.getElementById('stagePrompt').textContent, q: !document.getElementById('stageQuestions').hidden, legend: document.getElementById('stageLegend').textContent }; } return out; })()`);
+      for (const t of ['better', 'strong']) check('no changes needed: ' + t + ' tab shows the prompt unchanged, no extras', nc[t] && nc[t].text === '“' + NC + '”' && !nc[t].q && nc[t].legend === '', JSON.stringify(nc[t]).slice(0, 200));
+    }
     check('no console errors', errors.length === 0, errors.join(' | ').slice(0, 200));
     ws.close();
   } finally { chrome.kill(); }

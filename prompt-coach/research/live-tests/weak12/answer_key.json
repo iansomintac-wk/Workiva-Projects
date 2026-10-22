@@ -1,0 +1,212 @@
+{
+ "FR-W1": {
+  "job": "Short ranked explanation of the Q2 to Q3 FY26 freight increase from the attached file: total +95, air freight +58 (45 one-time expedite), ground +22 (no reason given in the file), fuel surcharge +14 (rate rise), warehousing flat.",
+  "found": [
+   "Total freight +95 (628 to 723)",
+   "Air freight +58, 45 of it a one-time expedited charge",
+   "Ground freight +22 with no explanation in the file",
+   "Fuel surcharge +14 from the 9% to 12% rate rise on Aug 1"
+  ],
+  "hard": "Ground freight +22 has no stated cause",
+  "optional": [],
+  "mustNotClaim": [
+   "a cause for the ground freight rise (volume, new lanes, carrier rate) stated as fact",
+   "carrier or customer names",
+   "fuel prices or diesel index levels",
+   "any Q4 outlook"
+  ],
+  "absent": []
+ },
+ "FR-W2": {
+  "job": "A check that each line foots (opening + additions - releases - utilised = closing) and a short list of lines that fail or look unusual, with the arithmetic shown.",
+  "found": [
+   "Accrued audit fees: computed 90 vs stated 95, off by 5",
+   "Accrued utilities closes at -4 (debit balance in an accrual)",
+   "Accrued bonus: 30 released, no additions"
+  ],
+  "hard": "Accrued audit fees footing error of 5",
+  "optional": [],
+  "mustNotClaim": [
+   "a reason for the bonus true-up beyond the note",
+   "journal entry numbers",
+   "who approved any entry",
+   "prior-quarter balances"
+  ],
+  "absent": []
+ },
+ "FR-W3": {
+  "job": "A draft operating lease maturity table and one short lead-in sentence in 10-K style, using the file's figures, with the footing difference flagged instead of silently corrected.",
+  "found": [
+   "Year rows sum to 6,100, total line shows 6,200",
+   "Present value 5,380 is consistent with the stated total, not with the year rows (5,280)",
+   "Weighted-average remaining term 6.2 years and rate 4.9% carried exactly"
+  ],
+  "hard": "Total undiscounted payments do not foot (6,100 vs 6,200)",
+  "optional": [],
+  "mustNotClaim": [
+   "finance lease amounts",
+   "lessor names or lease locations",
+   "short-term or variable lease cost",
+   "the company's ASC 842 policy elections"
+  ],
+  "absent": []
+ },
+ "FR-W4": {
+  "job": "A short board-ready summary of Q3 FY26 revenue by region with YoY growth, flagging the wrong EMEA percentage and the missing APAC figure rather than filling them in.",
+  "found": [
+   "EMEA YoY should be 8.0%, not 12.0%",
+   "APAC Q3 FY26 missing",
+   "Total Q3 FY26 cannot be stated because APAC is missing",
+   "North America +10.0% and LATAM +9.5% check out"
+  ],
+  "hard": "EMEA YoY misstated (8.0% vs 12.0%)",
+  "optional": [],
+  "mustNotClaim": [
+   "an APAC Q3 FY26 value or a total",
+   "reasons for regional growth",
+   "full-year or guidance figures",
+   "currency effects"
+  ],
+  "absent": []
+ },
+ "GRC-W1": {
+  "job": "A list of design gaps in the AP risk and control matrix: missing owner, undefined frequency on a key control, duplicate control, and the segregation-of-duties concern, each with the control ID.",
+  "found": [
+   "AP-03 no owner",
+   "AP-05 key control with 'As needed' frequency",
+   "AP-02 and AP-04 duplicate descriptions",
+   "AP-06 approved by AP Clerk (SoD)"
+  ],
+  "hard": "AP-06 segregation of duties concern",
+  "optional": [],
+  "mustNotClaim": [
+   "test results or deficiencies not in the file",
+   "the name of any person",
+   "an approval limit other than USD 10,000",
+   "IT general control issues"
+  ],
+  "absent": []
+ },
+ "GRC-W2": {
+  "job": "The conflicts that remain unmitigated, with the terminated user called out first as an access removal issue.",
+  "found": [
+   "U1002 R-03 unmitigated",
+   "U1003 R-01 unmitigated",
+   "U1005 R-05 unmitigated",
+   "U1003 terminated with active conflicting roles"
+  ],
+  "hard": "U1003 terminated user still holds roles",
+  "optional": [],
+  "mustNotClaim": [
+   "last login dates",
+   "the system or ERP name",
+   "whether any mitigating control operated effectively",
+   "termination dates"
+  ],
+  "absent": []
+ },
+ "GRC-W3": {
+  "job": "A committee-ready summary: overall rating, findings by severity, each finding in one line with owner and due date, and the two issues called out (Finding 1 overdue, Finding 2 has no response or owner).",
+  "found": [
+   "Overall rating Needs improvement",
+   "1 High, 1 Medium, 1 Low",
+   "Finding 1 overdue (due 31 Aug 2026, Open at 30 Sep 2026)",
+   "Finding 2 has no management response or owner"
+  ],
+  "hard": "Finding 1 is overdue",
+  "optional": [],
+  "mustNotClaim": [
+   "a management response for Finding 2",
+   "dollar amounts or losses from the bank detail changes",
+   "vendor names",
+   "prior audit ratings"
+  ],
+  "absent": []
+ },
+ "GRC-W4": {
+  "job": "A list of gaps and inconsistencies in the policy with section references, ranked by risk.",
+  "found": [
+   "Sections 2 and 4 conflict on the 25,000 / 50,000 thresholds",
+   "Section 5 has no review frequency",
+   "No verification for bank detail changes (section 6 allows changes by email)"
+  ],
+  "hard": "Threshold conflict between sections 2 and 4",
+  "optional": [],
+  "mustNotClaim": [
+   "the company's actual practice beyond the policy text",
+   "a regulation the policy is required to meet",
+   "past fraud or incidents",
+   "policy owner or effective date"
+  ],
+  "absent": []
+ },
+ "SUS-W1": {
+  "job": "FY2024 to FY2025 change by scope from the attached file, the main drivers named from the notes, and the Warehouse D gap flagged instead of estimated.",
+  "found": [
+   "Plant B Scope 1 +1,260 (refrigerant leak per note)",
+   "Office C Scope 2 -315 (renewable tariff per note)",
+   "Warehouse D FY2025 missing",
+   "Scope 1 total like-for-like (excluding D) 2,470 to 3,670; Scope 2 total 4,310 to 3,865"
+  ],
+  "hard": "Warehouse D FY2025 is missing, so totals are partial",
+  "optional": [],
+  "mustNotClaim": [
+   "a FY2025 value for Warehouse D",
+   "Scope 3 figures",
+   "a reduction target or baseline year",
+   "the refrigerant type or leak quantity"
+  ],
+  "absent": []
+ },
+ "SUS-W2": {
+  "job": "A data quality check of the withdrawal sheet: unit outlier, duplicate row and missing month, each with the site and month.",
+  "found": [
+   "Site 2 2025-05 value 845,000 looks like a unit error",
+   "Site 2 2025-05 duplicated",
+   "Site 2 2025-06 missing"
+  ],
+  "hard": "Site 2 June missing",
+  "optional": [],
+  "mustNotClaim": [
+   "a corrected value for Site 2 May",
+   "water stress or basin information",
+   "discharge or consumption figures",
+   "site locations"
+  ],
+  "absent": []
+ },
+ "SUS-W3": {
+  "job": "A 150 to 200 word report paragraph on supplier engagement using only the stated figures, with the response rate corrected to 65% or flagged.",
+  "found": [
+   "Response rate 78/120 = 65%, not 70%",
+   "31 with targets, 12 SBTi-validated",
+   "Respondents cover 58% of purchased goods spend"
+  ],
+  "hard": "Response rate misstated (65% vs 70%)",
+  "optional": [],
+  "mustNotClaim": [
+   "supplier names",
+   "a Scope 3 emissions total",
+   "a future supplier engagement target",
+   "prior-year survey results"
+  ],
+  "absent": []
+ },
+ "SUS-W4": {
+  "job": "A data quality list for the fleet energy sheet before it goes into Scope 1 and 2: type/fuel mismatches and the duplicate vehicle.",
+  "found": [
+   "V-103 EV with diesel",
+   "V-105 ICE with electricity only",
+   "V-102 duplicated"
+  ],
+  "hard": "V-105 ICE with no diesel",
+  "optional": [],
+  "mustNotClaim": [
+   "emission factors or tCO2e totals",
+   "vehicle makes or models",
+   "corrected fuel values",
+   "reasons for the mismatches stated as fact"
+  ],
+  "absent": []
+ }
+}

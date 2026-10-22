@@ -1,0 +1,34 @@
+RESUME: Prompt Coach done-when, C1 fix round (Ian's option A). Written 2026-10-22 ~13:40Z by talk 97edf2ce at the 200k stop.
+Load studio-harness:talk-and-run. Work in C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-done-when
+(branch worktree-prompt-coach-done-when, pushed). Ledger: .ledger/2026-10-22-prompt-coach-done-when/ (rulings.md, progress.md).
+Driver state: runs/2026-10-22-prompt-coach-done-when/progress.md (driver stopped 08:39Z; tasks 1-5 done, 6 parked, 7-8 blocked).
+
+WHERE IT STANDS
+- Task 6 parked = a real bar miss, not the tee error: C1 17/30 (bar 27); C2 2.0%/2.7% PASS; C4 0 blanks/862 PASS.
+  Breakdown in the ledger progress.md "13:35Z" bullet.
+- Ian, 13:31:26Z, card '[Ian] C1 miss': "Fix + fresh test (Recommended)" (answered-for-ian left=ian-kind = his own).
+  = one task fixes the Better step editing strong prompts + re-picks the Context sure cut-off from data/train_*.jsonl only;
+  an Opus helper writes 30 NEW strong prompts; C1 measured once on them; then Tasks 7, 8.
+- At hand-off two helpers were finishing (check their outputs; they do not report to you):
+  a) DONE, committed e5d1539: plan-writer added `### Task 9: C1 fix round` BEFORE Task 6 in docs/superpowers/plans/2026-10-22-prompt-coach-done-when.md,
+     Task 6 Depends: 2, 5, 9, tee removed from Task 6 Check, Tasks 7/8 updated. Verify: grep -n "^### Task\|^Depends" the plan.
+  b) DONE: Opus drafter wrote .ledger/2026-10-22-prompt-coach-done-when/done_when_strong_fresh.jsonl (copied from the drafter tmp; verified 30 rows FR8 GRC8 SUS8 GEN6, all five letters 1) (30 rows, FR8 GRC8 SUS8 GEN6,
+     tag done-when-strong-fresh; NOT graded with the engine on purpose). If either is missing/incomplete, redo it with a fresh helper.
+  The driver's plan parser keeps file order (lib/driver/plan.mjs, read), so Task 9 before Task 6 runs first.
+
+NEXT
+1. Verify both outputs (row count, domain split, all five letters 1; plan parse:
+   node -e "import('file:///C:/Users/teasp/Documents/studio-harness-worktrees/rules-main/lib/driver/plan.mjs').then(m=>console.log(m.parsePlan(require('fs').readFileSync('docs/superpowers/plans/2026-10-22-prompt-coach-done-when.md','utf8')).tasks.map(t=>t.n+':'+t.depends).join(' ')))"
+   ). A Sonnet checker re-reviews Task 9 (vacuous checks, held-out leaks, files not listed).
+2. Lead data step: git mv prompt-coach/data/done_when_strong.jsonl prompt-coach/data/done_when_strong_r1.jsonl; copy the fresh file to
+   prompt-coach/data/done_when_strong.jsonl. Commit plan + data, push.
+3. PM (studio-harness:pm) approves the plan change (proxy; Ian already chose A). Log in the ledger rulings.md.
+4. Reopen Task 6 for the driver: append to runs/2026-10-22-prompt-coach-done-when/progress.md one row
+   `| <ISO time> | 6 | task | reopened | 0 | 0 | 0 | 0 | Ian A 13:31Z: fix + fresh test |` (readDone takes the last task row;
+   'reopened' is in no set, so the task runs again; read in lib/driver/ledger.mjs + run.mjs, not run). 7, 8 re-evaluate themselves. Commit.
+5. Relaunch detached (never as a child of your session):
+   node C:/Users/teasp/Documents/studio-harness-worktrees/rules-main/bin/driver-start.mjs --log <abs .ledger/.../driver.log> -- --plan <abs plan> --repo <abs worktree> --run 2026-10-22-prompt-coach-done-when --base prompt-coach --skip-rehearse
+6. When the driver reaches done or awaiting-ian, tell "NEW - Overnight watch" (or whoever holds the Prompt Coach chrome try; it was
+   unreachable at 13:40Z, so also note it in the ledger): the try was held because Task 9 touches the rewrite path.
+Driver gaps (rules-main, told to PM upgrade lead): build worker exiting 0 without a commit is "ok"; worker replies not saved;
+progress tokens include cache reads (status 2.62M at 07:46Z); no run-level token cap.

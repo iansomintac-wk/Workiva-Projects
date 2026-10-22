@@ -72,7 +72,7 @@
       prob[k] = sigmoid(z); on[k] = prob[k] >= (weights.thr && weights.thr[k] || 0.5);
     }
     if (d.text.trim().split(/\s+/).length <= 2 && !d.el.O.on) on.O = false; // greetings
-    return { on, prob, stacked: d.stacked, el: d.el, vague: d.vague, rules: d };
+    return { on, prob, sure: weights.sure || null, stacked: d.stacked, el: d.el, vague: d.vague, rules: d };
   }
 
   const api = { featurize, predict, hash, DIM };
