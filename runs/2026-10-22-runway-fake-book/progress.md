@@ -18,3 +18,10 @@
 | 2026-10-22T07:00:35.638Z | 4 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; locked-files-untouched |
 | 2026-10-22T07:00:58.941Z | 4 | checker | pass | 35170 | 0.0410812 | 23 | 0 | PASS: The commit adds the 1.1 button (gated by `connectorConfigured()`), `surveyRowsToTable`, and `checkSurveyDatesViaCo |
 | 2026-10-22T07:00:58.953Z | 4 | task | done | 0 | 0 | 0 | 0 | attempt 1 |
+| 2026-10-22T07:06:55.377Z | 5 | build | ok | 1433054 | 0.5378791 | 356 | 0 |  |
+| 2026-10-22T07:07:09.705Z | 5 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; both-runs-8of8 |
+| 2026-10-22T07:08:00.682Z | 5 | checker | fail | 43665 | 0.058569600000000006 | 11 | 0 | FAIL: the task's file list doesn't include `connector/fixtures/snowflake-csat-demo.json`, but the commit edits it. The c |
+| 2026-10-22T07:12:06.323Z | 5 | build | ok | 155454 | 0.1304374 | 60 | 0 |  |
+| 2026-10-22T07:12:22.535Z | 5 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; both-runs-8of8 |
+| 2026-10-22T07:13:57.726Z | 5 | checker | pass | 42506 | 0.052428199999999994 | 15 | 0 | PASS: The commit changes only `tools/connector-e2e.mjs`, `README.txt` and the new `connector/test/e2e-steps.test.mjs`, w |
+| 2026-10-22T07:13:57.731Z | 5 | task | done | 0 | 0 | 0 | 0 | attempt 2 |
