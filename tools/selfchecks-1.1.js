@@ -10378,6 +10378,92 @@ function _runSelfChecksInner(){
      (spacer)
      (spacer) */
   /* ==== v13 checks: Accounts ==== (owned by the Accounts port) */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prev = {view: ui.view, open: ui.openCustomerId, av: ui.accountsView, search: ui.search, desk: ui.v13DeskId, cal: ui.v13CalMode, gs: ui.v13GsFilter};
+    const hadSeen = 'todayLastSeenIds' in DATA, prevSeen = JSON.stringify(DATA.todayLastSeenIds);
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    const prevSwitch = localStorage.getItem(KEY);
+    const pane = () => document.querySelector('#app [data-osm] [data-v13-accounts]');
+    const VIEWS = ['gantt','kanban','table','cal','heat','gs'];
+    let detail = '';
+    // 1. heading, switcher, 1.1's toolbar ids, no old toolbar
+    let headOk = false;
+    try{
+      localStorage.removeItem(KEY); ui.openCustomerId = null; ui.search = ''; ui.accountsView = 'gantt'; ui.view = 'accounts'; render();
+      const p = pane();
+      const h1 = p && p.querySelector('h1');
+      const tabs = p ? [...p.querySelectorAll('[role=tablist][aria-label="Book view"] [role=tab]')].map(b => b.textContent.trim()) : [];
+      const ids = ['search-input','filter-module','filter-lifecycle','filter-risk','sort-by'];
+      const missing = ids.filter(id => !(p && p.querySelector('#' + id)));
+      const sub = p && p.querySelector('[data-v13-acct-sub]');
+      headOk = !!p && !!h1 && h1.textContent.trim() === 'Accounts' && tabs.join('|') === 'Gantt|Kanban|Table|Calendar|Outcome coverage|Gainsight admin'
+        && !missing.length && !document.querySelector('#app .view-switch') && !!sub && sub.textContent.indexOf(DATA.customers.length + ' accounts') === 0;
+      detail = JSON.stringify({pane: !!p, h1: h1 && h1.textContent, tabs, missing, sub: sub && sub.textContent.slice(0, 60)});
+    }catch(e){ detail = e.message; }
+    check('v13 Accounts draws the v13 heading, the six-view switcher (Gantt, Kanban, Table, Calendar, Outcome coverage, Gainsight admin) and 1.1\'s search/filter/sort ids, not the old toolbar', headOk, detail);
+    // 2. every tab switches view and draws one row per filtered account
+    let tabsOk = false; detail = '';
+    try{
+      const got = {};
+      VIEWS.forEach(k => {
+        const b = pane().querySelector('[data-v13-av="' + k + '"]');
+        if(!b){ got[k] = 'missing'; return; }
+        b.click();
+        const p = pane(), body = p && p.querySelector('[data-v13-av-pane="' + k + '"]');
+        got[k] = ui.accountsView === k && !!body && p.querySelector('[data-v13-av="' + k + '"]').getAttribute('aria-selected') === 'true' ? 'ok' : 'bad';
+      });
+      ui.accountsView = 'table'; render();
+      const n = getFilteredCustomers().length;
+      const rows = pane().querySelectorAll('[data-v13-av-pane="table"] tbody tr').length;
+      ui.accountsView = 'gantt'; render();
+      const grows = pane().querySelectorAll('[data-v13-av-pane="gantt"] [data-v13-acct]').length;
+      ui.accountsView = 'cal'; ui.v13CalMode = 'month'; render();
+      const month = pane().querySelectorAll('[data-v13-av-pane="cal"] [data-v13-month-cell]').length;
+      tabsOk = VIEWS.every(k => got[k] === 'ok') && rows === n && grows === n && month === 35;
+      detail = JSON.stringify({got, n, rows, grows, month});
+    }catch(e){ detail = e.message; }
+    check('v13 Accounts each switcher view draws (and marks itself selected); the Table and Gantt show one row per filtered account; the Month calendar draws 35 days', tabsOk, detail);
+    // 3. a row opens the account on the Desk
+    let openOk = false; detail = '';
+    try{
+      ui.accountsView = 'table'; render();
+      const btn = pane().querySelector('[data-v13-av-pane="table"] [data-v13-acct]');
+      const id = btn && btn.getAttribute('data-v13-acct');
+      btn.click();
+      openOk = !!id && ui.v13DeskId === id && ui.view === 'today';
+      detail = JSON.stringify({id, desk: ui.v13DeskId, view: ui.view});
+    }catch(e){ detail = e.message; }
+    check('v13 Accounts clicking an account sets ui.v13DeskId to it and goes to the Desk', openOk, detail);
+    // 4. never a health number or a percentage in any view
+    let healthOk = false; detail = '';
+    try{
+      const bad = [];
+      VIEWS.forEach(k => { ui.view = 'accounts'; ui.accountsView = k; render(); let t = pane().textContent; DATA.customers.forEach(c => { t = t.split(c.name).join(' '); }); if(/\d\s*%|health/i.test(t)) bad.push(k + ':' + (t.match(/.{0,30}(\d\s*%|health).{0,10}/i) || [''])[0]); });
+      healthOk = !bad.length;
+      detail = JSON.stringify(bad);
+    }catch(e){ detail = e.message; }
+    check('v13 Accounts shows no health number or percentage in any view', healthOk, detail);
+    // 5. 1.1's search still filters
+    let searchOk = false; detail = '';
+    try{
+      const first = DATA.customers[0];
+      ui.view = 'accounts'; ui.accountsView = 'table'; ui.search = first ? first.name : ''; render();
+      const rows = pane().querySelectorAll('[data-v13-av-pane="table"] tbody tr').length;
+      const want = getFilteredCustomers().length;
+      searchOk = !!first && rows === want && rows >= 1 && rows < DATA.customers.length && pane().querySelector('#search-input').value === first.name;
+      detail = JSON.stringify({rows, want, all: DATA.customers.length});
+    }catch(e){ detail = e.message; }
+    check('v13 Accounts 1.1\'s search box still narrows the rows', searchOk, detail);
+    try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+    if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
+    try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+    ui.view = prev.view; ui.openCustomerId = prev.open; ui.accountsView = prev.av; ui.search = prev.search;
+    if(prev.desk === undefined) delete ui.v13DeskId; else ui.v13DeskId = prev.desk;
+    if(prev.cal === undefined) delete ui.v13CalMode; else ui.v13CalMode = prev.cal;
+    if(prev.gs === undefined) delete ui.v13GsFilter; else ui.v13GsFilter = prev.gs;
+    render();
+  })();
   /* ==== end v13 checks: Accounts ==== */
   /* (spacer)
      (spacer)

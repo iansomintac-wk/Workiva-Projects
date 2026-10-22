@@ -9914,7 +9914,309 @@ V13_BINDERS.copilot = box => {
    Owned by the Accounts port. Everything for the Accounts screen goes between
    this marker and the end marker below: v13Accounts() and its helpers.
    Keep the end marker and do not edit outside it. */
-function v13Accounts(){ return renderAccounts(); }
+/* v13 Accounts: six read-only views of the same filtered, sorted list 1.1's
+   Accounts tab draws (getFilteredCustomers + sortCustomers), so the search,
+   filter and sort controls keep their 1.1 ids and attachEvents still binds
+   them. A click on an account sets ui.v13DeskId and goes to the Desk. Never a
+   health number: every cell is a fact (a date, a count, entered or not). */
+const V13_AV = [['gantt','Gantt'],['kanban','Kanban'],['table','Table'],['cal','Calendar'],['heat','Outcome coverage'],['gs','Gainsight admin']];
+function v13AcView(){ return V13_AV.some(v => v[0] === ui.accountsView) ? ui.accountsView : 'gantt'; }
+function v13AcSeg(on){ return `background:${on ? 'var(--sheet)' : 'transparent'};color:${on ? 'var(--ink)' : 'var(--muted)'};box-shadow:${on ? 'var(--sh1)' : 'none'}`; }
+function v13AcOff(iso){ return isRealISODate(iso) ? calendarDayDiff(iso, todayISO()) : null; }
+function v13AcDay(off){ const d = new Date(todayISO() + 'T00:00:00'); d.setDate(d.getDate() + off); return d; }
+function v13AcMd(iso){ return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric'}); }
+function v13AcWhen(iso, time){
+  const off = v13AcOff(iso);
+  if(off === null) return '';
+  const day = off === 0 ? 'Today' : off === 1 ? 'Tomorrow' : (off > 1 && off < 7) ? v13AcDay(off).toLocaleDateString('en-US', {weekday:'short'}) : v13AcMd(iso);
+  return day + (time ? ' ' + time : '');
+}
+// One fact record per account, read once per render.
+function v13AcFacts(c, hubBy){
+  const kind = c.stage === 'graduated' ? 'handed' : inImplementation(c) ? 'partner' : 'live';
+  const total = plannedSessionTotal(c);
+  const held = (DATA.activities[c.id] || []).filter(a => a.sessionNumber && isRealISODate(a.date)).map(a => ({n: a.sessionNumber, date: a.date})).sort((a, b) => a.date < b.date ? -1 : 1);
+  const nextInfo = kind === 'live' ? getNextSessionInfo(c) : null;
+  const next = nextInfo ? nextInfo.number : null;
+  const sched = kind === 'live' ? getNextSessionScheduled(c) : null;
+  const schedOff = sched ? v13AcOff(sched) : null;
+  const time = sched ? getNextSessionTime(c) : null;
+  const cov = kind === 'live' && next ? computeCoverage(c) : null;
+  const pace = Math.max(1, Math.round(sessionPaceDays(c)));
+  const planned = []; // [{n, date, kind:'next'|'later'}]
+  if(next){
+    const booked = sched && schedOff >= 0;
+    const start = booked ? sched : (cov && cov.dueOn) || null;
+    if(start) for(let k = next; k <= total; k++) planned.push({n:k, date: isoAddDays(start, pace * (k - next)), kind: booked && k === next ? 'next' : 'later'});
+  }
+  const impl = getImplementationState(c);
+  const goLive = impl && isRealISODate(impl.targetGoLive) ? impl.targetGoLive : null;
+  const implStart = impl && isRealISODate(impl.startedOn) ? impl.startedOn : (isRealISODate(c.implementationDate) ? c.implementationDate : null);
+  const lead = impl && impl.partner ? impl.partner : 'Internal PM';
+  const gh = (c.stageHistory || []).filter(h => h.stage === 'graduated' && isRealISODate(h.date)).pop();
+  const handed = gh ? gh.date : null;
+  const crit = outcomeCriteriaFor(c);
+  const by = b => crit.filter(x => x.evidence && x.evidence.by === b).length;
+  const counts = {demo: by('customer'), obs: by('osm'), unk: by('unknown'), total: crit.length};
+  const risks = confirmedRisksFor(c).length;
+  const sigs = (hubBy[c.id] || []).filter(it => { const s = riskVerdictState(it); return s !== 'confirmed' && s !== 'dismissed'; }).length;
+  const ready = kind === 'live' && outcomeVerdict(c).state === 'ready';
+  const owe = openCommitments(c).length;
+  const stage = DATA.config.stages.find(s => s.key === c.stage);
+  const phase = kind === 'partner' ? 'In implementation' : kind === 'handed' ? 'Handed off' : (stage ? stage.label : 'Live');
+  const nearEnd = kind === 'live' && (!next || next > total - 2);
+  const col = kind === 'partner' ? 'partner' : kind === 'handed' ? 'handed' : ready ? 'ready' : nearEnd ? 'near' : 'post';
+  const tone = {partner:'var(--partner)', handed:'var(--faint)', ready:'var(--demo-t)', near:'var(--plum)', post:'var(--runway)'}[col];
+  const paused = isPaused(c);
+  const whenLabel = kind === 'handed' ? (handed ? v13AcMd(handed) : 'Handed off')
+    : kind === 'partner' ? (goLive ? 'Go-live ' + v13AcMd(goLive) : 'Go-live not set')
+    : !next ? 'All sessions logged' : paused ? 'Paused'
+    : (sched && schedOff >= 0) ? v13AcWhen(sched, time) : 'Not booked';
+  return {c, kind, total, held, next, sched, schedOff, time, planned, goLive, implStart, lead, handed, counts, risks, sigs, ready, owe, phase, col, tone, whenLabel, paused,
+    nextTitle: nextInfo ? nextInfo.template.title : ''};
+}
+function v13AcSignal(f){
+  return f.risks ? ['Confirmed risk', 'var(--risk)'] : f.sigs ? ['Signal to check', 'var(--warn)'] : f.ready ? ['Ready for graduation', 'var(--demo-t)'] : ['No signals', f.tone];
+}
+function v13AcGantt(F){
+  const G0 = -70, GS = 147, gx = off => ((off - G0) / GS * 100).toFixed(2) + '%';
+  const inR = off => off !== null && off >= G0 && off <= G0 + GS;
+  const months = [];
+  for(let off = G0; off <= G0 + GS; off++){ const d = v13AcDay(off); if(d.getDate() === 1 || off === G0) months.push({label: d.toLocaleDateString('en-US', {month:'short'}), left: gx(off), first: off === G0}); }
+  const mLines = months.filter(m => !m.first).map(m => `<span style="position:absolute;top:0;bottom:0;left:${m.left};border-left:1px solid var(--line)"></span>`).join('');
+  const dot = (off, bg, ring, title) => inR(off) ? `<span title="${escapeAttr(title)}" style="position:absolute;top:50%;left:${gx(off)};width:9px;height:9px;border-radius:50%;transform:translate(-50%,-50%);background:${bg};box-shadow:${ring}"></span>` : '';
+  const rows = F.map(f => {
+    let dots = '', bar = '', lastOff = null, tag;
+    f.held.forEach(h => { const o = v13AcOff(h.date); dots += dot(o, 'var(--runway)', 'none', 'Session ' + h.n + ' held · ' + v13AcMd(h.date)); lastOff = o; });
+    f.planned.forEach(p => { const o = v13AcOff(p.date); dots += p.kind === 'next' ? dot(o, 'var(--acc)', 'none', 'Session ' + p.n + ' · next planned') : dot(o, 'transparent', 'inset 0 0 0 1.5px var(--faint)', 'Session ' + p.n + ' · projected at the current pace'); if(o !== null && o <= G0 + GS) lastOff = o; });
+    if(f.kind === 'partner'){
+      const s = Math.max(G0, v13AcOff(f.implStart) ?? G0), e = f.goLive ? v13AcOff(f.goLive) : 0;
+      const eC = Math.min(G0 + GS, Math.max(s, e));
+      bar = `<span style="position:absolute;top:50%;height:10px;margin-top:-5px;left:${gx(s)};width:${((eC - s) / GS * 100).toFixed(2)}%;border:1.5px dashed var(--partner);border-radius:4px;box-sizing:border-box;background:var(--partner-bg)"></span>`;
+      if(f.goLive) dots += dot(e, 'transparent', 'inset 0 0 0 1.5px var(--acc)', 'Go-live target · ' + v13AcMd(f.goLive));
+      lastOff = eC;
+      tag = (f.goLive ? 'Go-live ' + v13AcMd(f.goLive) : 'Go-live not set') + ' · ' + f.lead;
+    } else if(f.kind === 'handed'){
+      tag = 'Handed off' + (f.handed ? ' ' + v13AcMd(f.handed) : '');
+      if(f.handed && inR(v13AcOff(f.handed))) lastOff = v13AcOff(f.handed);
+    } else {
+      tag = f.next ? 'S' + f.next + ' · ' + f.whenLabel : 'All ' + f.total + ' sessions logged';
+    }
+    const tagL = 'calc(' + gx(Math.min(lastOff === null ? G0 : lastOff, G0 + GS - 24)) + ' + 12px)';
+    return `<button type="button" data-v13-acct="${escapeAttr(f.c.id)}" class="v13ac-row" style="display:grid;grid-template-columns:190px minmax(0,1fr);align-items:center;width:100%;height:30px;border:0;border-top:1px solid var(--line);background:transparent;padding:0;text-align:left;color:var(--ink)">
+      <span style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;padding-right:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="width:6px;height:6px;border-radius:50%;background:${f.tone};flex:none"></span>${escapeHtml(f.c.name)}</span>
+      <span style="position:relative;height:100%;border-left:1px solid var(--line)">${mLines}<span style="position:absolute;top:0;bottom:0;left:${gx(0)};border-left:2px solid var(--ink)"></span>${bar}${dots}<span style="position:absolute;top:50%;transform:translateY(-50%);left:${tagL};font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap;background:var(--sheet);padding:0 4px;border-radius:4px">${escapeHtml(tag)}</span></span>
+    </button>`;
+  }).join('');
+  const lg = (sw, t) => `<span style="display:flex;align-items:center;gap:6px">${sw}${t}</span>`;
+  return `<div data-v13-av-pane="gantt">
+    <div style="display:flex;flex-wrap:wrap;gap:4px 18px;font-size:12px;color:var(--muted);margin-bottom:12px">
+      ${lg('<span style="width:9px;height:9px;border-radius:50%;background:var(--runway)"></span>', 'Session held')}
+      ${lg('<span style="width:9px;height:9px;border-radius:50%;background:var(--acc)"></span>', 'Next planned (booked)')}
+      ${lg('<span style="width:9px;height:9px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--faint)"></span>', 'Later sessions (projected at the current pace)')}
+      ${lg('<span style="width:18px;height:7px;border-radius:3px;border:1.5px dashed var(--partner);box-sizing:border-box"></span>', 'Implementation')}
+      ${lg('<span style="width:9px;height:9px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--acc)"></span>', 'Go-live target')}
+    </div>
+    <div style="overflow-x:auto"><div style="min-width:1080px">
+      <div style="display:grid;grid-template-columns:190px minmax(0,1fr);height:22px"><span></span><span style="position:relative">${months.map(m => `<span style="position:absolute;left:${m.left};font-family:var(--mono);font-size:10px;color:var(--muted)">${m.label}</span>`).join('')}</span></div>
+      ${rows}
+    </div></div>
+    <p style="font-size:12px;color:var(--muted);margin-top:10px">Black line · today. Held sessions are logged dates; later sessions are projected at each account's own pace.</p>
+  </div>`;
+}
+function v13AcKanban(F){
+  const K = [['partner','In implementation','Partner or internal PM · before go-live','var(--partner)'], ['post','Post-implementation','Two or more sessions to go','var(--acc)'], ['near','Near handoff','Last two sessions · criteria not met yet','var(--plum)'], ['ready','Ready for graduation','Criteria met · your decision','var(--demo-t)'], ['handed','Handed off','Decision recorded','var(--faint)']];
+  const card = f => { const [sig, tone] = v13AcSignal(f);
+    const line = f.kind === 'partner' ? f.lead + (f.goLive ? ' · go-live ' + v13AcMd(f.goLive) : '') : f.kind === 'handed' ? 'Graduated' : (f.next ? 'S' + f.next + ' of ' + f.total : 'All ' + f.total + ' logged') + ' · ' + f.counts.demo + ' demonstrated';
+    return `<button type="button" data-v13-acct="${escapeAttr(f.c.id)}" style="text-align:left;border:0;border-radius:10px;background:var(--sheet);box-shadow:var(--sh1);padding:9px 12px;color:var(--ink)">
+      <span style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><span style="font-size:13px;font-weight:800">${escapeHtml(f.c.name)}</span><span style="font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap">${escapeHtml(f.kind === 'partner' ? '' : f.whenLabel)}</span></span>
+      <span style="display:block;font-size:12px;color:var(--muted)">${escapeHtml(line)}</span>
+      <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:${tone};margin-top:2px"><span style="width:6px;height:6px;border-radius:50%;background:${tone}"></span>${escapeHtml(sig)}</span>
+    </button>`; };
+  return `<div data-v13-av-pane="kanban" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">${K.map(([k, label, sub, c]) => { const items = F.filter(f => f.col === k);
+    return `<section style="background:var(--sheet2);border-radius:14px;padding:12px;min-height:200px">
+      <p style="display:flex;justify-content:space-between;align-items:baseline;font-size:14px;font-weight:900"><span style="display:flex;align-items:center;gap:7px"><span style="width:8px;height:8px;border-radius:50%;background:${c}"></span>${label}</span><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${items.length}</span></p>
+      <p style="font-size:12px;color:var(--muted);margin-top:2px;margin-bottom:10px">${sub}</p>
+      <div style="display:flex;flex-direction:column;gap:6px">${items.map(card).join('')}</div>
+    </section>`; }).join('')}</div>`;
+}
+function v13AcTable(F){
+  const th = (t, p) => `<th style="padding:${p || '10px 8px'};font-weight:700">${t}</th>`;
+  const rows = F.map(f => { const [sig] = v13AcSignal(f);
+    const nextCol = f.kind === 'partner' ? 'S1 after go-live' + (f.goLive ? ' (' + v13AcMd(f.goLive) + ')' : '') : f.kind === 'handed' ? 'Complete' : f.next ? 'S' + f.next + ' · ' + f.nextTitle : 'All sessions logged';
+    const riskCol = f.risks ? f.risks + ' confirmed' : f.sigs ? f.sigs + ' to check' : 'None';
+    const riskC = f.risks ? 'var(--risk)' : f.sigs ? 'var(--warn)' : 'var(--muted)';
+    return `<tr style="border-top:1px solid var(--line)">
+      <td style="padding:10px 10px 10px 0"><button type="button" data-v13-acct="${escapeAttr(f.c.id)}" style="border:0;background:transparent;padding:0;font-weight:800;font-size:14px;color:var(--acc);text-decoration:underline;text-underline-offset:3px;text-align:left">${escapeHtml(f.c.name)}</button><span style="display:block;font-size:12px;color:var(--muted)">${escapeHtml(f.c.module || '')}</span></td>
+      <td style="padding:10px 8px">${escapeHtml(f.phase)}</td>
+      <td style="padding:10px 8px">${escapeHtml(nextCol)}</td>
+      <td style="padding:10px 8px;font-variant-numeric:tabular-nums">${f.held.length}</td>
+      <td style="padding:10px 8px;font-variant-numeric:tabular-nums"><b>${f.counts.demo}</b> / ${f.counts.total}</td>
+      <td style="padding:10px 8px;font-variant-numeric:tabular-nums">${f.counts.obs} · ${f.counts.unk}</td>
+      <td style="padding:10px 8px;font-variant-numeric:tabular-nums">${f.owe}</td>
+      <td style="padding:10px 8px;color:${riskC};font-weight:700">${riskCol}</td>
+      <td style="padding:10px 0 10px 8px;font-family:var(--mono);font-size:12px">${escapeHtml(f.whenLabel)}</td>
+    </tr>`; }).join('');
+  return `<div data-v13-av-pane="table" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:980px">
+    <thead><tr style="text-align:left;font-size:12px;color:var(--muted)">${th('Account', '10px 10px 10px 0')}${th('Phase')}${th('Next planned')}${th('Held')}${th('Demonstrated')}${th('Observed · source unknown')}${th('You owe')}${th('Risk · signals')}${th('Next moment', '10px 0 10px 8px')}</tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+function v13AcEvents(F, lo, hi){
+  const evs = {};
+  const add = (iso, it) => { const off = v13AcOff(iso); if(off === null || off < lo || off > hi) return; (evs[off] = evs[off] || []).push(it); };
+  F.forEach(f => { const id = f.c.id, name = f.c.name;
+    if(f.kind === 'partner'){ if(f.goLive) add(f.goLive, {id, name, label:'Go-live', tone:'var(--partner)', o:0}); return; }
+    if(f.kind === 'handed'){ if(f.handed) add(f.handed, {id, name, label:'Handed off', tone:'var(--faint)', o:2}); return; }
+    f.held.forEach(h => add(h.date, {id, name, label:'S' + h.n + ' held', tone:'var(--runway)', o:3}));
+    f.planned.forEach(p => add(p.date, {id, name, label:'S' + p.n + (p.kind === 'next' && f.time ? ' ' + f.time : p.kind === 'next' ? '' : ' projected'), tone: p.kind === 'next' ? 'var(--acc)' : 'var(--faint)', o: p.kind === 'next' ? 0 : 2, time: p.kind === 'next' ? f.time : null}));
+  });
+  Object.keys(evs).forEach(k => evs[k].sort((a, b) => a.o - b.o));
+  return evs;
+}
+function v13AcCal(F){
+  const mode = ui.v13CalMode === 'month' ? 'month' : 'week';
+  const dow = (v13AcDay(0).getDay() + 6) % 7; // 0 = Monday
+  const modes = [['week','Week'],['month','Month']].map(([k, label]) => `<button type="button" role="tab" data-v13-cal="${k}" aria-selected="${mode === k}" style="border:0;border-radius:999px;padding:5px 14px;font-size:12px;font-weight:700;${v13AcSeg(mode === k)}">${label}</button>`).join('');
+  let body = '', note;
+  if(mode === 'week'){
+    const mon = -dow, evs = v13AcEvents(F, mon, mon + 4);
+    note = 'Week of ' + v13AcDay(mon).toLocaleDateString('en-US', {month:'short', day:'numeric'}) + ' · booked sessions, projected sessions and go-lives in the book.';
+    const hours = []; for(let h = 8; h <= 17; h++) hours.push(h);
+    const now = new Date(), nowTop = Math.max(0, Math.min(540, (now.getHours() - 8) * 60 + now.getMinutes()));
+    const days = [0,1,2,3,4].map(i => { const off = mon + i, d = v13AcDay(off), today = off === 0;
+      const all = evs[off] || [], timed = all.filter(m => m.time), untimed = all.filter(m => !m.time);
+      const item = (m, top, h) => `<button type="button" data-v13-acct="${escapeAttr(m.id)}" title="${escapeAttr(m.name + ' · ' + m.label)}" style="position:absolute;left:4px;right:4px;top:${top}px;height:${h}px;box-sizing:border-box;border:0;border-radius:8px;background:var(--sheet);box-shadow:var(--sh1);padding:3px 8px;text-align:left;overflow:hidden;color:var(--ink)"><span style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--muted)"><span style="width:6px;height:6px;border-radius:50%;background:${m.tone}"></span>${escapeHtml(m.label)}</span><span style="display:block;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(m.name)}</span></button>`;
+      const tItems = timed.map(m => { const [hh, mm] = m.time.split(':').map(Number); return item(m, Math.max(0, Math.min(495, (hh - 8) * 60 + (mm || 0))), 45); }).join('');
+      const strip = untimed.slice(0, 3).map((m, j) => item(m, 2 + j * 40, 38)).join('') + (untimed.length > 3 ? `<span style="position:absolute;left:8px;top:124px;font-size:10px;color:var(--muted)">+${untimed.length - 3} more · no time set</span>` : '');
+      return {label: d.toLocaleDateString('en-US', {weekday:'short'}) + ' ' + d.getDate(), today, col: `<div style="position:relative;height:540px;border-left:1px solid var(--line);background:${today ? 'var(--sheet2)' : 'transparent'}">${hours.map(h => `<span style="position:absolute;left:0;right:0;top:${(h - 8) * 60}px;border-top:1px solid var(--line)"></span>`).join('')}${today ? `<span style="position:absolute;left:0;right:0;top:${nowTop}px;border-top:2px solid var(--ink)"></span>` : ''}${strip}${tItems}</div>`};
+    });
+    body = `<div style="overflow-x:auto"><div style="display:grid;grid-template-columns:52px repeat(5,minmax(150px,1fr));min-width:820px">
+      <span></span>${days.map(d => `<p style="font-size:13px;font-weight:800;padding:0 6px 8px;color:var(--ink)">${d.label}</p>`).join('')}
+      <div style="position:relative;height:540px">${hours.map(h => `<span style="position:absolute;top:${(h - 8) * 60}px;right:8px;transform:translateY(-50%);font-family:var(--mono);font-size:10px;color:var(--faint)">${String(h).padStart(2, '0')}:00</span>`).join('')}</div>
+      ${days.map(d => d.col).join('')}
+    </div></div>
+    <p style="font-size:12px;color:var(--muted);margin-top:10px">Items without a set time sit at the top of their day.</p>`;
+  } else {
+    const start = -14 - dow, evs = v13AcEvents(F, start, start + 34), month = v13AcDay(0).getMonth();
+    note = v13AcDay(0).toLocaleDateString('en-US', {month:'long', year:'numeric'}) + ' · sessions, go-lives and handoffs across the book.';
+    const cells = []; for(let off = start; off < start + 35; off++){ const d = v13AcDay(off), list = evs[off] || [], today = off === 0, wk = d.getDay() === 0 || d.getDay() === 6;
+      cells.push(`<div data-v13-month-cell style="min-height:118px;border-radius:10px;padding:6px;background:${today ? 'var(--acc-bg)' : wk ? 'transparent' : 'var(--sheet2)'};box-shadow:${today ? 'inset 0 0 0 2px var(--acc)' : 'none'};opacity:${d.getMonth() === month ? (off < 0 ? 0.7 : 1) : 0.4};display:flex;flex-direction:column;gap:3px;min-width:0">
+        <p style="font-family:var(--mono);font-size:11px;font-weight:${today ? 800 : 500};color:${today ? 'var(--acc)' : 'var(--muted)'};padding:0 2px">${(d.getDate() === 1 || off === start) ? d.toLocaleDateString('en-US', {month:'short'}) + ' ' : ''}${d.getDate()}</p>
+        ${list.slice(0, 4).map(m => `<button type="button" data-v13-acct="${escapeAttr(m.id)}" title="${escapeAttr(m.name + ' · ' + m.label)}" style="display:grid;grid-template-columns:6px minmax(0,1fr);column-gap:5px;align-items:center;width:100%;max-width:100%;box-sizing:border-box;border:0;border-radius:6px;background:var(--sheet);box-shadow:var(--sh1);padding:3px 6px;text-align:left;font-size:11px;line-height:1.25;color:var(--ink)"><span style="width:6px;height:6px;border-radius:50%;background:${m.tone}"></span><span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${escapeHtml(m.name)}</span><span style="grid-column:2;font-family:var(--mono);font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${escapeHtml(m.label)}</span></button>`).join('')}
+        ${list.length > 4 ? `<p style="font-size:10px;color:var(--muted);padding-left:6px">+${list.length - 4} more</p>` : ''}
+      </div>`); }
+    const lg = (c, t) => `<span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${c}"></span>${t}</span>`;
+    body = `<div style="overflow-x:auto"><div style="min-width:860px">
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-bottom:4px">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => `<p style="font-size:11px;font-weight:800;color:var(--muted);padding:0 6px">${d}</p>`).join('')}</div>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">${cells.join('')}</div>
+    </div></div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--muted);margin-top:10px">${lg('var(--acc)', 'Next planned session (booked)')}${lg('var(--faint)', 'Later sessions (projected at the current pace)')}${lg('var(--runway)', 'Held')}${lg('var(--partner)', 'Go-live')}</div>`;
+  }
+  return `<div data-v13-av-pane="cal">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"><p style="font-size:13px;color:var(--muted)">${escapeHtml(note)}</p><div role="tablist" aria-label="Calendar range" style="display:flex;gap:2px;padding:3px;background:var(--well);border-radius:999px">${modes}</div></div>
+    ${body}</div>`;
+}
+function v13AcHeat(F){
+  const rows = F.filter(f => f.kind !== 'partner').map(f => ({f, crit: outcomeCriteriaFor(f.c)}));
+  const n = Math.max(1, ...rows.map(r => r.crit.length));
+  const grid = `display:grid;grid-template-columns:190px repeat(${n},26px) auto;gap:3px;align-items:center`;
+  const sw = (s, t) => `<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;${s}"></span>${t}</span>`;
+  const body = rows.map(({f, crit}) => {
+    const cells = []; for(let k = 0; k < n; k++){ const x = crit[k];
+      if(!x){ cells.push('<span></span>'); continue; }
+      const by = x.evidence ? x.evidence.by : null;
+      const st = by === 'customer' ? ['var(--demo)', 'none', 'Customer demonstrated'] : by === 'osm' ? ['var(--obs)', 'none', 'OSM observed'] : by ? ['transparent', 'inset 0 0 0 2px var(--ink)', 'Met · source unknown'] : ['var(--well)', 'none', 'Not yet'];
+      cells.push(`<span title="${escapeAttr((k + 1) + ' · ' + x.text + ' · ' + st[2])}" style="height:20px;border-radius:4px;background:${st[0]};box-shadow:${st[1]}"></span>`); }
+    return `<button type="button" data-v13-acct="${escapeAttr(f.c.id)}" style="${grid};width:100%;border:0;background:transparent;padding:2px 0;text-align:left;color:var(--ink)"><span style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:8px">${escapeHtml(f.c.name)}</span>${cells.join('')}<span style="font-size:12px;color:var(--muted);padding-left:10px;white-space:nowrap">${f.counts.demo} / ${f.counts.total}</span></button>`;
+  }).join('');
+  const cols = []; for(let k = 1; k <= n; k++) cols.push(`<span style="font-family:var(--mono);font-size:9px;color:var(--faint);text-align:center">${k}</span>`);
+  return `<div data-v13-av-pane="heat">
+    <div style="display:flex;flex-wrap:wrap;gap:4px 18px;font-size:12px;color:var(--muted);margin-bottom:12px">${sw('background:var(--demo)', 'Customer demonstrated')}${sw('background:var(--obs)', 'OSM observed')}${sw('box-shadow:inset 0 0 0 2px var(--ink)', 'Met · source unknown')}${sw('background:var(--well)', 'Not yet')}</div>
+    <div style="overflow-x:auto"><div style="min-width:760px">
+      <div style="${grid};margin-bottom:4px"><span style="font-size:11px;color:var(--muted)">Required outcome</span>${cols.join('')}<span></span></div>
+      ${body || '<p style="padding:14px 0;font-size:13px;color:var(--muted)">No live account in this filter.</p>'}
+    </div></div>
+    <p style="font-size:12px;color:var(--muted);margin-top:10px">One cell per success criterion in the account's curriculum. Accounts still in implementation have no sessions yet and are left out.</p>
+  </div>`;
+}
+function v13AcGsCells(f){
+  const c = f.c, comp = c.compliance || {}, impl = getImplementationState(c);
+  const done = (ok, t) => ok ? {t: t || 'Entered', c:'var(--demo-t)', bg:'var(--demo-bg)', open:false} : {t:'Not entered', c:'var(--acc)', bg:'var(--acc-bg)', open:true};
+  const na = t => ({t: t || '–', c:'var(--faint)', bg:'transparent', open:false});
+  if(f.kind === 'handed') return [na(), na(), na(), na(), na(), c.renewalDate ? na(v13AcMd(c.renewalDate)) : na()];
+  return [
+    impl ? done(!!(impl.targetGoLive || impl.wentLiveOn)) : na(),
+    done(!!(comp.sentiment && comp.sentiment.done)),
+    done(!!c.targetGraduationDate),
+    done(!!(comp.associatedPeopleCSAT && comp.associatedPeopleCSAT.done)),
+    done(!!(comp.outcomePlan && comp.outcomePlan.done)),
+    isRealISODate(c.renewalDate) ? {t: v13AcMd(c.renewalDate), c:'var(--muted)', bg:'transparent', open:false} : na('Not set')
+  ];
+}
+function v13AcGs(F){
+  const flt = ui.v13GsFilter === 'all' ? 'all' : 'open';
+  const COLS = ['Go-live','Sentiment','Est. graduation','CSAT contact','Success plan','Renewal'];
+  const all = F.map(f => ({f, cells: v13AcGsCells(f)}));
+  const due = all.reduce((s, r) => s + r.cells.filter(x => x.open).length, 0);
+  const rows = flt === 'all' ? all : all.filter(r => r.cells.some(x => x.open));
+  const grid = 'display:grid;grid-template-columns:200px repeat(6,minmax(0,1fr));gap:4px';
+  const opts = [['open','Needs you'],['all','Whole book']].map(([k, label]) => `<button type="button" role="tab" data-v13-gsf="${k}" aria-selected="${flt === k}" style="border:0;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700;${v13AcSeg(flt === k)}">${label}</button>`).join('');
+  return `<div data-v13-av-pane="gs">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><div role="tablist" aria-label="Rows" style="display:flex;gap:2px;padding:3px;background:var(--well);border-radius:999px">${opts}</div><span style="font-size:13px;color:var(--muted)">${due} field${due === 1 ? '' : 's'} not entered · ${getGainsightQueue().filter(q => q.status === 'queued').length} queued for Gainsight</span></div>
+    <div style="overflow-x:auto"><div style="min-width:860px">
+      <div style="${grid};margin-bottom:4px"><span style="font-size:11px;color:var(--muted)">Account</span>${COLS.map(c => `<span style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--muted)">${c}</span>`).join('')}</div>
+      ${rows.map(({f, cells}) => `<div style="${grid};align-items:center;padding:3px 0;border-top:1px solid var(--line)">
+        <span style="min-width:0;padding-right:8px"><span style="display:block;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(f.c.name)}</span><span style="display:block;font-size:11px;color:var(--muted)">${escapeHtml(f.kind === 'handed' ? 'Handed off · CSM owns' : f.kind === 'partner' ? 'In implementation' : f.next ? 'S' + f.next + ' of ' + f.total : 'All sessions logged')}</span></span>
+        ${cells.map((x, i) => `<button type="button" data-v13-gs-cell="${escapeAttr(f.c.id)}" title="${escapeAttr(COLS[i] + ' · ' + x.t)}" style="border:0;border-radius:8px;background:${x.bg};color:${x.c};padding:7px 8px;font-size:12px;font-weight:700;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(x.t)}</button>`).join('')}
+      </div>`).join('')}
+      ${rows.length ? '' : '<p style="padding:14px 0;font-size:13px;color:var(--muted)">No account needs Gainsight admin right now.</p>'}
+    </div></div>
+    <p style="font-size:12px;color:var(--muted);margin-top:10px">Not entered is a to-do, not a risk. Click a cell to open the account.</p>
+  </div>`;
+}
+function v13AcToolbar(){
+  const sel = 'border:1px solid var(--line2);border-radius:999px;background:var(--sheet);color:var(--ink);padding:6px 12px;font-size:13px;font-family:inherit';
+  return `<div class="v13ac-tools" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:18px">
+    ${ui.quickFilter === 'grad30' ? `<button type="button" id="clear-quick-filter" title="Clear this filter" style="${sel};font-weight:700;color:var(--acc)">Graduating ≤30 days ✕</button>` : ''}
+    <input type="text" id="search-input" placeholder="Search accounts…" aria-label="Search accounts" value="${escapeAttr(ui.search)}" style="${sel};min-width:220px;flex:0 1 280px">
+    <select id="filter-module" aria-label="Module" style="${sel}"><option value="all" ${ui.filterModule === 'all' ? 'selected' : ''}>All modules</option>${DATA.config.modules.map(m => `<option value="${escapeAttr(m)}" ${ui.filterModule === m ? 'selected' : ''}>${escapeHtml(m)}</option>`).join('')}</select>
+    <select id="filter-lifecycle" aria-label="Lifecycle" style="${sel}">${[['all','All lifecycle'],['implementation','In implementation'],['live','Live (post-impl.)'],['graduated','Graduated']].map(([v, t]) => `<option value="${v}" ${ui.filterLifecycle === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
+    <select id="filter-risk" aria-label="Status" style="${sel}">${[['all','All statuses'],['risk','Off Track'],['watch','Watch'],['ontrack','On Track']].map(([v, t]) => `<option value="${v}" ${ui.filterRisk === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
+    <select id="sort-by" aria-label="Sort" style="${sel}">${[['risk','Confirmed risk, then quiet longest'],['lastActivity','Last activity'],['stage','TTFV stage'],['graduation','Graduation date'],['name','Name']].map(([v, t]) => `<option value="${v}" ${ui.sortBy === v ? 'selected' : ''}>Sort: ${t}</option>`).join('')}</select>
+  </div>`;
+}
+function v13Accounts(){
+  const av = v13AcView();
+  const hubBy = {};
+  buildRiskHubList({readOnly:true}).forEach(it => { (hubBy[it.c.id] = hubBy[it.c.id] || []).push(it); });
+  const F = sortCustomers(getFilteredCustomers()).map(c => v13AcFacts(c, hubBy));
+  const tabs = V13_AV.map(([k, label]) => `<button type="button" role="tab" data-v13-av="${k}" aria-selected="${av === k}" style="border:0;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;white-space:nowrap;${v13AcSeg(av === k)}">${label}</button>`).join('');
+  const body = !DATA.customers.length ? '<p style="padding:14px 0;font-size:14px;color:var(--muted)">No accounts yet. Add your first customer from More.</p>'
+    : !F.length ? '<p style="padding:14px 0;font-size:14px;color:var(--muted)">No matches. Try adjusting the search or filters.</p>'
+    : av === 'kanban' ? v13AcKanban(F) : av === 'table' ? v13AcTable(F) : av === 'cal' ? v13AcCal(F) : av === 'heat' ? v13AcHeat(F) : av === 'gs' ? v13AcGs(F) : v13AcGantt(F);
+  return `<section data-v13-accounts aria-label="Accounts">
+    <style>[data-v13-accounts] .v13ac-row:hover{background:var(--sheet2) !important}[data-v13-accounts] button{cursor:pointer;font-family:inherit}[data-v13-accounts] h1,[data-v13-accounts] p{margin:0}[data-v13-accounts] table th,[data-v13-accounts] table td{border:0;vertical-align:top}</style>
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px 24px">
+      <div>
+        <h1 style="font-size:clamp(34px,3.6vw,52px);font-weight:900;letter-spacing:-0.035em;line-height:1">Accounts</h1>
+        <p data-v13-acct-sub style="color:var(--muted);margin-top:8px;font-size:15px">${DATA.customers.length} accounts${F.length !== DATA.customers.length ? ' · ' + F.length + ' shown' : ''}. Each view shows separate facts; none of them stands in for readiness.</p>
+      </div>
+      <div role="tablist" aria-label="Book view" style="display:flex;gap:2px;padding:3px;background:var(--well);border-radius:999px;flex-wrap:wrap">${tabs}</div>
+    </div>
+    ${v13AcToolbar()}
+    <div style="margin-top:14px;background:var(--sheet);border-radius:18px;box-shadow:var(--sh1);padding:18px 20px">${body}</div>
+  </section>`;
+}
+V13_BINDERS.accounts = box => {
+  const p = box.querySelector('[data-v13-accounts]');
+  if(!p) return;
+  const open = id => { ui.v13DeskId = id; v13SwitchView('today'); };
+  p.querySelectorAll('[data-v13-av]').forEach(b => b.addEventListener('click', () => { ui.accountsView = b.dataset.v13Av; render(); }));
+  p.querySelectorAll('[data-v13-cal]').forEach(b => b.addEventListener('click', () => { ui.v13CalMode = b.dataset.v13Cal; render(); }));
+  p.querySelectorAll('[data-v13-gsf]').forEach(b => b.addEventListener('click', () => { ui.v13GsFilter = b.dataset.v13Gsf; render(); }));
+  p.querySelectorAll('[data-v13-acct]').forEach(b => b.addEventListener('click', () => open(b.dataset.v13Acct)));
+  p.querySelectorAll('[data-v13-gs-cell]').forEach(b => b.addEventListener('click', () => open(b.dataset.v13GsCell)));
+};
 /* ==== end v13 screen: Accounts ==== */
 /* (spacer: keeps each screen's block apart so parallel ports merge cleanly)
    (spacer)
