@@ -270,7 +270,7 @@ export const PART_A = [
     const id = await ctx.ev(`DATA.customers.find(x => x.name === ${JSON.stringify(ORION)}).id`);
     let after = null, done = null;
     if (before) {
-      await ctx.ev(`(() => { const c = DATA.customers.find(x => x.name === ${JSON.stringify(ORION)}); ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = c.id; render();
+      await ctx.ev(`(() => { const c = DATA.customers.find(x => x.name === ${JSON.stringify(ORION)}); ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = c.id; ui.v13DeskTab = 'capture'; render();
         const b = document.querySelector('[data-v13-desk-body] [data-fp-toggle="sentiment|' + c.id + '"]'); if (!b) throw new Error('no sentiment toggle in the Orion pane'); b.click(); return true; })()`);
       await sleep(400);
       after = sent(JSON.parse(await heads(ORION) || '[]'));

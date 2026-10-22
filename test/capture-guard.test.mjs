@@ -88,7 +88,7 @@ test('the guard module imports only node: modules and never names port 8790', ()
 
 test('guardJs checks the containing pane, not the target own text', () => {
   const js = G.guardJs('document.body', 'Orion Semiconductor', 'c_1');
-  assert.ok(js.includes("closest('.day-pane, .day-step, .modal, .todo-item')"));
+  assert.ok(js.includes("closest('.day-pane, .day-step, .modal, .todo-item, [data-v13-desk-body]')"));
   assert.ok(js.includes('dayHolds') && js.includes('dayStep'));
   assert.ok(!js.includes('target.textContent.includes('));
   assert.ok(js.includes('scope.textContent.includes('));

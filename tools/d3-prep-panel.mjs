@@ -22,8 +22,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const OPEN = name => `(() => {
   const c = DATA.customers.find(x => x.name === ${JSON.stringify(name)});
   if (!c) return JSON.stringify({found: false});
-  ui.view = 'today'; ui.openCustomerId = null; ui.todayFocusId = c.id; render();
-  const pane = document.querySelector('.day-pane[data-day-holds="' + cssEscape(c.id) + '"]');
+  ui.view = 'today'; ui.openCustomerId = null; ui.v13DeskId = c.id; ui.v13DeskFilter = null; ui.v13DeskTab = 'prepare'; render();
+  const pane = document.querySelector('[data-v13-desk-body] [data-v13-desk-pane]');
   const out = {found: true, id: c.id, pane: !!pane, open: openCommitments(c).length};
   if (!pane) return JSON.stringify(out);
   pane.scrollIntoView({block: 'start'});
@@ -98,7 +98,7 @@ async function shot(ctx, file, name, info, extra) {
   await sleep(300);
   mkdirSync(OUT, { recursive: true });
   const png = join(OUT, file + '.png');
-  const pane = `document.querySelector('.day-pane[data-day-holds="' + cssEscape(${JSON.stringify(info.id)}) + '"]')`;
+  const pane = `document.querySelector('[data-v13-desk-body] [data-v13-desk-pane]')`;
   try { await guardShot(ctx, { name: 'd3-' + file, account: name, accountId: info.id, targetExpr: pane, png, logFile: GUARD_LOG }); }
   finally { await resetCapture(ctx); }
   writeFileSync(join(OUT, file + '.txt'), `Account: ${name}\nOpen commitments: ${info.open}\nPromise rows: ${info.rows}\nSection height: ${info.sectionHeight}px\n${extra || ''}`);
@@ -112,7 +112,7 @@ async function captures() {
     await ctx.ev(`(() => { const c = DATA.customers.find(x => x.name.startsWith('Solaris')) || DATA.customers.find(x => x.name.startsWith('Halcyon')); c.nextSessionScheduledOn = todayISO(); saveData(); render(); return c.name; })()`);
     const name = await ctx.ev(`(() => (DATA.customers.find(x => x.name.startsWith('Solaris')) || DATA.customers.find(x => x.name.startsWith('Halcyon'))).name)()`);
     const one = await open(ctx, name);
-    const pt = await ctx.ev(`(() => { const p = document.querySelector('.day-pane[data-day-holds="' + cssEscape(${JSON.stringify(one.id)}) + '"]'); return !!p && p.textContent.includes('Call prep'); })()`);
+    const pt = await ctx.ev(`(() => { const p = document.querySelector('[data-v13-desk-body] [data-v13-desk-pane]'); return !!p && p.textContent.includes('Call prep'); })()`);
     if (!(one.pane && pt && one.sections === 1 && one.rows === 1 && one.open === 1)) throw new Error('one-promise preconditions failed; stopping: ' + JSON.stringify({ ...one, callPrep: pt }));
     await shot(ctx, 'one-promise', name, one, 'booked for this capture only\n');
     const au = await open(ctx, 'Aurora Renewables');

@@ -77,7 +77,7 @@ async function runControl(name) {
         openThreads:[{id:uid(), q:'SIM-QUESTION which sandbox region?', a:'', resolvedOn:null}]}]})`);
       const panel = `(() => { const c = DATA.customers.find(x => x.id === ${JSON.stringify(id)});
         const call = callsScheduledToday().find(x => x.c.id === c.id);
-        return renderBeatPanel({kind:'call', customerId:c.id, customerName:c.name, call, row:null}, () => ''); })()`;
+        return v13DeskCallPrep(c, { calls: [call] }); })()`;
       const pre = await ctx.ev(panel);
       const owe = pre.match(/SIM-OWE[^<]*/g) || [];
       if (owe.length < 1) fail(`control d3: FAIL no SIM-OWE entries on the unbroken panel (${/Call prep/.test(pre) ? 'heading present' : 'no heading'})`);
@@ -145,7 +145,7 @@ async function runProbe() {
     const calledElsewhere = n => h.replace(`function ${n}(`, '').includes(`${n}(`);
     add(/persistFn *= *saveData/.test(body('commitDataCandidate')), 'L1: commitDataCandidate persists through saveData (add-customer save goes via commitDataCandidate)');
     add(calledElsewhere('confirmGraduation'), 'L11: confirmGraduation is called by name somewhere');
-    add(calledElsewhere('renderBeatPanel'), 'D3: renderBeatPanel is called by name somewhere');
+    add(calledElsewhere('renderBeatPrep'), 'D3: renderBeatPrep is called by name somewhere');
     add(calledElsewhere('commitDataCandidate'), 'D4: commitDataCandidate is called by name somewhere');
     add(/todayActionList\(\)/.test(body('buildDayTimeline')), 'L6: buildDayTimeline sources Today rows from todayActionList()');
     const s = ctx.aiStats(); escaped = s.escaped; add(s.escaped === 0, `AI escaped = ${s.escaped}, fake = ${s.fake}`);
