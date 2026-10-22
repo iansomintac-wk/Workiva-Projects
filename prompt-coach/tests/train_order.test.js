@@ -21,11 +21,13 @@ function trainBytes(dir, order, tag) {
   cp.execFileSync(process.execPath, [TRAIN, 'rulefeat', '--tune', '--out', out, ...order.map((n) => path.join(dir, n + '.jsonl'))], { stdio: 'pipe' });
   return fs.readFileSync(out);
 }
-test('train.js: two data files in either order give identical weights bytes', () => {
+test('train.js: two data files in either order give identical weights bytes', (t) => {
   const d = fixture(['train_fr', 'train_grc']);
+  t.after(() => fs.rmSync(d, { recursive: true, force: true }));
   assert.deepEqual(trainBytes(d, ['train_fr', 'train_grc'], 'a'), trainBytes(d, ['train_grc', 'train_fr'], 'b'));
 });
-test('train.js: four named files plus an extra, scrambled, give identical weights bytes', () => {
+test('train.js: four named files plus an extra, scrambled, give identical weights bytes', (t) => {
   const d = fixture(['train_fr', 'train_grc', 'train_sus', 'train_hard', 'train_zz']);
+  t.after(() => fs.rmSync(d, { recursive: true, force: true }));
   assert.deepEqual(trainBytes(d, ['train_fr', 'train_grc', 'train_sus', 'train_hard', 'train_zz'], 'a'), trainBytes(d, ['train_zz', 'train_hard', 'train_sus', 'train_grc', 'train_fr'], 'b'));
 });

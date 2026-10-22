@@ -12,7 +12,7 @@ Proxy: the scratch copies under the run lead's job tmp folder (`C:/Users/teasp/.
 |---|---|---|---|---|
 | D1 | `node tests/repro_weights.js` on the branch | exit 0, `REPRO OK` | `REPRO OK 3007835695bb` | measured (lead) |
 | D1c | Control: same script with `engine/weights.json` still the old shipped file | exit 1 | `REPRO FAIL first difference: S thr committed=0.625 retrained=0.5`, exit=1 | measured (lead) |
-| D1o | Retrain with files in reverse order, then D1 | exit 0 | `REPRO OK 3007835695bb`, same hash as D1 | measured (lead) |
+| D1o | Retrain with files in reverse order, then D1 | exit 0 | `cmp` of the reverse-order retrain vs `engine/weights.json`: no output (byte-identical). No hash | measured (T3 helper; re-measured by the Opus final review with `diff -q`) |
 | D2 | Thresholds and sure in the committed file | thr S .5 C .575 O .3 P .3 E .45; sure S .99 C .715 O .3 P .3 E .45 | exact match | measured (lead) |
 | D3 | `rewrite_unit.test.js` after the new baseline, before pinning | 77 ok, 0 not ok | 77/0 | measured (lead) |
 | D4 | Same file after pinning, on the branch and on all 24 file orders | 77/0 in 24 of 24 | Branch 77/0. 24 rows, 24 orders, 22 distinct threshold sets, 23 orders at 77/0, 0 pinned tests failing in any order. One order (hard,sus,fr,grc) is 74/3: #31, #35, #36 fail. Expected, see "What changed" | measured (helper; lead re-counted d4.txt, did not re-run the sweep) |
@@ -22,7 +22,7 @@ Proxy: the scratch copies under the run lead's job tmp folder (`C:/Users/teasp/.
 | D6 | `node tests/c5_gate.js` | PASS | PASS, exit 0; simulate counts equal `c5_base.json` | measured (lead) |
 | D7 | `node tests/done_when.js --only C2,C4` | C2 test/sim at or below 2.0% / 1.8%; C4 0 blanks | C2 2.0% / 1.8%; C4 0 | measured (lead) |
 | D8 | r1 (a seen set) in a `mkcopy.sh r1` copy, `done_when.js --only C1` | about 14 of 30, no bar | `C1 14 of 30 (bar 27 of 30) MISS` | measured (lead) |
-| D9 | `pagetest.js` after `build.js` | passes | pagetest 22 checks, 0 failed (from Task 3's c5_gate run) | measured (helper) |
+| D9 | `pagetest.js` after `build.js` | passes | pagetest 22 checks, 0 failed (from Task 3's c5_gate run) | measured (lead, lead_t3_c5.log) |
 
 D8 note: `done_when.js` exits 1 on this run. That is its own C1 bar (27 of 30), not D8's. D8 has no bar; r1 is a seen set and 14 of 30 equals the control.
 
@@ -46,7 +46,18 @@ Only read, not re-run:
 - README: build bytes 338538 -> 339250 (line 9); Model row `sure` line C 0.7 -> 0.715; added the `repro_weights.js` command line. Weights size stays "4 KB".
 - 7 pinned tests (#1 #9 #11 #13 #14 #76 #77) in `rewrite_unit.test.js`: each now pins the grader letters it depends on, so it no longer moves with the retrained weights. 2 assert lines differ, including the one #11 line. #76 is pinned below sure (all letters on, allProb(0)), not above it as the spec's example said: `noChanges` (rewrite.js:636) overwrites Better when sure, which hides rewrite.js:593 and lets the D4m mutant survive.
 - D4 bar as ruled: the 7 pinned tests pass in 24 of 24 orders; the full file is 77/0 on the branch. In order hard,sus,fr,grc, #31, #35 and #36 fail (74/3). That is expected. They are not in Ian's ruling and stay as they are.
-- Pin variant: A (pin S,O,P,E on, C off) gave 76/1 with #14 failing; B gave 77/0. B was kept (pin_ab.txt).
+- Pin variant: A (pin S,O,P,E on, C off) gave 76/1 with #14 failing; B gave 77/0. B was kept (pin_ab.txt). A and B use the same letters and differ only in which detect calls are pinned.
+- The pin fixes the letters only on the test's own prompt; the rewrite's draft checks still use the real weights.
+
+## Known limits
+
+- REPRO depends on V8's sort: training shuffles with `sort(() => rand() - .5)`. Measured on Node v26.5.0 only.
+- `train.js` sorts data files by basename, so same-named files in different folders keep argument order and a retrain over them still depends on shell order. Rare; a full-path tie-break would close it.
+- `repro_weights.js` firstDifference assumes both files have `sure`, `thr` and `w`; a retrained file missing one throws a TypeError stack instead of a `REPRO FAIL` line. Still exit 1, so not a false pass.
+
+## Open for Ian
+
+- Codex flags `c5_gate.js:40-42`: the live `rewrite_unit` gate does not use `judgeTap`, so it would accept pass 0 / fail 0. It came in with 3d2fe90 (C1 run). `c5_gate.js` is locked in this run, so it is not fixed here. Opus did not flag it.
 
 ## Plan corrections made during the run
 
