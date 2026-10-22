@@ -1,20 +1,6 @@
 OSM Runway — release notes
 ==========================
 
-1.1 - v13 look.
-
-    - The five screens (Desk, Co-pilot, Accounts, Risk, System) are drawn in the v13 layout, copy and
-      colours on 1.1's engine and data: no new data fields, no score. They are on by default; setting the
-      browser-storage switch obm-next-screens-v1 to '0' brings back the old screens.
-    - Fix: the Desk's work tabs (Prepare, Capture, Evidence, Record) were drawn read-only, and their
-      controls looked up the account open in the full-account panel, so on the Desk they did nothing or
-      could act on another account. They are live now and every control acts on the Desk's selected
-      account. "Open full account" still opens the panel.
-    - Prepare follows v13's call review: Goal (the next session's required outcomes, tickable, and what
-      to enable), Evidence (outcomes the customer demonstrated and the latest log entries), Uncertainty
-      (the account's signals and confirmed risks) and Next review (the 45-minute run script, the copy
-      button and the notes for next meeting). Every other session stays under "Session plan".
-
 1.1 — Hosting. A site you can put behind company sign-in (nothing is published).
 
     - 1.1 - Surveys to chase: one short line at the top of Today, outside the ranking: "Surveys to chase: Fernhollow (sent 9 days
@@ -95,6 +81,25 @@ OSM Runway — release notes
     - Fix: the day pane and the Details tab no longer share element ids for the survey-sent and answered boxes (a label click or a re-focus after an edit could land on the other copy).
     - Dev tooling: tools/nl-drive.mjs: the Graduate "0 of 0" check now also requires that the modal opened; --sabotage-grad stubs the modal to prove the check fails without it.
     - Dev tooling: selfcheck 'the beat panel states each fact once' counts the open question outside the Call prep Agenda (the Agenda repeats it on purpose) and proves it still rejects a planted second copy; selfcheck is 483/483.
+
+1.1 — v13 look. The five screens in the new design, and what the new design needed fixed.
+
+    - The five screens (Desk, Co-pilot, Accounts, Risk, System) are drawn in the v13 layout, copy and
+      colours on 1.1's engine and data: no new data fields, no score. They are on by default; setting the
+      browser-storage switch obm-next-screens-v1 to '0' brings back the old screens.
+    - Fix: the Desk's work tabs (Prepare, Capture, Evidence, Record) were drawn read-only, and their
+      controls looked up the account open in the full-account panel, so on the Desk they did nothing or
+      could act on another account. They are live now and every control acts on the Desk's selected
+      account. "Open full account" still opens the panel.
+    - Prepare follows v13's call review: Goal (the next session's required outcomes, tickable, and what
+      to enable), Evidence (outcomes the customer demonstrated and the latest log entries), Uncertainty
+      (the account's signals and confirmed risks) and Next review (the 45-minute run script, the copy
+      button and the notes for next meeting). Every other session stays under "Session plan".
+    - Accounts: the search, module, lifecycle, status and sort controls sit on one line in the heading
+      instead of a second toolbar row. Month calendar entries read as v13 does ("S7 09:00", "Go-live"),
+      held / next / projected show in the dot colour, and the legend says "Next planned session".
+    - Co-pilot: two self-checks build a call booked today and an overdue promise in the page and prove the
+      "Before today's calls" and "Overdue" groups (the demo book has neither due).
 
 1.1 — Graduation prompt colour.
     - The line under the graduation confirm box title (#gc-prompt) used var(--warn), which is not defined, so it fell back to grey; it now uses var(--status-watch-text) like the CSAT line.
