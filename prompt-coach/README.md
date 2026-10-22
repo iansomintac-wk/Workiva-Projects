@@ -6,7 +6,7 @@ strong version into toggleable SCOPE elements. Everything runs in the browser: n
 server, no uploads. Built for customer-facing use where Claude access can't be provisioned.
 
 ```sh
-node tests/build.js                      # -> dist/prompt-coach.html (single file, 338501 bytes, LF)
+node tests/build.js                      # -> dist/prompt-coach.html (single file, 338538 bytes, LF)
 node tests/pagetest.js                      # real-browser page test of the built page (notes, display grade, off-topic); build first
 node tests/eval.js rulefeat data/test.jsonl          # accuracy on held-out prompts
 node tests/simulate.js data/train_*.jsonl            # rewrite invariants
@@ -171,3 +171,7 @@ detector's; naming only the letters the detector is sure of is still open (Ian's
 earlier 147-of-430 probe measured the reason line, which no tab shows since 16a49e2; the headline names only
 source and ask. Details, history and the final numbers are in
 `docs/evidence/2026-10-20-prompt-coach-quote-line.md`. See `research/2026-10-20-quote-line-probe.md`.
+
+## Done-when status
+
+The done-when work stopped at f984c75 (Ian, 2026-10-22 15:10Z): C2, C4 and the C5 gate pass, C1 missed (17/30 on the first strong set), C3 never run. Numbers and open items: `docs/evidence/2026-10-22-prompt-coach-done-when.md`.
