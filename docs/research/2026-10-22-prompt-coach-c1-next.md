@@ -73,3 +73,10 @@ truly 80% coach passes 1 time in 100 instead of 12), it does not make the bar ea
 Recommends recording C1 as missed at 21/30 (seen), keeping the fallback, and moving to C3 in the sandbox. Redefining C1 or
 accepting a miss is Ian's (his '[Ian] C1 way' card raised the middle tier and a larger set). Assumed by the PM, untested:
 C3 can run without a filled `prompts.csv` (it uses `research/live-tests/weak12/`, which exists: measured `ls`).
+
+## Ruling (verbatim)
+
+- Ian, 2026-10-22, card '[Ian] C1' (asked 23:16:57Z, `~/.claude/answered-for-ian.jsonl` row `left: "ian-kind"`, so the hook
+  left it and the answer is Ian's; answered by 23:37Z): "Close C1, go to sandbox (Recommended)". Option text: record C1 as
+  missed at 21/30 on the practice set, keep today's coach, the fresh 30 stays unread; the next talk specs the C3 sandbox test
+  of the 12 weak prompts. No middle tier, no larger set, no coach change.

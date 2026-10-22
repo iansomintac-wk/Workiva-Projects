@@ -175,4 +175,4 @@ source and ask. Details, history and the final numbers are in
 
 ## Done-when status
 
-The done-when work stopped at f984c75 (Ian, 2026-10-22 15:10Z): C2, C4 and the C5 gate pass, C1 missed (17/30 on the first strong set), C3 never run. Numbers and open items: `docs/evidence/2026-10-22-prompt-coach-done-when.md`.
+The done-when work stopped at f984c75 (Ian, 2026-10-22 15:10Z): C2, C4 and the C5 gate pass, C1 missed (17/30 on the first strong set), C3 never run. After the C1 cues and reshape runs (21/30 on the seen r1 set), Ian closed C1 as missed on 2026-10-22 and chose the C3 sandbox test next; the fresh strong set stays unread. Numbers and open items: `docs/evidence/2026-10-22-prompt-coach-done-when.md`, `docs/research/2026-10-22-prompt-coach-c1-next.md`.

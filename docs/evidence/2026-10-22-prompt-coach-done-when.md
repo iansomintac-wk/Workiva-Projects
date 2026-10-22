@@ -8,7 +8,7 @@ measured and was not opened for this doc. Spec: docs/superpowers/specs/2026-10-2
 
 | Bar | What it asks | Status |
 |---|---|---|
-| C1 | strong-30: "No changes needed" shown and the prompt untouched, at least 27 of 30 | MISS on the first set (17/30, measured earlier); fresh set unread |
+| C1 | strong-30: "No changes needed" shown and the prompt untouched, at least 27 of 30 | MISS on the first set (17/30, measured earlier); CLOSED AS MISSED 2026-10-22 ~23:37Z by Ian ("Close C1, go to sandbox (Recommended)") at 21/30 on r1 (seen) after the C1 cues and reshape work; fresh set unread, so C1 can be reopened (`docs/research/2026-10-22-prompt-coach-c1-next.md`) |
 | C2 | non-strong prompts wrongly told "no changes", 5% or less on test and on sim | PASS (re-run below) |
 | C3 | weak-12 in the Workiva AI sandbox, 22 of 24 intended answers, 0 invented facts | PENDING, never run (needs a separate --chrome session) |
 | C4 | no [blanks] in Better or Strong output | PASS (re-run below) |
