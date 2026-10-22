@@ -176,7 +176,7 @@
     {
       "id": "gen-formula", "area": "GEN", "role": "Anyone",
       "task": "Explain or fix a formula in a spreadsheet.",
-      "ops": ["EXPLAIN", "CHECK", "DRAFT"], "match": "formulas?|spreadsheets?|workbooks?",
+      "ops": ["EXPLAIN", "CHECK"], "match": "formulas?|spreadsheets?|workbooks?",
       "surfaces": ["sheet"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S19", "S20"],
       "prompt": null,
       "stays": "The numbers. Workiva AI returns formulas, not calculated values; check each one before you rely on it.",

@@ -20,3 +20,7 @@ AGREEMENT: N 40 D 0 agreement 100.0% PASS
 NOTE: PM labels are one card per row and no partial level; see the plan's deviations
 
 BEFORE-LINE: first card right: 14 of 28 that fit; wrong card 9 (F1,F3,F10,F11,F22,F23,F25,F28,F37); no card where one fits 5 (F4,F17,F20,F30,F33); card on a not-a-fit prompt 0 (); fit agreement 14 of 40; score 23; split: right feature first 7 of 16, rightly none 7 (F5,F12,F14,F18,F27,F31,F34)
+AFTER-LINE: first card right: 14 of 28 that fit; wrong card 9 (F1,F3,F10,F11,F22,F23,F25,F28,F37); no card where one fits 5 (F4,F17,F20,F30,F33); card on a not-a-fit prompt 0 (); fit agreement 14 of 40; score 23; split: right feature first 7 of 16, rightly none 7 (F5,F12,F14,F18,F27,F31,F34)
+OUTCOME: reverted
+REASON: R gain < 1 (7 to 7)
+PREDICTION: did not hold
