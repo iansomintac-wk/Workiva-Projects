@@ -10657,9 +10657,10 @@ function riskItemHasReason(it){
 /* FX2: confirm or dismiss a case. Only items that still need a judgement are touched:
    a confirmed item keeps its first reason and its confirmed state. A legacy
    confirmation with no reason is the one exception when confirming: it gets the reason. */
-function confirmRiskCase(k, reason){
+function confirmRiskCase(k, reason, onlyConfirmed){
   k.items.forEach(it => {
     if(riskVerdictState(it) === 'confirmed' && riskItemHasReason(it)) return;
+    if(onlyConfirmed && riskVerdictState(it) !== 'confirmed') return;   // N3: adding a reason never confirms a signal nobody reviewed
     setRiskVerdict(it, 'confirmed', reason); markRiskActioned(it, false);
   });
 }
@@ -10674,9 +10675,10 @@ function openDeskRiskConfirm(logKey){
   if(!k) return false;
   // FX4: nothing left to confirm: say so, and do not open a modal that would toast "confirmed" for a no-op.
   if(k.items.every(x => riskVerdictState(x) === 'confirmed' && riskItemHasReason(x))){ showToast('Already confirmed as a real risk.'); return true; }
+  const addingReason = riskVerdictState(it) === 'confirmed';
   showRiskConfirmModal(k, reason => {
     markUndoable('risk verdict');
-    confirmRiskCase(k, reason);
+    confirmRiskCase(k, reason, addingReason);
     showToast(`${k.c.name} confirmed as a real risk.`);
     render();
   });
