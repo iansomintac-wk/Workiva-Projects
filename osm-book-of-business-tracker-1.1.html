@@ -18096,6 +18096,7 @@ function openSettingsModal(){
         <button class="btn btn-sm" id="btn-import-excel-settings">Import Excel</button>
         <button class="btn btn-sm" id="btn-import-values" title="Import tier, contract value and renewal date from a Gainsight CSV export — matched to your accounts by name, previewed before anything is written">Import from Gainsight (CSV)</button>
         <button class="btn btn-sm" id="btn-import-csat" title="Fill survey sent and answered dates from a Snowflake CSAT export — previewed before anything is written">Import CSAT dates (CSV)</button>
+        ${connectorConfigured() ? `<button class="btn btn-sm" id="btn-check-survey-connector" title="Pull survey dates through the connector and review them before anything is written">Check CSAT (connector)</button>` : ''}
         <button class="btn btn-sm" id="btn-csat-watch" title="Read a folder for new csat_runway_export_*.csv files; nothing is applied until you press Apply">Watch a folder for CSAT exports</button>
         <button class="btn btn-sm" id="btn-csat-check">Check now</button>
         <button class="btn btn-sm" id="btn-csat-unwatch">Stop watching</button>
@@ -20055,6 +20056,8 @@ function bindCsatSettings(backdrop){
       catch(err){ if(!err || err.name !== 'AbortError') showToast('Could not open that folder.'); }
     });
   }
+  const viaConn = backdrop.querySelector('#btn-check-survey-connector');
+  if(viaConn) viaConn.addEventListener('click', ()=> { backdrop.remove(); checkSurveyDatesViaConnector(); });
   const chk = backdrop.querySelector('#btn-csat-check');
   if(chk) chk.addEventListener('click', async ()=> { await csatWatchRefresh(true); if(_csatWatch.note) showToast('CSAT folder: ' + _csatWatch.note); });
   const stop = backdrop.querySelector('#btn-csat-unwatch');
@@ -20378,6 +20381,22 @@ async function checkForCalls(){
     return;
   }
   openCallPreviewModal(preview);
+}
+function surveyRowsToTable(rows){
+  const list = Array.isArray(rows) ? rows : [];
+  return [CSAT_COLS.slice()].concat(list.map(r => CSAT_COLS.map(k => r && r[k] != null ? String(r[k]) : '')));
+}
+async function checkSurveyDatesViaConnector(){
+  let resp;
+  try{ resp = await connectorRequest('/v1/csat'); }
+  catch(e){
+    showToast(e && e.code === 'OFFLINE' ? 'Connector offline — no survey dates were checked and nothing changed.'
+      : e && e.code === 'UNAUTHORIZED' ? 'The connector rejected the token — check it in Settings.'
+      : 'Could not check survey dates right now. Nothing changed.');
+    return;
+  }
+  if(!resp || !Array.isArray(resp.rows)){ showToast('The connector sent no survey rows. Nothing changed.'); return; }
+  openCsatImportModal(buildCsatImportPlan(surveyRowsToTable(resp.rows), DATA.customers, {}), {fileName:'Connector (Snowflake CSAT)', fileModified:Date.now()});
 }
 function openCallPreviewModal(preview){
   if(document.querySelector('.modal-backdrop')) return;
