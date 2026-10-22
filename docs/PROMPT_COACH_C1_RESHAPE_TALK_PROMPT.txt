@@ -1,0 +1,33 @@
+TALK: Prompt Coach C1 reshape (c) on the new baseline. Drafted 2026-10-22 ~21:00Z by the PM (hand-off step of run lead 7ce6ba3a,
+weights repro); two stale references corrected by the lead.
+Load studio-harness:talk-and-run (the talk), then superpowers:brainstorming.
+
+BRANCH: first `git fetch`, then check whether origin/prompt-coach contains 46b0c12 (weights repro merged). If yes, branch
+prompt-coach-c1-reshape from prompt-coach. If not, branch from prompt-coach-weights-repro @ 46b0c12 and say so in the first
+message. Never from 74040ee (old weights nobody can rebuild).
+
+WHY: the C1 run's A/B/C numbers (control 14/30, spike cues 19/30, C2 2.8%/1.8%) were measured on weights nobody could rebuild.
+Weights now rebuild: `node tests/repro_weights.js` prints REPRO OK. Thresholds changed (S thr .625 -> .5, sure C .7 -> .715).
+
+FIRST STEP: re-measure state A (control), B and C on the new baseline, on r1 plus training only, and replace every old number.
+Quote the old ones only as "read, measured on the old weights". Read docs/evidence/2026-10-22-prompt-coach-weights-repro.md and
+prompt-coach/docs/research/2026-10-22-c1-options.md first. Weights-repro D8 already measured control on r1: 14 of 30 (new baseline).
+
+STANDING RULINGS: AI-free, $0. Bars unchanged: C1 >= 27 of 30, C2 <= 5% on test and sim, C4 0 blanks. Run
+`node tests/repro_weights.js` after every retrain and before every commit: it must print REPRO OK.
+
+LEAK RULE: data/done_when_strong.jsonl (fresh 30) stays UNREAD until the single final C1 measurement. Before then, never run
+done_when.js --only C1 on it, validate_done_when_sets.js, or any script that scores or prints it, outside a copy made by
+prompt-coach/docs/research/c1-probes/mkcopy.sh. r1 is dev data and has been seen: say so whenever an r1 number is quoted. Cues
+come from TRAINING misses, written as patterns, never copied from r1 or fresh rows. If the fresh set is read early for any reason,
+say so: the C1 number then no longer counts as held-out.
+
+OPEN ITEM (Ian's ruling at the weights-repro merge stop): tests/c5_gate.js:40-42, the live rewrite_unit gate ignores judgeTap,
+so "# pass 0 / # fail 0" passes (from 3d2fe90). Status: [PENDING: fill from Ian's merge-stop answer]. Until Ian has ruled, do not
+edit c5_gate.js; ask the PM.
+
+SMALL ITEMS the talk may fold in: done_when.js --only with an empty or unknown set exits 0; template.html:402 "[fill in your
+details]" is a look item for Ian. Leave the weights-repro known limits (V8 sort, same-basename tie-break) unless they bite.
+
+WORK REPO: no PR unless asked; commit locally on the feature branch; merge-gate.mjs cannot run its suite here (memory
+merge-gate-no-npm-test), so the merge goes to Ian with the measured suite. Nothing goes to the brain.
