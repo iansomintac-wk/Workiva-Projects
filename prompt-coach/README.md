@@ -12,6 +12,8 @@ node tests/eval.js rulefeat data/test.jsonl          # accuracy on held-out prom
 node tests/simulate.js data/train_*.jsonl            # rewrite invariants
 node tests/customer_check.js                         # strong version keeps the user's ask, adds blanks not facts; no filler, original order, whole pieces, blank rule, Ian's invoice case
 node --test --test-reporter=tap tests/rewrite_unit.test.js   # one focused test per rewrite rule; splitting: a ";" or text inside ( ) [ ] never ends a sentence (sentenceSpans)
+node tests/c5_gate.js                                # runs the five checks above; FAIL if eval is not 0.856, a simulate count rises above tests/fixtures/c5_base.json, or a test fails
+node tests/done_when.js [--only C1,C2,C4]            # done-when bars: C1 strong-30 untouched, C2 no-changes on non-strong <= 5%, C4 zero [blanks]; exit 0 met, 1 missed, 2 error
 node tests/train.js rulefeat --tune data/train_*.jsonl   # retrain engine/weights.json
 node tests/train_cls.js --eval data/test.jsonl data/train_*.jsonl   # retrain task/area classifier
 python3 tests/make_fixtures.py && VENDOR=<npm dir> node tests/filetest.js   # real-file test
