@@ -5,3 +5,4 @@ Half A was used to tune engine/fit.js; half B is held out. 2026-10-15: A 86.7%, 
 `node tests/synth-score.js <set.jsonl> <gold.jsonl> --top3`: scores a new set and also the right card anywhere in a list of three.
 `node tests/match-frozen.js --base <sha>`: fails if the engine or any id/area/ops/match changed since that commit.
 `node tests/sandbox-kit.js --build <dir>` builds the sandbox files and prompt cards; `node tests/sandbox-kit.test.js` tests it. pagetest stays at 98 checks.
+`node tests/match-frozen.js --base <sha> --allow ops` (and `fair-guard.js ... --allow ops`) lets card `ops` differ; `node tests/match-frozen.test.js` tests both.
