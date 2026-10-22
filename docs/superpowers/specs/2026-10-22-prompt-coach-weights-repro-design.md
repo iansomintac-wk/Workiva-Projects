@@ -45,6 +45,7 @@ stubbing models in unit tests.
 - 2026-10-22 19:45Z, "how to fix #13 and its look-alikes": "Pin letters in all 7 (Recommended)". Option text: spec
   amendment: the 7 weight-tied rewrite tests (#1, #9, #11, #13, #14, #76, #77) set the grader's letters themselves; the run
   proves each still fails when its rule is broken (mutant check) and passes on all 24 file orders.
+- 2026-10-22 19:53Z, spec review card: "Approve as written (Recommended)" (#31, #35 and #36 stay as they are).
 - Not covered by a ruling: #31, #35, #36 (flipped in one order; the talk's card wrongly said only 7 flip, corrected in
   the talk). They stay as they are unless Ian adds them.
 - (c) reshaping C1 is not decided here: its numbers were measured on weights nobody could rebuild, so it goes to a later

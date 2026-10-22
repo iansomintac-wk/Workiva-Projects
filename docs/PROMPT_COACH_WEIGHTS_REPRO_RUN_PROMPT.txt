@@ -1,0 +1,54 @@
+RUN: Prompt Coach, reproducible weights (workiva repo). Written 2026-10-22 ~19:58Z by the talk session 73f0cb40.
+Load studio-harness:talk-and-run first and follow "The run". You are the run lead: coordinate only, never plan or
+build in your own context. Workiva repo: write nothing to the brain or studio-harness; tell Ian instead.
+
+WHERE
+- Worktree: C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-weights-repro, branch prompt-coach-weights-repro
+  (from c4175c8 on prompt-coach-c1-cues: the C1 run's small fixes and guarded copy helper, no Context cues). Main: prompt-coach.
+- Spec (Ian approved 19:53Z): docs/superpowers/specs/2026-10-22-prompt-coach-weights-repro-design.md. Read it whole.
+  Probe scripts and every talk number: prompt-coach/docs/research/weights-repro/ (README.md, orders.txt). The scripts
+  hard-code the talk's job tmp in T=...; point T at your own job tmp.
+- Ledger: .ledger/2026-10-22-prompt-coach-weights-repro/ (budget.json, slip.json, rulings.md; progress.md is yours).
+- Plan goes to docs/superpowers/plans/2026-10-22-prompt-coach-weights-repro.md (no bin/rehearse.mjs here: skip rehearsal,
+  but the plan carries Data: and Suite: lines). Suite: cd prompt-coach && node tests/c5_gate.js, plus
+  node tests/done_when.js --only C2,C4, plus node tests/repro_weights.js once it exists.
+
+FIRST CHECK: echo "$STUDIO_RUN_LEDGER"; test -f "$STUDIO_RUN_LEDGER/budget.json"; test -f "$STUDIO_RUN_LEDGER/slip.json".
+Empty or missing is a stop for Ian. Then create $STUDIO_RUN_LEDGER/progress.md (one row per dispatch, talk-and-run Ledger).
+CAPS: run cap 2M tokens across helpers (budget.json); CLAUDE_STOP_AT_TOKENS=300000 is only YOUR context stop: at it, write
+docs/PROMPT_COACH_WEIGHTS_REPRO_RUN_RESUME_PROMPT.txt, commit, start a successor lead.
+
+ORDER OF WORK (the plan writer turns this into tasks of <= 8 steps; the PM proxy approves the plan)
+1. Fixed file order in train.js (spec Design 1), test first: a node:test that runs train.js twice on a tiny fixture
+   pair of train files passed in two orders (--out to a temp file) and expects identical bytes; red before, green after.
+2. tests/repro_weights.js (spec Design 3). Prove it can fail first: run it on the branch before step 3 -> exit 1 (D1c).
+3. New baseline (spec Design 2): README --tune then --tune-sure, rebuild dist, README figures in the same commit.
+   Check D1, D1o, D2, D3, D5, D6, D7, D9. D2 must match the talk probe exactly (thr S .5 C .575 O .3 P .3 E .45;
+   sure S .99 C .715 O .3 P .3 E .45); a different number is a stop to understand, not to tune around.
+4. Pin letters in the 7 tests #1, #9, #11, #13, #14, #76, #77 (spec Design 4, Ian 19:45Z). Assertions about rewrites unchanged.
+   Then D4 (24 orders on copies with Design 1 taken out), D4m (one mutant per pinned test, 7 of 7 must fail), D4c (copy
+   with 9515a81 + aece903 cherry-picked and retrained: #13 passes). A pinned test that survives its mutant is restored
+   and reported to Ian, not loosened further.
+5. r1 (D8) in a mkcopy.sh r1 copy only; report, no bar; say r1 is a seen set.
+6. Evidence doc docs/evidence/2026-10-22-prompt-coach-weights-repro.md (measured vs read, every D row with its number).
+   Final review (Opus final-reviewer + Codex), fix round.
+7. Merge stop: merge-gate.mjs cannot run its suite here (memory merge-gate-no-npm-test). Run it with --dry-run for the
+   other checks, run the Suite on base and on a scratch merge, push the branch and backup/prompt-coach-before-
+   prompt-coach-weights-repro-2026-10-22, then stop for Ian's merge yes, reporting the measured Suite result on base and
+   on the merge result side by side.
+
+HARD RULES
+- data/done_when_strong.jsonl is never opened, copied, grepped or scored. Do not run tests/done_when.js --only C1 or
+  tests/validate_done_when_sets.js outside a copy made by prompt-coach/docs/research/c1-probes/mkcopy.sh. Every copy
+  made with git archive excludes it (':!data/done_when_strong.jsonl').
+- Locked: data files, the C1-C5 bars, the 3% sure cap, the training-only check in train.js, c5_gate.js and its exact
+  GRADE acc=0.856 rule, tests/fixtures/c5_base.json. A simulate count above c5_base is a stop for Ian.
+- Out of scope: the C1 cues and C1 bars, #31/#35/#36, template.html:402, rules.js:100. AI-free, $0, no installs.
+- .ledger/ is git-ignored and the only copy: never delete, clean or remove this worktree (or the C1 run's
+  prompt-coach-c1-cues worktree, whose ledger is also local-only) before Ian's stop.
+- Git Bash guard: in this worktree plain git commands only (no loops or variables around git); put multi-step shell in
+  a script file under your job tmp. GNU tar needs /c/... paths, not C:/....
+
+STOPS: plan approval goes to the PM proxy; D2 differing from the probe; a pinned test surviving its mutant; the merge
+(above); token cap 2M. After the run: tell Ian the next talk is C1 reshape (c) on the new baseline, since the C1 run's
+state A/B/C numbers were measured on weights nobody could rebuild.
