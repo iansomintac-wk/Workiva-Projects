@@ -1,0 +1,20 @@
+RESUME: Prompt Coach done-when, close-out. Written 2026-10-22 ~15:25Z by run lead 81667bc0 at the 200k stop.
+Load studio-harness:talk-and-run. Work in C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-done-when
+(branch worktree-prompt-coach-done-when @ f86e2dd, pushed; base branch prompt-coach). Ledger: .ledger/2026-10-22-prompt-coach-done-when/
+(rulings.md, progress.md, slip.json: push and merge true). Evidence: docs/evidence/2026-10-22-prompt-coach-done-when.md.
+
+WHERE IT STANDS
+- Ian 15:10:16Z "[Ian] C1 stop": "Stop with numbers (Recommended)" (his own answer). Done: Task 9 cut-offs undone (f984c75), Better fix kept,
+  evidence doc f86e2dd. Measured at f984c75/f86e2dd: C2 test 2.0% / sim 2.7% PASS, C4 0 blanks/862 PASS, c5_gate PASS, rewrite_unit 77/0.
+  C1 is a MISS (17/30 on r1). Fresh strong-30 (prompt-coach/data/done_when_strong.jsonl) is UNREAD: never open or run it.
+- Driver stopped (lead killed its own pid 1788 after Task 9 parked). Plan tasks 6-8 are not run, by Ian's choice. Do not relaunch the driver.
+
+NEXT (close-out only; nothing new is built)
+1. Final whole-branch review, base prompt-coach: studio-harness:final-reviewer (Opus) + a read-only Codex review of the diff; merge the
+   finding lists; must-fix disagreements go to Ian (decision card). The review file needs a "Verdict: no open must-fix" line.
+2. Fix round only for must-fix items, by an implementer; re-check.
+3. Merge by the merge rule (Workiva: clear): push origin prompt-coach to backup/prompt-coach-before-worktree-prompt-coach-done-when-2026-10-22,
+   full prompt-coach suite on the merge result (no npm test here: run c5_gate.js, done_when.js --only C2,C4, rewrite_unit, pagetest; see
+   memory merge-gate-no-npm-test), no failure the target lacks; conflicts keep both sides; unforced push.
+4. Notify Ian (notify.mjs + PushNotification): merged or not, and that C1 stays open (retrain talk or bar change are his later calls).
+Predecessor 97edf2ce (state done, committed) and 81667bc0 share this worktree: do NOT claude rm them while you work here (rm may remove the worktree).
