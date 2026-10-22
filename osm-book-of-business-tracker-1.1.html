@@ -17239,9 +17239,10 @@ The draft is discarded. The risk itself stays open.`)) return;
   $$('[data-risk-confirm]').forEach(btn => btn.addEventListener('click', ()=>{
     const k = casesById(btn.dataset.riskConfirm);
     if(!k) return;
+    const addingReason = k.items.some(x => riskVerdictState(x) === 'confirmed' && !riskItemHasReason(x));   // N3: adding a reason to a legacy confirmation never confirms a signal nobody reviewed
     showRiskConfirmModal(k, reason => {
       markUndoable('risk verdict');
-      confirmRiskCase(k, reason);
+      confirmRiskCase(k, reason, addingReason);
       showToast(`${k.c.name} confirmed as a real risk — next steps and the summary are open.`);
       render();
     });

@@ -11320,6 +11320,64 @@ function _runSelfChecksInner(){
     _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
     check('T14v13: on the v13 Risk screen a confirmed risk with a reason shows that reason, and the Add a reason control of a pre-1.2 confirmed item opens the reason modal, a real click on save writes the reason, and the card then shows it', ok, detail);
   })();
+  /* ==== v13 Task 5: T16 on the v13 Risk screen ==== */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    let prevSwitch = null;
+    try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const prevView = ui.view, prevOpen = ui.openCustomerId, prevTab = ui.panelTab, realSave = saveData, prevUL = _undoLabel, prevSnap = DATA.weeklySnapshot, realToast = showToast;
+    const pre = new Set(document.querySelectorAll('.modal-backdrop'));
+    const closeOwn = () => document.querySelectorAll('.modal-backdrop').forEach(el => { if(pre.has(el)) return; const b = el.querySelector('#rkc-cancel'); if(b) b.click(); else el.remove(); });
+    const resetMemo = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+    let ok = false, detail = '';
+    try{
+      saveData = function(){ return true; };
+      showToast = function(){};
+      localStorage.setItem(KEY, '1');
+      const c1 = v13Acct('__t16a__', {riskOverride: 'risk'});
+      DATA.customers = [c1]; DATA.activities = {[c1.id]: [{id: 't16note', date: isoAddDays(todayISO(), -2), type: 'Call', summary: 'T16V13 flagged note', checklist: [], sessionNumber: null, flagged: true}]};
+      DATA.riskLog = {};
+      resetMemo();
+      const items = buildRiskHubList().filter(r => r.c.id === c1.id);
+      const itA = items.find(r => r.kind === 'Off Track'), itB = items.find(r => r.kind === 'Flagged note');
+      const two = items.length === 2 && !!itA && !!itB;
+      const kA = itA && itA.logKey, kB = itB && itB.logKey;
+      const on = isoAddDays(todayISO(), -5);
+      if(two) DATA.riskLog[kA] = {firstSeen: on, lastActioned: on, verdict: 'confirmed', verdictOn: on, verdictSev: 3};   // pre-1.2: confirmed, no reason
+      resetMemo();
+      DATA.weeklySnapshot = {date: isoAddDays(todayISO(), -7), ids: []};
+      ui.openCustomerId = null; ui.view = 'risk';
+      render();
+      const root = document.querySelector('#app [data-osm] [data-v13-risk]');
+      const card = root && root.querySelector('[data-v13-risk-card="' + c1.id + '"]');
+      const btn = card && card.querySelector('[data-risk-confirm="' + c1.id + '"]');
+      const m0 = document.querySelectorAll('#rkc-reason').length;
+      if(btn) btn.click();
+      const ta = document.querySelector('#rkc-reason');
+      const opened = !!btn && document.querySelectorAll('#rkc-reason').length === m0 + 1;
+      let wroteA = false, leftB = false, stillUnreviewed = false;
+      if(opened){
+        ta.value = 'T16V13-REASON'; ta.dispatchEvent(new Event('input', {bubbles: true}));
+        document.querySelector('#rkc-ok').click();
+        const eA = DATA.riskLog[kA], eB = DATA.riskLog[kB];
+        wroteA = !!eA && eA.verdict === 'confirmed' && eA.verdictReason === 'T16V13-REASON';
+        leftB = !!eB && eB.verdict === undefined && eB.verdictReason === undefined;
+        const root2 = document.querySelector('#app [data-osm] [data-v13-risk]'), card2 = root2 && root2.querySelector('[data-v13-risk-card="' + c1.id + '"]');
+        stillUnreviewed = !!card2 && card2.textContent.indexOf('T16V13-REASON') !== -1 && riskVerdictState(buildRiskHubList().find(r => r.logKey === kB)) !== 'confirmed';
+      }
+      ok = two && !!btn && opened && wroteA && leftB && stillUnreviewed;
+      detail = JSON.stringify({two, hasBtn: !!btn, opened, wroteA, leftB, stillUnreviewed});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    closeOwn(); saveData = realSave; showToast = realToast; _undoLabel = prevUL;
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    if(prevSnap === undefined) delete DATA.weeklySnapshot; else DATA.weeklySnapshot = prevSnap;
+    try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+    ui.view = prevView; ui.openCustomerId = prevOpen; ui.panelTab = prevTab;
+    try{ render(); }catch(e){}
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('T16v13: on the v13 Risk screen, one account with a confirmed-without-reason signal and an unreviewed signal: a real click on Add a reason then save writes the reason on the first and leaves the unreviewed one with no verdict and no reason', ok, detail);
+  })();
   /* ==== end v13 Task 4 ==== */
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
