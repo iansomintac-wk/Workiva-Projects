@@ -9,9 +9,19 @@
    A2), but it is the honest way to assert that folding is LOSSLESS rather than merely
    that short lines came out. */
 function icsUnfold(text){ return String(text).split(ICS_CRLF + ' ').join(''); }
+/* v13 Task 1: the old-UI checks below were written against the old shell, so the
+   suite runs them with the v13 switch OFF and puts the switch back afterwards. The
+   v13 checks near the end turn it on for themselves. */
+const V13_SWITCH_KEY_SC = 'obm-next-screens-v1';
 function runSelfChecks(){
   _suiteRunning = true;
-  try{ return _runSelfChecksInner(); } finally { _suiteRunning = false; }
+  let prevSwitch = null;
+  try{ prevSwitch = localStorage.getItem(V13_SWITCH_KEY_SC); localStorage.setItem(V13_SWITCH_KEY_SC, '0'); }catch(e){}
+  try{ render(); return _runSelfChecksInner(); } finally {
+    _suiteRunning = false;
+    try{ if(prevSwitch === null) localStorage.removeItem(V13_SWITCH_KEY_SC); else localStorage.setItem(V13_SWITCH_KEY_SC, prevSwitch); }catch(e){}
+    try{ render(); }catch(e){}
+  }
 }
 function _runSelfChecksInner(){
   const results = [];
@@ -10071,6 +10081,93 @@ function _runSelfChecksInner(){
     }catch(err){ detail = err.message; }
     finally{ window.setTimeout = realSet; clearTimeout(showToast._t); if(el){ el.textContent = prevText; el.classList.toggle('show', prevShow); } }
     check('toast r4: a short toast lasts 3200 ms, a long warning (the push-timeout text) lasts at least 6 s, and no toast outlives 12 s', ok, detail);
+  })();
+  /* ==== v13 Task 1: shell, tokens, switch ==== */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC, THEME = 'obm-theme-v1';
+    const prevView = ui.view, prevOpen = ui.openCustomerId;
+    // Leaving Today stamps DATA.todayLastSeenIds and saves (the real rule); put both back.
+    const hadSeen = 'todayLastSeenIds' in DATA, prevSeen = JSON.stringify(DATA.todayLastSeenIds);
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    let prevTheme = null; try{ prevTheme = localStorage.getItem(THEME); }catch(e){}
+    const setSwitch = v => { if(v === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, v); };
+    let detail = '';
+    // 1. default on: no stored value means v13
+    let defOn = false;
+    try{ setSwitch(null); defOn = typeof v13On === 'function' && v13On() === true;
+         setSwitch('0'); defOn = defOn && v13On() === false; }
+    catch(e){ detail = e.message; }
+    check('v13 T1 the next-screens switch defaults to on and "0" turns it off', defOn, detail || 'v13On missing or wrong');
+    // 2. the shell
+    let shellOk = false; detail = '';
+    try{
+      setSwitch('1'); ui.openCustomerId = null; ui.view = 'today'; render();
+      const root = document.querySelector('#app [data-osm]');
+      const nav = root && root.querySelector('header nav[aria-label="Workspace"]');
+      const labels = nav ? [...nav.querySelectorAll('button')].map(b => (b.querySelector('[data-v13-label]') || b).textContent.trim()) : [];
+      const head = root && root.querySelector('header');
+      const ids = ['btn-quick-log','btn-settings','btn-progress-report','btn-add-customer','import-file-input','restore-archive-input','import-excel-input','import-partner-sheet-input','import-values-input','import-csat-input'];
+      const missing = ids.filter(id => !(head && head.querySelector('#' + id)));
+      const old = ['.stats','.tabs[role="tablist"]','.header h1'].filter(sel => document.querySelector('#app ' + sel));
+      const themeBtn = head && head.querySelector('[data-v13-theme]');
+      shellOk = !!root && labels.join('|') === 'Desk|Co-pilot|Accounts|Risk|System' && !missing.length && !old.length && !!themeBtn
+        && getComputedStyle(root).getPropertyValue('--page').trim() !== '';
+      detail = JSON.stringify({root: !!root, labels, missing, old, themeBtn: !!themeBtn, page: root ? getComputedStyle(root).getPropertyValue('--page') : null});
+    }catch(e){ detail = e.message; }
+    check('v13 T1 v13 mode draws the top bar (OSM nav Desk/Co-pilot/Accounts/Risk/System, header actions with their ids, theme button) and not the old hero, stat tiles or tabs', shellOk, detail);
+    // 3. every nav item switches view
+    let navOk = false; detail = '';
+    try{
+      const want = {desk:'today', copilot:'copilot', accounts:'accounts', risk:'risk', system:'system'};
+      const got = {};
+      Object.keys(want).forEach(k => {
+        const b = document.querySelector('#app [data-osm] header [data-v13-nav="' + k + '"]');
+        if(!b){ got[k] = 'missing'; return; }
+        b.click();
+        const cur = document.querySelector('#app [data-osm] header [data-v13-nav="' + k + '"]');
+        got[k] = ui.view + (cur && cur.getAttribute('aria-current') === 'page' ? '' : ' (not current)');
+      });
+      navOk = Object.keys(want).every(k => got[k] === want[k]);
+      detail = JSON.stringify(got);
+    }catch(e){ detail = e.message; }
+    check('v13 T1 every top-bar nav item switches ui.view (desk→today, copilot, accounts, risk, system) and marks itself current', navOk, detail);
+    // 4. theme toggle
+    let themeOk = false; detail = '';
+    try{
+      localStorage.setItem(THEME, 'light'); render();
+      document.querySelector('#app [data-osm] [data-v13-theme]').click();
+      const r1 = document.querySelector('#app [data-osm]');
+      const dark = r1.getAttribute('data-theme') === 'dark' && localStorage.getItem(THEME) === 'dark';
+      const darkPage = getComputedStyle(r1).getPropertyValue('--page').trim().toUpperCase();
+      document.querySelector('#app [data-osm] [data-v13-theme]').click();
+      const r2 = document.querySelector('#app [data-osm]');
+      const light = r2.getAttribute('data-theme') === 'light' && localStorage.getItem(THEME) === 'light';
+      const lightPage = getComputedStyle(r2).getPropertyValue('--page').trim().toUpperCase();
+      themeOk = dark && light && darkPage === '#151514' && lightPage === '#F3EEE6';
+      detail = JSON.stringify({dark, light, darkPage, lightPage});
+    }catch(e){ detail = e.message; }
+    check('v13 T1 the theme button flips data-theme light/dark, stores it in obm-theme-v1, and the v13 page token follows (#F3EEE6 / #151514)', themeOk, detail);
+    // 5. never in the book or an export
+    let bookOk = false; detail = '';
+    try{
+      const exported = serializeBackup(DATA, serializeBook(DATA));
+      bookOk = !(KEY in DATA) && !(THEME in DATA) && exported.indexOf(KEY) === -1 && exported.indexOf(THEME) === -1
+        && String(localStorage.getItem(STORAGE_KEY) || '').indexOf(KEY) === -1;
+      detail = 'switch or theme key found in DATA, the export or the stored book';
+    }catch(e){ detail = e.message; }
+    check('v13 T1 the switch and theme keys never enter DATA, the stored book or an export', bookOk, detail);
+    // 6. old mode treats "system" as today
+    let oldOk = false; detail = '';
+    try{
+      setSwitch('0'); ui.view = 'system'; render();
+      oldOk = !document.querySelector('#app [data-osm]') && !!document.querySelector('#app .tabs[role="tablist"]') && !!document.querySelector('#app .stats');
+      detail = 'old shell not drawn for ui.view=system with the switch off';
+    }catch(e){ detail = e.message; }
+    check('v13 T1 with the switch off the old shell draws, and ui.view "system" falls back to Today', oldOk, detail);
+    try{ setSwitch('0'); if(prevTheme === null) localStorage.removeItem(THEME); else localStorage.setItem(THEME, prevTheme); }catch(e){}
+    if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
+    try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+    ui.view = prevView; ui.openCustomerId = prevOpen; render();
   })();
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',

@@ -66,7 +66,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Book of Business — Runway</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Figtree:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -1692,6 +1692,47 @@
   @media (prefers-reduced-motion: reduce){
     *{transition-duration:.01ms !important; animation:none !important;}
   }
+  /* ==== v13 shell (2026-10-22): tokens and top bar from OSM Workstation v13 ====
+     Scoped to [data-osm] (the v13 wrapper) rather than :root because 1.1 already
+     defines --ink and --brand there for the old shell; old mode never sees these. */
+  [data-osm]{--page:#F3EEE6;--sheet:#FFFFFF;--sheet2:#FAF7F1;--well:#EFE9DF;--ink:#262626;--muted:#5B5650;--faint:#A39C91;--line:rgba(38,38,38,.09);--line2:rgba(38,38,38,.17);--acc:#0067CF;--acc-bg:#E6F0FB;--brand:#66CC66;--runway:#6E6A64;--demo:#3F9F3F;--demo-t:#2A6B2A;--demo-bg:#E7F3E2;--obs:#F0A020;--warn:#7A5200;--warn-bg:#FDF0D4;--risk:#B42000;--risk-bg:#FBE6DF;--partner:#0058AF;--partner-bg:#E3EEFA;--plum:#663399;--plum-bg:#F1E8F8;--sh1:0 1px 0 rgba(38,38,38,.04),0 10px 30px -18px rgba(38,38,38,.30);--sh2:0 1px 0 rgba(38,38,38,.05),0 24px 60px -28px rgba(38,38,38,.45),0 4px 12px -6px rgba(38,38,38,.12);--mono:'JetBrains Mono',Consolas,monospace;--font-brand:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color-scheme:light}
+  [data-osm][data-theme="dark"]{--page:#151514;--sheet:#1F1F1D;--sheet2:#252523;--well:#1A1A19;--ink:#EDEBE7;--muted:#B3AEA6;--faint:#6E6A64;--line:rgba(237,235,231,.08);--line2:rgba(237,235,231,.16);--acc:#8CC6FF;--acc-bg:#1B2A3A;--runway:#A39C91;--demo:#66CC66;--demo-t:#8FE08F;--demo-bg:#1E3220;--obs:#FBAD17;--warn:#F9CB76;--warn-bg:#3A301C;--risk:#FF9E85;--risk-bg:#3E231D;--partner:#A9D2FF;--partner-bg:#1C2836;--plum:#D9B8EE;--plum-bg:#30243B;--sh1:0 1px 0 rgba(0,0,0,.3),0 12px 30px -18px rgba(0,0,0,.7);--sh2:0 24px 60px -24px rgba(0,0,0,.85),0 4px 12px -6px rgba(0,0,0,.5);color-scheme:dark}
+  body[data-ui="v13"]{background:#F3EEE6;}
+  body[data-ui="v13"][data-v13-theme="dark"]{background:#151514;}
+  body[data-ui="v13"] .app{max-width:none; margin:0; padding:0;}
+  [data-osm]{min-height:100vh; background:var(--page); color:var(--ink); font-family:var(--font-brand); font-size:14px; line-height:1.5; padding-bottom:110px;}
+  .v13-nav button, .v13-pill, .v13-menu-panel > button{font-family:inherit; line-height:inherit; color:inherit; cursor:pointer;}
+  [data-osm] :focus-visible{outline:2px solid var(--acc); outline-offset:3px; border-radius:6px;}
+  .v13-top{position:sticky; top:0; z-index:40; height:56px; display:flex; align-items:center; gap:20px; padding:0 24px; background:var(--page); border-bottom:1px solid var(--line); box-sizing:border-box;}
+  .v13-mark{display:flex; align-items:center; gap:10px; flex:none;}
+  .v13-mark-bars{display:flex; align-items:flex-end; gap:3px; height:20px;}
+  .v13-mark-bars span{width:4px; background:var(--brand); border-radius:1px;}
+  .v13-mark-word{font-weight:900; font-size:17px; letter-spacing:-0.02em;}
+  .v13-nav{flex:none; display:flex; gap:2px; padding:3px; background:var(--well); border-radius:999px;}
+  .v13-nav button{border:0; border-radius:999px; padding:6px 14px; font-size:13px; font-weight:700; background:transparent; color:var(--muted); box-shadow:none; white-space:nowrap;}
+  .v13-nav button[aria-current="page"]{background:var(--sheet); color:var(--ink); box-shadow:var(--sh1);}
+  .v13-nav button > span{display:inline-flex; align-items:center; gap:6px;}
+  .v13-badge{font-family:var(--mono); font-size:10px; font-weight:700; color:#fff; background:#0074E8; border-radius:999px; padding:1px 7px; white-space:nowrap;}
+  .v13-crumb{font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:0 10 auto;}
+  .v13-right{margin-left:auto; display:flex; align-items:center; gap:12px; flex:0 1 auto; min-width:0;}
+  .v13-date{font-family:var(--mono); font-size:11px; color:var(--muted); background:var(--well); border-radius:999px; padding:3px 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:0 1 auto;}
+  .v13-date.is-test{color:var(--warn); background:var(--warn-bg);}
+  .v13-pill{border:1px solid var(--line2); background:transparent; border-radius:999px; padding:5px 12px; font-size:12px; font-weight:600; flex:none; white-space:nowrap;}
+  .v13-pill:hover{border-color:var(--ink);}
+  .v13-pill .v13-k{font-family:var(--mono); font-size:10px; color:var(--faint); margin-left:4px;}
+  .v13-warnlink{font-size:12px; font-weight:700; color:var(--warn); background:var(--warn-bg); border-radius:999px; padding:3px 10px; white-space:nowrap; flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis;}
+  .v13-warnlink .link-btn{color:inherit !important;}
+  .v13-me{flex:none; width:30px; height:30px; border-radius:50%; background:var(--ink); color:var(--page); display:grid; place-items:center; font-size:11px; font-weight:800;}
+  .v13-menu{position:relative; flex:none;}
+  .v13-menu > summary{list-style:none;}
+  .v13-menu > summary::-webkit-details-marker{display:none;}
+  .v13-menu-panel{position:absolute; right:0; top:calc(100% + 8px); min-width:260px; background:var(--sheet); border-radius:12px; box-shadow:var(--sh2); padding:6px; display:flex; flex-direction:column; gap:2px; z-index:50;}
+  .v13-menu-panel > button{border:0; background:transparent; text-align:left; border-radius:8px; padding:8px 10px; font-size:13px; font-weight:600;}
+  .v13-menu-panel > button:hover{background:var(--well);}
+  .v13-menu-status{font-size:12px; color:var(--muted); padding:8px 10px 6px; border-top:1px solid var(--line); margin-top:4px;}
+  .v13-main{position:relative; z-index:1; padding:24px clamp(14px,2.4vw,36px) 40px; max-width:1500px; margin:0 auto; box-sizing:border-box;}
+  .v13-h1{font-size:clamp(38px,4vw,58px); font-weight:900; letter-spacing:-0.035em; line-height:1; margin:0;}
+  .v13-sub{font-size:15px; color:var(--muted); margin:8px 0 0;}
 </style>
 </head>
 <body>
@@ -9327,6 +9368,122 @@ function renderHostedEmptyHint(){
   if(!shouldShowHostedHint(location.protocol, DATA)) return '';
   return `<div id="hosted-empty-hint" role="note" style="margin:8px 0; padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg-panel); color:var(--text-faint); font-size:var(--text-xs);">${escapeHtml(HOSTED_EMPTY_HINT)}</div>`;
 }
+/* ==== v13 screens ====
+   The v13 design (OSM Workstation v13) drawn over 1.1's engine. One browser-only
+   switch, obm-next-screens-v1 in localStorage (never in DATA or an export), default
+   on; "0" brings back the old shell. These functions only read while drawing;
+   v13Bind() wires the clicks inside the v13 container. Header actions keep their
+   1.1 ids so attachEvents() still binds them. */
+const V13_SWITCH_KEY = 'obm-next-screens-v1';
+const V13_THEME_KEY = 'obm-theme-v1';
+const V13_NAV = [['desk','Desk','today'],['copilot','Co-pilot','copilot'],['accounts','Accounts','accounts'],['risk','Risk','risk'],['system','System','system']];
+function v13On(){
+  try{ return localStorage.getItem(V13_SWITCH_KEY) !== '0'; }catch(e){ return true; }
+}
+function v13Theme(){
+  try{ return localStorage.getItem(V13_THEME_KEY) === 'dark' ? 'dark' : 'light'; }catch(e){ return 'light'; }
+}
+function v13DateChip(){
+  const d = new Date();
+  const day = d.toLocaleDateString('en-GB', {weekday:'short'});
+  const date = d.toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+  const time = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  return `${day} ${date} · ${time}`;
+}
+function v13Shell(){
+  const theme = v13Theme();
+  const navKey = (V13_NAV.find(n => n[2] === ui.view) || V13_NAV[0])[0];
+  const gsN = getGainsightQueue().length;
+  const nav = V13_NAV.map(([k, label]) => {
+    const badge = k === 'copilot' && gsN ? `<span class="v13-badge" title="${gsN} queued for Gainsight">${gsN}</span>` : '';
+    return `<button type="button" data-v13-nav="${k}"${k === navKey ? ' aria-current="page"' : ''}><span><span data-v13-label>${label}</span>${badge}</span></button>`;
+  }).join('');
+  const open = ui.openCustomerId && DATA.customers.find(c => c.id === ui.openCustomerId);
+  const crumb = (V13_NAV.find(n => n[0] === navKey) || V13_NAV[0])[1] + (open ? ' · ' + open.name : '');
+  const u = undoAvailable();
+  const undo = u ? (function(){
+    const secs = Math.max(1, Math.round((Date.now() - u.at)/1000));
+    const age = secs < 60 ? secs + 's ago' : Math.round(secs/60) + 'm ago';
+    return `<button type="button" class="v13-pill" id="btn-undo" title="Restores the book to its state before that change. One level — pressing it again puts the change back.">${_lastActionWasUndo ? 'Redo' : 'Undo'}<span class="v13-k">${age}</span></button>`;
+  })() : '';
+  const backup = renderBackupStatus();
+  const backupWarn = /btn-backup-now|btn-fs-resume-header|Not backing up/.test(backup);
+  const conn = renderConnectorStatus();
+  const test = DATA && DATA.synthetic === true;
+  const status = [renderTestBookMarker().replace(/ · $/, ''), backupWarn ? '' : backup, conn].filter(Boolean).join(' · ');
+  return `
+    <div data-osm="" data-theme="${theme}">
+      <header class="v13-top">
+        <div class="v13-mark"><div class="v13-mark-bars" aria-hidden="true"><span style="height:11px"></span><span style="height:20px"></span><span style="height:15px"></span></div><span class="v13-mark-word">OSM</span></div>
+        <nav class="v13-nav" aria-label="Workspace">${nav}</nav>
+        <span class="v13-crumb">${escapeHtml(crumb)}</span>
+        <div class="v13-right">
+          ${backupWarn ? `<span class="v13-warnlink">${backup}</span>` : ''}
+          <span class="v13-date${test ? ' is-test' : ''}">${test ? 'Test book · ' : ''}${escapeHtml(v13DateChip())}</span>
+          ${undo}
+          <button type="button" class="v13-pill" id="btn-quick-log" title="Log a touchpoint without opening the account — press L anywhere outside a text field">Quick log<span class="v13-k">L</span></button>
+          <details class="v13-menu" data-v13-menu>
+            <summary class="v13-pill" title="Settings, imports, reports and connections">More</summary>
+            <div class="v13-menu-panel">
+              <button type="button" id="btn-add-customer">Add customer</button>
+              ${connectorConfigured() ? `<button type="button" id="btn-check-calls" title="Pull recorded calls from Gong through the connector and review them before anything is added">Check for calls</button>
+              <button type="button" id="btn-refresh-gainsight" title="Pull account details from Gainsight through the connector and review them before anything is changed">Refresh from Gainsight</button>` : ''}
+              <button type="button" id="btn-progress-report" title="Download a manager-ready progress report: who's moving, stagnant, quiet, at risk, and ready for CSM handoff">Progress report</button>
+              <button type="button" id="btn-settings">Settings</button>
+              <div class="v13-menu-status">${DATA.customers.length} accounts${status ? ' · ' + status : ''}</div>
+            </div>
+          </details>
+          <input type="file" id="import-file-input" accept="application/json" style="display:none;">
+          <input type="file" id="restore-archive-input" accept="application/json" style="display:none;">
+          <input type="file" id="import-excel-input" accept=".xlsx,.xls" style="display:none;">
+          <input type="file" id="import-partner-sheet-input" accept=".xlsx,.xls,.csv" style="display:none;">
+          <input type="file" id="import-values-input" accept=".csv,text/csv" style="display:none;">
+          <input type="file" id="import-csat-input" accept=".csv,text/csv" style="display:none;">
+          <button type="button" class="v13-pill" data-v13-theme title="Switch between light and dark">${theme === 'dark' ? 'Light' : 'Dark'}</button>
+          <span class="v13-me" aria-label="Signed in">Me</span>
+        </div>
+      </header>
+      <main class="v13-main">
+        ${renderHostedEmptyHint()}
+        ${v13Body()}
+      </main>
+    </div>`;
+}
+// Task 1: the screens are still 1.1's renderers inside the v13 shell; Tasks 2-7 replace them.
+function v13Body(){
+  if(ui.view === 'accounts') return renderAccounts();
+  if(ui.view === 'risk') return renderRiskTab();
+  if(ui.view === 'copilot') return renderCopilot();
+  if(ui.view === 'system') return `<section aria-label="System"><h1 class="v13-h1">System</h1><p class="v13-sub">Curricula, Gainsight rules and connections live in Settings for now.</p><p style="margin-top:16px"><button type="button" class="v13-pill" data-v13-open-settings>Open settings</button></p></section>`;
+  return renderToday();
+}
+function v13SwitchView(newView){
+  if(ui.view === 'today' && newView !== 'today'){
+    const ids = needsAttentionList().map(x=>x.c.id);
+    // Same rule as the old tabs: an unchanged list is not a change.
+    if(JSON.stringify(ids) !== JSON.stringify(DATA.todayLastSeenIds)){
+      DATA.todayLastSeenIds = ids;
+      saveData();
+    }
+  }
+  ui.view = newView;
+  render();
+}
+function v13Bind(root){
+  const box = root.querySelector('[data-osm]');
+  if(!box) return;
+  box.querySelectorAll('[data-v13-nav]').forEach(b => b.addEventListener('click', () => {
+    const n = V13_NAV.find(x => x[0] === b.dataset.v13Nav);
+    if(n) v13SwitchView(n[2]);
+  }));
+  const t = box.querySelector('[data-v13-theme]');
+  if(t) t.addEventListener('click', () => {
+    try{ localStorage.setItem(V13_THEME_KEY, v13Theme() === 'dark' ? 'light' : 'dark'); }catch(e){}
+    render();
+  });
+  box.querySelectorAll('[data-v13-open-settings]').forEach(b => b.addEventListener('click', openSettingsModal));
+}
+
 function render(){
   // A repaint is happening now, so any debounced one is redundant. Without this,
   // typing and then immediately clicking a tab renders twice — the second one
@@ -9340,7 +9497,11 @@ function render(){
   const panelScroll = (prevPanel && panelKey && panelKey === _lastRenderKeys.panel) ? prevPanel.scrollTop : 0;
   const pageScroll = ui.view === _lastRenderKeys.view ? (window.scrollY || 0) : 0;
   const app = document.getElementById('app');
-  app.innerHTML = `
+  const v13 = v13On();
+  if(v13){ document.body.setAttribute('data-ui', 'v13'); document.body.setAttribute('data-v13-theme', v13Theme()); }
+  else { document.body.removeAttribute('data-ui'); document.body.removeAttribute('data-v13-theme'); }
+  if(v13) app.innerHTML = `${v13Shell()}${ui.openCustomerId ? renderPanel() : ''}`;
+  else app.innerHTML = `
     ${renderHeader()}
     ${renderStats()}
     ${renderTabs()}
@@ -9353,6 +9514,7 @@ function render(){
     ${ui.openCustomerId ? renderPanel() : ''}
   `;
   attachEvents();
+  if(v13) v13Bind(app);
   if(panelScroll){
     const newPanel = document.querySelector('.overlay .panel');
     if(newPanel) newPanel.scrollTop = panelScroll;

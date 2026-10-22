@@ -172,6 +172,9 @@ export async function launch({ version, startDay, runDir, part, seed = null, chr
     // The sim never reads or writes the OS clipboard (headless Chrome may share the user's). A page hook, installed before
     // every load, records what the tracker copies into window.__simClip, which starts as a per-run sentinel.
     await send('Page.addScriptToEvaluateOnNewDocument', { source: clipboardShim(sentinel) });
+    // The sim's steps drive the old 1.1 screens; v13 is now the default, so pin the old shell
+    // (browser-only switch, never in the book). Porting the steps to v13 is on the v13 fix list.
+    await send('Page.addScriptToEvaluateOnNewDocument', { source: "try{localStorage.setItem('obm-next-screens-v1','0')}catch(e){}" });
 
     ctx.ev = ev;
     ctx.send = send;
