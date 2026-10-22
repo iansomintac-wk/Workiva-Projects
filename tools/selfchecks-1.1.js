@@ -10188,6 +10188,85 @@ function _runSelfChecksInner(){
      (spacer)
      (spacer) */
   /* ==== v13 checks: Risk ==== (owned by the Risk port) */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prevView = ui.view, prevOpen = ui.openCustomerId;
+    const hadSeen = 'todayLastSeenIds' in DATA, prevSeen = JSON.stringify(DATA.todayLastSeenIds);
+    const hadLog = 'riskLog' in DATA, prevLog = JSON.stringify(DATA.riskLog);
+    const prevStored = localStorage.getItem(STORAGE_KEY);
+    const restoreBook = () => {
+      if(hadLog) DATA.riskLog = JSON.parse(prevLog); else delete DATA.riskLog;
+      if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
+      try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
+    };
+    const draw = () => { localStorage.removeItem(KEY); ui.openCustomerId = null; ui.view = 'risk'; render(); return document.querySelector('#app [data-osm] [data-v13-risk]'); };
+    const cases = () => buildRiskCases(buildRiskHubList({readOnly:true}));
+    let detail = '';
+    // 1. heading, two sections, counts from 1.1's cases
+    let headOk = false;
+    try{
+      const box = draw();
+      const ks = cases();
+      const nR = ks.filter(k => k.isRisk).length, nS = ks.filter(k => !k.isRisk && k.state !== 'dismissed').length;
+      const h1 = box && box.querySelector('h1');
+      const hR = box && box.querySelector('[data-v13-risk-confirmed] h2'), hS = box && box.querySelector('[data-v13-risk-signals] h2');
+      headOk = !!h1 && h1.textContent.trim() === 'Signals ask. You confirm.'
+        && !!hR && hR.textContent.trim() === `Confirmed risks · ${nR}`
+        && !!hS && hS.textContent.trim() === `Signals to check · ${nS}`
+        && box.querySelectorAll('[data-v13-signal]').length === nS
+        && !document.querySelector('#app .rk3');
+      detail = JSON.stringify({h1: h1 && h1.textContent, hR: hR && hR.textContent, hS: hS && hS.textContent, nR, nS});
+    }catch(e){ detail = e.message; }
+    check('v13 Risk draws "Signals ask. You confirm." with Confirmed risks · N and Signals to check · N counted from 1.1\'s cases, no old deck', headOk, detail);
+    // 2. drawing is read-only
+    let pureOk = false; detail = '';
+    try{
+      const before = JSON.stringify(DATA.riskLog), storedBefore = localStorage.getItem(STORAGE_KEY);
+      draw(); draw();
+      pureOk = JSON.stringify(DATA.riskLog) === before && localStorage.getItem(STORAGE_KEY) === storedBefore;
+      detail = 'drawing the v13 Risk screen changed the risk log or the stored book';
+    }catch(e){ detail = e.message; }
+    check('v13 Risk drawing writes nothing (no risk log stamps, stored book unchanged)', pureOk, detail);
+    // 3. every signal card offers 1.1's confirm and dismiss, and never calls itself a risk
+    let sigOk = false; detail = '';
+    try{
+      const box = draw();
+      const rows = [...box.querySelectorAll('[data-v13-signal]')];
+      sigOk = rows.length > 0 && rows.every(r => r.querySelector('[data-risk-confirm]') && r.querySelector('[data-risk-dismiss]') && r.querySelector('[data-open-cust]')
+        && !/\brisk\b/i.test((r.querySelector('[data-v13-signal-label]') || {}).textContent || 'risk'));
+      detail = rows.length + ' signal cards';
+    }catch(e){ detail = e.message; }
+    check('v13 Risk each signal card has Review, confirm and dismiss (1.1 handlers) and its label never says risk', sigOk, detail);
+    // 4. confirm needs a reason; a confirmed case moves to Confirmed risks with the reason shown
+    let confOk = false; detail = '';
+    try{
+      const k = cases().find(x => !x.isRisk && x.state !== 'dismissed');
+      const noReason = setRiskVerdict(k.lead, 'confirmed', '   ');
+      confirmRiskCase(k, 'Sponsor left and nobody owns approvals');
+      const box = draw();
+      const card = box.querySelector(`[data-v13-risk-confirmed] [data-v13-risk-card="${k.c.id}"]`);
+      confOk = noReason === false && !!card && card.textContent.includes(k.c.name) && card.textContent.includes('Sponsor left and nobody owns approvals')
+        && card.textContent.includes('You confirmed') && !box.querySelector(`[data-v13-risk-signals] [data-v13-signal="${k.c.id}"]`);
+      detail = JSON.stringify({noReason, card: !!card});
+    }catch(e){ detail = e.message; }
+    restoreBook();
+    check('v13 Risk confirm without a reason is refused; with one the account moves to Confirmed risks showing "You confirmed" and the reason', confOk, detail);
+    // 5. the confirm button on a signal opens 1.1's reason modal
+    let modalOk = false; detail = '';
+    try{
+      const box = draw();
+      const b = box.querySelector('[data-v13-signal] [data-risk-confirm]');
+      b.click();
+      const m = document.getElementById('rkc-reason');
+      modalOk = !!m;
+      document.querySelectorAll('.modal-backdrop').forEach(o => { if(o.querySelector('#rkc-reason')) o.remove(); });
+      detail = 'no reason modal after clicking confirm';
+    }catch(e){ detail = e.message; }
+    check('v13 Risk a signal\'s confirm button opens the reason-required modal', modalOk, detail);
+    restoreBook();
+    try{ localStorage.setItem(KEY, '0'); }catch(e){}
+    ui.view = prevView; ui.openCustomerId = prevOpen; render();
+  })();
   /* ==== end v13 checks: Risk ==== */
   /* (spacer)
      (spacer)

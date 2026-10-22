@@ -9497,7 +9497,75 @@ function v13Accounts(){ return renderAccounts(); }
    Owned by the Risk port. Everything for the Risk screen goes between this
    marker and the end marker below: v13Risk() and its helpers.
    Keep the end marker and do not edit outside it. */
-function v13Risk(){ return renderRiskTab(); }
+/* v13 layout over 1.1's engine: the cases come from buildRiskHubList({readOnly:true})
+   so drawing stamps nothing; confirm/dismiss/reopen reuse 1.1's data-risk-* buttons,
+   which attachEvents() binds (confirm opens the reason-required modal). */
+const V13_RISK_SIGNAL_LABEL = {'Flagged note':'Flagged note','Risk language':'Note wording','Category signal':'Note wording','Implementation risk':'Implementation record','Implementation paused':'Implementation paused','Off Track':'Pacing','Watch':'Pacing','Behind target':'Behind target'};
+const V13_RISK_PILL = 'border:1px solid var(--line2);background:var(--sheet);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer';
+function v13RiskCard(k){
+  const id = escapeAttr(k.c.id);
+  const conf = k.items.filter(it => riskVerdictState(it) === 'confirmed');
+  const withReason = conf.find(riskItemHasReason);
+  const t = (withReason || conf[0] || k.lead).tracking || {};
+  const rec = getRecommendedAction(k.c);
+  const when = t.verdictOn ? ` · You confirmed ${escapeHtml(fmtDate(t.verdictOn))}` : ' · You confirmed';
+  return `
+        <div data-v13-risk-card="${id}" style="margin-top:12px;padding:14px 16px;border-radius:14px;background:var(--risk-bg)">
+          <p style="font-size:12px;font-weight:800;color:var(--risk)">${escapeHtml(k.c.name)}${when}</p>
+          <p style="font-size:16px;font-weight:800;margin-top:2px">${escapeHtml(k.lead.detail || k.lead.kind || '')}</p>
+          ${withReason
+            ? `<p style="font-size:13px;margin-top:4px">Your reason · &ldquo;${escapeHtml(withReason.tracking.verdictReason)}&rdquo;</p>`
+            : `<p style="font-size:13px;margin-top:4px">Confirmed before reasons were required. <button type="button" data-risk-confirm="${id}" style="border:0;background:none;padding:0;color:var(--risk);font-weight:700;text-decoration:underline;cursor:pointer;font-size:13px">Add a reason</button></p>`}
+          ${rec && rec.action ? `<p style="font-size:13px;margin-top:4px">Mitigation · ${escapeHtml(rec.action)}</p>` : ''}
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" data-open-cust="${id}" data-open-tab="overview" style="${V13_RISK_PILL}">Open commitments</button>
+            <button type="button" data-risk-reopen="${id}" style="${V13_RISK_PILL};color:var(--muted)">Not a risk after all</button>
+          </div>
+        </div>`;
+}
+function v13RiskSignal(k){
+  const id = escapeAttr(k.c.id);
+  const label = V13_RISK_SIGNAL_LABEL[k.lead.kind] || 'Signal';
+  const more = k.items.length > 1 ? ` · ${k.items.length} signals` : '';
+  return `
+        <div data-v13-signal="${id}" style="margin-top:10px;padding:12px 14px;border-radius:14px;border:1.5px dashed var(--obs);display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+          <span style="flex:1 1 220px"><span data-v13-signal-label style="display:block;font-size:12px;font-weight:800;color:var(--warn)">${escapeHtml(k.c.name)} · ${escapeHtml(label)}${more}</span><span style="display:block;font-size:14px;margin-top:2px">${escapeHtml(k.lead.detail || '')}</span></span>
+          <span style="display:flex;gap:6px;flex-wrap:wrap">
+            <button type="button" data-open-cust="${id}" data-open-tab="overview" style="${V13_RISK_PILL}">Review</button>
+            <button type="button" data-risk-confirm="${id}" style="${V13_RISK_PILL}" title="Only you confirm a risk, with a reason">Confirm</button>
+            <button type="button" data-risk-dismiss="${id}" style="${V13_RISK_PILL};color:var(--muted)" title="Not real; it returns by itself if the account worsens">Rule out</button>
+          </span>
+        </div>`;
+}
+function v13Risk(){
+  _riskHubCache = buildRiskHubList({readOnly:true});
+  const cases = buildRiskCases(_riskHubCache);
+  const risks = cases.filter(k => k.isRisk);
+  const signals = cases.filter(k => !k.isRisk && k.state !== 'dismissed');
+  const dismissed = cases.filter(k => !k.isRisk && k.state === 'dismissed');
+  const queue = getGainsightQueue();
+  const sheet = 'background:var(--sheet);border-radius:18px;box-shadow:var(--sh1);padding:20px';
+  return `
+<section aria-label="Risk" data-v13-risk="">
+  <style>[data-v13-risk] h1,[data-v13-risk] h2,[data-v13-risk] p{margin:0}[data-v13-risk-queue] .rk-group-head{margin-top:0 !important;font-size:18px;font-weight:900}[data-v13-risk-queue] .rk-group-note{margin-top:4px}[data-v13-risk-queue] .rk-queue{margin-top:12px}</style>
+  <h1 style="font-size:clamp(34px,3.6vw,52px);font-weight:900;letter-spacing:-0.035em;line-height:1">Signals ask. You confirm.</h1>
+  <p style="color:var(--muted);margin-top:8px;font-size:15px;max-width:70ch">Signals come from rules over the record and your notes. A risk is confirmed only by you, with a reason.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;margin-top:22px;align-items:start">
+    <section data-v13-risk-confirmed="" style="${sheet}">
+      <h2 style="font-size:18px;font-weight:900">Confirmed risks · ${risks.length}</h2>
+      ${risks.length ? risks.map(v13RiskCard).join('') : '<p style="font-size:13px;color:var(--muted);margin-top:8px">Nothing confirmed. A signal becomes a risk only when you confirm it and say why.</p>'}
+    </section>
+    <section data-v13-risk-signals="" style="${sheet}">
+      <h2 style="font-size:18px;font-weight:900">Signals to check · ${signals.length}</h2>
+      <p style="font-size:13px;color:var(--muted);margin-top:4px">Missing evidence is a reason to ask, not proof that work wasn’t done.</p>
+      ${signals.length ? signals.map(v13RiskSignal).join('') : '<p style="font-size:13px;color:var(--muted);margin-top:10px">No signals to check.</p>'}
+      ${dismissed.length ? `<p style="font-size:12px;color:var(--muted);margin-top:12px">${dismissed.length} ruled out; each returns by itself if the account worsens or after ${RISK_DISMISS_EXPIRY_DAYS} days. <button type="button" data-risk-show-dismissed style="border:0;background:none;padding:0;color:var(--ink);font-weight:700;text-decoration:underline;cursor:pointer;font-size:12px">${ui.riskShowDismissed ? 'Hide them' : 'Show them'}</button></p>
+      ${ui.riskShowDismissed ? dismissed.map(k => `<p data-v13-ruled-out="${escapeAttr(k.c.id)}" style="font-size:13px;margin-top:8px;color:var(--muted)">${escapeHtml(k.c.name)} · ${escapeHtml(k.lead.detail || '')} <button type="button" data-risk-reopen="${escapeAttr(k.c.id)}" style="${V13_RISK_PILL}">Reopen</button></p>`).join('') : ''}` : ''}
+    </section>
+  </div>
+  <section data-v13-risk-queue="" style="${sheet};margin-top:20px">${renderGainsightQueueBlock(queue)}</section>
+</section>`;
+}
 /* ==== end v13 screen: Risk ==== */
 /* (spacer: keeps each screen's block apart so parallel ports merge cleanly)
    (spacer)
