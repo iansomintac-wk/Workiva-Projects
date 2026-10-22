@@ -46,11 +46,17 @@ Date 2026-10-22. Branch `prompt-coach-c1-reshape`. Spec: `docs/superpowers/specs
 ## Final-tree Suite (measured now, state committed = fallback)
 
 - `repro_weights.js`: REPRO OK 7e77a3d869eb
-- `build.js`: dist 339 KB; `wc -c` = 346976 bytes, matches README line 9; `git diff --stat` empty after the build, tree clean
+- `build.js`: dist 339 KB; committed LF size `git cat-file -s HEAD:prompt-coach/dist/prompt-coach.html` = 345526 bytes, matches README line 9 (a CRLF checkout is larger, 346976 by `wc -c`); `git diff --stat` empty after the build, tree clean
 - `c5_gate.js`: 5 GATE lines, all PASS (eval acc 0.866; simulate 2/2, 5/5; customer_check 229 runs; rewrite_unit 77/0; pagetest 22 checks, 0 failed)
 - `c1_fixes.test.js` + `train_order.test.js`: 8 pass, 0 fail
 - fit-finder `prompts-strong.test.js`: 1 pass, 0 fail
 - r1 copy `done_when.js --only C1,C2,C4`: C1 21 of 30 (seen; bar 27, MISS), C2 test 3.2% PASS, C2 sim 2.7% PASS, C4 0 PASS
+
+## Final review (Opus + Codex, then fixes)
+
+Fixed: (1) simall.js --check now fails on a missing baseline key, a failed child run or a non-numeric count, and --save refuses on a child failure (empty baseline: PASS before, FAIL after); (2) ctxzero.js resolves its dir argument (`.` now prints older c1=532 zero=12); (3) silentc.js exits 9 before any data read when data/done_when_strong_r1.jsonl exists; (4) README build size is the committed LF size and the cue count is the measured 145.
+
+Declined: Opus should-fix rules.js:158 ("we make"), rules.js:140 ("this is used to") and nit rules.js:136 `\s*`. Changing rules.js re-opens the measured fallback F (C2 within bar), so they are follow-ups for the next C1 talk.
 
 ## Open
 

@@ -1,7 +1,7 @@
 // Training-only probe: of the rows labeled Context=1, how many get zero Context hits under engine/rules.js.
 // usage: node ctxzero.js <prompt-coach dir> [--rows]   Prints counts and 1-based row numbers only, never text.
 const fs = require('fs'), path = require('path');
-const R = process.argv[2] || process.cwd(), showRows = process.argv.includes('--rows');
+const R = path.resolve(process.argv[2] || process.cwd()), showRows = process.argv.includes('--rows');
 const M = require(path.join(R, 'engine/model.js'));
 const w = JSON.parse(fs.readFileSync(path.join(R, 'engine/weights.json')));
 const files = fs.readdirSync(path.join(R, 'data')).filter((f) => /^train_.*\.jsonl$/.test(f)).sort();

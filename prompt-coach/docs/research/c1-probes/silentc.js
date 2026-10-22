@@ -1,6 +1,7 @@
 // In a state-C probe copy: rows that get "No changes needed" with ZERO Context hits. Can a training-only signal
 // (word count, total rule hits) split strong from non-strong among them? No prompt text printed.
 const R = process.argv[2]; const fs = require('fs'), path = require('path');
+if (fs.existsSync(path.join(R, 'data/done_when_strong_r1.jsonl'))) { console.log('silentc: refusing, not an r1 copy (data/done_when_strong_r1.jsonl exists)'); process.exit(9); }
 const M = require(path.join(R, 'engine/model.js')), W = require(path.join(R, 'engine/rewrite.js')), C = require(path.join(R, 'engine/classify.js'));
 const w = JSON.parse(fs.readFileSync(path.join(R, 'engine/weights.json')));
 const CLS = C.unpack(JSON.parse(fs.readFileSync(path.join(R, 'engine/cls-weights.json'))));
