@@ -1,0 +1,52 @@
+RUN: Prompt Coach C3, sandbox test of the weak-12 (workiva repo). Written 2026-10-22 ~00:00Z by talk 055a0f72 after
+Ian approved the spec ("Approve the spec (Recommended)", 23:55Z, left: ian-kind). Load studio-harness:talk-and-run
+first and follow "The run". Workiva repo: write nothing to the brain or studio-harness; tell Ian instead.
+
+WHERE: branch prompt-coach-c3-sandbox (worktree .claude/worktrees/prompt-coach-c1-next), based on the UNMERGED
+prompt-coach-c1-next @ 2b2f1ba. Ledger: .ledger/2026-10-22-prompt-coach-c3-sandbox/ (budget.json, slip.json there).
+SPEC: docs/superpowers/specs/2026-10-22-prompt-coach-c3-sandbox-design.md (the authority; this prompt only orders it).
+Keys (confirmed by Ian): prompt-coach/research/live-tests/weak12/answer_key.json. Rulebook:
+prompt-coach/research/live-tests/SCORING_RULES.md.
+
+ORDER OF WORK
+1. First check (talk-and-run): STUDIO_RUN_LEDGER set, budget.json and slip.json present; else stop for Ian.
+2. Plan by studio-harness:plan-writer at docs/superpowers/plans/2026-10-22-prompt-coach-c3-sandbox.md, from the spec's
+   (a)-(d). Header: "Data: (none)" for the coach; the run writes only under prompt-coach/research/live-tests/weak12/c3/
+   and docs/evidence/. Codex plan review beside the Opus one; the PM proxy approves the plan. Update budget.json
+   (tasksLeft, helperToolCallCap) from the approved plan.
+3. Pre-flight (spec (a)1), then launch ONE browser driver session yourself, the whole Bash command alone:
+   claude --bg --chrome -n "NEW - C3 sandbox driver" "read <driver brief file> and do it"
+   Without --chrome a bg session has no browser tools (memory bg-browser-driver-needs-chrome-flag). Brief it by a
+   file plus SendMessage. Only one driver at a time; check claude agents --json --all first.
+4. Driver: capture the 12 Strong prompts from the built page (spec (a)2), commit improved.json.
+5. STOP for Ian: notify (PushNotification + notify.mjs), then ask under "[Ian] Sandbox sign-in" that he signs in to
+   https://sandbox.wdesk.com/ in Chrome and confirms. Never app.wdesk.com (production).
+6. Driver: uploads (spec (a)3), order file committed before the first send (a)4, pilot of 2 sends (a)6, report the
+   per-send times and projected total, then the remaining 46 sends with the stop rules of spec (d).
+7. Scoring: Opus scorer Pass A (blind, no prompt) and Pass B; Codex the same, run by you (read-only, empty temp
+   folder, stdin closed, -c windows.sandbox=unelevated, scratch CODEX_HOME); a fresh Opus adjudicator on every field
+   that differs. Scorers never see the id map (ledger only) or each other's rows.
+8. Evidence doc docs/evidence/YYYY-MM-DD-prompt-coach-c3-sandbox.md with C3a/C3b/C3c, the prediction line (assumed
+   >= 22/24 and 0 invented; disproved by 21 or fewer or any invented fact) and the result; the C3 row of
+   docs/evidence/2026-10-22-prompt-coach-done-when.md and the prompt-coach README status, in the same commit.
+9. Final whole-branch review: Opus plus Codex; Ian decides where they disagree on must-fix.
+10. STOP for merge. merge-gate.mjs always refuses here (no npm test; memory merge-gate-no-npm-test): run it --dry-run
+   for its other checks, run the suite yourself (cd prompt-coach && node tests/c5_gate.js | tail -3, and
+   node tests/done_when.js --only C2,C4) on base and on a scratch merge, then ask Ian to merge c1-next and this branch
+   into prompt-coach by hand, with that evidence. A yes covers what it names only.
+11. Hand-off PM step, then notify.mjs "<run> done: <the one thing Ian does>".
+
+STOPS: plan approval is the PM proxy's; Ian for sign-in, merge, spend past the cap, and any decision only he can make.
+Two strikes on any check failing twice. A step auto mode refuses is parked once, not retried.
+
+SAFETY
+- Sandbox only: the driver reads the tab URL before every action; any host but sandbox.wdesk.com or the 127.0.0.1 coach
+  page stops the drive. Stop at once on sign-in/Okta/MFA, billing or upgrade prompts, or customer-looking data.
+- Made-up data only. No customer-specific or real data in any prompt, fixture or answer file.
+- The fresh strong-30 (prompt-coach/data/done_when_strong.jsonl) stays UNREAD. No engine/rules.js edits; held
+  follow-ups rules.js:158 "we make", :140 "this is used to", :136 \s* stay held. A C3 miss is reported, never tuned.
+- Answer keys are locked: no edit to answer_key.json or SCORING_RULES.md without Ian's ruling.
+- No money. Usage cap 1.2M tokens (budget.json). No writes under ~/.claude/ except the session-rename field.
+- No helper edits the worktree while a check or verify runs (ledger 2026-10-19-helper-edited-worktree-under-running-
+  verify); test commands name files, never folders (node 26 runs nothing for a folder).
+- Push: the run's own branch only, and only as slip.json allows; never main/master, never force.

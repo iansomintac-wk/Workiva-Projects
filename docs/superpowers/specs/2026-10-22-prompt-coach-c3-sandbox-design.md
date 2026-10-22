@@ -26,6 +26,9 @@ UNREAD.
   stage (the page's stages are Weak / Better / Strong, `web/template.html:269-271`); (2) "in the requested format" is
   judged against the prompt as sent (SCORING_RULES R6); the key's own `format` field is reported, not gating.
 
+- Ian, 2026-10-22 23:55Z, card '[Ian] C3 spec' (this talk; row `left: "ian-kind"`): "Approve the spec
+  (Recommended)". Approves this spec, the 48 sends, the 1.2M usage cap, and no money.
+
 ## Probes (measured in this talk)
 
 - Coach output for weak-12 with each fixture attached, built offline from the drafts' fixture specs
