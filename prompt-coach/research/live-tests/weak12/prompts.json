@@ -1,0 +1,98 @@
+[
+ {
+  "id": "FR-W1",
+  "domain": "FR",
+  "prompt": "what drove the jump in freight costs this quarter?",
+  "file": "fr_w1_freight_q3.xlsx",
+  "intended": "Short ranked explanation of the Q2 to Q3 FY26 freight increase from the attached file: total +95, air freight +58 (45 one-time expedite), ground +22 (no reason given in the file), fuel surcharge +14 (rate rise), warehousing flat.",
+  "format": "Table: cost line, Q2, Q3, change, driver per the file's note; ranked by change; under 120 words of commentary"
+ },
+ {
+  "id": "FR-W2",
+  "domain": "FR",
+  "prompt": "Can you look at the attached accruals rollforward?",
+  "file": "fr_w2_accruals_rollforward.xlsx",
+  "intended": "A check that each line foots (opening + additions - releases - utilised = closing) and a short list of lines that fail or look unusual, with the arithmetic shown.",
+  "format": "Table: account, expected closing, file closing, difference, issue; only lines with an issue; one sentence each"
+ },
+ {
+  "id": "FR-W3",
+  "domain": "FR",
+  "prompt": "write up the lease maturity disclosure for the 10-K",
+  "file": "fr_w3_lease_maturity.xlsx",
+  "intended": "A draft operating lease maturity table and one short lead-in sentence in 10-K style, using the file's figures, with the footing difference flagged instead of silently corrected.",
+  "format": "Maturity table (year, amount) plus one or two sentences with the weighted-average term and rate; a note listing the footing issue"
+ },
+ {
+  "id": "FR-W4",
+  "domain": "FR",
+  "prompt": "Can you help with the revenue numbers for the board deck?",
+  "file": "fr_w4_revenue_by_region.xlsx",
+  "intended": "A short board-ready summary of Q3 FY26 revenue by region with YoY growth, flagging the wrong EMEA percentage and the missing APAC figure rather than filling them in.",
+  "format": "Table: region, Q3 FY25, Q3 FY26, YoY % (recomputed), plus up to three bullets for the board; issues listed separately"
+ },
+ {
+  "id": "GRC-W1",
+  "domain": "GRC",
+  "prompt": "anything wrong with our AP controls?",
+  "file": "grc_w1_rcm_ap.xlsx",
+  "intended": "A list of design gaps in the AP risk and control matrix: missing owner, undefined frequency on a key control, duplicate control, and the segregation-of-duties concern, each with the control ID.",
+  "format": "Table: control ID, issue, why it matters (one sentence); no more than one row per issue"
+ },
+ {
+  "id": "GRC-W2",
+  "domain": "GRC",
+  "prompt": "Please review the attached SoD conflicts report.",
+  "file": "grc_w2_sod_conflicts.xlsx",
+  "intended": "The conflicts that remain unmitigated, with the terminated user called out first as an access removal issue.",
+  "format": "Table: user ID, conflict rule, status, mitigating control (or 'none'), suggested next step; unmitigated rows only"
+ },
+ {
+  "id": "GRC-W3",
+  "domain": "GRC",
+  "prompt": "summarize the audit findings for the committee",
+  "file": "grc_w3_ia_findings.docx",
+  "intended": "A committee-ready summary: overall rating, findings by severity, each finding in one line with owner and due date, and the two issues called out (Finding 1 overdue, Finding 2 has no response or owner).",
+  "format": "Five to seven bullets, under 150 words, for the audit committee"
+ },
+ {
+  "id": "GRC-W4",
+  "domain": "GRC",
+  "prompt": "Could you go over the attached vendor onboarding policy?",
+  "file": "grc_w4_vendor_policy.docx",
+  "intended": "A list of gaps and inconsistencies in the policy with section references, ranked by risk.",
+  "format": "Table: section, issue, risk (high/medium/low), suggested fix in one sentence"
+ },
+ {
+  "id": "SUS-W1",
+  "domain": "SUS",
+  "prompt": "how did our emissions change last year",
+  "file": "sus_w1_scope12_by_site.xlsx",
+  "intended": "FY2024 to FY2025 change by scope from the attached file, the main drivers named from the notes, and the Warehouse D gap flagged instead of estimated.",
+  "format": "Table: scope, FY2024, FY2025 (sites with data), change; then three bullets on drivers; gap note"
+ },
+ {
+  "id": "SUS-W2",
+  "domain": "SUS",
+  "prompt": "check the attached water data",
+  "file": "sus_w2_water_withdrawal.xlsx",
+  "intended": "A data quality check of the withdrawal sheet: unit outlier, duplicate row and missing month, each with the site and month.",
+  "format": "Table: site, month, issue, value as entered; no corrected values"
+ },
+ {
+  "id": "SUS-W3",
+  "domain": "SUS",
+  "prompt": "write something on supplier engagement for the report",
+  "file": "sus_w3_supplier_engagement.docx",
+  "intended": "A 150 to 200 word report paragraph on supplier engagement using only the stated figures, with the response rate corrected to 65% or flagged.",
+  "format": "One or two paragraphs, 150 to 200 words, report tone; any figure issue listed after the text"
+ },
+ {
+  "id": "SUS-W4",
+  "domain": "SUS",
+  "prompt": "Can you take a look at the attached fleet sheet?",
+  "file": "sus_w4_fleet_energy.xlsx",
+  "intended": "A data quality list for the fleet energy sheet before it goes into Scope 1 and 2: type/fuel mismatches and the duplicate vehicle.",
+  "format": "Table: vehicle ID, issue, value as entered; no corrected values"
+ }
+]
