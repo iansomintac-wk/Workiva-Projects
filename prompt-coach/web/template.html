@@ -290,7 +290,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
   const CLS = ScopeClassify.unpack(window.SCOPE_CLS);
   const detect = (p) => {
     const r = ScopeModel.predict(p, weights, { mode: weights.mode });
-    return { on: r.on, prob: r.prob, d: r.rules };
+    return { on: r.on, prob: r.prob, sure: r.sure, d: r.rules };
   };
   const state = { files: [], stage: 'mine', on: Object.fromEntries(K.map((k) => [k, true])), result: null };
 
@@ -342,6 +342,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     renderMirror(prompt, r);
     $('yourLabel').textContent = GRADE_LABEL[g]; $('yourLabel').style.color = GRADE_COLOR[g];
     $('headline').textContent = r.offtopic ? 'This is not a Workiva task, so there is nothing to grade.'
+      : r.noChanges ? 'No changes needed: ' + r.noChangesReason
       : g !== r.grade ? 'All five SCOPE elements are here, but it asks for several things at once. Split it into one ask at a time.' : r.headline;
     // warnings that matter: the engine's notes, plus the page's own check for emails, card numbers and passwords
     const notes = $('notes'); notes.replaceChildren();
@@ -364,7 +365,7 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     // tabs: your prompt (live, editable), then each stronger version above its grade
     const r = state.result, order = ['weak', 'better', 'strong'];
     const gi = r ? order.indexOf(r.grade) : 0;
-    const keys = ['mine', ...(r && !r.offtopic ? order.slice(gi + 1) : [])]; // off-topic: no polished rewrite to show
+    const keys = ['mine', ...(r && r.noChanges ? ['better', 'strong'] : r && !r.offtopic ? order.slice(gi + 1) : [])]; // off-topic: no polished rewrite to show
     if (!keys.includes(state.stage)) state.stage = 'mine';
     const tabs = $('stageTabs'); tabs.replaceChildren();
     for (const key of keys) {
@@ -379,10 +380,10 @@ details.how summary { cursor: pointer; font-weight: 800; font-size: 16px; paddin
     $('yourPanel').hidden = !mine; $('yourVerdict').hidden = !mine; $('stagePanel').hidden = mine; $('stageVerdict').hidden = mine;
     if (mine) return;
     const s = STAGES.find((x) => x.key === state.stage), data = r.stages[s.key];
-    $('stageLabel').textContent = 'a ' + s.key + ' version of your prompt';
+    $('stageLabel').textContent = r.noChanges ? 'your prompt, unchanged' : 'a ' + s.key + ' version of your prompt';
     const el = $('stagePrompt'); el.replaceChildren();
     // underline what the coach added (only for rewrites above the user's grade)
-    const showAdded = true;
+    const showAdded = !r.noChanges;
     const segs = showAdded ? r.segments.filter((g) => s.key === 'strong' || !g.generated || g.letter === 'S' || g.letter === 'O') : null;
     if (segs) {
       el.append('“');

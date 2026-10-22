@@ -6,8 +6,8 @@ const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
 const K = ['S', 'C', 'O', 'P', 'E'];
 
-// "Shown no changes needed": today the coach grades the prompt strong (Task 5 switches this to o.noChanges).
-const noChangesNeeded = (o) => o.grade === 'strong';
+// "Shown no changes needed": the coach sets noChanges (strong, one ask, every letter above its sure cut-off).
+const noChangesNeeded = (o) => o.noChanges === true;
 
 function main() {
   const args = process.argv.slice(2);
@@ -18,7 +18,7 @@ function main() {
   const M = require('../engine/model.js'), W = require('../engine/rewrite.js'), C = require('../engine/classify.js');
   const weights = JSON.parse(fs.readFileSync(path.join(ROOT, 'engine/weights.json')));
   const CLS = C.unpack(JSON.parse(fs.readFileSync(path.join(ROOT, 'engine/cls-weights.json'))));
-  const detect = (p) => { const r = M.predict(p, weights, { mode: weights.mode }); return { on: r.on, d: r.rules }; };
+  const detect = (p) => { const r = M.predict(p, weights, { mode: weights.mode }); return { on: r.on, prob: r.prob, sure: r.sure, d: r.rules }; };
   // same FILES table as customer_check.js
   const src = fs.readFileSync(path.join(__dirname, 'customer_check.js'), 'utf8');
   const FILES = eval('(' + src.match(/const FILES = (\{[\s\S]*?\n\});/)[1] + ')');

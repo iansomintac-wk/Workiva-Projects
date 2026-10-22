@@ -466,7 +466,7 @@
     opts = opts || {};
     const files = opts.files || [];
     const detect = opts.detect || ((p) => { const d = R.detect(p, { files: files.map((f) => f.name) }); return { on: Object.fromEntries(K.map((k) => [k, d.el[k].on])), d }; });
-    const { on, d, prob } = detect(prompt);
+    const { on, d, prob, sure } = detect(prompt);
     const t = d.text;
     const grade = R.grade(on);
     const chosen = bestSheet(files, t);
@@ -629,8 +629,13 @@
     // One question per letter the engine filled from its intent template (not the user's words, not a named file). Objective has none.
     const QUESTION = { S: 'Which file or section should it read?', C: 'Who is it for?', P: 'How long, and in what format?', E: 'What should it do if the data is missing?' };
     const questions = grade === 'strong' ? [] : K.filter((k) => QUESTION[k] && segments.some((x) => x.generated && x.letter === k) && !(k === 'S' && files.length)).map((k) => ({ letter: k, text: QUESTION[k] }));
+    // "No changes needed": strong, one ask, and every letter's probability at or above its sure cut-off (weights.sure). Without probabilities or cut-offs it is never sure.
+    const sureAll = !!(prob && sure && K.every((k) => typeof prob[k] === 'number' && typeof sure[k] === 'number' && prob[k] >= sure[k]));
+    const noChanges = grade === 'strong' && !stackedAll && !offtopic && sureAll;
+    const noChangesReason = noChanges ? 'it already names its source, who it is for, one clear job, its constraints, and a check on what is true.' : '';
+    if (noChanges) { stages.better.prompt = prompt.trim(); stages.strong.prompt = prompt.trim(); }
     const placeholders = (strongP.match(/\[[^\]]+\]/g) || []).length;
-    return { grade, detected: on, headline: headlineOut, stages, scope, segments, notes, stacked: stackedAll, offtopic, tips, intent: ctx.intent, domain: ctx.domain, placeholders, questions, hits: d.el };
+    return { grade, detected: on, headline: headlineOut, stages, scope, segments, notes, stacked: stackedAll, offtopic, tips, intent: ctx.intent, domain: ctx.domain, placeholders, questions, noChanges, noChangesReason, hits: d.el };
   }
 
   // Coach notes (T4): additive warnings that never change a grade, weight or rewrite.

@@ -1,6 +1,7 @@
 /* Train per-element logistic regression. node tests/train.js <mode: model|hybrid> [--cv 5] train1.jsonl ...
    Writes engine/weights.json (sparse, rounded) unless --cv is given. */
 const fs = require('fs');
+const assert = require('assert');
 const path = require('path');
 const M = require('../engine/model.js');
 const K = ['S', 'C', 'O', 'P', 'E'];
@@ -10,7 +11,10 @@ const mode = args.shift();
 const cvIdx = args.indexOf('--cv');
 const cv = cvIdx >= 0 ? +args.splice(cvIdx, 2)[1] : 0;
 if (args.includes('--tune')) args.splice(args.indexOf('--tune'), 1);
+const tuneSure = args.includes('--tune-sure');
+if (tuneSure) args.splice(args.indexOf('--tune-sure'), 1);
 const out = args.indexOf('--out') >= 0 ? args.splice(args.indexOf('--out'), 2)[1] : path.join(__dirname, '../engine/weights.json');
+if (tuneSure) for (const f of args) assert.ok(/(^|[\/])train_[^\/]*.jsonl$/.test(f), 'tune-sure reads data/train_*.jsonl only, refusing ' + f); // never test.jsonl, sim_customers.jsonl or done_when_strong.jsonl
 const rows = args.flatMap((f) => fs.readFileSync(f, 'utf8').split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l)));
 
 let seed = 12345;
@@ -53,7 +57,38 @@ function trainOnce(data, { epochs = 30, lr = 0.5, l2 = 1e-4 } = {}) {
   return { mode, w, thr: Object.fromEntries(K.map((k) => [k, 0.5])) };
 }
 
-if (cv) {
+if (tuneSure) {
+  // Does not retrain. Out-of-fold probabilities with the trained weights' hyper-parameters, then per-letter "sure" cut-offs:
+  // false sure (non-strong gold row with every letter above its cut-off) <= 3% of non-strong rows, keeping the most strong rows sure.
+  const base = JSON.parse(fs.readFileSync(out, 'utf8')); delete base.sure;
+  seed = 7; const idx = rows.map((_, i) => i).sort(() => rand() - 0.5); const folds = 5; const oof = new Array(rows.length);
+  for (let f = 0; f < folds; f++) {
+    const teI = new Set(idx.filter((_, j) => j % folds === f));
+    const Wf = train(rows.filter((_, i) => !teI.has(i)), { runs: 3 });
+    for (const i of teI) oof[i] = M.predict(rows[i].prompt, Wf, { mode }).prob;
+  }
+  const strong = rows.map((r) => K.every((k) => r[k]) && !r.stacked);
+  const nStrong = strong.filter(Boolean).length, nNon = rows.length - nStrong;
+  const cut = Object.fromEntries(K.map((k) => [k, base.thr[k]]));
+  const sure = (i) => K.every((k) => oof[i][k] >= cut[k]);
+  const counts = () => { let fs_ = 0, ts = 0; rows.forEach((_, i) => { if (sure(i)) { if (strong[i]) ts++; else fs_++; } }); return { fs: fs_, ts }; };
+  let c = counts();
+  while (c.fs / nNon > 0.03) { // raise the letter that drops the most false sures per strong row lost
+    let best = null;
+    for (const k of K) {
+      if (cut[k] >= 0.99) continue;
+      const was = cut[k]; cut[k] = +(was + 0.005).toFixed(3); const n = counts(); cut[k] = was;
+      const score = (c.fs - n.fs) / (1 + c.ts - n.ts);
+      if (!best || score > best.score) best = { k, score, n };
+    }
+    if (!best) throw new Error('cannot reach 3% false sure');
+    cut[best.k] = +(cut[best.k] + 0.005).toFixed(3); c = best.n;
+  }
+  console.log('sure cut-offs', JSON.stringify(cut), `false sure ${c.fs}/${nNon} (${(100 * c.fs / nNon).toFixed(2)}%), strong sure ${c.ts}/${nStrong}`);
+  const txt = fs.readFileSync(out, 'utf8').replace(/,"sure":{[^}]*}/, '');
+  fs.writeFileSync(out, txt.replace(/}(s*)$/, ',"sure":' + JSON.stringify(cut) + '}$1'));
+  console.log('wrote sure to', out);
+} else if (cv) {
   seed = 99; const idx = rows.map((_, i) => i).sort(() => rand() - 0.5);
   const agg = Object.fromEntries(K.map((k) => [k, { tp: 0, fp: 0, fn: 0 }])); let gOk = 0;
   const R = require('../engine/rules.js');

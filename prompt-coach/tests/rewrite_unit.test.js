@@ -515,7 +515,7 @@ test('unsupported: Upstream T&D is not Downstream T&D, and a truly missing categ
 });
 
 // ---- quote line (spec 2026-10-20-prompt-coach-quote-line-design.md): headline AND stages.weak.verdict ----
-const detectP = (p) => { const r = M.predict(p, weights, { mode: weights.mode }); return { on: r.on, prob: r.prob, d: r.rules }; };
+const detectP = (p) => { const r = M.predict(p, weights, { mode: weights.mode }); return { on: r.on, prob: r.prob, sure: r.sure, d: r.rules }; };
 const withO = (x) => (p) => { const r = detectP(p); return { ...r, prob: { ...r.prob, O: x } }; };
 const coachWith = (prompt, det) => W.coach(prompt, { files: [], detect: det, ...C.pick(prompt, CLS) });
 const QUOTED = /The coach read your ask as "/;
@@ -615,4 +615,51 @@ test('questions: empty when the user supplied every letter', () => {
   const o = run('Use only @RCM_FY26.xlsx. This is for the audit committee. Summarize the failed controls. Use five bullets. Flag anything you cannot verify.', [{ name: 'RCM_FY26.xlsx', kind: 'Excel', sheets: [], periods: [], text: '' }]);
   assert.equal(o.grade, 'strong');
   assert.deepEqual(o.questions, []);
+});
+
+// ---- no changes needed: all five letters surely there, strong, not stacked ----
+const NC_PROMPT = 'Use only @RCM_FY26.xlsx. This is for the audit committee. Summarize the failed controls. Use five bullets. Flag anything you cannot verify.';
+const NC_FILE = [{ name: 'RCM_FY26.xlsx', kind: 'Excel', sheets: [], periods: [], text: '' }];
+const sureOf = () => { assert.ok(weights.sure && K.every((k) => typeof weights.sure[k] === 'number'), 'weights.sure missing'); return weights.sure; };
+const forced = (on, prob) => (p) => { const r = detectP(p); return { ...r, on: { ...r.on, ...on }, prob: { ...r.prob, ...prob } }; };
+const allProb = (x) => Object.fromEntries(K.map((k) => [k, x]));
+const ncRun = (prompt, det, files = NC_FILE) => W.coach(prompt, { files, detect: det, ...C.pick(prompt, CLS) });
+
+test('no changes needed: a prompt with all five letters above the cut-offs shows noChanges and unchanged Better/Strong', () => {
+  sureOf();
+  const o = ncRun(NC_PROMPT, detectP);
+  assert.equal(o.grade, 'strong', JSON.stringify(o.detected));
+  assert.equal(o.noChanges, true, JSON.stringify(o.detected));
+  assert.ok(typeof o.noChangesReason === 'string' && o.noChangesReason.length > 0 && !o.noChangesReason.includes('\n'));
+  assert.equal(o.stages.better.prompt, NC_PROMPT);
+  assert.equal(o.stages.strong.prompt, NC_PROMPT);
+  assert.deepEqual(o.questions, []);
+});
+
+test('no changes needed: a strong prompt with a stacked ask is not sure', () => {
+  const p = 'Use only @RCM_FY26.xlsx. This is for the audit committee. Summarize the failed controls, list the risks, draft an email, and compare to last year. Use five bullets. Flag anything you cannot verify.';
+  const o = ncRun(p, forced({ S: true, C: true, O: true, P: true, E: true }, allProb(0.999)));
+  assert.equal(o.grade, 'strong');
+  assert.equal(o.stacked, true);
+  assert.equal(o.noChanges, false);
+});
+
+test('no changes needed: a strong-but-borderline prompt keeps today\'s behaviour', () => {
+  const s = sureOf();
+  for (const k of K) {
+    const o = ncRun(NC_PROMPT, forced({ S: true, C: true, O: true, P: true, E: true }, { ...allProb(0.999), [k]: s[k] - 0.01 }));
+    assert.equal(o.grade, 'strong', k);
+    assert.equal(o.noChanges, false, k);
+    assert.equal(o.headline, 'It names a source, context, one job, constraints, and a check.', k);
+  }
+});
+
+test('no changes needed: a non-strong prompt is never noChanges', () => {
+  for (const k of ['S', 'O']) {
+    const o = ncRun(NC_PROMPT, forced({ [k]: false }, allProb(0.999)));
+    assert.notEqual(o.grade, 'strong', k);
+    assert.equal(o.noChanges, false, k);
+  }
+  assert.equal(ncRun('Check the emissions numbers', detectP, []).noChanges, false);
+  assert.equal(ncRun(NC_PROMPT, (p) => { const r = detectP(p); delete r.prob; return r; }).noChanges, false, 'no probability means not sure');
 });
