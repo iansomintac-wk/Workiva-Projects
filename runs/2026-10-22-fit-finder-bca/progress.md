@@ -97,3 +97,4 @@
 | 2026-10-22T07:47:10.300Z | 14 | task | parked | 0 | 0 | 0 | 0 | two strikes |
 | 2026-10-22T07:55:28.693Z | 14 | debug | ok | 152970 | 0.47624560000000005 | 337 | 0 |  |
 | 2026-10-22T07:55:29.638Z | 14 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; |
+| 2026-10-22T07:59:18.000Z | 14 | task | reset | 0 | 0 | 0 | 0 | lead 0dfe9582: Task 14 CR clause grep fixed to tr -cd (PM approved); re-run |
