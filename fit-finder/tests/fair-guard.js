@@ -1,4 +1,5 @@
-/* Guard for the fair-test tuning loop.  node tests/fair-guard.js --base <sha> [--lock-base <sha>] [--pins <file>]
+/* Guard for the fair-test tuning loop.  node tests/fair-guard.js --base <sha> [--lock-base <sha>] [--pins <file>] [--allow ops]
+   With --allow ops the catalogue may also differ in ops.
    Exit 0 only if: the suite exits 0; every pin holds (suite lines incl. fresh fit agreement); eval A and B exit 0 over the pinned
    number of rows and hold their agreement pins; the locked paths are unchanged against the lock base; catalogue.json differs
    from <sha> only in match fields. */
@@ -7,6 +8,7 @@ const a = process.argv.slice(2);
 const opt = (k, d) => { const i = a.indexOf(k); return i >= 0 ? a.splice(i, 2)[1] : d; };
 const root = path.join(__dirname, '..');
 const pinFile = opt('--pins');
+const allowOps = opt('--allow') === 'ops';
 const base = opt('--base', process.env.FAIR_BASE);
 const lockBase = opt('--lock-base', base);
 const pins = pinFile ? JSON.parse(fs.readFileSync(pinFile, 'utf8'))
@@ -51,7 +53,7 @@ else {
   const g = git(['show', base + ':fit-finder/data/catalogue.json']);
   if (g.status !== 0) bad.push('catalogue: cannot read base ' + base);
   else {
-    const strip = (c) => JSON.stringify({ ...c, useCases: c.useCases.map((u) => { const { match, ...rest } = u; return rest; }) });
+    const strip = (c) => JSON.stringify({ ...c, useCases: c.useCases.map((u) => { const { match, ops, ...rest } = u; return allowOps ? rest : { ...rest, ops }; }) });
     const now = JSON.parse(fs.readFileSync(path.join(root, 'data/catalogue.json'), 'utf8'));
     if (strip(JSON.parse(g.stdout)) !== strip(now)) bad.push('catalogue: differs from base outside match fields');
   }

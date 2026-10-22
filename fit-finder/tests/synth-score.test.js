@@ -19,7 +19,12 @@ const P = [{ id: 'T1', task: 'zzqx vvkw' }, { id: 'T2', task: 'zzqx vvkw jjrp' }
 const G = [{ id: 'T1', fit: 'good', cards: [card], by: 'model', conf: 'high' }, { id: 'T2', fit: 'not', cards: [], by: 'model', conf: 'low' }];
 
 const r = run(P, G);
-ok('scores a good pair', r.status === 0 && /^first card right: 0 of 1 that fit; wrong card 0 \(\); no card where one fits 1 \(T1\); card on a not-a-fit prompt 0 \(\); fit agreement \d+ of 2; score 1\n$/.test(r.stdout), `exit ${r.status} out "${r.stdout}" err "${r.stderr.trim()}"`);
+ok('scores a good pair', r.status === 0 && /^first card right: 0 of 1 that fit; wrong card 0 \(\); no card where one fits 1 \(T1\); card on a not-a-fit prompt 0 \(\); fit agreement \d+ of 2; score 1; split: .*\n$/.test(r.stdout), `exit ${r.status} out "${r.stdout}" err "${r.stderr.trim()}"`);
+const rn = run([P[0]], [{ id: 'T1', fit: 'good', cards: [], by: 'model', conf: 'high' }]);
+ok('split: rightly none when no card is shown and the gold is empty', /; split: right feature first 0 of 0, rightly none 1 \(T1\)\n$/.test(rn.stdout) && rn.stdout.includes('first card right: 1 of 1 that fit'), `out "${rn.stdout}"`);
+const rw = run([{ id: 'T1', task: cat.useCases[0].try }], [{ id: 'T1', fit: 'good', cards: [], by: 'model', conf: 'high' }]);
+ok('split: a card shown against an empty gold is wrong, not rightly none', rw.stdout.includes('wrong card 1') && rw.stdout.includes('rightly none 0 ()'), `out "${rw.stdout}"`);
+ok('split: the old line is unchanged before the suffix', r.stdout.includes('; split: ') && /^first card right: 0 of 1 that fit; wrong card 0 \(\); no card where one fits 1 \(T1\); card on a not-a-fit prompt 0 \(\); fit agreement \d+ of 2; score 1\n$/.test(r.stdout.replace(/; split: .*/, '')), `out "${r.stdout}"`);
 const u = spawnSync(process.execPath, [script], { encoding: 'utf8' });
 closed('usage error', u, 'usage');
 closed('duplicate prompt id', run([P[0], P[0]], G), 'duplicate prompt id');
@@ -48,6 +53,14 @@ ok('top3: no wrong card when the gold lists every shown card', /^top 3: right ca
 ok('top3: a card shown on a not-a-fit row is a wrong card', /^top 3: right card anywhere in the 3 shown 0 of 0 that fit \(first card right 0, gain 0\); any wrong card shown 1 of 1 \(M1\); first card wrong or on a not-a-fit prompt 1; rise in wrong lists 0\n$/.test(second(run(PM, gold('not', []), ['--top3']))));
 ok('top3: rows with no card shown (missed, and rightly none)', /^top 3: right card anywhere in the 3 shown 0 of 1 that fit \(first card right 0, gain 0\); any wrong card shown 0 of 2 \(\); first card wrong or on a not-a-fit prompt 0; rise in wrong lists 0\n$/.test(second(run(P, G, ['--top3']))));
 ok('top3: without the flag the output is still one line', run(PM, gold('good', [shown[0]])).stdout.split('\n').filter(Boolean).length === 1);
-fs.rmSync(dir, { recursive: true, force: true });
+// rank 3 / rank 4 boundary: only the first 3 matches are shown
+let long = '';
+for (const c of cat.useCases.slice(0, 8)) { long += (long ? ' ' : '') + c.try; if (match(long, cat, 10).length >= 4) break; }
+const all = match(long, cat, 10).map((c) => c.id);
+const PL = [{ id: 'M1', task: long }];
+ok('top3: found a task with 4 or more raw hits', all.length >= 4);
+ok('top3: a gold card at rank 3 counts as right in the 3', /right card anywhere in the 3 shown 1 of 1 that fit/.test(second(run(PL, gold('good', [all[2]]), ['--top3']))));
+ok('top3: a gold card at rank 4 is not shown, so not right in the 3', /right card anywhere in the 3 shown 0 of 1 that fit/.test(second(run(PL, gold('good', [all[3]]), ['--top3']))));
+fs.rmSync(dir,{ recursive: true, force: true });
 console.log(fails ? `synth-score tests FAILED: ${fails} of ${n}` : `synth-score tests pass: ${n}`);
 process.exit(fails ? 1 : 0);

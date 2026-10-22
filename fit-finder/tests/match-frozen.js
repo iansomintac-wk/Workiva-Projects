@@ -1,11 +1,15 @@
-/* node tests/match-frozen.js --base <sha>
+/* node tests/match-frozen.js --base <sha> [--allow ops]
+   With --allow ops the compared tuple is id, area, match (ops may differ); any other --allow value fails.
    Exit 0 only if engine/fit.js and every catalogue card's id, area, ops and match (in order) are identical to <sha>.
    These are everything match() reads from the catalogue. Other fields may differ. */
 const { spawnSync } = require('child_process'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 const i = process.argv.indexOf('--base');
 const base = i >= 0 ? process.argv[i + 1] : '';
+const j = process.argv.indexOf('--allow');
+const allow = j >= 0 ? process.argv[j + 1] : '';
 const bad = [];
+if (j >= 0 && allow !== 'ops') bad.push('unknown --allow value: ' + allow);
 if (!base) bad.push('no --base given');
 else {
   const git = (a) => spawnSync('git', a, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26 });
@@ -14,7 +18,7 @@ else {
   const g = git(['show', base + ':fit-finder/data/catalogue.json']);
   if (g.status !== 0) bad.push('cannot read the catalogue at ' + base);
   else {
-    const m = (c) => JSON.stringify(c.useCases.map((u) => [u.id, u.area, u.ops, u.match]));
+    const m = (c) => JSON.stringify(c.useCases.map((u) => allow === 'ops' ? [u.id, u.area, u.match] : [u.id, u.area, u.ops, u.match]));
     const now = JSON.parse(fs.readFileSync(path.join(root, 'data/catalogue.json'), 'utf8'));
     if (m(JSON.parse(g.stdout)) !== m(now)) bad.push('catalogue id/area/ops/match differs from ' + base);
   }

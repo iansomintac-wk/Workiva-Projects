@@ -1,0 +1,4 @@
+{"useCases":[
+{"id":"gen-translate","area":"GEN","role":"r","task":"Translate a memo.","ops":["DRAFT"],"match":"translat","surfaces":["doc"],"try":"I translate the board memo every quarter for the whole team","stays":"s"},
+{"id":"fr-narr","area":"FR","role":"r","task":"Draft the narrative.","ops":["DRAFT","COMPARE"],"match":"narrat","surfaces":["doc"],"try":"Draft the variance narrative for the quarter close","stays":"s"}
+]}

@@ -17,7 +17,7 @@ ok('scoring sheet names all 8 cards', cards.every((c) => sheet.includes(c.id)));
 const msg = message(cards);
 ok('batch message holds all 8 prompts, no answer key, under 30000 characters', cards.every((c) => msg.includes(c.prompt)) && !/planted/i.test(msg) && msg.length < 30000, 'length ' + msg.length);
 for (const c of cards) {
-  ok(c.id + ': page lists this card for its sample task and shows this prompt', c.raw.length > 0 && patternPrompt(c.sample, c.u) === c.raw && match(c.sample, cat).some((u) => u.id === c.id));
+  ok(c.id + ': page lists this card for its sample task and shows this prompt', c.raw.length > 0 && patternPrompt(c.sample, c.u) === c.raw && (match(c.sample, cat)[0] || {}).id === c.id);
   ok(c.id + ': file is small, made up and clean', c.fileText.length <= 2500 && /^MADE-UP TEST DATA/.test(c.fileText) && !/[@]|http|planted/i.test(c.fileText), 'length ' + c.fileText.length);
   const ids = (c.planted || []).map((p) => p.id);
   ok(c.id + ': five planted items with unique ids', ids.length === 5 && new Set(ids).size === 5 && (c.planted || []).every((p) => p.find && p.note));
@@ -25,5 +25,7 @@ for (const c of cards) {
   ok(c.id + ': prompt has no [bracket] left', !hasBracket(c.prompt), (c.prompt.match(BR) || []).join(' '));
   ok(c.id + ': prompt has no planted-item text', !(c.planted || []).some((p) => c.prompt.includes(p.find)));
 }
+const yoyLine = fs.readFileSync(path.join(__dirname, '../sandbox/fr-yoy-narrative.txt'), 'utf8').split(String.fromCharCode(10)).find((l) => l.startsWith('PRIOR YEAR')) || '';
+ok('fr-yoy-narrative: PRIOR YEAR heading is tagged MADE-UP', yoyLine.includes('MADE-UP'), yoyLine);
 console.log(fails ? `sandbox-kit tests FAILED: ${fails} of ${n}` : `sandbox-kit tests pass: ${n}`);
 process.exit(fails ? 1 : 0);

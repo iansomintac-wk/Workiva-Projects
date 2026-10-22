@@ -108,7 +108,7 @@ Measured now by the lead at 9888c48, except the lines marked 88cdc8e (9888c48 ch
 - Publishing: nothing was shared or published.
 - The prompts-strong check does not run over the new blind set, by design: it lives apart from the catalogue.
 - The three-card page (Task 3): skipped, see section 4.
-- A fallback for the 22 of 31 with no card: a future talk.
+- A fallback for the 22 of 31 with no card: talked 2026-10-20, parked (`docs/evidence/2026-10-20-fit-finder-no-card-probe.md`).
 
 ## 8. For Ian
 
