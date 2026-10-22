@@ -74,3 +74,7 @@
 | 2026-10-22T07:33:46.885Z | 13 | task | waiting | 0 | 0 | 0 | 0 | depends on a look awaiting Ian |
 | 2026-10-22T07:33:51.150Z | 14 | task | waiting | 0 | 0 | 0 | 0 | depends on a look awaiting Ian |
 | 2026-10-22T07:36:30.000Z | 9 | task | done | 0 | 0 | 0 | 0 | Ian accepted the PM labels (card [Ian] Labels, hook left=ian-kind); ian-label-batch.json written |
+| 2026-10-22T07:37:11.916Z | 10 | build | ok | 77130 | 0.0733588 | 35 | 0 |  |
+| 2026-10-22T07:37:13.066Z | 10 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; rows 40, per area FR 10 GRC 10 SUS 10 GEN 10, gold 40, not 12, unknown cards 0 |
+| 2026-10-22T07:37:27.242Z | 10 | checker | pass | 32233 | 0.0305023 | 14 | 0 | PASS: the check exits 0 and the commit changes only the four expected files: the two data files, the `.sha256` file and  |
+| 2026-10-22T07:37:27.247Z | 10 | task | done | 0 | 0 | 0 | 0 | attempt 1 |
