@@ -11178,6 +11178,88 @@ function _runSelfChecksInner(){
     check('v13 look2: the full-account Overview still has its Health tile', tileLabels(ov).includes('health'), tileLabels(ov).slice(0, 12).join(','));
   })();
   /* ==== end v13 fixes: look2 ==== */
+  /* ==== v13 Task 3: Check CSAT (connector) on the v13 Settings screen (regression guard) ==== */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prev = {view: ui.view, open: ui.openCustomerId};
+    let prevSwitch = null, prevConn = null;
+    try{ prevSwitch = localStorage.getItem(KEY); prevConn = localStorage.getItem(CONNECTOR_SETTINGS_KEY); }catch(e){}
+    const realReq = connectorRequest;
+    const calls = [];
+    const sentinel = {n: document.querySelectorAll('.modal-backdrop').length};
+    const closeAll = () => document.querySelectorAll('.modal-backdrop').forEach(b => { if(!b.__keep) b.remove(); });
+    const openSettingsV13 = () => {
+      render();
+      const hb = document.querySelector('#app [data-osm] header #btn-settings');
+      if(!hb) return null;
+      hb.click();
+      const all = document.querySelectorAll('.modal-backdrop');
+      return all.length ? all[all.length - 1] : null;
+    };
+    let ok = false, detail = '';
+    try{
+      closeAll();
+      localStorage.setItem(KEY, '1'); ui.openCustomerId = null; ui.view = 'today';
+      // 1. configured: present, visible, not covered; a click reaches the connector survey route
+      saveConnectorSettings({url: 'http://127.0.0.1:8787', token: 'demo-token'});
+      connectorRequest = function(path){ calls.push(path); return new Promise(function(){}); };   // never answers: nothing runs after the suite
+      const m1 = openSettingsV13();
+      const btn = m1 && m1.querySelector('#btn-check-survey-connector');
+      let visible = false;
+      if(btn){
+        try{ btn.scrollIntoView({block:'center'}); }catch(e){}
+        const r = btn.getBoundingClientRect();
+        const top = r.width > 0 && r.height > 0 ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null;
+        visible = r.width > 0 && r.height > 0 && !!top && (top === btn || btn.contains(top));
+      }
+      if(btn) btn.click();
+      const clicked = calls.length === 1 && calls[0] === '/v1/csat' && !document.body.contains(m1);
+      closeAll();
+      // 2. the modal that click leads to, built from stubbed demo rows (changed, filled, unchanged, unmatched)
+      const S = n => isoAddDays(todayISO(), -n);
+      const mk = (id, sf, ap) => { const c = v13Acct(id, {salesforceId: sf});
+        c.compliance = c.compliance || {}; c.compliance.associatedPeopleCSAT = Object.assign({done:false, date:null, contactName:'', surveySentOn:null, surveyAnsweredOn:null}, ap); return c; };
+      const custs = [
+        mk('t3-chg', '001AAAAAAAAAAAA001', {surveySentOn: S(60)}),
+        mk('t3-fil', '001AAAAAAAAAAAA002', {surveySentOn: S(20)}),
+        mk('t3-same', '001AAAAAAAAAAAA003', {surveySentOn: S(40), surveyAnsweredOn: S(35)})
+      ];
+      const demoRows = [
+        {SALESFORCE_ACCOUNT_ID:'001AAAAAAAAAAAA001', GAINSIGHT_COMPANY_ID:'', COMPANY_NAME:custs[0].name, CSAT_SENT_DATE:S(30), CSAT_ANSWERED_DATE:''},
+        {SALESFORCE_ACCOUNT_ID:'001AAAAAAAAAAAA002', GAINSIGHT_COMPANY_ID:'', COMPANY_NAME:custs[1].name, CSAT_SENT_DATE:S(20), CSAT_ANSWERED_DATE:S(10)},
+        {SALESFORCE_ACCOUNT_ID:'001AAAAAAAAAAAA003', GAINSIGHT_COMPANY_ID:'', COMPANY_NAME:custs[2].name, CSAT_SENT_DATE:S(40), CSAT_ANSWERED_DATE:S(35)},
+        {SALESFORCE_ACCOUNT_ID:'001ZZZZZZZZZZZZ999', GAINSIGHT_COMPANY_ID:'', COMPANY_NAME:'T3 Not In Runway Co', CSAT_SENT_DATE:S(15), CSAT_ANSWERED_DATE:''}
+      ];
+      const plan = buildCsatImportPlan(surveyRowsToTable(demoRows), custs, {});
+      openCsatImportModal(plan, {fileName:'Connector (Snowflake CSAT)', fileModified:Date.now()});
+      const all = document.querySelectorAll('.modal-backdrop');
+      const mod = all.length ? all[all.length - 1] : null;
+      const txt = mod ? mod.textContent : '';
+      const modalOk = !!mod && !!mod.querySelector('#csat-apply')
+        && txt.indexOf(custs[0].name + ': Survey sent') !== -1
+        && txt.indexOf(custs[1].name + ': Answered') !== -1
+        && txt.indexOf('T3 Not In Runway Co') !== -1
+        && plan.changes.length === 2 && plan.unchanged.length === 1 && plan.unchanged[0] === 't3-same' && plan.unmatchedRows.length === 1;
+      closeAll();
+      // 3. not configured: no button
+      localStorage.removeItem(CONNECTOR_SETTINGS_KEY);
+      const m3 = openSettingsV13();
+      const absent = !!m3 && !connectorConfigured() && !m3.querySelector('#btn-check-survey-connector') && !!m3.querySelector('#btn-import-csat');
+      closeAll();
+      ok = !!btn && visible && clicked && modalOk && absent;
+      detail = JSON.stringify({present: !!btn, visible, clicked, calls, modalOk, changes: plan.changes.length, unchanged: plan.unchanged.length, unmatched: plan.unmatchedRows.length, absent});
+    }catch(e){ detail = e.message; }
+    finally{
+      connectorRequest = realReq;
+      closeAll();
+      try{ if(prevConn === null) localStorage.removeItem(CONNECTOR_SETTINGS_KEY); else localStorage.setItem(CONNECTOR_SETTINGS_KEY, prevConn); }catch(e){}
+      try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+      ui.view = prev.view; ui.openCustomerId = prev.open;
+      render();
+    }
+    check('T4v13: on the v13 Settings screen, Check CSAT (connector) is present and visible when the connector is set, its click asks the connector for /v1/csat, the CSAT import modal shows changed, filled, unchanged and unmatched demo rows, and the button is absent when no connector is set', ok, detail);
+  })();
+  /* ==== end v13 Task 3 ==== */
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
