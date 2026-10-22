@@ -1,0 +1,30 @@
+TALK RESUME: Runway fake-book end to end. Written 2026-10-22 ~06:55Z by talk 87fc0869 at its 200k stop line. Run `date -u` before every stamp.
+Worktree: C:/Users/teasp/Documents/Runway Tracker/.claude/worktrees/runway-fake-book-talk (branch runway-fake-book-talk, pushed). Work only there.
+Skill first: studio-harness:talk-and-run.
+
+DONE (committed): spec docs/superpowers/specs/2026-10-22-runway-fake-book-connector-design.md, APPROVED by Ian 2026-10-22T06:42Z
+(his own answer "Approve (Recommended)"; answered-for-ian.jsonl row left=ian-kind). Run prompt docs/RUNWAY_FAKE_BOOK_RUN_PROMPT.txt (reference
+for constraints). Research docs/research/2026-10-22-connector-wiring-gaps.md. Ledger defect 2026-10-22-runway-e2e-fixture-dates-aged-out.
+Predecessor d92f0cf6 stopped with `claude stop` (state done).
+
+TONIGHT'S RULES (Ian 06:40:56Z, relayed verbatim by lead 5996f223; cards left=ian-kind): the build runs on the driver, not a run session;
+the PM helper (studio-harness:pm) answers questions, marked "proxy decided", logged as one line in
+C:/Users/teasp/Documents/studio-harness/.ledger/proxy/decisions.md (UTC time, session, question, answer, why, signed proxy). Money, deleting
+work and look calls still wait for Ian.
+
+DO, in order
+1. Plan: docs/superpowers/plans/2026-10-22-runway-fake-book.md. Talk 87fc0869 sent a plan-writer for it; if the file is there and committed,
+   use it. If not, dispatch studio-harness:plan-writer with the spec and the driver format below.
+2. Parse check (the driver refuses a task with no Check line):
+   node -e "import('file:///C:/Users/teasp/Documents/studio-harness-worktrees/rules-main/lib/driver/plan.mjs').then(m=>{const p=m.parsePlan(require('fs').readFileSync('docs/superpowers/plans/2026-10-22-runway-fake-book.md','utf8'));console.log(p.tasks.length,'tasks; data',p.data)})"
+   It must print a task count and "data (none)".
+3. PM proxy approves the plan (studio-harness:pm); log the decision line.
+4. Commit the plan. Make the run worktree: git worktree add "../runway-fake-book" -b runway-fake-book (from this branch).
+5. Start the driver detached, log to a file:
+   node C:/Users/teasp/Documents/studio-harness-worktrees/rules-main/bin/driver.mjs --plan <abs plan in the run worktree> --repo <abs run worktree>
+   --run 2026-10-22-runway-fake-book --base master --skip-rehearse   > <job tmp>/driver.log 2>&1   (run_in_background)
+6. When the first worker row is in <run worktree>/runs/2026-10-22-runway-fake-book/progress.md, record it, tell the PM upgrade lead
+   ("NEW - PM upgrade close-out 2"), name this session COMPLETED, and end.
+Driver plan format: "### Task N: title"; one line "Check: `cmd`" (no backticks inside); optional Expect:, Depends:, Timeout: Nm, Look: true,
+Captures:; header Suite: and Data: (none); a "## Global Constraints" section holding every rule (workers load no CLAUDE.md).
+Session-name rule: predecessor 87fc0869.

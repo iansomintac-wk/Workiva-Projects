@@ -1,5 +1,6 @@
 RUN: Runway fake-book end to end, connector seam, team demo. Written 2026-10-22 ~06:50Z by the fake-book talk. Run `date -u` before every stamp.
-Method: studio-harness:talk-and-run, "The run". You are the lead: coordinate only. Each piece goes to a fresh helper, one at a time; the ledger is the memory.
+HOW IT RUNS (Ian, 2026-10-22T06:40:56Z, relayed by lead 5996f223: "All three use the driver"): no run session. The talk starts C:/Users/teasp/Documents/studio-harness-worktrees/rules-main/bin/driver.mjs detached on docs/superpowers/plans/2026-10-22-runway-fake-book.md (--repo the run worktree, --run 2026-10-22-runway-fake-book, --base master, --skip-rehearse). The ledger is runs/2026-10-22-runway-fake-book/progress.md on the run branch. This file is the reference for the plan's Global Constraints and for anyone resuming by hand.
+Method if resumed by hand: studio-harness:talk-and-run, "The run". The lead coordinates only; each piece goes to a fresh helper, one at a time; the ledger is the memory.
 Spec (approved by Ian before launch): docs/superpowers/specs/2026-10-22-runway-fake-book-connector-design.md. Read it whole first.
 Repo: C:/Users/teasp/Documents/Runway Tracker. Worktree: .claude/worktrees/runway-fake-book, branch runway-fake-book (made from runway-fake-book-talk at launch).
 Ledger: $STUDIO_RUN_LEDGER (= <worktree>/.ledger/2026-10-22-runway-fake-book). First check: budget.json and slip.json exist there, else stop.
