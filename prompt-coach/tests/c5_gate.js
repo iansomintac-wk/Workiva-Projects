@@ -37,10 +37,7 @@ const gates = [
     return [bad.length === 0, CATS.map((k) => `${k}=${got[k]}/${BASE[k]}`).join(' ') + (bad.length ? ' over: ' + bad.join(',') : '')];
   }],
   ['customer_check', ['tests/customer_check.js'], (r) => [lastLine(r.out).startsWith('PASS'), lastLine(r.out)]],
-  ['rewrite_unit', ['--test', '--test-reporter=tap', 'tests/rewrite_unit.test.js'], (r) => {
-    const p = r.out.match(/^# pass (\d+)/m), f = r.out.match(/^# fail (\d+)/m);
-    return [!!f && f[1] === '0', `pass ${p ? p[1] : '?'} fail ${f ? f[1] : '?'}`];
-  }],
+  ['rewrite_unit', ['--test', '--test-reporter=tap', 'tests/rewrite_unit.test.js'], (r) => judgeTap(r.out)],
   ['pagetest', ['tests/pagetest.js'], (r) => [r.code === 0, `exit ${r.code}; ${lastLine(r.out)}`]],
 ];
 
@@ -54,4 +51,4 @@ if (require.main === module) {
   }
   process.exit(failed ? 1 : 0);
 }
-module.exports = { judgeTap };
+module.exports = { judgeTap, gates };

@@ -25,6 +25,14 @@ test('judgeTap rejects pass 0', () => {
   assert.strictEqual(judgeTap('# pass 3\n# fail 0\n')[0], true);
 });
 
+test('live rewrite_unit gate rejects pass 0 and accepts pass 77', () => {
+  const { gates } = require('./c5_gate.js');
+  const g = gates.find((x) => x[0] === 'rewrite_unit');
+  assert.ok(g, 'rewrite_unit gate is exported');
+  assert.strictEqual(g[2]({ out: '# pass 0\n# fail 0\n' })[0], false);
+  assert.strictEqual(g[2]({ out: '# pass 77\n# fail 0\n' })[0], true);
+});
+
 test('done_when --only rejects unknown or empty set', () => {
   for (const v of ['ZZ', '']) {
     const r = spawnSync(process.execPath, ['tests/done_when.js', '--only', v], { cwd: ROOT, encoding: 'utf8' });
