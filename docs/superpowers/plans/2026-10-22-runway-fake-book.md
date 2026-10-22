@@ -22,6 +22,7 @@ Workers do NOT load CLAUDE.md. These rules apply to every task.
 - LOCKED (no change without Ian's ruling): `test/csat-no-network.test.mjs`; the existing connector contract tests' fixed fixture dates (`connector/fixtures/calls.json`, `connector/fixtures/accounts.json`, `connector/fixtures/snowflake-csat.json` stay byte-identical); `osm-book-of-business-tracker-1.0.html`; `tools/step*-probe.js` expected counts other than README text.
 - Any function the tracker adds that calls the connector must NOT have a name starting with `csat` (the locked `test/csat-no-network.test.mjs` scans every `csat*` function for network use).
 - SAFETY: $0 spend. No installs (no snowflake-sdk, no npm packages). No network from code or tests: 127.0.0.1 only, no real Gainsight, Snowflake or Gong credentials or calls. Network-using tests run under `connector/lib/test-net-guard.mjs`.
+- Workiva data stays in this repo; only names go to the brain or studio-harness.
 - Never read `*RESTORE-POINT*` files, exports, or Ian's real CSAT file. Never touch the 6 untracked files in Ian's main checkout. Do not ask Ian to switch his real book. No writes under `~/.claude/`.
 - Chrome: only with `--user-data-dir` pointing at a fresh temp folder; never Ian's normal profile.
 - Stop processes by PID only (a process you started); never by image name; never touch ports 8790 or 8800. The demo origin is 127.0.0.1:8801.
@@ -117,7 +118,7 @@ Expect: fail 0
 
 Depends: 2
 Timeout: 40m
-Check: `node --test test/demo-csat-ids.test.mjs connector/test/fixtures.test.mjs connector/test/snowflake.test.mjs 2>&1 | tail -15 && N=$(grep -o -m1 'seed demo-seed.js --expect [0-9]*' README.txt | grep -o '[0-9]*$') && node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect $N | tail -4`
+Check: `node --test test/demo-csat-ids.test.mjs connector/test/fixtures.test.mjs connector/test/snowflake.test.mjs 2>&1 | tail -15 && N=$(grep -o -m1 '1.1.html --seed demo-seed.js --expect [0-9]*' README.txt | grep -o '[0-9]*$') && node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect $N | tail -4`
 Expect: console errors: 0
 
 **Files:**
@@ -285,7 +286,7 @@ Expect: 6
 - [ ] Step 1: Write `test/team-demo-capture.test.mjs`: the script's source takes an output dir argument, names the 6 files above, writes only inside that dir and the temp folder, and refuses a non-empty `--user-data-dir` outside `os.tmpdir()`. Run red.
 - [ ] Step 2: Implement the capture script (reuse launcher functions by importing a `startTeamDemo()` export; if Task 7 did not export one, add it without changing the CLI behaviour).
 - [ ] Step 3: Run the Check line. Then open each PNG with the Read tool and verify it shows what it claims (right subject, no overlay, no blank area): step 1 shows the call preview with 5 matched and 1 no-account, step 3 shows the CSAT dry run, step 4 shows 2 sent and 1 failed. A capture failing this is a defect: fix and re-run, do not commit it.
-- [ ] Step 4: Commit the PNGs and the script. The look critic and PM first pass read these files; both page looks are taste calls for Ian's batch, not for this task.
+- [ ] Step 4: Commit the PNGs and the script. The look critic and PM first pass read these files; both page looks are taste calls for Ian's batch, not for this task. Do not self-approve looks.
 
 ### Task 11: M1 Snowflake key-pair JWT and the statement guard
 
@@ -350,18 +351,18 @@ Expect: fail 0
 
 Depends: 13
 Timeout: 40m
-Check: `node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 505 | tail -4`
+Check: `N=$(grep -o -m1 '1.1.html --seed demo-seed.js --expect [0-9]*' README.txt | grep -o '[0-9]*$') && node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect $N | tail -4`
 Expect: console errors: 0
 
 **Files:**
-- Modify: `tools/selfchecks-1.1.js`, `README.txt`, `docs/HOSTING.md`, `test/hosting-docs.test.mjs`, `test/selfcheck-exit.test.mjs` (count moves by exactly the checks added: 503 + 2 = 505 if Task 3 did not move the base; if it did, base + 2)
+- Modify: `tools/selfchecks-1.1.js`, `README.txt`, `docs/HOSTING.md`, `test/hosting-docs.test.mjs`, `test/selfcheck-exit.test.mjs` (count moves by exactly the checks added: S1 edits a check (+0), S2 adds one (+1), so base + 1 = 504 expected if Task 3 did not move the 503 base; the measured count is what goes in README.txt)
 - Reference (read only): `C:/Users/teasp/Documents/Runway Tracker/.claude/worktrees/runway-1.2-d3-race/.ledger/2026-10-20-runway-sim-c5-d3/reviews/look-fixes-final.md`
 
 - [ ] Step 1: Read the reference review for items S1 and S2. S1: the FX4 check computes `found = !dis && !conf`, which passes when the desk card is absent; it must fail when the card is not rendered. S2: a new check must click the desk "Add a reason" on a pre-1.2 item and assert the reason is written.
 - [ ] Step 2: RED first: for S1 write a mutant that removes the desk card from the rendered page (or a `--pre` script like `test/selfcheck-console-error.pre.js`) and show that the OLD check still passes and the NEW check fails; put both outputs in the commit body. For S2 show the new check fails when the click handler is removed.
 - [ ] Step 3: Strengthen the FX4 check (S1) and add the S2 check. S1 edits an existing check (count +0); S2 adds one (+1). If the change adds two separate checks, the count moves by 2: the Check line's number must equal the measured result, so measure `--expect` first with a deliberately wrong number and read the real count from the output, then set it.
 - [ ] Step 4: Update the count in README.txt (both lines), docs/HOSTING.md, `test/hosting-docs.test.mjs`, `test/selfcheck-exit.test.mjs`; run `node --test test/readme-counts.test.mjs test/hosting-docs.test.mjs test/selfcheck-exit.test.mjs`.
-- [ ] Step 5: Run the Check line with the measured number (edit the number in the Check line of THIS task if it differs from 505). Commit.
+- [ ] Step 5: Run the Check line (it reads the count from README.txt, so README.txt must hold the measured number). Commit.
 
 ### Task 15: M0b S3 measure, N1 stale comment, N2 changelog figure
 
@@ -384,17 +385,17 @@ Expect: fail 0
 Depends: 15
 Timeout: 40m
 Tokens: 600000
-Check: `node --test test/desk-reason-confirm.test.mjs 2>&1 | tail -10 && node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 505 | tail -4`
+Check: `node --test test/desk-reason-confirm.test.mjs 2>&1 | tail -10 && N=$(grep -o -m1 '1.1.html --seed demo-seed.js --expect [0-9]*' README.txt | grep -o '[0-9]*$') && node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect $N | tail -4`
 Expect: console errors: 0
 
 **Files:**
 - Create: `test/desk-reason-confirm.test.mjs`
-- Modify: `osm-book-of-business-tracker-1.1.html` (the desk "save a reason" handler), `tools/selfchecks-1.1.js` (if you add a selfcheck, the count moves by exactly that many; update README.txt, docs/HOSTING.md and the two tests as in Task 14, and the number in this Check line)
+- Modify: `osm-book-of-business-tracker-1.1.html` (the desk "save a reason" handler), `tools/selfchecks-1.1.js` (if you add a selfcheck, the count moves by exactly that many; update README.txt, docs/HOSTING.md and the two tests as in Task 14; the Check line reads the count from README.txt)
 
 - [ ] Step 1: Read the reference review (path in Task 14) for N3, then find the desk reason save code with `grep -n "Add a reason" osm-book-of-business-tracker-1.1.html`. N3: saving a reason from the desk must not also confirm an unreviewed signal on the same account. This is a behaviour change; the PM proxy ruled it the most reversible option, so keep it a small isolated edit.
 - [ ] Step 2: Write `test/desk-reason-confirm.test.mjs` (load the function the way `test/csat-plan-match.test.mjs` loads tracker functions, or drive the page with CDP like `tools/connector-e2e.mjs`): an account has one unreviewed signal; saving a reason from the desk writes the reason and leaves that signal unreviewed (`confirmed` unchanged). Run it; confirm red on the current html.
 - [ ] Step 3: Make the edit. Re-run the test (green) and the locked tests `node --test test/csat-no-network.test.mjs`.
-- [ ] Step 4: Run the 1.1 selfcheck; the count must equal the Check number (505 unless Task 14 measured otherwise; use the number Task 14 wrote into README.txt).
+- [ ] Step 4: Run the 1.1 selfcheck; the count must equal the number in README.txt (the Check line reads it from there; if you add a selfcheck, update README.txt first).
 - [ ] Step 5: Look call 6 (the reason line printed once per signal; PM pick: print once) is NOT done here: it goes in Ian's batch. Write that one line in the commit body. Run the Check line. Commit.
 
 ---
