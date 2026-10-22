@@ -16,6 +16,7 @@ node tests/c5_gate.js                                # runs the five checks abov
 node tests/done_when.js [--only C1,C2,C4]            # done-when bars: C1 strong-30 untouched, C2 no-changes on non-strong <= 5%, C4 zero [blanks]; exit 0 met, 1 missed, 2 error
 node tests/train.js rulefeat --tune data/train_*.jsonl   # retrain engine/weights.json
 node tests/train.js rulefeat --tune-sure data/train_*.jsonl   # no retrain: adds the per-letter "sure" cut-offs to weights.json (out-of-fold, false sure <= 3% of non-strong training rows; refuses any file not named train_*.jsonl)
+node tests/repro_weights.js                  # retrain into a temp file with the two README commands, byte-compare engine/weights.json -> REPRO OK <sha256-prefix>
 node tests/train_cls.js --eval data/test.jsonl data/train_*.jsonl   # retrain task/area classifier
 python3 tests/make_fixtures.py && VENDOR=<npm dir> node tests/filetest.js   # real-file test
 node tests/eval_real.js real-eval/prompts.csv        # score on real prompts (see real-eval/README.md)
