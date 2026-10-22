@@ -10492,6 +10492,46 @@ function _runSelfChecksInner(){
       detail = JSON.stringify({rows, want, all: DATA.customers.length});
     }catch(e){ detail = e.message; }
     check('v13 Accounts 1.1\'s search box still narrows the rows', searchOk, detail);
+    /* v13 fixes: accounts (fix item 7) */
+    // 6. the search/filter/sort controls sit in the heading area as one line, not a second toolbar row; typing and choosing still filter
+    let headCtlOk = false; detail = '';
+    const prevLife = ui.filterLifecycle;
+    try{
+      ui.view = 'accounts'; ui.accountsView = 'table'; ui.search = ''; ui.filterLifecycle = 'all'; render();
+      const p = pane(), head = p && p.querySelector('[data-v13-ac-head]');
+      const ids = ['search-input','filter-module','filter-lifecycle','filter-risk','sort-by'];
+      const inHead = ids.filter(id => head && head.querySelector('#' + id));
+      const line = head && head.querySelector('[data-v13-ac-filters]');
+      const oneLine = !!line && getComputedStyle(line).flexWrap === 'nowrap' && ids.every(id => line.querySelector('#' + id));
+      // the sheet holding the view comes straight after the heading: nothing in between
+      const noToolbar = !!head && !p.querySelector('.v13ac-tools') && !!head.nextElementSibling && !!head.nextElementSibling.querySelector('[data-v13-av-pane]');
+      const first = DATA.customers[0];
+      const inp = p.querySelector('[data-v13-ac-head] #search-input');
+      if(inp && first){ inp.value = first.name; inp.dispatchEvent(new Event('input', {bubbles:true})); }
+      const typed = ui.search; render();
+      const rows = pane().querySelectorAll('[data-v13-av-pane="table"] tbody tr').length;
+      ui.search = ''; render();
+      const lc = pane().querySelector('[data-v13-ac-head] #filter-lifecycle');
+      if(lc){ lc.value = 'graduated'; lc.dispatchEvent(new Event('change', {bubbles:true})); }
+      const lcOk = ui.filterLifecycle === 'graduated' && !!pane().querySelector('[data-v13-ac-head] #filter-lifecycle') && pane().querySelector('[data-v13-ac-head] #filter-lifecycle').value === 'graduated';
+      headCtlOk = inHead.length === ids.length && oneLine && noToolbar && !!first && typed === first.name && rows >= 1 && rows < DATA.customers.length && lcOk;
+      detail = JSON.stringify({head: !!head, inHead: inHead.length, oneLine, noToolbar, typed, rows, lc: ui.filterLifecycle});
+    }catch(e){ detail = e.message; }
+    ui.filterLifecycle = prevLife; ui.search = '';
+    check('v13 Accounts the 1.1 search/filter/sort controls sit on one line inside the heading area (no second toolbar row above the sheet); typing in the search and choosing a lifecycle still filter', headCtlOk, detail);
+    // 7. Month calendar copy matches v13: item label is S<n> (plus time when booked), Go-live or Handed off; the kind lives in the dot and the title; legend says "Next planned session"
+    let monthOk = false; detail = '';
+    try{
+      ui.view = 'accounts'; ui.accountsView = 'cal'; ui.v13CalMode = 'month'; render();
+      const cal = pane().querySelector('[data-v13-av-pane="cal"]');
+      const items = [...cal.querySelectorAll('[data-v13-month-cell] [data-v13-acct]')];
+      const bad = items.map(b => ({l: b.lastElementChild.textContent.trim(), t: b.title})).filter(x => !/^(S\d+( \d{1,2}:\d\d)?|Go-live|Handed off)$/.test(x.l)
+        || !/ · (Session \d+ (held|· next planned|· projected at the current pace)|go-live target|handed off)$/.test(x.t));
+      const legend = cal.lastElementChild.textContent;
+      monthOk = items.length > 0 && !bad.length && legend.indexOf('Next planned session') !== -1 && legend.indexOf('(booked)') === -1;
+      detail = JSON.stringify({items: items.length, bad: bad.slice(0, 3), legend: legend.slice(0, 80)});
+    }catch(e){ detail = e.message; }
+    check('v13 Accounts Month calendar items read like v13 (S<n>, S<n> HH:MM, Go-live, Handed off; held/next/projected in the title) and the legend says "Next planned session"', monthOk, detail);
     try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
     if(hadSeen) DATA.todayLastSeenIds = JSON.parse(prevSeen); else delete DATA.todayLastSeenIds;
     try{ if(prevStored === null) localStorage.removeItem(STORAGE_KEY); else localStorage.setItem(STORAGE_KEY, prevStored); }catch(e){}
