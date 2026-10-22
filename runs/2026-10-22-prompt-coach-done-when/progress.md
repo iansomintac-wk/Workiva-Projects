@@ -46,3 +46,4 @@
 | 2026-10-22T15:07:17.178Z | 9 | build | ok | 40770 | 0.0445344 | 68 | 0 |  |
 | 2026-10-22T15:08:11.053Z | 9 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; GATE pagetest PASS exit 0; pagetest: 22 checks, 0 failed |
 | 2026-10-22T15:08:11.069Z | 9 | task | parked | 0 | 0 | 0 | 0 | two strikes |
+| 2026-10-22T15:08:15.604Z | 6 | task | blocked | 0 | 0 | 0 | 0 | depends on a task that is parked or not done |
