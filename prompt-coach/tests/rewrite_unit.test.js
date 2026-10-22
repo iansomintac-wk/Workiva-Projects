@@ -663,3 +663,26 @@ test('no changes needed: a non-strong prompt is never noChanges', () => {
   assert.equal(ncRun('Check the emissions numbers', detectP, []).noChanges, false);
   assert.equal(ncRun(NC_PROMPT, (p) => { const r = detectP(p); delete r.prob; return r; }).noChanges, false, 'no probability means not sure');
 });
+
+// ---- task 9: a prompt graded strong is returned untouched in Better (two made-up strong prompts the Better stage used to edit) ----
+const STRONG_EDITED = [
+  "Draft the inventory accounting policy note for our FY2026 10-K from the policy memo in this document. Match last year's note style: two paragraphs, past tense, no more than 180 words. Use only the policies the memo states, and list anything the memo leaves unclear as open questions at the end.",
+  "From the meeting minutes in this document, list every action item for the finance transformation workstream in a table (owner, action, due date) sorted by due date. It's going into the PMO tracker, so use the minutes' own wording for each action and write \"no date given\" where the minutes don't set one."
+];
+
+test('better stage: a prompt graded strong is returned untouched in Better', () => {
+  for (const text of STRONG_EDITED) {
+    const o = coachWith(text, detectP);
+    assert.equal(o.grade, 'strong');
+    assert.equal(o.stages.better.prompt, text.trim());
+  }
+});
+
+test('better stage: a strong prompt that is not sure still has Better equal to Strong', () => {
+  for (const text of STRONG_EDITED) {
+    const o = coachWith(text, detect); // no probabilities, so never sure
+    assert.equal(o.grade, 'strong');
+    assert.equal(o.noChanges, false, 'fixture must be strong but not sure');
+    assert.equal(o.stages.better.prompt, o.stages.strong.prompt);
+  }
+});

@@ -590,7 +590,7 @@
     const quote = grade === 'weak' && !on.O && prob && typeof prob.O === 'number' && prob.O < 0.2 ? askQuote(prompt) : null;
     const stages = {
       weak: { prompt: grade === 'weak' ? prompt.trim() : weakP, verdict: verdictFor('weak', grade === 'weak' ? on : { S: false, C: false, O: false, P: false, E: false }, { vague: grade === 'weak' && !on.O ? vagueVerb : (grade === 'weak' ? null : vagueVerb || 'look at'), quote }) },
-      better: { prompt: grade !== 'better' || R.grade(detect(betterP).on) !== 'weak' ? betterP : assemble([{ text: prompt, letter: 'O' }], allOn), verdict: verdictFor('better', grade === 'better' ? on : { ...on, S: true, O: true }, {}) },
+      better: { prompt: grade === 'strong' ? prompt.trim() : grade !== 'better' || R.grade(detect(betterP).on) !== 'weak' ? betterP : assemble([{ text: prompt, letter: 'O' }], allOn), verdict: verdictFor('better', grade === 'better' ? on : { ...on, S: true, O: true }, {}) },
       strong: { prompt: grade === 'strong' ? prompt.trim() : strongP, verdict: verdictFor('strong', on, {}) }
     };
 
