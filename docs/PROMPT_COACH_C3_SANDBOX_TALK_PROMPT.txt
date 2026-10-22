@@ -1,0 +1,26 @@
+TALK: Prompt Coach C3, sandbox test of the weak-12 (workiva repo). Drafted 2026-10-22 ~23:45Z by talk 7bc2a80f from the
+hand-off PM step. Load studio-harness:talk-and-run first and follow "The talk". Workiva repo: write nothing to the brain or
+studio-harness; tell Ian instead.
+
+WHERE: branch off prompt-coach once prompt-coach-c1-next (@ 9d5397e or later) is merged; if it is not merged yet, ask Ian
+before branching. Read docs/research/2026-10-22-prompt-coach-c1-next.md (Ruling), docs/evidence/2026-10-22-prompt-coach-done-when.md
+(C1 closed as missed, 21/30 seen; C3 pending), docs/superpowers/plans/2026-10-22-prompt-coach-done-when.md ("After the
+driver"), prompt-coach/research/live-tests/SCORING_RULES.md and weak12/ (prompts.json, answer_key.json, fixtures, drafts.json).
+
+PROBLEM: Ian closed C1 as missed ("Close C1, go to sandbox (Recommended)", 2026-10-22); today's coach stays. C3 is the one
+done-when bar never measured: do the coach's improved prompts, pasted as-is into Workiva AI, give the intended answer?
+Bar: weak-12, improved prompt 2 runs each (24), original 2 runs each beside it; >= 22/24 intended answer in the requested
+format, 0 invented facts, keyed findings >= the original's. Fresh strong 30 stays UNREAD.
+
+TASK: spec first, no driving. Answer, counts only: (a) run protocol (order, how each answer is captured, one browser driver
+at a time, text reports not screenshots); (b) the scorer per SCORING_RULES.md plus a second-provider scorer, blind to which
+prompt is the original; (c) fixtures are made-up data only, sandbox https://sandbox.wdesk.com/ only, never app.wdesk.com;
+(d) per-run stop rule, and time per run from a 2-run pilot; (e) whether the weak-12 labels were confirmed by Ian (plan
+Task 8) - grep the evidence, do not assume. Then one spec with one prediction (assumed: >= 22/24 and 0 invented facts;
+disproved by 21 or fewer, or any invented fact). One decision card to Ian only if the spec needs a product call.
+Driving needs a session launched with claude --bg --chrome (without it a bg session has no browser tools) and Ian logged in
+to the sandbox: the run prompt says so, and the run asks Ian to log in before its first drive.
+
+HELD: no engine/rules.js edits; follow-ups rules.js:158 "we make", :140 "this is used to", :136 \s* stay held. The tips
+yardstick page step is separate. No customer-specific or real data in any prompt or fixture.
+STOP at an approved spec; commit locally on a feature branch; no push.
