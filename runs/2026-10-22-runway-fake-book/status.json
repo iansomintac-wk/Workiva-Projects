@@ -2,24 +2,24 @@
   "run": "2026-10-22-runway-fake-book",
   "state": "running",
   "pid": 33280,
-  "task": 15,
+  "task": 16,
   "of": 16,
   "step": "check",
   "attempts": [
     {
       "attempt": 1,
       "startedAt": "2026-10-22T06:53:01.473Z",
-      "peakWorkerMb": 5414,
+      "peakWorkerMb": 6772,
       "minFreeGb": 3.7
     }
   ],
-  "peakWorkerMb": 5414,
+  "peakWorkerMb": 6772,
   "minFreeGb": 3.7,
   "startedAt": "2026-10-22T06:53:00.575Z",
-  "updatedAt": "2026-10-22T08:34:47.689Z",
-  "elapsedSec": 6107,
-  "tokens": 8908116,
-  "usage_cost_usd": 5.3183,
+  "updatedAt": "2026-10-22T08:39:29.844Z",
+  "elapsedSec": 6389,
+  "tokens": 9193506,
+  "usage_cost_usd": 5.4949,
   "usage_cost_note": "summed total_cost_usd of the workers: subscription usage, not money",
   "done": [
     1,
@@ -35,12 +35,11 @@
     12,
     13,
     14,
-    15
-  ],
-  "parked": [],
-  "blocked": [
+    15,
     16
   ],
+  "parked": [],
+  "blocked": [],
   "awaiting": [
     10
   ],
