@@ -14,6 +14,7 @@ if (args.includes('--tune')) args.splice(args.indexOf('--tune'), 1);
 const tuneSure = args.includes('--tune-sure');
 if (tuneSure) args.splice(args.indexOf('--tune-sure'), 1);
 const out = args.indexOf('--out') >= 0 ? args.splice(args.indexOf('--out'), 2)[1] : path.join(__dirname, '../engine/weights.json');
+{ const RK = ['train_fr', 'train_grc', 'train_sus', 'train_hard'], nm = (f) => path.basename(f).replace(/\.jsonl$/, ''), rk = (f) => { const i = RK.indexOf(nm(f)); return i < 0 ? RK.length : i; }; args.sort((a, b) => rk(a) - rk(b) || (nm(a) < nm(b) ? -1 : nm(a) > nm(b) ? 1 : 0)); } /*FIXED_ORDER*/
 if (tuneSure) for (const f of args) assert.ok(/(^|[\/])train_[^\/]*.jsonl$/.test(f), 'tune-sure reads data/train_*.jsonl only, refusing ' + f); // never test.jsonl, sim_customers.jsonl or done_when_strong.jsonl
 const rows = args.flatMap((f) => fs.readFileSync(f, 'utf8').split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l)));
 
