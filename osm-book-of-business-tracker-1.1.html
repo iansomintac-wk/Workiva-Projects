@@ -9028,8 +9028,9 @@ function bindRiskDeck(host){
     let total = 0;
     cards.forEach((el, i) => { total += (i === cards.length - 1) ? overflowOf(el) : costOf(el); });
     const lastStage = stageForNatural(naturalOf(cards[cards.length - 1]));
-    // The last card must be reachable by SCROLLING: the track itself has to provide at least one viewport after the last offset, or a short last card leaves the page out of scroll with the previous card still in front (only content below the track used to hide it).
-    track.style.height = (total + Math.max(lastStage + 16, innerHeight)) + 'px';
+    // The last card must be reachable by SCROLLING: the last offset only has to be scrollable, and any page content below the track already provides scroll. So the track reserves a viewport minus what sits below it (never less than one stage), which keeps the blank room under the last case short. `below` is measured when sizeTrack runs (bind and resize); it is not re-run if the content below changes later.
+    const below = Math.max(0, document.documentElement.scrollHeight - (track.getBoundingClientRect().bottom + scrollY));
+    track.style.height = (total + Math.max(lastStage + 16, innerHeight - below)) + 'px';
   };
   sizeTrack();
 
@@ -9043,7 +9044,8 @@ function bindRiskDeck(host){
     let acc = 0, active = cards.length - 1, within = 0;
     for(let i = 0; i < cards.length; i++){
       const cost = i === cards.length - 1 ? Number.POSITIVE_INFINITY : costOf(cards[i]);
-      if(y < acc + cost){ active = i; within = y - acc; break; }
+      // A slot counts as reached within 1px: step() is fractional and the page scrolls whole pixels, so a jump can land just short of a slot (at 1280x863 a rail click on the last case lands y=14699.25 against 14699.4999) and would leave the card before it in front.
+      if(y < acc + cost - 1){ active = i; within = Math.max(0, y - acc); break; }
       acc += cost;
     }
     const front = cards[active];
@@ -9053,6 +9055,11 @@ function bindRiskDeck(host){
     // The last case has nothing after it to hand over to: progress stops at its own offset, so however far the page scrolls (content below the track, a track that grew) it stays front, fully opaque and live.
     const p = Math.min(cards.length - 1, active + (over > 0 ? Math.max(0, (within - over) / step()) : Math.max(0, within / step())));
     const H = front ? Math.min(naturalOf(front), stageForNatural(naturalOf(front)) - PEEK) : 0;
+    // Sized (before the transforms read offsetHeight) from the card's NATURAL height, capped to what the viewport can show.
+    if(front){
+      stage.style.height = stageForNatural(naturalOf(front)) + 'px';
+      cards.forEach(el => { el.style.maxHeight = (stageForNatural(naturalOf(front)) - PEEK) + 'px'; });
+    }
     cards.forEach((el, i) => {
       const d = i - p;                       // <0 already decided past, 0 active, >0 still to come
       if(d <= -1 || d > RK_DEPTH + .5){ el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.style.zIndex = '0'; return; }
@@ -9075,11 +9082,6 @@ function bindRiskDeck(host){
         el.style.zIndex = String(100 - i);
       }
     });
-    // Sized from the card's NATURAL height, capped to what the viewport can show.
-    if(front){
-      stage.style.height = stageForNatural(naturalOf(front)) + 'px';
-      cards.forEach(el => { el.style.maxHeight = (stageForNatural(naturalOf(front)) - PEEK) + 'px'; });
-    }
     if(active !== lastActive){
       lastActive = active;
       const el = cards[active];
@@ -9883,7 +9885,7 @@ function renderRiskCase(k, idx, active){
   /* FX2: print the reason the OSM gave; a pre-1.2 confirmation has none, so say so. */
   const confirmedLines = k.items.filter(it => riskVerdictState(it) === 'confirmed').map(it => riskItemHasReason(it)
     ? `<p class="rk-confirmed-why">Confirmed as a risk — &ldquo;${escapeHtml(it.tracking.verdictReason)}&rdquo; · ${fmtDate(it.tracking.verdictOn)}</p>`
-    : `<p class="rk-confirmed-why">Confirmed before reasons were required: add a reason <button class="link-btn" data-risk-confirm="${escapeAttr(k.c.id)}">Add a reason</button></p>`).join('');
+    : `<p class="rk-confirmed-why">Confirmed before reasons were required. <button class="link-btn" data-risk-confirm="${escapeAttr(k.c.id)}">Add a reason</button></p>`).join('');
 
   return `
   <article class="rk3-card ${sevClass} ${state}${active ? ' is-active' : ''}" id="rk-c-${escapeAttr(k.c.id)}"
@@ -11348,14 +11350,24 @@ const CARD_EDITORS = {
     render: c => {
       const risks = buildRiskHubList({readOnly:true}).filter(r => r.c.id === c.id).slice(0, 3);
       if(!risks.length) return `<p class="dk-hint">Nothing open. Flagging a note on the Activity Log raises one here.</p>`;
-      return risks.map(r => `
+      return risks.map(r => {
+        const confirmed = riskVerdictState(r) === 'confirmed';
+        const hasReason = riskItemHasReason(r);
+        const actions = confirmed && hasReason
+          ? `<p class="dk-hint">Confirmed as a risk — &ldquo;${escapeHtml(r.tracking.verdictReason)}&rdquo; · ${fmtDate(r.tracking.verdictOn)}</p>`
+          : confirmed
+            ? `<p class="dk-hint">Confirmed before reasons were required.</p>
+            <button class="btn btn-sm" data-dk-risk="confirmed|${escapeAttr(r.logKey)}">Add a reason</button>`
+            : `<button class="btn btn-sm" data-dk-risk="confirmed|${escapeAttr(r.logKey)}">Confirm</button>
+            <button class="btn btn-sm" data-dk-risk="dismissed|${escapeAttr(r.logKey)}">Dismiss</button>`;
+        return `
         <div class="dk-risk">
           <div class="dk-risk-t"><span class="badge ${r.sev>=3?'badge-risk':r.sev===2?'badge-watch':'badge-module'}">${escapeHtml(r.kind)}</span> ${escapeHtml(trimToLength(r.detail, 110))}</div>
           <div class="dk-risk-a">
-            <button class="btn btn-sm" data-dk-risk="confirmed|${escapeAttr(r.logKey)}">Confirm</button>
-            <button class="btn btn-sm" data-dk-risk="dismissed|${escapeAttr(r.logKey)}">Dismiss</button>
+            ${actions}
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     }
   }
 };
@@ -15201,7 +15213,7 @@ function renderActivityTab(c, acts){
         const cats = classifyRiskText(act.summary || '');
         const riskCats = cats.filter(x => !(RISK_TAXONOMY_BY_KEY[x.key] && RISK_TAXONOMY_BY_KEY[x.key].notRisk)), expCats = cats.filter(x => RISK_TAXONOMY_BY_KEY[x.key] && RISK_TAXONOMY_BY_KEY[x.key].notRisk);
         const chipPart = (x) => `${escapeHtml(x.label)} (“${escapeHtml(x.phrase)}”)`;
-        const chipText = [riskCats.length ? `Possible risk categor${riskCats.length===1?'y':'ies'}: ${riskCats.map(chipPart).join(' · ')}` : '', expCats.length ? `Expansion signal: ${expCats.map(chipPart).join(' · ')}` : ''].filter(Boolean).join(' · ');
+        const chipText = [riskCats.length ? `Possible risk categor${riskCats.length===1?'y':'ies'}: ${riskCats.map(chipPart).join(' · ')}` : '', expCats.length ? `Expansion signal: ${expCats.map(x => escapeHtml(x.phrase)).join(' · ')}` : ''].filter(Boolean).join(' · ');
         return cats.length ? `<div style="font-size:var(--text-xs); color:var(--accent-watch-text); margin-bottom:6px;" title="Suggested from the team keyword list by matching — a keyword hit, not a judgment; confirm before treating a risk category as a real risk.">${chipText}</div>` : '';
       })()}
       ${activityIsFirstValueEvidence(c, act.id) ? `

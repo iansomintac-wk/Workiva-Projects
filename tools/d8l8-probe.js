@@ -1,6 +1,6 @@
 /* 1.2 D8/L8 probe: clicking the last case on the Risk rail must bring it to the front, even when nothing
    sits below the deck to make up the scroll. Asynchronous, so it is not in the main suite:
-     node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/d8l8-probe.js --fn d8l8Probe --expect 3
+     node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js,tools/d8l8-probe.js --fn d8l8Probe --expect 6
    It hides whatever follows the track while it runs, and restores (saveData is stubbed so nothing persists): saveData, DATA.customers, DATA.activities, DATA.riskLog,
    ui.view, ui.riskFocusId, the scroll position. */
 window.d8l8Probe = async function d8l8Probe(){
@@ -28,6 +28,8 @@ window.d8l8Probe = async function d8l8Probe(){
       for(let n = track; n && n !== document.documentElement; n = n.parentElement){
         for(let s = n.nextElementSibling; s; s = s.nextElementSibling){ hidden.push([s, s.style.display]); s.style.display = 'none'; }
       }
+      /* the track measures the page below it when it is sized (bind and resize), so tell it the page below has gone */
+      dispatchEvent(new Event('resize'));
       await frame();
       const lastCard = host._deckCards[host._deckCards.length - 1], lastId = lastCard.dataset.riskCase;
       const btn = document.querySelector('[data-spine-to="rk-c-' + lastId + '"]');
@@ -80,6 +82,87 @@ window.d8l8Probe = async function d8l8Probe(){
   extra.push(['1.2 D8/L8 page scrolled to the very bottom: a single short case stays front with live buttons, no more blank than needed', await bottomPart(1, 'one card')]);
   extra.push(['1.2 D8/L8 page scrolled to the very bottom: the last of many cases stays front with live buttons, no more blank than needed', await bottomPart(14, 'many cards')]);
   hidden.forEach(h => { h[0].style.display = h[1]; });
+  /* a jump that lands under a pixel short of a card's slot (1280x863: step() is fractional, the track top sits at .75 and the page scrolls whole pixels) still makes that card the front and focused card */
+  let nearRes = {ok: false, detail: ''}, nearTrack = null;
+  try{
+    const mkN = id => { const c = {id, name: 'D8L8 ' + id, module: DATA.config.modules[0], stage: DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200), totalSessions: 8, domainScores: {}, sessionNotes: {}, stageHistory: [], riskOverride: 'risk'}; backfillCustomerRecord(c); return c; };
+    const csN = []; for(let i = 0; i < 14; i++) csN.push(mkN('__d8l8n_' + i));
+    DATA.customers = csN; DATA.activities = {}; DATA.riskLog = {};
+    reset();
+    buildRiskCases(buildRiskHubList()).forEach(k => setRiskVerdict(k.items[0], 'confirmed', 'short reason'));
+    reset(); ui.view = 'risk'; ui.riskFocusId = null; render(); await frame(); await frame();
+    const trN = document.querySelector('.rk3-track'), hostN = trN && trN.parentElement;
+    if(!hostN || !hostN._deckCards || hostN._deckCards.length !== 14) nearRes.detail = 'deck not bound';
+    else {
+      nearTrack = trN; trN.style.marginTop = '0.75px'; /* a fractional track top, as at 1280x863, so the whole-pixel scroll can fall short */
+      dispatchEvent(new Event('resize')); await frame(); await frame();
+      const parts = [], bad = [];
+      for(const idx of [13, 7]){
+        const card = hostN._deckCards[idx], cid = card.dataset.riskCase, need = hostN._deckOffsetFor(idx);
+        const arrive = trN.getBoundingClientRect().top + scrollY + need;
+        let y = NaN, hit = false;
+        for(const d of [0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 0.9]){
+          scrollTo({top: arrive - d, behavior: 'instant'}); await frame(); await frame();
+          y = -trN.getBoundingClientRect().top;
+          if(need - y > 0 && need - y < 1){ hit = true; break; }
+        }
+        const gap = need - y;
+        if(!hit){ bad.push('card ' + idx + ' precondition 0 < need - y < 1 not met: ' + JSON.stringify({need, y, gap, arrive})); continue; }
+        const r = {idx, gap: +gap.toFixed(3), focus: ui.riskFocusId === cid, behind: card.classList.contains('is-behind'), opacity: +getComputedStyle(card).opacity};
+        parts.push(r);
+        if(!(r.focus && !r.behind && r.opacity >= 0.99)) bad.push('card ' + idx + ' not front: ' + JSON.stringify(r));
+      }
+      nearRes.ok = bad.length === 0;
+      nearRes.detail = bad.length ? bad.join('; ') : JSON.stringify(parts);
+    }
+  }catch(e){ nearRes.detail = 'threw: ' + e.message; }
+  if(nearTrack){ nearTrack.style.marginTop = ''; }
+  extra.push(['1.2 D8/L8 a jump landing under a pixel short of a case slot still brings that case to the front and focused (last and a middle one)', nearRes]);
+  /* call 5: with the real page below the deck, the blank under the stage at the scroll where the last case arrives is small */
+  let roomRes = {ok: false, detail: ''};
+  try{
+    const mkR = id => { const c = {id, name: 'D8L8 ' + id, module: DATA.config.modules[0], stage: DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200), totalSessions: 8, domainScores: {}, sessionNotes: {}, stageHistory: [], riskOverride: 'risk'}; backfillCustomerRecord(c); return c; };
+    const csR = []; for(let i = 0; i < 14; i++) csR.push(mkR('__d8l8r_' + i));
+    DATA.customers = csR; DATA.activities = {}; DATA.riskLog = {};
+    reset();
+    buildRiskCases(buildRiskHubList()).forEach(k => setRiskVerdict(k.items[0], 'confirmed', 'short reason'));
+    reset(); ui.view = 'risk'; ui.riskFocusId = null; render(); await frame(); await frame();
+    const trR = document.querySelector('.rk3-track'), hostR = trR && trR.parentElement, stR = trR && trR.querySelector('.rk3-stage');
+    if(!stR || !hostR._deckCards) roomRes.detail = 'deck not bound';
+    else {
+      const arrive = trR.getBoundingClientRect().top + scrollY + hostR._deckOffsetFor(hostR._deckCards.length - 1);
+      scrollTo(0, arrive); await sleep(500); await frame(); scrollTo(0, arrive); await sleep(300); await frame();
+      const tb = trR.getBoundingClientRect(), sb = stR.getBoundingClientRect();
+      const blank = Math.round(Math.min(tb.bottom, innerHeight) - sb.bottom), below = Math.round(document.documentElement.scrollHeight - (tb.bottom + scrollY));
+      const lastR = hostR._deckCards[hostR._deckCards.length - 1];
+      roomRes.ok = blank <= 32 && !lastR.classList.contains('is-behind') && Math.round(scrollY) >= Math.round(arrive) - 1;
+      roomRes.detail = JSON.stringify({blank, below, vh: innerHeight, reached: Math.round(scrollY) >= Math.round(arrive) - 1, front: !lastR.classList.contains('is-behind')});
+    }
+  }catch(e){ roomRes.detail = 'threw: ' + e.message; }
+  extra.push(['1.2 call 5 Deck blank room: with page content below, the blank under the stage where the last case arrives is at most 32px and the case is front', roomRes]);
+  /* first paint after a jump: the last card, taller than the first card's cap, is drawn at its resting place (no stale offset) */
+  let staleRes = {ok: false, detail: ''};
+  try{
+    const mkS = id => { const c = {id, name: 'D8L8 ' + id, module: DATA.config.modules[0], stage: DATA.config.stages[1].key, implementationDate: isoAddDays(todayISO(), -200), totalSessions: 8, domainScores: {}, sessionNotes: {}, stageHistory: [], riskOverride: 'risk'}; backfillCustomerRecord(c); return c; };
+    const csS = []; for(let i = 0; i < 6; i++) csS.push(mkS('__d8l8s_' + i));
+    DATA.customers = csS; DATA.activities = {}; DATA.riskLog = {};
+    reset();
+    buildRiskCases(buildRiskHubList()).forEach((k, i) => setRiskVerdict(k.items[0], 'confirmed', i === 0 ? 'short reason' : 'the sponsor said they may not renew and the budget owner has gone quiet. '.repeat(12)));
+    reset(); ui.view = 'risk'; ui.riskFocusId = null; render(); await frame(); await frame();
+    scrollTo(0, 0); await sleep(300); await frame();
+    const trS = document.querySelector('.rk3-track'), hostS = trS && trS.parentElement, stS = trS && trS.querySelector('.rk3-stage');
+    if(!stS || !hostS._deckCards) staleRes.detail = 'deck not bound';
+    else {
+      const lastS = hostS._deckCards[hostS._deckCards.length - 1];
+      scrollTo({top: trS.getBoundingClientRect().top + scrollY + hostS._deckOffsetFor(hostS._deckCards.length - 1), behavior: 'instant'});
+      await frame(); await frame();
+      const m = /translate3d\(0px, ([-\d.]+)px/.exec(lastS.style.transform), ty = m ? +m[1] : NaN;
+      const lb = lastS.getBoundingClientRect().bottom, sb = stS.getBoundingClientRect().bottom;
+      staleRes.ok = ty === 0 && lb <= sb + 1;
+      staleRes.detail = JSON.stringify({transform: lastS.style.transform, cardBottom: Math.round(lb), stageBottom: Math.round(sb), maxH: lastS.style.maxHeight});
+    }
+  }catch(e){ staleRes.detail = 'threw: ' + e.message; }
+  extra.push(['1.2 deck first paint after a jump: the last case sits at translate 0 and inside the stage, not one paint stale', staleRes]);
   saveData = realSave; DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog; ui.view = prevView; ui.riskFocusId = prevFocus;
   reset(); render();
   scrollTo(0, prevY);
