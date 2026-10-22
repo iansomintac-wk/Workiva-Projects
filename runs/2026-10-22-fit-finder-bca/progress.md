@@ -55,3 +55,7 @@
 | 2026-10-22T07:29:12.757Z | 7 | debug | ok | 108447 | 0.2553894 | 65 | 0 |  |
 | 2026-10-22T07:29:13.570Z | 7 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; |
 | 2026-10-22T07:30:10.000Z | 7 | task | reset | 0 | 0 | 0 | 0 | lead 0dfe9582: Task 7 Check cut -c16- typo fixed to -c15- (PM approved); records kept, no re-score |
+| 2026-10-22T07:30:56.324Z | 7 | build | ok | 90168 | 0.0853219 | 40 | 0 |  |
+| 2026-10-22T07:30:58.433Z | 7 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; match-frozen PASS |
+| 2026-10-22T07:31:23.837Z | 7 | checker | pass | 59982 | 0.048482199999999996 | 25 | 0 | PASS: the evidence file (committed in a1a0d8d, with HEAD a07b8eb an empty commit on top) has the hashes, B-SHA, both sco |
+| 2026-10-22T07:31:23.843Z | 7 | task | done | 0 | 0 | 0 | 0 | attempt 1 |
