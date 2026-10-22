@@ -13,6 +13,9 @@ function main() {
   const args = process.argv.slice(2);
   const oi = args.indexOf('--only');
   const only = oi >= 0 ? new Set((args[oi + 1] || '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean)) : null;
+  if (only && (!only.size || [...only].some((s) => !['C1', 'C2', 'C4'].includes(s)))) {
+    console.error('done_when: --only needs a known set'); process.exit(2);
+  }
   const want = (c) => !only || only.has(c);
 
   const M = require('../engine/model.js'), W = require('../engine/rewrite.js'), C = require('../engine/classify.js');

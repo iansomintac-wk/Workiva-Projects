@@ -33,7 +33,7 @@ Built page: 338,538 bytes (`wc -c < prompt-coach/dist/prompt-coach.html`, measur
 - 13:35Z, at 4158145: C1 17/30 on the first strong-30 (called r1, now dev data) = MISS (bar 27). C2 test 2.0%,
   sim 2.7%, C4 0 blanks of 862 all passed. Misses: 9 prompts had a Context score of 0.66, under the 0.70
   "sure" cut-off (FR6 FR7 GRC9 SUS18 SUS21 SUS24 GEN26 GEN27 GEN28); GRC14 not sure on another letter
-  (stacked list); FR3 and GEN29 had their text changed by the Better step; SUS22 graded "better" (Context not detected).
+  (stacked list); FR3 and GEN29 are "not sure" misses; SUS22 graded "better" (Context not detected).
 - 15:02-15:15Z, Task 9 (build b046b1f): new cut-offs {S .99 C .65 O .55 P .2 E .95}, picked from training data only.
   On training: 24/827 false "sure" (2.90%, under the 3% cap). On the simulated customers: C2 sim 15/111 = 13.5%
   MISS (bar 5%). Test set 4/247 = 1.6% PASS. The training-side cap did not carry over to the sim set.

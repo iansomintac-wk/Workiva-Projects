@@ -16,6 +16,12 @@ const run = (args) => {
 };
 const lastLine = (s) => s.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).pop() || '';
 
+// TAP judge: fails when "# fail" is missing or nonzero, or "# pass" is 0.
+const judgeTap = (out) => {
+  const p = out.match(/^# pass (\d+)/m), f = out.match(/^# fail (\d+)/m);
+  return [!!f && f[1] === '0' && !!p && p[1] !== '0', `pass ${p ? p[1] : '?'} fail ${f ? f[1] : '?'}`];
+};
+
 const gates = [
   ['eval', ['tests/eval.js', 'rulefeat', 'data/test.jsonl'], (r) => {
     const m = r.out.match(/GRADE acc=[0-9.]+/);
@@ -38,11 +44,14 @@ const gates = [
   ['pagetest', ['tests/pagetest.js'], (r) => [r.code === 0, `exit ${r.code}; ${lastLine(r.out)}`]],
 ];
 
-let failed = 0;
-for (const [name, args, judge] of gates) {
-  let ok, detail;
-  try { [ok, detail] = judge(run(args)); } catch (e) { ok = false; detail = 'ERROR ' + e.message; }
-  if (!ok) failed++;
-  console.log(`GATE ${name} ${ok ? 'PASS' : 'FAIL'} ${detail}`);
+if (require.main === module) {
+  let failed = 0;
+  for (const [name, args, judge] of gates) {
+    let ok, detail;
+    try { [ok, detail] = judge(run(args)); } catch (e) { ok = false; detail = 'ERROR ' + e.message; }
+    if (!ok) failed++;
+    console.log(`GATE ${name} ${ok ? 'PASS' : 'FAIL'} ${detail}`);
+  }
+  process.exit(failed ? 1 : 0);
 }
-process.exit(failed ? 1 : 0);
+module.exports = { judgeTap };

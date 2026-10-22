@@ -86,7 +86,7 @@ if (tuneSure) {
   }
   console.log('sure cut-offs', JSON.stringify(cut), `false sure ${c.fs}/${nNon} (${(100 * c.fs / nNon).toFixed(2)}%), strong sure ${c.ts}/${nStrong}`);
   const txt = fs.readFileSync(out, 'utf8').replace(/,"sure":{[^}]*}/, '');
-  fs.writeFileSync(out, txt.replace(/}(s*)$/, ',"sure":' + JSON.stringify(cut) + '}$1'));
+  fs.writeFileSync(out, txt.replace(/}(\s*)$/, ',"sure":' + JSON.stringify(cut) + '}$1'));
   console.log('wrote sure to', out);
 } else if (cv) {
   seed = 99; const idx = rows.map((_, i) => i).sort(() => rand() - 0.5);
