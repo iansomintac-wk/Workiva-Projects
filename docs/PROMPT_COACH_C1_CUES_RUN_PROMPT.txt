@@ -1,0 +1,56 @@
+RUN: Prompt Coach C1, more Context cues (workiva repo). Written 2026-10-22 ~18:15Z by the talk session 2307a63e.
+Load studio-harness:talk-and-run first and follow "The run". You are the run lead: coordinate only, never plan or
+build in your own context.
+
+WHERE
+- Worktree: C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-c1-cues, branch prompt-coach-c1-cues
+  (from prompt-coach @ 74040ee).
+- Spec (PM proxy approved this talk; Ian may overturn): docs/superpowers/specs/2026-10-22-prompt-coach-c1-cues-design.md.
+  Read it whole. Background: prompt-coach/docs/research/2026-10-22-c1-options.md.
+- Ledger: .ledger/2026-10-22-prompt-coach-c1-cues/ (budget.json, slip.json, rulings.md; progress.md is yours).
+- Plan goes to docs/superpowers/plans/2026-10-22-prompt-coach-c1-cues.md (no bin/rehearse.mjs here: skip rehearsal,
+  but the plan still carries Data: and Suite: lines). Suite: cd prompt-coach && node tests/c5_gate.js, plus
+  node tests/done_when.js --only C2,C4.
+- Probe scripts from the talk (throwaway, in the talk's job tmp, copied here for reuse): prompt-coach/docs/research/c1-probes/
+  (block.js = which letter blocks "sure" per r1 row + training zero-hit counts; ssweep.js = Source cut-off sweep;
+  probe.sh = control vs spike retrain on a throwaway copy with the fresh set excluded; set PROBE_TMP to your job's
+  tmp folder; r1 is renamed into the fresh set's slot inside the copy only, so done_when.js C1 there scores r1).
+
+FIRST CHECK: echo "$STUDIO_RUN_LEDGER"; test -f "$STUDIO_RUN_LEDGER/budget.json"; test -f "$STUDIO_RUN_LEDGER/slip.json".
+Empty or missing is a stop for Ian.
+
+ORDER OF WORK (the plan writer turns this into tasks of <= 8 steps; the PM proxy approves the plan)
+1. Small fixes (spec Design 1), test first, one task.
+2. Baseline: a control retrain on the branch (rules unchanged) measured with done_when C2/C4, r1 via a throwaway copy
+   (probe.sh pattern), eval.js and the training zero-hit count. Expect r1 14/30, C2 2.0%/1.8%, eval 0.859, zero-hit
+   99/532 (talk measurements); a different number is a stop to understand, not to tune around.
+3. Context cue families in engine/rules.js (spec Design 2), written from TRAINING rows only, as patterns. The cue writer
+   is a helper on the top model (design judgement); it gets training rows only, never test/sim/r1/fresh.
+4. Retrain + tune-sure, Source re-check (spec Design 3); README figures and c5_gate eval rule in the same commit.
+5. Dev gates (spec Design 4). One fix round at most. Fail: stop with numbers; the fresh set stays unread.
+6. Pass: read the fresh 30 once (spec Design 5). Record the number as it comes out. No tuning after.
+7. Evidence doc docs/evidence/2026-10-22-prompt-coach-c1-cues.md (measured vs read; r1 disclosed as seen).
+   Final review (Opus final-reviewer + Codex), fix round.
+8. Merge stop: merge-gate.mjs cannot run its suite here (memory merge-gate-no-npm-test). Run it with --dry-run for the
+   other checks, run the Suite on base and a scratch merge, push the branch and the backup branch, then stop for Ian's
+   merge yes with that evidence.
+
+RULES FOR THE FRESH SET: data/done_when_strong.jsonl is never opened, copied, grepped or scored before step 6, and
+validate_done_when_sets.js is not run before step 6. Every throwaway copy excludes it (probe.sh shows how).
+
+STOPS: plan approval goes to the PM proxy; dev gates missed after one fix round (Ian's ruling: come back with numbers,
+no AI model); the merge (above); token cap 2M reached. Look item for Ian at the end, not blocking: template.html:402
+"[fill in your details]" under Strong (PM first-pass note + a capture you opened). Also tell Ian: the done-when run's
+runtime files under runs/2026-10-22-prompt-coach-done-when/ are tracked on prompt-coach (not removed here).
+
+SLIP (Ian's words, slip.json): push yes ("Workiva push too."), merge yes ("Workiva projects are clear to merge.") under
+the merge rule; spend $0, usage only, 2M token cap; new sessions yes when needed.
+
+CODEX (plan review, final review): codex exec -s read-only -c windows.sandbox=unelevated --skip-git-repo-check -o <out> - < <prompt>
+  (ledger gotcha 2026-10-17-codex-unelevated-sandbox-runs-on-windows).
+
+TESTS: name test files, never a folder (node 26 `node --test <folder>` runs nothing). No helper edits the worktree
+while a check runs in it. Retrains take ~18 s each (measured this talk).
+
+SAFETY: Workiva data stays in this repo; nothing to the brain or studio-harness (work repo, owner not iansomintac).
+No writes under ~/.claude/ except the session-rename exception in talk-and-run "Session names". Never force flags.
