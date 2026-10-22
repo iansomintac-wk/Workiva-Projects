@@ -9673,7 +9673,7 @@ function v13DeskPrepare(c, x){
     {key:'uncertainty', kick:'Uncertainty · what you don’t know yet', c:'var(--warn)',
       title: unCards.length ? unCards.length + (k.isRisk ? ' confirmed risk item' : ' signal') + (unCards.length === 1 ? '' : 's') + ' on this account.' : 'Nothing flagged.',
       body: 'Missing evidence is a reason to check, not a confirmed risk.' + (unOpen > 0 ? ' ' + unOpen + ' outcome' + (unOpen === 1 ? '' : 's') + ' not yet evidenced' + (v.undated ? ', ' + v.undated + ' undated' : '') + '.' : ''), more: grid(unCards)},
-    {key:'next', kick:'Next review · curriculum · ' + c.module + (num ? ' · S' + num : ''), c:'var(--acc)',
+    {key:'next', kick:'Next · curriculum · ' + c.module + (num ? ' · S' + num : ''), c:'var(--acc)',
       title: rb ? '45-minute run script · ' + RUNBOOK_SOURCE_LABEL[rb.source] : 'No session to run.',
       body: rb ? 'Today’s agenda. Open a row for its call script.' : 'Log the next touchpoint from Capture.', more: agenda}
   ];
@@ -9734,12 +9734,12 @@ function v13DeskTabBody(c, tab, x){
   };
   // The panel's Cancel only moves the panel's tab; on the Desk it would do nothing, so hide it.
   const body = tab === 'capture' ? call(() => renderLogActivityTab(c).replace('id="btn-cancel-log-form"', 'id="btn-cancel-log-form" hidden')) + call(() => v13DeskGates(c, 'capture'))
-    : tab === 'evidence' ? call(() => v13DeskGates(c, 'evidence')) + call(() => {
+    : tab === 'evidence' ? call(() => {
         // renderOverviewTab stamps lastShownRecommendation; the Desk only reads, so put it back.
         const had = Object.prototype.hasOwnProperty.call(c, 'lastShownRecommendation'), was = c.lastShownRecommendation;
-        try{ return renderOverviewTab(c, computeRisk(c)); }
+        try{ return renderOverviewTab(c, computeRisk(c), {noHealth: true}); }
         finally{ if(had) c.lastShownRecommendation = was; else delete c.lastShownRecommendation; }
-      }) + call(() => renderHandoffTab(c))
+      }) + call(() => v13DeskGates(c, 'evidence')) + call(() => renderHandoffTab(c))
     : tab === 'record' ? call(() => renderActivityTab(c, acts)) + call(() => renderCustomerGainsightTab(c))
     : call(() => v13DeskCallPrep(c, x)) + call(() => v13DeskPrepare(c, x));
   const h = heads[tab] || heads.prepare;
@@ -15593,7 +15593,7 @@ function renderActivityRollup(c){
    In-implementation accounts get a different set of cells because sessions,
    readiness, and Gainsight compliance do not start until Go-Live — showing them
    as 0/x would read as failure rather than "not applicable yet". */
-function renderAccountSnapshot(c, risk){
+function renderAccountSnapshot(c, risk, opts){
   const cell = (label, value, title) => `
     <div style="padding:8px 10px; background:var(--bg-card-hover); border-radius:6px; min-width:0;"${title ? ` title="${escapeAttr(title)}"` : ''}>
       <div style="font-size:var(--text-xs); color:var(--text-faint); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:.04em;">${escapeHtml(label)}</div>
@@ -15623,8 +15623,8 @@ function renderAccountSnapshot(c, risk){
   const cov = computeCoverage(c);
   return wrap([
     cell('Status', `<span class="badge ${risk==='risk'?'badge-risk':risk==='watch'?'badge-watch':'badge-ontrack'}">${riskLabel(risk)}</span>`, riskReasonText(c)),
-    cell('Health', `${healthScore(c)}%${healthTrendArrowHtml(c)}`,
-      `Readiness ${hb.domainPoints}/${hb.domainMax} + Gainsight ${hb.compliancePoints}/${hb.complianceMax}`),
+    ...(opts && opts.noHealth ? [] : [cell('Health', `${healthScore(c)}%${healthTrendArrowHtml(c)}`,
+      `Readiness ${hb.domainPoints}/${hb.domainMax} + Gainsight ${hb.compliancePoints}/${hb.complianceMax}`)]),
     cell('Last touch', d === null ? faint('none yet') : `${d}d ago`),
     cell('Sessions', `${sessionsCompletedCount(c)}${faint('/' + plannedSessionTotal(c))}`),
     cell('Readiness', `${hb.domainPoints}${faint('/' + hb.domainMax + ' pts')}`),
@@ -15792,7 +15792,7 @@ function renderOutcomeCriteria(c){
       ${v.undated ? `<p class="bp-basis" style="margin:6px 0 0;">${v.undated} criteri${v.undated===1?'on was':'a were'} ticked before evidence was tracked, so ${v.undated===1?'its date is':'their dates are'} unknown.</p>` : ''}
     </div>`;
 }
-function renderOverviewTab(c, risk){
+function renderOverviewTab(c, risk, opts){
   const nextSession = getNextSessionInfo(c);
   const nextSteps = getCustomerNextSteps(c);
   const gapSig = customerSessionGapSignal(c);
@@ -15806,7 +15806,7 @@ function renderOverviewTab(c, risk){
   // in-implementation account has none BY DESIGN, so skip the walk entirely.
   const pending = inImplementation(c) ? [] : pendingGainsightItems().filter(it => it.customerId === c.id);
   return `
-    ${renderAccountSnapshot(c, risk)}
+    ${renderAccountSnapshot(c, risk, opts)}
     ${renderGradReviewBlock(c)}
     ${renderGoalPanel(c)}
     <div class="copilot-brief" style="margin-bottom:18px;">

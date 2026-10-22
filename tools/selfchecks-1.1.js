@@ -10358,7 +10358,7 @@ function _runSelfChecksInner(){
         show(A, 'prepare');
         const heads = [...body().querySelectorAll('[data-v13-prep-step] h4')].map(h => h.textContent.split('·')[0].trim());
         document.querySelector('#app [data-osm] [data-v13-desk-open]').click();
-        ok = heads.join('|') === 'Goal|Evidence|Uncertainty|Next review' && ui.openCustomerId === A.id && !!document.querySelector('.overlay .panel');
+        ok = heads.join('|') === 'Goal|Evidence|Uncertainty|Next' && ui.openCustomerId === A.id && !!document.querySelector('.overlay .panel');
         detail = JSON.stringify({heads, open: ui.openCustomerId});
       }catch(e){ detail = e.message; }
       check('v13 fix Desk Prepare shows Goal, Evidence, Uncertainty and Next review in order; "Open full account" still opens the panel', ok, detail);
@@ -11083,6 +11083,41 @@ function _runSelfChecksInner(){
     check('v13 fix review: on the old screens the three day panes sit side by side, none inside another', ok, detail);
   })();
   /* ==== end v13 fixes: review ==== */
+  /* ==== v13 fixes: look2 ==== (Ian's three look rulings, 2026-10-22) */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    const prev = {view: ui.view, open: ui.openCustomerId, tab: ui.panelTab, id: ui.v13DeskId, wt: ui.v13DeskTab, fil: ui.v13DeskFilter};
+    let prevSwitch = null; try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const body = () => document.querySelector('#app [data-osm] [data-v13-desk-body]');
+    const a = DATA.customers.find(c => c.stage !== 'graduated' && !inImplementation(c));
+    const show = tab => { ui.openCustomerId = null; ui.view = 'today'; ui.v13DeskId = a.id; ui.v13DeskTab = tab; ui.v13DeskFilter = null; render(); };
+    const tileLabels = root => [...root.querySelectorAll('div')].filter(d => d.children.length === 0).map(d => d.textContent.trim().toLowerCase());
+    let r = {};
+    try{
+      localStorage.removeItem(KEY);
+      show('prepare'); const p = body();
+      r.kick = p ? p.textContent : '';
+      show('evidence'); const e = body();
+      const t = e ? e.textContent : '';
+      r.gateAt = t.indexOf('Go-Live gates'); r.tileAt = t.indexOf('Last touch');
+      r.health = e ? tileLabels(e).includes('health') : null;
+      r.tiles = e ? tileLabels(e).includes('last touch') : false;
+    }catch(err){ r.err = err.message; }
+    finally{
+      ui.view = prev.view; ui.openCustomerId = prev.open; ui.panelTab = prev.tab; ui.v13DeskId = prev.id; ui.v13DeskTab = prev.wt; ui.v13DeskFilter = prev.fil;
+      try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+      render();
+    }
+    check('v13 look2: Desk Prepare step 04 kicker starts "NEXT · curriculum", not "Next review"', /Next · curriculum/.test(r.kick || '') && !/Next review/.test(r.kick || ''), JSON.stringify({err: r.err, has: (r.kick || '').match(/Next[^·]*·[^·]*/)}));
+    check('v13 look2: Desk Evidence draws the Go-Live gates box below the stat tiles', r.tileAt >= 0 && r.gateAt > r.tileAt, JSON.stringify(r).slice(0, 300));
+    check('v13 look2: Desk Evidence has no Health tile (and still has the other tiles)', r.health === false && r.tiles === true, JSON.stringify({health: r.health, tiles: r.tiles, err: r.err}));
+    const ov = document.createElement('div');
+    const had = Object.prototype.hasOwnProperty.call(a, 'lastShownRecommendation'), was = a.lastShownRecommendation;
+    try{ ov.innerHTML = renderOverviewTab(a, computeRisk(a)); }catch(e){}
+    finally{ if(had) a.lastShownRecommendation = was; else delete a.lastShownRecommendation; }
+    check('v13 look2: the full-account Overview still has its Health tile', tileLabels(ov).includes('health'), tileLabels(ov).slice(0, 12).join(','));
+  })();
+  /* ==== end v13 fixes: look2 ==== */
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
     JSON.stringify(DATA.riskLog || {}) === _riskLogAtSuiteEntry,
