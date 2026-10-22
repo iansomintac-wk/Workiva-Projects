@@ -41,3 +41,8 @@
 | 2026-10-22T08:39:07.892Z | 6 | debug | ok | 130506 | 0.18157720000000002 | 60 | 0 |  |
 | 2026-10-22T08:39:08.682Z | 6 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; tee: /dev/stderr: No such file or directory |
 | 2026-10-22T15:01:49.000Z | 6 | task | reopened | 0 | 0 | 0 | 0 | Ian A 13:31Z: fix + fresh test; Ian 15:00Z launch now (lowest-Context rule) |
+| 2026-10-22T15:05:11.140Z | 9 | build | ok | 429765 | 0.2339425 | 188 | 0 |  |
+| 2026-10-22T15:06:08.877Z | 9 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; GATE pagetest PASS exit 0; pagetest: 22 checks, 0 failed |
+| 2026-10-22T15:07:17.178Z | 9 | build | ok | 40770 | 0.0445344 | 68 | 0 |  |
+| 2026-10-22T15:08:11.053Z | 9 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; GATE pagetest PASS exit 0; pagetest: 22 checks, 0 failed |
+| 2026-10-22T15:08:11.069Z | 9 | task | parked | 0 | 0 | 0 | 0 | two strikes |
