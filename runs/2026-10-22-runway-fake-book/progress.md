@@ -81,3 +81,4 @@
 | 2026-10-22T08:38:11.350Z | 16 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; console errors: 0 (exceptions 0, console.error 0, log 0, network 0; favicon requests ignored 0) |
 | 2026-10-22T08:39:29.837Z | 16 | checker | pass | 31644 | 0.0330993 | 18 | 0 | PASS: the commit changes only the desk reason handler. `confirmRiskCase` gets an `onlyConfirmed` flag, so adding a reaso |
 | 2026-10-22T08:39:29.842Z | 16 | task | done | 0 | 0 | 0 | 0 | attempt 1 |
+| 2026-10-22T15:38:21.000Z | 10 | lead | stopped | 0 | 0 | 0 | 0 | stopped by Ian's v13-first ruling (~15:45Z, relayed by Overnight watch): no reshoot, no driver restart, no merge; layout fix d05176a left on branch |
