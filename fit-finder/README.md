@@ -12,7 +12,7 @@ text-heavy (reading, comparing, checking, summarizing, drafting, rewriting). Jud
 sign-off, exact calculation, work in other systems and chasing people stay with a person.
 
 ```sh
-node tests/build.js                                               # -> dist/fit-finder.html (92592 bytes, LF)
+node tests/build.js                                               # -> dist/fit-finder.html (92712 bytes, LF)
 # Offline Coach link: ship both html files (fit-finder.html and prompt-coach.html) in one folder; opened from a file, the link uses prompt-coach.html, online it uses the artifact URL.
 node tests/eval.js data/tasks.jsonl data/tasks.jsonl --ids B      # held-out accuracy
 node tests/catalogue.test.js                                      # every use case sourced; matching
@@ -308,14 +308,14 @@ Read-only probe on the two tuned sets (tune and half A; the fresh blind set was 
 ## 2026-10-22 split numbers and the A result
 
 The score now splits "first card right" into the right feature first and rightly none (no feature
-shown where none fits). Tune split (29 newer real prompts): right feature first 17 of 29, rightly none 6.
+shown where none fits). Tune split (the 50 AI-written, AI-labelled tuning sentences): right feature first 17 of 29 fit rows with a gold card, rightly none 6.
 The two sealed sets, each scored once:
 
 - HOLDOUT-LINE: first card right: 26 of 42 that fit; wrong card 4 (N42,N48,N53,N91); no card where one fits 12 (N17,N18,N24,N52,N63,N77,N79,N88,N93,N99,N100,N102); card on a not-a-fit prompt 1 (N34); fit agreement 19 of 50; score 22; split: right feature first 16 of 32, rightly none 10 (N26,N45,N57,N58,N62,N76,N81,N84,N87,N96)
 - BLIND-LINE: first card right: 13 of 29 that fit; wrong card 7 (K8,K22,K24,K25,K31,K36,K40); no card where one fits 9 (K4,K5,K6,K15,K21,K23,K27,K32,K38); card on a not-a-fit prompt 4 (K3,K9,K12,K28); fit agreement 11 of 40; score 31; split: right feature first 5 of 17, rightly none 8 (K1,K10,K11,K13,K14,K30,K33,K39)
 
 A result: reverted. The card-ops change (A) did not raise the right-first count on the fresh set
-(7 to 7, W0 to W1 unchanged), so it was not kept. REASON: R gain < 1 (7 to 7). Before and after
+(7 to 7, wrong cards 9 to 9), so it was not kept. REASON: R gain < 1 (7 to 7). Before and after
 both read: right feature first 7 of 16, rightly none 7.
 
 Agreement with the product-manager labels: N 40 D 0 agreement 100.0% PASS (one card per row, no partial level).
