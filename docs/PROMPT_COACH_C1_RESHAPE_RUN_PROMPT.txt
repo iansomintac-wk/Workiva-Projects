@@ -1,0 +1,59 @@
+RUN: Prompt Coach C1 reshape, new practice prompts for Context (workiva repo). Written 2026-10-22 ~21:45Z by talk 0b6e9a11.
+Load studio-harness:talk-and-run first and follow "The run". You are the run lead: coordinate only, never plan or
+build in your own context. Workiva repo: write nothing to the brain or studio-harness; tell Ian instead.
+
+WHERE
+- Worktree: C:/Users/teasp/Documents/workiva/.claude/worktrees/prompt-coach-c1-reshape, branch prompt-coach-c1-reshape
+  (from origin/prompt-coach @ e7bda50: weights repro and the c5_gate judgeTap fix merged). Main: prompt-coach.
+- Spec (Ian approved ~21:38Z): docs/superpowers/specs/2026-10-22-prompt-coach-c1-reshape-design.md. Read it whole.
+- Probes: prompt-coach/docs/research/c1-probes/ (mkcopy.sh, states.sh = the talk's four-state re-measure, block.js,
+  ssweep.js, silentc.js). states.sh writes under $CLAUDE_JOB_DIR/tmp/states; usage in its header.
+- Ledger: .ledger/2026-10-22-prompt-coach-c1-reshape/ (budget.json, slip.json; progress.md is yours).
+  The weights-repro run's ledger is backed up beside it in .ledger/2026-10-22-prompt-coach-weights-repro/ (local only).
+- Plan goes to docs/superpowers/plans/2026-10-22-prompt-coach-c1-reshape.md (no bin/rehearse.mjs here: skip rehearsal,
+  but the plan carries Data: and Suite: lines). Data: prompt-coach/data (one new file, train_ctx.jsonl), prompt-coach/engine.
+  Suite: cd prompt-coach && node tests/repro_weights.js && node tests/c5_gate.js, plus node --test tests/c1_fixes.test.js
+  tests/train_order.test.js, plus done_when.js --only C1,C2,C4 inside a mkcopy.sh r1 copy (never in the repo).
+
+FIRST CHECK: echo "$STUDIO_RUN_LEDGER"; test -f "$STUDIO_RUN_LEDGER/budget.json"; test -f "$STUDIO_RUN_LEDGER/slip.json".
+Empty or missing is a stop for Ian. Then create $STUDIO_RUN_LEDGER/progress.md (one row per dispatch, talk-and-run Ledger).
+CAPS: run cap 2M tokens across helpers (budget.json); CLAUDE_STOP_AT_TOKENS=300000 is only YOUR context stop: at it, write
+docs/PROMPT_COACH_C1_RESHAPE_RUN_RESUME_PROMPT.txt, commit, start a successor lead.
+
+ORDER OF WORK (the plan writer turns this into tasks of <= 8 steps; the PM proxy approves the plan)
+1. Fallback, spec Design 1: rules.js from aece903 (git show aece903:prompt-coach/engine/rules.js), c5_gate eval floor
+   test first (0.866 fails old / passes new; 0.855 fails both), README retrain (--tune then --tune-sure), build, README
+   figures in the same commit. Check F: r1 21/30, C2 3.2% / 2.7%, C4 0, c5_gate PASS, REPRO OK, sure S .985 C .3.
+   A different r1 or C2 is a stop to understand, not to tune around.
+2. Draft 20 prompts into data/train_ctx.jsonl (Design 2) on the TOP model; record the model in the ledger row. The packet
+   names data/LABELING.md and one existing train row as the format; it carries no text from r1, test, sim or the fresh set.
+   A fresh checker re-labels 5 at random (more than 1 letter of disagreement in total is a stop).
+3. Go/no-go G (Design 3): more than half of the drafts labeled Context=1 get zero Context hits under Task 1's rules, else stop
+   and keep the fallback (the run then goes straight to 6).
+4. Context cues from training misses only (Design 4): the drafts plus the 12 older Context=1 zero-hit rows are the only
+   sources. Retrain, REPRO OK. D1 count, scored against its prediction (under 8; disproved above 12).
+5. Dev gates in a mkcopy.sh r1 copy (Design 5), at most one fix round (more cues from training misses only): r1 under 25, or C2 over 5%: stop, fallback kept. 25-26: stop, keep the better
+   committed state. >= 27 with C2, C4, c5_gate passing: read the fresh 30 once (Design 6), C1 then validate, report as is.
+6. Evidence doc docs/evidence/2026-10-22-prompt-coach-c1-reshape.md (measured vs read, every row with its number; r1 always
+   called seen). Final review (Opus final-reviewer + Codex), fix round.
+7. Merge stop: merge-gate.mjs cannot run its suite here (memory merge-gate-no-npm-test). Run the Suite on base and on a
+   scratch merge, push the branch and backup/prompt-coach-before-prompt-coach-c1-reshape-2026-10-22, then stop for Ian's
+   merge yes with both Suite results side by side.
+
+HARD RULES
+- data/done_when_strong.jsonl (fresh 30) stays UNREAD until step 5's single read: never opened, copied, grepped or scored.
+  No tests/done_when.js (any --only) and no tests/validate_done_when_sets.js outside a mkcopy.sh copy before then. If it is
+  read early for any reason, say so: C1 then no longer counts as held-out.
+- Cues come from TRAINING rows only, written as patterns, never copied from a row; never from r1, test, sim or fresh.
+- Locked: data files (train_ctx.jsonl locked after step 2's check), done_when.js bar logic, the 3% cap and training-only
+  check in train.js, rewrite_unit.test.js, tests/fixtures/c5_base.json, the C1-C5 bars, c5_gate.js except the eval floor.
+  A simulate count above c5_base is a stop for Ian.
+- node tests/repro_weights.js prints REPRO OK after every retrain and before every commit.
+- AI-free coach, $0, no installs. Out of scope: middle-tier message, larger C1 set, second-stage sure rule, stacked-ask,
+  template.html:402 (look item for Ian), weights-repro known limits.
+- .ledger/ is git-ignored and the only copy: never delete, clean or remove this worktree before Ian's stop.
+- Git Bash guard: plain git commands only (no loops, cd, -C or variables around git); multi-step shell goes in a script file
+  under your job tmp. GNU tar needs /c/... paths, not C:/....
+
+STOPS: plan approval to the PM proxy; F differing from the talk numbers; the step 2 relabel check; G; the step 5 gates;
+the merge (above); token cap 2M.

@@ -6,13 +6,13 @@ strong version into toggleable SCOPE elements. Everything runs in the browser: n
 server, no uploads. Built for customer-facing use where Claude access can't be provisioned.
 
 ```sh
-node tests/build.js                      # -> dist/prompt-coach.html (single file, 339250 bytes, LF)
+node tests/build.js                      # -> dist/prompt-coach.html (single file, 345526 bytes as committed with LF; a CRLF checkout is larger)
 node tests/pagetest.js                      # real-browser page test of the built page (notes, display grade, off-topic); build first
 node tests/eval.js rulefeat data/test.jsonl          # accuracy on held-out prompts
 node tests/simulate.js data/train_*.jsonl            # rewrite invariants
 node tests/customer_check.js                         # strong version keeps the user's ask, adds safe general wording, not facts; no filler, original order, whole pieces, zero-blank rule, Ian's invoice case
 node --test --test-reporter=tap tests/rewrite_unit.test.js   # one focused test per rewrite rule; splitting: a ";" or text inside ( ) [ ] never ends a sentence (sentenceSpans)
-node tests/c5_gate.js                                # runs the five checks above; FAIL if eval is not 0.856, a simulate count rises above tests/fixtures/c5_base.json, or a test fails
+node tests/c5_gate.js                                # runs the five checks above; FAIL if eval is below 0.856, a simulate count rises above tests/fixtures/c5_base.json, or a test fails
 node tests/done_when.js [--only C1,C2,C4]            # done-when bars: C1 strong-30 untouched, C2 no-changes on non-strong <= 5%, C4 zero [blanks]; exit 0 met, 1 missed, 2 error
 node tests/train.js rulefeat --tune data/train_*.jsonl   # retrain engine/weights.json
 node tests/train.js rulefeat --tune-sure data/train_*.jsonl   # no retrain: adds the per-letter "sure" cut-offs to weights.json (out-of-fold, false sure <= 3% of non-strong training rows; refuses any file not named train_*.jsonl)
@@ -26,8 +26,8 @@ node tests/eval_real.js real-eval/prompts.csv        # score on real prompts (se
 
 | Layer | File | What it does |
 |---|---|---|
-| Rules | `engine/rules.js` | ~150 regex cues per SCOPE letter on normalized text (typos, contractions, curly quotes). Each hit maps back to the user's original characters for highlighting. Also detects stacked asks and vague verbs. |
-| Model | `engine/model.js` + `engine/weights.json` (4 KB) | Per-letter logistic regression over that letter's own rule hits only (no raw words, no cross-letter features, so one element can't vouch for another), averaged over 5 seeded runs, thresholds tuned on out-of-fold training predictions. A separate `sure` object holds a higher per-letter cut-off, tuned the same way so that at most 3% of non-strong training rows come out "sure" (S 0.99, C 0.715, O 0.3, P 0.3, E 0.45); it never changes a grade. |
+| Rules | `engine/rules.js` | 145 regex cues on normalized text (31 Situation, 42 Context, 42 Expected output, 30 Process; Outcome has no regex list) (typos, contractions, curly quotes). Each hit maps back to the user's original characters for highlighting. Also detects stacked asks and vague verbs. |
+| Model | `engine/model.js` + `engine/weights.json` (5 KB) | Per-letter logistic regression over that letter's own rule hits only (no raw words, no cross-letter features, so one element can't vouch for another), averaged over 5 seeded runs, thresholds tuned on out-of-fold training predictions. A separate `sure` object holds a higher per-letter cut-off, tuned the same way so that at most 3% of non-strong training rows come out "sure" (S 0.985, C 0.3, O 0.3, P 0.3, E 0.45); it never changes a grade. |
 | Task + area | `engine/classify.js` + `engine/cls-weights.json` (166 KB) | Softmax regression over words + intent/domain pattern hits. Task 69.7% / area 86.3% on test (pattern-only baseline: 48% / 78%); 79% when confident. Low confidence falls back to patterns and the page asks the user to confirm. |
 | Rewrites | `engine/rewrite.js` | Detects area (FR / GRC / SUS / general) and task (15 intents). Splits the prompt into letter-tagged segments so the user's own wording is kept; fills missing letters from intent-specific templates (general wording such as "the reader of this report" or "a short table", never a [blank]) and file metadata (file name, best-matching sheet, header row, periods). Re-grades its own strong version and swaps in more explicit wording if a letter doesn't register. Adds Workiva-specific tips. `coach()` also returns `noChanges` and `noChangesReason`: true only when the grade is strong, the ask is not stacked, the prompt is not off-topic and every letter's probability is at or above its `sure` cut-off (no probabilities means false). Then Better and Strong are the user's prompt unchanged and `questions` is `[]`. A strong prompt that is not surely strong keeps today's behaviour. |
 | Files | `engine/files.js` | Reads .docx (headings), .xlsx (sheets + header rows), .pptx (slide titles), .pdf, .csv, .txt in the browser; libraries load from cdnjs only when needed. |
@@ -53,7 +53,7 @@ would likely be lower).
 | Word/char n-gram model only | 75.9% | 42% | 2.6 MB |
 | Rules + n-gram hybrid | 86.9% | 75% | 2.6 MB |
 | Rules + rule-feature model, shared features | 87.5% | 82% | 18 KB |
-| **Rules + per-letter rule-feature model (shipped)** | **85.6%** | 82% | **4 KB** |
+| **Rules + per-letter rule-feature model (shipped)** | **86.6%** | 82% (not remeasured) | **5 KB** |
 
 The shared-feature model scored higher by inferring letters from other letters (a prompt with an
 audience usually also has a check rule). That made the coach credit elements the user never

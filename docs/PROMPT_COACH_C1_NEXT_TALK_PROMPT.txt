@@ -1,0 +1,27 @@
+TALK: Prompt Coach C1, after the C1 reshape run (workiva repo). Drafted 2026-10-22 ~23:05Z by run lead 325af6f9 from the
+hand-off PM step. Load studio-harness:talk-and-run first and follow "The talk". Workiva repo: write nothing to the brain or
+studio-harness; tell Ian instead.
+
+WHERE: branch off prompt-coach once the C1 reshape branch (prompt-coach-c1-reshape @ dea990c) is merged; if it is not merged
+yet, ask Ian before branching. Read docs/evidence/2026-10-22-prompt-coach-c1-reshape.md and
+docs/superpowers/specs/2026-10-22-prompt-coach-c1-reshape-design.md (Evidence, Out of scope).
+
+PROBLEM: C1 stuck at 21/30 on r1 (seen); training shows no cut-off splits silent-Context strong from silent weak (14/14 silent
+rows non-strong), and 20 drafted practice prompts gave G = 3/16 (the shipped cues already cover them). Fresh 30 stays UNREAD.
+
+TASK: research only first, no code. Answer, counts only from r1/sim/test (never open data/done_when_strong.jsonl):
+ (a) the exact C1 and C2 definitions, the current verdict tiers and message text: would a middle-tier landing count as a C1
+     pass, or only move the bar?
+ (b) silent-Context rows by strong/weak across r1, sim and test;
+ (c) a non-model source of strong prompts (Ian's real Workiva prompts, or the sandbox; memory workiva-sandbox), since one
+     model drafting and labeling is not independent;
+ (d) the statistical power of a 30-prompt set at a 27 bar, to decide set size.
+Then one spec: the middle-tier verdict (message text, C1/C2 meaning, bars, prediction and disproving result for each), with the
+larger C1 set as the alternative. One decision card to Ian; PM recommendation: middle tier (proxy view, Ian decides; it is his
+product call from the earlier '[Ian] C1 way' card).
+PM prediction (assumed): at least 5 of r1's 9 misses land in the tier and C2 stays <= 5% on test and sim; disproved if fewer
+than 5 land or C2 goes over 5%.
+
+HELD: no cue writing and no engine/rules.js edits (re-opens the measured fallback F). Follow-ups from the final review:
+rules.js:158 "we make", :140 "this is used to", :136 \s* (loose cues; C2 within bar).
+STOP at an approved spec; commit locally on a feature branch; no push.

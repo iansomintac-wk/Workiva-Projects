@@ -46,3 +46,12 @@ test('evidence line names FR3 and GEN29 as not sure misses', () => {
   assert.ok(!/had their text changed by the Better step/.test(t));
   assert.match(t, /FR3 and GEN29[^\n]*not sure/);
 });
+
+test('c5_gate eval is a floor at 0.856, not an exact match', () => {
+  const { gates } = require('./c5_gate.js');
+  const judge = gates.find((g) => g[0] === 'eval')[2];
+  assert.strictEqual(judge({ out: 'GRADE acc=0.866\n' })[0], true);
+  assert.strictEqual(judge({ out: 'GRADE acc=0.856\n' })[0], true);
+  assert.strictEqual(judge({ out: 'GRADE acc=0.855\n' })[0], false);
+  assert.strictEqual(judge({ out: 'no grade here\n' })[0], false);
+});
