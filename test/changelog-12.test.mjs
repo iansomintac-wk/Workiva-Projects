@@ -33,3 +33,7 @@ test('CHANGELOG 1.2 final review: Review rebuilds the plan from current data; a 
 test('CHANGELOG 1.2 final review B: suggestions show what they write; Add Customer says Gainsight ID', () => {
   assert.match(s12, /name suggestion shows what ticking it writes/); assert.match(s12, /Add Customer box is labelled Gainsight ID/);
 });
+test('CHANGELOG 1.2 N2: a "N px at WxH" figure in a bullet cites a capture under docs/evidence/ (or is not there)', () => {
+  const bad = s12.split('\n').filter(l => /\d+ px at \d+x\d+/.test(l) && !/docs\/evidence\/\S+/.test(l));
+  assert.deepEqual(bad, []);
+});

@@ -6567,9 +6567,10 @@ function _runSelfChecksInner(){
 
   (function(){
     /* ============ 1.2 D8/L8 THE DECK CAN REACH ITS LAST CASE ============
-       The track must provide, by itself, the scroll distance at which the last card
-       becomes the front card; a short last card used to leave the page out of scroll
-       with the previous card still in front (only content below the track hid it). */
+       The track plus whatever page content sits below it must provide the scroll distance
+       at which the last card becomes the front card (the track reserves a viewport less that
+       content, never under one stage); a short last card used to leave the page out of scroll
+       with the previous card still in front. Do not restore a full-viewport reserve. */
     const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevView = ui.view, prevFocus = ui.riskFocusId, prevY = scrollY, realSave = saveData;
     const reset = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
     let ok = false, detail = '';
