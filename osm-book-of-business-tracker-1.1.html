@@ -14093,7 +14093,8 @@ function beatGateBlocks(c){
       <textarea id="fp-sent-a-${escapeAttr(c.id)}" data-fp-sentiment="a|${escapeAttr(c.id)}" rows="2" placeholder="What has contributed most to their satisfaction or success?">${escapeHtml(s.answerA || '')}</textarea>
       <label class="sr-only" for="fp-sent-b-${escapeAttr(c.id)}">What could be improved to better meet their needs or goals?</label>
       <textarea id="fp-sent-b-${escapeAttr(c.id)}" data-fp-sentiment="b|${escapeAttr(c.id)}" rows="2" style="margin-top:6px;" placeholder="What could be improved to better meet their needs or goals?">${escapeHtml(s.answerB || '')}</textarea>
-      <button class="btn btn-sm ${s.done ? '' : 'btn-primary'}" style="margin-top:6px;" data-fp-toggle="sentiment|${escapeAttr(c.id)}">${s.done ? 'Undo' : 'Mark logged'}</button>`
+      <button class="btn btn-sm ${s.done ? '' : 'btn-primary'}" style="margin-top:6px;" data-fp-toggle="sentiment|${escapeAttr(c.id)}">${s.done ? 'Undo' : 'Mark logged'}</button>
+    </div>`
   };
 }
 function renderBeatPanel(beat, dispatchChips){
