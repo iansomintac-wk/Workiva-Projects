@@ -1,0 +1,139 @@
+{
+  "_label": "documented-shape: built from Snowflake docs, not recorded from a real reply",
+  "_source": "SHAPE FROM DOCS, NOT FROM A LIVE TENANT. https://docs.snowflake.com/en/developer-guide/sql-api/reference",
+  "steps": [
+    {
+      "status": 200,
+      "body": {
+        "code": "090001",
+        "sqlState": "00000",
+        "message": "Statement executed successfully.",
+        "statementHandle": "01FAKE-HANDLE-0001",
+        "createdOn": 1790000000000,
+        "statementStatusUrl": "/api/v2/statements/01FAKE-HANDLE-0001",
+        "resultSetMetaData": {
+          "numRows": 3,
+          "format": "jsonv2",
+          "rowType": [
+            {
+              "name": "SALESFORCE_ACCOUNT_ID",
+              "database": "DB",
+              "schema": "SC",
+              "table": "CSAT",
+              "type": "text",
+              "length": 255,
+              "precision": null,
+              "scale": null,
+              "nullable": true,
+              "collation": null,
+              "byteLength": 1020
+            },
+            {
+              "name": "GAINSIGHT_COMPANY_ID",
+              "database": "DB",
+              "schema": "SC",
+              "table": "CSAT",
+              "type": "text",
+              "length": 255,
+              "precision": null,
+              "scale": null,
+              "nullable": true,
+              "collation": null,
+              "byteLength": 1020
+            },
+            {
+              "name": "COMPANY_NAME",
+              "database": "DB",
+              "schema": "SC",
+              "table": "CSAT",
+              "type": "text",
+              "length": 255,
+              "precision": null,
+              "scale": null,
+              "nullable": true,
+              "collation": null,
+              "byteLength": 1020
+            },
+            {
+              "name": "CSAT_SENT_DATE",
+              "database": "DB",
+              "schema": "SC",
+              "table": "CSAT",
+              "type": "date",
+              "length": null,
+              "precision": null,
+              "scale": null,
+              "nullable": true,
+              "collation": null,
+              "byteLength": null
+            },
+            {
+              "name": "CSAT_ANSWERED_DATE",
+              "database": "DB",
+              "schema": "SC",
+              "table": "CSAT",
+              "type": "date",
+              "length": null,
+              "precision": null,
+              "scale": null,
+              "nullable": true,
+              "collation": null,
+              "byteLength": null
+            }
+          ],
+          "partitionInfo": [
+            {
+              "rowCount": 1,
+              "uncompressedSize": 100
+            },
+            {
+              "rowCount": 1,
+              "uncompressedSize": 100
+            },
+            {
+              "rowCount": 1,
+              "uncompressedSize": 100
+            }
+          ]
+        },
+        "data": [
+          [
+            "001FAKE00000001AAA",
+            "1I00FAKE0000000000000000000000000001",
+            "Fixture Co One",
+            "2026-08-01",
+            "2026-08-05"
+          ]
+        ]
+      }
+    },
+    {
+      "status": 200,
+      "body": {
+        "data": [
+          [
+            "001FAKE00000002AAA",
+            "1I00FAKE0000000000000000000000000002",
+            "Fixture Co Two",
+            "2026-08-20",
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "status": 200,
+      "body": {
+        "data": [
+          [
+            "001FAKE00000003AAA",
+            "1I00FAKE0000000000000000000000000003",
+            "Fixture Co Three",
+            "2026-09-02",
+            "2026-09-04"
+          ]
+        ]
+      }
+    }
+  ]
+}

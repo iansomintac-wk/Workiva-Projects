@@ -34,8 +34,7 @@ test('snowflake: since keeps only rows whose newest CSAT date is on or after it'
   for (const r of some) assert.ok((r.CSAT_ANSWERED_DATE || r.CSAT_SENT_DATE) >= '2026-09-10');
 });
 test('snowflake: any adapter name other than fake throws the parked-stage-2 message', () => {
-  assert.throws(() => loadAdapters({ snowflake: { adapter: 'snowflake-rest' } }),
-    /snowflake: only 'fake' is built; the real adapter is stage 2 \(parked\)/);
+  assert.throws(() => loadAdapters({ snowflake: { adapter: 'snowflake-rest' } }), /adapter not built: snowflake-rest/);
 });
 test('snowflake: config.example.json has a snowflake block with adapter fake and empty placeholders only', () => {
   const cfg = JSON.parse(readFileSync(join(root, 'config.example.json'), 'utf8'));

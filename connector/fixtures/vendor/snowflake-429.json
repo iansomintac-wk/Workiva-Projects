@@ -1,0 +1,14 @@
+{
+  "_label": "documented-shape: built from Snowflake docs, not recorded from a real reply",
+  "_source": "SHAPE FROM DOCS, NOT FROM A LIVE TENANT. https://docs.snowflake.com/en/developer-guide/sql-api/reference",
+  "steps": [
+    {
+      "status": 429,
+      "body": {
+        "code": "390900",
+        "message": "Too many requests. Retry the request with the same requestId and retry=true.",
+        "sqlState": "57014"
+      }
+    }
+  ]
+}

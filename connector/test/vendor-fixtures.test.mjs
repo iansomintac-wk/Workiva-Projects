@@ -19,7 +19,7 @@ test('A-7 every vendor fixture is headed with the docs-not-tenant warning and a 
     const j = load(f);
     assert.equal(typeof j._source, 'string', `${f}: no _source`);
     assert.ok(j._source.startsWith(HEADER), `${f}: _source must start with "${HEADER}"`);
-    assert.match(j._source, /https:\/\/(help\.gong\.io|support\.gainsight\.com)\/\S+/, `${f}: no vendor source URL`);
+    assert.match(j._source, /https:\/\/(help\.gong\.io|support\.gainsight\.com|docs\.snowflake\.com)\/\S+/, `${f}: no vendor source URL`);
   }
 });
 

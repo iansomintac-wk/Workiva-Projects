@@ -11,14 +11,15 @@ import { create as aiClaude } from './ai-claude.mjs';
 import { create as aiOpenai } from './ai-openai.mjs';
 import { create as aiGemini } from './ai-gemini.mjs';
 import { create as snowflakeFake } from './snowflake-fake.mjs';
+import { create as snowflakeSql } from './snowflake-sql.mjs';
 
 const BUILT = {
   gong: { fake: gong, 'gong-rest': gongRest },
   gainsight: { fake: gainsight, 'gainsight-rest': gainsightRest },
   ai: { fake: aiFake, claude: aiClaude, openai: aiOpenai, gemini: aiGemini },
-  snowflake: { fake: snowflakeFake },
+  snowflake: { fake: snowflakeFake, 'snowflake-sql': snowflakeSql },
 };
-const REAL = new Set(['gong-rest', 'gainsight-rest']);
+const REAL = new Set(['gong-rest', 'gainsight-rest', 'snowflake-sql']);
 
 export function loadAdapters(config = {}, opts = {}) {
   const { fetchImpl, env = process.env, stateDir, sleep, now, tokenSource, pageLimit, ...rest } = opts;
@@ -26,7 +27,6 @@ export function loadAdapters(config = {}, opts = {}) {
   for (const slot of Object.keys(BUILT)) {
     const cfg = config[slot] || {};
     const name = cfg.adapter || 'fake';
-    if (slot === 'snowflake' && name !== 'fake') throw new Error("snowflake: only 'fake' is built; the real adapter is stage 2 (parked)");
     const factory = BUILT[slot][name];
     if (!factory) throw new Error(`adapter not built: ${name}`);
     if (slot === 'ai' && name !== 'fake') {

@@ -1,0 +1,15 @@
+{
+  "_label": "documented-shape: built from Snowflake docs, not recorded from a real reply",
+  "_source": "SHAPE FROM DOCS, NOT FROM A LIVE TENANT. https://docs.snowflake.com/en/developer-guide/sql-api/reference",
+  "steps": [
+    {
+      "status": 422,
+      "body": {
+        "code": "000904",
+        "message": "SQL compilation error: error line 1 at position 7 invalid identifier 'NOPE'",
+        "sqlState": "42000",
+        "statementHandle": "01FAKE-HANDLE-0001"
+      }
+    }
+  ]
+}
