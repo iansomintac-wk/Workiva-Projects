@@ -9475,7 +9475,177 @@ function v13Desk(){ return renderToday(); }
    Owned by the Co-pilot port. Everything for the Co-pilot screen goes between
    this marker and the end marker below: v13Copilot() and its helpers.
    Keep the end marker and do not edit outside it. */
-function v13Copilot(){ return renderCopilot(); }
+/* v13 Co-pilot: one ranked queue, drawn read-only from 1.1's engine.
+   Sources: callsToPrepare(0) (briefs for today's calls), todayActionList() (one card
+   per ranked account, its top reason), pendingGainsightItems() (one card per item),
+   suggestedPlaybooks() (the draft play on a signal card), getPortfolioAdvisorInsights()
+   (the book read in the morning summary). Buckets come from 1.1's own severity bands:
+   band 4 ("act today") is Overdue, the rest This week. 1.1 applies nothing on its own,
+   so there is no "Applied for you" card, and it keeps no call times, so there is no
+   "After your calls" group. The view-only state below never enters DATA. */
+let v13CoSumHidden = false;
+const v13CoAltOpen = new Set();
+const V13_CO_TIER = {auto:['APPLIED FOR YOU','var(--demo-t)','var(--demo-bg)'], tap:['ONE TAP','var(--acc)','var(--acc-bg)'], judge:['YOUR CALL','var(--plum)','var(--plum-bg)']};
+const V13_CO_BK = [['before','Before today’s calls'],['after','After your calls'],['overdue','Overdue'],['week','This week']];
+const V13_CO_BTN = {
+  primary:'border:0;background:var(--ink);color:var(--sheet);border-radius:999px;padding:6px 14px;font-size:12px;font-weight:800;white-space:nowrap',
+  outline:'border:1px solid var(--line2);background:var(--sheet);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;white-space:nowrap',
+  ghost:'border:0;background:transparent;padding:5px 6px;font-size:12px;font-weight:700;white-space:nowrap;color:var(--muted)',
+  link:'border:0;background:transparent;padding:5px 6px;font-size:12px;font-weight:700;white-space:nowrap;color:var(--acc)'
+};
+function v13CoBand(source){ const d = TODAY_SOURCE_MAP[source]; return d && d.severity >= 4 ? 'overdue' : 'week'; }
+function v13CoQueue(){
+  const out = [];
+  callsToPrepare(0).forEach(x => {
+    const c = x.c, rec = getRecommendedAction(c), last = x.last;
+    const qs = (x.questions || []).map(q => q.thread && (q.thread.text || q.thread.q)).filter(Boolean);
+    const lines = ['Goal: ' + rec.action];
+    if(last) lines.push('Last time: ' + last.type + ', ' + fmtDate(last.date) + (last.summary ? ' — ' + last.summary : ''));
+    if(qs.length) lines.push('Still owed an answer: ' + qs.slice(0, 2).join('; ') + (qs.length > 2 ? ' (+' + (qs.length - 2) + ' more)' : ''));
+    out.push({kind:'brief', bucket:'before', tier:'tap', c, title:'Brief for today’s call',
+      why:'Next session booked ' + fmtDate(x.on) + '.' + (rec.reasons && rec.reasons[0] ? ' ' + rec.reasons[0] : ''),
+      ev:[{label:'Session plan', tab:'sessions'}], draft:{kind:'Call brief', body:lines.join('\n')},
+      actions:[{label:'Open session plan', style:'primary', attrs:`data-open-cust="${escapeAttr(c.id)}" data-open-tab="sessions"`}]});
+  });
+  todayActionList().filter(r => !/^gainsight_|^grad_review/.test(r.source)).forEach(r => {
+    const c = DATA.customers.find(x => x.id === r.customerId);
+    if(!c) return;
+    const isSig = !!(r.signalKey && SIGNAL_KEY_SET.has(r.signalKey));
+    const plays = isSig ? suggestedPlaybooks(c) : [];
+    const id = escapeAttr(c.id), tab = escapeAttr(r.panelTab);
+    const actions = [];
+    if(plays.length) actions.push({label:'Start this play', style:'primary', attrs:`data-v13-co-play="${id}|${escapeAttr(plays[0].key)}"`});
+    if(isSig) actions.push({label:'Done', style: plays.length ? 'outline' : 'primary', attrs:`data-rec-done="${id}|${escapeAttr(r.signalKey)}" title="Log as done — suppresses this signal up to 7 days or until it clears"`});
+    actions.push({label: PANEL_TAB_LABEL[r.panelTab] || 'Open account', style: actions.length ? 'outline' : 'primary', attrs:`data-open-cust="${id}" data-open-tab="${tab}"`});
+    if(isSig) actions.push({label:'Not now…', style:'ghost', attrs:`data-rec-dismiss="${id}|${escapeAttr(r.signalKey)}" title="Suppress with a reason for 7/14/30 days"`});
+    out.push({kind:'row', bucket: v13CoBand(r.source), tier:'tap', c, sev: r.severity,
+      title: r.headline, why: (r.reasons || []).slice(0, 2).join(' '),
+      ev: [{label: r.signalKey || r.source, tab: r.panelTab}].concat((r.alsoWaiting || []).map(w => ({label:w.label, tab:w.panelTab}))),
+      play: plays[0] || null, alts: plays.slice(1), effort: r.effortMin || 0, actions});
+  });
+  pendingGainsightItems().forEach(it => {
+    const c = DATA.customers.find(x => x.id === it.customerId);
+    if(!c) return;
+    const id = escapeAttr(c.id);
+    const src = it.kind === 'activity' ? 'gainsight_item' : it.kind === 'compliance' ? 'gainsight_gate' : 'grad_review_due';
+    if(it.kind === 'grad-review'){
+      out.push({kind:'gs', bucket: v13CoBand(src), tier:'judge', c, title: it.label,
+        why: it.instruction + '.', ev:[{label:'Gainsight', tab:'gainsight'}], effort: effortMinutesFor(src) || 0,
+        reasons:['Is the estimate right, or is the target?', 'The target graduation date lives on Edit account', 'Nothing changes until you correct it in Gainsight'],
+        actions:[{label:'Open account', style:'link', attrs:`data-open-cust="${id}" data-open-tab="details"`}]});
+      return;
+    }
+    const done = it.kind === 'activity' ? `data-done-item="${id}|${escapeAttr(it.activityId)}|${it.itemIdx}"` : `data-done-compliance="${id}|${escapeAttr(it.complianceKey)}"`;
+    out.push({kind:'gs', bucket: v13CoBand(src), tier:'tap', c, title: it.label,
+      why: (it.instruction ? it.instruction + ' ' : '') + 'From ' + it.activityType + ', ' + fmtDate(it.date) + '.',
+      ev:[{label:'Gainsight', tab:'gainsight'}], effort: effortMinutesFor(src) || 0,
+      actions:[{label:'Mark done', style:'primary', attrs:done},{label:'Gainsight admin', style:'outline', attrs:`data-open-cust="${id}" data-open-tab="gainsight"`}]});
+  });
+  const B = {before:0, after:1, overdue:2, week:3};
+  // Stable: within a bucket, judgement first (as v13), then 1.1's own ranking order.
+  return out.map((o, i) => Object.assign(o, {i})).sort((p, q) => B[p.bucket] - B[q.bucket] || (p.tier === 'judge' ? -1 : 0) - (q.tier === 'judge' ? -1 : 0) || p.i - q.i);
+}
+function v13CoCard(it){
+  const T = V13_CO_TIER[it.tier], c = it.c, id = escapeAttr(c.id);
+  const btn = a => `<button type="button" ${a.attrs} style="${V13_CO_BTN[a.style]}">${escapeHtml(a.label)}</button>`;
+  const ev = (it.ev || []).map(e => `<button type="button" data-open-cust="${id}" data-open-tab="${escapeAttr(e.tab || 'overview')}" title="Open the record" style="flex:none;white-space:nowrap;border:1px solid var(--line2);background:var(--sheet);border-radius:999px;padding:0 8px;font-family:var(--mono);font-size:10px;color:var(--acc)">${escapeHtml(e.label)}</button>`).join('');
+  const draftBox = (kind, body, extra) => `
+      <div style="margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--sheet2)">
+        <p style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--acc)">${escapeHtml(kind)}</p>
+        <p style="font-size:13px;margin-top:4px;white-space:pre-line;text-wrap:pretty">${escapeHtml(body)}</p>${extra || ''}
+      </div>`;
+  let mid = '';
+  if(it.draft) mid = draftBox(it.draft.kind + ' · DRAFT', it.draft.body);
+  else if(it.play){
+    const p = it.play, first = (p.steps || [])[0];
+    const altOpen = v13CoAltOpen.has(c.id);
+    const alts = it.alts.length ? `<button type="button" data-v13-co-alt="${id}" style="${V13_CO_BTN.link};padding-left:0;margin-top:4px">${altOpen ? 'Hide other plays' : 'Other plays · ' + it.alts.length}</button>${altOpen ? `
+        <div style="display:grid;gap:6px;margin-top:4px">${it.alts.map(a => `<div style="padding:8px 10px;border-radius:10px;border:1px dashed var(--line2)"><p style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--muted)">${escapeHtml(a.title)}</p><p style="font-size:12px;margin-top:2px">${escapeHtml(a.when)}</p><button type="button" data-v13-co-play="${id}|${escapeAttr(a.key)}" style="${V13_CO_BTN.link};padding-left:0">Use this instead</button></div>`).join('')}</div>` : ''}` : '';
+    mid = draftBox(p.title + ' play · draft', p.when + (first ? '\nFirst step: ' + first.label : ''), alts);
+  }
+  else if(it.tier === 'judge') mid = `
+      <div style="margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--plum-bg)">
+        <p style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--plum)">WHAT THE RECORD SAYS · NO ANSWER PRE-SELECTED</p>
+        <ul style="list-style:none;padding:0;margin:4px 0 0;display:grid;gap:2px;font-size:12px">${it.reasons.map(w => `<li>${escapeHtml(w)}</li>`).join('')}</ul>
+        <div style="display:flex;gap:6px;margin-top:8px">${it.actions.map(btn).join('')}</div>
+      </div>`;
+  const row = it.tier === 'judge' ? '' : `<div style="display:flex;gap:4px;margin-top:10px;align-items:center;flex-wrap:wrap">${it.actions.map(btn).join('')}</div>`;
+  return `
+    <article data-v13-co-card data-kind="${it.kind}" data-tier="${it.tier}" data-cust="${id}" style="padding:14px 16px;border-radius:14px;background:var(--sheet);border:1px solid var(--line2)">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap">
+        <p style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--ink)">${escapeHtml(c.name)}</p>
+        <span data-v13-co-tier style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;color:${T[1]};background:${T[2]};border-radius:999px;padding:1px 8px;white-space:nowrap">${T[0]}</span>
+      </div>
+      <p style="font-size:15px;font-weight:800;margin-top:4px">${escapeHtml(it.title)}</p>
+      ${it.why ? `<p style="font-size:13px;color:var(--muted);margin-top:3px;text-wrap:pretty">${escapeHtml(it.why)}</p>` : ''}
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${ev}</div>
+      ${mid}${row}
+    </article>`;
+}
+function v13Copilot(){
+  const head = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:14px">
+      <div>
+        <h1 style="font-size:clamp(34px,3.6vw,52px);font-weight:900;letter-spacing:-0.035em;line-height:1">Co-pilot</h1>
+        <p style="color:var(--muted);margin-top:8px;font-size:15px;max-width:76ch">One list, ranked by time. Admin and plays take one tap. Nothing is changed for you: dates, risks and anything that needs judgement are always your call.</p>
+        <p style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px">${DATA.synthetic === true ? 'SAMPLE · ' : ''}NO LIVE AI · NOTHING IS SENT</p>
+      </div>
+    </div>`;
+  if(!DATA.customers.length) return `<section aria-label="Co-pilot" data-v13-copilot style="max-width:1280px;margin:0 auto">${head}<p style="font-size:14px;font-weight:700;color:var(--muted);padding:14px 0">No accounts yet. Add a customer and this becomes one ranked list of what needs you.</p></section>`;
+  const items = v13CoQueue();
+  const calls = callsToPrepare(0);
+  const beforeN = items.filter(i => i.bucket === 'before').length;
+  const judgeN = items.filter(i => i.tier === 'judge').length;
+  const first = calls[0];
+  const insights = getPortfolioAdvisorInsights().slice(0, 2).map(x => x.text);
+  const summary = 'Morning. ' + calls.length + ' call' + (calls.length === 1 ? '' : 's') + ' today' + (first ? ', first with ' + first.c.name : '') + '. '
+    + items.length + ' thing' + (items.length === 1 ? '' : 's') + ' need' + (items.length === 1 ? 's' : '') + ' you: ' + beforeN + ' before your first call, ' + judgeN + (judgeN === 1 ? ' is' : ' are') + ' your judgment.';
+  const sumCard = v13CoSumHidden
+    ? `<button type="button" data-v13-co-sumshow style="${V13_CO_BTN.link};padding-left:0">Show the morning summary</button>`
+    : `<div data-v13-co-summary style="padding:14px 16px;border-radius:14px;background:var(--ink);color:var(--sheet)">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><p style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;opacity:.75">MORNING SUMMARY · FROM YOUR BOOK, NOT SENT ANYWHERE</p><button type="button" data-v13-co-sumhide style="border:0;background:transparent;font-size:12px;font-weight:700;white-space:nowrap;color:inherit;opacity:.75;padding:0">Hide</button></div>
+        <p style="font-size:17px;font-weight:700;margin-top:6px;text-wrap:pretty">${escapeHtml(summary)}</p>
+        ${insights.length ? `<p style="font-size:13px;margin-top:6px;opacity:.8;text-wrap:pretty">${insights.map(escapeHtml).join(' ')}</p>` : ''}
+      </div>`;
+  const mins = items.reduce((s, i) => s + (i.effort || 0), 0);
+  const ttfv = portfolioTTFVStat();
+  const stats = 'Today: ' + items.length + ' in the queue · ~' + mins + ' min of work · ' + judgeN + ' your call · ' + (ttfv ? 'Median TTFV ' + ttfv.median + ' days' : 'No first values yet');
+  const groups = V13_CO_BK.map(([k, label]) => {
+    const list = items.filter(i => i.bucket === k);
+    if(!list.length) return '';
+    return `
+      <section data-v13-co-group="${escapeAttr(label)}" style="margin-bottom:18px">
+        <p style="display:flex;gap:8px;align-items:baseline;font-size:13px;font-weight:900;margin-bottom:8px">${escapeHtml(label)}<span style="font-family:var(--mono);font-size:12px;color:var(--muted)">${list.length}</span></p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;align-items:start">${list.map(v13CoCard).join('')}</div>
+      </section>`;
+  }).join('');
+  return `
+    <section aria-label="Co-pilot" data-v13-copilot style="max-width:1280px;margin:0 auto">
+      ${head}
+      ${sumCard}
+      <p style="font-family:var(--mono);font-size:11px;color:var(--muted);margin:10px 0 14px">${escapeHtml(stats)}</p>
+      ${items.length ? groups : `<p style="font-size:14px;font-weight:700;color:var(--demo-t);padding:14px 0">Nothing needs you. Everything else is upcoming.</p>`}
+    </section>`;
+}
+V13_BINDERS.copilot = box => {
+  const cp = box.querySelector('[data-v13-copilot]');
+  if(!cp) return;
+  cp.querySelectorAll('[data-v13-co-sumhide]').forEach(b => b.addEventListener('click', () => { v13CoSumHidden = true; render(); }));
+  cp.querySelectorAll('[data-v13-co-sumshow]').forEach(b => b.addEventListener('click', () => { v13CoSumHidden = false; render(); }));
+  cp.querySelectorAll('[data-v13-co-alt]').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.v13CoAlt; if(v13CoAltOpen.has(k)) v13CoAltOpen.delete(k); else v13CoAltOpen.add(k); render();
+  }));
+  // Same act as the play panel's Start button (data-pb-start), which reads ui.openCustomerId.
+  cp.querySelectorAll('[data-v13-co-play]').forEach(b => b.addEventListener('click', () => {
+    const [cid, key] = b.dataset.v13CoPlay.split('|');
+    const c = DATA.customers.find(x => x.id === cid);
+    if(!c || !playbookDef(key)) return;
+    markUndoable('start play');
+    if(!startPlaybook(c, key)){ showToast('That play is already running on this account, or the account has the most plays it can run.'); return; }
+    saveData(); render();
+    showToast(`"${playbookDef(key).title}" started on ${c.name}. Its steps carry dates and will show on Today.`);
+  }));
+};
 /* ==== end v13 screen: Co-pilot ==== */
 /* (spacer: keeps each screen's block apart so parallel ports merge cleanly)
    (spacer)
