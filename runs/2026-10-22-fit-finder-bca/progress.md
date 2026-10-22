@@ -54,3 +54,4 @@
 | 2026-10-22T07:28:03.661Z | 7 | task | parked | 0 | 0 | 0 | 0 | two strikes |
 | 2026-10-22T07:29:12.757Z | 7 | debug | ok | 108447 | 0.2553894 | 65 | 0 |  |
 | 2026-10-22T07:29:13.570Z | 7 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; |
+| 2026-10-22T07:30:10.000Z | 7 | task | reset | 0 | 0 | 0 | 0 | lead 0dfe9582: Task 7 Check cut -c16- typo fixed to -c15- (PM approved); records kept, no re-score |
