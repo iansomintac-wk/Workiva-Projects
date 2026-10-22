@@ -235,10 +235,11 @@ Measures the fresh held-out set (`data/done_when_strong.jsonl`, replaced by the 
 - Produces: the measured fresh-set C1 count that Task 7 quotes.
 
 - [ ] **Step 1:** Run `node tests/done_when.js --only C1 > research/2026-10-22-done-when-c1.txt; echo "exit $?" >> research/2026-10-22-done-when-c1.txt` (no tee; the saved file keeps node's exit status as its last line).
-- [ ] **Step 2:** Commit the output file whether C1 passes or misses. The bar is 27 of 30 or more with the prompt untouched.
-- [ ] **Step 3:** On a miss, do not tune on the fresh set, do not edit it, do not retrain. `done_when.js` prints no row ids (it is a locked check script; never edit it). List the missed 1-based row numbers with a throwaway script in the OS temp folder (never in the repo) that uses the same pass condition as `done_when.js` lines 41-43 (`noChangesNeeded(o)` true and the Strong and Better prompt text equal to the trimmed original). Append the numbers to the research file and write the count and the missed row numbers into the commit message, then end the task with its Check failing, so Ian gets the numbers (spec: no AI model; a retrain is Ian's call).
+- [ ] **Step 2:** Read the saved file's last line. If it is `exit 2` (a `done_when.js` script error: thrown error, missing file, zero rows), that is not a bar miss: do not commit a result, do not list rows, and end the task with its Check failing, with the file's `ERROR` line in the reply. If it is `exit 0` (C1 at 27 of 30 or more, prompt untouched), go to Step 4. If it is `exit 1` (a bar miss), go to Step 3.
+- [ ] **Step 3:** On a miss, first collect the missed rows; do not tune on the fresh set, do not edit it, do not retrain. `done_when.js` prints no row ids (it is a locked check script; never edit it). List the missed 1-based row numbers with a throwaway script in the OS temp folder (never in the repo) that uses the same pass condition as `done_when.js` lines 41-43 (`noChangesNeeded(o)` true and the Strong and Better prompt text equal to the trimmed original). Append the count and the missed row numbers to `research/2026-10-22-done-when-c1.txt`, so the file is complete before it is committed.
+- [ ] **Step 4:** Commit `research/2026-10-22-done-when-c1.txt`. On a pass, commit it as it stands. On a miss, put the count and the missed row numbers in the commit message and then end the task with its Check failing, so Ian gets the numbers (spec: no AI model; a retrain is Ian's call).
 
-Check: `cd prompt-coach && node tests/done_when.js --only C1 | grep -E '^C1 .*(2[7-9]|30) of 30.*PASS'`
+Check: `cd prompt-coach && grep -qx 'exit 0' research/2026-10-22-done-when-c1.txt && node tests/done_when.js --only C1 | grep -E '^C1 .*(2[7-9]|30) of 30.*PASS'`
 Expect: of 30
 Depends: 2, 5, 9
 Timeout: 10m
