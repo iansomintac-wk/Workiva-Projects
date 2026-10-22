@@ -19,7 +19,12 @@ const P = [{ id: 'T1', task: 'zzqx vvkw' }, { id: 'T2', task: 'zzqx vvkw jjrp' }
 const G = [{ id: 'T1', fit: 'good', cards: [card], by: 'model', conf: 'high' }, { id: 'T2', fit: 'not', cards: [], by: 'model', conf: 'low' }];
 
 const r = run(P, G);
-ok('scores a good pair', r.status === 0 && /^first card right: 0 of 1 that fit; wrong card 0 \(\); no card where one fits 1 \(T1\); card on a not-a-fit prompt 0 \(\); fit agreement \d+ of 2; score 1\n$/.test(r.stdout), `exit ${r.status} out "${r.stdout}" err "${r.stderr.trim()}"`);
+ok('scores a good pair', r.status === 0 && /^first card right: 0 of 1 that fit; wrong card 0 \(\); no card where one fits 1 \(T1\); card on a not-a-fit prompt 0 \(\); fit agreement \d+ of 2; score 1; split: .*\n$/.test(r.stdout), `exit ${r.status} out "${r.stdout}" err "${r.stderr.trim()}"`);
+const rn = run([P[0]], [{ id: 'T1', fit: 'good', cards: [], by: 'model', conf: 'high' }]);
+ok('split: rightly none when no card is shown and the gold is empty', /; split: right feature first 0 of 0, rightly none 1 \(T1\)\n$/.test(rn.stdout) && rn.stdout.includes('first card right: 1 of 1 that fit'), `out "${rn.stdout}"`);
+const rw = run([{ id: 'T1', task: cat.useCases[0].try }], [{ id: 'T1', fit: 'good', cards: [], by: 'model', conf: 'high' }]);
+ok('split: a card shown against an empty gold is wrong, not rightly none', rw.stdout.includes('wrong card 1') && rw.stdout.includes('rightly none 0 ()'), `out "${rw.stdout}"`);
+ok('split: the old line is unchanged before the suffix', r.stdout.includes('; split: ') && /^first card right: 0 of 1 that fit; wrong card 0 \(\); no card where one fits 1 \(T1\); card on a not-a-fit prompt 0 \(\); fit agreement \d+ of 2; score 1\n$/.test(r.stdout.replace(/; split: .*/, '')), `out "${r.stdout}"`);
 const u = spawnSync(process.execPath, [script], { encoding: 'utf8' });
 closed('usage error', u, 'usage');
 closed('duplicate prompt id', run([P[0], P[0]], G), 'duplicate prompt id');

@@ -37,7 +37,8 @@ const notShown = rows.filter((r) => gold.get(r.id).fit === 'not' && first(r));
 const agree = rows.filter((r) => rate(r.task).fit === gold.get(r.id).fit).length;
 const ids = (a) => a.map((r) => r.id).join(',');
 const S = 2 * wrong.length + missed.length + 2 * notShown.length;
-console.log(`first card right: ${fit.length - wrong.length - missed.length} of ${fit.length} that fit; wrong card ${wrong.length} (${ids(wrong)}); no card where one fits ${missed.length} (${ids(missed)}); card on a not-a-fit prompt ${notShown.length} (${ids(notShown)}); fit agreement ${agree} of ${rows.length}; score ${S}`);
+const withGold = fit.filter((r) => want(r).length), rightNone = fit.filter((r) => !want(r).length && !first(r)), R = withGold.filter((r) => first(r) && want(r).includes(first(r))).length;
+console.log(`first card right: ${fit.length - wrong.length - missed.length} of ${fit.length} that fit; wrong card ${wrong.length} (${ids(wrong)}); no card where one fits ${missed.length} (${ids(missed)}); card on a not-a-fit prompt ${notShown.length} (${ids(notShown)}); fit agreement ${agree} of ${rows.length}; score ${S}; split: right feature first ${R} of ${withGold.length}, rightly none ${rightNone.length} (${ids(rightNone)})`);
 if (process.argv.includes('--top3')) {
   const shownIds = (r) => match(r.task, cat).map((u) => u.id);
   const inThree = fit.filter((r) => { const s = shownIds(r); return s.length ? s.some((c) => want(r).includes(c)) : !want(r).length; });
