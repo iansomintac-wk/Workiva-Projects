@@ -38,3 +38,4 @@
 | 2026-10-22T07:10:10.053Z | 14 | task | blocked | 0 | 0 | 0 | 0 | depends on a task that is parked or not done |
 | 2026-10-22T07:11:02.593Z | 5 | debug | ok | 121437 | 0.2638362 | 49 | 0 |  |
 | 2026-10-22T07:11:03.520Z | 5 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; |
+| 2026-10-22T07:20:34.000Z | 5 | task | reset | 0 | 0 | 0 | 0 | lead 0dfe9582: plan order fixed (1a129ab, tooling is now Task 5); re-run |
