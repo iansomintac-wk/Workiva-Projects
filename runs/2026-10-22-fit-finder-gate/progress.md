@@ -72,3 +72,5 @@
 | 2026-10-23T02:54:24.914Z | 10 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; fair-guard PASS |
 | 2026-10-23T02:54:37.232Z | 10 | checker | pass | 32784 | 0.028527300000000002 | 12 | 0 | PASS: the HEAD commit changes only the evidence file, adding `PINS-MOVED: none (reverted, engine equals ae60341)` after  |
 | 2026-10-23T02:54:37.237Z | 10 | task | done | 0 | 0 | 0 | 0 | attempt 1 |
+| 2026-10-23T02:56:39.294Z | 0 | review | ok | 366880 | 0.7300180000000001 | 110 | 0 |  |
+| 2026-10-23T02:57:53.588Z | 0 | codex | ok | not measured | not measured | 74 | 0 |  |
