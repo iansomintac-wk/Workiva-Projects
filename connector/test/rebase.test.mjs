@@ -7,6 +7,8 @@ import { loadAdapters } from '../adapters/index.mjs';
 
 const DAY = 86400000;
 const now = () => Date.now() + 90 * DAY;
+// The tracker's todayISO() is the LOCAL date, so the rebase target is the local date too.
+const localISO = (ms) => { const d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const iso = (ms) => new Date(ms).toISOString();
 
 test('default config keeps the fixed fixture dates', async () => {
@@ -24,7 +26,7 @@ test('rebaseToToday calls: all inside 30d, spacing unchanged, newest 1 day befor
   const r0 = Date.parse(calls[0].startedAt);
   calls.forEach((c, i) => assert.equal(Date.parse(c.startedAt) - r0, Date.parse(base[i].startedAt) - t0));
   const newest = Math.max(...calls.map((c) => Date.parse(c.startedAt)));
-  assert.equal(iso(newest).slice(0, 10), iso(now() - DAY).slice(0, 10));
+  assert.equal(iso(newest).slice(0, 10), localISO(now() - DAY));
 });
 
 test('rebaseToToday csat: every row, sent <= answered, empty stays empty', async () => {
@@ -37,13 +39,13 @@ test('rebaseToToday csat: every row, sent <= answered, empty stays empty', async
     else assert.equal(base[i].CSAT_ANSWERED_DATE, '');
   });
   const newest = rows.flatMap((r) => [r.CSAT_SENT_DATE, r.CSAT_ANSWERED_DATE]).filter(Boolean).sort().at(-1);
-  assert.equal(newest, iso(now() - DAY).slice(0, 10));
+  assert.equal(newest, localISO(now() - DAY));
 });
 
 test('shiftISO keeps the time part; rebaseDays counts whole days minus lag', () => {
   assert.equal(shiftISO('2026-09-08T14:00:00Z', 10), '2026-09-18T14:00:00Z');
   assert.equal(shiftISO('2026-09-08', -8), '2026-08-31');
-  assert.equal(rebaseDays('2026-09-20', Date.parse('2026-09-30T05:00:00Z')), 9);
+  assert.equal(rebaseDays('2026-09-20', new Date(2026, 8, 30, 12).getTime()), 9);
 });
 
 test('loadAdapters passes rebaseToToday and now to the fakes', async () => {
