@@ -58,7 +58,7 @@ ok('summary from split with differing first-card number', 'final', { b: B, a: [2
 
 // git mode: engine/fit.js at BASE must be compared with HEAD (was a doubled path, always 'same')
 const gr = run('before', { sha: '23757a5' }, true);
-if (!/engine\/fit\.js differs from BASE/.test(gr.stdout)) fail('git mode: BASE with a different engine/fit.js should report that it differs; got: ' + gr.stdout.trim());
+if (!/differs from BASE/.test(gr.stdout)) fail('git mode: BASE with a different engine/fit.js should report that it differs; got: ' + gr.stdout.trim());
 
 // engine-scope
 const base = fs.readFileSync(path.join(root, 'engine/fit.js'), 'utf8').replace(/\r\n/g, '\n');
@@ -81,4 +81,63 @@ expect('crlf vs lf', es.check(crlf(base), base), true);
 const mixed = (s) => s.split('\n').map((l, i, all) => i % 2 && i < all.length - 1 ? l + '\r' : l).join('\n');
 expect('lf vs mixed ops change', es.check(base, mixed(inOps)), true);
 expect('mixed STEP', es.check(base, mixed(step)), false);
+// engine-scope strict mode (--ops-only)
+const ST = { opsOnly: true };
+const stc = (t) => { try { return es.check(base, t, ST); } catch (e) { return ['threw: ' + e.message]; } };
+const gate13 = base.indexOf('    let fit;\n') + 13;
+const gateEdit = base.slice(0, gate13) + ' ' + base.slice(gate13);
+const readAt = base.indexOf('    READ: /');
+const valEdit = base.slice(0, readAt + 11) + '(?:)' + base.slice(readAt + 11);
+const eol = base.indexOf('\n', readAt);
+expect('strict same', stc(base), true);
+expect('strict value change', stc(valEdit), true);
+expect('strict gate edit', stc(gateEdit), false);
+expect('non-strict gate edit passes', es.check(base, gateEdit), true);
+expect('strict added key line', stc(base.slice(0, readAt) + '    newkey: /zzqx/,\n' + base.slice(readAt)), false);
+expect('strict added lowercase key line', stc(base.slice(0, readAt) + '    lowerkey: /zzqx/,\n' + base.slice(readAt)), false);
+expect('strict renamed key', stc(once(base, '    READ:', '    READX:')), false);
+expect('strict deleted line', stc(base.slice(0, readAt) + base.slice(eol + 1)), false);
+expect('strict STEP change', stc(step), false);
+const lineEnd = base.slice(readAt, eol).endsWith(',') ? eol : fail('first OPS line does not end with a comma');
+expect('strict key on existing line', stc(base.slice(0, lineEnd) + ' newkey: /zzqx/,' + base.slice(lineEnd)), false);
+expect('strict duplicate key on existing line', stc(base.slice(0, lineEnd) + ' READ: /zzqx/,' + base.slice(lineEnd)), false);
+expect('strict ", x: /" inside a regex value', stc(once(base, '    READ: /', '    READ: /a|, x: \\/|')), true);
+const l1 = base.indexOf('\n', readAt) + 1, l2 = base.indexOf('\n', l1) + 1, l3 = base.indexOf('\n', l2) + 1;
+expect('strict reordered properties', stc(base.slice(0, l1) + base.slice(l2, l3) + base.slice(l1, l2) + base.slice(l3)), false);
+{
+  const fb = path.join(dir, 'base.js'), fn = path.join(dir, 'gate.js');
+  fs.writeFileSync(fb, base); fs.writeFileSync(fn, gateEdit);
+  const esCli = path.join(__dirname, 'engine-scope.js');
+  const r = spawnSync('node', [esCli, '--files', fb, fn, '--ops-only'], { encoding: 'utf8' });
+  if (r.status !== 1 || !/engine-scope FAIL/.test(r.stdout)) fail('CLI --ops-only should exit 1 with engine-scope FAIL; got ' + r.status + ' ' + r.stdout);
+  const r2 = spawnSync('node', [esCli, '--files', fb, fn], { encoding: 'utf8' });
+  if (r2.status !== 0) fail('CLI without the flag should exit 0');
+}
+
+// gitCheck with a scripted runner
+let gg = null;
+try { gg = require('./gate-git.js'); } catch (e) { /* reported by each case */ }
+function gcase(name, outcome, st, wantEmpty) {
+  // st: { diff, tune3, plain, scope } statuses
+  const calls = [];
+  const run = (cmd, args) => {
+    calls.push([cmd, args]);
+    if (cmd === 'git') return st.diff;
+    if (args.includes('--allow')) return st.tune3;
+    if (args.some((x) => /engine-scope/.test(x))) return st.scope;
+    return st.plain;
+  };
+  let got;
+  try { got = gg.gitCheck('fb26061', outcome, run); } catch (e) { got = ['threw: ' + e.message]; }
+  if ((got.length === 0) !== wantEmpty) fail('gitCheck ' + name + (wantEmpty ? ' should be empty: ' : ' should report a problem; got ') + got.join('; '));
+  return calls;
+}
+const cj = gcase('kept ok', 'kept', { diff: 1, tune3: 0, plain: 1, scope: 0 }, true);
+gcase('kept but same', 'kept', { diff: 0, tune3: 0, plain: 1, scope: 0 }, false);
+gcase('kept scope fails', 'kept', { diff: 1, tune3: 0, plain: 1, scope: 1 }, false);
+gcase('kept tune3 fails', 'kept', { diff: 1, tune3: 1, plain: 1, scope: 0 }, false);
+gcase('reverted differs', 'reverted', { diff: 1, tune3: 0, plain: 0, scope: 0 }, false);
+gcase('reverted same', 'reverted', { diff: 0, tune3: 1, plain: 0, scope: 1 }, true);
+const gd = cj.find((c) => c[0] === 'git');
+if (!gd || !gd[1].includes(':(top)fit-finder/engine/fit.js') || !gd[1].includes(':(top)fit-finder/data/catalogue.json')) fail('gitCheck git diff should name engine/fit.js and data/catalogue.json');
 console.log('gate-selftest ok');

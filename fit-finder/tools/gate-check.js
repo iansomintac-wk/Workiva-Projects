@@ -68,16 +68,7 @@ if (b) {
 }
 if (!noGit && base && base.v && !bad.length) {
   const run = (cmd, args) => spawnSync(cmd, args, { cwd: root, encoding: 'utf8' }).status;
-  const sha = base.v, mf = path.join(root, 'tests/match-frozen.js');
-  const same = run('git', ['diff', '--quiet', sha, 'HEAD', '--', ':(top)fit-finder/engine/fit.js']) === 0;
-  if (finalOutcome === 'kept') {
-    if (same) bad.push('kept but engine/fit.js equals BASE');
-    if (run('node', [mf, '--base', sha, '--allow', 'engine']) !== 0) bad.push('match-frozen --allow engine fails');
-    if (run('node', [mf, '--base', sha]) === 0) bad.push('match-frozen passes without --allow engine');
-  } else {
-    if (!same) bad.push('engine/fit.js differs from BASE but outcome is ' + finalOutcome);
-    if (run('node', [mf, '--base', sha]) !== 0) bad.push('match-frozen --base fails');
-  }
+  bad.push(...require('./gate-git.js').gitCheck(base.v, finalOutcome, run));
 }
 if (bad.length) { console.log('gate-check FAIL: ' + bad.join('; ')); process.exit(1); }
 const f = (t, x) => `${t} feature ${x.R} of ${x.F} wrong ${x.W} no-card ${x.N} not-a-fit ${x.K}`;
