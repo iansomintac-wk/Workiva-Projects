@@ -63,3 +63,4 @@
 | 2026-10-23T02:48:35.165Z | 10 | task | blocked | 0 | 0 | 0 | 0 | depends on a task that is parked or not done |
 | 2026-10-23T02:49:46.493Z | 8 | debug | ok | 86208 | 0.26273 | 67 | 0 |  |
 | 2026-10-23T02:49:47.648Z | 8 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; |
+| 2026-10-23T02:51:14.000Z | 8 | task | done | 0 | 0 | 0 | 0 | lead 9ca3e0a8: plan Check unedited passes on the task's own commits (steps 1-11 on scratch T7+23757a5+1cc43a1, exit at step 12 only for absent git-ignored data/real; steps 12-14 pass on branch, same fit-finder tree c500222); its only failure on the branch is step 9 listing driver-committed runs/ files. N 25->23, guard PASS, engine-scope ok |
