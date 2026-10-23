@@ -71,6 +71,11 @@ test('c5_gate eval is a floor at 0.856, not an exact match', () => {
     assert.ok(!/both locations and both values/.test(s), s);
   });
 
+  test('hyphenated SoD-conflicts is not consistency in pick()', () => {
+    assert.notStrictEqual(C.pick('Review the SoD-conflicts report.', CLS).intent, 'consistency');
+    assert.strictEqual(W.intentOf(R.normalize('review the segregation-of-duties-conflict listing'), false, true), null);
+  });
+
   test('conflict of interest is not consistency in pick()', () => {
     assert.notStrictEqual(C.pick('Flag any conflict of interest in the vendor list.', CLS).intent, 'consistency');
   });

@@ -76,6 +76,37 @@ changes, or any gate number gets worse.
 
 Not measurable here: whether the new GRC-W2 prompt gets the intended answer. That needs a sandbox send on a fresh set.
 
+## Result (Measured by the lead after febed14, implementer Sonnet via studio-harness:implementer)
+
+- Red before green: the new tests run on the parent's engine (4edd07d export) fail 3 targeted tests (SoD report,
+  conflict of interest, strict intentOf null); the two "stays consistency" tests pass both ways, as designed. (A 4th
+  fail there, "evidence line names FR3 and GEN29", is an artifact of exporting only `prompt-coach/`; it passes on HEAD.)
+  On HEAD: c1_fixes + train_order 12 pass / 0 fail.
+- Gates on HEAD, same as the baseline: c5 exit 0 (eval acc 0.866; customer_check 229 runs; rewrite_unit 77/0; pagetest
+  22/0); done_when `--only C2,C4` C2 8/247 and 3/111, C4 0. Rebuild leaves the tree clean; committed dist 345,899 bytes.
+- Snapshot diff: 2 of 1,883 keys differ. weak12 GRC-W2 `consistency`/sure -> no intent/unsure. train_grc row 44
+  ("Look for segregation of duties conflicts ...") changed only in the snapshot's keyword-pattern field; its `pick()`
+  stays `anomaly`/sure. **Correction:** the prediction "exactly 1 of 1,883 snapshot rows changes" was wrong as worded,
+  because the lead put the keyword-pattern result into the snapshot key. On `pick()` intent and sureness, which is what
+  the prediction was about, exactly 1 row changed and 0 labelled rows did.
+- The GRC-W2 original with an Excel file attached (seam check, `$CLAUDE_JOB_DIR/tmp/grcw2.js`): the parent reproduces
+  C3's Strong text exactly ("... list every number or statement that does not match. For each mismatch, give both
+  locations and both values in a table. Do not decide which value is correct."); HEAD gives "... For the attached SoD
+  conflicts report: identify and list the key points and where each one appears. Format it as a short table. Do not
+  add facts that are not in the source, and list any open questions separately."
+- Assumed, untested: that the new prompt gets GRC-W2's intended answer (needs a sandbox send on a fresh set).
+
+### Review round (`/code-review low 4edd07d..febed14`, 3 findings, each tested by the lead)
+
+- Hyphen: "Review the SoD-conflicts report." still picked `consistency` (model 0.94, pattern matched; `R.normalize`
+  lowercases and collapses spaces but keeps hyphens). Reproduced, fixed test-first (new test red, then green): both
+  guards take `[- ]`. After: c1_fixes + train_order 13/0; gates unchanged from the baseline; snapshot diff the same 2
+  keys; dist 345,908 bytes (+9 characters).
+- Guard skipped when another pattern matches ("list the gaps in our SoD conflicts"): not reproduced, the model says
+  `anomaly` (0.69). Known limit, no code: a prompt where the model says `consistency`, another pattern matches and the
+  only consistency cue is the noun would still get `consistency`. None found.
+- "sod conflicting": not reproduced, the model says `other` (0.39), already unsure.
+
 ## Disclosures
 
 - Fresh strong-30 (`data/done_when_strong.jsonl`): 1 row (line 11) was shown to the lead by an unscoped grep at 04:0xZ.

@@ -22,7 +22,7 @@
     ['gaps', /\b(gaps?|missing (?:controls?|evidence|steps?|owners?|information|disclosures?)|incomplete|deficienc|weakness(?:es)?|not covered|coverage)/],
     ['rewrite', /\b(rewrite|re-?word|rephrase|shorten|tighten|condense|trim|simplify|edit|proofread|polish|make (?:it|this) (?:shorter|clearer|more concise|sound)|plain english|tone)/],
     ['formula', /\b(formula|vlookup|xlookup|sumif|index ?match|pivot|query|sql|wdata|calculated field|excel function)/],
-    ['consistency', /\b(consisten|inconsisten|(?<!sod )(?<!duties )conflict(?!s? of interest)|contradict|tie[- ]?out|tie out|ties to|tick and tie|match(?:es)? (?:the|between)|cross-?check|cross-?reference|discrepanc|mismatch|agree to)/],
+    ['consistency', /\b(consisten|inconsisten|(?<!sod[- ])(?<!duties[- ])conflict(?!s? of interest)|contradict|tie[- ]?out|tie out|ties to|tick and tie|match(?:es)? (?:the|between)|cross-?check|cross-?reference|discrepanc|mismatch|agree to)/],
     ['anomaly', /\b(anomal|outlier|unusual|missing values?|blank|duplicate|odd|spike|suspicious|data quality|gaps? in the data|errors? in the data)/],
     ['variance', /\b(varian|flux|change[sd]? (?:from|between|vs|versus)|year[- ]over[- ]year|yoy|quarter[- ]over[- ]quarter|qoq|increase|decrease|drove|drivers?|movement|trend|went up|went down|go(?:es)? (?:up|down)|(?:up|down) (?:vs|versus|from|compared)|spiked|dropped|grew|declin)/],
     ['map', /\b(map|mapping|crosswalk|align (?:to|with)|which (?:principle|requirement|criteria|control objective)|link (?:each|the) .{0,20}to)/],
