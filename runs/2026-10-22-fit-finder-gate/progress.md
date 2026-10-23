@@ -45,3 +45,4 @@
 | 2026-10-23T00:48:14.148Z | 8 | task | waiting | 0 | 0 | 0 | 0 | depends on a look awaiting Ian |
 | 2026-10-23T00:48:18.221Z | 9 | task | waiting | 0 | 0 | 0 | 0 | depends on a look awaiting Ian |
 | 2026-10-23T00:48:22.249Z | 10 | task | waiting | 0 | 0 | 0 | 0 | depends on a look awaiting Ian |
+| 2026-10-23T02:43:50.000Z | 5 | task | done | 0 | 0 | 0 | 0 | Ian accepted the PM labels (typed in session bca3ff92: "i accept the labels"); ian-label-batch.json written |
