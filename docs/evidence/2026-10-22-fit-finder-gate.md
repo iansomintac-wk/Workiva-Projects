@@ -25,3 +25,8 @@ OUTCOME: reverted
 REASON: no-card fall < 2 (15 to 15)
 PREDICTION: did not hold
 PINS-MOVED: none (reverted, engine equals ae60341)
+
+REVIEW NOTES (lead, after the final review, 2026-10-23):
+- The tune stopped after 3 of 12 attempts (N 25 to 23, target 19) for a reason the plan does not list ("remaining gate misses need card keywords (match frozen)"). The gate set may be scored only once, so "reverted" is the result of a short tune, not a full one.
+- Task 8's Check failed only at its allowlist step: `git diff --name-only <task 7> HEAD` also listed the driver's own runs/ commits. Run unedited on the task's own commits (scratch copy, same fit-finder tree c500222), steps 1-11 passed; steps 12-14 passed on the branch. The lead marked Task 8 done.
+- Both reviewers found one must-fix: tools/gate-check.js:72 checked the engine with a path relative to fit-finder/, so it could never see an engine change. Fixed in f54aee8 with Ian's yes (":(top)" path, plus a git-mode case in gate-selftest.js that fails on the old line). This run's result does not change (match-frozen --base confirms engine equals ae60341).
