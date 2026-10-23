@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadCsat } from '../tools/lib/csat-fixture.mjs';
 
-const FNS = ['riskVerdictState', 'riskItemHasReason', 'riskItemIsRisk', 'setRiskVerdict', 'markRiskActioned', 'confirmRiskCase', 'buildRiskCases', 'openDeskRiskConfirm'];
+const FNS = ['riskVerdictState', 'riskItemHasReason', 'riskItemIsRisk', 'setRiskVerdict', 'markRiskActioned', 'confirmRiskCase', 'riskConfirmToast', 'buildRiskCases', 'openDeskRiskConfirm'];
 const CONSTS = ['RISK_VERDICTS', 'RISK_DISMISS_EXPIRY_DAYS'];
 
 function world(trackings) {
@@ -34,4 +34,14 @@ test('desk Confirm on an unreviewed signal still confirms the case with the reas
   ctx.openDeskRiskConfirm('a|sig0');
   assert.equal(log['a|sig0'].verdict, 'confirmed');
   assert.equal(log['a|sig1'].verdict, 'confirmed');
+});
+
+test('Risk-tab Yes it is real on a legacy-confirmed case: toast says what happened, not "confirmed", when a signal was skipped', () => {
+  const { ctx, items } = world([{ verdict: 'confirmed', verdictOn: '2026-09-02', verdictSev: 3 }, {}]);
+  const k = { c: items[0].c, items };
+  const skipped = ctx.riskConfirmToast(k, true);
+  assert.match(skipped, /skipped|left as|not reviewed/i);
+  assert.doesNotMatch(skipped, /confirmed as a real risk/i);
+  assert.match(ctx.riskConfirmToast({ c: items[0].c, items: [items[0]] }, true), /already confirmed|reason added/i);
+  assert.match(ctx.riskConfirmToast(k, false), /Acme confirmed as a real risk/);
 });

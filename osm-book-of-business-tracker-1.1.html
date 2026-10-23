@@ -12014,6 +12014,14 @@ function confirmRiskCase(k, reason, onlyConfirmed){
     setRiskVerdict(it, 'confirmed', reason); markRiskActioned(it, false);
   });
 }
+/* Fix B S1: say what the Risk-tab "Yes - it's real" did. Adding a reason to a pre-1.2 confirmation never confirms a signal nobody reviewed, so the toast must not claim a case confirmation then. */
+function riskConfirmToast(k, addingReason){
+  if(!addingReason) return `${k.c.name} confirmed as a real risk — next steps and the summary are open.`;
+  const skipped = k.items.filter(x => riskVerdictState(x) !== 'confirmed').length;
+  return skipped
+    ? `Reason added to the already-confirmed signal. ${skipped} other signal${skipped === 1 ? ' was' : 's were'} skipped, not reviewed, left as they were.`
+    : 'Already confirmed as a real risk — reason added.';
+}
 function dismissRiskCase(k, reason){
   k.items.forEach(it => { if(riskVerdictState(it) !== 'confirmed') setRiskVerdict(it, 'dismissed', reason); });
 }
@@ -17242,8 +17250,9 @@ The draft is discarded. The risk itself stays open.`)) return;
     const addingReason = k.items.some(x => riskVerdictState(x) === 'confirmed' && !riskItemHasReason(x));   // N3: adding a reason to a legacy confirmation never confirms a signal nobody reviewed
     showRiskConfirmModal(k, reason => {
       markUndoable('risk verdict');
+      const msg = riskConfirmToast(k, addingReason);
       confirmRiskCase(k, reason, addingReason);
-      showToast(`${k.c.name} confirmed as a real risk — next steps and the summary are open.`);
+      showToast(msg);
       render();
     });
   }));

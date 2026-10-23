@@ -83,7 +83,16 @@ export function create(cfg = {}, deps = {}) {
       if (pr.status !== 200) throw fail(pr);
       data = data.concat((pr.json && pr.json.data) || []);
     }
-    let rows = data.map((row) => Object.fromEntries(FIELDS.map((f, k) => [f, row[idx[k]] == null ? '' : String(row[idx[k]])])));
+    // UNVERIFIED against a live account: a reviewer read in the Snowflake SQL API docs that DATE values come back as
+    // epoch-day integer strings (e.g. "19723"). Convert those by rowType type 'date'; ISO strings pass through unchanged.
+    const isDate = FIELDS.map((f, k) => String(((meta.rowType || [])[idx[k]] || {}).type || '').toLowerCase() === 'date');
+    const cell = (v, k) => {
+      if (v == null) return '';
+      const s = String(v);
+      if (isDate[k] && /^-?\d+$/.test(s)) return new Date(Number(s) * 86400000).toISOString().slice(0, 10);
+      return s;
+    };
+    let rows = data.map((row) => Object.fromEntries(FIELDS.map((f, k) => [f, cell(row[idx[k]], k)])));
     if (since) {
       const t = String(since).slice(0, 10);
       rows = rows.filter((x) => (x.CSAT_ANSWERED_DATE || x.CSAT_SENT_DATE) >= t);

@@ -96,3 +96,9 @@ test('docs F24: the transcript scope is never stated as fact for the key (measur
     if (/transcript scope|api:calls:read:transcript/.test(l)) assert.ok(/to confirm/.test(l), `unmarked: ${l}`);
   }
 });
+test('Fix B N2: CONNECT-SNOWFLAKE.md flags the region-style JWT account identifier as unverified and says what to check', () => {
+  const t = read(join(root, 'CONNECT-SNOWFLAKE.md'));
+  assert.match(t, /xy12345\.us-east-2\.aws/);
+  assert.match(t, /UNVERIFIED[^\n]*(account identifier|JWT)/i);
+  assert.match(t, /401/);
+});

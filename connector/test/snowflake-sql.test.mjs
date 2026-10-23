@@ -115,3 +115,19 @@ test('s7 Authorization is Bearer <jwt> with KEYPAIR_JWT, and the key text never 
   assert.ok(!all.includes(keyBody.slice(0, 40)) && !all.includes('PRIVATE KEY'));
   assert.deepEqual(blocked, []);
 });
+
+test('s8 DATE columns arriving as epoch-day strings become YYYY-MM-DD; ISO strings and empties still work', async () => {
+  const body = structuredClone(steps('snowflake-200.json')[0].body);
+  const rt = body.resultSetMetaData.rowType;
+  const iS = rt.findIndex((c) => c.name === 'CSAT_SENT_DATE');
+  const iA = rt.findIndex((c) => c.name === 'CSAT_ANSWERED_DATE');
+  rt[iS].type = 'date'; rt[iA].type = 'date';
+  body.data = [body.data[0].slice(), body.data[1].slice()];
+  body.data[0][iS] = '19723'; body.data[0][iA] = '19724';   // 2024-01-01, 2024-01-02
+  body.data[1][iS] = '2024-03-05'; body.data[1][iA] = null;
+  const rows = await adapter(stub([{ status: 200, body }]).fn).listCsat();
+  assert.equal(rows[0].CSAT_SENT_DATE, '2024-01-01');
+  assert.equal(rows[0].CSAT_ANSWERED_DATE, '2024-01-02');
+  assert.equal(rows[1].CSAT_SENT_DATE, '2024-03-05');
+  assert.equal(rows[1].CSAT_ANSWERED_DATE, '');
+});

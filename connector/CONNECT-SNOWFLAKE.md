@@ -18,6 +18,8 @@ Please:
 2. Give that user a read-only role with USAGE on the warehouse, database and schema, and SELECT on the CSAT table or view only. No INSERT, UPDATE, DELETE or DDL.
 3. Tell us the account identifier and the warehouse name.
 
+The JWT account-identifier format for region-style accounts (for example `xy12345.us-east-2.aws`) is UNVERIFIED: the adapter uppercases `snowflake.account` exactly as given (any region suffix included) when it builds the JWT issuer, and Snowflake's key-pair docs may want a different form there; it has not been run against a live account. When live access arrives and `--check` returns 401, try the org-account form (`ORG-ACCOUNT`) in `snowflake.account` and compare the issuer (`iss`) with the one Snowflake shows for the user's key.
+
 Whether a Snowflake network policy blocks this machine is UNCONFIRMED for this account. If `--check` fails with a 401 or 403, ask the admin to allow this machine's IP in the user's network policy.
 
 ## Column mapping

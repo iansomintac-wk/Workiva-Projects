@@ -57,3 +57,13 @@ test('guard-3 errors never contain the private key', () => {
     assert.ok(!e.message.includes(privateKeyPem.split('\n')[1]));
   }
 });
+
+test('guard-4 WITH may not define a procedure or contain a write; a plain CTE SELECT passes', () => {
+  assert.throws(() => assertReadOnlySql('WITH p AS PROCEDURE () RETURNS INT LANGUAGE SQL AS $$ BEGIN DROP TABLE t; END $$ CALL p()'));
+  assert.throws(() => assertReadOnlySql('WITH x AS (SELECT 1) DELETE FROM t'));
+  assert.throws(() => assertReadOnlySql('WITH x AS (SELECT 1) INSERT INTO t SELECT * FROM x'));
+  assert.throws(() => assertReadOnlySql('with x as (select 1) merge into t using x on 1=1 when matched then delete'));
+  assert.throws(() => assertReadOnlySql('WITH x AS (SELECT 1) UPDATE t SET a = 1'));
+  const ok = "WITH x AS (SELECT 'updated' AS note, 1 AS deleted_at) SELECT * FROM x";
+  assert.equal(assertReadOnlySql(ok), ok);
+});

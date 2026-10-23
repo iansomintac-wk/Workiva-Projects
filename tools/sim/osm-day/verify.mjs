@@ -20,7 +20,7 @@ const VERSIONS = ['1.0', '1.1'];
 const PREFIXES = ['fieldtest-', 'osmsim-', 'clockspike-', 'aispike-'];
 const HASHES = {
   '1.0': '88ff9926fd49c837103b9b0eb9ebe554f8e5cbe2a48a0b6a55926441b67a64c4',
-  '1.1': '8e9ff9581337dbc13f1051badbe250dc3508780cbdf4363b818a32e07ddc4759',
+  '1.1': '17e74f8a211e1f0255051f51cfe8c243a4b649acdc9758d3bf7570d2dad2cab7',
 };
 const trackerFile = v => join(ROOT, `osm-book-of-business-tracker-${v}.html`);
 
