@@ -1,0 +1,18 @@
+FIT FINDER NO-CARD STEP 3: RESUME THE RUN. Written 2026-10-23 07:35Z by run lead c6f936e9.
+Load studio-harness:talk-and-run first (the run). You are the run lead: coordinate only.
+Worktree: C:/Users/teasp/Documents/workiva/.claude/worktrees/fit-finder-no-card-step3, branch fit-finder-no-card-step3.
+Ledger: .ledger/2026-10-23-fit-finder-no-card-step3/ (progress.md "## Run" section is the state). Run prompt with all rules: docs/FIT_FINDER_STEP3_RUN_PROMPT.txt.
+
+Done: plan docs/superpowers/plans/2026-10-23-fit-finder-no-card-step3.md (10 tasks), reviewed Opus r1 + Codex r1-r3, all must-fix closed, PM proxy approved, committed ab89d72. gates.mjs exit 0.
+Parked: 2026-10-23-fit-finder-no-card-step3/T0 (driver start). fit-finder/data/real is missing (test -d only; never list or open it). Ian answered 05:26Z "I'll run the copy (Recommended)" but the folder was still absent at 07:34Z. Do not copy it yourself (auto mode refused once).
+
+Order of work:
+1. First checks (STUDIO_RUN_LEDGER, budget.json, slip.json). test -d fit-finder/data/real. If missing: tell Ian once, the line is
+   ! cp -r C:/Users/teasp/Documents/workiva/.claude/worktrees/fit-finder-gate/fit-finder/data/real C:/Users/teasp/Documents/workiva/.claude/worktrees/fit-finder-no-card-step3/fit-finder/data/real
+   and end (no waiting loop: the last one was killed for low memory).
+2. When present: start the driver detached, as step 2 did:
+   node C:/Users/teasp/Documents/studio-harness/bin/driver-start.mjs --log <ABSOLUTE ledger>/driver.log -- --plan docs/superpowers/plans/2026-10-23-fit-finder-no-card-step3.md --repo C:/Users/teasp/Documents/workiva/.claude/worktrees/fit-finder-no-card-step3 --run 2026-10-23-fit-finder-no-card-step3 --base prompt-coach --no-merge
+   Check driver.log's first line is 'worker start: build' (Task 0). Clear the park: gates.mjs decide ... done.
+3. Then the run prompt's steps 4-6 (label batch to Ian at Task 4, final review Opus + Codex, evidence, merge ask with measured suite).
+Rules: as in the run prompt (data ban in every helper and Codex prompt; $0; nothing to the brain).
+Session names: predecessor c6f936e9 (owns no worktree; ff5e5d85 owns it, keep ff5e5d85).
