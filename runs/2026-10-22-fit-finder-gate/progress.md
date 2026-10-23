@@ -64,3 +64,7 @@
 | 2026-10-23T02:49:46.493Z | 8 | debug | ok | 86208 | 0.26273 | 67 | 0 |  |
 | 2026-10-23T02:49:47.648Z | 8 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; |
 | 2026-10-23T02:51:14.000Z | 8 | task | done | 0 | 0 | 0 | 0 | lead 9ca3e0a8: plan Check unedited passes on the task's own commits (steps 1-11 on scratch T7+23757a5+1cc43a1, exit at step 12 only for absent git-ignored data/real; steps 12-14 pass on branch, same fit-finder tree c500222); its only failure on the branch is step 9 listing driver-committed runs/ files. N 25->23, guard PASS, engine-scope ok |
+| 2026-10-23T02:51:51.814Z | 9 | build | ok | 82327 | 0.07075580000000001 | 24 | 0 |  |
+| 2026-10-23T02:51:52.947Z | 9 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; gate-check ok final reverted; before feature 14 of 31 wrong 3 no-card 15 not-a-fit 0; after feature 14 of 31 wro |
+| 2026-10-23T02:52:05.672Z | 9 | checker | pass | 23443 | 0.0398426 | 13 | 0 | PASS: the commit changes only the evidence file and `fit.js`, and the evidence matches the task's keep/revert rule. - ** |
+| 2026-10-23T02:52:05.679Z | 9 | task | done | 0 | 0 | 0 | 0 | attempt 1 |

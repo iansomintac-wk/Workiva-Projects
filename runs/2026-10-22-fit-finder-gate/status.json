@@ -1,10 +1,10 @@
 {
   "run": "2026-10-22-fit-finder-gate",
-  "state": "stopped",
-  "pid": 16656,
-  "task": 8,
+  "state": "running",
+  "pid": 33256,
+  "task": 9,
   "of": 11,
-  "step": "stopped",
+  "step": "check",
   "attempts": [
     {
       "attempt": 1,
@@ -17,15 +17,21 @@
       "startedAt": "2026-10-23T02:44:06.939Z",
       "peakWorkerMb": 488,
       "minFreeGb": 7.4
+    },
+    {
+      "attempt": 3,
+      "startedAt": "2026-10-23T02:51:26.360Z",
+      "peakWorkerMb": 458,
+      "minFreeGb": 8.7
     }
   ],
-  "peakWorkerMb": 488,
-  "minFreeGb": 7.4,
+  "peakWorkerMb": 458,
+  "minFreeGb": 8.7,
   "startedAt": "2026-10-23T00:29:40.891Z",
-  "updatedAt": "2026-10-23T02:49:47.659Z",
-  "elapsedSec": 8407,
-  "tokens": 2442753,
-  "usage_cost_usd": 2.3182,
+  "updatedAt": "2026-10-23T02:52:05.681Z",
+  "elapsedSec": 8545,
+  "tokens": 2548523,
+  "usage_cost_usd": 2.4288,
   "usage_cost_note": "summed total_cost_usd of the workers: subscription usage, not money",
   "done": [
     0,
@@ -35,17 +41,16 @@
     4,
     5,
     6,
-    7
+    7,
+    8,
+    9
   ],
-  "parked": [
-    8
-  ],
+  "parked": [],
   "blocked": [
-    9,
     10
   ],
   "awaiting": [],
   "waiting": [],
-  "pidCreated": "2026-10-23T02:44:00.9336800Z",
+  "pidCreated": "2026-10-23T02:51:21.2022990Z",
   "reason": null
 }
