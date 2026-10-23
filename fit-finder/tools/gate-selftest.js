@@ -1,4 +1,4 @@
-/* node tools/gate-selftest.js : exercises gate-check.js (--no-git) and engine-scope.js. Prints gate-selftest ok or the first failure. */
+/* node tools/gate-selftest.js : exercises gate-check.js (--no-git, plus one git-mode engine-diff case) and engine-scope.js. Prints gate-selftest ok or the first failure. */
 const fs = require('fs'), os = require('os'), path = require('path'), { spawnSync } = require('child_process');
 const root = path.join(__dirname, '..');
 const gc = path.join(__dirname, 'gate-check.js');
@@ -12,7 +12,7 @@ const line = (R, F, W, N, K, cr) => `first card right: ${cr === undefined ? R + 
 const sum = (tag, R, F, W, N, K) => `${tag} feature ${R} of ${F}, wrong ${W}, no card ${N}, not-a-fit ${K}`;
 function doc(o) {
   const b = o.b || [17, 29, 2, 8, 0], a = o.a;
-  const L = ['BASE-SHA: ae60341', 'BEFORE-LINE: ' + line(...b), o.beforeSum || sum('BEFORE:', ...b)];
+  const L = ['BASE-SHA: ' + (o.sha || 'ae60341'), 'BEFORE-LINE: ' + line(...b), o.beforeSum || sum('BEFORE:', ...b)];
   if (!o.noPred) { if (!o.pmLate) L.push('PREDICTION-PM: x'); L.push('PREDICTION-LEAD: y'); }
   if (o.outcome && !a) L.push('OUTCOME: ' + o.outcome);
   if (o.reason) L.push('REASON: ' + o.reason);
@@ -24,11 +24,11 @@ function doc(o) {
   }
   return L.join('\n') + '\n';
 }
-function run(stage, o) {
+function run(stage, o, git) {
   const f = path.join(dir, 'ev' + (n++) + '.md');
   fs.writeFileSync(f, doc(o));
-  const r = spawnSync('node', [gc, f, '--stage', stage, '--no-git'], { encoding: 'utf8' });
-  return r.status === 0;
+  const r = spawnSync('node', [gc, f, '--stage', stage].concat(git ? [] : ['--no-git']), { encoding: 'utf8' });
+  return git ? r : r.status === 0;
 }
 const ok = (name, stage, o) => { if (!run(stage, o)) fail(name + ' should pass'); };
 const bad = (name, stage, o) => { if (run(stage, o)) fail(name + ' should fail'); };
@@ -55,6 +55,10 @@ bad('PM after AFTER-LINE', 'final', { b: B, a: [20, 29, 2, 6, 0], outcome: 'kept
 bad('summary disagrees', 'final', { b: B, a: [20, 29, 2, 6, 0], afterSum: sum('AFTER:', 21, 29, 2, 6, 0), outcome: 'kept', reason: 'none', pred: 'held' });
 bad('summary from first card right', 'final', { b: B, a: [20, 29, 2, 6, 0, 24], afterSum: sum('AFTER:', 24, 33, 2, 6, 0), outcome: 'kept', reason: 'none', pred: 'held' });
 ok('summary from split with differing first-card number', 'final', { b: B, a: [20, 29, 2, 6, 0, 24], outcome: 'kept', reason: 'none', pred: 'held' });
+
+// git mode: engine/fit.js at BASE must be compared with HEAD (was a doubled path, always 'same')
+const gr = run('before', { sha: '23757a5' }, true);
+if (!/engine\/fit\.js differs from BASE/.test(gr.stdout)) fail('git mode: BASE with a different engine/fit.js should report that it differs; got: ' + gr.stdout.trim());
 
 // engine-scope
 const base = fs.readFileSync(path.join(root, 'engine/fit.js'), 'utf8').replace(/\r\n/g, '\n');

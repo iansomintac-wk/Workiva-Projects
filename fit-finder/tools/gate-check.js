@@ -69,7 +69,7 @@ if (b) {
 if (!noGit && base && base.v && !bad.length) {
   const run = (cmd, args) => spawnSync(cmd, args, { cwd: root, encoding: 'utf8' }).status;
   const sha = base.v, mf = path.join(root, 'tests/match-frozen.js');
-  const same = run('git', ['diff', '--quiet', sha, 'HEAD', '--', 'fit-finder/engine/fit.js']) === 0;
+  const same = run('git', ['diff', '--quiet', sha, 'HEAD', '--', ':(top)fit-finder/engine/fit.js']) === 0;
   if (finalOutcome === 'kept') {
     if (same) bad.push('kept but engine/fit.js equals BASE');
     if (run('node', [mf, '--base', sha, '--allow', 'engine']) !== 0) bad.push('match-frozen --allow engine fails');
