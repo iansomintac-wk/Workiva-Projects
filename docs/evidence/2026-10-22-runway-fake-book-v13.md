@@ -35,7 +35,14 @@ The v13 features 1.1 has no data for: signal ids (EV-27); co-pilot minutes saved
 
 ## Not on any list
 
-The design's floating "Ask or jump" bar is absent from the build (0 hits in the html) and is not on Ian's deferred list. This is Ian's decision: build it, or add it to the deferred list. Until he answers it is held as deferred (PM proxy first pass 2026-10-23, proxy decided; asked in Ian's end-of-run batch).
+Nothing left here. The design's floating "Ask or jump" bar (absent from the build, 0 hits in the html) was put on the deferred list by Ian 2026-10-23: "Later list (Recommended)".
+
+## Ian's end-of-run batch, 2026-10-23
+
+- Team-demo captures 01-06 on v13: "Keep all six (Recommended)".
+- Look call 6, the reason line once per signal: "Show once (Recommended)". Not built in this run; it is the next look item.
+- "Ask or jump" bar: "Later list (Recommended)".
+- runway-v13-look into master: "Right after this run (Recommended)".
 
 ## Known residuals
 
