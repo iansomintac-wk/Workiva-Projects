@@ -18,3 +18,4 @@ BEFORE-LINE: first card right: 14 of 32 that fit; wrong card 3 (G14,G16,G37); no
 BEFORE: feature 14 of 31, wrong 3, no card 15, not-a-fit 0
 PREDICTION-PM: (assumed) no-card misses on the gate set fall by about a third; wrong card rises by at most 1.
 PREDICTION-LEAD: (assumed) on tune + half A the loop recovers 3 to 5 of the 6 gate misses to the right card, and 0 to 2 of the 19 keyword misses. Keep only if, on the gate set: no-card misses fall by >= 2, wrong card does not rise, card-on-not-a-fit does not rise. Disproved by: a fall < 2, or any rise in wrong card or card-on-not-a-fit.
+TUNE-RESULT: start N 25, best N 23, kept 1 of 3 attempts, stop remaining gate misses need card keywords (match frozen), results L/results.tsv, tool uses 22
