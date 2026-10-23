@@ -9,9 +9,9 @@ Branch runway-fake-book-v13, measured 2026-10-22. Ian's scope that day: everythi
 | Feature area | Check command | Measured result | Commit |
 |---|---|---|---|
 | v13 look screens (Today, Co-pilot, Accounts, Risk, System, Settings) | `node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 564`; step 0 probe `... --seed demo-seed.js,tools/step0-probe.js --fn step0Probe --expect 34`; step 1 probe `... --fn step1Probe --expect 72` (with step1-fixture.js) | 564/564, console errors 0 (re-run); step 0 34/34 (re-run); step 1 72/72 (re-run). Side-by-side design vs build PNGs: `docs/evidence/v13-vs-design/` | cc39480 (merge), 4f7f9c3 (step 0 fix), 93b2fc3 |
-| Check for calls | `node tools/connector-e2e.mjs`; `node tools/d3-prep-panel.mjs --check` | connector-e2e 8/8 (re-run); D3 prep rows 5 (Task 2/6). Capture 01 shows 5 matched, 1 no account | cc39480, 0865c0d |
-| Refresh from Gainsight | `node tools/connector-e2e.mjs`; capture 02 | 8/8 (re-run); 17 accounts in the differences list, no clipped table (Task 7: scrollWidth = clientWidth 933) | 0865c0d |
-| Send to Gainsight | `node tools/connector-e2e.mjs`; capture 04 | 8/8 (re-run); capture shows 2 sent, 1 failed on the v13 Risk screen's Gainsight queue | 0865c0d |
+| Check for calls | `node tools/connector-e2e.mjs`; `node tools/d3-prep-panel.mjs --check` | connector-e2e 8/8 (re-run) but its e1-e7 drive tracker 1.0 (e8 CSAT drives 1.1), so it is not v13 proof. v13 proof is the capture run (real CDP clicks on v13, via the walkthrough's /practice entry): capture 01 shows 5 matched, 1 no account. D3 prep rows 5 (Task 2/6) | cc39480, 0865c0d |
+| Refresh from Gainsight | `node tools/connector-e2e.mjs`; capture 02 | connector-e2e 8/8 (re-run, e4 on tracker 1.0); v13 proof is the capture run (real CDP clicks on v13): 17 accounts in the differences list, no clipped table (Task 7: scrollWidth = clientWidth 933) | 0865c0d |
+| Send to Gainsight | `node tools/connector-e2e.mjs`; capture 04 | connector-e2e 8/8 (re-run, e5 on tracker 1.0); v13 proof is the capture run (real CDP clicks on v13): capture 04 shows 2 sent, 1 failed on the v13 Risk screen's Gainsight queue | 0865c0d |
 | Check CSAT (T4) | in the 564 self-check: T4v13 (browser click on `#btn-check-survey-connector` goes to /v1/csat); `node --test test/connector-survey-pull.test.mjs` | T4v13 passes inside 564/564 (re-run). Mutant (renamed button) gave 561/562 FAIL T4v13, real 562/562 (Task 3) | dd4d4f6 |
 | Desk card (T14), re-scoped to the v13 Risk screen | in the 564 self-check: T14v13 (confirm a risk on `[data-v13-risk]`, real clicks) | The old Desk card does not exist in v13 (0 `.dk-risk`); the guard was moved to the v13 Risk screen. Mutants 561/563 and 562/563 FAIL, green 563/563 (Task 4b) | 2790677 |
 | Desk reason (T16), re-scoped to the v13 Risk screen; found and fixed a real defect | in the 564 self-check: T16v13 | The v13 "Add a reason" button also confirmed the unreviewed signal. One-line fix (passes `addingReason`). Parent html with the new test: 563/564 FAIL T16v13; fixed: 564/564 | 512f1c0 |
@@ -39,6 +39,7 @@ The design's floating "Ask or jump" bar is absent from the build (0 hits in the 
 
 ## Known residuals
 
+- connector-e2e not yet ported to v13: `tools/connector-e2e.mjs` drives tracker 1.0 for e1-e7 (only e8 Check CSAT drives 1.1); the capture run (`tools/team-demo-capture.mjs`, real CDP clicks on v13) is the v13 proof for calls, refresh and send. Also, tracker 1.1 loads the xlsx library from cdnjs for Import Excel only, so "offline" holds for everything except that button.
 - T4 response-to-modal path is covered in two halves: T4v13 (browser: click goes to /v1/csat) and the connector-survey-pull node test ("a good response opens the modal with the plan"). No single browser test covers the whole path.
 - `tools/step1-coldstart.mjs` printed `SPREAD_FLAG: yes` (32% spread) in Task 2. That was timing noise: C8 PASS (median under 500 ms) both times, and after Task 6 the spread was 9%.
 - The 1.0 sim keeps its 7 known FAIL (D2, D3, D8, L7, L8, L11, L12, all "break NOT-TESTED"): those features exist only in 1.1 and 1.0 is locked. Unchanged from Task 2.

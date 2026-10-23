@@ -80,3 +80,17 @@ test('evidence doc 2026-10-22-runway-fake-book-v13.md names every feature area, 
   assert.match(d, /Ask or jump/);
   assert.ok((d.match(/^\| /gm) || []).length >= 12, 'fewer than 12 table rows');
 });
+
+// Fix A / S6: the evidence rows say which tracker each connector-e2e scenario drives and cite the capture run as the v13 proof.
+test('evidence doc: connector-e2e rows name the tracker (e1-e7 on 1.0, CSAT on 1.1), the capture run is the v13 proof, and the port is a known residual', () => {
+  const d = read('docs/evidence/2026-10-22-runway-fake-book-v13.md');
+  for (const area of ['Check for calls', 'Refresh from Gainsight', 'Send to Gainsight']) {
+    const row = d.split('\n').find((l) => l.startsWith('| ' + area));
+    assert.ok(row, 'no row ' + area);
+    assert.match(row, /tracker 1\.0/, area + ': says e2e drives tracker 1.0');
+    assert.match(row, /capture/i, area + ': cites the capture run');
+    assert.match(row, /real CDP clicks on v13/, area + ': names the v13 proof');
+  }
+  assert.match(d, /e8 Check CSAT[^\n]*tracker 1\.1|CSAT[^\n]*tracker 1\.1/);
+  assert.match(d, /connector-e2e not yet ported to v13/);
+});
