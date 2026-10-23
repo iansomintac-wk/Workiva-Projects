@@ -1,0 +1,21 @@
+TALK (no run): Prompt Coach after C3 (workiva repo). Written 2026-10-23 by C3 run lead 2 (cf444bdb) from the hand-off PM
+step. Load studio-harness:talk-and-run first and follow "The talk". Workiva repo: write nothing to the brain or
+studio-harness; tell Ian instead.
+
+READ: docs/evidence/2026-10-23-prompt-coach-c3-sandbox.md sections 1-3; prompt-coach/README.md "Done-when status";
+docs/research/2026-10-22-prompt-coach-c1-next.md (overlap). Run ledger: .ledger/2026-10-22-prompt-coach-c3-sandbox/.
+
+PROBLEM (measured): Strong prompts gave the intended answer in 13 of 24 sandbox sends (bar 22); 0 of 24 invented facts
+(originals 4 of 24); found 58 vs 63 for the originals. GRC-W2's Strong prompt asks for a comparison against a second
+source while one file is attached: found 0 in both runs vs 8 for the original (8 of the 10 lost key items). The generic
+job line ("Identify and list the key points and where each one appears") is in 7 of 12 Strong prompts; 5 of its 14
+sends missed, all on the answer part. FR-W3/FR-W4 miss in both versions.
+
+ASK IAN ONE QUESTION FIRST: reopen the coach (appetite: one afternoon, a $0 read of the existing 48 answers first) or
+park it with C2, C4, C5 as shipped. PM proxy's recommendation: reopen on GRC-W2 first.
+$0 RESEARCH BEFORE ANY SPEC: the 5 generic-line misses (what failed in each); does the key credit "key points"
+answers; FR-W3/W4 key vs answers by hand; any other Strong prompt that names two sources when one is attached.
+PM prediction (assumed): one fixable cause behind GRC-W2 and at least 3 of the 5 generic-line misses; disproved if
+the misses split across 3 or more causes.
+NO-GOS: no new sandbox sends; no tuning against the C3 answers without a fresh set; the fresh strong-30
+(prompt-coach/data/done_when_strong.jsonl) stays unread; no merge by the session.
