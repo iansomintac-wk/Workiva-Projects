@@ -15,6 +15,7 @@ Small scripts for the BCA run. Run them from `fit-finder/` (paths are relative t
 | `score-once.js` | `<name> <prompts> <gold> [--scorer <path>]` | the scorer's stdout (from `L/score-<name>.out` on a repeat) | the scorer's status. 3 with `STOP: unknown outcome` if `L/score-<name>.started` exists without `.out` |
 | `keep-check.js` | `<EV>` | `keep-check ok <outcome>` | 1 if the rule, the written REASON or the git state disagree |
 | `ops-check.js` | `<base sha>` | `ops-check ok <n> cards changed` | 1 on any violation |
+| `diag-nocard.js`, `diag-selftest.js` | `[--engine <path>]` (self-test only); selftest: none (needs `FF_LEDGER`) | `diag no-card N (tune T, halfA A); tune wrong W; tune not-a-fit K`; selftest `diag-selftest ok` | 1 with `INVALID: ...` if tune wrong > 4, tune not-a-fit > BASE_K or half A wrong > 0; 2 on bad input. Reads only the tune set and half A |
 | `selftest.js` | none | `selftest ok` or `selftest FAIL: ...` | 1 on the first failure |
 
 ## Details
