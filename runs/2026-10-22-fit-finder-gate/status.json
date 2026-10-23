@@ -1,44 +1,49 @@
 {
   "run": "2026-10-22-fit-finder-gate",
-  "state": "awaiting-ian",
-  "pid": 36464,
-  "task": 5,
+  "state": "running",
+  "pid": 16656,
+  "task": 6,
   "of": 11,
-  "step": "awaiting-ian",
+  "step": "check",
   "attempts": [
     {
       "attempt": 1,
       "startedAt": "2026-10-23T00:29:43.674Z",
       "peakWorkerMb": 568,
       "minFreeGb": 6.6
+    },
+    {
+      "attempt": 2,
+      "startedAt": "2026-10-23T02:44:06.939Z",
+      "peakWorkerMb": 308,
+      "minFreeGb": 9.4
     }
   ],
-  "peakWorkerMb": 568,
-  "minFreeGb": 6.6,
+  "peakWorkerMb": 308,
+  "minFreeGb": 9.4,
   "startedAt": "2026-10-23T00:29:40.891Z",
-  "updatedAt": "2026-10-23T00:48:26.670Z",
-  "elapsedSec": 1126,
-  "tokens": 1625191,
-  "usage_cost_usd": 1.4977,
+  "updatedAt": "2026-10-23T02:44:57.747Z",
+  "elapsedSec": 8117,
+  "tokens": 1726583,
+  "usage_cost_usd": 1.6595,
   "usage_cost_note": "summed total_cost_usd of the workers: subscription usage, not money",
   "done": [
     0,
     1,
     2,
     3,
-    4
+    4,
+    5,
+    6
   ],
   "parked": [],
   "blocked": [],
-  "awaiting": [
-    5
-  ],
+  "awaiting": [],
   "waiting": [
-    6,
     7,
     8,
     9,
     10
   ],
-  "pidCreated": "2026-10-23T00:29:39.2196710Z"
+  "pidCreated": "2026-10-23T02:44:00.9336800Z"
 }
