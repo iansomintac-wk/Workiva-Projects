@@ -7,7 +7,7 @@
 // Ctrl+C, SIGTERM, a crash, Chrome exiting or GET /__stop (from 127.0.0.1) stop every child by PID and delete the temp folder.
 // Never touches ports 8790 or 8800. NOT part of the distributable bundle.
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, readFileSync, readdirSync, existsSync, cpSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -58,14 +58,8 @@ function startConnector() {
     port: 0, gong: { adapter: 'fake', rebaseToToday: true }, gainsight: { adapter: 'fake' },
     snowflake: { adapter: 'fake', rebaseToToday: true, fixture: 'demo' }, ai: { adapter: 'fake', model: '', apiKey: '' },
   }));
-  // The connector runs from a temp copy whose demo CSAT rows have their GAINSIGHT_COMPANY_ID padded to the csat schema's 36 characters
-  // (the committed demo rows have 11, which makes GET /v1/csat answer 500). Matching is by Salesforce id; no repo file changes.
-  const connectorDir = join(tmp, 'connector');
-  cpSync(join(root, 'connector'), connectorDir, { recursive: true, filter: (f) => !/[/\\](test|node_modules)([/\\]|$)/.test(f) });
-  const demoCsat = join(connectorDir, 'fixtures', 'snowflake-csat-demo.json');
-  writeFileSync(demoCsat, readFileSync(demoCsat, 'utf8').replace(/"GAINSIGHT_COMPANY_ID":"([^"]*)"/g, (m, id) => `"GAINSIGHT_COMPANY_ID":"${id.padEnd(36, '0')}"`));
   return new Promise((resolve, reject) => {
-    connector = spawn(process.execPath, [join(connectorDir, 'server.mjs')], {
+    connector = spawn(process.execPath, [join(root, 'connector', 'server.mjs')], {
       cwd: root,
       env: { ...process.env, CONNECTOR_CONFIG: cfgPath, CONNECTOR_TOKEN_FILE: join(tmp, 'token.txt'), CONNECTOR_LOG: join(tmp, 'push-log.jsonl') },
       stdio: ['ignore', 'pipe', 'pipe'],

@@ -10,7 +10,7 @@
 // Prints `connector-e2e: N/8 passed, M failed`; exit 0 only for 8/8 with no console errors.
 // NOT part of the distributable bundle — dev tooling, like docs/.
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, readFileSync, existsSync, cpSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -40,12 +40,6 @@ const profile = mkdtempSync(join(tmpdir(), 'connector-e2e-chrome-'));
 const cfgPath = join(tmp, 'config.json');
 const tokenPath = join(tmp, 'token.txt');
 const logPath = join(tmp, 'fake-gainsight-log.jsonl');
-// The connector runs from a temp copy so the demo CSAT rows can be padded to the csat schema's 36-char GAINSIGHT_COMPANY_ID
-// (the committed demo fixture has 11-char ids, which makes GET /v1/csat answer 500). Matching is by Salesforce id; no repo file changes.
-const connectorDir = join(tmp, 'connector');
-cpSync(join(root, 'connector'), connectorDir, { recursive: true, filter: (f) => !/[\/](test|node_modules)([\/]|$)/.test(f) });
-const demoCsat = join(connectorDir, 'fixtures', 'snowflake-csat-demo.json');
-writeFileSync(demoCsat, readFileSync(demoCsat, 'utf8').replace(/"GAINSIGHT_COMPANY_ID":"([^"]*)"/g, (m, id) => `"GAINSIGHT_COMPANY_ID":"${id.padEnd(36, '0')}"`));
 writeFileSync(cfgPath, JSON.stringify({
   port: 0, gong: { adapter: 'fake', rebaseToToday: true }, gainsight: { adapter: 'fake' },
   snowflake: { adapter: 'fake', rebaseToToday: true, fixture: 'demo' }, ai: { adapter: 'fake', model: '', apiKey: '' },
@@ -57,7 +51,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function startConnector() {
   return new Promise((resolve, reject) => {
-    connector = spawn(process.execPath, [join(connectorDir, 'server.mjs')], {
+    connector = spawn(process.execPath, [join(root, 'connector', 'server.mjs')], {
       cwd: root,
       env: { ...process.env, CONNECTOR_CONFIG: cfgPath, CONNECTOR_TOKEN_FILE: tokenPath, CONNECTOR_LOG: logPath,
         ...(daysAhead ? { CONNECTOR_FAKE_NOW: new Date(Date.now() + daysAhead * 86400000).toISOString() } : {}) },

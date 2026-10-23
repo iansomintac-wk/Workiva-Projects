@@ -23,7 +23,7 @@ test('e2e runner: has the e8 Check CSAT step', () => {
   assert.match(src, /check\('e8 Check CSAT/);
 });
 
-test('e2e runner: pads the demo CSAT company ids in a temp connector copy instead of editing the fixture', () => {
-  assert.match(src, /padEnd\(36/);
-  assert.match(src, /join\(connectorDir, 'server\.mjs'\)/);
+test('e2e runner: runs the committed connector directly (the demo CSAT fixture passes the schema, no padded copy)', () => {
+  assert.doesNotMatch(src, /padEnd\(36/);
+  assert.match(src, /join\(root, 'connector', 'server\.mjs'\)/);
 });
