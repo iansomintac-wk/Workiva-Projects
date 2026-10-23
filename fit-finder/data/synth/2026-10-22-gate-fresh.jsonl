@@ -1,0 +1,40 @@
+{"id":"G1","area":"FR","task":"Every quarter I spend two days explaining why revenue and opex moved versus last year in the MD&A. I'd like a first pass at those paragraphs."}
+{"id":"G2","area":"FR","task":"Before we file the 10-Q, someone has to confirm the numbers in the notes match the balance sheet and cash flow statement."}
+{"id":"G3","area":"FR","task":"Our earnings release keeps drifting from the filing text. Need to catch where the two disagree."}
+{"id":"G4","area":"FR","task":"We have 30 subsidiaries filing local accounts. For each one, I need a plain explanation of why the local result differs from our group US GAAP numbers."}
+{"id":"G5","area":"FR","task":"Curious how three of our competitors word their going concern and segment disclosures compared to ours."}
+{"id":"G6","area":"FR","task":"The XBRL tagging check threw a pile of errors and I don't understand half of them. Help me make sense of what they mean and what to change."}
+{"id":"G7","area":"FR","task":"We just announced a CEO departure. Need a draft 8-K."}
+{"id":"G8","area":"FR","task":"Approve the final 10-K and send it to the SEC on EDGAR tonight."}
+{"id":"G9","area":"FR","task":"Chase the regional controllers for their late flux commentary submissions."}
+{"id":"G10","area":"FR","task":"Calculate the exact deferred tax balance for each jurisdiction down to the cent."}
+{"id":"G11","area":"GEN","task":"I've got a 90-page board pack and a meeting in an hour. What are the main points?"}
+{"id":"G12","area":"GEN","task":"How do I link a table from my spreadsheet into a document so it updates? I can never remember the steps."}
+{"id":"G13","area":"GEN","task":"This paragraph is way too technical for our audit committee. Make it shorter and plainer."}
+{"id":"G14","area":"GEN","task":"A VLOOKUP in our reconciliation sheet returns #N/A and I can't see why. Can you explain what's wrong with it?"}
+{"id":"G15","area":"GEN","task":"Help me write a Wdata query that pulls all journal entries over 50k for last month, in plain words I can then refine."}
+{"id":"G16","area":"GEN","task":"Our sustainability summary needs to go out in German and French as well as English."}
+{"id":"G17","area":"GEN","task":"Book a meeting room and schedule the kickoff call with the whole close team for next Tuesday."}
+{"id":"G18","area":"GEN","task":"Summarize the vendor contract I've attached into the key obligations and dates."}
+{"id":"G19","area":"GRC","task":"We've got hundreds of SOX controls accumulated over the years and I suspect many say the same thing in different words. Find the repeats."}
+{"id":"G20","area":"GRC","task":"We're adopting NIST CSF. Line up our current control library against it and tell me what we don't cover."}
+{"id":"G21","area":"GRC","task":"For each control in the revenue cycle, look at the uploaded screenshots and samples and tell me what's missing, like dates or reviewer names."}
+{"id":"G22","area":"GRC","task":"Our new controls have no testing procedures. Please draft test steps and the attributes to look for, control by control."}
+{"id":"G23","area":"GRC","task":"The access review test failed. Write up the finding for the audit report."}
+{"id":"G24","area":"GRC","task":"Risk team flagged a new third-party payment risk. Suggest wording for a control that would address it."}
+{"id":"G25","area":"GRC","task":"Control 4.2 failed twice this year. Put together a remediation plan we can take to the owner."}
+{"id":"G26","area":"GRC","task":"Pull together my notes from the twelve risk interviews and the quarter's risk log into something for the risk committee."}
+{"id":"G27","area":"GRC","task":"I have a written procure-to-pay narrative. Turn it into a flowchart."}
+{"id":"G28","area":"GRC","task":"Sign off that control 7.1 is operating effectively so we can close out the audit."}
+{"id":"G29","area":"GRC","task":"Email every control owner a reminder and follow up until they've uploaded their evidence."}
+{"id":"G30","area":"SUS","task":"The new ESRS E1 standard just landed. What exactly do we have to report under it?"}
+{"id":"G31","area":"SUS","task":"We've collected our emissions and energy data for the year. Write the disclosure section from it."}
+{"id":"G32","area":"SUS","task":"The sustainability report reads like a technical manual. Redo it for our board in a few crisp paragraphs."}
+{"id":"G33","area":"SUS","task":"Compare this year's scope 1 and 2 numbers with last year's and flag anything that looks off, with a reason for each."}
+{"id":"G34","area":"SUS","task":"Which ISSB S2 climate items do we need to cover, and what do they mean in practice?"}
+{"id":"G35","area":"SUS","task":"Update the carbon figures in our ERP and send the data request to each plant manager."}
+{"id":"G36","area":"SUS","task":"Decide which sustainability topics are material for us this year."}
+{"id":"G37","area":"SUS","task":"Each plant sends a different format of water usage notes. Make the narrative for each of them consistent in tone."}
+{"id":"G38","area":"GEN","task":"Can you explain the formula in cell F12? Nobody on the team knows who built it."}
+{"id":"G39","area":"FR","task":"Walk through the footnotes in this draft annual report and point out where numbers in the text don't match the tables, one note at a time."}
+{"id":"G40","area":"GRC","task":"Terse: draft findings for all the failed tests from Q3."}
