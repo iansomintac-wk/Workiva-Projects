@@ -24,3 +24,4 @@ AFTER: feature 14 of 31, wrong 3, no card 15, not-a-fit 0
 OUTCOME: reverted
 REASON: no-card fall < 2 (15 to 15)
 PREDICTION: did not hold
+PINS-MOVED: none (reverted, engine equals ae60341)
