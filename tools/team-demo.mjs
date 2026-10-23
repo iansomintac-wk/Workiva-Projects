@@ -24,6 +24,16 @@ const CHROME_CANDIDATES = [
   '/usr/bin/google-chrome',
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
 ];
+const ORIGIN = 'http://127.0.0.1:' + PORT;
+// A page from another origin (or another Host, as in DNS rebinding) must get neither the connector token nor a way to stop the launcher.
+// Browsers add Origin and Sec-Fetch-Site themselves; scripts and curl-style callers with neither header are same-machine and allowed.
+function sameOrigin(req) {
+  const h = req.headers;
+  if (h.host !== '127.0.0.1:' + PORT) return false;
+  if (h.origin !== undefined && h.origin !== ORIGIN) return false;
+  const site = h['sec-fetch-site'];
+  return site === undefined || site === 'same-origin' || site === 'none';
+}
 const FILES = {
   '/osm-book-of-business-tracker-1.1.html': ['osm-book-of-business-tracker-1.1.html', 'text/html; charset=utf-8'],
   '/walkthrough': ['tools/team-demo/walkthrough.html', 'text/html; charset=utf-8'],
@@ -120,9 +130,27 @@ function listen() {
     const path = (req.url || '/').split('?')[0];
     const local = req.socket.remoteAddress === '127.0.0.1' || req.socket.remoteAddress === '::ffff:127.0.0.1';
     if (path === '/__stop') {
-      if (!local) { res.writeHead(403).end(); return; }
+      if (!local || !sameOrigin(req)) { res.writeHead(403).end(); return; }
       res.writeHead(200, { 'content-type': 'text/plain' }).end('stopping\n');
       setImmediate(() => shutdown(0));
+      return;
+    }
+    if (path === '/demo-connector-seed.js' || path === '/demo-practice.js') {
+      if (!sameOrigin(req)) { res.writeHead(403).end('forbidden'); return; }
+    }
+    if (path === '/demo-practice.js') {
+      const body = readFileSync(join(root, 'tools', 'team-demo', 'practice.js'), 'utf8')
+        .replace('/*CONNECTOR*/null', () => JSON.stringify({ url: connectorUrl, token: connectorToken }))
+        .replace('/*SEED*/', () => readFileSync(join(root, 'demo-seed.js'), 'utf8'));
+      res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-store' }).end(body);
+      return;
+    }
+    if (path === '/practice' && (req.method === 'GET' || req.method === 'HEAD')) {
+      // The tracker plus the practice loader: the one place a person gets the fake practice book and send queue.
+      const html = readFileSync(join(root, 'osm-book-of-business-tracker-1.1.html'), 'utf8');
+      const at = html.lastIndexOf('</body>');
+      const page = at < 0 ? html + '<script src="/demo-practice.js"></script>' : html.slice(0, at) + '<script src="/demo-practice.js"></script>' + html.slice(at);
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' }).end(page);
       return;
     }
     if (path === '/demo-connector-seed.js') {

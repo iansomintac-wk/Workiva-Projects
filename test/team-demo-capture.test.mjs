@@ -34,3 +34,12 @@ test('it refuses a --user-data-dir outside the temp folder', () => {
   assert.match((r.stdout || '') + (r.stderr || ''), /user-data-dir/);
   assert.equal(existsSync(join(root, 'docs', 'evidence', 'x-never-written')), false);
 });
+
+test('the capture tool reaches the books through the practice entry, not by injecting seed / queue / settings with Runtime.evaluate', () => {
+  const s = src();
+  assert.match(s, /BASE \+ '\/practice'/);
+  assert.doesNotMatch(s, /demo-seed\.js/);
+  assert.doesNotMatch(s, /demo-connector-seed\.js/);
+  assert.doesNotMatch(s, /saveConnectorSettings\(/);
+  assert.doesNotMatch(s, /DATA\.gainsightQueue = \[/);
+});

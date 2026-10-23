@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import net from 'node:net';
+import http from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -95,7 +96,7 @@ test('walkthrough page has five steps, fake/unproven health, and only loopback U
     assert.match(html, /\/v1\/health/);
     assert.match(html, /Bearer/);
     assert.match(html, /fake/); assert.match(html, /unproven/);
-    assert.match(html, /osm-book-of-business-tracker-1\.1\.html/);
+    assert.match(html, /href="\/practice"/);
     const urls = html.match(/https?:\/\/[^\s"'<>)]+/g) || [];
     for (const u of urls) assert.match(u, /^https?:\/\/(127\.0\.0\.1|localhost)([:\/]|$)/, 'external URL: ' + u);
     await fetch('http://127.0.0.1:8801/__stop').catch(() => {});
@@ -170,3 +171,51 @@ test('team-demo-counts.json: 1.1, 1.0, guide and step 1 counts equal the --expec
     }
   }
 });
+
+// Fix A / M1 + S2: the walkthrough opens a practice-book entry the launcher seeds with fake data only; other origins get no token and cannot stop it.
+// Raw request so the test can set Host / Origin / Sec-Fetch-Site exactly like a browser page would.
+const get = (path, headers = {}) => new Promise((res, rej) => {
+  const r = http.request({ host: '127.0.0.1', port: 8801, path, method: 'GET', headers }, (resp) => {
+    let b = ''; resp.on('data', (d) => { b += d; }); resp.on('end', () => res({ status: resp.statusCode, body: b }));
+  });
+  r.on('error', rej); r.end();
+});
+
+test('walkthrough practice path: seeded entry, cross-site refusals, same-origin still works, /__stop obeys the same rule', { skip }, async () => {
+  const child = spawn(process.execPath, [launcher, '--no-open'], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+  let out = '';
+  child.stdout.on('data', (d) => { out += d; }); child.stderr.on('data', (d) => { out += d; });
+  try {
+    for (let i = 0; i < 240 && !/team-demo: ready/.test(out); i++) await sleep(250);
+    assert.match(out, /team-demo: ready/);
+    // M1: every walkthrough button opens the practice entry, not the bare (empty) tracker.
+    const wt = (await get('/walkthrough')).body;
+    assert.equal((wt.match(/href="\/practice"/g) || []).length, 5, 'five Open-the-tracker buttons go to /practice');
+    assert.doesNotMatch(wt, /href="\/osm-book-of-business-tracker-1\.1\.html"/);
+    // /practice is the tracker plus the practice loader.
+    const page = await get('/practice');
+    assert.equal(page.status, 200);
+    assert.match(page.body, /<script src="\/demo-practice\.js"><\/script>\s*<\/body>/);
+    const loader = await get('/demo-practice.js');
+    assert.equal(loader.status, 200);
+    assert.match(loader.body, /001DEMO/, 'loader carries the fake practice book');
+    assert.match(loader.body, /forceFail/, 'loader carries the fake send queue (one set to fail)');
+    assert.match(loader.body, /confirm\(/, 'a book that already has data is replaced only after a confirm');
+    assert.match(loader.body, /obm-connector-settings-v1|saveConnectorSettings/);
+    const token = (loader.body.match(/[0-9a-f]{64}/) || [])[0];
+    assert.ok(token, 'same-origin loader carries the connector token');
+    // S2: a page from another origin gets neither the token nor a way to stop the launcher.
+    const bad = [{ origin: 'http://evil.example' }, { origin: 'null' }, { 'sec-fetch-site': 'cross-site' }, { host: 'evil.example:8801' }];
+    for (const p of ['/demo-connector-seed.js', '/demo-practice.js']) {
+      for (const h of bad) { const r = await get(p, h); assert.equal(r.status, 403, p + ' ' + JSON.stringify(h)); assert.doesNotMatch(r.body, /[0-9a-f]{64}/); }
+      const ok = await get(p, { origin: 'http://127.0.0.1:8801', 'sec-fetch-site': 'same-origin' });
+      assert.equal(ok.status, 200); assert.match(ok.body, new RegExp(token));
+    }
+    for (const h of bad) assert.equal((await get('/__stop', h)).status, 403, '/__stop ' + JSON.stringify(h));
+    assert.equal(child.exitCode, null, 'launcher still running after the refused stops');
+    assert.equal((await get('/__stop')).status, 200);
+    await new Promise((res) => { if (child.exitCode !== null) res(); else { child.once('exit', res); setTimeout(res, 20000); } });
+    assert.equal(child.exitCode, 0, out.slice(-400));
+  } finally { if (child.exitCode === null && child.pid) spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' }); }
+});
+

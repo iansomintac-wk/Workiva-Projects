@@ -37,38 +37,39 @@ a.btn { display: inline-block; margin-top: 8px; padding: 6px 12px; border-radius
 <h1>Team demo walkthrough</h1>
 <p class="sub">Five steps against a practice connector on this computer. Nothing here talks to a real system.</p>
 <p class="sub">The live Gainsight and Snowflake connection waits on Ian's internal team (credentials and access); until then the tracker works fully offline and by file import, and this practice connector sends nothing anywhere.</p>
+<p class="sub">Each Open the tracker button loads a fake practice book (17 made-up accounts) and a made-up send queue on this computer only. If the tracker already holds accounts it asks before replacing them; say Cancel and your book stays untouched.</p>
 <div class="banner" id="banner">Checking the connector&hellip;</div>
 <ol>
 <li id="step-1">
   <h2>Check for calls</h2>
   <p>Open the tracker and run the call check: it shows 5 matched and 1 no-account.</p>
   <p class="real">What the real connector does: asks Gong for recent calls and matches each one to an account in your book.</p>
-  <a class="btn" href="/osm-book-of-business-tracker-1.1.html" target="_blank">Open the tracker</a>
+  <a class="btn" href="/practice" target="_blank">Open the tracker</a>
 </li>
 <li id="step-2">
   <h2>Read Gainsight accounts</h2>
   <p>In the tracker, read the Gainsight accounts and see the account list fill in.</p>
   <p class="real">What the real connector does: reads company records from Gainsight; it never changes them in this step.</p>
-  <a class="btn" href="/osm-book-of-business-tracker-1.1.html" target="_blank">Open the tracker</a>
+  <a class="btn" href="/practice" target="_blank">Open the tracker</a>
 </li>
 <li id="step-3">
   <h2>Check CSAT</h2>
   <p>In the tracker, choose Check CSAT, look at the dry run, then choose Apply.</p>
   <p class="real">What the real connector does: reads survey scores from Snowflake, read-only, and the tracker applies them only after you confirm.</p>
-  <a class="btn" href="/osm-book-of-business-tracker-1.1.html" target="_blank">Open the tracker</a>
+  <a class="btn" href="/practice" target="_blank">Open the tracker</a>
 </li>
 <li id="step-4">
   <h2>Send to Gainsight</h2>
   <p>In the tracker, send the prepared updates: it shows 2 sent and 1 failed.</p>
   <p class="real">What the real connector does: writes the updates to Gainsight one at a time and reports which ones were refused.</p>
-  <a class="btn" href="/osm-book-of-business-tracker-1.1.html" target="_blank">Open the tracker</a>
+  <a class="btn" href="/practice" target="_blank">Open the tracker</a>
 </li>
 <li id="step-5">
   <h2>Health</h2>
   <p>In the tracker, open the connector health line. It names each adapter as fake or unproven.</p>
   <p class="real">What the real connector does: reports which adapters are live, and marks any it has not yet proven against your tenant as unproven.</p>
   <p id="health-line">Health: loading&hellip;</p>
-  <a class="btn" href="/osm-book-of-business-tracker-1.1.html" target="_blank">Open the tracker</a>
+  <a class="btn" href="/practice" target="_blank">Open the tracker</a>
 </li>
 </ol>
 </main>

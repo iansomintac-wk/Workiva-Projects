@@ -60,8 +60,6 @@ async function startTeamDemo() {
 
 async function main() {
   const demo = await startTeamDemo();
-  const token = (await (await fetch(BASE + '/demo-connector-seed.js')).text()).match(/[0-9a-f]{64}/)[0];
-  const seed = await (await fetch(BASE + '/demo-seed.js')).text();
   const port = 9900 + Math.floor(Math.random() * 90);
   chrome = spawn(chromePath, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', '--disable-gpu', 'about:blank'], { stdio: 'ignore' });
   let page = null;
@@ -113,10 +111,10 @@ async function main() {
   };
   const closeModals = `document.querySelectorAll('.modal-backdrop').forEach(e => e.remove()); return true;`;
 
-  await navigate(BASE + '/osm-book-of-business-tracker-1.1.html', `typeof saveData === 'function'`);
-  const seeded = await send('Runtime.evaluate', { returnByValue: true, expression: `(() => { try { ${seed}\n; saveData(); return 'ok:' + DATA.customers.length; } catch (e) { return 'err:' + e.message; } })()` });
-  if (!String(seeded.result?.value).startsWith('ok:')) throw new Error('seed failed: ' + seeded.result?.value);
-  await ev(`saveConnectorSettings({url: ${JSON.stringify(demo.connector)}, token: ${JSON.stringify(token)}}); await checkConnectorHealth(); ui.view = 'today'; render(); return ui.connector.state;`);
+  // The same entry a person gets from the walkthrough's Open the tracker button: /practice loads the fake practice book, the fake send queue and the connector settings.
+  await navigate(BASE + '/practice', `typeof saveData === 'function'`);
+  await waitFor(`DATA.customers.length === 17 && ui.connector && ui.connector.state`, 30000);
+  await ev(`ui.view = 'today'; render(); return ui.connector.state;`);
 
   // 1. Check for calls: the preview, 5 matched and 1 no-account.
   await ev(`document.getElementById('btn-check-calls').click(); return true;`);
@@ -140,12 +138,8 @@ async function main() {
   await shot('03-check-csat-dry-run.png');
   await ev(closeModals);
 
-  // 4. Send to Gainsight: three queued items, one set to fail.
-  await ev(`
-    const cust = DATA.customers.find(c => c.gainsightId) || DATA.customers[0];
-    const mk = (id, fields) => ({id, date: todayISO(), customerId: cust.id, customerName: cust.name, kind: 'At-Risk CTA', payload: 'p ' + id, status: 'queued', fields, externalId: null, sentAt: null, error: null});
-    DATA.gainsightQueue = [mk('demo-ok-1', {ctaName: 'Renewal at risk', reason: 'Sponsor left', severity: 'low'}), mk('demo-ok-2', {ctaName: 'Low usage', reason: 'No logins in 30 days', severity: 'low'}), mk('demo-bad', {ctaName: 'Contract question', reason: 'Legal review', severity: 'low', forceFail: true})];
-    saveData(); ui.view = 'risk'; render(); return true;`);
+  // 4. Send to Gainsight: the three queued items came with the practice book, one set to fail.
+  await ev(`ui.view = 'risk'; render(); return DATA.gainsightQueue.length;`);
   await ev(`document.getElementById('btn-send-gainsight').click(); return true;`);
   await waitFor(`DATA.gainsightQueue.every(q => q.status !== 'queued')`);
   const q = await ev(`return DATA.gainsightQueue.map(x => x.status);`);
