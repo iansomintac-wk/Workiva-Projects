@@ -1,0 +1,6 @@
+RUNWAY LOOK CALL 6: print the reason line once per signal. Drafted by 0c86c843 (lead, Runway fake-book on v13 run), 2026-10-23.
+Load studio-harness:talk-and-run first; this is a bounded change (short design in chat, approval, build).
+Ian 2026-10-23 (AskUserQuestion): "Show once (Recommended)" - when one signal has a reason line, show it once rather than on each place the signal appears. PM pick was the same.
+Base: branch from runway-v13-look (1afcd96, also local master). Find where the reason line repeats on the v13 Risk screen (switch '1', the default) and on the old deck; take a before capture, change it, after capture, and send both to Ian as a look item (PM first pass, then Ian).
+Checks: a selfcheck that runs with the v13 switch at '1' (ledger defect 2026-10-22-runway-selfcheck-pins-old-screens: tools/selfchecks-1.1.js:19 pins '0'), red before / green after; full suite (670/668/0f/2s at 1afcd96), selfcheck 564/564 + the new one, html hash repin in docs/HOSTING.md and tools/sim/osm-day/verify.mjs.
+Not doing: live Gainsight/Snowflake (parked for Ian's internal team); the Ask-or-jump bar (deferred by Ian 2026-10-23).
