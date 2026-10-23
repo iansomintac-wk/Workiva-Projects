@@ -1,10 +1,10 @@
 {
   "run": "2026-10-22-fit-finder-gate",
-  "state": "running",
+  "state": "awaiting-ian",
   "pid": 36464,
   "task": 5,
   "of": 11,
-  "step": "check",
+  "step": "awaiting-ian",
   "attempts": [
     {
       "attempt": 1,
@@ -16,8 +16,8 @@
   "peakWorkerMb": 568,
   "minFreeGb": 6.6,
   "startedAt": "2026-10-23T00:29:40.891Z",
-  "updatedAt": "2026-10-23T00:48:01.274Z",
-  "elapsedSec": 1100,
+  "updatedAt": "2026-10-23T00:48:26.670Z",
+  "elapsedSec": 1126,
   "tokens": 1625191,
   "usage_cost_usd": 1.4977,
   "usage_cost_note": "summed total_cost_usd of the workers: subscription usage, not money",
@@ -29,16 +29,16 @@
     4
   ],
   "parked": [],
-  "blocked": [
+  "blocked": [],
+  "awaiting": [
+    5
+  ],
+  "waiting": [
     6,
     7,
     8,
     9,
     10
   ],
-  "awaiting": [
-    5
-  ],
-  "waiting": [],
   "pidCreated": "2026-10-23T00:29:39.2196710Z"
 }
