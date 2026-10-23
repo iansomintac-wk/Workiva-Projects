@@ -61,3 +61,5 @@
 | 2026-10-23T02:48:26.913Z | 8 | task | parked | 0 | 0 | 0 | 0 | two strikes |
 | 2026-10-23T02:48:31.057Z | 9 | task | blocked | 0 | 0 | 0 | 0 | depends on a task that is parked or not done |
 | 2026-10-23T02:48:35.165Z | 10 | task | blocked | 0 | 0 | 0 | 0 | depends on a task that is parked or not done |
+| 2026-10-23T02:49:46.493Z | 8 | debug | ok | 86208 | 0.26273 | 67 | 0 |  |
+| 2026-10-23T02:49:47.648Z | 8 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; |
