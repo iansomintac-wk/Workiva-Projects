@@ -1,6 +1,8 @@
-/* Guard for the fair-test tuning loop.  node tests/fair-guard.js --base <sha> [--lock-base <sha>] [--pins <file>] [--allow ops|engine]
+/* Guard for the fair-test tuning loop.  node tests/fair-guard.js --base <sha> [--lock-base <sha>] [--pins <file>] [--allow ops|engine|tune3]
    With --allow ops the catalogue may also differ in ops. With --allow engine it also runs match-frozen.js --allow engine
-   (engine/fit.js may differ; card id, area, ops and match stay frozen).
+   (engine/fit.js may differ; card id, area, ops and match stay frozen). With --allow tune3 the catalogue may differ in match and ops
+   (every other field, card order and count stay frozen), match-frozen.js --allow tune3 must pass, and tools/engine-scope.js --ops-only
+   must pass (only regex values of OPS properties may change in engine/fit.js).
    Exit 0 only if: the suite exits 0; every pin holds (suite lines incl. fresh fit agreement); eval A and B exit 0 over the pinned
    number of rows and hold their agreement pins; the locked paths are unchanged against the lock base; catalogue.json differs
    from <sha> only in match fields. */
@@ -9,13 +11,13 @@ const a = process.argv.slice(2);
 const opt = (k, d) => { const i = a.indexOf(k); return i >= 0 ? a.splice(i, 2)[1] : d; };
 const root = path.join(__dirname, '..');
 const pinFile = opt('--pins');
-const allowV = opt('--allow'); const allowOps = allowV === 'ops', allowEngine = allowV === 'engine';
+const allowV = opt('--allow'); const allowOps = allowV === 'ops', allowEngine = allowV === 'engine', allowTune3 = allowV === 'tune3';
 const base = opt('--base', process.env.FAIR_BASE);
 const lockBase = opt('--lock-base', base);
 const pins = pinFile ? JSON.parse(fs.readFileSync(pinFile, 'utf8'))
   : { B: { r: 13, w: 3 }, A: { r: 12, w: 0 }, real: { r: 15, w: 2 }, fresh: { r: 15, w: 5, k: 1, agree: 12 }, evalA: 52, evalB: 45, evalRows: 60 };
 const bad = [];
-if (allowV !== undefined && !allowOps && !allowEngine) bad.push('unknown --allow value: ' + allowV);
+if (allowV !== undefined && !allowOps && !allowEngine && !allowTune3) bad.push('unknown --allow value: ' + allowV);
 const run = (args) => spawnSync(process.execPath, args, { cwd: root, encoding: 'utf8' });
 const git = (args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
 const suite = run(['tests/catalogue.test.js']);
@@ -49,6 +51,12 @@ const locked = [':(top)fit-finder/tests', ':(top)fit-finder/data/LABELING.md', '
 if (!base) bad.push('no --base given');
 else {
   if (allowEngine) { const mf = run(['tests/match-frozen.js', '--base', base, '--allow', 'engine']); if (mf.status !== 0) bad.push('card id/area/ops/match changed: ' + (mf.stdout || '').trim()); }
+  if (allowTune3) {
+    const mf = run(['tests/match-frozen.js', '--base', base, '--allow', 'tune3']);
+    if (mf.status !== 0) bad.push('card id/area changed: ' + (mf.stdout || '').trim());
+    const es = run(['tools/engine-scope.js', '--git', base, '--ops-only']);
+    if (es.status !== 0) bad.push('engine-scope: ' + ((es.stdout || '') + (es.stderr || '')).trim());
+  }
   const d = git(['diff', '--quiet', lockBase, '--', ...locked]);
   if (d.status !== 0) bad.push('locked files differ from base (git diff exit ' + d.status + ')');
   const s = git(['status', '--porcelain', '--', ...locked]);
@@ -56,7 +64,7 @@ else {
   const g = git(['show', base + ':fit-finder/data/catalogue.json']);
   if (g.status !== 0) bad.push('catalogue: cannot read base ' + base);
   else {
-    const strip = (c) => JSON.stringify({ ...c, useCases: c.useCases.map((u) => { const { match, ops, ...rest } = u; return allowOps ? rest : { ...rest, ops }; }) });
+    const strip = (c) => JSON.stringify({ ...c, useCases: c.useCases.map((u) => { const { match, ops, ...rest } = u; return allowOps || allowTune3 ? rest : { ...rest, ops }; }) });
     const now = JSON.parse(fs.readFileSync(path.join(root, 'data/catalogue.json'), 'utf8'));
     if (strip(JSON.parse(g.stdout)) !== strip(now)) bad.push('catalogue: differs from base outside match fields');
   }

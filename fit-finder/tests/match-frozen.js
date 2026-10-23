@@ -1,6 +1,7 @@
-/* node tests/match-frozen.js --base <sha> [--allow ops|engine]
+/* node tests/match-frozen.js --base <sha> [--allow ops|engine|tune3]
    With --allow ops the compared tuple is id, area, match (ops may differ); with --allow engine engine/fit.js may differ
-   (id, area, ops, match stay frozen); any other --allow value fails.
+   (id, area, ops, match stay frozen); with --allow tune3 engine/fit.js may differ and only id and area stay frozen (each card's
+   match and ops may change; card order and count stay frozen; fair-guard.js checks the engine diff via engine-scope --ops-only); any other --allow value fails.
    Exit 0 only if engine/fit.js (unless --allow engine) and every catalogue card's id, area, ops and match (in order) are identical to <sha>.
    These are everything match() reads from the catalogue. Other fields may differ. */
 const { spawnSync } = require('child_process'), fs = require('fs'), path = require('path');
@@ -10,18 +11,18 @@ const base = i >= 0 ? process.argv[i + 1] : '';
 const j = process.argv.indexOf('--allow');
 const allow = j >= 0 ? process.argv[j + 1] : '';
 const bad = [];
-if (j >= 0 && !['ops', 'engine'].includes(allow)) bad.push('unknown --allow value: ' + allow);
+if (j >= 0 && !['ops', 'engine', 'tune3'].includes(allow)) bad.push('unknown --allow value: ' + allow);
 if (!base) bad.push('no --base given');
 else {
   const git = (a) => spawnSync('git', a, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26 });
-  if (allow !== 'engine') {
+  if (allow !== 'engine' && allow !== 'tune3') {
     const d = git(['diff', '--quiet', base, '--', ':(top)fit-finder/engine/fit.js']);
     if (d.status !== 0) bad.push('engine/fit.js differs from ' + base + ' (git diff exit ' + d.status + ')');
   }
   const g = git(['show', base + ':fit-finder/data/catalogue.json']);
   if (g.status !== 0) bad.push('cannot read the catalogue at ' + base);
   else {
-    const m = (c) => JSON.stringify(c.useCases.map((u) => allow === 'ops' ? [u.id, u.area, u.match] : [u.id, u.area, u.ops, u.match]));
+    const m = (c) => JSON.stringify(c.useCases.map((u) => allow === 'tune3' ? [u.id, u.area] : allow === 'ops' ? [u.id, u.area, u.match] : [u.id, u.area, u.ops, u.match]));
     const now = JSON.parse(fs.readFileSync(path.join(root, 'data/catalogue.json'), 'utf8'));
     if (m(JSON.parse(g.stdout)) !== m(now)) bad.push('catalogue id/area/ops/match differs from ' + base);
   }
