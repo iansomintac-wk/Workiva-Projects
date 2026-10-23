@@ -66,3 +66,17 @@ test('parked live: the walkthrough says the live connection is parked', () => {
   assert.match(t, /waits on Ian's internal team/i);
   assert.match(t, /sends nothing/i);
 });
+
+// Task 9: the good-to-go evidence doc names every feature area, the parked item, the deferred list and the open decisions.
+test('evidence doc 2026-10-22-runway-fake-book-v13.md names every feature area, Parked, Deferred, Not on any list and Known residuals', () => {
+  const d = read('docs/evidence/2026-10-22-runway-fake-book-v13.md');
+  for (const area of ['v13 look screens', 'Check for calls', 'Refresh from Gainsight', 'Send to Gainsight', 'Check CSAT', 'desk card', 'desk reason', 'Snowflake adapter', 'launcher and walkthrough', 'captures', 'sim', 'parked-live audit']) {
+    assert.ok(d.toLowerCase().includes(area.toLowerCase()), 'no feature area: ' + area);
+  }
+  for (const h of ['## Parked', '## Deferred by Ian 2026-10-22', '## Not on any list', '## Known residuals']) assert.ok(d.includes(h), 'no section ' + h);
+  assert.match(d, /test\/parked-live\.test\.mjs/);
+  assert.match(d, /test\/csat-no-network\.test\.mjs/);
+  assert.match(d, /512f1c0/);
+  assert.match(d, /Ask or jump/);
+  assert.ok((d.match(/^\| /gm) || []).length >= 12, 'fewer than 12 table rows');
+});

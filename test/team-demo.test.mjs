@@ -149,3 +149,24 @@ test('built.html has no typed count literals; counts come from the evidence file
   assert.ok(existsSync(p), 'built.html missing');
   assert.doesNotMatch(readFileSync(p, 'utf8'), /\b(503|475|180|72)\b/);
 });
+
+// Task 9: the Evidence counts table on the /built page reads docs/evidence/team-demo-counts.json; its counts must be
+// the same numbers README.txt tells people to expect (the file once said 503 while the suite defined 564).
+test('team-demo-counts.json: 1.1, 1.0, guide and step 1 counts equal the --expect numbers in README.txt', () => {
+  const norm = (s) => s.replace(/\s+/g, ' ').trim();
+  const readme = readFileSync(join(root, 'README.txt'), 'utf8').replace(/\r\n/g, '\n').split('\n').map(norm);
+  const counts = JSON.parse(readFileSync(join(root, 'docs', 'evidence', 'team-demo-counts.json'), 'utf8'));
+  const byLabel = Object.fromEntries(counts.entries.map((e) => [e.label, e]));
+  for (const label of ['Tracker 1.1 self-check', 'Tracker 1.0 self-check', 'Onboarding guide self-check', 'Step 1 probe']) {
+    const e = byLabel[label];
+    assert.ok(e, 'no entry: ' + label);
+    const own = Number(norm(e.command).match(/--expect (\d+)$/)[1]);
+    const lines = readme.filter((l) => l.includes(norm(e.command).replace(/ --expect \d+$/, '') + ' --expect '));
+    assert.ok(lines.length > 0, label + ': its command is not in README.txt');
+    for (const l of lines) {
+      const n = Number(l.match(/--expect (\d+)/)[1]);
+      assert.equal(e.count, n, label + ': json count ' + e.count + ' != README --expect ' + n);
+      assert.equal(own, n, label + ': json command --expect ' + own + ' != README --expect ' + n);
+    }
+  }
+});

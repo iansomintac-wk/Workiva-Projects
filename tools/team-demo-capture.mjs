@@ -162,6 +162,9 @@ async function main() {
 
   // 6. How it is built.
   await navigate(BASE + '/built', `document.body.innerText.length > 50`);
+  // Whole page in frame so the full Evidence counts table is visible (taller than 900 px).
+  const fullH = await ev(`return Math.ceil(document.documentElement.scrollHeight);`);
+  await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: Math.max(900, fullH), deviceScaleFactor: 1, mobile: false });
   await shot('06-how-its-built.png');
   ws.close();
   if (errors.length) console.log(`team-demo-capture: ${errors.length} page exception(s): ${errors.slice(0, 3).join(' | ')}`);

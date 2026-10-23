@@ -9,7 +9,7 @@ Retaken 2026-10-23T00:01Z with tools/team-demo-capture.mjs (1440x900, temp profi
 | 03-check-csat-dry-run.png | Import CSAT dates dry run before Apply | osm:true, Today desk behind the modal | 1247f20f77d5d20bbb127e2386cd67e0a5d5f5a5d8ef941ffb1a107c4abb122f |
 | 04-send-to-gainsight.png | v13 Risk screen scrolled to the Gainsight queue: 2 sent, 1 failed, toast | osm:true, Signals ask. You confirm. / Gainsight queue 3 | 4a9aa0c4010488bf0c09a13c07f89688aa263f5d7d0511594080b787bf130221 |
 | 05-health.png | v13 desk with the More menu open, status row "Connector: FAKE DATA" | osm:true, Today | d40afe067b9240212ee1b85179c32775cef7edd48abd39c2e9f76c7eb566f578 |
-| 06-how-its-built.png | tools/team-demo/built.html (not the tracker, so osm:false is correct) | osm:false, How it's built | 8945612d4bdfd87e43a3d0a00406798fee8b3aebd8de10e049cb00b8bac05550 |
+| 06-how-its-built.png | tools/team-demo/built.html (not the tracker, so osm:false is correct) | osm:false, How it's built, whole page (taller than 900 px) with the full Evidence counts table | 43ab9ad8c35b5d696f21078a2e9b18b5fe3f27d28f39caeefec70452f95e29ee |
 
 ## Ian's 3 issues, measured on the new run (CDP)
 
@@ -22,4 +22,4 @@ Retaken 2026-10-23T00:01Z with tools/team-demo-capture.mjs (1440x900, temp profi
 - 05: the open More menu covers part of the Wrap up / Day-Week controls by design; the health line is only visible inside that menu on v13.
 - 02: column headings of the stacked per-account tables do not line up with each other (auto table layout); no clipping.
 - 04 changed from the first reshoot: the queue is scrolled into view because the top of the Risk screen did not show the queue.
-- 06: the Evidence counts table still reads "Tracker 1.1 self-check 503" (docs/evidence/team-demo-counts.json); the branch self-check is 564. Outside this task's files, flagged for the lead.
+- 06: reshot in Task 9 as a whole-page capture; the Evidence counts table now reads 564 / 72 / 475 / 18 / 450 at 2128b04.
