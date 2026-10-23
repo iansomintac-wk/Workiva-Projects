@@ -6,3 +6,4 @@ Half A was used to tune engine/fit.js; half B is held out. 2026-10-15: A 86.7%, 
 `node tests/match-frozen.js --base <sha>`: fails if the engine or any id/area/ops/match changed since that commit.
 `node tests/sandbox-kit.js --build <dir>` builds the sandbox files and prompt cards; `node tests/sandbox-kit.test.js` tests it. pagetest stays at 98 checks.
 `node tests/match-frozen.js --base <sha> --allow ops` (and `fair-guard.js ... --allow ops`) lets card `ops` differ; `node tests/match-frozen.test.js` tests both.
+`node tests/match-frozen.js --base <sha> --allow engine` (and `fair-guard.js ... --allow engine`) lets `engine/fit.js` differ; card id, area, match and ops stay frozen.

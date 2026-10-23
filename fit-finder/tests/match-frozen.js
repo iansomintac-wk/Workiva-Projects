@@ -1,6 +1,7 @@
-/* node tests/match-frozen.js --base <sha> [--allow ops]
-   With --allow ops the compared tuple is id, area, match (ops may differ); any other --allow value fails.
-   Exit 0 only if engine/fit.js and every catalogue card's id, area, ops and match (in order) are identical to <sha>.
+/* node tests/match-frozen.js --base <sha> [--allow ops|engine]
+   With --allow ops the compared tuple is id, area, match (ops may differ); with --allow engine engine/fit.js may differ
+   (id, area, ops, match stay frozen); any other --allow value fails.
+   Exit 0 only if engine/fit.js (unless --allow engine) and every catalogue card's id, area, ops and match (in order) are identical to <sha>.
    These are everything match() reads from the catalogue. Other fields may differ. */
 const { spawnSync } = require('child_process'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
@@ -9,12 +10,14 @@ const base = i >= 0 ? process.argv[i + 1] : '';
 const j = process.argv.indexOf('--allow');
 const allow = j >= 0 ? process.argv[j + 1] : '';
 const bad = [];
-if (j >= 0 && allow !== 'ops') bad.push('unknown --allow value: ' + allow);
+if (j >= 0 && !['ops', 'engine'].includes(allow)) bad.push('unknown --allow value: ' + allow);
 if (!base) bad.push('no --base given');
 else {
   const git = (a) => spawnSync('git', a, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26 });
-  const d = git(['diff', '--quiet', base, '--', ':(top)fit-finder/engine/fit.js']);
-  if (d.status !== 0) bad.push('engine/fit.js differs from ' + base + ' (git diff exit ' + d.status + ')');
+  if (allow !== 'engine') {
+    const d = git(['diff', '--quiet', base, '--', ':(top)fit-finder/engine/fit.js']);
+    if (d.status !== 0) bad.push('engine/fit.js differs from ' + base + ' (git diff exit ' + d.status + ')');
+  }
   const g = git(['show', base + ':fit-finder/data/catalogue.json']);
   if (g.status !== 0) bad.push('cannot read the catalogue at ' + base);
   else {

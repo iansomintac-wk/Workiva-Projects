@@ -7,6 +7,16 @@ const WT = path.join(root, '..');
 const catPath = path.join(root, 'data/catalogue.json');
 const backup = path.join(os.tmpdir(), 'catalogue-backup-' + process.pid + '.json');
 fs.copyFileSync(catPath, backup);
+const engPath = path.join(root, 'engine/fit.js'), engBackup = path.join(os.tmpdir(), 'fit-backup-' + process.pid + '.js');
+fs.copyFileSync(engPath, engBackup);
+const withEngine = (title, fn) => {
+  try {
+    const before = fs.readFileSync(engPath, 'utf8');
+    fs.writeFileSync(engPath, before + '\n// gate-test edit\n');
+    ok(title + ': engine edit changed the file', fs.readFileSync(engPath, 'utf8') !== before);
+    fn();
+  } finally { fs.copyFileSync(engBackup, engPath); }
+};
 let n = 0, fails = 0;
 const ok = (title, cond) => { n++; if (!cond) { fails++; console.log('FAIL: ' + title); } };
 const node = (args) => spawnSync(process.execPath, args, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26 });
@@ -62,6 +72,37 @@ withEdit('i', addCheck, () => {
   const r = node(['tests/fair-guard.js', '--base', 'HEAD', '--lock-base', 'HEAD']);
   ok('i: fair-guard without the flag flags ops', out(r).includes('differs from base outside match fields'));
 });
+withEngine('j', () => {
+  const r = node(['tests/match-frozen.js', '--base', 'HEAD', '--allow', 'engine']);
+  ok('j: engine edit allowed with --allow engine', r.status === 0 && /match-frozen PASS/.test(out(r)));
+});
+withEngine('k', () => {
+  const r = node(['tests/match-frozen.js', '--base', 'HEAD']);
+  ok('k: engine edit fails without the flag', r.status === 1 && out(r).includes('engine/fit.js differs'));
+});
+withEngine('l', () => {
+  withEdit('l', addCheck, () => {
+    ok('l: ops change still fails with --allow engine', node(['tests/match-frozen.js', '--base', 'HEAD', '--allow', 'engine']).status === 1);
+  });
+});
+withEngine('m', () => {
+  withEdit('m', (c) => { c.useCases[0].match = 'zzqx'; }, () => {
+    ok('m: match change fails with --allow engine', node(['tests/match-frozen.js', '--base', 'HEAD', '--allow', 'engine']).status === 1);
+  });
+});
+{
+  const r = node(['tests/fair-guard.js', '--base', 'HEAD', '--lock-base', 'HEAD', '--allow', 'bogus']);
+  ok('n: fair-guard unknown --allow value fails', out(r).includes('unknown --allow value'));
+}
+withEdit('o', (c) => { c.useCases[0].match = 'zzqx'; }, () => {
+  const r = node(['tests/fair-guard.js', '--base', 'HEAD', '--lock-base', 'HEAD', '--allow', 'engine']);
+  ok('o: fair-guard --allow engine runs match-frozen', out(r).includes('match-frozen') && out(r).includes('FAIL'));
+});
+withEngine('p', () => {
+  const r = node(['tests/fair-guard.js', '--base', 'HEAD', '--lock-base', 'HEAD', '--allow', 'engine']);
+  ok('p: fair-guard --allow engine ignores the engine diff', !out(r).includes('engine/fit.js differs'));
+});
 fs.rmSync(backup, { force: true });
+fs.rmSync(engBackup, { force: true });
 console.log(fails ? `match-frozen tests FAILED: ${fails} of ${n}` : `match-frozen tests pass: ${n}`);
 process.exit(fails ? 1 : 0);

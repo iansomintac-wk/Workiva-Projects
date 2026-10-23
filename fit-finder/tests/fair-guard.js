@@ -1,5 +1,6 @@
-/* Guard for the fair-test tuning loop.  node tests/fair-guard.js --base <sha> [--lock-base <sha>] [--pins <file>] [--allow ops]
-   With --allow ops the catalogue may also differ in ops.
+/* Guard for the fair-test tuning loop.  node tests/fair-guard.js --base <sha> [--lock-base <sha>] [--pins <file>] [--allow ops|engine]
+   With --allow ops the catalogue may also differ in ops. With --allow engine it also runs match-frozen.js --allow engine
+   (engine/fit.js may differ; card id, area, ops and match stay frozen).
    Exit 0 only if: the suite exits 0; every pin holds (suite lines incl. fresh fit agreement); eval A and B exit 0 over the pinned
    number of rows and hold their agreement pins; the locked paths are unchanged against the lock base; catalogue.json differs
    from <sha> only in match fields. */
@@ -8,12 +9,13 @@ const a = process.argv.slice(2);
 const opt = (k, d) => { const i = a.indexOf(k); return i >= 0 ? a.splice(i, 2)[1] : d; };
 const root = path.join(__dirname, '..');
 const pinFile = opt('--pins');
-const allowOps = opt('--allow') === 'ops';
+const allowV = opt('--allow'); const allowOps = allowV === 'ops', allowEngine = allowV === 'engine';
 const base = opt('--base', process.env.FAIR_BASE);
 const lockBase = opt('--lock-base', base);
 const pins = pinFile ? JSON.parse(fs.readFileSync(pinFile, 'utf8'))
   : { B: { r: 13, w: 3 }, A: { r: 12, w: 0 }, real: { r: 15, w: 2 }, fresh: { r: 15, w: 5, k: 1, agree: 12 }, evalA: 52, evalB: 45, evalRows: 60 };
 const bad = [];
+if (allowV !== undefined && !allowOps && !allowEngine) bad.push('unknown --allow value: ' + allowV);
 const run = (args) => spawnSync(process.execPath, args, { cwd: root, encoding: 'utf8' });
 const git = (args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
 const suite = run(['tests/catalogue.test.js']);
@@ -46,6 +48,7 @@ for (const [h, key] of [['A', 'evalA'], ['B', 'evalB']]) {
 const locked = [':(top)fit-finder/tests', ':(top)fit-finder/data/LABELING.md', ':(top)fit-finder/data/synth', ':(top,glob)fit-finder/data/*.jsonl'];
 if (!base) bad.push('no --base given');
 else {
+  if (allowEngine) { const mf = run(['tests/match-frozen.js', '--base', base, '--allow', 'engine']); if (mf.status !== 0) bad.push('card id/area/ops/match changed: ' + (mf.stdout || '').trim()); }
   const d = git(['diff', '--quiet', lockBase, '--', ...locked]);
   if (d.status !== 0) bad.push('locked files differ from base (git diff exit ' + d.status + ')');
   const s = git(['status', '--porcelain', '--', ...locked]);
