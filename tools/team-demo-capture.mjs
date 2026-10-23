@@ -105,7 +105,11 @@ async function main() {
     await sleep(400);
     const r = await send('Page.captureScreenshot', { format: 'png' });
     writeFileSync(join(outDir, name), Buffer.from(r.data, 'base64'));
-    console.log('captured ' + name);
+    // v13 fingerprint + layout measures, printed per shot (v13 container is #app [data-osm]).
+    const fp = await ev(`const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+      const tables = Array.from(document.querySelectorAll('.modal-backdrop table, .modal table')).map((t) => { let b = t; while (b && b.scrollWidth <= b.clientWidth && b !== document.body && !/auto|scroll/.test(getComputedStyle(b).overflowX)) b = b.parentElement; return {sw: t.scrollWidth, cw: t.clientWidth, box: b ? [b.scrollWidth, b.clientWidth] : null}; });
+      return {osm: !!document.querySelector('#app [data-osm]'), h: Array.from(document.querySelectorAll('h1,h2,.section-title')).filter(vis).slice(0, 4).map((e) => e.textContent.replace(/\\s+/g, ' ').trim().slice(0, 50)), tables, counter: !!document.querySelector('.day-marker'), ranked: document.body.innerText.includes('Ranked by severity'), ofN: /\\d+ of \\d+/i.test(Array.from(document.querySelectorAll('.day-marker')).map((e) => e.textContent).join())};`).catch((e) => ({ err: String(e.message) }));
+    console.log('captured ' + name + ' ' + JSON.stringify(fp));
   };
   const closeModals = `document.querySelectorAll('.modal-backdrop').forEach(e => e.remove()); return true;`;
 
@@ -146,13 +150,14 @@ async function main() {
   await waitFor(`DATA.gainsightQueue.every(q => q.status !== 'queued')`);
   const q = await ev(`return DATA.gainsightQueue.map(x => x.status);`);
   if (q.filter((s) => s === 'sent').length !== 2 || q.filter((s) => s === 'failed').length !== 1) throw new Error('send result is not 2 sent + 1 failed: ' + JSON.stringify(q));
+  // v13 Risk screen: bring the Gainsight queue (3 rows, 2 sent, 1 failed) into view; the Send toast stays as the result line.
+  await ev(`const h = Array.from(document.querySelectorAll('h2,h3,.section-title')).find((e) => /Gainsight queue/.test(e.textContent)); if (h) h.scrollIntoView({block: 'start'}); return !!h;`);
   await shot('04-send-to-gainsight.png');
 
-  // 5. Health: the connector health line on Today.
+  // 5. Health: on the v13 shell the connector health line lives in the More menu's status row; open it so the line is on screen.
   await ev(`ui.view = 'today'; render(); return true;`);
-  await waitFor(`/Connector: FAKE DATA/.test(document.body.innerText)`);
-  // Scroll the health line into view and let the Send toast fade, so the shot shows the line and nothing else on top.
-  await ev(`const el = Array.from(document.querySelectorAll('span')).find(s => s.textContent === 'Connector: FAKE DATA'); el.scrollIntoView({block: 'center'}); document.getElementById('toast').classList.remove('show'); return true;`);
+  await waitFor(`/Connector: FAKE DATA/.test(document.querySelector('.v13-menu-status')?.textContent || '')`);
+  await ev(`document.getElementById('toast').classList.remove('show'); document.querySelector('[data-v13-menu]').open = true; return true;`);
   await shot('05-health.png');
 
   // 6. How it is built.
