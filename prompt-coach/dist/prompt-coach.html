@@ -705,7 +705,7 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
     ['gaps', /\b(gaps?|missing (?:controls?|evidence|steps?|owners?|information|disclosures?)|incomplete|deficienc|weakness(?:es)?|not covered|coverage)/],
     ['rewrite', /\b(rewrite|re-?word|rephrase|shorten|tighten|condense|trim|simplify|edit|proofread|polish|make (?:it|this) (?:shorter|clearer|more concise|sound)|plain english|tone)/],
     ['formula', /\b(formula|vlookup|xlookup|sumif|index ?match|pivot|query|sql|wdata|calculated field|excel function)/],
-    ['consistency', /\b(consisten|inconsisten|conflict|contradict|tie[- ]?out|tie out|ties to|tick and tie|match(?:es)? (?:the|between)|cross-?check|cross-?reference|discrepanc|mismatch|agree to)/],
+    ['consistency', /\b(consisten|inconsisten|(?<!sod )(?<!duties )conflict(?!s? of interest)|contradict|tie[- ]?out|tie out|ties to|tick and tie|match(?:es)? (?:the|between)|cross-?check|cross-?reference|discrepanc|mismatch|agree to)/],
     ['anomaly', /\b(anomal|outlier|unusual|missing values?|blank|duplicate|odd|spike|suspicious|data quality|gaps? in the data|errors? in the data)/],
     ['variance', /\b(varian|flux|change[sd]? (?:from|between|vs|versus)|year[- ]over[- ]year|yoy|quarter[- ]over[- ]quarter|qoq|increase|decrease|drove|drivers?|movement|trend|went up|went down|go(?:es)? (?:up|down)|(?:up|down) (?:vs|versus|from|compared)|spiked|dropped|grew|declin)/],
     ['map', /\b(map|mapping|crosswalk|align (?:to|with)|which (?:principle|requirement|criteria|control objective)|link (?:each|the) .{0,20}to)/],
@@ -1422,9 +1422,12 @@ window.SCOPE_CLS = {"intent":{"labels":["anomaly","checklist","compare","consist
   // patterns and report that it is unsure (the coach then adds blanks instead of a task template).
   function pick(prompt, weights) {
     const c = classify(prompt, weights);
-    const taskSure = c.intent.label !== 'other' && c.intent.p >= 0.5;
+    let taskSure = c.intent.label !== 'other' && c.intent.p >= 0.5;
     const pattern = W.intentOf(R.normalize(prompt), false, true);
-    const intent = (taskSure ? c.intent.label : pattern || (c.intent.label !== 'other' ? c.intent.label : null)) || undefined;
+    // "SoD conflicts" / "conflict of interest" are not a compare-two-sources cue: do not take the model's consistency label
+    const guarded = c.intent.label === 'consistency' && !pattern && /\b(?:sod|duties) conflicts?\b|\bconflicts? of interest\b/.test(R.normalize(prompt));
+    if (guarded) taskSure = false;
+    const intent = guarded ? undefined : (taskSure ? c.intent.label : pattern || (c.intent.label !== 'other' ? c.intent.label : null)) || undefined;
     // a prompt with no area words ("make this sound less harsh") is not sure, however the model leans
     const areaSure = c.domain.p >= 0.85 || (c.domain.p >= 0.5 && W.domainOf(R.normalize(prompt)) !== 'GEN');
     return { intent, domain: areaSure ? c.domain.label : undefined, taskSure, areaSure };
