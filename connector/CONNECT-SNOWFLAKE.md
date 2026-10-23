@@ -1,5 +1,7 @@
 # Connecting Snowflake (CSAT)
 
+The live Gainsight and Snowflake connection waits on Ian's internal team (credentials and access); until then the tracker works fully offline and by file import (CSV or JSON), and the fake connector sends nothing anywhere.
+
 The snowflake slot is served by the fake adapter unless `snowflake.adapter` is `snowflake-sql`. The fake's `listCsat` returns rows from `connector/fixtures/snowflake-csat.json`, over `GET /v1/csat`. Nothing leaves your machine.
 
 `snowflake-sql` is built (Snowflake SQL API v2, key-pair JWT, Node built-ins only, no install) and unproven: `/v1/health` shows `snowflake-sql (unproven)` until `node connector/server.mjs --check` reads from your account. `--check` prints the number of rows only, never a row value, and then records the proof. On `config.example.json` every Snowflake step prints SKIP.

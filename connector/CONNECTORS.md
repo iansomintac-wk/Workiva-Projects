@@ -1,5 +1,7 @@
 # Connectors: how the slots work
 
+The live Gainsight and Snowflake connection waits on Ian's internal team (credentials and access); until then the tracker works fully offline and by file import (CSV or JSON), and the fake connector sends nothing anywhere.
+
 Each external system is a slot with a small set of methods. Today every slot is served by a fake adapter that reads recorded-shape fixtures.
 
 | Slot | Methods |

@@ -26,6 +26,9 @@ Copilot features are the exception: they send a prompt to an AI provider
 (Anthropic, OpenAI or Gemini) either from the browser with a key entered in
 Settings or through the optional local connector, and need a network
 connection. Everything else works offline.
+The live Gainsight and Snowflake connection waits on Ian's internal team
+(credentials and access); until then the tracker works fully offline and by
+file import (CSV or JSON), and the fake connector sends nothing anywhere.
 The prompts carry facts (last touchpoint, sessions, notes) and the risks you have confirmed with your reasons;
 The progress report likewise no longer shows a health figure or column.
 they no longer carry the health figure, the automatic risk level or automatic risk labels.

@@ -1,5 +1,7 @@
 # Hosting the OSM Runway tracker
 
+The live Gainsight and Snowflake connection waits on Ian's internal team (credentials and access); until then the tracker works fully offline and by file import (CSV or JSON), and the fake connector sends nothing anywhere.
+
 This page is written so it can go to whoever runs the host, unchanged. Nothing in this repository publishes anything.
 
 ## What this is

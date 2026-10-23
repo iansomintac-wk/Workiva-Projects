@@ -1,5 +1,7 @@
 # Connect Gainsight
 
+The live Gainsight and Snowflake connection waits on Ian's internal team (credentials and access); until then the tracker works fully offline and by file import (CSV or JSON), and the fake connector sends nothing anywhere.
+
 The `gainsight-rest` adapter is tested on recorded-shape fixtures and is unproven until `--check` passes against
 our tenant. Until then `/v1/health` reports `gainsight-rest (unproven, dry-run)` and the tracker shows
 "Connector: UNPROVEN". Dry-run is the default: a Send builds each request and writes it to `dry-run.jsonl`, and
