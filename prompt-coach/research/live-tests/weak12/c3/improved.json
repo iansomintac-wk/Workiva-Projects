@@ -1,0 +1,74 @@
+[
+ {
+  "id": "FR-W1",
+  "original": "what drove the jump in freight costs this quarter?",
+  "strong": "Use only @fr_w1_freight_q3.xlsx. This is for the reader of this report. What drove the jump in freight costs this quarter? Return a table: Cost line, Q2 FY26, Q3 FY26, Change, change in amount and percent, largest changes first. Do not speculate beyond the data; phrase explanations as hypotheses and list open questions for the data owner separately.",
+  "distSha": "fcffdef3923649dff37c46e0b511a1c04b97d222c120c2753d7f5876fa4f8f19"
+ },
+ {
+  "id": "FR-W2",
+  "original": "Can you look at the attached accruals rollforward?",
+  "strong": "Look at the attached accruals rollforward. This is for the reader of this report. Identify and list the key points and where each one appears. Format it as a short table. Do not add facts that are not in the source, and list any open questions separately.",
+  "distSha": "fcffdef3923649dff37c46e0b511a1c04b97d222c120c2753d7f5876fa4f8f19"
+ },
+ {
+  "id": "FR-W3",
+  "original": "write up the lease maturity disclosure for the 10-K",
+  "strong": "Use only @fr_w3_lease_maturity.xlsx. Write up the lease maturity disclosure for the 10-K. Keep it short, in the style of the existing text. Use only facts from the source, and mark anything I need to confirm as \"to confirm\".",
+  "distSha": "fcffdef3923649dff37c46e0b511a1c04b97d222c120c2753d7f5876fa4f8f19"
+ },
+ {
+  "id": "FR-W4",
+  "original": "Can you help with the revenue numbers for the board deck?",
+  "strong": "Use only @fr_w4_revenue_by_region.xlsx. Identify and list the key points and where each one appears. Help with the revenue numbers for the board deck. Format it as a short table. Do not add facts that are not in the source, and list any open questions separately.",
+  "distSha": "fcffdef3923649dff37c46e0b511a1c04b97d222c120c2753d7f5876fa4f8f19"
+ },
+ {
+  "id": "GRC-W1",
+  "original": "anything wrong with our AP controls?",
+  "strong": "Use only @grc_w1_rcm_ap.xlsx. This is for the reader of this report. Identify and list the key points and where each one appears. Anything wrong with our AP controls? Format it as a short table. Do not add facts that are not in the source, and list any open questions separately.",
+  "distSha": "fcffdef3923649dff37c46e0b511a1c04b97d222c120c2753d7f5876fa4f8f19"
+ },
+ {
+  "id": "GRC-W2",
+  "original": "Please review the attached SoD conflicts report.",
+  "strong": "Use only @grc_w2_sod_conflicts.xlsx. This is for the reader of this report. For the attached SoD conflicts report: list every number or statement that does not match. For each mismatch, give both locations and both values in a table. Do not decide which value is correct.",
+  "distSha": "fcffdef3923649dff37c46e0b511a1c04b97d222c120c2753d7f5876fa4f8f19"
+ },
+ {
+  "id": "GRC-W3",
+  "original": "summarize the audit findings for the committee",
+  "strong": "Use only @grc_w3_ia_findings.docx. Summarize the audit findings for the committee. Use short bullets. Do not add anything that is not in the source, and keep every figure exactly as written.",
+  "distSha": "fcffdef3923649dff37c46e0b511a1c04b97d222c120c2753d7f5876fa4f8f19"
+ },
+ {
+  "id": "GRC-W4",
+  "original": "Could you go over the attached vendor onboarding policy?",
+  "strong": "Go over the attached vendor onboarding policy. This is for the reader of this report. Identify and list the key points and where each one appears. Format it as a short table. Do not add facts that are not in the source, and list any open questions separately.",
+  "distSha": "fcffdef3923649dff37c46e0b511a1c04b97d222c120c2753d7f5876fa4f8f19"
+ },
+ {
+  "id": "SUS-W1",
+  "original": "how did our emissions change last year",
+  "strong": "Use only @sus_w1_scope12_by_site.xlsx. This is for the reader of this report. How did our emissions change last year. Return a table: item, both values, change in amount and percent, largest changes first. Do not speculate beyond the data; phrase explanations as hypotheses and list open questions for the data owner separately.",
+  "distSha": "fcffdef3923649dff37c46e0b511a1c04b97d222c120c2753d7f5876fa4f8f19"
+ },
+ {
+  "id": "SUS-W2",
+  "original": "check the attached water data",
+  "strong": "Use only @sus_w2_water_withdrawal.xlsx. This is for the reader of this report. For the attached water data: identify and list the key points and where each one appears. Format it as a short table. Do not add facts that are not in the source, and list any open questions separately.",
+  "distSha": "fcffdef3923649dff37c46e0b511a1c04b97d222c120c2753d7f5876fa4f8f19"
+ },
+ {
+  "id": "SUS-W3",
+  "original": "write something on supplier engagement for the report",
+  "strong": "Use only @sus_w3_supplier_engagement.docx. Identify and list the key points and where each one appears. Write something on supplier engagement for the report. Format it as a short table. Do not add facts that are not in the source, and list any open questions separately.",
+  "distSha": "fcffdef3923649dff37c46e0b511a1c04b97d222c120c2753d7f5876fa4f8f19"
+ },
+ {
+  "id": "SUS-W4",
+  "original": "Can you take a look at the attached fleet sheet?",
+  "strong": "Take a look at the attached fleet sheet. This is for the reader of this report. Identify and list the key points and where each one appears. Format it as a short table. Do not add facts that are not in the source, and list any open questions separately.",
+  "distSha": "fcffdef3923649dff37c46e0b511a1c04b97d222c120c2753d7f5876fa4f8f19"
+ }
+]

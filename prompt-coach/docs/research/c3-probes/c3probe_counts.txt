@@ -1,0 +1,14 @@
+FR-W1 grade=weak better.w=12 strong.w=57 blanks=0 fileInStrong=true questions=3
+FR-W2 grade=weak better.w=17 strong.w=47 blanks=0 fileInStrong=false questions=3
+FR-W3 grade=weak better.w=12 strong.w=38 blanks=0 fileInStrong=true questions=2
+FR-W4 grade=weak better.w=23 strong.w=45 blanks=0 fileInStrong=true questions=2
+GRC-W1 grade=weak better.w=20 strong.w=50 blanks=0 fileInStrong=true questions=3
+GRC-W2 grade=weak better.w=18 strong.w=45 blanks=0 fileInStrong=true questions=3
+GRC-W3 grade=weak better.w=10 strong.w=30 blanks=0 fileInStrong=true questions=2
+GRC-W4 grade=weak better.w=18 strong.w=48 blanks=0 fileInStrong=false questions=3
+SUS-W1 grade=weak better.w=10 strong.w=51 blanks=0 fileInStrong=true questions=3
+SUS-W2 grade=weak better.w=19 strong.w=49 blanks=0 fileInStrong=true questions=3
+SUS-W3 grade=weak better.w=22 strong.w=44 blanks=0 fileInStrong=true questions=2
+SUS-W4 grade=weak better.w=19 strong.w=49 blanks=0 fileInStrong=false questions=3
+genericJob (case-insensitive) 7 FR-W2,FR-W4,GRC-W1,GRC-W4,SUS-W2,SUS-W3,SUS-W4
+noAtFile 3 FR-W2,GRC-W4,SUS-W4

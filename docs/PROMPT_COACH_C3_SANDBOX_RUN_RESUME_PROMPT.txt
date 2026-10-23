@@ -1,0 +1,54 @@
+RESUME: Prompt Coach C3 sandbox run (workiva repo), lead 2. Written 2026-10-23 ~03:15Z by run lead ed8d4f22, which
+handed off at a clean boundary (Tasks 1-10 done, Pass A frozen) because its own context was large. Load
+studio-harness:talk-and-run first and follow "The run". Workiva repo: write nothing to the brain or studio-harness; tell
+Ian instead.
+
+READ FIRST: docs/PROMPT_COACH_C3_SANDBOX_RUN_PROMPT.txt (order of work, stops, SAFETY: all of it still applies), the
+plan docs/superpowers/plans/2026-10-22-prompt-coach-c3-sandbox.md (PM proxy approved, sha in ledger; do not edit it),
+the spec docs/superpowers/specs/2026-10-22-prompt-coach-c3-sandbox-design.md, and the ledger
+.ledger/2026-10-22-prompt-coach-c3-sandbox/progress.md (the memory: every task row, the lead amendments, the traps).
+
+STATE (measured by lead 1; re-check with the commands in the plan)
+- Commits on branch prompt-coach-c3-sandbox: 0dba162 plan + c3 folder; bdcc412 improved.json (12 Strong prompts from
+  the built page, 0 differ from the probe); 5c7fd23 run_order.tsv; 46644fa 48 answers (48 ok, 0 tech-fail, 0 parked).
+- The drive is OVER. No driver session is running and none is needed. Do not open the sandbox.
+- Task 9 done: score_in/A/{instructions.md,rulebook.md,packets_A.md}; fixtext/ (12, from the real files).
+- Task 10 done: logs/opus_passA.tsv (Opus H3) and logs/codex_passA.tsv (Codex, 4 chunks), both frozen in
+  logs/frozen.txt (check: cd LEDGER/logs && sha256sum -c frozen.txt -> 2 OK). Pass A disagreements (lead count): 41 of 48
+  rows differ in some field: extra 34, false 7, found 5, source 4; invented 0 and hard 0 differences.
+- Usage cap raised by lead 1 from 1.2M to 1.8M (+600k, Ian's 2026-10-22 rule; budget.json capRaises). Ian has NOT been
+  told yet: tell him in your first report. No further raise is yours to make; past 1.8M is Ian's.
+
+NEXT: plan Task 11, then 12, 13, 14, then run-prompt steps 9-11.
+- Task 11: check frozen.txt first. H4 (Sonnet implementer) builds score_in/B/{rulebook.md,packets_B.md} (+ an
+  instructions.md like score_in/A/instructions.md but for Pass B: columns id table job format evidence; table and format
+  by R6, job by R14, judged against the prompt as sent). H5 = a FRESH Opus (general-purpose, model opus; not H3).
+- Codex: make your own scratch CODEX_HOME (mkdir $CLAUDE_JOB_DIR/tmp/codexhome; copy ~/.codex/auth.json and
+  config.toml into it), an empty cwd outside the repo (ls -A prints nothing), then per chunk:
+  CODEX_HOME=<it> timeout 1500 codex exec -s read-only -c windows.sandbox=unelevated --skip-git-repo-check
+  -o <out> - < <in>  (run from the empty cwd, in a background Bash job), appending "exit=<n> pass=B chunk=<c>" to
+  logs/codex_run.txt. Chunks: node LEDGER/scripts/make_codex_chunks.js <instructions> <rulebook> <packets> <outdir>
+  <prefix> (12 packets each). Lead 1's Pass A inputs/outputs/logs are in logs/codexA/ (the shape to copy).
+- Codex's TSV: copy the ^Q\d\d\t lines from its outputs under the header line (Codex does not write files).
+- Task 12 (two fresh Opus adjudicators, A fields first with A inputs only, then B fields), 13 (tally + evidence doc,
+  Opus H8), 14 (README, C3 row, commit) exactly as the plan says. Per-send rule and bars: spec "Success criteria".
+
+TRAPS (from this run's ledger)
+- A subagent's output_file path (AppData/Local/Temp/claude/.../tasks/<id>.output) can be 0 bytes: a grep on it is
+  vacuous. The real transcript is ~/.claude/projects/C--Users-teasp-Documents-workiva--claude-worktrees-prompt-coach-
+  c1-next/<session id>/subagents/agent-<agentId>.jsonl. Blind checks grep THAT file's tool_use inputs, with a positive
+  control (e.g. the count of "packets_A" or "packets_B" > 0).
+- grep -P needs LC_ALL=C.UTF-8 here. Windows paths from $CLAUDE_JOB_DIR need cygpath -u before globbing.
+- Lead amendment to plan Task 9 Step 4 (ledger "AMEND T9 S4"): answers name their attached file, so file stems are not a
+  blindness leak; the id check is FR-W[1-4]|GRC-W[1-4]|SUS-W[1-4]. Use the same reading for packets_B.
+- git commit prints one CRLF warning per file: add 2>/dev/null to keep logs out of context.
+- The checker role refuses node without --test; the lead re-runs checks itself (with a control that shows the check
+  can fail) and records it.
+
+TELL IAN AT THE END (not yet told): the cap raise; driver sessions ran clipboard PowerShell calls with
+dangerouslyDisableSandbox (it overwrote his Windows clipboard during the drive); two driver sessions hit their 200k stop
+(3 sessions in all); the Q01 answer was first saved flattened (detached-clone innerText) and was re-extracted from the
+open chat without a resend (old copy logs/Q01.flat.md); the Task 9 check amendment.
+
+STOPS: merge is Ian's by hand (run prompt step 10; merge-gate.mjs always refuses here, memory merge-gate-no-npm-test);
+spend past 1.8M; any decision only he can make; two strikes on any check failing twice.
