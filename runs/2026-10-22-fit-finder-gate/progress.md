@@ -54,3 +54,8 @@
 | 2026-10-23T02:45:51.668Z | 7 | check-cmd | pass | 0 | 0 | 0 | 0 | exit 0; gate-check ok before pending; before feature 14 of 31 wrong 3 no-card 15 not-a-fit 0 |
 | 2026-10-23T02:46:04.501Z | 7 | checker | pass | 29552 | 0.0262514 | 13 | 0 | PASS: The commit changes only the evidence file, and it holds the BEFORE-LINE, the BEFORE summary and both prediction li |
 | 2026-10-23T02:46:04.507Z | 7 | task | done | 0 | 0 | 0 | 0 | attempt 1 |
+| 2026-10-23T02:47:55.694Z | 8 | build | ok | 460781 | 0.24076069999999997 | 107 | 0 |  |
+| 2026-10-23T02:47:56.994Z | 8 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; |
+| 2026-10-23T02:48:25.815Z | 8 | build | ok | 59017 | 0.030166799999999997 | 29 | 0 |  |
+| 2026-10-23T02:48:26.907Z | 8 | check-cmd | fail | 0 | 0 | 0 | 0 | exit 1; |
+| 2026-10-23T02:48:26.913Z | 8 | task | parked | 0 | 0 | 0 | 0 | two strikes |
