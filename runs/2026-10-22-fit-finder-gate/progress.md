@@ -40,3 +40,4 @@
 | 2026-10-23T00:47:47.321Z | 5 | checker | pass | 28538 | 0.024005300000000004 | 13 | 0 | PASS: The commit is empty, as the task allows with `--allow-empty`. It carries the required message and attribution line |
 | 2026-10-23T00:48:01.267Z | 5 | pm | ok | 23392 | 0.0456269 | 14 | 0 |  |
 | 2026-10-23T00:48:01.272Z | 5 | task | awaiting | 0 | 0 | 0 | 0 | look filed: looks/5.md |
+| 2026-10-23T00:48:05.340Z | 6 | task | waiting | 0 | 0 | 0 | 0 | depends on a look awaiting Ian |
