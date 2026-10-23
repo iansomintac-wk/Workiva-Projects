@@ -10,7 +10,7 @@ measured and was not opened for this doc. Spec: docs/superpowers/specs/2026-10-2
 |---|---|---|
 | C1 | strong-30: "No changes needed" shown and the prompt untouched, at least 27 of 30 | MISS on the first set (17/30, measured earlier); CLOSED AS MISSED 2026-10-22 ~23:37Z by Ian ("Close C1, go to sandbox (Recommended)") at 21/30 on r1 (seen) after the C1 cues and reshape work; fresh set unread, so C1 can be reopened (`docs/research/2026-10-22-prompt-coach-c1-next.md`) |
 | C2 | non-strong prompts wrongly told "no changes", 5% or less on test and on sim | PASS (re-run below) |
-| C3 | weak-12 in the Workiva AI sandbox, 22 of 24 intended answers, 0 invented facts | PENDING, never run (needs a separate --chrome session) |
+| C3 | weak-12 in the Workiva AI sandbox, 22 of 24 intended answers, 0 invented facts | MISS (run 2026-10-23, 48 sandbox sends): 13 of 24 intended (C3a); 0 of 24 invented (C3b PASS); found 58 vs 63 for the originals (C3c MISS). `docs/evidence/2026-10-23-prompt-coach-c3-sandbox.md` |
 | C4 | no [blanks] in Better or Strong output | PASS (re-run below) |
 | C5 | every command in the README test block passes | PASS on the gate (re-run below) |
 
@@ -48,7 +48,7 @@ Built page: 338,538 bytes (`wc -c < prompt-coach/dist/prompt-coach.html`, measur
 - SUS22: Context not detected, so it grades "better".
 - The fresh strong-30 stays unread for whatever comes next.
 - A possible retrain of the model is Ian's call. No AI model is used (ruling: keep it AI-free).
-- C3 (sandbox runs) never started; Tasks 7 and 8 of the plan were not run.
+- C3 was not run before this stop; it ran on 2026-10-23 and missed (13 of 24), see the C3 row above.
 
 ## Ian's rulings (verbatim)
 
