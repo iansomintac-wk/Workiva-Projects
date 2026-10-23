@@ -2,7 +2,7 @@
   "run": "2026-10-23-fit-finder-no-card-step3",
   "state": "running",
   "pid": 37932,
-  "task": 3,
+  "task": 4,
   "of": 10,
   "step": "check",
   "attempts": [
@@ -16,10 +16,10 @@
   "peakWorkerMb": 608,
   "minFreeGb": 1.9,
   "startedAt": "2026-10-23T14:36:38.967Z",
-  "updatedAt": "2026-10-23T14:45:47.977Z",
-  "elapsedSec": 549,
-  "tokens": 1360722,
-  "usage_cost_usd": 0.8164,
+  "updatedAt": "2026-10-23T14:53:51.561Z",
+  "elapsedSec": 1033,
+  "tokens": 1455855,
+  "usage_cost_usd": 0.9231,
   "usage_cost_note": "summed total_cost_usd of the workers: subscription usage, not money",
   "done": [
     0,
@@ -29,7 +29,9 @@
   ],
   "parked": [],
   "blocked": [],
-  "awaiting": [],
+  "awaiting": [
+    4
+  ],
   "waiting": [],
   "pidCreated": "2026-10-23T14:36:37.9370110Z"
 }
