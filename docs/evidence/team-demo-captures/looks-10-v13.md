@@ -1,15 +1,15 @@
 # Team-demo captures on the v13 look (Task 7, steps 1-4)
 
-Retaken 2026-10-23T00:01Z with tools/team-demo-capture.mjs (1440x900, temp profile, 127.0.0.1:8801). v13 fingerprint per shot is printed by the tool: `#app [data-osm]` present (osm:true) plus visible headings. Look call is Ian's; not self-approved.
+Retaken 2026-10-23T00:01Z, then again in Fix A (1143cba, ~01:04Z) through the walkthrough's /practice path; sha256 below are the Fix A files (lead 0c86c843 re-hashed and opened all six). First retake with tools/team-demo-capture.mjs (1440x900, temp profile, 127.0.0.1:8801). v13 fingerprint per shot is printed by the tool: `#app [data-osm]` present (osm:true) plus visible headings. Look call is Ian's; not self-approved.
 
 | Shot | Subject | v13 fingerprint | sha256 |
 |---|---|---|---|
-| 01-check-for-calls.png | Calls preview: 5 matched, 1 no account | osm:true, headings Today / Matched to an account (5) | 78d87d49f0d244962417cc2cd75b24a0ba019ebfd211018b0ed031380e4c12ef |
-| 02-read-accounts.png | Refresh from Gainsight differences list (17 accounts) | osm:true, Differences (17 accounts) | 70c921581430ad87e9bade823002b05d8f3227370d349a4d7f2f298ae1d43f37 |
-| 03-check-csat-dry-run.png | Import CSAT dates dry run before Apply | osm:true, Today desk behind the modal | 1247f20f77d5d20bbb127e2386cd67e0a5d5f5a5d8ef941ffb1a107c4abb122f |
-| 04-send-to-gainsight.png | v13 Risk screen scrolled to the Gainsight queue: 2 sent, 1 failed, toast | osm:true, Signals ask. You confirm. / Gainsight queue 3 | 4a9aa0c4010488bf0c09a13c07f89688aa263f5d7d0511594080b787bf130221 |
-| 05-health.png | v13 desk with the More menu open, status row "Connector: FAKE DATA" | osm:true, Today | d40afe067b9240212ee1b85179c32775cef7edd48abd39c2e9f76c7eb566f578 |
-| 06-how-its-built.png | tools/team-demo/built.html (not the tracker, so osm:false is correct) | osm:false, How it's built, whole page (taller than 900 px) with the full Evidence counts table | 43ab9ad8c35b5d696f21078a2e9b18b5fe3f27d28f39caeefec70452f95e29ee |
+| 01-check-for-calls.png | Calls preview: 5 matched, 1 no account | osm:true, headings Today / Matched to an account (5) | d1b2efffd73ea70add75c95a2f4019e334ede7ba800bcdbe5f0a69f339bb3992 |
+| 02-read-accounts.png | Refresh from Gainsight differences list (17 accounts) | osm:true, Differences (17 accounts) | 2c290339723084fab548fe9bb5fec115d9b49d730095907ce4fcfeb808ab4c73 |
+| 03-check-csat-dry-run.png | Import CSAT dates dry run before Apply | osm:true, Today desk behind the modal | badab5819b7bfcb41e0b3ebecec67e308d74b4ef84ca4f03bc79f0314fae18e7 |
+| 04-send-to-gainsight.png | v13 Risk screen scrolled to the Gainsight queue: 2 sent, 1 failed, toast | osm:true, Signals ask. You confirm. / Gainsight queue 3 | dcf5b043a44fbfa044c485c9d994fe570a3f0410dfef360b6843e2c354900c16 |
+| 05-health.png | v13 desk with the More menu open, status row "Connector: FAKE DATA" | osm:true, Today | dda34b139d131b8abac168e51c9a30a537ea7547a43fc73d75f687e8c3059df3 |
+| 06-how-its-built.png | tools/team-demo/built.html (not the tracker, so osm:false is correct) | osm:false, How it's built, whole page (taller than 900 px) with the full Evidence counts table | bdfe03783cc665428e5acaabe30950b573c484114ee28b31f7594e30d0c63f96 |
 
 ## Ian's 3 issues, measured on the new run (CDP)
 

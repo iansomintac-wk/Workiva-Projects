@@ -35,7 +35,7 @@ The v13 features 1.1 has no data for: signal ids (EV-27); co-pilot minutes saved
 
 ## Not on any list
 
-The design's floating "Ask or jump" bar is absent from the build (0 hits in the html) and is not on Ian's deferred list. This is Ian's decision: build it, or add it to the deferred list.
+The design's floating "Ask or jump" bar is absent from the build (0 hits in the html) and is not on Ian's deferred list. This is Ian's decision: build it, or add it to the deferred list. Until he answers it is held as deferred (PM proxy first pass 2026-10-23, proxy decided; asked in Ian's end-of-run batch).
 
 ## Known residuals
 
