@@ -13,3 +13,8 @@ first card right: 23 of 35 that fit; wrong card 4 (N14,N15,N60,N69); no card whe
 
 AGREEMENT: N 40 D 0 agreement 100.0% PASS
 NOTE: PM labels are one card per row and no partial level; see the plan's deviations
+
+BEFORE-LINE: first card right: 14 of 32 that fit; wrong card 3 (G14,G16,G37); no card where one fits 15 (G2,G3,G4,G11,G12,G13,G19,G24,G26,G27,G30,G31,G32,G33,G34); card on a not-a-fit prompt 0 (); fit agreement 16 of 40; score 21; split: right feature first 14 of 31, rightly none 0 ()
+BEFORE: feature 14 of 31, wrong 3, no card 15, not-a-fit 0
+PREDICTION-PM: (assumed) no-card misses on the gate set fall by about a third; wrong card rises by at most 1.
+PREDICTION-LEAD: (assumed) on tune + half A the loop recovers 3 to 5 of the 6 gate misses to the right card, and 0 to 2 of the 19 keyword misses. Keep only if, on the gate set: no-card misses fall by >= 2, wrong card does not rise, card-on-not-a-fit does not rise. Disproved by: a fall < 2, or any rise in wrong card or card-on-not-a-fit.
