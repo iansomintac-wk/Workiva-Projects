@@ -86,7 +86,7 @@
     {
       "id": "fr-yoy-narrative", "area": "FR", "role": "SEC or external reporting",
       "task": "Write the first draft of the year-over-year change narrative.",
-      "ops": ["DRAFT", "COMPARE"], "match": "(?<!\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|co2e?|carbon|energy (?:use|usage|consumption|data)|factbook|anomal\\w*|outliers?|unusual)\\b(?:[^.;]|(?<=\\d)\\.(?=\\d)){0,300})(?:year[- ]over[- ]year|yoy)\\b(?!(?:[^.;]|(?<=\\d)\\.(?=\\d)){0,300}\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|co2e?|carbon|energy (?:use|usage|consumption|data)|factbook|anomal\\w*|outliers?|unusual)\\b)|variance (?:narrative|commentary|explanations?)|md&a|flux|change narrative|commentary",
+      "ops": ["DRAFT", "COMPARE"], "match": "(?<!\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|co2e?|carbon|energy (?:use|usage|consumption|data)|factbook|anomal\\w*|outliers?|unusual)\\b(?:[^.;]|(?<=\\d)\\.(?=\\d)){0,300})(?:year[- ]over[- ]year|yoy)\\b(?!(?:[^.;]|(?<=\\d)\\.(?=\\d)){0,300}\\b(?:sustainab\\w*|esg|emissions?|scope [123]|ghg|co2e?|carbon|energy (?:use|usage|consumption|data)|factbook|anomal\\w*|outliers?|unusual)\\b)|variance (?:narrative|commentary|explanations?)|md&a|flux|change narrative|commentary|board (?:papers?|packs?)|roll(?:ed|ing)? forward",
       "surfaces": ["files", "doc"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S2", "S23"],
       "prompt": "Use only the current-year file and the prior-year file I selected with @. Context: this narrative goes to [who will read it] in the [section] of our report. Draft the year-over-year change narrative for [section], explaining each change of more than [threshold] in one or two sentences, as a short list. Use only figures in the files, keeping each amount and unit exactly as written with no currency added. Do not explain a change the files do not explain; mark it, and anything else I need to confirm, as [to confirm].",
       "stays": "Checking every figure, and deciding what is worth explaining.",
@@ -104,7 +104,7 @@
     {
       "id": "fr-narrative-tables", "area": "FR", "role": "SEC or external reporting",
       "task": "Check that the narrative, the tables and related documents such as the earnings release say the same thing.",
-      "ops": ["CHECK", "COMPARE"], "match": "narrative|(?<!wdata )tables?|footnotes?|earnings release|press release|financial statements|consisten\\w*|don'?t (?:agree|match)",
+      "ops": ["CHECK", "COMPARE"], "match": "narrative|(?<!wdata )tables?|footnotes?|earnings release|press release|financial statements|consisten\\w*|don'?t (?:agree|match)|inconsistent (?:numbers?|figures?|terms?|amounts?)|cross[- ]?references?",
       "surfaces": ["files", "doc"], "fitBasis": "assumed", "evidence": ["heard"], "refs": ["S3", "S5"],
       "prompt": "Use only the draft and the other document I selected with @. Context: the draft goes to review soon, so I need to catch mismatches first. Check them against each other and list every place where a number or statement does not match, as a table with the section and both values. Do not fix anything or guess; I will check each one.",
       "stays": "The tie-out itself and every correction. Keep to one section at a time for long filings.",
@@ -212,7 +212,7 @@
     {
       "id": "grc-framework", "area": "GRC", "role": "Compliance or IT risk",
       "task": "Map our existing controls to a new framework and see what is missing.",
-      "ops": ["MAP", "CHECK"], "match": "framework|nist|iso|soc ?2|coso|crosswalk|map\\w*|gaps?",
+      "ops": ["MAP", "CHECK"], "match": "framework|nist|iso|soc ?2|coso|crosswalk|map\\w*|gaps?|regulations?",
       "surfaces": ["grc-chat", "files"], "fitBasis": "assumed", "evidence": ["heard"], "refs": ["S1", "S3"],
       "prompt": "Use only the control list and the framework file I selected with @. Context: I am preparing a mapping to [framework] for [who will read it]. Map each control to the [framework] requirements as a table with a one-line reason for each match, mark weak matches as [unsure], and list requirements with no matching control. Do not invent matches.",
       "stays": "Accepting each mapping and deciding how to close gaps.",
@@ -248,7 +248,7 @@
     {
       "id": "grc-control-from-risk", "area": "GRC", "role": "Risk or controls",
       "task": "Draft a control for a newly identified risk.",
-      "ops": ["DRAFT"], "match": "new risks?|draft (?:a )?controls?|design (?:a )?controls?|control (?:for|to address)",
+      "ops": ["DRAFT"], "match": "new risks?|draft (?:a )?controls?|design (?:a )?controls?|control (?:for|to address)|(?:write|writing) (?:a )?control descriptions?|risk and control matri(?:x|ces)",
       "surfaces": ["control-creator"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S1"],
       "prompt": null,
       "stays": "Whether the control fits your process, and who owns it.",
