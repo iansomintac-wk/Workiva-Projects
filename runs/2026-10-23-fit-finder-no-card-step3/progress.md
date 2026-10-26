@@ -49,3 +49,6 @@
 | 2026-10-26T03:07:31.906Z | 9 | check-cmd | pass | not measured | not measured | 0 | 0 | exit 0; fair-guard PASS | not measured | not measured | not measured |
 | 2026-10-26T03:09:25.585Z | 9 | checker | pass | not measured | not measured | 111 | 0 | ted outcome. `SUMMARY` accurately copies the recorded numbers and explains why the prediction failed. No tests or check  | codex | medium | not measured |
 | 2026-10-26T03:09:25.630Z | 9 | task | done | not measured | not measured | 0 | 0 | attempt 1 | not measured | not measured | not measured |
+| 2026-10-26T03:11:30.282Z | 0 | review | ok | 439843 | 0.8642748 | 121 | 0 |  | opus | high | not measured |
+| 2026-10-26T03:17:05.587Z | 0 | codex | ok | not measured | not measured | 335 | 0 | optional second opinion; Codex usage is unavailable and is not used to accept task work | not measured | not measured | not measured |
+Usage: 2026-10-26T03:17:05.980Z tokens 3947472 | 5h not measured | 7d not measured
