@@ -1,0 +1,40 @@
+{"id":"G1","area":"FR","task":"Every quarter I spend two days writing up why revenue and opex moved versus last year for the MD&A. I'd love a rough first version to start from."}
+{"id":"G2","area":"FR","task":"Can it go through our draft 10-Q and tell me if the numbers in the text match the tables?"}
+{"id":"G3","area":"FR","task":"Our earnings release and the 10-K have to say the same thing. Someone has to read both side by side and flag where they disagree."}
+{"id":"G4","area":"FR","task":"We just got a pile of XBRL errors back from the validator and I don't understand half of them. Help me figure out what they mean."}
+{"id":"G5","area":"FR","task":"Draft 8-K for the CFO transition."}
+{"id":"G6","area":"FR","task":"I want to see how three of our competitors worded their segment disclosures and where ours is thinner."}
+{"id":"G7","area":"FR","task":"For each of our subsidiaries, explain in plain words why the local statutory accounts differ from the group GAAP numbers."}
+{"id":"G8","area":"FR","task":"Reading the risk factors section against last year's, point out what's been added or reworded. We do this every year by hand."}
+{"id":"G9","area":"FR","task":"Approve the final 10-K numbers and sign off so we can file tonight."}
+{"id":"G10","area":"FR","task":"Email the auditors our tie-out schedule and remind the entity controllers to send their late balances."}
+{"id":"G11","area":"FR","task":"Recalculate our deferred tax balance to the cent for all 30 entities and post the journal entries in the ERP."}
+{"id":"G12","area":"GEN","task":"I've got a 90-page board pack to read before tomorrow. Give me the main points."}
+{"id":"G13","area":"GEN","task":"How do I set up a new user group in Workiva and give them view-only access to a folder?"}
+{"id":"G14","area":"GEN","task":"This paragraph is too dense for the board. Make it shorter and plainer."}
+{"id":"G15","area":"GEN","task":"My spreadsheet has a nested IF that returns the wrong thing and I can't see why. Can you explain what it's doing and fix it?"}
+{"id":"G16","area":"GEN","task":"I need a Wdata query that pulls all invoices over a threshold grouped by vendor, but I don't write SQL."}
+{"id":"G17","area":"GEN","task":"Our annual report needs to go out in German and French. Translate the text sections."}
+{"id":"G18","area":"GEN","task":"Explain what this long lease policy document says about renewal terms, in a few bullets."}
+{"id":"G19","area":"GEN","task":"Tidy up the tone of this email-style memo so it sounds more professional for the client."}
+{"id":"G20","area":"GEN","task":"Book the meeting room and schedule the review call with everyone for next Tuesday."}
+{"id":"G21","area":"GRC","task":"We have hundreds of SOX controls and I suspect many are saying the same thing in different words. Which ones overlap?"}
+{"id":"G22","area":"GRC","task":"We're adopting ISO 27001 this year. Line up our current controls with it and show me where we have nothing."}
+{"id":"G23","area":"GRC","task":"For every control in the revenue process, look at the evidence we attached and tell me what's missing, like dates or approver names."}
+{"id":"G24","area":"GRC","task":"Write the testing steps for each of our access controls."}
+{"id":"G25","area":"GRC","task":"A control test failed last week. Write up the finding so I can send it to the owner for review."}
+{"id":"G26","area":"GRC","task":"There's a new risk around third-party data processors. Suggest a control to cover it."}
+{"id":"G27","area":"GRC","task":"Our password-rotation control failed. Put together a plan to fix it with steps and who should do what."}
+{"id":"G28","area":"GRC","task":"Boil down the notes from this month's risk interviews into a one-page summary for the committee."}
+{"id":"G29","area":"GRC","task":"Here's the procurement process narrative. Turn it into a flowchart."}
+{"id":"G30","area":"GRC","task":"Go through the internal audit walkthrough notes for each process and list the gaps against what the policy requires."}
+{"id":"G31","area":"GRC","task":"Decide whether this deficiency is a material weakness and close it out."}
+{"id":"G32","area":"GRC","task":"Chase the control owners who haven't uploaded their Q3 evidence yet."}
+{"id":"G33","area":"SUS","task":"The ESRS E1 climate standard has changed. What exactly do we need to disclose now?"}
+{"id":"G34","area":"SUS","task":"We've collected our emissions and energy numbers. Write the disclosure section around them."}
+{"id":"G35","area":"SUS","task":"Rework our sustainability report text into a short summary the board will actually read."}
+{"id":"G36","area":"SUS","task":"Compare this year's water and waste data to last year's and point out anything that looks odd, with a reason."}
+{"id":"G37","area":"SUS","task":"What does ISSB S2 ask for on scenario analysis? Plain language please."}
+{"id":"G38","area":"SUS","task":"Our sustainability chapter reads like a technical manual. Make it clearer for executives."}
+{"id":"G39","area":"SUS","task":"Work out our exact Scope 3 total by multiplying all the supplier factors in the ledger."}
+{"id":"G40","area":"SUS","task":"Send the supplier survey to all 200 vendors and follow up with the ones who haven't answered."}

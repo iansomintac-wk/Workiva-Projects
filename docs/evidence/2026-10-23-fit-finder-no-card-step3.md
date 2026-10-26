@@ -10,3 +10,6 @@ fresh prompts first card right: 15 of 23 that fit; wrong card 5 (G2,G14,G15,G22,
 fit agreement 52/60 = 86.7%  good<->not mix-ups 0  repeats 78%
 fit agreement 45/60 = 75.0%  good<->not mix-ups 1  repeats 67%
 first card right: 23 of 35 that fit; wrong card 4 (N14,N15,N60,N69); no card where one fits 8 (N5,N7,N9,N29,N35,N40,N70,N83); card on a not-a-fit prompt 0 (); fit agreement 16 of 50; score 16; split: right feature first 17 of 29, rightly none 6 (N27,N59,N65,N73,N80,N86)
+
+AGREEMENT: N 40 D 0 agreement 100.0% PASS
+NOTE: PM labels are one card per row and no partial level; see the plan's deviations
