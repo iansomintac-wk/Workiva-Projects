@@ -6,3 +6,6 @@
 | 2026-10-26T06:14:47.302Z | 1 | check-cmd | pass | not measured | not measured | 0 | 0 | exit 0; RUNWAY_ND_T1_PASS | not measured | not measured | not measured |
 | 2026-10-26T06:15:00.808Z | 1 | checker | pass | not measured | not measured | 13 | 0 | driver reports all 11 tests passing and a clean scope check. I did not run tests; the provided evidence does not establi | codex | medium | not measured |
 | 2026-10-26T06:15:00.810Z | 1 | task | done | not measured | not measured | 0 | 0 | attempt 1 | not measured | not measured | not measured |
+| 2026-10-26T06:15:29.377Z | 0 | review | ok | 40896 | 0.1280056 | 28 | 0 |  | opus | high | not measured |
+| 2026-10-26T06:15:38.989Z | 0 | codex | ok | not measured | not measured | 10 | 0 | optional second opinion; Codex usage is unavailable and is not used to accept task work | not measured | not measured | not measured |
+Usage: 2026-10-26T06:15:41.357Z tokens 103489 | 5h 15% resets 2026-10-26T08:20:00.000Z | 7d 11% resets 2026-10-31T16:00:00.000Z
