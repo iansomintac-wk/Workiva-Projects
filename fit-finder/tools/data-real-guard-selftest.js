@@ -19,8 +19,8 @@ git(repo, 'add', 'fit-finder/README.md');
 const line = 'first card right: 20 of 33 that fit; wrong card 2 (a); no card where one fits 8 (b); card on a not-a-fit prompt 0 (c); split: right feature first 17 of 29, rightly none 3 (x)';
 const ev = path.join(tmp, 'ev.md');
 fs.writeFileSync(ev, ['BASE-SHA: ae60341', 'BEFORE-LINE: ' + line, 'BEFORE: feature 17 of 29, wrong 2, no card 8, not-a-fit 0', 'PREDICTION-PM: x', 'PREDICTION-LEAD: y'].join('\n') + '\n');
-const gate = () => spawnSync('node', [path.join(ff, 'tools', 'gate-check.js'), ev, '--stage', 'before', '--no-git'], { encoding: 'utf8' });
-const guard = (cwd) => spawnSync('node', [path.join(ff, 'tools', 'data-real-guard.js')], { cwd, encoding: 'utf8', env: { ...process.env, GIT_CEILING_DIRECTORIES: tmp } });
+const gate = (env = {}) => spawnSync('node', [path.join(ff, 'tools', 'gate-check.js'), ev, '--stage', 'before', '--no-git'], { encoding: 'utf8', env: { ...process.env, ...env } });
+const guard = (cwd, env = {}) => spawnSync('node', [path.join(ff, 'tools', 'data-real-guard.js')], { cwd, encoding: 'utf8', env: { ...process.env, GIT_CEILING_DIRECTORIES: tmp, ...env } });
 let n = 0;
 const expect = (name, r, code, re) => {
   n++;
@@ -40,11 +40,35 @@ const t = trackedReal(ff);
 if (!t.ok || t.files.join() !== 'data/real/fake.jsonl') fail('trackedReal lists ' + JSON.stringify(t));
 n++;
 
-// 6. untrack again: passes again
+// 6-15. inherited git env vars that point git at another repo, index or tree must not hide the tracked file
+const other = path.join(tmp, 'other');
+fs.mkdirSync(other);
+git(other, 'init', '-q');
+const misleading = {
+  GIT_DIR: path.join(other, '.git'),
+  GIT_INDEX_FILE: path.join(tmp, 'empty-index'),
+  GIT_WORK_TREE: other,
+  GIT_COMMON_DIR: path.join(other, '.git'),
+  GIT_OBJECT_DIRECTORY: path.join(other, '.git', 'objects'),
+};
+for (const [k, v] of Object.entries(misleading)) {
+  expect(`${k} guard`, guard(ff, { [k]: v }), 1, /data-real-guard FAIL: .*data\/real\/fake\.jsonl/);
+  expect(`${k} gate`, gate({ [k]: v }), 1, /gate-check FAIL: .*data\/real is tracked by git: data\/real\/fake\.jsonl/);
+}
+
+// 16. untrack again: passes again
 git(repo, 'rm', '-q', '--cached', 'fit-finder/data/real/fake.jsonl');
 expect('untracked again gate', gate(), 0, /^gate-check ok before/);
 
-// 7. fails closed outside a git repo (git ls-files errors)
+// 17-19. a case variant (data/REAL) is caught too; put straight in the index so the test does not depend on the disk's case rules
+const blob = git(repo, 'hash-object', '-w', 'fit-finder/data/real/fake.jsonl').stdout.trim();
+git(repo, 'update-index', '--add', '--cacheinfo', `100644,${blob},fit-finder/data/REAL/x.jsonl`);
+expect('case variant guard', guard(ff), 1, /data-real-guard FAIL: .*data\/REAL\/x\.jsonl/);
+expect('case variant gate', gate(), 1, /gate-check FAIL: .*data\/real is tracked by git: data\/REAL\/x\.jsonl/);
+git(repo, 'update-index', '--force-remove', 'fit-finder/data/REAL/x.jsonl');
+expect('case variant removed gate', gate(), 0, /^gate-check ok before/);
+
+// 20. fails closed outside a git repo (git ls-files errors)
 const bare = path.join(tmp, 'not-a-repo');
 fs.mkdirSync(bare);
 expect('no repo guard', guard(bare), 1, /data-real-guard FAIL: git ls-files failed/);

@@ -35,3 +35,25 @@ exit 0
 ```
 
 The 7 checks: untracked file on disk passes (guard, gate); `git add -f` of the fake file fails (guard and gate, each naming the path; `trackedReal` lists exactly it); `git rm --cached` passes again; outside any repo the guard fails closed (`git ls-files failed`). On this checkout nothing under `data/real` is tracked.
+
+## Round 2: the two Codex must-fixes (2026-10-26 ~05:40Z, Ian's PC)
+
+The Codex judge of d007e0b (`docs/evidence/2026-10-26-f3-fit-finder-codex-judge.md`) failed it on two must-fixes: inherited `GIT_INDEX_FILE` / `GIT_WORK_TREE` (and similar) make `git ls-files` print nothing and exit 0, and the case-sensitive `data/real` pathspec lets `data/REAL/...` past on Windows.
+
+Fix in `data-real-guard.js`: git runs as `git -C <fit-finder> ls-files -z` with `GIT_DIR`, `GIT_INDEX_FILE`, `GIT_WORK_TREE`, `GIT_COMMON_DIR` and `GIT_OBJECT_DIRECTORY` removed from its environment (any case of the name), and the output is filtered with `/(^|\/)data\/real(\/|$)/i`, so a `data/real` segment in any case, at any depth under `fit-finder/`, fails.
+
+Tests added first to the selftest (13 new checks, 20 in all):
+- checks 6-15: with the fake file tracked, each of the five env vars set to point at a second throwaway repo (or an empty index path), guard and gate must still fail naming `data/real/fake.jsonl`;
+- checks 17-19: `fit-finder/data/REAL/x.jsonl` put straight into the index with `git update-index --cacheinfo` (so the test does not depend on the disk's case rules) must fail guard and gate, and pass again once removed.
+
+Red against the old guard (each new check run alone in a scratch copy): `GIT_DIR`, `GIT_INDEX_FILE`, `GIT_WORK_TREE` and the `data/REAL` case each got `exit 0: data-real-guard ok`. `GIT_COMMON_DIR` and `GIT_OBJECT_DIRECTORY` did not hide the file even before the fix; their checks stay as regression guards, not proof of the fix.
+
+Green after the fix:
+```
+## data-real-guard-selftest
+data-real-guard-selftest ok (20 checks)
+## gate-selftest
+gate-selftest ok
+## data-real-guard on this checkout
+data-real-guard ok
+```
