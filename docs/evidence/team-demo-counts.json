@@ -3,8 +3,8 @@
   "entries": [
     {
       "label": "Tracker 1.1 self-check",
-      "command": "node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 564",
-      "count": 564,
+      "command": "node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 565",
+      "count": 565,
       "commit": "2128b04",
       "date": "2026-10-22"
     },

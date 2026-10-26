@@ -1,0 +1,4 @@
+[
+ {"name":"old-deck-kestrel","wait":1500,"js":"return (()=>{localStorage.setItem('obm-next-screens-v1','0');ui.openCustomerId=null;ui.view='risk';render();const track=document.querySelector('.rk3-track'),host=track&&track.parentElement;if(!host||!host._deckOffsetFor)return 'NO DECK';const ids=[...document.querySelectorAll('[data-risk-case]')].map(e=>e.getAttribute('data-risk-case'));const i=ids.indexOf('lc6-kestrel');if(i<0)return 'NO KESTREL';scrollTo(0,track.getBoundingClientRect().top+scrollY+host._deckOffsetFor(i)+2);const el=document.querySelector('#rk-c-lc6-kestrel');const ls=[...el.querySelectorAll('.rk-confirmed-why')];return 'idx '+i+' active='+el.classList.contains('is-active')+' '+ls.length+' reason lines: '+ls.map(p=>p.textContent.trim()).join(' | ').slice(0,300);})()"},
+ {"name":"old-deck-kestrel-check","wait":200,"js":"return (()=>{const el=document.querySelector('#rk-c-lc6-kestrel');return 'active='+el.classList.contains('is-active');})()"}
+]

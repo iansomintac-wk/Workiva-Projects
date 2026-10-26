@@ -10377,6 +10377,7 @@ function v13RiskCard(k){
   const id = escapeAttr(k.c.id);
   const conf = k.items.filter(it => riskVerdictState(it) === 'confirmed');
   const withReason = conf.find(riskItemHasReason);
+  const reasons = riskReasonLines(conf);   // look call 6: each distinct reason once; dated when there are several
   const t = (withReason || conf[0] || k.lead).tracking || {};
   const rec = getRecommendedAction(k.c);
   const when = t.verdictOn ? ` · You confirmed ${escapeHtml(fmtDate(t.verdictOn))}` : ' · You confirmed';
@@ -10385,7 +10386,7 @@ function v13RiskCard(k){
           <p style="font-size:12px;font-weight:800;color:var(--risk)">${escapeHtml(k.c.name)}${when}</p>
           <p style="font-size:16px;font-weight:800;margin-top:2px">${escapeHtml(k.lead.detail || k.lead.kind || '')}</p>
           ${withReason
-            ? `<p style="font-size:13px;margin-top:4px">Your reason · &ldquo;${escapeHtml(withReason.tracking.verdictReason)}&rdquo;</p>`
+            ? reasons.map(it => `<p style="font-size:13px;margin-top:4px">Your reason · &ldquo;${escapeHtml(it.tracking.verdictReason)}&rdquo;${reasons.length > 1 ? ` · ${escapeHtml(fmtDate(it.tracking.verdictOn))}` : ''}</p>`).join('')
             : `<p style="font-size:13px;margin-top:4px">Confirmed before reasons were required. <button type="button" data-risk-confirm="${id}" style="border:0;background:none;padding:0;color:var(--risk);font-weight:700;text-decoration:underline;cursor:pointer;font-size:13px">Add a reason</button></p>`}
           ${rec && rec.action ? `<p style="font-size:13px;margin-top:4px">Mitigation · ${escapeHtml(rec.action)}</p>` : ''}
           <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
@@ -11232,10 +11233,13 @@ function renderRiskCase(k, idx, active){
   const returned = state === 'returned';
   const open = state === 'confirmed';
   const dismissedItem = k.items.find(it => riskVerdictState(it) === 'dismissed');
-  /* FX2: print the reason the OSM gave; a pre-1.2 confirmation has none, so say so. */
-  const confirmedLines = k.items.filter(it => riskVerdictState(it) === 'confirmed').map(it => riskItemHasReason(it)
-    ? `<p class="rk-confirmed-why">Confirmed as a risk — &ldquo;${escapeHtml(it.tracking.verdictReason)}&rdquo; · ${fmtDate(it.tracking.verdictOn)}</p>`
-    : `<p class="rk-confirmed-why">Confirmed before reasons were required. <button class="link-btn" data-risk-confirm="${escapeAttr(k.c.id)}">Add a reason</button></p>`).join('');
+  /* FX2: print the reason the OSM gave; a pre-1.2 confirmation has none, so say so.
+     Look call 6: each distinct reason once, and the no-reason line once. */
+  const confirmedItems = k.items.filter(it => riskVerdictState(it) === 'confirmed');
+  const confirmedLines = riskReasonLines(confirmedItems).map(it =>
+    `<p class="rk-confirmed-why">Confirmed as a risk — &ldquo;${escapeHtml(it.tracking.verdictReason)}&rdquo; · ${fmtDate(it.tracking.verdictOn)}</p>`).join('')
+    + (confirmedItems.some(it => !riskItemHasReason(it))
+      ? `<p class="rk-confirmed-why">Confirmed before reasons were required. <button class="link-btn" data-risk-confirm="${escapeAttr(k.c.id)}">Add a reason</button></p>` : '');
 
   return `
   <article class="rk3-card ${sevClass} ${state}${active ? ' is-active' : ''}" id="rk-c-${escapeAttr(k.c.id)}"
@@ -12004,6 +12008,20 @@ function riskItemHasReason(it){
   const t = (it && it.tracking) || {};
   return typeof t.verdictReason === 'string' && !!t.verdictReason.trim();
 }
+/* Look call 6 (Ian 2026-10-23, "Show once"): signals confirmed with the same reason on
+   the same date print that reason once; a different reason or date still gets its own line. */
+function riskReasonKey(it){
+  const t = (it && it.tracking) || {};
+  return riskItemHasReason(it) ? t.verdictReason.trim() + '|' + (t.verdictOn || '') : '';
+}
+function riskReasonLines(items){
+  const seen = new Set();
+  return items.filter(it => {
+    const key = riskReasonKey(it);
+    if(!key || seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+}
 /* FX2: confirm or dismiss a case. Only items that still need a judgement are touched:
    a confirmed item keeps its first reason and its confirmed state. A legacy
    confirmation with no reason is the one exception when confirming: it gets the reason. */
@@ -12710,11 +12728,14 @@ const CARD_EDITORS = {
     render: c => {
       const risks = buildRiskHubList({readOnly:true}).filter(r => r.c.id === c.id).slice(0, 3);
       if(!risks.length) return `<p class="dk-hint">Nothing open. Flagging a note on the Activity Log raises one here.</p>`;
+      const shownReasons = new Set();   // look call 6: a reason already printed above is not printed again
       return risks.map(r => {
         const confirmed = riskVerdictState(r) === 'confirmed';
         const hasReason = riskItemHasReason(r);
+        const repeat = confirmed && hasReason && shownReasons.has(riskReasonKey(r));
+        if(confirmed && hasReason) shownReasons.add(riskReasonKey(r));
         const actions = confirmed && hasReason
-          ? `<p class="dk-hint">Confirmed as a risk — &ldquo;${escapeHtml(r.tracking.verdictReason)}&rdquo; · ${fmtDate(r.tracking.verdictOn)}</p>`
+          ? (repeat ? '' : `<p class="dk-hint">Confirmed as a risk — &ldquo;${escapeHtml(r.tracking.verdictReason)}&rdquo; · ${fmtDate(r.tracking.verdictOn)}</p>`)
           : confirmed
             ? `<p class="dk-hint">Confirmed before reasons were required.</p>
             <button class="btn btn-sm" data-dk-risk="confirmed|${escapeAttr(r.logKey)}">Add a reason</button>`
