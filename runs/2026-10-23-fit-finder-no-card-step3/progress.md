@@ -37,3 +37,7 @@
 | 2026-10-26T02:54:22.975Z | 6 | check-cmd | pass | not measured | not measured | 0 | 0 | exit 0; gate-check ok before pending; before feature 13 of 30 wrong 3 no-card 16 not-a-fit 0 | not measured | not measured | not measured |
 | 2026-10-26T02:56:19.195Z | 6 | checker | pass | not measured | not measured | 113 | 0 | ATUS 0` output, uses the feature denominator 30, and includes both exact predictions. `diag-before.txt` records 25 no-ca | codex | medium | not measured |
 | 2026-10-26T02:56:19.258Z | 6 | task | done | not measured | not measured | 0 | 0 | attempt 1 | not measured | not measured | not measured |
+| 2026-10-26T03:00:34.860Z | 7 | build | ok | 1699216 | 0.6296162000000002 | 254 | 0 |  | sonnet | medium | not measured |
+| 2026-10-26T03:00:40.326Z | 7 | check-cmd | pass | not measured | not measured | 0 | 0 | exit 0; tune-result ok | not measured | not measured | not measured |
+| 2026-10-26T03:03:23.551Z | 7 | checker | pass | not measured | not measured | 161 | 0 | o expected result was hard-coded. - Ledger records N 25 → 15, three keeps across five attempts, stopping at target. - Sa | codex | medium | not measured |
+| 2026-10-26T03:03:23.618Z | 7 | task | done | not measured | not measured | 0 | 0 | attempt 1 | not measured | not measured | not measured |
