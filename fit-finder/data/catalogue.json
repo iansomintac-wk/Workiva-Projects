@@ -176,7 +176,7 @@
     {
       "id": "gen-formula", "area": "GEN", "role": "Anyone",
       "task": "Explain or fix a formula in a spreadsheet.",
-      "ops": ["EXPLAIN", "CHECK"], "match": "formulas?|spreadsheets?|workbooks?",
+      "ops": ["EXPLAIN", "CHECK", "DRAFT"], "match": "formulas?|spreadsheets?|workbooks?",
       "surfaces": ["sheet"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S19", "S20"],
       "prompt": null,
       "stays": "The numbers. Workiva AI returns formulas, not calculated values; check each one before you rely on it.",
@@ -266,7 +266,7 @@
     {
       "id": "grc-risk-summary", "area": "GRC", "role": "Risk management",
       "task": "Summarize risk interviews and risk activity for the risk committee.",
-      "ops": ["SUMMARIZE"], "match": "risk (?:interviews?|assessments?|activity|committee|register)|interview notes",
+      "ops": ["SUMMARIZE", "CLASSIFY", "DRAFT"], "match": "risk (?:interviews?|assessments?|activity|committee|register)|interview notes",
       "surfaces": ["risk-summary", "files"], "fitBasis": "named", "evidence": ["workiva"], "refs": ["S1"],
       "prompt": "Use only the interview notes I selected with @. Context: the summary is for the risk committee. Summarize them in five bullets: the risks raised, who raised them, and anything that changed since [last period]. Do not add facts that are not in the notes; say so if something is unclear.",
       "stays": "Rating the risks and deciding what goes to the committee.",
