@@ -13,6 +13,10 @@ const get = (tag) => {
   return i < 0 ? null : { i, v: lines[i].slice(tag.length).trim() };
 };
 const bad = [];
+// always, even with --no-git: real data must never be tracked (studio-harness F3)
+const real = require('./data-real-guard.js').trackedReal(root);
+if (!real.ok) bad.push(real.error);
+else if (real.files.length) bad.push('data/real is tracked by git: ' + real.files.join(', '));
 function parse(text) {
   const m = (re) => { const x = re.exec(text); return x ? +x[1] : NaN; };
   const s = /split: right feature first (\d+) of (\d+)/.exec(text);
