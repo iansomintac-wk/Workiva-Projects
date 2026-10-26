@@ -57,3 +57,23 @@ gate-selftest ok
 ## data-real-guard on this checkout
 data-real-guard ok
 ```
+
+## Round 3: the two must-fixes from Codex judge round 2 (2026-10-26 ~05:50Z, Ian's PC)
+
+`docs/evidence/2026-10-26-f3-fit-finder-codex-judge-r2.md` (judge of 3c059b4) found the round-1 fixes sound, and two new must-fixes:
+
+1. An accidental `git init` inside `fit-finder/` makes `git -C fit-finder` read the new, empty index. Fix: after `ls-files`, the guard runs `git rev-parse --show-toplevel` (same cleaned env) and fails unless the real path of the root it found is fit-finder's parent (compared case-insensitively on Windows). A linked worktree still passes, because its root is the worktree folder. Running the guard CLI from anywhere but `fit-finder/` now fails closed.
+2. The selftest's own setup git commands inherited GIT_* overrides and ignored exit codes. Fix: its `git()` helper drops every `GIT_*` variable and stops the test on any non-zero exit.
+
+Tests first:
+- New checks 16-17: with the fake file tracked, `git init` inside the fixture's `fit-finder/` must make the guard and the gate fail with `git found repo root ...`. Red before the guard fix: `nested repo guard: want exit 1 ..., got 0: data-real-guard ok`.
+- Selftest leak, red before the helper fix: `GIT_INDEX_FILE=<scratch>/leak-index node tools/data-real-guard-selftest.js` gave `FAIL: tracked guard: ... got 0: data-real-guard ok` and created the scratch index (the fixture's `git add` went there). After: the same command and `GIT_WORK_TREE=<scratch> ...` both print `ok (22 checks)` and no scratch index is created.
+
+Green after both fixes:
+```
+data-real-guard-selftest ok (22 checks)
+gate-selftest ok
+data-real-guard ok            (this worktree, run from fit-finder/)
+trackedReal(<main checkout>/fit-finder): ok, tracked data/real count 0
+```
+No Codex judge has been run on this round yet.
