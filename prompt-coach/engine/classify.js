@@ -55,9 +55,12 @@
   // patterns and report that it is unsure (the coach then adds blanks instead of a task template).
   function pick(prompt, weights) {
     const c = classify(prompt, weights);
-    const taskSure = c.intent.label !== 'other' && c.intent.p >= 0.5;
+    let taskSure = c.intent.label !== 'other' && c.intent.p >= 0.5;
     const pattern = W.intentOf(R.normalize(prompt), false, true);
-    const intent = (taskSure ? c.intent.label : pattern || (c.intent.label !== 'other' ? c.intent.label : null)) || undefined;
+    // "SoD conflicts" / "conflict of interest" are not a compare-two-sources cue: do not take the model's consistency label
+    const guarded = c.intent.label === 'consistency' && !pattern && /\b(?:sod|duties)[- ]conflicts?\b|\bconflicts? of interest\b/.test(R.normalize(prompt));
+    if (guarded) taskSure = false;
+    const intent = guarded ? undefined : (taskSure ? c.intent.label : pattern || (c.intent.label !== 'other' ? c.intent.label : null)) || undefined;
     // a prompt with no area words ("make this sound less harsh") is not sure, however the model leans
     const areaSure = c.domain.p >= 0.85 || (c.domain.p >= 0.5 && W.domainOf(R.normalize(prompt)) !== 'GEN');
     return { intent, domain: areaSure ? c.domain.label : undefined, taskSure, areaSure };

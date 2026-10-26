@@ -55,3 +55,38 @@ test('c5_gate eval is a floor at 0.856, not an exact match', () => {
   assert.strictEqual(judge({ out: 'GRADE acc=0.855\n' })[0], false);
   assert.strictEqual(judge({ out: 'no grade here\n' })[0], false);
 });
+
+// SoD-conflict fix (spec 2026-10-23): "conflict" inside these nouns is not a compare-two-sources cue.
+{
+  const R = require('../engine/rules.js'), M = require('../engine/model.js'), W = require('../engine/rewrite.js'), C = require('../engine/classify.js');
+  const weights = JSON.parse(fs.readFileSync(path.join(ROOT, 'engine/weights.json')));
+  const CLS = C.unpack(JSON.parse(fs.readFileSync(path.join(ROOT, 'engine/cls-weights.json'))));
+  const detect = (p) => { const r = M.predict(p, weights, { mode: weights.mode }); return { on: r.on, d: r.rules }; };
+
+  test('SoD conflicts report does not get the compare-two-sources job', () => {
+    const p = 'Please review the attached SoD conflicts report.';
+    const o = W.coach(p, { files: [], detect, ...C.pick(p, CLS) });
+    const s = o.stages.strong.prompt;
+    assert.ok(!/does not match/.test(s), s);
+    assert.ok(!/both locations and both values/.test(s), s);
+  });
+
+  test('hyphenated SoD-conflicts is not consistency in pick()', () => {
+    assert.notStrictEqual(C.pick('Review the SoD-conflicts report.', CLS).intent, 'consistency');
+    assert.strictEqual(W.intentOf(R.normalize('review the segregation-of-duties-conflict listing'), false, true), null);
+  });
+
+  test('conflict of interest is not consistency in pick()', () => {
+    assert.notStrictEqual(C.pick('Flag any conflict of interest in the vendor list.', CLS).intent, 'consistency');
+  });
+
+  test('other conflict cues stay consistency', () => {
+    assert.strictEqual(C.pick('Check the attached report for conflicts between the totals and the detail.', CLS).intent, 'consistency');
+    assert.strictEqual(W.intentOf(R.normalize('the figures conflict with the summary'), false, true), 'consistency');
+  });
+
+  test('SoD and segregation of duties conflicts give no intent when strict', () => {
+    assert.strictEqual(W.intentOf(R.normalize('review the sod conflicts report'), false, true), null);
+    assert.strictEqual(W.intentOf(R.normalize('segregation of duties conflicts'), false, true), null);
+  });
+}

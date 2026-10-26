@@ -6,7 +6,7 @@ strong version into toggleable SCOPE elements. Everything runs in the browser: n
 server, no uploads. Built for customer-facing use where Claude access can't be provisioned.
 
 ```sh
-node tests/build.js                      # -> dist/prompt-coach.html (single file, 345526 bytes as committed with LF; a CRLF checkout is larger)
+node tests/build.js                      # -> dist/prompt-coach.html (single file, 345908 bytes as committed with LF; a CRLF checkout is larger)
 node tests/pagetest.js                      # real-browser page test of the built page (notes, display grade, off-topic); build first
 node tests/eval.js rulefeat data/test.jsonl          # accuracy on held-out prompts
 node tests/simulate.js data/train_*.jsonl            # rewrite invariants
@@ -175,4 +175,4 @@ source and ask. Details, history and the final numbers are in
 
 ## Done-when status
 
-The done-when work stopped at f984c75 (Ian, 2026-10-22 15:10Z): C2, C4 and the C5 gate pass, C1 missed (17/30 on the first strong set), C3 not yet run. After the C1 cues and reshape runs (21/30 on the seen r1 set), Ian closed C1 as missed on 2026-10-22 and chose the C3 sandbox test next; the fresh strong set stays unread. C3 ran on 2026-10-23 (48 sends in Ian's Workiva AI sandbox) and missed: 13 of 24 Strong-prompt sends gave the intended answer (bar 22), 0 of 24 had an invented fact (4 of 24 for the originals), and they found 58 key items against the originals' 63 (`docs/evidence/2026-10-23-prompt-coach-c3-sandbox.md`). Numbers and open items: `docs/evidence/2026-10-22-prompt-coach-done-when.md`, `docs/research/2026-10-22-prompt-coach-c1-next.md`.
+The done-when work stopped at f984c75 (Ian, 2026-10-22 15:10Z): C2, C4 and the C5 gate pass, C1 missed (17/30 on the first strong set), C3 not yet run. After the C1 cues and reshape runs (21/30 on the seen r1 set), Ian closed C1 as missed on 2026-10-22 and chose the C3 sandbox test next; the fresh strong set stays unread. C3 ran on 2026-10-23 (48 sends in Ian's Workiva AI sandbox) and missed: 13 of 24 Strong-prompt sends gave the intended answer (bar 22), 0 of 24 had an invented fact (4 of 24 for the originals), and they found 58 key items against the originals' 63 (`docs/evidence/2026-10-23-prompt-coach-c3-sandbox.md`). A $0 read of those answers found 5 separate causes, so C3 is parked as missed (Ian, 2026-10-23); the one coach bug it turned up is fixed: "SoD conflicts" and "conflict of interest" no longer get the compare-two-sources job (`docs/superpowers/specs/2026-10-23-prompt-coach-sod-conflict-design.md`, `docs/research/2026-10-23-prompt-coach-after-c3-read.md`). Numbers and open items: `docs/evidence/2026-10-22-prompt-coach-done-when.md`, `docs/research/2026-10-22-prompt-coach-c1-next.md`.
