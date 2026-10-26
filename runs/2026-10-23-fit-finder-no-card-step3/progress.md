@@ -28,3 +28,4 @@
 | 2026-10-23T14:53:56.864Z | 7 | task | waiting | 0 | 0 | 0 | 0 | depends on a look awaiting Ian |
 | 2026-10-23T14:53:59.580Z | 8 | task | waiting | 0 | 0 | 0 | 0 | depends on a look awaiting Ian |
 | 2026-10-23T14:54:01.743Z | 9 | task | waiting | 0 | 0 | 0 | 0 | depends on a look awaiting Ian |
+| 2026-10-26T00:32:38.000Z | 4 | task | done | 0 | 0 | 0 | 0 | Ian accepted the PM labels (card '[Ian] Labels' in session c6f936e9, hook row left: ian-typed: "Accept all 40 (Recommended)"); ian-label-batch.json written |
