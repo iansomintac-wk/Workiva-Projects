@@ -19,3 +19,10 @@ BEFORE: feature 13 of 30, wrong 3, no card 16, not-a-fit 0
 PREDICTION-PM: (assumed) on the new gate set the no-card misses fall by 4 or more and wrong card is unchanged.
 PREDICTION-LEAD: (assumed) on tune + half A, diag no-card N falls from 25 to 15 or fewer. Keep only if, on the gate set: no-card misses fall by >= 2, wrong card does not rise, card-on-not-a-fit does not rise. Disproved by: N above 15 after the tune, or a gate fall below 4, or any rise in wrong card or card on a not-a-fit prompt.
 TUNE-RESULT: start N 25, best N 15, kept 3 of 5 attempts, stop target, results L/results.tsv, tool uses 48
+
+AFTER-LINE: first card right: 13 of 32 that fit; wrong card 3 (G2,G8,G30); no card where one fits 16 (G6,G12,G13,G14,G16,G18,G21,G23,G26,G27,G29,G33,G34,G36,G37,G38); card on a not-a-fit prompt 0 (); fit agreement 16 of 40; score 22; split: right feature first 13 of 30, rightly none 0 ()
+AFTER: feature 13 of 30, wrong 3, no card 16, not-a-fit 0
+OUTCOME: reverted
+REASON: no-card fall < 2 (16 to 16)
+PREDICTION: did not hold
+PARKED: Fit Finder parked per the spec (no reshape, no retry); Ian is told by the lead
