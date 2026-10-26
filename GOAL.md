@@ -1,4 +1,4 @@
-Status: DRAFT - awaiting Ian's approval
+Status: APPROVED by Ian 2026-10-26: "Approve as written (Recommended)" (his own answer; answered-for-ian.jsonl row left it to him, left: ian-kind)
 Product: OSM Runway (this folder; branch master after the runway-v13-look merge). A Book of Business Tracker and Onboarding Guide: single-file HTML apps that run from a local folder with no build step, no account and no server.
 
 ## Ian's words (verbatim)
