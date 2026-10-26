@@ -2,7 +2,7 @@
   "run": "2026-10-23-fit-finder-no-card-step3",
   "state": "running",
   "pid": 6364,
-  "task": 5,
+  "task": 6,
   "of": 10,
   "step": "check",
   "attempts": [
@@ -22,10 +22,10 @@
   "peakWorkerMb": 1583,
   "minFreeGb": 4.7,
   "startedAt": "2026-10-23T14:36:38.967Z",
-  "updatedAt": "2026-10-26T02:53:50.441Z",
-  "elapsedSec": 217031,
-  "tokens": 1553208,
-  "usage_cost_usd": 1.0491,
+  "updatedAt": "2026-10-26T02:56:19.261Z",
+  "elapsedSec": 217180,
+  "tokens": 1638800,
+  "usage_cost_usd": 1.1255,
   "usage_cost_note": "provider-reported cost estimate; not billing enforcement; actual quota and billing are unverified",
   "done": [
     0,
@@ -33,19 +33,19 @@
     2,
     3,
     4,
-    5
+    5,
+    6
   ],
   "parked": [],
   "blocked": [],
   "awaiting": [],
   "waiting": [
-    6,
     7,
     8,
     9
   ],
   "pidCreated": "2026-10-26T02:51:32.2857240Z",
   "token_usage_complete": false,
-  "unmeasured_worker_calls": 1,
-  "token_usage_note": "known token subtotal; 1 worker call not measured"
+  "unmeasured_worker_calls": 2,
+  "token_usage_note": "known token subtotal; 2 worker calls not measured"
 }
