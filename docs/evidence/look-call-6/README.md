@@ -19,6 +19,12 @@ Ian, 2026-10-23 (AskUserQuestion): "Show once (Recommended)". The call's card (l
 | old deck, Halvorsen | 27604f0a87e8 | 8acc25086d09 | 1 reason line (before: 3) |
 | old deck, Kestrel | f0af83676cb1 | 492612a68add | 2 reason lines (before: 3) |
 
+## Look call result
+
+Look critic: pass-to-ian; PM first pass: keep (the dates are what tell two different reasons apart). Ian, 2026-10-26 (AskUserQuestion; the answer hook left it to him, `left: ian-kind`): "Looks right (Recommended)". Logged in the studio-harness taste log.
+
+The hand-off prompt said the line repeats on the v13 Risk screen. Measured, it did not: v13 hid the second reason instead. Both are fixed by the same rule.
+
 ## Check
 
 `node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 565`, check LC6v13 (it runs the v13 screen with the switch at '1'). Parent html: 564/565, LC6v13 FAIL `{"v13":{"A":1,"B1":1,"B2":0},"deck":{"A":3,...},"desk":{"A":3,...}}`. After: 565/565.
