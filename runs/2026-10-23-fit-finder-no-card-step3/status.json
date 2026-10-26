@@ -1,0 +1,52 @@
+{
+  "run": "2026-10-23-fit-finder-no-card-step3",
+  "state": "failed",
+  "pid": 6364,
+  "task": 9,
+  "of": 10,
+  "step": "done-check",
+  "attempts": [
+    {
+      "attempt": 1,
+      "startedAt": "2026-10-23T14:36:41.863Z",
+      "peakWorkerMb": 608,
+      "minFreeGb": 1.9
+    },
+    {
+      "attempt": 2,
+      "startedAt": "2026-10-26T02:51:34.505Z",
+      "peakWorkerMb": 2985,
+      "minFreeGb": 4.7
+    }
+  ],
+  "peakWorkerMb": 2985,
+  "minFreeGb": 4.7,
+  "startedAt": "2026-10-23T14:36:38.967Z",
+  "updatedAt": "2026-10-26T03:17:05.989Z",
+  "elapsedSec": 218427,
+  "tokens": 3947472,
+  "usage_cost_usd": 2.7739,
+  "usage_cost_note": "provider-reported cost estimate; not billing enforcement; actual quota and billing are unverified",
+  "done": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "parked": [],
+  "blocked": [],
+  "awaiting": [],
+  "waiting": [],
+  "pidCreated": "2026-10-26T02:51:32.2857240Z",
+  "token_usage_complete": false,
+  "unmeasured_worker_calls": 6,
+  "token_usage_note": "known token subtotal; 6 worker calls not measured",
+  "reason": "done-check-failed",
+  "doneCheck": "DONE CHECK: FAIL exit=1 head=2c81dce850fc41919513ba5fdf6944e5f5c11d8c dirty=3 captures=0 log=C:\\Users\\teasp\\AppData\\Local\\Temp\\done-check-2c81dce850fc41919513ba5fdf6944e5f5c11d8c-1792984625804.log"
+}

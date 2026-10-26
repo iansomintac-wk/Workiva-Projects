@@ -17,6 +17,19 @@ const withEngine = (title, fn) => {
     fn();
   } finally { fs.copyFileSync(engBackup, engPath); }
 };
+// engine edits by text: change(text) returns the new text; the file is restored afterwards
+const withText = (title, change, fn) => {
+  try {
+    const before = fs.readFileSync(engPath, 'utf8');
+    const after = change(before);
+    ok(title + ': engine edit changed the file', after !== before);
+    fs.writeFileSync(engPath, after);
+    fn();
+  } finally { fs.copyFileSync(engBackup, engPath); }
+};
+const withOpsValue = (title, fn) => withText(title, (t) => t.replace('READ: /', 'READ: /(?:)'), fn);
+const withGateEdit = (title, fn) => withText(title, (t) => t.replace(/^    let fit;(\r?\n)/m, (m, e) => m + '    /* gate edit */' + e), fn);
+const withOpsKey = (title, fn) => withText(title, (t) => t.replace(/^(    READ: .*?)(\r?\n)/m, (m, a, e) => a + ' newkey: /zzqx/,' + e), fn);
 let n = 0, fails = 0;
 const ok = (title, cond) => { n++; if (!cond) { fails++; console.log('FAIL: ' + title); } };
 const node = (args) => spawnSync(process.execPath, args, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26 });
@@ -101,6 +114,54 @@ withEdit('o', (c) => { c.useCases[0].match = 'zzqx'; }, () => {
 withEngine('p', () => {
   const r = node(['tests/fair-guard.js', '--base', 'HEAD', '--lock-base', 'HEAD', '--allow', 'engine']);
   ok('p: fair-guard --allow engine ignores the engine diff', !out(r).includes('engine/fit.js differs'));
+});
+const T3 = ['--base', 'HEAD', '--allow', 'tune3'];
+const FG3 = ['tests/fair-guard.js', '--base', 'HEAD', '--lock-base', 'HEAD', '--allow', 'tune3'];
+const setMatch = (c) => { c.useCases[0].match = 'zzqx'; };
+const matchAndOps = (c) => { setMatch(c); addCheck(c); };
+withEdit('t3a', matchAndOps, () => {
+  const r = node(['tests/match-frozen.js', ...T3]);
+  ok('t3a: match and ops change allowed with --allow tune3', r.status === 0 && /match-frozen PASS/.test(out(r)));
+});
+withEngine('t3b', () => {
+  withEdit('t3b', matchAndOps, () => {
+    ok('t3b: engine edit plus match and ops allowed with --allow tune3', node(['tests/match-frozen.js', ...T3]).status === 0);
+  });
+});
+withEdit('t3c', (c) => { c.useCases[0].id += 'x'; }, () => {
+  ok('t3c: id change fails with --allow tune3', node(['tests/match-frozen.js', ...T3]).status === 1);
+});
+withEdit('t3d', (c) => { c.useCases[0].area += ' x'; }, () => {
+  ok('t3d: area change fails with --allow tune3', node(['tests/match-frozen.js', ...T3]).status === 1);
+});
+withEdit('t3e', (c) => { const u = c.useCases; [u[0], u[1]] = [u[1], u[0]]; }, () => {
+  ok('t3e: card swap fails with --allow tune3', node(['tests/match-frozen.js', ...T3]).status === 1);
+});
+withEdit('t3f', (c) => { c.useCases.pop(); }, () => {
+  ok('t3f: card count change fails with --allow tune3', node(['tests/match-frozen.js', ...T3]).status === 1);
+});
+withEdit('t3g', (c) => { const u = c.useCases[0]; const k = ['try', 'task', 'prompt'].find((x) => x in u); u[k] = 'zzqx'; }, () => {
+  const o = out(node(FG3));
+  ok('t3g: fair-guard tune3 flags other fields', o.includes('outside match fields') && !o.includes('unknown --allow value'));
+});
+withEngine('t3h', () => {
+  ok('t3h: fair-guard tune3 rejects an engine edit outside OPS', out(node(FG3)).includes('engine-scope'));
+});
+withGateEdit('t3i', () => {
+  ok('t3i: fair-guard tune3 rejects a gate edit', out(node(FG3)).includes('engine-scope'));
+});
+withOpsKey('t3i2', () => {
+  ok('t3i2: fair-guard tune3 rejects an added OPS key', out(node(FG3)).includes('engine-scope'));
+});
+withOpsValue('t3j', () => {
+  const o = out(node(FG3));
+  ok('t3j: fair-guard tune3 accepts an OPS regex value', !o.includes('engine-scope') && !o.includes('unknown --allow value'));
+});
+withEdit('t3k', setMatch, () => {
+  ok('t3k: no-flag match edit still fails', node(['tests/match-frozen.js', '--base', 'HEAD']).status === 1);
+});
+withEdit('t3k2', addCheck, () => {
+  ok('t3k2: no-flag ops edit still fails', node(['tests/match-frozen.js', '--base', 'HEAD']).status === 1);
 });
 fs.rmSync(backup, { force: true });
 fs.rmSync(engBackup, { force: true });

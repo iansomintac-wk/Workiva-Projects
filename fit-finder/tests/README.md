@@ -7,3 +7,4 @@ Half A was used to tune engine/fit.js; half B is held out. 2026-10-15: A 86.7%, 
 `node tests/sandbox-kit.js --build <dir>` builds the sandbox files and prompt cards; `node tests/sandbox-kit.test.js` tests it. pagetest stays at 98 checks.
 `node tests/match-frozen.js --base <sha> --allow ops` (and `fair-guard.js ... --allow ops`) lets card `ops` differ; `node tests/match-frozen.test.js` tests both.
 `node tests/match-frozen.js --base <sha> --allow engine` (and `fair-guard.js ... --allow engine`) lets `engine/fit.js` differ; card id, area, match and ops stay frozen.
+`node tests/match-frozen.js --base <sha> --allow tune3` (and `fair-guard.js ... --allow tune3`) lets each card's `match`/`ops` and the regex values of the engine `OPS` properties differ together; card id, area, order, count and every other field stay frozen, and any other engine change (including the gate block or an added OPS key) fails via `tools/engine-scope.js --ops-only`.
