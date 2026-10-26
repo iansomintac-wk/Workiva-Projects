@@ -41,3 +41,7 @@
 | 2026-10-26T03:00:40.326Z | 7 | check-cmd | pass | not measured | not measured | 0 | 0 | exit 0; tune-result ok | not measured | not measured | not measured |
 | 2026-10-26T03:03:23.551Z | 7 | checker | pass | not measured | not measured | 161 | 0 | o expected result was hard-coded. - Ledger records N 25 → 15, three keeps across five attempts, stopping at target. - Sa | codex | medium | not measured |
 | 2026-10-26T03:03:23.618Z | 7 | task | done | not measured | not measured | 0 | 0 | attempt 1 | not measured | not measured | not measured |
+| 2026-10-26T03:03:58.573Z | 8 | build | ok | 98025 | 0.0799869 | 34 | 0 |  | sonnet | medium | not measured |
+| 2026-10-26T03:03:59.963Z | 8 | check-cmd | pass | not measured | not measured | 0 | 0 | exit 0; gate-check ok final reverted; before feature 13 of 30 wrong 3 no-card 16 not-a-fit 0; after feature 13 of 30 wro | not measured | not measured | not measured |
+| 2026-10-26T03:05:43.763Z | 8 | checker | pass | not measured | not measured | 102 | 0 | - Engine and catalogue blob hashes match BASE `fb26061`. - Checks and tests were unchanged; none were deleted, weakened  | codex | medium | not measured |
+| 2026-10-26T03:05:43.868Z | 8 | task | done | not measured | not measured | 0 | 0 | attempt 1 | not measured | not measured | not measured |

@@ -2,7 +2,7 @@
   "run": "2026-10-23-fit-finder-no-card-step3",
   "state": "running",
   "pid": 6364,
-  "task": 7,
+  "task": 8,
   "of": 10,
   "step": "check",
   "attempts": [
@@ -15,17 +15,17 @@
     {
       "attempt": 2,
       "startedAt": "2026-10-26T02:51:34.505Z",
-      "peakWorkerMb": 1583,
+      "peakWorkerMb": 2985,
       "minFreeGb": 4.7
     }
   ],
-  "peakWorkerMb": 1583,
+  "peakWorkerMb": 2985,
   "minFreeGb": 4.7,
   "startedAt": "2026-10-23T14:36:38.967Z",
-  "updatedAt": "2026-10-26T03:03:23.621Z",
-  "elapsedSec": 217605,
-  "tokens": 3338016,
-  "usage_cost_usd": 1.7551,
+  "updatedAt": "2026-10-26T03:05:43.871Z",
+  "elapsedSec": 217745,
+  "tokens": 3436041,
+  "usage_cost_usd": 1.8351,
   "usage_cost_note": "provider-reported cost estimate; not billing enforcement; actual quota and billing are unverified",
   "done": [
     0,
@@ -35,17 +35,17 @@
     4,
     5,
     6,
-    7
+    7,
+    8
   ],
   "parked": [],
   "blocked": [],
   "awaiting": [],
   "waiting": [
-    8,
     9
   ],
   "pidCreated": "2026-10-26T02:51:32.2857240Z",
   "token_usage_complete": false,
-  "unmeasured_worker_calls": 3,
-  "token_usage_note": "known token subtotal; 3 worker calls not measured"
+  "unmeasured_worker_calls": 4,
+  "token_usage_note": "known token subtotal; 4 worker calls not measured"
 }
