@@ -11378,6 +11378,59 @@ function _runSelfChecksInner(){
     _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
     check('T16v13: on the v13 Risk screen, one account with a confirmed-without-reason signal and an unreviewed signal: a real click on Add a reason then save writes the reason on the first and leaves the unreviewed one with no verdict and no reason', ok, detail);
   })();
+  /* ==== Look call 6: the reason line prints once per signal (Ian 2026-10-23, "Show once") ====
+     Account A: three signals confirmed with one reason on one date -> the reason shows once.
+     Account B: two signals confirmed with different reasons -> both show. Run on the v13
+     Risk screen (switch '1', real render) and on the old deck card and old desk card back. */
+  (function(){
+    const KEY = V13_SWITCH_KEY_SC;
+    let prevSwitch = null;
+    try{ prevSwitch = localStorage.getItem(KEY); }catch(e){}
+    const prevC = DATA.customers, prevA = DATA.activities, prevLog = DATA.riskLog, prevRM = _riskMemo, prevHM = _healthMemo, prevHub = _riskHubCache;
+    const prevView = ui.view, prevOpen = ui.openCustomerId, prevTab = ui.panelTab, prevSnap = DATA.weeklySnapshot;
+    const resetMemo = () => { _renderMemoResets.forEach(r => r()); _riskMemo = new Map(); _healthMemo = new Map(); };
+    const count = (s, sub) => s ? s.split(sub).length - 1 : -1;
+    let ok = false, detail = '';
+    try{
+      const cA = v13Acct('__lc6a__'), cB = v13Acct('__lc6b__');
+      const note = (id, d) => ({id, date: isoAddDays(todayISO(), d), type: 'Call', summary: 'LC6 flagged note ' + id, checklist: [], sessionNumber: null, flagged: true});
+      DATA.customers = [cA, cB];
+      DATA.activities = {[cA.id]: [note('lc6a1', -2), note('lc6a2', -3)], [cB.id]: [note('lc6b1', -2)]};
+      DATA.riskLog = {};
+      resetMemo();
+      const itemsA = buildRiskHubList().filter(r => r.c.id === cA.id), itemsB = buildRiskHubList().filter(r => r.c.id === cB.id);
+      const shape = itemsA.length === 3 && itemsB.length === 2;
+      const on = isoAddDays(todayISO(), -5), on2 = isoAddDays(todayISO(), -4);
+      itemsA.forEach(it => { DATA.riskLog[it.logKey] = {firstSeen: on, lastActioned: on, verdict: 'confirmed', verdictOn: on, verdictSev: 3, verdictReason: 'LC6-ONE-REASON'}; });
+      itemsB.forEach((it, i) => { DATA.riskLog[it.logKey] = {firstSeen: on, lastActioned: on, verdict: 'confirmed', verdictOn: i ? on2 : on, verdictSev: 3, verdictReason: 'LC6-REASON-' + (i + 1)}; });
+      resetMemo();
+      DATA.weeklySnapshot = {date: isoAddDays(todayISO(), -7), ids: []};
+      // v13 Risk screen, real render with the switch on
+      localStorage.setItem(KEY, '1');
+      ui.openCustomerId = null; ui.view = 'risk';
+      render();
+      const root = document.querySelector('#app [data-osm] [data-v13-risk]');
+      const vA = root && root.querySelector('[data-v13-risk-card="' + cA.id + '"]'), vB = root && root.querySelector('[data-v13-risk-card="' + cB.id + '"]');
+      const v13 = {A: count(vA && vA.textContent, 'LC6-ONE-REASON'), B1: count(vB && vB.textContent, 'LC6-REASON-1'), B2: count(vB && vB.textContent, 'LC6-REASON-2')};
+      // old deck card and old desk card back, rendered as the old screens draw them
+      const cases = buildRiskCases(buildRiskHubList({readOnly: true}));
+      const kA = cases.find(k => k.c.id === cA.id), kB = cases.find(k => k.c.id === cB.id);
+      const dA = kA ? renderRiskCase(kA, 0, true) : '', dB = kB ? renderRiskCase(kB, 1, false) : '';
+      const deck = {A: count(dA, 'LC6-ONE-REASON'), B1: count(dB, 'LC6-REASON-1'), B2: count(dB, 'LC6-REASON-2')};
+      const eA = CARD_EDITORS.risk.render(cA), eB = CARD_EDITORS.risk.render(cB);
+      const desk = {A: count(eA, 'LC6-ONE-REASON'), B1: count(eB, 'LC6-REASON-1'), B2: count(eB, 'LC6-REASON-2')};
+      const once = o => o.A === 1 && o.B1 === 1 && o.B2 === 1;
+      ok = shape && once(v13) && once(deck) && once(desk);
+      detail = JSON.stringify({nA: itemsA.length, nB: itemsB.length, v13, deck, desk});
+    }catch(e){ detail = 'threw: ' + e.message; }
+    DATA.customers = prevC; DATA.activities = prevA; DATA.riskLog = prevLog;
+    if(prevSnap === undefined) delete DATA.weeklySnapshot; else DATA.weeklySnapshot = prevSnap;
+    try{ if(prevSwitch === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, prevSwitch); }catch(e){}
+    ui.view = prevView; ui.openCustomerId = prevOpen; ui.panelTab = prevTab;
+    try{ render(); }catch(e){}
+    _renderMemoResets.forEach(r => r()); _riskMemo = prevRM; _healthMemo = prevHM; _riskHubCache = prevHub;
+    check('LC6v13: a reason shared by three confirmed signals prints once and two different reasons each print once, on the v13 Risk screen (switch on), the old deck card and the old desk card back', ok, detail);
+  })();
   /* ==== end v13 Task 4 ==== */
   // Last two checks on purpose — everything above has had its chance to leak by now.
   check('v61 running the suite leaves the book risk memory exactly as it found it',
