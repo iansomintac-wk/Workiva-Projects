@@ -26,3 +26,6 @@ OUTCOME: reverted
 REASON: no-card fall < 2 (16 to 16)
 PREDICTION: did not hold
 PARKED: Fit Finder parked per the spec (no reshape, no retry); Ian is told by the lead
+
+PINS-MOVED: none (reverted, engine and catalogue equal fb26061)
+SUMMARY: The tune of card keywords, card verb lists and the engine's verb patterns brought no-card misses on tune plus half A from 25 to 15 (3 of 5 attempts kept), so the tune-set part of the prediction held. On the new gate set it did nothing: right feature first 13 of 30 before and 13 of 30 after, no card 16 before and 16 after, wrong card 3 and not-a-fit 0 unchanged. The gate fall was 0, below the 4 the spec predicted and below the keep floor of 2, so the change was reverted and the engine and catalogue equal fb26061. The prediction as a whole did not hold. The pins are unchanged. Fit Finder is parked per the spec.
