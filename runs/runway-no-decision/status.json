@@ -1,0 +1,35 @@
+{
+  "run": "runway-no-decision",
+  "state": "running",
+  "pid": 19830,
+  "task": 1,
+  "of": 1,
+  "step": "check",
+  "attempts": [
+    {
+      "attempt": 1,
+      "startedAt": "2026-10-26T06:14:18.922Z",
+      "peakWorkerMb": 491,
+      "minFreeGb": 14.8
+    }
+  ],
+  "peakWorkerMb": 491,
+  "minFreeGb": 14.8,
+  "startedAt": "2026-10-26T06:14:18.881Z",
+  "updatedAt": "2026-10-26T06:15:00.810Z",
+  "elapsedSec": 42,
+  "tokens": 62593,
+  "token_usage_complete": false,
+  "unmeasured_worker_calls": 1,
+  "token_usage_note": "known token subtotal; 1 worker call not measured",
+  "usage_cost_usd": 0.061,
+  "usage_cost_note": "provider-reported cost estimate; not billing enforcement; actual quota and billing are unverified",
+  "done": [
+    1
+  ],
+  "parked": [],
+  "blocked": [],
+  "awaiting": [],
+  "waiting": [],
+  "pidCreated": "2026-10-26T06:14:17.810Z:dab4e566-3c97-4c4d-b5c9-74ffceda238d:142081"
+}
