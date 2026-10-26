@@ -1,11 +1,11 @@
-Status: APPROVED by Ian 2026-10-26: "Approve as written (Recommended)" (his own answer; answered-for-ian.jsonl row left it to him, left: ian-kind)
+Status: APPROVED by Ian 2026-10-25: "Approve as written (Recommended)" (his own answer; answered-for-ian.jsonl row left it to him, left: ian-kind)
 Product: OSM Runway (this folder; branch master after the runway-v13-look merge). A Book of Business Tracker and Onboarding Guide: single-file HTML apps that run from a local folder with no build step, no account and no server.
 
 ## Ian's words (verbatim)
 - 2026-10-16, why the tracker exists: "a team moving off scattered spreadsheets, a delayed dashboard within Quicksight, having to click through Gainsight and find the right fields to update into one shared tool".
 - 2026-10-22, scope of the v13 port: everything works on the fake book except the live Gainsight and Snowflake connection, which is parked until his internal team supplies access (docs/evidence/2026-10-22-runway-fake-book-v13.md, opening line).
 - 2026-10-23: "Right after this run (Recommended)" (runway-v13-look into master); "Later list (Recommended)" (the Ask-or-jump bar).
-- 2026-10-26: "So runway is done?", then "Do it" (draft this file, then the master merge).
+- 2026-10-25: "So runway is done?", then "Do it" (draft this file, then the master merge).
 
 ## Objective
 An OSM keeps their whole book in one place and turns it into a day's work: Today, Accounts, Risk, Co-pilot, System and Settings on the v13 look (tracker 1.1), with call checks, refresh from Gainsight and send to Gainsight working against the fake connector, and the onboarding guide beside it. Tracker 1.0 stays as it is (locked).
@@ -16,7 +16,7 @@ Tracker 1.1 on the v13 look is on master, its full test suite and its 565 self-c
 ## Done check
 `node --test --test-reporter=spec "test/*.test.mjs" "connector/test/*.test.mjs" && node tools/selfcheck.mjs osm-book-of-business-tracker-1.1.html --seed demo-seed.js --expect 565 && node tools/sim/osm-day/run.mjs --version 1.1`
 
-Expected (measured 2026-10-26 at 04df7e8, Node v26.5.0, about 6 minutes):
+Expected (measured 2026-10-25 at 04df7e8, Node v26.5.0, about 6 minutes):
 - suite: `ℹ tests 670`, `ℹ pass 668`, `ℹ fail 0`, `ℹ skipped 2`
 - self-check: `runSelfChecks: 565/565 passed, 0 failed` and `console errors: 0`
 - sim: `summary 1.1 | steps 22 breaks 22 | exit 0`
