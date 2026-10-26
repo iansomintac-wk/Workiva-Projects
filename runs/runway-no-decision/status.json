@@ -4,7 +4,7 @@
   "pid": 19830,
   "task": 1,
   "of": 1,
-  "step": "check",
+  "step": "review",
   "attempts": [
     {
       "attempt": 1,
@@ -16,7 +16,7 @@
   "peakWorkerMb": 491,
   "minFreeGb": 14.8,
   "startedAt": "2026-10-26T06:14:18.881Z",
-  "updatedAt": "2026-10-26T06:15:00.810Z",
+  "updatedAt": "2026-10-26T06:15:00.940Z",
   "elapsedSec": 42,
   "tokens": 62593,
   "token_usage_complete": false,
